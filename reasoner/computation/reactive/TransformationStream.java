@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Transformer;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ProviderRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReceiverRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
 
 import java.util.Set;
 import java.util.function.Function;
@@ -36,22 +36,22 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     protected TransformationStream(Processor<?, ?, ?, ?> processor,
                                    Transformer<INPUT, OUTPUT> transformer,
-                                   ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
+                                   SubscriberRegistry<Subscriber<OUTPUT>> subscriberRegistry,
                                    ProviderRegistry<Publisher<INPUT>> providerRegistry) {
-        super(processor, receiverRegistry, providerRegistry);
+        super(processor, subscriberRegistry, providerRegistry);
         this.transformer = transformer;
         registerNewPublishers(transformer.initialise());
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> single(
             Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
-        return new TransformationStream<>(processor, transformer, new ReceiverRegistry.Single<>(),
+        return new TransformationStream<>(processor, transformer, new SubscriberRegistry.Single<>(),
                                           new ProviderRegistry.Single<>());
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> fanIn(
             Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
-        return new TransformationStream<>(processor, transformer, new ReceiverRegistry.Single<>(),
+        return new TransformationStream<>(processor, transformer, new SubscriberRegistry.Single<>(),
                                           new ProviderRegistry.Multi<>());
     }
 
@@ -62,32 +62,32 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
         providerActions.tracePull(subscriber);
-        receiverRegistry().recordPull(subscriber);
+        subscriberRegistry().recordPull(subscriber);
         providerRegistry().nonPulling().forEach(this::propagatePull);
     }
 
     @Override
     public void receive(Publisher<INPUT> publisher, INPUT input) {
-        receiverActions.traceReceive(publisher, input);
+        subscriberActions.traceReceive(publisher, input);
         providerRegistry().recordReceive(publisher);
 
         Operator.Transformed<OUTPUT, INPUT> outcome = operator().accept(publisher, input);
         registerNewPublishers(outcome.newPublishers());
         providerActions.processEffects(outcome);
-        if (outcome.outputs().isEmpty() && receiverRegistry().anyPulling()) {
-            receiverActions.rePullPublisher(publisher);
+        if (outcome.outputs().isEmpty() && subscriberRegistry().anyPulling()) {
+            subscriberActions.rePullPublisher(publisher);
         } else {
             // pass on the output, regardless of pulling state
-            iterate(receiverRegistry().receivers()).forEachRemaining(
-                    receiver -> {
-                        receiverRegistry().setNotPulling(receiver);
-                        iterate(outcome.outputs()).forEachRemaining(output -> providerActions.subscriberReceive(receiver, output));
+            iterate(subscriberRegistry().subscribers()).forEachRemaining(
+                    subscriber -> {
+                        subscriberRegistry().setNotPulling(subscriber);
+                        iterate(outcome.outputs()).forEachRemaining(output -> providerActions.subscriberReceive(subscriber, output));
                     });
         }
     }
 
     public void registerNewPublishers(Set<Publisher<INPUT>> newPublishers) {
-        newPublishers.forEach(newPublisher -> newPublisher.registerReceiver(this));
+        newPublishers.forEach(newPublisher -> newPublisher.registerSubscriber(this));
     }
 
     @Override

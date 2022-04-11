@@ -98,16 +98,16 @@ public class Monitor extends Actor<Monitor> {
         sourceNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    public void registerPath(Reactive.Identifier<?, ?> receiver, Reactive.Identifier<?, ?> provider) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerPath(receiver, provider, driver()));
+    public void registerPath(Reactive.Identifier<?, ?> subscriber, Reactive.Identifier<?, ?> provider) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerPath(subscriber, provider, driver()));
         if (terminated) return;
-        ReactiveNode receiverNode = reactiveNodes.computeIfAbsent(receiver, n -> new ReactiveNode());
+        ReactiveNode subscriberNode = reactiveNodes.computeIfAbsent(subscriber, n -> new ReactiveNode());
         ReactiveNode providerNode = reactiveNodes.computeIfAbsent(provider, n -> new ReactiveNode());
-        receiverNode.addProvider(providerNode);
-        // We could be learning about a new receiver or provider or both.
-        // Propagate any graphs the receiver belongs to to the provider.
-        receiverNode.propagateReactiveGraphs();
-        receiverNode.graphMemberships().forEach(ReactiveGraph::checkFinished);  // In case a root connects to an already complete graph it should terminate straight away  TODO: very inefficient
+        subscriberNode.addProvider(providerNode);
+        // We could be learning about a new subscriber or provider or both.
+        // Propagate any graphs the subscriber belongs to to the provider.
+        subscriberNode.propagateReactiveGraphs();
+        subscriberNode.graphMemberships().forEach(ReactiveGraph::checkFinished);  // In case a root connects to an already complete graph it should terminate straight away  TODO: very inefficient
     }
 
     public void createAnswer(Reactive.Identifier<?, ?> provider) {
@@ -116,12 +116,12 @@ public class Monitor extends Actor<Monitor> {
         getOrCreateNode(provider).createAnswer();
     }
 
-    public void consumeAnswer(Reactive.Identifier<?, ?> receiver) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.consumeAnswer(receiver, driver()));
+    public void consumeAnswer(Reactive.Identifier<?, ?> subscriber) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.consumeAnswer(subscriber, driver()));
         if (terminated) return;
-        ReactiveNode receiverNode = getOrCreateNode(receiver);
-        receiverNode.consumeAnswer();
-        receiverNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
+        ReactiveNode subscriberNode = getOrCreateNode(subscriber);
+        subscriberNode.consumeAnswer();
+        subscriberNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
     private static class ReactiveGraph {  // TODO: A graph can effectively be a source node within another graph
@@ -194,20 +194,20 @@ public class Monitor extends Actor<Monitor> {
 
         private final Set<ReactiveGraph> graphMemberships;
         private final Set<ReactiveNode> providers;
-        private final Map<ReactiveGraph, Set<ReactiveNode>> receiversByGraph;
+        private final Map<ReactiveGraph, Set<ReactiveNode>> subscribersByGraph;
         private long answersCreated;
         private long answersConsumed;
 
         ReactiveNode() {
             this.graphMemberships = new HashSet<>();
             this.providers = new HashSet<>();
-            this.receiversByGraph = new HashMap<>();
+            this.subscribersByGraph = new HashMap<>();
             this.answersCreated = 0;
             this.answersConsumed = 0;
         }
 
         public long answersCreated(ReactiveGraph reactiveGraph) {
-            return answersCreated * receiversByGraph.get(reactiveGraph).size();
+            return answersCreated * subscribersByGraph.get(reactiveGraph).size();
         }
 
         public long answersConsumed() {
@@ -215,7 +215,7 @@ public class Monitor extends Actor<Monitor> {
         }
 
         public long frontierJoins(ReactiveGraph reactiveGraph) {
-            return receiversByGraph.get(reactiveGraph).size();
+            return subscribersByGraph.get(reactiveGraph).size();
         }
 
         public long frontierForks() {
@@ -240,8 +240,8 @@ public class Monitor extends Actor<Monitor> {
             assert isNew;
         }
 
-        public boolean addReceiverGraphs(ReactiveNode receiver, Set<ReactiveGraph> reactiveGraphs) {
-            reactiveGraphs.forEach(g -> receiversByGraph.computeIfAbsent(g, n -> new HashSet<>()).add(receiver));
+        public boolean addSubscriberGraphs(ReactiveNode subscriber, Set<ReactiveGraph> reactiveGraphs) {
+            reactiveGraphs.forEach(g -> subscribersByGraph.computeIfAbsent(g, n -> new HashSet<>()).add(subscriber));
             return addGraphMemberships(reactiveGraphs);
         }
 
@@ -257,7 +257,7 @@ public class Monitor extends Actor<Monitor> {
         public void propagateReactiveGraphs() {
             if (!graphsToPropagate().isEmpty()) {
                 providers().forEach(provider -> {
-                    if (provider.addReceiverGraphs(this, graphsToPropagate())) provider.propagateReactiveGraphs();
+                    if (provider.addSubscriberGraphs(this, graphsToPropagate())) provider.propagateReactiveGraphs();
                 });
             }
         }

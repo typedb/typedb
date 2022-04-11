@@ -48,7 +48,7 @@ public class Connector<BOUNDS, PACKET> {
     public void connectViaTransforms(Reactive.Stream<PACKET, PACKET> toConnect, Output<PACKET> output) {
         Publisher<PACKET> op = toConnect;
         for (Function<PACKET, PACKET> t : transforms) op = op.map(t);
-        op.registerReceiver(output);
+        op.registerSubscriber(output);
     }
 
     public BOUNDS bounds(){

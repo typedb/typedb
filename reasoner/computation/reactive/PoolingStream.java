@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.operator.BufferOper
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.FanOutOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ProviderRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReceiverRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -37,25 +37,25 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
 
     protected PoolingStream(Processor<?, ?, ?, ?> processor,
                             Operator.Pool<INPUT, OUTPUT> pool,
-                            ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
+                            SubscriberRegistry<Subscriber<OUTPUT>> subscriberRegistry,
                             ProviderRegistry<Publisher<INPUT>> providerRegistry) {
-        super(processor, receiverRegistry, providerRegistry);
+        super(processor, subscriberRegistry, providerRegistry);
         this.pool = pool;
     }
 
     public static <PACKET> PoolingStream<PACKET, PACKET> fanOut(
             Processor<?, ?, ?, ?> processor) {
-        return new PoolingStream<>(processor, new FanOutOperator<>(), new ReceiverRegistry.Multi<>(),
+        return new PoolingStream<>(processor, new FanOutOperator<>(), new SubscriberRegistry.Multi<>(),
                                    new ProviderRegistry.Single<>());
     }
 
     public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> fanIn(
             Processor<?, ?, ?, ?> processor, Operator.Pool<INPUT, OUTPUT> pool) {
-        return new PoolingStream<>(processor, pool, new ReceiverRegistry.Single<>(), new ProviderRegistry.Multi<>());
+        return new PoolingStream<>(processor, pool, new SubscriberRegistry.Single<>(), new ProviderRegistry.Multi<>());
     }
 
     public static <PACKET> PoolingStream<PACKET, PACKET> fanInFanOut(Processor<?, ?, ?, ?> processor) {
-        return new PoolingStream<>(processor, new FanOutOperator<>(), new ReceiverRegistry.Multi<>(),
+        return new PoolingStream<>(processor, new FanOutOperator<>(), new SubscriberRegistry.Multi<>(),
                                    new ProviderRegistry.Multi<>());
     }
 
@@ -65,7 +65,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
         //  operator here even though the types allow it. In fact what really changes in tandem is the signature of the
         //  receive() and pull() methods, as when there are multiple upstreams/downstreams we need to know which the
         //  message is from/to, but  not so for single upstream/downstreams
-        return new PoolingStream<>(processor, new BufferOperator<>(), new ReceiverRegistry.Single<>(),
+        return new PoolingStream<>(processor, new BufferOperator<>(), new SubscriberRegistry.Single<>(),
                                    new ProviderRegistry.Single<>());
     }
 
@@ -76,14 +76,14 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
         providerActions.tracePull(subscriber);
-        receiverRegistry().recordPull(subscriber);
+        subscriberRegistry().recordPull(subscriber);
         // TODO: We don't care about the subscriber here
         if (operator().hasNext(subscriber)) {
             // TODO: Code duplicated in Source
-            receiverRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
+            subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
             Operator.Supplied<OUTPUT> supplied = operator().next(subscriber);
             providerActions.processEffects(supplied);
-            providerActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
+            providerActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which subscribers have seen this packet then it needs to be sent to all subscribers. So far this is never the case.
         } else {
             providerRegistry().nonPulling().forEach(this::propagatePull);
         }
@@ -91,23 +91,23 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
 
     @Override
     public void receive(Publisher<INPUT> provider, INPUT packet) {
-        receiverActions.traceReceive(provider, packet);
+        subscriberActions.traceReceive(provider, packet);
         providerRegistry().recordReceive(provider);
 
         providerActions.processEffects(operator().accept(provider, packet));
         AtomicBoolean retry = new AtomicBoolean();
         retry.set(false);
-        iterate(receiverRegistry().pulling()).forEachRemaining(receiver -> {
-            if (operator().hasNext(receiver)) {
-                Operator.Supplied<OUTPUT> supplied = operator().next(receiver);
+        iterate(subscriberRegistry().pulling()).forEachRemaining(subscriber -> {
+            if (operator().hasNext(subscriber)) {
+                Operator.Supplied<OUTPUT> supplied = operator().next(subscriber);
                 providerActions.processEffects(supplied);
-                receiverRegistry().setNotPulling(receiver);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
-                providerActions.subscriberReceive(receiver, supplied.output());
+                subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
+                providerActions.subscriberReceive(subscriber, supplied.output());
             } else {
                 retry.set(true);
             }
         });
-        if (retry.get()) receiverActions.rePullPublisher(provider);
+        if (retry.get()) subscriberActions.rePullPublisher(provider);
     }
 
     @Override

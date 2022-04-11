@@ -83,7 +83,7 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
         @Override
         public void setUp() {
             setOutputRouter(PoolingStream.fanOut(this));
-            Source.create(this, new SupplierOperator<>(traversalSupplier)).registerReceiver(outputRouter());
+            Source.create(this, new SupplierOperator<>(traversalSupplier)).registerSubscriber(outputRouter());
         }
     }
 }

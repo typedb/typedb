@@ -22,26 +22,26 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReactiveActions.PublisherActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReactiveActions.SubscriberActions;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReceiverRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
 
 public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl implements Reactive.Stream<INPUT, OUTPUT> {  // TODO: Rename Stream when there's no conflict
 
-    private final ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry;
+    private final SubscriberRegistry<Subscriber<OUTPUT>> subscriberRegistry;
     private final ProviderRegistry<Publisher<INPUT>> providerRegistry;
-    protected final SubscriberActions<INPUT> receiverActions;
+    protected final SubscriberActions<INPUT> subscriberActions;
     protected final PublisherActions<OUTPUT> providerActions;
 
     protected AbstractStream(Processor<?, ?, ?, ?> processor,
-                             ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry,
+                             SubscriberRegistry<Subscriber<OUTPUT>> subscriberRegistry,
                              ProviderRegistry<Publisher<INPUT>> providerRegistry) {
         super(processor);
-        this.receiverRegistry = receiverRegistry;
+        this.subscriberRegistry = subscriberRegistry;
         this.providerRegistry = providerRegistry;
-        this.receiverActions = new SubscriberActionsImpl<>(this);
+        this.subscriberActions = new SubscriberActionsImpl<>(this);
         this.providerActions = new PublisherActionsImpl<>(this);
     }
 
-    public ReceiverRegistry<Subscriber<OUTPUT>> receiverRegistry() { return receiverRegistry; }
+    public SubscriberRegistry<Subscriber<OUTPUT>> subscriberRegistry() { return subscriberRegistry; }
 
     public ProviderRegistry<Publisher<INPUT>> providerRegistry() {
         return providerRegistry;
@@ -54,13 +54,13 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl impleme
 
     @Override
     public void registerProvider(Publisher<INPUT> publisher) {
-        if (providerRegistry().add(publisher)) receiverActions.registerPath(publisher);
-        if (receiverRegistry().anyPulling() && providerRegistry().setPulling(publisher)) propagatePull(publisher);
+        if (providerRegistry().add(publisher)) subscriberActions.registerPath(publisher);
+        if (subscriberRegistry().anyPulling() && providerRegistry().setPulling(publisher)) propagatePull(publisher);
     }
 
     @Override
-    public void registerReceiver(Subscriber<OUTPUT> subscriber) {
-        receiverRegistry().addReceiver(subscriber);
+    public void registerSubscriber(Subscriber<OUTPUT> subscriber) {
+        subscriberRegistry().addSubscriber(subscriber);
         subscriber.registerProvider(this);  // TODO: Bad to have this mutual registering in one method call, it's unclear
     }
 }

@@ -26,7 +26,7 @@ import java.util.function.Function;
 
 public interface Reactive {
 
-    Processor<?, ?, ?, ?> processor();  // TODO: It's weird to be able to access your receiver/provider's processor, but this is needed for monitoring?
+    Processor<?, ?, ?, ?> processor();  // TODO: It's weird to be able to access your subscriber/provider's processor, but this is needed for monitoring?
 
     Identifier<?, ?> identifier();
 
@@ -40,13 +40,13 @@ public interface Reactive {
 
     }
 
-    // TODO: Rename all local variables from receiver to subscriber and from provider to publisher throughout
+    // TODO: Rename all local variables from subscriber to subscriber and from provider to publisher throughout
 
     interface Publisher<PACKET> extends Reactive {
 
         void pull(Subscriber<PACKET> subscriber);
 
-        void registerReceiver(Subscriber<PACKET> subscriber);
+        void registerSubscriber(Subscriber<PACKET> subscriber);
 
         <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function);
 

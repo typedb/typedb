@@ -103,7 +103,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
                             .distinct()
             );
             rootSink = new RootSink(this, reasonerConsumer);
-            outputRouter().registerReceiver(rootSink);
+            outputRouter().registerSubscriber(rootSink);
         }
 
         @Override

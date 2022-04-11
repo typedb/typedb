@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReceiverRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ProviderRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
@@ -96,8 +96,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             requestConnection(new DisjunctionRequest(input.identifier(), negated.pattern(), bounds));
             negation = new NegationStream(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
-            input.registerReceiver(negation);
-            negation.registerReceiver(outputRouter());
+            input.registerSubscriber(negation);
+            negation.registerSubscriber(outputRouter());
         }
 
         @Override
@@ -128,7 +128,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             private boolean answerFound;
 
             protected NegationStream(Processor<?, ?, ?, ?> processor, ConceptMap bounds) {
-                super(processor, new NegationOperator<>(), new ReceiverRegistry.Single<>(), new ProviderRegistry.Single<>());
+                super(processor, new NegationOperator<>(), new SubscriberRegistry.Single<>(), new ProviderRegistry.Single<>());
                 this.bounds = bounds;
                 this.answerFound = false;
             }
@@ -141,7 +141,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
 
             @Override
             public void receive(Publisher<ConceptMap> publisher, ConceptMap conceptMap) {
-                receiverActions.traceReceive(publisher, conceptMap);
+                subscriberActions.traceReceive(publisher, conceptMap);
                 providerRegistry().recordReceive(publisher);
                 answerFound = true;
                 processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
@@ -151,7 +151,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             public void finished() {
                 assert !answerFound;
                 processor().monitor().execute(actor -> actor.createAnswer(identifier()));
-                iterate(receiverRegistry().receivers()).forEachRemaining(r -> r.receive(this, bounds));
+                iterate(subscriberRegistry().subscribers()).forEachRemaining(r -> r.receive(this, bounds));
                 processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
             }
         }

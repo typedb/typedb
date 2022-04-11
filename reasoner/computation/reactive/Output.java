@@ -67,7 +67,7 @@ public class Output<PACKET> implements Reactive.Subscriber<PACKET> {
         subscriberActions.registerPath(publisher);
     }
 
-    public void setReceiver(Identifier<PACKET, ?> inputId) {
+    public void setSubscriber(Identifier<PACKET, ?> inputId) {
         assert receivingInput == null;
         receivingInput = inputId;
     }

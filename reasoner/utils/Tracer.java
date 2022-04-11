@@ -75,28 +75,28 @@ public final class Tracer {
         return Optional.ofNullable(INSTANCE);
     }
 
-    public synchronized void pull(@Nullable Identifier<?, ?> receiverId, Identifier<?, ?> providerId) {
-        pull(receiverId, providerId, EdgeType.PULL, "pull");
+    public synchronized void pull(@Nullable Identifier<?, ?> subscriberId, Identifier<?, ?> providerId) {
+        pull(subscriberId, providerId, EdgeType.PULL, "pull");
     }
 
-    public synchronized void pullRetry(Identifier<?, ?> receiverId, Identifier<?, ?> providerId) {
-        pull(receiverId, providerId, EdgeType.RETRY, "retry");
+    public synchronized void pullRetry(Identifier<?, ?> subscriberId, Identifier<?, ?> providerId) {
+        pull(subscriberId, providerId, EdgeType.RETRY, "retry");
     }
 
-    private void pull(@Nullable Identifier<?, ?> receiverId, Identifier<?, ?> providerId, EdgeType edgeType, String edgeLabel) {
-        String receiverString;
-        if (receiverId == null) receiverString = "root";
+    private void pull(@Nullable Identifier<?, ?> subscriberId, Identifier<?, ?> providerId, EdgeType edgeType, String edgeLabel) {
+        String subscriberString;
+        if (subscriberId == null) subscriberString = "root";
         else {
-            receiverString = receiverId.toString();
-            addNodeGroup(receiverId.toString(), receiverId.toString(), defaultTrace);
+            subscriberString = subscriberId.toString();
+            addNodeGroup(subscriberId.toString(), subscriberId.toString(), defaultTrace);
         }
-        addMessage(receiverString, providerId.toString(), defaultTrace, edgeType, edgeLabel);
+        addMessage(subscriberString, providerId.toString(), defaultTrace, edgeType, edgeLabel);
         addNodeGroup(providerId.toString(), providerId.toString(), defaultTrace);
     }
 
-    public <PACKET> void receive(Identifier<?, ?> providerId, Identifier<?, ?> receiverId, PACKET packet) {
-        addMessage(providerId.toString(), receiverId.toString(), defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(receiverId.toString(), receiverId.toString(), defaultTrace);
+    public <PACKET> void receive(Identifier<?, ?> providerId, Identifier<?, ?> subscriberId, PACKET packet) {
+        addMessage(providerId.toString(), subscriberId.toString(), defaultTrace, EdgeType.RECEIVE, packet.toString());
+        addNodeGroup(subscriberId.toString(), subscriberId.toString(), defaultTrace);
         addNodeGroup(providerId.toString(), providerId.toString(), defaultTrace);
     }
 
@@ -112,11 +112,11 @@ public final class Tracer {
         addMessage(monitor.debugName().get(), root.toString(), defaultTrace, EdgeType.ROOT_FINISH, "finished");
     }
 
-    public void registerPath(Identifier<?, ?> receiver, @Nullable Identifier<?, ?> provider, Actor.Driver<Monitor> monitor) {
+    public void registerPath(Identifier<?, ?> subscriber, @Nullable Identifier<?, ?> provider, Actor.Driver<Monitor> monitor) {
         String providerName;
         if (provider == null) providerName = "entry";  // TODO: Prevent provider from ever being null
         else providerName = provider.toString();
-        addMessage(receiver.toString(), monitor.debugName().get(), defaultTrace, EdgeType.REGISTER, "reg_" + providerName);
+        addMessage(subscriber.toString(), monitor.debugName().get(), defaultTrace, EdgeType.REGISTER, "reg_" + providerName);
     }
 
     public void registerSource(Identifier<?, ?> source, Actor.Driver<Monitor> monitor) {
@@ -131,16 +131,16 @@ public final class Tracer {
         addMessage(provider.toString(), monitor.debugName().get(), defaultTrace, EdgeType.CREATE, "create");
     }
 
-    public void consumeAnswer(Identifier<?, ?> receiver, Actor.Driver<Monitor> monitor) {
-        addMessage(receiver.toString(), monitor.debugName().get(), defaultTrace, EdgeType.CONSUME, "consume");
+    public void consumeAnswer(Identifier<?, ?> subscriber, Actor.Driver<Monitor> monitor) {
+        addMessage(subscriber.toString(), monitor.debugName().get(), defaultTrace, EdgeType.CONSUME, "consume");
     }
 
     public void forkFrontier(int numForks, Identifier<?, ?> forker, Actor.Driver<Monitor> monitor) {
         addMessage(forker.toString(), monitor.debugName().get(), defaultTrace, EdgeType.FORK, "fork" + numForks);
     }
 
-    private void addMessage(String sender, String receiver, Trace trace, EdgeType edgeType, String label) {
-        rootRequestTracers.get(trace).addMessage(sender, receiver, edgeType, label);
+    private void addMessage(String sender, String subscriber, Trace trace, EdgeType edgeType, String label) {
+        rootRequestTracers.get(trace).addMessage(sender, subscriber, edgeType, label);
     }
 
     private void addNodeGroup(String node, String group, Trace trace) {
@@ -228,8 +228,8 @@ public final class Tracer {
             writer.println(toWrite);
         }
 
-        private synchronized void addMessage(String sender, String receiver, EdgeType edgeType, String packet) {
-            writeEdge(sender, receiver, edgeType.colour(), "m" + messageNumber + "_" + packet);
+        private synchronized void addMessage(String sender, String subscriber, EdgeType edgeType, String packet) {
+            writeEdge(sender, subscriber, edgeType.colour(), "m" + messageNumber + "_" + packet);
             messageNumber++;
         }
 

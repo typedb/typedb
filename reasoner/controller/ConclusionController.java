@@ -181,8 +181,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), bounds));
             Stream<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>> conclusionReactive =
                     TransformationStream.fanIn(this, new ConclusionOperator(this));
-            conditionInput.map(ConclusionProcessor::convertConclusionInput).registerReceiver(conclusionReactive);
-            conclusionReactive.registerReceiver(outputRouter());
+            conditionInput.map(ConclusionProcessor::convertConclusionInput).registerSubscriber(conclusionReactive);
+            conclusionReactive.registerSubscriber(outputRouter());
         }
 
         private static Either<ConceptMap, Map<Variable, Concept>> convertConclusionInput(Either<ConceptMap, Materialisation> input) {

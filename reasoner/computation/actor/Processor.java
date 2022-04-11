@@ -94,14 +94,14 @@ public abstract class Processor<INPUT, OUTPUT,
         inputs.get(inputId).receive(providerId, input);
     }
 
-    public <PACKET> void schedulePullRetry(Publisher<PACKET> provider, Subscriber<PACKET> receiver) {
-        pullRetries.put(new Pair<>(provider.identifier(), receiver.identifier()), () -> provider.pull(receiver));
-        driver().execute(actor -> actor.pullRetry(provider.identifier(), receiver.identifier()));
+    public <PACKET> void schedulePullRetry(Publisher<PACKET> provider, Subscriber<PACKET> subscriber) {
+        pullRetries.put(new Pair<>(provider.identifier(), subscriber.identifier()), () -> provider.pull(subscriber));
+        driver().execute(actor -> actor.pullRetry(provider.identifier(), subscriber.identifier()));
     }
 
-    protected void pullRetry(Identifier<?, ?> provider, Identifier<?, ?> receiver) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pullRetry(receiver, provider));
-        pullRetries.get(new Pair<Identifier<?, ?>, Identifier<?, ?>>(provider, receiver)).run();
+    protected void pullRetry(Identifier<?, ?> provider, Identifier<?, ?> subscriber) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pullRetry(subscriber, provider));
+        pullRetries.get(new Pair<Identifier<?, ?>, Identifier<?, ?>>(provider, subscriber)).run();
     }
 
     protected void requestConnection(REQ req) {
@@ -114,7 +114,7 @@ public abstract class Processor<INPUT, OUTPUT,
         assert !done;
         if (isTerminated()) return;
         Output<OUTPUT> output = createOutput();
-        output.setReceiver(connector.inputId());
+        output.setSubscriber(connector.inputId());
         connector.connectViaTransforms(outputRouter(), output);
         connector.inputId().processor().execute(
                 actor -> actor.finishConnection(connector.inputId(), output.identifier()));

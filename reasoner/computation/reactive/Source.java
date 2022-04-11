@@ -22,20 +22,20 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReactiveActions;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReceiverRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
 
 import java.util.function.Function;
 
 public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<PACKET> {
 
     private final Operator.Source<PACKET> sourceOperator;
-    private final ReceiverRegistry.Single<Subscriber<PACKET>> receiverRegistry;
+    private final SubscriberRegistry.Single<Subscriber<PACKET>> subscriberRegistry;
     private final ReactiveActions.PublisherActions<PACKET> providerActions;
 
     protected Source(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET> sourceOperator) {
         super(processor);
         this.sourceOperator = sourceOperator;
-        this.receiverRegistry = new ReceiverRegistry.Single<>();
+        this.subscriberRegistry = new SubscriberRegistry.Single<>();
         this.providerActions = new AbstractStream.PublisherActionsImpl<>(this);
         processor().monitor().execute(actor -> actor.registerSource(identifier()));
     }
@@ -52,25 +52,25 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
     @Override
     public void pull(Subscriber<PACKET> subscriber) {
         providerActions.tracePull(subscriber);
-        receiverRegistry().recordPull(subscriber);
+        subscriberRegistry().recordPull(subscriber);
         if (!operator().isExhausted(subscriber)) {
             // TODO: Code duplicated in PoolingStream
-            receiverRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a receiver, so encapsulate it
+            subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
             Operator.Supplied<PACKET> supplied = operator().next(subscriber);
             providerActions.processEffects(supplied);
-            providerActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which receivers have seen this packet then it needs to be sent to all receivers. So far this is never the case.
+            providerActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which subscribers have seen this packet then it needs to be sent to all subscribers. So far this is never the case.
         } else {
             processor().monitor().execute(actor -> actor.sourceFinished(identifier()));
         }
     }
 
-    public ReceiverRegistry<Subscriber<PACKET>> receiverRegistry() {
-        return receiverRegistry;
+    public SubscriberRegistry<Subscriber<PACKET>> subscriberRegistry() {
+        return subscriberRegistry;
     }
 
     @Override
-    public void registerReceiver(Subscriber<PACKET> subscriber) {
-        receiverRegistry.addReceiver(subscriber);
+    public void registerSubscriber(Subscriber<PACKET> subscriber) {
+        subscriberRegistry.addSubscriber(subscriber);
         subscriber.registerProvider(this);  // TODO: Bad to have this mutual registering in one method call, it's unclear
     }
 

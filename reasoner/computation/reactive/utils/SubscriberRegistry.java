@@ -23,35 +23,35 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public abstract class ReceiverRegistry<RECEIVER> {  // TODO: Rename SubscriberRegistry
+public abstract class SubscriberRegistry<SUBSCRIBER> {  // TODO: Rename SubscriberRegistry
 
     abstract void setNotPulling();
 
-    public abstract boolean addReceiver(RECEIVER receiver);
+    public abstract boolean addSubscriber(SUBSCRIBER subscriber);
 
-    public abstract Set<RECEIVER> pulling();
+    public abstract Set<SUBSCRIBER> pulling();
 
-    public abstract void setNotPulling(RECEIVER receiver);
+    public abstract void setNotPulling(SUBSCRIBER subscriber);
 
     public abstract boolean anyPulling();
 
-    public abstract Set<RECEIVER> receivers();
+    public abstract Set<SUBSCRIBER> subscribers();
 
-    public abstract void recordPull(RECEIVER receiver);
+    public abstract void recordPull(SUBSCRIBER subscriber);
 
-    public static class Single<RECEIVER> extends ReceiverRegistry<RECEIVER> {
+    public static class Single<SUBSCRIBER> extends SubscriberRegistry<SUBSCRIBER> {
 
         private boolean isPulling;
-        private RECEIVER receiver;
+        private SUBSCRIBER subscriber;
 
         public Single() {
-            this.receiver = null;
+            this.subscriber = null;
             this.isPulling = false;
         }
 
         @Override
-        public Set<RECEIVER> receivers() {
-            return set(receiver);
+        public Set<SUBSCRIBER> subscribers() {
+            return set(subscriber);
         }
 
         @Override
@@ -60,8 +60,8 @@ public abstract class ReceiverRegistry<RECEIVER> {  // TODO: Rename SubscriberRe
         }
 
         @Override
-        public void recordPull(RECEIVER receiver) {
-            assert this.receiver.equals(receiver);
+        public void recordPull(SUBSCRIBER subscriber) {
+            assert this.subscriber.equals(subscriber);
             isPulling = true;
         }
 
@@ -70,21 +70,21 @@ public abstract class ReceiverRegistry<RECEIVER> {  // TODO: Rename SubscriberRe
         }
 
         @Override
-        public boolean addReceiver(RECEIVER receiver) {
-            assert this.receiver == null;
-            this.receiver = receiver;
+        public boolean addSubscriber(SUBSCRIBER subscriber) {
+            assert this.subscriber == null;
+            this.subscriber = subscriber;
             return false;
         }
 
         @Override
-        public Set<RECEIVER> pulling() {
-            if (isPulling) return set(receiver);
+        public Set<SUBSCRIBER> pulling() {
+            if (isPulling) return set(subscriber);
             else return set();
         }
 
         @Override
-        public void setNotPulling(RECEIVER receiver) {
-            assert receiver.equals(this.receiver);
+        public void setNotPulling(SUBSCRIBER subscriber) {
+            assert subscriber.equals(this.subscriber);
             isPulling = false;
         }
 
@@ -93,56 +93,52 @@ public abstract class ReceiverRegistry<RECEIVER> {  // TODO: Rename SubscriberRe
             return isPulling;
         }
 
-        public RECEIVER receiver() {
-            assert this.receiver != null;
-            return receiver;
-        }
     }
 
-    public static class Multi<RECEIVER> extends ReceiverRegistry<RECEIVER> {
+    public static class Multi<RECEIVER> extends SubscriberRegistry<RECEIVER> {
 
-        private final Set<RECEIVER> receivers;
-        private final Set<RECEIVER> pullingReceivers;
+        private final Set<RECEIVER> subscribers;
+        private final Set<RECEIVER> pullingSubscribers;
 
         public Multi() {
-            this.receivers = new HashSet<>();
-            this.pullingReceivers = new HashSet<>();
+            this.subscribers = new HashSet<>();
+            this.pullingSubscribers = new HashSet<>();
         }
 
         @Override
         public void setNotPulling() {
-            pullingReceivers.clear();
+            pullingSubscribers.clear();
         }
 
         @Override
-        public void setNotPulling(RECEIVER receiver) {
-            pullingReceivers.remove(receiver);
+        public void setNotPulling(RECEIVER subscriber) {
+            pullingSubscribers.remove(subscriber);
         }
 
         @Override
-        public void recordPull(RECEIVER receiver) {
-            assert receivers.contains(receiver);
-            pullingReceivers.add(receiver);
+        public void recordPull(RECEIVER subscriber) {
+            assert subscribers.contains(subscriber);
+            pullingSubscribers.add(subscriber);
         }
 
         @Override
-        public boolean addReceiver(RECEIVER receiver) {
-            return receivers.add(receiver);
+        public boolean addSubscriber(RECEIVER subscriber) {
+            return subscribers.add(subscriber);
         }
 
         @Override
         public Set<RECEIVER> pulling() {
-            return new HashSet<>(pullingReceivers);
+            return new HashSet<>(pullingSubscribers);
         }
 
         @Override
         public boolean anyPulling() {
-            return pullingReceivers.size() > 0;
+            return pullingSubscribers.size() > 0;
         }
 
         @Override
-        public Set<RECEIVER> receivers() {
-            return receivers;
+        public Set<RECEIVER> subscribers() {
+            return subscribers;
         }
 
     }
