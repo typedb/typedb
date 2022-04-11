@@ -70,9 +70,7 @@ public class RootSink implements Reactive.Subscriber.Finishable<ConceptMap>, Rea
 
     @Override
     public void registerPublisher(Publisher<ConceptMap> publisher) {
-        if (publisherRegistry().add(publisher)) {
-            processor().monitor().execute(actor -> actor.registerPath(identifier(), publisher.identifier()));
-        }
+        if (publisherRegistry().add(publisher)) subscriberActions.registerPath(publisher);
         if (isPulling && publisherRegistry().setPulling()) publisher.pull(this);
     }
 

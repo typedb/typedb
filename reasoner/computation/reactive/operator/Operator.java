@@ -39,11 +39,10 @@ public interface Operator {
 
     }
 
-    interface Transformer<INPUT, OUTPUT> extends Accepter<INPUT> {
+    interface Transformer<INPUT, OUTPUT> {
 
         Set<Publisher<INPUT>> initialise();
 
-        @Override
         Transformed<OUTPUT, INPUT> accept(Publisher<INPUT> publisher, INPUT packet);
 
     }

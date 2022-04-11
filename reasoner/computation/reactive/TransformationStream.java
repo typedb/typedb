@@ -73,7 +73,10 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
         Operator.Transformed<OUTPUT, INPUT> outcome = operator().accept(publisher, input);
         registerNewPublishers(outcome.newPublishers());
-        publisherActions.processEffects(outcome);
+
+        if (outcome.outputs().size() > 1) publisherActions.monitorCreateAnswers(outcome.outputs().size() - 1);
+        else if (outcome.outputs().isEmpty()) publisherActions.monitorConsumeAnswers(1);
+
         if (outcome.outputs().isEmpty() && subscriberRegistry().anyPulling()) {
             subscriberActions.rePullPublisher(publisher);
         } else {

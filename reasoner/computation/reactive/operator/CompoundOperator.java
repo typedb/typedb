@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Transformed;
 
 import java.util.ArrayList;
 import java.util.HashMap;
