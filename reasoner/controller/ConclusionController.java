@@ -218,7 +218,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             }
 
             @Override
-            public Set<Publisher<Either<ConceptMap, Map<Variable, Concept>>>> initialise() {
+            public Set<Publisher<Either<ConceptMap, Map<Variable, Concept>>>> initialNewPublishers() {
                 return set();  // TODO: This could create the connection to the condition
             }
 

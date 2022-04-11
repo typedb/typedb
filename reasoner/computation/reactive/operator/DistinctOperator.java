@@ -35,7 +35,7 @@ public class DistinctOperator<PACKET> implements Operator.Transformer<PACKET, PA
     }
 
     @Override
-    public Set<Publisher<PACKET>> initialise() {
+    public Set<Publisher<PACKET>> initialNewPublishers() {
         return set();
     }
 

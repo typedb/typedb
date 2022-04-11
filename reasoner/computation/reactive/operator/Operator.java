@@ -41,7 +41,7 @@ public interface Operator {
 
     interface Transformer<INPUT, OUTPUT> {
 
-        Set<Publisher<INPUT>> initialise();
+        Set<Publisher<INPUT>> initialNewPublishers();
 
         Either<Publisher<INPUT>, Set<OUTPUT>> accept(Publisher<INPUT> publisher, INPUT packet);
 

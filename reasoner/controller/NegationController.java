@@ -112,7 +112,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         private static class NegationOperator<PACKET> implements Operator.Transformer<PACKET, PACKET> {
 
             @Override
-            public Set<Reactive.Publisher<PACKET>> initialise() {
+            public Set<Reactive.Publisher<PACKET>> initialNewPublishers() {
                 return set();
             }
 

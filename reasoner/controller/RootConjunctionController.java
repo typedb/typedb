@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.RootSink;
 import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.CompoundOperator;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.List;
@@ -97,7 +96,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         @Override
         public void setUp() {
             setOutputRouter(
-                    TransformationStream.fanIn(this, new CompoundOperator<>(this, plan, this::nextCompoundLeader, ConjunctionController::merge, bounds))
+                    TransformationStream.fanIn(this, new CompoundOperator(this, plan, bounds))
                             .buffer()
                             .map(conceptMap -> conceptMap.filter(filter))
                             .distinct()

@@ -35,7 +35,7 @@ public class MapOperator<INPUT, OUTPUT> implements Operator.Transformer<INPUT, O
     }
 
     @Override
-    public Set<Publisher<INPUT>> initialise() {
+    public Set<Publisher<INPUT>> initialNewPublishers() {
         return set();
     }
 

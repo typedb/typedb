@@ -27,7 +27,6 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.CompoundOperator;
 
 import java.util.List;
 import java.util.Set;
@@ -69,7 +68,7 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
         @Override
         public void setUp() {
             setOutputRouter(
-                    TransformationStream.fanIn(this, new CompoundOperator<>(this, plan, this::nextCompoundLeader, ConjunctionController::merge, bounds))
+                    TransformationStream.fanIn(this, new CompoundOperator(this, plan, bounds))
                             .map(Either::<ConceptMap, Materialisation>first).buffer()
             );
         }

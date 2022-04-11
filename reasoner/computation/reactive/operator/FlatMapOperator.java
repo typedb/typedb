@@ -36,7 +36,7 @@ public class FlatMapOperator<INPUT, OUTPUT> implements Operator.Transformer<INPU
     }
 
     @Override
-    public Set<Publisher<INPUT>> initialise() {
+    public Set<Publisher<INPUT>> initialNewPublishers() {
         return set();
     }
 

@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -34,10 +35,13 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
+import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.controller.Registry.ResolverView;
 import com.vaticle.typedb.core.reasoner.utils.Planner;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -193,8 +197,56 @@ public abstract class ConjunctionController<OUTPUT,
             this.plan = plan;
         }
 
+        public class CompoundOperator implements Operator.Transformer<ConceptMap, ConceptMap> {
+
+            private final Reactive.Publisher<ConceptMap> leadingPublisher;
+            private final List<Resolvable<?>> remainingPlan;
+            private final Map<Reactive.Publisher<ConceptMap>, ConceptMap> publisherPackets;
+            private final ConceptMap initialPacket;
+            private final Processor<?, ?, ?, ?> processor;
+
+            public CompoundOperator(Processor<?, ?, ?, ?> processor, List<Resolvable<?>> plan, ConceptMap initialPacket) {
+                this.processor = processor;
+                assert plan.size() > 0;
+                this.initialPacket = initialPacket;
+                this.remainingPlan = new ArrayList<>(plan);
+                this.publisherPackets = new HashMap<>();
+                this.leadingPublisher = nextCompoundLeader(this.remainingPlan.remove(0), initialPacket);
+            }
+
+            @Override
+            public Set<Reactive.Publisher<ConceptMap>> initialNewPublishers() {
+                return set(this.leadingPublisher);
+            }
+
+            @Override
+            public Either<Reactive.Publisher<ConceptMap>, Set<ConceptMap>> accept(Reactive.Publisher<ConceptMap> publisher, ConceptMap packet) {
+                ConceptMap mergedPacket = merge(initialPacket, packet);
+                if (leadingPublisher.equals(publisher)) {
+                    if (remainingPlan.size() == 0) {  // For a single item plan
+                        return Either.second(set(mergedPacket));
+                    } else {
+                        Reactive.Publisher<ConceptMap> follower;  // TODO: Creation of a new publisher should be delegated to the owner of this operation
+                        if (remainingPlan.size() == 1) {
+                            follower = nextCompoundLeader(remainingPlan.get(0), mergedPacket);
+                        } else {
+                            follower = TransformationStream.fanIn(
+                                    processor,
+                                    new CompoundOperator(processor, remainingPlan, mergedPacket)
+                            ).buffer();
+                        }
+                        publisherPackets.put(follower, mergedPacket);
+                        return Either.first(follower);
+                    }
+                } else {
+                    ConceptMap compoundedPacket = merge(mergedPacket, publisherPackets.get(publisher));
+                    return Either.second(set(compoundedPacket));
+                }
+            }
+
+        }
+
         protected Input<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
-            // TODO: Rethink this ugly structure for compound reactives
             Input<ConceptMap> input = createInput();
             if (planElement.isRetrievable()) {
                 requestConnection(new RetrievableRequest(input.identifier(), planElement.asRetrievable(),

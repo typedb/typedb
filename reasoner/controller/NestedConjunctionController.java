@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.CompoundOperator;
 
 import java.util.List;
 import java.util.Set;
@@ -68,7 +67,7 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
 
         @Override
         public void setUp() {
-            setOutputRouter(TransformationStream.fanIn(this, new CompoundOperator<>(this, plan, this::nextCompoundLeader, ConjunctionController::merge, bounds)).buffer());
+            setOutputRouter(TransformationStream.fanIn(this, new CompoundOperator(this, plan, bounds)).buffer());
         }
     }
 

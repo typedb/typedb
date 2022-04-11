@@ -41,7 +41,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
                                    PublisherRegistry<INPUT> publisherRegistry) {
         super(processor, subscriberRegistry, publisherRegistry);
         this.transformer = transformer;
-        registerNewPublishers(transformer.initialise());
+        registerNewPublishers(transformer.initialNewPublishers());
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> single(
