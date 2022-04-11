@@ -45,7 +45,7 @@ public class MaterialisationController extends AbstractController<
         MaterialisationController.ReactiveBlock,
         MaterialisationController
         > {
-    // TODO: Either here is just to match the input to ConclusionController, but this class only ever returns Materialisation
+    // Either<> is just to match the input to ConclusionController, but this class only ever returns Materialisation
 
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;

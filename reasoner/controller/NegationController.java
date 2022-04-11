@@ -150,9 +150,12 @@ public class NegationController extends AbstractController<
 
             @Override
             public void pull(Subscriber<ConceptMap> subscriber) {
-                // TODO: This would create duplicate traces, but removing it is also a misnomer
-                // Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
-                if (!answerFound) super.pull(subscriber);
+                if (!answerFound) {
+                    super.pull(subscriber);
+                } else {
+                    subscriberRegistry().recordPull(subscriber);
+                    publisherActions.tracePull(subscriber);
+                }
             }
 
             @Override
