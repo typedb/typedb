@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.DistinctOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.FlatMapOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.MapOperator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReactiveActions;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
@@ -79,19 +78,6 @@ public abstract class ReactiveImpl implements Reactive {
 
         public PublisherActionsImpl(Publisher<OUTPUT> publisher) {
             this.publisher = publisher;
-        }
-
-        @Override
-        public void processEffects(Operator.Effects effects) {
-            for (int i = 0; i < effects.answersCreated(); i++) {
-                // TODO: We can now batch this and even send the delta between created and consumed
-                //  in fact we should be able to look at the number of inputs and outputs and move the monitoring
-                //  responsibility to streams in a generic way, removing the need for this Outcome object
-                publisher.processor().monitor().execute(actor -> actor.createAnswer(publisher.identifier()));
-            }
-            for (int i = 0; i < effects.answersConsumed(); i++) {
-                publisher.processor().monitor().execute(actor -> actor.consumeAnswer(publisher.identifier()));
-            }
         }
 
         @Override

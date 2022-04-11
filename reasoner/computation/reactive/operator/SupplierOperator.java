@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Supplied;
 
 import java.util.function.Supplier;
 
@@ -45,12 +44,9 @@ public class SupplierOperator<PACKET> implements Operator.Source<PACKET> {
     }
 
     @Override
-    public Supplied<PACKET> next(Reactive.Subscriber<PACKET> subscriber) {
-        Supplied<PACKET> outcome = Supplied.create();
+    public PACKET next(Reactive.Subscriber<PACKET> subscriber) {
         assert !isExhausted(subscriber);
-        outcome.addAnswerCreated();
-        outcome.setOutput(iterator().next());
-        return outcome;
+        return iterator().next();
     }
 
 }

@@ -22,7 +22,6 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
 
-import java.util.HashSet;
 import java.util.Set;
 
 public interface Operator {
@@ -31,12 +30,12 @@ public interface Operator {
 
         boolean isExhausted(Subscriber<OUTPUT> subscriber);
 
-        Supplied<OUTPUT> next(Subscriber<OUTPUT> subscriber);
+        OUTPUT next(Subscriber<OUTPUT> subscriber);
     }
 
     interface Accepter<INPUT> extends Operator {
 
-        Effects accept(Publisher<INPUT> publisher, INPUT packet);
+        void accept(Publisher<INPUT> publisher, INPUT packet);
 
     }
 
@@ -58,61 +57,12 @@ public interface Operator {
 
         boolean hasNext(Subscriber<OUTPUT> subscriber);
 
-        Supplied<OUTPUT> next(Subscriber<OUTPUT> subscriber);
+        OUTPUT next(Subscriber<OUTPUT> subscriber);
 
     }
 
     interface Bridge<PACKET> extends Accepter<PACKET>, Source<PACKET> {
-
-    }
-
-    abstract class Effects {
-        // TODO: We should be able to do without these classes by reporting the change in number of answers the
-        //  reactives sees from before and after applying the operator. There are a couple of edge-cases to this that
-        //  make it hard, notably fanOut.
-
-        int answersCreated;
-        int answersConsumed;
-
-        private Effects(int answersCreated, int answersConsumed) {
-            this.answersCreated = answersCreated;
-            this.answersConsumed = answersConsumed;
-        }
-
-        public void addAnswerCreated() {
-            answersCreated += 1;
-        }
-
-        public int answersCreated() {
-            return answersCreated;
-        }
-
-        public int answersConsumed() {
-            return answersConsumed;
-        }
-
-    }
-
-    class Supplied<OUTPUT> extends Effects {
-
-        private OUTPUT output;
-
-        private Supplied(int answersCreated, int answersConsumed) {
-            super(answersCreated, answersConsumed);
-        }
-
-        public static <PACKET> Supplied<PACKET> create() {
-            return new Supplied<>(0, 0);
-        }
-
-        public void setOutput(OUTPUT output) {
-            this.output = output;
-        }
-
-        public OUTPUT output() {
-            assert output != null;
-            return output;
-        }
+        // TODO: To be used for negation
     }
 
 }

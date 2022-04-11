@@ -28,8 +28,6 @@ public interface ReactiveActions {
 
     interface PublisherActions<OUTPUT> extends ReactiveActions {
 
-        void processEffects(Operator.Effects effects);
-
         void monitorCreateAnswers(int answersCreated);
 
         void monitorConsumeAnswers(int answersConsumed);

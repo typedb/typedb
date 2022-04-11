@@ -81,9 +81,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
         if (operator().hasNext(subscriber)) {
             // TODO: Code duplicated in Source
             subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
-            Operator.Supplied<OUTPUT> supplied = operator().next(subscriber);
-            publisherActions.processEffects(supplied);
-            publisherActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which subscribers have seen this packet then it needs to be sent to all subscribers. So far this is never the case.
+            publisherActions.subscriberReceive(subscriber, operator().next(subscriber));  // TODO: If the operator isn't tracking which subscribers have seen this packet then it needs to be sent to all subscribers. So far this is never the case.
         } else {
             publisherRegistry().nonPulling().forEach(this::propagatePull);
         }
@@ -99,10 +97,8 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
         retry.set(false);
         iterate(subscriberRegistry().pulling()).forEachRemaining(subscriber -> {
             if (operator().hasNext(subscriber)) {
-                Operator.Supplied<OUTPUT> supplied = operator().next(subscriber);
-                publisherActions.processEffects(supplied);
                 subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
-                publisherActions.subscriberReceive(subscriber, supplied.output());
+                publisherActions.subscriberReceive(subscriber, operator().next(subscriber));
             } else {
                 retry.set(true);
             }
