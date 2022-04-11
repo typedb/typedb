@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Supplied;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,14 +41,13 @@ public class FanOutOperator<PACKET> implements Operator.Pool<PACKET, PACKET> {
     }
 
     @Override
-    public EffectsImpl accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
-        EffectsImpl outcome = EffectsImpl.create();
+    public boolean accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
         if (bufferSet.add(packet)) {
             bufferList.add(packet);
-            outcome.addAnswerCreated();
+            return true;
+        } else {
+            return false;
         }
-        outcome.addAnswerConsumed();
-        return outcome;
     }
 
     @Override

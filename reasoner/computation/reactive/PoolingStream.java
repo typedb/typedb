@@ -93,8 +93,8 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
     public void receive(Publisher<INPUT> publisher, INPUT packet) {
         subscriberActions.traceReceive(publisher, packet);
         publisherRegistry().recordReceive(publisher);
-
-        publisherActions.processEffects(operator().accept(publisher, packet));
+        if (operator().accept(publisher, packet)) publisherActions.monitorCreateAnswers(1);
+        publisherActions.monitorConsumeAnswers(1);
         AtomicBoolean retry = new AtomicBoolean();
         retry.set(false);
         iterate(subscriberRegistry().pulling()).forEachRemaining(subscriber -> {

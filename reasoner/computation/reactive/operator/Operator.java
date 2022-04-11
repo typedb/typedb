@@ -52,10 +52,9 @@ public interface Operator {
         // TODO: Add methods to usefully retrieve items from the sink
     }
 
-    interface Pool<INPUT, OUTPUT> extends Accepter<INPUT> {
+    interface Pool<INPUT, OUTPUT> {
 
-        @Override
-        EffectsImpl accept(Publisher<INPUT> publisher, INPUT packet);
+        boolean accept(Publisher<INPUT> publisher, INPUT packet);
 
         boolean hasNext(Subscriber<OUTPUT> subscriber);
 

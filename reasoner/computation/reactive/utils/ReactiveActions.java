@@ -30,6 +30,10 @@ public interface ReactiveActions {
 
         void processEffects(Operator.Effects effects);
 
+        void monitorCreateAnswers(int answersCreated);
+
+        void monitorConsumeAnswers(int answersConsumed);
+
         void subscriberReceive(Reactive.Subscriber<OUTPUT> subscriber, OUTPUT packet);
 
         void tracePull(Reactive.Subscriber<OUTPUT> subscriber);

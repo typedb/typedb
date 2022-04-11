@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
 
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Supplied;
 
 import java.util.Stack;
 
@@ -31,9 +32,9 @@ public class BufferOperator<PACKET> implements Operator.Pool<PACKET, PACKET> {
     }
 
     @Override
-    public EffectsImpl accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
+    public boolean accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
         stack.add(packet);
-        return EffectsImpl.create();
+        return true;
     }
 
     @Override

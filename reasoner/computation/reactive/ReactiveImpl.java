@@ -95,6 +95,20 @@ public abstract class ReactiveImpl implements Reactive {
         }
 
         @Override
+        public void monitorCreateAnswers(int answersCreated) {
+            for (int i = 0; i < answersCreated; i++) {
+                publisher.processor().monitor().execute(actor -> actor.createAnswer(publisher.identifier()));
+            }
+        }
+
+        @Override
+        public void monitorConsumeAnswers(int answersConsumed) {
+            for (int i = 0; i < answersConsumed; i++) {
+                publisher.processor().monitor().execute(actor -> actor.consumeAnswer(publisher.identifier()));
+            }
+        }
+
+        @Override
         public void subscriberReceive(Subscriber<OUTPUT> subscriber, OUTPUT packet) {
             subscriber.receive(publisher, packet);
         }
