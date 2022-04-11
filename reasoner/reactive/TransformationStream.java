@@ -34,7 +34,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     private final Transformer<INPUT, OUTPUT> transformer;
 
-    protected TransformationStream(ReactiveBlock<?, ?, ?, ?> reactiveBlock,
+    protected TransformationStream(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock,
                                    Transformer<INPUT, OUTPUT> transformer,
                                    SubscriberRegistry<OUTPUT> subscriberRegistry,
                                    PublisherRegistry<INPUT> publisherRegistry) {
@@ -44,13 +44,13 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> single(
-            ReactiveBlock<?, ?, ?, ?> reactiveBlock, Transformer<INPUT, OUTPUT> transformer) {
+            AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, Transformer<INPUT, OUTPUT> transformer) {
         return new TransformationStream<>(reactiveBlock, transformer, new SubscriberRegistry.Single<>(),
                                           new PublisherRegistry.Single<>());
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> fanIn(
-            ReactiveBlock<?, ?, ?, ?> reactiveBlock, Transformer<INPUT, OUTPUT> transformer) {
+            AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, Transformer<INPUT, OUTPUT> transformer) {
         return new TransformationStream<>(reactiveBlock, transformer, new SubscriberRegistry.Single<>(),
                                           new PublisherRegistry.Multi<>());
     }

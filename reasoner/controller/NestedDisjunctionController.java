@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import java.util.function.Supplier;
 
 public class NestedDisjunctionController
-        extends DisjunctionController<NestedDisjunctionController.NestedDisjunctionReactiveBlock, NestedDisjunctionController>{
+        extends DisjunctionController<NestedDisjunctionController.ReactiveBlock, NestedDisjunctionController>{
 
     private final Driver<Monitor> monitor;
 
@@ -37,20 +37,21 @@ public class NestedDisjunctionController
     }
 
     @Override
-    protected NestedDisjunctionReactiveBlock createReactiveBlockFromDriver(Driver<NestedDisjunctionReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
-        return new NestedDisjunctionReactiveBlock(
+    protected ReactiveBlock createReactiveBlockFromDriver(
+            Driver<ReactiveBlock> reactiveBlockDriver,
+            ConceptMap bounds) {
+        return new ReactiveBlock(
                 reactiveBlockDriver, driver(), monitor, disjunction, bounds,
-                () -> NestedDisjunctionReactiveBlock.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
+                () -> ReactiveBlock.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
 
-    protected static class NestedDisjunctionReactiveBlock
-            extends DisjunctionController.DisjunctionReactiveBlock<NestedDisjunctionReactiveBlock> {
+    protected static class ReactiveBlock extends DisjunctionController.ReactiveBlock<ReactiveBlock> {
 
-        protected NestedDisjunctionReactiveBlock(Driver<NestedDisjunctionReactiveBlock> driver,
-                                                 Driver<NestedDisjunctionController> controller,
-                                                 Driver<Monitor> monitor, Disjunction disjunction, ConceptMap bounds,
-                                                 Supplier<String> debugName) {
+        protected ReactiveBlock(Driver<ReactiveBlock> driver,
+                                Driver<NestedDisjunctionController> controller,
+                                Driver<Monitor> monitor, Disjunction disjunction, ConceptMap bounds,
+                                Supplier<String> debugName) {
             super(driver, controller, monitor, disjunction, bounds, debugName);
         }
     }

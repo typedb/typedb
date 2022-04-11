@@ -23,11 +23,14 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.reasoner.controller.NegationController.ReactiveBlock.Request;
 import com.vaticle.typedb.core.reasoner.reactive.Monitor;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.Input;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive.Subscriber.Finishable;
 import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
@@ -39,7 +42,14 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class NegationController extends Controller<ConceptMap, ConceptMap, ConceptMap, NegationController.NegationReactiveBlock.DisjunctionRequest, NegationController.NegationReactiveBlock, NegationController> {
+public class NegationController extends AbstractController<
+        ConceptMap,
+        ConceptMap,
+        ConceptMap,
+        Request,
+        NegationController.ReactiveBlock,
+        NegationController
+        > {
 
     private final Negated negated;
     private final Driver<Monitor> monitor;
@@ -61,28 +71,31 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     }
 
     @Override
-    protected NegationReactiveBlock createReactiveBlockFromDriver(Driver<NegationReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
-        return new NegationReactiveBlock(
+    protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
+        return new ReactiveBlock(
                 reactiveBlockDriver, driver(), monitor, negated, bounds,
-                () -> NegationReactiveBlock.class.getSimpleName() + "(pattern: " + negated + ", bounds: " + bounds + ")"
+                () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + negated + ", bounds: " + bounds + ")"
         );
     }
 
     @Override
-    public void resolveController(NegationReactiveBlock.DisjunctionRequest req) {
+    public void resolveController(Request req) {
         if (isTerminated()) return;
-        disjunctionContoller.execute(actor -> actor.resolveReactiveBlock(new ReactiveBlock.Connector<>(req.inputId(), req.bounds())));
+        disjunctionContoller.execute(actor -> actor.resolveReactiveBlock(
+                new AbstractReactiveBlock.Connector<>(req.inputId(), req.bounds())
+        ));
     }
 
-    protected static class NegationReactiveBlock extends ReactiveBlock<ConceptMap, ConceptMap, NegationReactiveBlock.DisjunctionRequest, NegationReactiveBlock> {
+    protected static class ReactiveBlock
+            extends AbstractReactiveBlock<ConceptMap, ConceptMap, Request, ReactiveBlock> {
 
         private final Negated negated;
         private final ConceptMap bounds;
         private NegationStream negation;
 
-        protected NegationReactiveBlock(Driver<NegationReactiveBlock> driver, Driver<NegationController> controller,
-                                        Driver<Monitor> monitor, Negated negated, ConceptMap bounds,
-                                        Supplier<String> debugName) {
+        protected ReactiveBlock(Driver<ReactiveBlock> driver, Driver<NegationController> controller,
+                                Driver<Monitor> monitor, Negated negated, ConceptMap bounds,
+                                Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.negated = negated;
             this.bounds = bounds;
@@ -92,7 +105,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         public void setUp() {
             setOutputRouter(PoolingStream.fanOut(this));
             Input<ConceptMap> input = createInput();
-            requestConnection(new DisjunctionRequest(input.identifier(), negated.pattern(), bounds));
+            requestConnection(new Request(input.identifier(), negated.pattern(), bounds));
             negation = new NegationStream(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
             input.registerSubscriber(negation);
@@ -110,31 +123,35 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         private static class NegationOperator<PACKET> implements Operator.Transformer<PACKET, PACKET> {
 
             @Override
-            public Set<Reactive.Publisher<PACKET>> initialNewPublishers() {
+            public Set<Publisher<PACKET>> initialNewPublishers() {
                 return set();
             }
 
             @Override
-            public Either<Reactive.Publisher<PACKET>, Set<PACKET>> accept(Reactive.Publisher<PACKET> publisher, PACKET packet) {
+            public Either<Publisher<PACKET>, Set<PACKET>> accept(Publisher<PACKET> publisher, PACKET packet) {
                 return Either.second(set(packet));
             }
         }
 
-        private static class NegationStream extends TransformationStream<ConceptMap, ConceptMap> implements Reactive.Subscriber.Finishable<ConceptMap> {
-            // TODO: Negation should be modelled as both a source and a sink, called a Bridge for now. It is a Source for the graph downstream and a Sink for the graph upstream
+        private static class NegationStream
+                extends TransformationStream<ConceptMap, ConceptMap> implements Finishable<ConceptMap> {
+            // TODO: Negation should be modelled as both a source and a sink, called a Bridge for now. It is a Source
+            //  for the graph downstream and a Sink for the graph upstream
 
             private final ConceptMap bounds;
             private boolean answerFound;
 
-            protected NegationStream(ReactiveBlock<?, ?, ?, ?> reactiveBlock, ConceptMap bounds) {
-                super(reactiveBlock, new NegationOperator<>(), new SubscriberRegistry.Single<>(), new PublisherRegistry.Single<>());
+            protected NegationStream(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, ConceptMap bounds) {
+                super(reactiveBlock, new NegationOperator<>(), new SubscriberRegistry.Single<>(),
+                      new PublisherRegistry.Single<>());
                 this.bounds = bounds;
                 this.answerFound = false;
             }
 
             @Override
             public void pull(Subscriber<ConceptMap> subscriber) {
-                // Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));  TODO: This would create duplicate traces, but removing it is also a misnomer
+                // TODO: This would create duplicate traces, but removing it is also a misnomer
+                // Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
                 if (!answerFound) super.pull(subscriber);
             }
 
@@ -155,10 +172,10 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             }
         }
 
-        protected static class DisjunctionRequest extends Connector.Request<Disjunction, ConceptMap, ConceptMap> {
+        protected static class Request extends Connector.AbstractRequest<Disjunction, ConceptMap, ConceptMap> {
 
-            protected DisjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Disjunction controllerId,
-                                         ConceptMap reactiveBlockId) {
+            protected Request(Reactive.Identifier<ConceptMap, ?> inputId, Disjunction controllerId,
+                              ConceptMap reactiveBlockId) {
                 super(inputId, controllerId, reactiveBlockId);
             }
 

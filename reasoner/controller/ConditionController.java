@@ -32,8 +32,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-public class ConditionController extends ConjunctionController<Either<ConceptMap, Materialisation>, ConditionController, ConditionController.ConditionReactiveBlock> {
-    // TODO: Either here is just to match the input to ConclusionController, but this class only ever returns ConceptMap
+public class ConditionController extends ConjunctionController<
+        Either<ConceptMap, Materialisation>,
+        ConditionController,
+        ConditionController.ReactiveBlock
+        > {
+    // Either<> here is just to match the input to ConclusionController, but this class only ever returns ConceptMap
 
     private final Rule.Condition condition;
     private final Driver<Monitor> monitor;
@@ -51,17 +55,20 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
     }
 
     @Override
-    protected ConditionReactiveBlock createReactiveBlockFromDriver(Driver<ConditionReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
-        return new ConditionReactiveBlock(
+    protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver,
+                                                          ConceptMap bounds) {
+        return new ReactiveBlock(
                 reactiveBlockDriver, driver(), monitor, bounds, plan(),
-                () -> ConditionReactiveBlock.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
+                () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
         );
     }
 
-    protected static class ConditionReactiveBlock extends ConjunctionController.ConjunctionReactiveBlock<Either<ConceptMap, Materialisation>, ConditionReactiveBlock>{
-        protected ConditionReactiveBlock(Driver<ConditionReactiveBlock> driver, Driver<ConditionController> controller,
-                                         Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
-                                         Supplier<String> debugName) {
+    protected static class ReactiveBlock
+            extends ConjunctionController.ReactiveBlock<Either<ConceptMap, Materialisation>, ReactiveBlock> {
+
+        protected ReactiveBlock(Driver<ReactiveBlock> driver, Driver<ConditionController> controller,
+                                Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
+                                Supplier<String> debugName) {
             super(driver, controller, monitor, bounds, plan, debugName);
         }
 

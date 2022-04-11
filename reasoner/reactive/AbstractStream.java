@@ -29,7 +29,7 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
     protected final ReactiveActions.SubscriberActions<INPUT> subscriberActions;
     protected final ReactiveActions.PublisherActions<OUTPUT> publisherActions;
 
-    protected AbstractStream(ReactiveBlock<?, ?, ?, ?> reactiveBlock,
+    protected AbstractStream(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock,
                              SubscriberRegistry<OUTPUT> subscriberRegistry,
                              PublisherRegistry<INPUT> publisherRegistry) {
         super(reactiveBlock);

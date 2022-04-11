@@ -20,11 +20,11 @@ package com.vaticle.typedb.core.reasoner;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 
 public interface ReasonerConsumer {
 
-    void initialise(Actor.Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootReactiveBlock);
+    void initialise(Actor.Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock);
 
     void receiveAnswer(ConceptMap answer);
 

@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -46,7 +46,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
     private final ExplainablesManager explainablesManager;
     private boolean done;
     private Queue<ConceptMap> queue;
-    private Actor.Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootReactiveBlock;
+    private Actor.Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock;
     private boolean isPulling;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
@@ -83,7 +83,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
     }
 
     @Override
-    public void initialise(Actor.Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootReactiveBlock) {
+    public void initialise(Actor.Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock) {
         assert this.rootReactiveBlock == null;
         this.rootReactiveBlock = rootReactiveBlock;
         if (required.get() > 0) pull();

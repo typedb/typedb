@@ -27,10 +27,10 @@ import java.util.function.Function;
 
 public abstract class AbstractReactive implements Reactive {
 
-    protected final ReactiveBlock<?, ?, ?, ?> reactiveBlock;
+    protected final AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock;
     protected final Reactive.Identifier<?, ?> identifier;
 
-    protected AbstractReactive(ReactiveBlock<?, ?, ?, ?> reactiveBlock) {
+    protected AbstractReactive(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock) {
         this.reactiveBlock = reactiveBlock;
         this.identifier = reactiveBlock().registerReactive(this);
     }
@@ -41,7 +41,7 @@ public abstract class AbstractReactive implements Reactive {
     }
 
     @Override
-    public ReactiveBlock<?, ?, ?, ?> reactiveBlock() {
+    public AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock() {
         return reactiveBlock;
     }
 

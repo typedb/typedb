@@ -32,7 +32,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
 
     private final Operator.Pool<INPUT, OUTPUT> pool;
 
-    protected PoolingStream(ReactiveBlock<?, ?, ?, ?> reactiveBlock,
+    protected PoolingStream(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock,
                             Operator.Pool<INPUT, OUTPUT> pool,
                             SubscriberRegistry<OUTPUT> subscriberRegistry,
                             PublisherRegistry<INPUT> publisherRegistry) {
@@ -41,23 +41,23 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
     }
 
     public static <PACKET> PoolingStream<PACKET, PACKET> fanOut(
-            ReactiveBlock<?, ?, ?, ?> reactiveBlock) {
+            AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock) {
         return new PoolingStream<>(reactiveBlock, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
                                    new PublisherRegistry.Single<>());
     }
 
     public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> fanIn(
-            ReactiveBlock<?, ?, ?, ?> reactiveBlock, Operator.Pool<INPUT, OUTPUT> pool) {
+            AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, Operator.Pool<INPUT, OUTPUT> pool) {
         return new PoolingStream<>(reactiveBlock, pool, new SubscriberRegistry.Single<>(), new PublisherRegistry.Multi<>());
     }
 
-    public static <PACKET> PoolingStream<PACKET, PACKET> fanInFanOut(ReactiveBlock<?, ?, ?, ?> reactiveBlock) {
+    public static <PACKET> PoolingStream<PACKET, PACKET> fanInFanOut(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock) {
         return new PoolingStream<>(reactiveBlock, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
                                    new PublisherRegistry.Multi<>());
     }
 
     public static <PACKET> PoolingStream<PACKET, PACKET> buffer(
-            ReactiveBlock<?, ?, ?, ?> reactiveBlock) {
+            AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock) {
         // TODO: The operator is not bound to the nature of the registries by type. We could not correctly use a FanOut
         //  operator here even though the types allow it. In fact what really changes in tandem is the signature of the
         //  receive() and pull() methods, as when there are multiple upstreams/downstreams we need to know which the

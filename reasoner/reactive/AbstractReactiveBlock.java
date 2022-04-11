@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.reasoner.reactive;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.controller.Controller;
+import com.vaticle.typedb.core.reasoner.controller.AbstractController;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Identifier;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Subscriber;
@@ -42,13 +42,13 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
-public abstract class ReactiveBlock<INPUT, OUTPUT,
-        REQ extends ReactiveBlock.Connector.Request<?, ?, INPUT>,
-        REACTIVE_BLOCK extends ReactiveBlock<INPUT, OUTPUT, REQ, REACTIVE_BLOCK>> extends Actor<REACTIVE_BLOCK> {
+public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
+        REQ extends AbstractReactiveBlock.Connector.AbstractRequest<?, ?, INPUT>,
+        REACTIVE_BLOCK extends AbstractReactiveBlock<INPUT, OUTPUT, REQ, REACTIVE_BLOCK>> extends Actor<REACTIVE_BLOCK> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ReactiveBlock.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractReactiveBlock.class);
 
-    private final Driver<? extends Controller<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller;
+    private final Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller;
     private final Map<Identifier<?, ?>, Input<INPUT>> inputs;
     private final Map<Identifier<?, ?>, Output<OUTPUT>> outputs;
     private final Map<Pair<Identifier<?, ?>, Identifier<?, ?>>, Runnable> pullRetries;
@@ -58,10 +58,10 @@ public abstract class ReactiveBlock<INPUT, OUTPUT,
     protected boolean done;
     private long reactiveCounter;
 
-    protected ReactiveBlock(Driver<REACTIVE_BLOCK> driver,
-                            Driver<? extends Controller<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller,
-                            Driver<Monitor> monitor,
-                            Supplier<String> debugName) {
+    protected AbstractReactiveBlock(Driver<REACTIVE_BLOCK> driver,
+                                    Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller,
+                                    Driver<Monitor> monitor,
+                                    Supplier<String> debugName) {
         super(driver, debugName);
         this.controller = controller;
         this.inputs = new HashMap<>();
@@ -227,14 +227,14 @@ public abstract class ReactiveBlock<INPUT, OUTPUT,
             return new Connector<>(inputId, newBounds, transforms);
         }
 
-        public abstract static class Request<CONTROLLER_ID, BOUNDS, PACKET> {
+        public abstract static class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET> {
 
             private final CONTROLLER_ID controllerId;
             private final BOUNDS bounds;
             private final Identifier<PACKET, ?> inputId;
 
-            protected Request(Identifier<PACKET, ?> inputId, CONTROLLER_ID controllerId,
-                              BOUNDS bounds) {
+            protected AbstractRequest(Identifier<PACKET, ?> inputId, CONTROLLER_ID controllerId,
+                                      BOUNDS bounds) {
                 this.inputId = inputId;
                 this.controllerId = controllerId;
                 this.bounds = bounds;
@@ -259,7 +259,7 @@ public abstract class ReactiveBlock<INPUT, OUTPUT,
                 //  to conjunction comparison are the same, and therefore will not create separate reactiveBlocks for them
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
-                Request<?, ?, ?> request = (Request<?, ?, ?>) o;
+                AbstractRequest<?, ?, ?> request = (AbstractRequest<?, ?, ?>) o;
                 return inputId == request.inputId &&
                         controllerId.equals(request.controllerId) &&
                         bounds.equals(request.bounds);

@@ -31,7 +31,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 public class RootDisjunctionController
-        extends DisjunctionController<RootDisjunctionController.RootDisjunctionReactiveBlock, RootDisjunctionController> {
+        extends DisjunctionController<RootDisjunctionController.ReactiveBlock, RootDisjunctionController> {
+
     private final Set<Identifier.Variable.Retrievable> filter;
     private final Driver<Monitor> monitor;
     private final ReasonerConsumer reasonerConsumer;
@@ -53,10 +54,10 @@ public class RootDisjunctionController
     }
 
     @Override
-    protected RootDisjunctionReactiveBlock createReactiveBlockFromDriver(Driver<RootDisjunctionReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
-        return new RootDisjunctionReactiveBlock(
+    protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
+        return new ReactiveBlock(
                 reactiveBlockDriver, driver(), monitor, disjunction, bounds, filter, reasonerConsumer,
-                () -> RootDisjunctionReactiveBlock.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
+                () -> ReactiveBlock.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
 
@@ -66,17 +67,17 @@ public class RootDisjunctionController
         reasonerConsumer.exception(e);
     }
 
-    protected static class RootDisjunctionReactiveBlock extends DisjunctionController.DisjunctionReactiveBlock<RootDisjunctionReactiveBlock> {
+    protected static class ReactiveBlock extends DisjunctionController.ReactiveBlock<ReactiveBlock> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
         private final ReasonerConsumer reasonerConsumer;
         private RootSink reasonerEntryPoint;
 
-        protected RootDisjunctionReactiveBlock(Driver<RootDisjunctionReactiveBlock> driver,
-                                               Driver<RootDisjunctionController> controller, Driver<Monitor> monitor,
-                                               Disjunction disjunction, ConceptMap bounds,
-                                               Set<Identifier.Variable.Retrievable> filter,
-                                               ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
+        protected ReactiveBlock(Driver<ReactiveBlock> driver,
+                                Driver<RootDisjunctionController> controller, Driver<Monitor> monitor,
+                                Disjunction disjunction, ConceptMap bounds,
+                                Set<Identifier.Variable.Retrievable> filter,
+                                ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, monitor, disjunction, bounds, debugName);
             this.filter = filter;
             this.reasonerConsumer = reasonerConsumer;

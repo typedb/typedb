@@ -25,8 +25,10 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.reasoner.controller.DisjunctionController.ReactiveBlock.Request;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.Monitor;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Input;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
@@ -45,9 +47,9 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.merge;
 
 public abstract class DisjunctionController<
-        REACTIVE_BLOCK extends DisjunctionController.DisjunctionReactiveBlock<REACTIVE_BLOCK>,
-        CONTROLLER extends DisjunctionController<REACTIVE_BLOCK, CONTROLLER>>
-        extends Controller<ConceptMap, ConceptMap, ConceptMap, DisjunctionController.DisjunctionReactiveBlock.NestedConjunctionRequest, REACTIVE_BLOCK, CONTROLLER> {
+        REACTIVE_BLOCK extends DisjunctionController.ReactiveBlock<REACTIVE_BLOCK>,
+        CONTROLLER extends DisjunctionController<REACTIVE_BLOCK, CONTROLLER>
+        > extends AbstractController<ConceptMap, ConceptMap, ConceptMap, Request, REACTIVE_BLOCK, CONTROLLER> {
 
     private final List<Pair<Conjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
     protected Disjunction disjunction;
@@ -69,11 +71,13 @@ public abstract class DisjunctionController<
     }
 
     @Override
-    public void resolveController(DisjunctionReactiveBlock.NestedConjunctionRequest req) {
+    public void resolveController(Request req) {
         if (isTerminated()) return;
         getConjunctionController(req.controllerId())
-                .execute(actor -> actor.resolveReactiveBlock(new ReactiveBlock.Connector<>(req.inputId(), req.bounds())
-                                                                 .withMap(c -> merge(c, req.bounds()))));
+                .execute(actor -> actor.resolveReactiveBlock(
+                        new AbstractReactiveBlock.Connector<>(
+                                req.inputId(), req.bounds()).withMap(c -> merge(c, req.bounds()))
+                ));
     }
 
     protected Driver<NestedConjunctionController> getConjunctionController(Conjunction conjunction) {
@@ -84,16 +88,16 @@ public abstract class DisjunctionController<
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    protected static abstract class DisjunctionReactiveBlock<REACTIVE_BLOCK extends DisjunctionReactiveBlock<REACTIVE_BLOCK>>
-            extends ReactiveBlock<ConceptMap, ConceptMap, DisjunctionReactiveBlock.NestedConjunctionRequest, REACTIVE_BLOCK> {
+    protected static abstract class ReactiveBlock<REACTIVE_BLOCK extends ReactiveBlock<REACTIVE_BLOCK>>
+            extends AbstractReactiveBlock<ConceptMap, ConceptMap, Request, REACTIVE_BLOCK> {
 
         private final Disjunction disjunction;
         private final ConceptMap bounds;
 
-        protected DisjunctionReactiveBlock(Driver<REACTIVE_BLOCK> driver,
-                                           Driver<? extends DisjunctionController<REACTIVE_BLOCK, ?>> controller,
-                                           Driver<Monitor> monitor, Disjunction disjunction, ConceptMap bounds,
-                                           Supplier<String> debugName) {
+        protected ReactiveBlock(Driver<REACTIVE_BLOCK> driver,
+                                Driver<? extends DisjunctionController<REACTIVE_BLOCK, ?>> controller,
+                                Driver<Monitor> monitor, Disjunction disjunction, ConceptMap bounds,
+                                Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.disjunction = disjunction;
             this.bounds = bounds;
@@ -109,7 +113,7 @@ public abstract class DisjunctionController<
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
-                requestConnection(new NestedConjunctionRequest(
+                requestConnection(new Request(
                         input.identifier(), conjunction, bounds.filter(retrievableConjunctionVars)));
             }
         }
@@ -119,10 +123,10 @@ public abstract class DisjunctionController<
             return fanIn;
         }
 
-        protected static class NestedConjunctionRequest extends Connector.Request<Conjunction, ConceptMap, ConceptMap> {
+        protected static class Request extends AbstractRequest<Conjunction, ConceptMap, ConceptMap> {
 
-            protected NestedConjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, Conjunction controllerId,
-                                               ConceptMap reactiveBlockId) {
+            protected Request(Reactive.Identifier<ConceptMap, ?> inputId, Conjunction controllerId,
+                              ConceptMap reactiveBlockId) {
                 super(inputId, controllerId, reactiveBlockId);
             }
 

@@ -31,7 +31,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-public class NestedConjunctionController extends ConjunctionController<ConceptMap, NestedConjunctionController, NestedConjunctionController.NestedConjunctionReactiveBlock> {
+public class NestedConjunctionController extends ConjunctionController<
+        ConceptMap,
+        NestedConjunctionController,
+        NestedConjunctionController.NestedConjunctionReactiveBlock
+        > {
 
     private final Driver<Monitor> monitor;
 
@@ -49,14 +53,18 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
     }
 
     @Override
-    protected NestedConjunctionReactiveBlock createReactiveBlockFromDriver(Driver<NestedConjunctionReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
+    protected NestedConjunctionReactiveBlock createReactiveBlockFromDriver(
+            Driver<NestedConjunctionReactiveBlock> reactiveBlockDriver,
+            ConceptMap bounds
+    ) {
         return new NestedConjunctionReactiveBlock(
                 reactiveBlockDriver, driver(), monitor, bounds, plan(),
                 () -> NestedConjunctionReactiveBlock.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
         );
     }
 
-    protected static class NestedConjunctionReactiveBlock extends ConjunctionController.ConjunctionReactiveBlock<ConceptMap, NestedConjunctionReactiveBlock> {
+    protected static class NestedConjunctionReactiveBlock
+            extends ConjunctionController.ReactiveBlock<ConceptMap, NestedConjunctionReactiveBlock> {
 
         protected NestedConjunctionReactiveBlock(Driver<NestedConjunctionReactiveBlock> driver,
                                                  Driver<NestedConjunctionController> controller,

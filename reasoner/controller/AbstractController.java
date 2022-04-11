@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,22 +32,22 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 
-public abstract class Controller<
+public abstract class AbstractController<
         REACTIVE_BLOCK_ID, INPUT, OUTPUT,
-        REQ extends ReactiveBlock.Connector.Request<?, ?, INPUT>,
-        REACTIVE_BLOCK extends ReactiveBlock<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
-        CONTROLLER extends Controller<REACTIVE_BLOCK_ID, INPUT, OUTPUT, ?, REACTIVE_BLOCK, CONTROLLER>
+        REQ extends AbstractReactiveBlock.Connector.AbstractRequest<?, ?, INPUT>,
+        REACTIVE_BLOCK extends AbstractReactiveBlock<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
+        CONTROLLER extends AbstractController<REACTIVE_BLOCK_ID, INPUT, OUTPUT, ?, REACTIVE_BLOCK, CONTROLLER>
         > extends Actor<CONTROLLER> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractController.class);
 
     private boolean terminated;
     private final ActorExecutorGroup executorService;
     private final Registry registry;
     protected final Map<REACTIVE_BLOCK_ID, Actor.Driver<REACTIVE_BLOCK>> reactiveBlocks;
 
-    protected Controller(Driver<CONTROLLER> driver, ActorExecutorGroup executorService, Registry registry,
-                         Supplier<String> debugName) {
+    protected AbstractController(Driver<CONTROLLER> driver, ActorExecutorGroup executorService, Registry registry,
+                                 Supplier<String> debugName) {
         super(driver, debugName);
         this.executorService = executorService;
         this.reactiveBlocks = new HashMap<>();
@@ -67,7 +67,7 @@ public abstract class Controller<
 
     public abstract void resolveController(REQ connectionRequest);
 
-    public void resolveReactiveBlock(ReactiveBlock.Connector<REACTIVE_BLOCK_ID, OUTPUT> connector) {
+    public void resolveReactiveBlock(AbstractReactiveBlock.Connector<REACTIVE_BLOCK_ID, OUTPUT> connector) {
         if (isTerminated()) return;
         createReactiveBlockIfAbsent(connector.bounds()).execute(actor -> actor.establishConnection(connector));
     }
@@ -80,7 +80,7 @@ public abstract class Controller<
     private Actor.Driver<REACTIVE_BLOCK> createReactiveBlock(REACTIVE_BLOCK_ID reactiveBlockId) {
         if (isTerminated()) return null;  // TODO: Avoid returning null
         Driver<REACTIVE_BLOCK> reactiveBlock = Actor.driver(d -> createReactiveBlockFromDriver(d, reactiveBlockId), executorService);
-        reactiveBlock.execute(ReactiveBlock::setUp);
+        reactiveBlock.execute(AbstractReactiveBlock::setUp);
         return reactiveBlock;
     }
 

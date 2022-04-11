@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -483,7 +483,7 @@ public class ControllerTest {
         public LinkedBlockingQueue<ConceptMap> responses;
         public LinkedBlockingQueue<Throwable> exceptions;
         public AtomicBoolean doneReceived;
-        private Actor.Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootProcessor;
+        private Actor.Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootProcessor;
         private boolean pullOnSet;
 
         AnswerProducer() {
@@ -503,7 +503,7 @@ public class ControllerTest {
         }
 
         @Override
-        public void initialise(Actor.Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootProcessor) {
+        public void initialise(Actor.Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootProcessor) {
             this.rootProcessor = rootProcessor;
             if (pullOnSet) pull();
         }

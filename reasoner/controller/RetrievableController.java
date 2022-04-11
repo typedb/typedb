@@ -23,17 +23,23 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.reactive.Monitor;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock.Connector.Request;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.Source;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
 
 import java.util.function.Supplier;
 
-public class RetrievableController extends Controller<ConceptMap, Void, ConceptMap,
-        Request<?, ?, Void>, RetrievableController.RetrievableReactiveBlock, RetrievableController> {
+public class RetrievableController extends AbstractController<
+        ConceptMap,
+        Void,
+        ConceptMap,
+        AbstractRequest<?, ?, Void>,
+        RetrievableController.RetrievableReactiveBlock,
+        RetrievableController
+        > {
 
     private final Retrievable retrievable;
     private final Driver<Monitor> monitor;
@@ -62,12 +68,16 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     }
 
     @Override
-    public void resolveController(Request<?, ?, Void> connectionRequest) {
+    public void resolveController(AbstractRequest<?, ?, Void> connectionRequest) {
         // Nothing to do
     }
 
-    protected static class RetrievableReactiveBlock extends ReactiveBlock<Void, ConceptMap,
-                Request<?, ?, Void>, RetrievableReactiveBlock> {
+    protected static class RetrievableReactiveBlock extends AbstractReactiveBlock<
+            Void,
+            ConceptMap,
+            AbstractRequest<?, ?, Void>,
+            RetrievableReactiveBlock
+            > {
 
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 

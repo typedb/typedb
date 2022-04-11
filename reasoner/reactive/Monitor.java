@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.controller.Controller;
+import com.vaticle.typedb.core.reasoner.controller.AbstractController;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 public class Monitor extends Actor<Monitor> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractController.class);
     private final Registry registry;
     private boolean terminated;
     private final Map<Reactive.Identifier<?, ?>, ReactiveNode> reactiveNodes;
@@ -60,7 +60,7 @@ public class Monitor extends Actor<Monitor> {
         assert exists == null;
     }
 
-    public <R> void registerRoot(Driver<? extends ReactiveBlock<R, ?, ?, ?>> reactiveBlock, Reactive.Identifier<?, ?> root) {
+    public <R> void registerRoot(Driver<? extends AbstractReactiveBlock<R, ?, ?, ?>> reactiveBlock, Reactive.Identifier<?, ?> root) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerRoot(root, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the root, or a duplicate node will be created.
@@ -126,14 +126,14 @@ public class Monitor extends Actor<Monitor> {
 
     private static class ReactiveGraph {  // TODO: A graph can effectively be a source node within another graph
 
-        private final Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootReactiveBlock;
+        private final Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock;
         private final RootNode rootNode;
         private final Driver<Monitor> monitor;
         private final Set<ReactiveNode> reactives;
         private final Set<SourceNode> nestedSources;
         private boolean finished;
 
-        ReactiveGraph(Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootReactiveBlock, RootNode rootNode, Driver<Monitor> monitor) {
+        ReactiveGraph(Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock, RootNode rootNode, Driver<Monitor> monitor) {
             this.rootReactiveBlock = rootReactiveBlock;
             this.rootNode = rootNode;
             this.monitor = monitor;
@@ -185,7 +185,7 @@ public class Monitor extends Actor<Monitor> {
             if (!finished && sourcesFinished() && activeAnswers() == 0 && activeFrontiers() == 0) finishRootNode();
         }
 
-        public Driver<? extends ReactiveBlock<?, ?, ?, ?>> rootReactiveBlock() {
+        public Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock() {
             return rootReactiveBlock;
         }
     }

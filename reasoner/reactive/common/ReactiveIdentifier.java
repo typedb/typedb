@@ -19,17 +19,17 @@
 package com.vaticle.typedb.core.reasoner.reactive.common;
 
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 
 import java.util.Objects;
 
 public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier<P_IN, P_OUT> {
-    private final Actor.Driver<? extends ReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock;
+    private final Actor.Driver<? extends AbstractReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock;
     private final Class<? extends Reactive> reactiveClass;
     private final long scopedId;
 
-    public ReactiveIdentifier(Actor.Driver<? extends ReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock,
+    public ReactiveIdentifier(Actor.Driver<? extends AbstractReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock,
                               Class<? extends Reactive> reactiveClass, long scopedId) {
         this.reactiveBlock = reactiveBlock;
         this.reactiveClass = reactiveClass;
@@ -57,7 +57,7 @@ public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier<P_IN
     }
 
     @Override
-    public Actor.Driver<? extends ReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock() {
+    public Actor.Driver<? extends AbstractReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock() {
         return reactiveBlock;
     }
 

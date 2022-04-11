@@ -29,13 +29,13 @@ import java.util.function.Function;
 public class Input<PACKET> implements Reactive.Publisher<PACKET> {
 
     private final Identifier<PACKET, ?> identifier;
-    private final ReactiveBlock<PACKET, ?, ?, ?> reactiveBlock;
+    private final AbstractReactiveBlock<PACKET, ?, ?, ?> reactiveBlock;
     private final AbstractReactive.PublisherActionsImpl<PACKET> publisherActions;
     private boolean ready;
     private Identifier<?, PACKET> providingOutput;
     private Subscriber<PACKET> subscriber;
 
-    public Input(ReactiveBlock<PACKET, ?, ?, ?> reactiveBlock) {
+    public Input(AbstractReactiveBlock<PACKET, ?, ?, ?> reactiveBlock) {
         this.reactiveBlock = reactiveBlock;
         this.identifier = reactiveBlock.registerReactive(this);
         this.ready = false;
@@ -43,7 +43,7 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
     }
 
     @Override
-    public ReactiveBlock<?, ?, ?, ?> reactiveBlock() {
+    public AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock() {
         return reactiveBlock;
     }
 

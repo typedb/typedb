@@ -26,9 +26,9 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.reactive.Monitor;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock.Connector.Request;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.Source;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -37,8 +37,14 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
 
-public class MaterialisationController extends Controller<Materialisable, Void, Either<ConceptMap, Materialisation>,
-        Request<?, ?, Void>, MaterialisationController.MaterialisationReactiveBlock, MaterialisationController> {
+public class MaterialisationController extends AbstractController<
+        Materialisable,
+        Void,
+        Either<ConceptMap, Materialisation>,
+        AbstractRequest<?, ?, Void>,
+        MaterialisationController.ReactiveBlock,
+        MaterialisationController
+        > {
     // TODO: Either here is just to match the input to ConclusionController, but this class only ever returns Materialisation
 
     private final ConceptManager conceptMgr;
@@ -60,30 +66,32 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
     }
 
     @Override
-    protected MaterialisationReactiveBlock createReactiveBlockFromDriver(Driver<MaterialisationReactiveBlock> reactiveBlockDriver, Materialisable materialisable) {
-        return new MaterialisationReactiveBlock(
+    protected ReactiveBlock createReactiveBlockFromDriver(
+            Driver<ReactiveBlock> reactiveBlockDriver, Materialisable materialisable
+    ) {
+        return new ReactiveBlock(
                 reactiveBlockDriver, driver(), monitor, materialisable, traversalEng, conceptMgr,
-                () -> MaterialisationReactiveBlock.class.getSimpleName() + "(Materialisable: " + materialisable + ")"
+                () -> ReactiveBlock.class.getSimpleName() + "(Materialisable: " + materialisable + ")"
         );
     }
 
     @Override
-    public void resolveController(Request<?, ?, Void> connectionRequest) {
+    public void resolveController(AbstractRequest<?, ?, Void> connectionRequest) {
         // Nothing to do
     }
 
-    public static class MaterialisationReactiveBlock extends ReactiveBlock<Void, Either<ConceptMap, Materialisation>,
-                Request<?, ?, Void>, MaterialisationReactiveBlock> {
+    public static class ReactiveBlock extends AbstractReactiveBlock<Void, Either<ConceptMap, Materialisation>,
+            AbstractRequest<?, ?, Void>, ReactiveBlock> {
 
         private final Materialisable materialisable;
         private final TraversalEngine traversalEng;
         private final ConceptManager conceptMgr;
 
-        protected MaterialisationReactiveBlock(Driver<MaterialisationReactiveBlock> driver,
-                                               Driver<MaterialisationController> controller,
-                                               Driver<Monitor> monitor, Materialisable materialisable,
-                                               TraversalEngine traversalEng, ConceptManager conceptMgr,
-                                               Supplier<String> debugName) {
+        protected ReactiveBlock(Driver<ReactiveBlock> driver,
+                                Driver<MaterialisationController> controller,
+                                Driver<Monitor> monitor, Materialisable materialisable,
+                                TraversalEngine traversalEng, ConceptManager conceptMgr,
+                                Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.materialisable = materialisable;
             this.traversalEng = traversalEng;

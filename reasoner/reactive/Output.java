@@ -26,12 +26,12 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 public class Output<PACKET> implements Reactive.Subscriber<PACKET> {
 
     private final Identifier<?, PACKET> identifier;
-    private final ReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
+    private final AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
     private final AbstractReactive.SubscriberActionsImpl<PACKET> subscriberActions;
     private Identifier<PACKET, ?> receivingInput;
     private Publisher<PACKET> publisher;
 
-    public Output(ReactiveBlock<?, PACKET, ?, ?> reactiveBlock) {
+    public Output(AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock) {
         this.reactiveBlock = reactiveBlock;
         this.identifier = reactiveBlock().registerReactive(this);
         this.subscriberActions = new AbstractReactive.SubscriberActionsImpl<>(this);
@@ -43,7 +43,7 @@ public class Output<PACKET> implements Reactive.Subscriber<PACKET> {
     }
 
     @Override
-    public ReactiveBlock<?, PACKET, ?, ?> reactiveBlock() {
+    public AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock() {
         return reactiveBlock;
     }
 

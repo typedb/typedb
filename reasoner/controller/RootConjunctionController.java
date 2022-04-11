@@ -35,7 +35,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-public class RootConjunctionController extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.RootConjunctionReactiveBlock> {
+public class RootConjunctionController
+        extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.ReactiveBlock> {
+
     private final Set<Identifier.Variable.Retrievable> filter;
     private final Driver<Monitor> monitor;
     private final ReasonerConsumer reasonerConsumer;
@@ -57,10 +59,10 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
     }
 
     @Override
-    protected RootConjunctionReactiveBlock createReactiveBlockFromDriver(Driver<RootConjunctionReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
-        return new RootConjunctionReactiveBlock(
+    protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
+        return new ReactiveBlock(
                 reactiveBlockDriver, driver(), monitor, bounds, plan(), filter, reasonerConsumer,
-                () -> RootConjunctionReactiveBlock.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
+                () -> ReactiveBlock.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
         );
     }
 
@@ -77,17 +79,17 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         reasonerConsumer.exception(e);
     }
 
-    protected static class RootConjunctionReactiveBlock extends ConjunctionController.ConjunctionReactiveBlock<ConceptMap, RootConjunctionReactiveBlock> {
+    protected static class ReactiveBlock extends ConjunctionController.ReactiveBlock<ConceptMap, ReactiveBlock> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
         private RootSink rootSink;
         private final ReasonerConsumer reasonerConsumer;
 
-        protected RootConjunctionReactiveBlock(Driver<RootConjunctionReactiveBlock> driver,
-                                               Driver<RootConjunctionController> controller, Driver<Monitor> monitor,
-                                               ConceptMap bounds, List<Resolvable<?>> plan,
-                                               Set<Identifier.Variable.Retrievable> filter,
-                                               ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
+        protected ReactiveBlock(Driver<ReactiveBlock> driver,
+                                Driver<RootConjunctionController> controller, Driver<Monitor> monitor,
+                                ConceptMap bounds, List<Resolvable<?>> plan,
+                                Set<Identifier.Variable.Retrievable> filter,
+                                ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, monitor, bounds, plan, debugName);
             this.filter = filter;
             this.reasonerConsumer = reasonerConsumer;

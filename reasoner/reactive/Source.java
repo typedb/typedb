@@ -31,7 +31,7 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
     private final SubscriberRegistry.Single<PACKET> subscriberRegistry;
     private final ReactiveActions.PublisherActions<PACKET> publisherActions;
 
-    protected Source(ReactiveBlock<?, ?, ?, ?> reactiveBlock, Operator.Source<PACKET> sourceOperator) {
+    protected Source(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, Operator.Source<PACKET> sourceOperator) {
         super(reactiveBlock);
         this.sourceOperator = sourceOperator;
         this.subscriberRegistry = new SubscriberRegistry.Single<>();
@@ -39,7 +39,7 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
         reactiveBlock().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
-    public static <OUTPUT> Source<OUTPUT> create(ReactiveBlock<?, ?, ?, ?> reactiveBlock,
+    public static <OUTPUT> Source<OUTPUT> create(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock,
                                                  Operator.Source<OUTPUT> operator) {
         return new Source<>(reactiveBlock, operator);
     }

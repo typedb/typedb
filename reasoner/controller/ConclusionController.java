@@ -27,8 +27,9 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.Monitor;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Stream;
@@ -36,8 +37,8 @@ import com.vaticle.typedb.core.reasoner.reactive.Input;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.ConditionRequest;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionController.FromConclusionRequest.MaterialiserRequest;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.ConditionRequest;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.MaterialiserRequest;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashSet;
@@ -48,17 +49,20 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public class ConclusionController extends Controller<ConceptMap, Either<ConceptMap, Materialisation>, Map<Variable, Concept>,
-        ConclusionController.FromConclusionRequest<?, ?>, ConclusionController.ConclusionReactiveBlock, ConclusionController> {
+public class ConclusionController extends AbstractController<ConceptMap, Either<ConceptMap, Materialisation>, Map<Variable, Concept>,
+        ConclusionController.Request<?, ?>, ConclusionController.ReactiveBlock, ConclusionController> {
+
     private final Rule.Conclusion conclusion;
     private final Driver<MaterialisationController> materialisationController;
     private final Driver<Monitor> monitor;
     private Driver<ConditionController> conditionController;
 
     public ConclusionController(Driver<ConclusionController> driver, Rule.Conclusion conclusion,
-                                ActorExecutorGroup executorService, Driver<MaterialisationController> materialisationController,
-                                Driver<Monitor> monitor, Registry registry) {
-        super(driver, executorService, registry, () -> ConclusionController.class.getSimpleName() + "(pattern: " + conclusion + ")");
+                                ActorExecutorGroup executorService,
+                                Driver<MaterialisationController> materialisationController, Driver<Monitor> monitor,
+                                Registry registry) {
+        super(driver, executorService, registry,
+              () -> ConclusionController.class.getSimpleName() + "(pattern: " + conclusion + ")");
         this.conclusion = conclusion;
         this.materialisationController = materialisationController;
         this.monitor = monitor;
@@ -70,31 +74,32 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
     }
 
     @Override
-    protected ConclusionReactiveBlock createReactiveBlockFromDriver(Driver<ConclusionReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
-        return new ConclusionReactiveBlock(
+    protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
+        return new ReactiveBlock(
                 reactiveBlockDriver, driver(), monitor, this.conclusion.rule(), bounds, registry().conceptManager(),
-                () -> ConclusionReactiveBlock.class.getSimpleName() + "(pattern: " + conclusion + ", bounds: " + bounds + ")"
+                () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + conclusion + ", bounds: " + bounds + ")"
         );
     }
 
     @Override
-    public void resolveController(FromConclusionRequest<?, ?> req) {
+    public void resolveController(Request<?, ?> req) {
         if (isTerminated()) return;
         if (req.isCondition()) {
             conditionController.execute(actor -> actor.resolveReactiveBlock(
-                    new ReactiveBlock.Connector<>(req.asCondition().inputId(), req.asCondition().bounds())));
+                    new AbstractReactiveBlock.Connector<>(req.asCondition().inputId(), req.asCondition().bounds())));
         } else if (req.isMaterialiser()) {
             materialisationController.execute(actor -> actor.resolveReactiveBlock(
-                    new ReactiveBlock.Connector<>(req.asMaterialiser().inputId(), req.asMaterialiser().bounds())));
+                    new AbstractReactiveBlock.Connector<>(req.asMaterialiser().inputId(), req.asMaterialiser().bounds())));
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
-    protected static class FromConclusionRequest<CONTROLLER_ID, BOUNDS> extends ReactiveBlock.Connector.Request<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>> {
+    protected static class Request<CONTROLLER_ID, BOUNDS>
+            extends AbstractRequest<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>> {
 
-        protected FromConclusionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
-                                        CONTROLLER_ID controller_id, BOUNDS bounds) {
+        protected Request(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
+                          CONTROLLER_ID controller_id, BOUNDS bounds) {
             super(inputId, controller_id, bounds);
         }
 
@@ -114,7 +119,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-        protected static class ConditionRequest extends FromConclusionRequest<Rule.Condition, ConceptMap> {
+        protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap> {
 
             public ConditionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
                                     Rule.Condition controllerId, ConceptMap reactiveBlockId) {
@@ -133,7 +138,7 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         }
 
-        protected static class MaterialiserRequest extends FromConclusionRequest<Void, Materialisable> {
+        protected static class MaterialiserRequest extends Request<Void, Materialisable> {
 
             public MaterialiserRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
                                        Void controllerId, Materialisable reactiveBlockId) {
@@ -153,7 +158,10 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         }
     }
 
-    protected static class ConclusionReactiveBlock extends ReactiveBlock<Either<ConceptMap, Materialisation>, Map<Variable, Concept>, FromConclusionRequest<?, ?>, ConclusionReactiveBlock> {
+    protected static class ReactiveBlock extends AbstractReactiveBlock<
+            Either<ConceptMap, Materialisation>, Map<Variable, Concept>,
+            Request<?, ?>, ReactiveBlock
+            > {
 
         private final Rule rule;
         private final ConceptMap bounds;
@@ -161,9 +169,9 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         private final Set<ConditionRequest> conditionRequests;
         private final Set<MaterialiserRequest> materialisationRequests;
 
-        protected ConclusionReactiveBlock(Driver<ConclusionReactiveBlock> driver,
-                                          Driver<ConclusionController> controller, Driver<Monitor> monitor, Rule rule,
-                                          ConceptMap bounds, ConceptManager conceptManager, Supplier<String> debugName) {
+        protected ReactiveBlock(Driver<ReactiveBlock> driver,
+                                Driver<ConclusionController> controller, Driver<Monitor> monitor, Rule rule,
+                                ConceptMap bounds, ConceptManager conceptManager, Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.rule = rule;
             this.bounds = bounds;
@@ -179,11 +187,12 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), bounds));
             Stream<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>> conclusionReactive =
                     TransformationStream.fanIn(this, new ConclusionOperator(this));
-            conditionInput.map(ConclusionReactiveBlock::convertConclusionInput).registerSubscriber(conclusionReactive);
+            conditionInput.map(ReactiveBlock::convertConclusionInput).registerSubscriber(conclusionReactive);
             conclusionReactive.registerSubscriber(outputRouter());
         }
 
-        private static Either<ConceptMap, Map<Variable, Concept>> convertConclusionInput(Either<ConceptMap, Materialisation> input) {
+        private static Either<ConceptMap, Map<Variable, Concept>> convertConclusionInput(Either<ConceptMap,
+                Materialisation> input) {
             return Either.first(input.first());
         }
 
@@ -205,13 +214,13 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
 
         private static class ConclusionOperator implements Operator.Transformer<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>> {
 
-            private final ConclusionReactiveBlock reactiveBlock;
+            private final ReactiveBlock reactiveBlock;
 
-            private ConclusionOperator(ConclusionController.ConclusionReactiveBlock reactiveBlock) {
+            private ConclusionOperator(ReactiveBlock reactiveBlock) {
                 this.reactiveBlock = reactiveBlock;
             }
 
-            private ConclusionReactiveBlock reactiveBlock() {
+            private ReactiveBlock reactiveBlock() {
                 return reactiveBlock;
             }
 

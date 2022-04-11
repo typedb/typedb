@@ -25,8 +25,10 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
+import com.vaticle.typedb.core.reasoner.controller.ConcludableController.ReactiveBlock.Request;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.Monitor;
-import com.vaticle.typedb.core.reasoner.reactive.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Input;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
@@ -43,8 +45,8 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class ConcludableController extends Controller<ConceptMap, Map<Variable, Concept>, ConceptMap,
-        ConcludableController.ConcludableReactiveBlock.ConclusionRequest, ConcludableController.ConcludableReactiveBlock, ConcludableController> {
+public class ConcludableController extends AbstractController<ConceptMap, Map<Variable, Concept>, ConceptMap,
+        Request, ConcludableController.ReactiveBlock, ConcludableController> {
 
     private final Map<Conclusion, Driver<ConclusionController>> conclusionControllers;
     private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
@@ -90,38 +92,39 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
     }
 
     @Override
-    protected ConcludableReactiveBlock createReactiveBlockFromDriver(Driver<ConcludableReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
+    protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
         // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
         //  concludable. They should be filtered before being passed to the concludableReactiveBlock's constructor
-        return new ConcludableReactiveBlock(
+        return new ReactiveBlock(
                 reactiveBlockDriver, driver(), monitor, bounds, unboundVars, conclusionUnifiers,
                 () -> Traversal.traversalIterator(registry, concludable.pattern(), bounds),
-                () -> ConcludableReactiveBlock.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
+                () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
         );
     }
 
     @Override
-    public void resolveController(ConcludableReactiveBlock.ConclusionRequest req) {
+    public void resolveController(Request req) {
         if (isTerminated()) return;
         conclusionControllers.get(req.controllerId())
-                .execute(actor -> actor.resolveReactiveBlock(new ReactiveBlock.Connector<>(req.inputId(), req.bounds())));
+                .execute(actor -> actor.resolveReactiveBlock(new AbstractReactiveBlock.Connector<>(req.inputId(), req.bounds())));
     }
 
-    protected static class ConcludableReactiveBlock extends ReactiveBlock<Map<Variable, Concept>, ConceptMap, ConcludableReactiveBlock.ConclusionRequest, ConcludableReactiveBlock> {
+    protected static class ReactiveBlock
+            extends AbstractReactiveBlock<Map<Variable, Concept>, ConceptMap, Request, ReactiveBlock> {
 
         private final ConceptMap bounds;
         private final Set<Variable.Retrievable> unboundVars;
         private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
         private final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
-        private final Set<ConclusionRequest> requestedConnections;
+        private final Set<Request> requestedConnections;
 
-        public ConcludableReactiveBlock(Driver<ConcludableReactiveBlock> driver,
-                                        Driver<ConcludableController> controller,
-                                        Driver<Monitor> monitor, ConceptMap bounds,
-                                        Set<Variable.Retrievable> unboundVars,
-                                        Map<Conclusion, Set<Unifier>> conclusionUnifiers,
-                                        Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
-                                        Supplier<String> debugName) {
+        public ReactiveBlock(Driver<ReactiveBlock> driver,
+                             Driver<ConcludableController> controller,
+                             Driver<Monitor> monitor, ConceptMap bounds,
+                             Set<Variable.Retrievable> unboundVars,
+                             Map<Conclusion, Set<Unifier>> conclusionUnifiers,
+                             Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
+                             Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
@@ -141,7 +144,7 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     Input<Map<Variable, Concept>> input = createInput();
-                    mayRequestConnection(new ConclusionRequest(input.identifier(), conclusion, boundsAndRequirements.first()));
+                    mayRequestConnection(new Request(input.identifier(), conclusion, boundsAndRequirements.first()));
                     input.flatMap(conclusionAns -> unifier.unUnify(conclusionAns, boundsAndRequirements.second()))
                             .buffer()
                             .registerSubscriber(outputRouter());
@@ -149,17 +152,17 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
             });
         }
 
-        private void mayRequestConnection(ConclusionRequest conclusionRequest) {
+        private void mayRequestConnection(Request conclusionRequest) {
             if (!requestedConnections.contains(conclusionRequest)) {
                 requestedConnections.add(conclusionRequest);
                 requestConnection(conclusionRequest);
             }
         }
 
-        protected static class ConclusionRequest extends Connector.Request<Conclusion, ConceptMap, Map<Variable, Concept>> {
+        protected static class Request extends AbstractRequest<Conclusion, ConceptMap, Map<Variable, Concept>> {
 
-            public ConclusionRequest(Reactive.Identifier<Map<Variable, Concept>, ?> inputId,
-                                     Conclusion controllerId, ConceptMap reactiveBlockId) {
+            public Request(Reactive.Identifier<Map<Variable, Concept>, ?> inputId, Conclusion controllerId,
+                           ConceptMap reactiveBlockId) {
                 super(inputId, controllerId, reactiveBlockId);
             }
 
