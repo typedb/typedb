@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive.operator;
+package com.vaticle.typedb.core.reasoner.computation.reactive.common;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -27,11 +27,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
