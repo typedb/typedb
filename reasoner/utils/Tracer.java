@@ -75,29 +75,29 @@ public final class Tracer {
         return Optional.ofNullable(INSTANCE);
     }
 
-    public synchronized void pull(@Nullable Identifier<?, ?> subscriberId, Identifier<?, ?> providerId) {
-        pull(subscriberId, providerId, EdgeType.PULL, "pull");
+    public synchronized void pull(@Nullable Identifier<?, ?> subscriberId, Identifier<?, ?> publisherId) {
+        pull(subscriberId, publisherId, EdgeType.PULL, "pull");
     }
 
-    public synchronized void pullRetry(Identifier<?, ?> subscriberId, Identifier<?, ?> providerId) {
-        pull(subscriberId, providerId, EdgeType.RETRY, "retry");
+    public synchronized void pullRetry(Identifier<?, ?> subscriberId, Identifier<?, ?> publisherId) {
+        pull(subscriberId, publisherId, EdgeType.RETRY, "retry");
     }
 
-    private void pull(@Nullable Identifier<?, ?> subscriberId, Identifier<?, ?> providerId, EdgeType edgeType, String edgeLabel) {
+    private void pull(@Nullable Identifier<?, ?> subscriberId, Identifier<?, ?> publisherId, EdgeType edgeType, String edgeLabel) {
         String subscriberString;
         if (subscriberId == null) subscriberString = "root";
         else {
             subscriberString = subscriberId.toString();
             addNodeGroup(subscriberId.toString(), subscriberId.toString(), defaultTrace);
         }
-        addMessage(subscriberString, providerId.toString(), defaultTrace, edgeType, edgeLabel);
-        addNodeGroup(providerId.toString(), providerId.toString(), defaultTrace);
+        addMessage(subscriberString, publisherId.toString(), defaultTrace, edgeType, edgeLabel);
+        addNodeGroup(publisherId.toString(), publisherId.toString(), defaultTrace);
     }
 
-    public <PACKET> void receive(Identifier<?, ?> providerId, Identifier<?, ?> subscriberId, PACKET packet) {
-        addMessage(providerId.toString(), subscriberId.toString(), defaultTrace, EdgeType.RECEIVE, packet.toString());
+    public <PACKET> void receive(Identifier<?, ?> publisherId, Identifier<?, ?> subscriberId, PACKET packet) {
+        addMessage(publisherId.toString(), subscriberId.toString(), defaultTrace, EdgeType.RECEIVE, packet.toString());
         addNodeGroup(subscriberId.toString(), subscriberId.toString(), defaultTrace);
-        addNodeGroup(providerId.toString(), providerId.toString(), defaultTrace);
+        addNodeGroup(publisherId.toString(), publisherId.toString(), defaultTrace);
     }
 
     public void registerRoot(Identifier<?, ?> root, Actor.Driver<Monitor> monitor) {
@@ -112,11 +112,11 @@ public final class Tracer {
         addMessage(monitor.debugName().get(), root.toString(), defaultTrace, EdgeType.ROOT_FINISH, "finished");
     }
 
-    public void registerPath(Identifier<?, ?> subscriber, @Nullable Identifier<?, ?> provider, Actor.Driver<Monitor> monitor) {
-        String providerName;
-        if (provider == null) providerName = "entry";  // TODO: Prevent provider from ever being null
-        else providerName = provider.toString();
-        addMessage(subscriber.toString(), monitor.debugName().get(), defaultTrace, EdgeType.REGISTER, "reg_" + providerName);
+    public void registerPath(Identifier<?, ?> subscriber, @Nullable Identifier<?, ?> publisher, Actor.Driver<Monitor> monitor) {
+        String publisherName;
+        if (publisher == null) publisherName = "entry";  // TODO: Prevent publisher from ever being null
+        else publisherName = publisher.toString();
+        addMessage(subscriber.toString(), monitor.debugName().get(), defaultTrace, EdgeType.REGISTER, "reg_" + publisherName);
     }
 
     public void registerSource(Identifier<?, ?> source, Actor.Driver<Monitor> monitor) {
@@ -127,8 +127,8 @@ public final class Tracer {
         addMessage(source.toString(), monitor.debugName().get(), defaultTrace, EdgeType.SOURCE_FINISH, "source_finished");
     }
 
-    public void createAnswer(Identifier<?, ?> provider, Actor.Driver<Monitor> monitor) {
-        addMessage(provider.toString(), monitor.debugName().get(), defaultTrace, EdgeType.CREATE, "create");
+    public void createAnswer(Identifier<?, ?> publisher, Actor.Driver<Monitor> monitor) {
+        addMessage(publisher.toString(), monitor.debugName().get(), defaultTrace, EdgeType.CREATE, "create");
     }
 
     public void consumeAnswer(Identifier<?, ?> subscriber, Actor.Driver<Monitor> monitor) {

@@ -30,13 +30,13 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
 
     private final Operator.Source<PACKET> sourceOperator;
     private final SubscriberRegistry.Single<PACKET> subscriberRegistry;
-    private final ReactiveActions.PublisherActions<PACKET> providerActions;
+    private final ReactiveActions.PublisherActions<PACKET> publisherActions;
 
     protected Source(Processor<?, ?, ?, ?> processor, Operator.Source<PACKET> sourceOperator) {
         super(processor);
         this.sourceOperator = sourceOperator;
         this.subscriberRegistry = new SubscriberRegistry.Single<>();
-        this.providerActions = new AbstractStream.PublisherActionsImpl<>(this);
+        this.publisherActions = new AbstractStream.PublisherActionsImpl<>(this);
         processor().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
@@ -51,14 +51,14 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
 
     @Override
     public void pull(Subscriber<PACKET> subscriber) {
-        providerActions.tracePull(subscriber);
+        publisherActions.tracePull(subscriber);
         subscriberRegistry().recordPull(subscriber);
         if (!operator().isExhausted(subscriber)) {
             // TODO: Code duplicated in PoolingStream
             subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
             Operator.Supplied<PACKET> supplied = operator().next(subscriber);
-            providerActions.processEffects(supplied);
-            providerActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which subscribers have seen this packet then it needs to be sent to all subscribers. So far this is never the case.
+            publisherActions.processEffects(supplied);
+            publisherActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which subscribers have seen this packet then it needs to be sent to all subscribers. So far this is never the case.
         } else {
             processor().monitor().execute(actor -> actor.sourceFinished(identifier()));
         }
@@ -71,27 +71,27 @@ public class Source<PACKET> extends ReactiveImpl implements Reactive.Publisher<P
     @Override
     public void registerSubscriber(Subscriber<PACKET> subscriber) {
         subscriberRegistry.addSubscriber(subscriber);
-        subscriber.registerProvider(this);  // TODO: Bad to have this mutual registering in one method call, it's unclear
+        subscriber.registerPublisher(this);  // TODO: Bad to have this mutual registering in one method call, it's unclear
     }
 
     @Override
     public <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function) {
-        return providerActions.map(this, function);
+        return publisherActions.map(this, function);
     }
 
     @Override
     public <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function) {
-        return providerActions.flatMap(this, function);
+        return publisherActions.flatMap(this, function);
     }
 
     @Override
     public Stream<PACKET, PACKET> distinct() {
-        return providerActions.distinct(this);
+        return publisherActions.distinct(this);
     }
 
     @Override
     public Stream<PACKET, PACKET> buffer() {
-        return providerActions.buffer(this);
+        return publisherActions.buffer(this);
     }
 
 }

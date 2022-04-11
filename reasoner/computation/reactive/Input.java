@@ -76,7 +76,7 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
     public void registerSubscriber(Subscriber<PACKET> subscriber) {
         assert this.subscriber == null;
         this.subscriber = subscriber;
-        subscriber.registerProvider(this);
+        subscriber.registerPublisher(this);
     }
 
     @Override

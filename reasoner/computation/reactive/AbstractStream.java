@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ProviderRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReactiveActions.PublisherActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReactiveActions.SubscriberActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
@@ -27,40 +27,40 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberReg
 public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl implements Reactive.Stream<INPUT, OUTPUT> {  // TODO: Rename Stream when there's no conflict
 
     private final SubscriberRegistry<OUTPUT> subscriberRegistry;
-    private final ProviderRegistry<Publisher<INPUT>> providerRegistry;
+    private final PublisherRegistry<INPUT> publisherRegistry;
     protected final SubscriberActions<INPUT> subscriberActions;
-    protected final PublisherActions<OUTPUT> providerActions;
+    protected final PublisherActions<OUTPUT> publisherActions;
 
     protected AbstractStream(Processor<?, ?, ?, ?> processor,
                              SubscriberRegistry<OUTPUT> subscriberRegistry,
-                             ProviderRegistry<Publisher<INPUT>> providerRegistry) {
+                             PublisherRegistry<INPUT> publisherRegistry) {
         super(processor);
         this.subscriberRegistry = subscriberRegistry;
-        this.providerRegistry = providerRegistry;
+        this.publisherRegistry = publisherRegistry;
         this.subscriberActions = new SubscriberActionsImpl<>(this);
-        this.providerActions = new PublisherActionsImpl<>(this);
+        this.publisherActions = new PublisherActionsImpl<>(this);
     }
 
     public SubscriberRegistry<OUTPUT> subscriberRegistry() { return subscriberRegistry; }
 
-    public ProviderRegistry<Publisher<INPUT>> providerRegistry() {
-        return providerRegistry;
+    public PublisherRegistry<INPUT> publisherRegistry() {
+        return publisherRegistry;
     }
 
     public void propagatePull(Publisher<INPUT> publisher) {
-        providerRegistry().setPulling(publisher);
+        publisherRegistry().setPulling(publisher);
         publisher.pull(this);
     }
 
     @Override
-    public void registerProvider(Publisher<INPUT> publisher) {
-        if (providerRegistry().add(publisher)) subscriberActions.registerPath(publisher);
-        if (subscriberRegistry().anyPulling() && providerRegistry().setPulling(publisher)) propagatePull(publisher);
+    public void registerPublisher(Publisher<INPUT> publisher) {
+        if (publisherRegistry().add(publisher)) subscriberActions.registerPath(publisher);
+        if (subscriberRegistry().anyPulling() && publisherRegistry().setPulling(publisher)) propagatePull(publisher);
     }
 
     @Override
     public void registerSubscriber(Subscriber<OUTPUT> subscriber) {
         subscriberRegistry().addSubscriber(subscriber);
-        subscriber.registerProvider(this);  // TODO: Bad to have this mutual registering in one method call, it's unclear
+        subscriber.registerPublisher(this);  // TODO: Bad to have this mutual registering in one method call, it's unclear
     }
 }

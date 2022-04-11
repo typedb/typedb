@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Transformer;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ProviderRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
 
 import java.util.Set;
@@ -37,8 +37,8 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
     protected TransformationStream(Processor<?, ?, ?, ?> processor,
                                    Transformer<INPUT, OUTPUT> transformer,
                                    SubscriberRegistry<OUTPUT> subscriberRegistry,
-                                   ProviderRegistry<Publisher<INPUT>> providerRegistry) {
-        super(processor, subscriberRegistry, providerRegistry);
+                                   PublisherRegistry<INPUT> publisherRegistry) {
+        super(processor, subscriberRegistry, publisherRegistry);
         this.transformer = transformer;
         registerNewPublishers(transformer.initialise());
     }
@@ -46,13 +46,13 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> single(
             Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
         return new TransformationStream<>(processor, transformer, new SubscriberRegistry.Single<>(),
-                                          new ProviderRegistry.Single<>());
+                                          new PublisherRegistry.Single<>());
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> fanIn(
             Processor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
         return new TransformationStream<>(processor, transformer, new SubscriberRegistry.Single<>(),
-                                          new ProviderRegistry.Multi<>());
+                                          new PublisherRegistry.Multi<>());
     }
 
     protected Transformer<INPUT, OUTPUT> operator() {
@@ -61,19 +61,19 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
-        providerActions.tracePull(subscriber);
+        publisherActions.tracePull(subscriber);
         subscriberRegistry().recordPull(subscriber);
-        providerRegistry().nonPulling().forEach(this::propagatePull);
+        publisherRegistry().nonPulling().forEach(this::propagatePull);
     }
 
     @Override
     public void receive(Publisher<INPUT> publisher, INPUT input) {
         subscriberActions.traceReceive(publisher, input);
-        providerRegistry().recordReceive(publisher);
+        publisherRegistry().recordReceive(publisher);
 
         Operator.Transformed<OUTPUT, INPUT> outcome = operator().accept(publisher, input);
         registerNewPublishers(outcome.newPublishers());
-        providerActions.processEffects(outcome);
+        publisherActions.processEffects(outcome);
         if (outcome.outputs().isEmpty() && subscriberRegistry().anyPulling()) {
             subscriberActions.rePullPublisher(publisher);
         } else {
@@ -81,7 +81,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
             iterate(subscriberRegistry().subscribers()).forEachRemaining(
                     subscriber -> {
                         subscriberRegistry().setNotPulling(subscriber);
-                        iterate(outcome.outputs()).forEachRemaining(output -> providerActions.subscriberReceive(subscriber, output));
+                        iterate(outcome.outputs()).forEachRemaining(output -> publisherActions.subscriberReceive(subscriber, output));
                     });
         }
     }
@@ -92,21 +92,21 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     @Override
     public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
-        return providerActions.map(this, function);
+        return publisherActions.map(this, function);
     }
 
     @Override
     public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-        return providerActions.flatMap(this, function);
+        return publisherActions.flatMap(this, function);
     }
 
     @Override
     public Stream<OUTPUT, OUTPUT> distinct() {
-        return providerActions.distinct(this);
+        return publisherActions.distinct(this);
     }
 
     @Override
     public Stream<OUTPUT, OUTPUT> buffer() {
-        return providerActions.buffer(this);
+        return publisherActions.buffer(this);
     }
 }

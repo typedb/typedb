@@ -89,19 +89,19 @@ public abstract class Processor<INPUT, OUTPUT,
         outputs.get(outputId).pull();
     }
 
-    public void receive(Identifier<?, INPUT> providerId, INPUT input, Identifier<?, ?> inputId) {
+    public void receive(Identifier<?, INPUT> publisherId, INPUT input, Identifier<?, ?> inputId) {
         assert !done;
-        inputs.get(inputId).receive(providerId, input);
+        inputs.get(inputId).receive(publisherId, input);
     }
 
-    public <PACKET> void schedulePullRetry(Publisher<PACKET> provider, Subscriber<PACKET> subscriber) {
-        pullRetries.put(new Pair<>(provider.identifier(), subscriber.identifier()), () -> provider.pull(subscriber));
-        driver().execute(actor -> actor.pullRetry(provider.identifier(), subscriber.identifier()));
+    public <PACKET> void schedulePullRetry(Publisher<PACKET> publisher, Subscriber<PACKET> subscriber) {
+        pullRetries.put(new Pair<>(publisher.identifier(), subscriber.identifier()), () -> publisher.pull(subscriber));
+        driver().execute(actor -> actor.pullRetry(publisher.identifier(), subscriber.identifier()));
     }
 
-    protected void pullRetry(Identifier<?, ?> provider, Identifier<?, ?> subscriber) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pullRetry(subscriber, provider));
-        pullRetries.get(new Pair<Identifier<?, ?>, Identifier<?, ?>>(provider, subscriber)).run();
+    protected void pullRetry(Identifier<?, ?> publisher, Identifier<?, ?> subscriber) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pullRetry(subscriber, publisher));
+        pullRetries.get(new Pair<Identifier<?, ?>, Identifier<?, ?>>(publisher, subscriber)).run();
     }
 
     protected void requestConnection(REQ req) {

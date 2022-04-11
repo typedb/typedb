@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ProviderRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
@@ -128,7 +128,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             private boolean answerFound;
 
             protected NegationStream(Processor<?, ?, ?, ?> processor, ConceptMap bounds) {
-                super(processor, new NegationOperator<>(), new SubscriberRegistry.Single<>(), new ProviderRegistry.Single<>());
+                super(processor, new NegationOperator<>(), new SubscriberRegistry.Single<>(), new PublisherRegistry.Single<>());
                 this.bounds = bounds;
                 this.answerFound = false;
             }
@@ -142,7 +142,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
             @Override
             public void receive(Publisher<ConceptMap> publisher, ConceptMap conceptMap) {
                 subscriberActions.traceReceive(publisher, conceptMap);
-                providerRegistry().recordReceive(publisher);
+                publisherRegistry().recordReceive(publisher);
                 answerFound = true;
                 processor().monitor().execute(actor -> actor.rootFinalised(identifier()));
             }

@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.BufferOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.FanOutOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ProviderRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.utils.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,25 +38,25 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
     protected PoolingStream(Processor<?, ?, ?, ?> processor,
                             Operator.Pool<INPUT, OUTPUT> pool,
                             SubscriberRegistry<OUTPUT> subscriberRegistry,
-                            ProviderRegistry<Publisher<INPUT>> providerRegistry) {
-        super(processor, subscriberRegistry, providerRegistry);
+                            PublisherRegistry<INPUT> publisherRegistry) {
+        super(processor, subscriberRegistry, publisherRegistry);
         this.pool = pool;
     }
 
     public static <PACKET> PoolingStream<PACKET, PACKET> fanOut(
             Processor<?, ?, ?, ?> processor) {
         return new PoolingStream<>(processor, new FanOutOperator<>(), new SubscriberRegistry.Multi<>(),
-                                   new ProviderRegistry.Single<>());
+                                   new PublisherRegistry.Single<>());
     }
 
     public static <INPUT, OUTPUT> PoolingStream<INPUT, OUTPUT> fanIn(
             Processor<?, ?, ?, ?> processor, Operator.Pool<INPUT, OUTPUT> pool) {
-        return new PoolingStream<>(processor, pool, new SubscriberRegistry.Single<>(), new ProviderRegistry.Multi<>());
+        return new PoolingStream<>(processor, pool, new SubscriberRegistry.Single<>(), new PublisherRegistry.Multi<>());
     }
 
     public static <PACKET> PoolingStream<PACKET, PACKET> fanInFanOut(Processor<?, ?, ?, ?> processor) {
         return new PoolingStream<>(processor, new FanOutOperator<>(), new SubscriberRegistry.Multi<>(),
-                                   new ProviderRegistry.Multi<>());
+                                   new PublisherRegistry.Multi<>());
     }
 
     public static <PACKET> PoolingStream<PACKET, PACKET> buffer(
@@ -66,7 +66,7 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
         //  receive() and pull() methods, as when there are multiple upstreams/downstreams we need to know which the
         //  message is from/to, but  not so for single upstream/downstreams
         return new PoolingStream<>(processor, new BufferOperator<>(), new SubscriberRegistry.Single<>(),
-                                   new ProviderRegistry.Single<>());
+                                   new PublisherRegistry.Single<>());
     }
 
     protected Operator.Pool<INPUT, OUTPUT> operator() {
@@ -75,59 +75,59 @@ public class PoolingStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> 
 
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
-        providerActions.tracePull(subscriber);
+        publisherActions.tracePull(subscriber);
         subscriberRegistry().recordPull(subscriber);
         // TODO: We don't care about the subscriber here
         if (operator().hasNext(subscriber)) {
             // TODO: Code duplicated in Source
             subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
             Operator.Supplied<OUTPUT> supplied = operator().next(subscriber);
-            providerActions.processEffects(supplied);
-            providerActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which subscribers have seen this packet then it needs to be sent to all subscribers. So far this is never the case.
+            publisherActions.processEffects(supplied);
+            publisherActions.subscriberReceive(subscriber, supplied.output());  // TODO: If the operator isn't tracking which subscribers have seen this packet then it needs to be sent to all subscribers. So far this is never the case.
         } else {
-            providerRegistry().nonPulling().forEach(this::propagatePull);
+            publisherRegistry().nonPulling().forEach(this::propagatePull);
         }
     }
 
     @Override
-    public void receive(Publisher<INPUT> provider, INPUT packet) {
-        subscriberActions.traceReceive(provider, packet);
-        providerRegistry().recordReceive(provider);
+    public void receive(Publisher<INPUT> publisher, INPUT packet) {
+        subscriberActions.traceReceive(publisher, packet);
+        publisherRegistry().recordReceive(publisher);
 
-        providerActions.processEffects(operator().accept(provider, packet));
+        publisherActions.processEffects(operator().accept(publisher, packet));
         AtomicBoolean retry = new AtomicBoolean();
         retry.set(false);
         iterate(subscriberRegistry().pulling()).forEachRemaining(subscriber -> {
             if (operator().hasNext(subscriber)) {
                 Operator.Supplied<OUTPUT> supplied = operator().next(subscriber);
-                providerActions.processEffects(supplied);
+                publisherActions.processEffects(supplied);
                 subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
-                providerActions.subscriberReceive(subscriber, supplied.output());
+                publisherActions.subscriberReceive(subscriber, supplied.output());
             } else {
                 retry.set(true);
             }
         });
-        if (retry.get()) subscriberActions.rePullPublisher(provider);
+        if (retry.get()) subscriberActions.rePullPublisher(publisher);
     }
 
     @Override
     public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
-        return providerActions.map(this, function);
+        return publisherActions.map(this, function);
     }
 
     @Override
     public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-        return providerActions.flatMap(this, function);
+        return publisherActions.flatMap(this, function);
     }
 
     @Override
     public Stream<OUTPUT, OUTPUT> distinct() {
-        return providerActions.distinct(this);
+        return publisherActions.distinct(this);
     }
 
     @Override
     public Stream<OUTPUT, OUTPUT> buffer() {
-        return providerActions.buffer(this);
+        return publisherActions.buffer(this);
     }
 
 }

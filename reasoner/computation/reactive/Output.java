@@ -61,7 +61,7 @@ public class Output<PACKET> implements Reactive.Subscriber<PACKET> {
     }
 
     @Override
-    public void registerProvider(Publisher<PACKET> publisher) {
+    public void registerPublisher(Publisher<PACKET> publisher) {
         assert this.publisher == null;
         this.publisher = publisher;
         subscriberActions.registerPath(publisher);

@@ -98,22 +98,22 @@ public class Monitor extends Actor<Monitor> {
         sourceNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
-    public void registerPath(Reactive.Identifier<?, ?> subscriber, Reactive.Identifier<?, ?> provider) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerPath(subscriber, provider, driver()));
+    public void registerPath(Reactive.Identifier<?, ?> subscriber, Reactive.Identifier<?, ?> publisher) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerPath(subscriber, publisher, driver()));
         if (terminated) return;
         ReactiveNode subscriberNode = reactiveNodes.computeIfAbsent(subscriber, n -> new ReactiveNode());
-        ReactiveNode providerNode = reactiveNodes.computeIfAbsent(provider, n -> new ReactiveNode());
-        subscriberNode.addProvider(providerNode);
-        // We could be learning about a new subscriber or provider or both.
-        // Propagate any graphs the subscriber belongs to to the provider.
+        ReactiveNode publisherNode = reactiveNodes.computeIfAbsent(publisher, n -> new ReactiveNode());
+        subscriberNode.addPublisher(publisherNode);
+        // We could be learning about a new subscriber or publisher or both.
+        // Propagate any graphs the subscriber belongs to to the publisher.
         subscriberNode.propagateReactiveGraphs();
         subscriberNode.graphMemberships().forEach(ReactiveGraph::checkFinished);  // In case a root connects to an already complete graph it should terminate straight away  TODO: very inefficient
     }
 
-    public void createAnswer(Reactive.Identifier<?, ?> provider) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.createAnswer(provider, driver()));
+    public void createAnswer(Reactive.Identifier<?, ?> publisher) {
+        Tracer.getIfEnabled().ifPresent(tracer -> tracer.createAnswer(publisher, driver()));
         if (terminated) return;
-        getOrCreateNode(provider).createAnswer();
+        getOrCreateNode(publisher).createAnswer();
     }
 
     public void consumeAnswer(Reactive.Identifier<?, ?> subscriber) {
@@ -193,14 +193,14 @@ public class Monitor extends Actor<Monitor> {
     private static class ReactiveNode {
 
         private final Set<ReactiveGraph> graphMemberships;
-        private final Set<ReactiveNode> providers;
+        private final Set<ReactiveNode> publishers;
         private final Map<ReactiveGraph, Set<ReactiveNode>> subscribersByGraph;
         private long answersCreated;
         private long answersConsumed;
 
         ReactiveNode() {
             this.graphMemberships = new HashSet<>();
-            this.providers = new HashSet<>();
+            this.publishers = new HashSet<>();
             this.subscribersByGraph = new HashMap<>();
             this.answersCreated = 0;
             this.answersConsumed = 0;
@@ -219,8 +219,8 @@ public class Monitor extends Actor<Monitor> {
         }
 
         public long frontierForks() {
-            if (providers.size() == 0) return 1;
-            else return providers.size();
+            if (publishers.size() == 0) return 1;
+            else return publishers.size();
         }
 
         protected void createAnswer() {
@@ -231,12 +231,12 @@ public class Monitor extends Actor<Monitor> {
             answersConsumed += 1;
         }
 
-        public Set<ReactiveNode> providers() {
-            return providers;
+        public Set<ReactiveNode> publishers() {
+            return publishers;
         }
 
-        public void addProvider(ReactiveNode providerNode) {
-            boolean isNew = providers.add(providerNode);
+        public void addPublisher(ReactiveNode publisherNode) {
+            boolean isNew = publishers.add(publisherNode);
             assert isNew;
         }
 
@@ -256,8 +256,8 @@ public class Monitor extends Actor<Monitor> {
 
         public void propagateReactiveGraphs() {
             if (!graphsToPropagate().isEmpty()) {
-                providers().forEach(provider -> {
-                    if (provider.addSubscriberGraphs(this, graphsToPropagate())) provider.propagateReactiveGraphs();
+                publishers().forEach(publisher -> {
+                    if (publisher.addSubscriberGraphs(this, graphsToPropagate())) publisher.propagateReactiveGraphs();
                 });
             }
         }

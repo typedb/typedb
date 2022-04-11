@@ -40,7 +40,7 @@ public class MapOperator<INPUT, OUTPUT> implements Operator.Transformer<INPUT, O
 
     @Override
     public Transformed<OUTPUT, INPUT> accept(Publisher<INPUT> publisher, INPUT packet) {
-        // TODO: Here and elsewhere the provider argument is unused
+        // TODO: Here and elsewhere the publisher argument is unused
         return Transformed.create(set(mappingFunc.apply(packet)));
     }
 
