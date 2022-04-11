@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.DistinctOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.FlatMapOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.MapOperator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReactiveActions;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 
 import java.util.function.Function;

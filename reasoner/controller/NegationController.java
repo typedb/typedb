@@ -32,8 +32,8 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.PublisherRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.SubscriberRegistry;
 
 import java.util.Set;
 import java.util.function.Supplier;

@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Identifier;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReactiveIdentifier;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveIdentifier;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Output;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;

@@ -19,10 +19,10 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.PublisherRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReactiveActions.PublisherActions;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.ReactiveActions.SubscriberActions;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions.PublisherActions;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions.SubscriberActions;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.SubscriberRegistry;
 
 public abstract class AbstractStream<INPUT, OUTPUT> extends ReactiveImpl implements Reactive.Stream<INPUT, OUTPUT> {  // TODO: Rename Stream when there's no conflict
 

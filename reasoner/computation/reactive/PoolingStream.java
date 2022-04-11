@@ -23,8 +23,8 @@ import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.BufferOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.FanOutOperator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.PublisherRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.SubscriberRegistry;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;

@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.reasoner.computation.reactive;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer.Trace;
 
 import javax.annotation.Nullable;

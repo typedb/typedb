@@ -22,8 +22,8 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.operator.Operator.Transformer;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.PublisherRegistry;
-import com.vaticle.typedb.core.reasoner.computation.reactive.utils.SubscriberRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.common.SubscriberRegistry;
 
 import java.util.Set;
 import java.util.function.Function;

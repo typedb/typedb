@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.reactive.utils;
+package com.vaticle.typedb.core.reasoner.computation.reactive.common;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.computation.actor.Processor;

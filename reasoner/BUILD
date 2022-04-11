@@ -35,7 +35,7 @@ native_java_libraries(
         "computation/actor/*.java",
         "computation/reactive/*.java",
         "computation/reactive/operator/*.java",
-        "computation/reactive/utils/*.java",
+        "computation/reactive/common/*.java",
         "controller/*.java",
         "answer/*.java",
         "utils/*.java",
