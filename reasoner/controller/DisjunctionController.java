@@ -25,10 +25,8 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
-import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
@@ -71,10 +69,10 @@ public abstract class DisjunctionController<
     }
 
     @Override
-    protected void resolveController(DisjunctionReactiveBlock.NestedConjunctionRequest req) {
+    public void resolveController(DisjunctionReactiveBlock.NestedConjunctionRequest req) {
         if (isTerminated()) return;
         getConjunctionController(req.controllerId())
-                .execute(actor -> actor.resolveReactiveBlock(new Connector<>(req.inputId(), req.bounds())
+                .execute(actor -> actor.resolveReactiveBlock(new ReactiveBlock.Connector<>(req.inputId(), req.bounds())
                                                                  .withMap(c -> merge(c, req.bounds()))));
     }
 

@@ -29,10 +29,8 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
-import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
@@ -119,13 +117,13 @@ public abstract class ConjunctionController<OUTPUT,
     }
 
     @Override
-    protected void resolveController(FromConjunctionRequest<?> connectionRequest) {
+    public void resolveController(FromConjunctionRequest<?> connectionRequest) {
         if (isTerminated()) return;
         if (connectionRequest.isRetrievable()) {
             ConjunctionReactiveBlock.RetrievableRequest req = connectionRequest.asRetrievable();
             ResolverView.FilteredRetrievable controllerView = retrievableControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
-            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
+            ReactiveBlock.Connector<ConceptMap, ConceptMap> connector = new ReactiveBlock.Connector<>(req.inputId(), req.bounds())
                     .withMap(c -> merge(c, req.bounds()))
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.resolveReactiveBlock(connector));
@@ -134,7 +132,7 @@ public abstract class ConjunctionController<OUTPUT,
             ResolverView.MappedConcludable controllerView = concludableControllers.get(req.controllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
             ConceptMap newPID = mapping.transform(req.bounds());
-            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
+            ReactiveBlock.Connector<ConceptMap, ConceptMap> connector = new ReactiveBlock.Connector<>(req.inputId(), req.bounds())
                     .withMap(mapping::unTransform)
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.resolveReactiveBlock(connector));
@@ -142,7 +140,7 @@ public abstract class ConjunctionController<OUTPUT,
             ConjunctionReactiveBlock.NegatedRequest req = connectionRequest.asNegated();
             ResolverView.FilteredNegation controllerView = negationControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
-            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
+            ReactiveBlock.Connector<ConceptMap, ConceptMap> connector = new ReactiveBlock.Connector<>(req.inputId(), req.bounds())
                     .withMap(c -> merge(c, req.bounds()))
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.resolveReactiveBlock(connector));
@@ -151,7 +149,7 @@ public abstract class ConjunctionController<OUTPUT,
         }
     }
 
-    public static class FromConjunctionRequest<CONTROLLER_ID> extends Connector.Request<CONTROLLER_ID, ConceptMap, ConceptMap> {
+    public static class FromConjunctionRequest<CONTROLLER_ID> extends ReactiveBlock.Connector.Request<CONTROLLER_ID, ConceptMap, ConceptMap> {
         protected FromConjunctionRequest(Reactive.Identifier<ConceptMap, ?> inputId, CONTROLLER_ID controller_id,
                                          ConceptMap conceptMap) {
             super(inputId, controller_id, conceptMap);

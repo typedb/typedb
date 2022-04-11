@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
-import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions.PublisherActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions.SubscriberActions;

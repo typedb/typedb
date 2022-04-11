@@ -23,10 +23,8 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
-import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
@@ -71,9 +69,9 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
     }
 
     @Override
-    protected void resolveController(NegationReactiveBlock.DisjunctionRequest req) {
+    public void resolveController(NegationReactiveBlock.DisjunctionRequest req) {
         if (isTerminated()) return;
-        disjunctionContoller.execute(actor -> actor.resolveReactiveBlock(new Connector<>(req.inputId(), req.bounds())));
+        disjunctionContoller.execute(actor -> actor.resolveReactiveBlock(new ReactiveBlock.Connector<>(req.inputId(), req.bounds())));
     }
 
     protected static class NegationReactiveBlock extends ReactiveBlock<ConceptMap, ConceptMap, NegationReactiveBlock.DisjunctionRequest, NegationReactiveBlock> {
@@ -102,7 +100,7 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         }
 
         @Override
-        protected void onFinished(Reactive.Identifier<?, ?> finishable) {
+        public void onFinished(Reactive.Identifier<?, ?> finishable) {
             assert !done;
 //            done = true;
             assert finishable == negation.identifier();

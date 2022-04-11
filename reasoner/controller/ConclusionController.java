@@ -27,10 +27,8 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
-import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Stream;
@@ -80,20 +78,20 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
     }
 
     @Override
-    protected void resolveController(FromConclusionRequest<?, ?> req) {
+    public void resolveController(FromConclusionRequest<?, ?> req) {
         if (isTerminated()) return;
         if (req.isCondition()) {
             conditionController.execute(actor -> actor.resolveReactiveBlock(
-                    new Connector<>(req.asCondition().inputId(), req.asCondition().bounds())));
+                    new ReactiveBlock.Connector<>(req.asCondition().inputId(), req.asCondition().bounds())));
         } else if (req.isMaterialiser()) {
             materialisationController.execute(actor -> actor.resolveReactiveBlock(
-                    new Connector<>(req.asMaterialiser().inputId(), req.asMaterialiser().bounds())));
+                    new ReactiveBlock.Connector<>(req.asMaterialiser().inputId(), req.asMaterialiser().bounds())));
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
-    protected static class FromConclusionRequest<CONTROLLER_ID, BOUNDS> extends Connector.Request<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>> {
+    protected static class FromConclusionRequest<CONTROLLER_ID, BOUNDS> extends ReactiveBlock.Connector.Request<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>> {
 
         protected FromConclusionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
                                         CONTROLLER_ID controller_id, BOUNDS bounds) {

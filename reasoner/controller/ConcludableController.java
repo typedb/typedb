@@ -25,10 +25,8 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
-import com.vaticle.typedb.core.reasoner.computation.actor.Connector;
-import com.vaticle.typedb.core.reasoner.computation.actor.Controller;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
-import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
 import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
@@ -103,10 +101,10 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
     }
 
     @Override
-    protected void resolveController(ConcludableReactiveBlock.ConclusionRequest req) {
+    public void resolveController(ConcludableReactiveBlock.ConclusionRequest req) {
         if (isTerminated()) return;
         conclusionControllers.get(req.controllerId())
-                .execute(actor -> actor.resolveReactiveBlock(new Connector<>(req.inputId(), req.bounds())));
+                .execute(actor -> actor.resolveReactiveBlock(new ReactiveBlock.Connector<>(req.inputId(), req.bounds())));
     }
 
     protected static class ConcludableReactiveBlock extends ReactiveBlock<Map<Variable, Concept>, ConceptMap, ConcludableReactiveBlock.ConclusionRequest, ConcludableReactiveBlock> {

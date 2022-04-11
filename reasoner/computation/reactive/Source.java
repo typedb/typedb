@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.computation.actor.ReactiveBlock;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveActions;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.SubscriberRegistry;

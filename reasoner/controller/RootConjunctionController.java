@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.RootSink;
 import com.vaticle.typedb.core.reasoner.computation.reactive.TransformationStream;
@@ -72,7 +72,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
     }
 
     @Override
-    protected void exception(Throwable e) {
+    public void exception(Throwable e) {
         super.exception(e);
         reasonerConsumer.exception(e);
     }
@@ -111,7 +111,7 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         }
 
         @Override
-        protected void onFinished(Reactive.Identifier<?, ?> finishable) {
+        public void onFinished(Reactive.Identifier<?, ?> finishable) {
             assert !done;
 //            done = true;
             assert finishable == rootSink.identifier();

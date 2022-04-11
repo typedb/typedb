@@ -16,12 +16,12 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.actor;
+package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.reasoner.controller.Registry;
+import com.vaticle.typedb.core.reasoner.computation.reactive.ReactiveBlock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 public abstract class Controller<
         REACTIVE_BLOCK_ID, INPUT, OUTPUT,
-        REQ extends Connector.Request<?, ?, INPUT>,
+        REQ extends ReactiveBlock.Connector.Request<?, ?, INPUT>,
         REACTIVE_BLOCK extends ReactiveBlock<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
         CONTROLLER extends Controller<REACTIVE_BLOCK_ID, INPUT, OUTPUT, ?, REACTIVE_BLOCK, CONTROLLER>
         > extends Actor<CONTROLLER> {
@@ -65,9 +65,9 @@ public abstract class Controller<
         return registry;
     }
 
-    protected abstract void resolveController(REQ connectionRequest);
+    public abstract void resolveController(REQ connectionRequest);
 
-    public void resolveReactiveBlock(Connector<REACTIVE_BLOCK_ID, OUTPUT> connector) {
+    public void resolveReactiveBlock(ReactiveBlock.Connector<REACTIVE_BLOCK_ID, OUTPUT> connector) {
         if (isTerminated()) return;
         createReactiveBlockIfAbsent(connector.bounds()).execute(actor -> actor.establishConnection(connector));
     }
@@ -87,7 +87,7 @@ public abstract class Controller<
     protected abstract REACTIVE_BLOCK createReactiveBlockFromDriver(Driver<REACTIVE_BLOCK> reactiveBlockDriver, REACTIVE_BLOCK_ID reactiveBlockId);
 
     @Override
-    protected void exception(Throwable e) {
+    public void exception(Throwable e) {
         if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent()) {
             String code = ((TypeDBException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {

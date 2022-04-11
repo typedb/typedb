@@ -16,24 +16,26 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.computation.actor;
+package com.vaticle.typedb.core.reasoner.computation.reactive;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.controller.Controller;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Identifier;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive.Subscriber;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.ReactiveIdentifier;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Input;
-import com.vaticle.typedb.core.reasoner.computation.reactive.Output;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
@@ -41,7 +43,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 public abstract class ReactiveBlock<INPUT, OUTPUT,
-        REQ extends Connector.Request<?, ?, INPUT>,
+        REQ extends ReactiveBlock.Connector.Request<?, ?, INPUT>,
         REACTIVE_BLOCK extends ReactiveBlock<INPUT, OUTPUT, REQ, REACTIVE_BLOCK>> extends Actor<REACTIVE_BLOCK> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReactiveBlock.class);
@@ -110,7 +112,7 @@ public abstract class ReactiveBlock<INPUT, OUTPUT,
         controller.execute(actor -> actor.resolveController(req));
     }
 
-    protected void establishConnection(Connector<?, OUTPUT> connector) {
+    public void establishConnection(Connector<?, OUTPUT> connector) {
         assert !done;
         if (isTerminated()) return;
         Output<OUTPUT> output = createOutput();
@@ -145,7 +147,7 @@ public abstract class ReactiveBlock<INPUT, OUTPUT,
         return monitor;
     }
 
-    protected void onFinished(Identifier<?, ?> finishable) {
+    public void onFinished(Identifier<?, ?> finishable) {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
@@ -183,4 +185,91 @@ public abstract class ReactiveBlock<INPUT, OUTPUT,
         return new ReactiveIdentifier<>(driver(), reactive.getClass(), incrementReactiveCounter());
     }
 
+    public static class Connector<BOUNDS, PACKET> {
+
+        private final Identifier<PACKET, ?> inputId;
+        private final List<Function<PACKET, PACKET>> transforms;
+        private final BOUNDS bounds;
+
+        public Connector(Identifier<PACKET, ?> inputId, BOUNDS bounds) {
+            this.inputId = inputId;
+            this.transforms = new ArrayList<>();
+            this.bounds = bounds;
+        }
+
+        public Connector(Identifier<PACKET, ?> inputId, BOUNDS bounds, List<Function<PACKET, PACKET>> transforms) {
+            this.inputId = inputId;
+            this.transforms = transforms;
+            this.bounds = bounds;
+        }
+
+        public void connectViaTransforms(Reactive.Stream<PACKET, PACKET> toConnect, Output<PACKET> output) {
+            Publisher<PACKET> op = toConnect;
+            for (Function<PACKET, PACKET> t : transforms) op = op.map(t);
+            op.registerSubscriber(output);
+        }
+
+        public BOUNDS bounds(){
+            return bounds;
+        }
+
+        public Identifier<PACKET, ?> inputId() {
+            return inputId;
+        }
+
+        public Connector<BOUNDS, PACKET> withMap(Function<PACKET, PACKET> function) {
+            ArrayList<Function<PACKET, PACKET>> newTransforms = new ArrayList<>(transforms);
+            newTransforms.add(function);
+            return new Connector<>(inputId, bounds, newTransforms);
+        }
+
+        public Connector<BOUNDS, PACKET> withNewBounds(BOUNDS newBounds) {
+            return new Connector<>(inputId, newBounds, transforms);
+        }
+
+        public abstract static class Request<CONTROLLER_ID, BOUNDS, PACKET> {
+
+            private final CONTROLLER_ID controllerId;
+            private final BOUNDS bounds;
+            private final Identifier<PACKET, ?> inputId;
+
+            protected Request(Identifier<PACKET, ?> inputId, CONTROLLER_ID controllerId,
+                              BOUNDS bounds) {
+                this.inputId = inputId;
+                this.controllerId = controllerId;
+                this.bounds = bounds;
+            }
+
+            public Identifier<PACKET, ?> inputId() {
+                return inputId;
+            }
+
+            public CONTROLLER_ID controllerId() {
+                return controllerId;
+            }
+
+            public BOUNDS bounds() {
+                return bounds;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                // TODO: be wary with request equality when conjunctions are involved
+                // TODO: I think there's a subtle bug here where a conjunction could break down into two parts that according
+                //  to conjunction comparison are the same, and therefore will not create separate reactiveBlocks for them
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                Request<?, ?, ?> request = (Request<?, ?, ?>) o;
+                return inputId == request.inputId &&
+                        controllerId.equals(request.controllerId) &&
+                        bounds.equals(request.bounds);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(controllerId, inputId, bounds);
+            }
+
+        }
+    }
 }

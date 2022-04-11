@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.computation.actor.Monitor;
+import com.vaticle.typedb.core.reasoner.computation.reactive.Monitor;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.computation.reactive.RootSink;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -61,7 +61,7 @@ public class RootDisjunctionController
     }
 
     @Override
-    protected void exception(Throwable e) {
+    public void exception(Throwable e) {
         super.exception(e);
         reasonerConsumer.exception(e);
     }
@@ -101,7 +101,7 @@ public class RootDisjunctionController
         }
 
         @Override
-        protected void onFinished(Reactive.Identifier<?, ?> finishable) {
+        public void onFinished(Reactive.Identifier<?, ?> finishable) {
             assert !done;
 //            done = true;
             assert finishable == reasonerEntryPoint.identifier();
