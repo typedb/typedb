@@ -65,9 +65,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-computation-graph",
-    srcs = ["computation/ComputationGraphTest.java", "utils/Util.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.computation.ComputationGraphTest",
+    name = "test-controller",
+    srcs = ["controller/ControllerTest.java", "utils/Util.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.controller.ControllerTest",
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
@@ -116,7 +116,7 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
-        "computation/*",
+        "controller/*",
         "utils/*",
     ]),
     license_type = "agpl",
