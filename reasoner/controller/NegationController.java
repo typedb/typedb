@@ -81,8 +81,8 @@ public class NegationController extends Controller<ConceptMap, ConceptMap, Conce
         private NegationStream negation;
 
         protected NegationReactiveBlock(Driver<NegationReactiveBlock> driver, Driver<NegationController> controller,
-                                    Driver<Monitor> monitor, Negated negated, ConceptMap bounds,
-                                    Supplier<String> debugName) {
+                                        Driver<Monitor> monitor, Negated negated, ConceptMap bounds,
+                                        Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.negated = negated;
             this.bounds = bounds;

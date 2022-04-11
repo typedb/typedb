@@ -71,10 +71,10 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
 
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 
-        protected RetrievableReactiveBlock(Driver<RetrievableReactiveBlock> driver, Driver<RetrievableController> controller,
-                                       Driver<Monitor> monitor,
-                                       Supplier<FunctionalIterator<ConceptMap>> traversalSupplier,
-                                       Supplier<String> debugName) {
+        protected RetrievableReactiveBlock(Driver<RetrievableReactiveBlock> driver,
+                                           Driver<RetrievableController> controller, Driver<Monitor> monitor,
+                                           Supplier<FunctionalIterator<ConceptMap>> traversalSupplier,
+                                           Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.traversalSupplier = traversalSupplier;
         }

@@ -60,8 +60,8 @@ public class ConditionController extends ConjunctionController<Either<ConceptMap
 
     protected static class ConditionReactiveBlock extends ConjunctionController.ConjunctionReactiveBlock<Either<ConceptMap, Materialisation>, ConditionReactiveBlock>{
         protected ConditionReactiveBlock(Driver<ConditionReactiveBlock> driver, Driver<ConditionController> controller,
-                                     Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
-                                     Supplier<String> debugName) {
+                                         Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
+                                         Supplier<String> debugName) {
             super(driver, controller, monitor, bounds, plan, debugName);
         }
 

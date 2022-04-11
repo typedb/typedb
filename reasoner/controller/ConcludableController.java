@@ -115,11 +115,13 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         private final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
         private final Set<ConclusionRequest> requestedConnections;
 
-        public ConcludableReactiveBlock(Driver<ConcludableReactiveBlock> driver, Driver<ConcludableController> controller,
-                                    Driver<Monitor> monitor, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
-                                    Map<Conclusion, Set<Unifier>> conclusionUnifiers,
-                                    Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
-                                    Supplier<String> debugName) {
+        public ConcludableReactiveBlock(Driver<ConcludableReactiveBlock> driver,
+                                        Driver<ConcludableController> controller,
+                                        Driver<Monitor> monitor, ConceptMap bounds,
+                                        Set<Variable.Retrievable> unboundVars,
+                                        Map<Conclusion, Set<Unifier>> conclusionUnifiers,
+                                        Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
+                                        Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.bounds = bounds;
             this.unboundVars = unboundVars;

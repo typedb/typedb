@@ -91,9 +91,9 @@ public abstract class DisjunctionController<
         private final ConceptMap bounds;
 
         protected DisjunctionReactiveBlock(Driver<REACTIVE_BLOCK> driver,
-                                       Driver<? extends DisjunctionController<REACTIVE_BLOCK, ?>> controller,
-                                       Driver<Monitor> monitor, Disjunction disjunction, ConceptMap bounds,
-                                       Supplier<String> debugName) {
+                                           Driver<? extends DisjunctionController<REACTIVE_BLOCK, ?>> controller,
+                                           Driver<Monitor> monitor, Disjunction disjunction, ConceptMap bounds,
+                                           Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.disjunction = disjunction;
             this.bounds = bounds;

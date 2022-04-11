@@ -187,9 +187,9 @@ public abstract class ConjunctionController<OUTPUT,
         protected final List<Resolvable<?>> plan;
 
         protected ConjunctionReactiveBlock(Driver<REACTIVE_BLOCK> driver,
-                                       Driver<? extends ConjunctionController<OUTPUT, ?, REACTIVE_BLOCK>> controller,
-                                       Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
-                                       Supplier<String> debugName) {
+                                           Driver<? extends ConjunctionController<OUTPUT, ?, REACTIVE_BLOCK>> controller,
+                                           Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
+                                           Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.bounds = bounds;
             this.plan = plan;

@@ -48,8 +48,9 @@ public class NestedDisjunctionController
             extends DisjunctionController.DisjunctionReactiveBlock<NestedDisjunctionReactiveBlock> {
 
         protected NestedDisjunctionReactiveBlock(Driver<NestedDisjunctionReactiveBlock> driver,
-                                             Driver<NestedDisjunctionController> controller, Driver<Monitor> monitor,
-                                             Disjunction disjunction, ConceptMap bounds, Supplier<String> debugName) {
+                                                 Driver<NestedDisjunctionController> controller,
+                                                 Driver<Monitor> monitor, Disjunction disjunction, ConceptMap bounds,
+                                                 Supplier<String> debugName) {
             super(driver, controller, monitor, disjunction, bounds, debugName);
         }
     }

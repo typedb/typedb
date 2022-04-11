@@ -59,9 +59,9 @@ public class NestedConjunctionController extends ConjunctionController<ConceptMa
     protected static class NestedConjunctionReactiveBlock extends ConjunctionController.ConjunctionReactiveBlock<ConceptMap, NestedConjunctionReactiveBlock> {
 
         protected NestedConjunctionReactiveBlock(Driver<NestedConjunctionReactiveBlock> driver,
-                                             Driver<NestedConjunctionController> controller,
-                                             Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
-                                             Supplier<String> debugName) {
+                                                 Driver<NestedConjunctionController> controller,
+                                                 Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
+                                                 Supplier<String> debugName) {
             super(driver, controller, monitor, bounds, plan, debugName);
         }
 

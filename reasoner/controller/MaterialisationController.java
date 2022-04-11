@@ -79,10 +79,11 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
         private final TraversalEngine traversalEng;
         private final ConceptManager conceptMgr;
 
-        protected MaterialisationReactiveBlock(
-                Driver<MaterialisationReactiveBlock> driver, Driver<MaterialisationController> controller,
-                Driver<Monitor> monitor, Materialisable materialisable, TraversalEngine traversalEng,
-                ConceptManager conceptMgr, Supplier<String> debugName) {
+        protected MaterialisationReactiveBlock(Driver<MaterialisationReactiveBlock> driver,
+                                               Driver<MaterialisationController> controller,
+                                               Driver<Monitor> monitor, Materialisable materialisable,
+                                               TraversalEngine traversalEng, ConceptManager conceptMgr,
+                                               Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.materialisable = materialisable;
             this.traversalEng = traversalEng;

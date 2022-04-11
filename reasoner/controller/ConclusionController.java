@@ -162,8 +162,8 @@ public class ConclusionController extends Controller<ConceptMap, Either<ConceptM
         private final Set<MaterialiserRequest> materialisationRequests;
 
         protected ConclusionReactiveBlock(Driver<ConclusionReactiveBlock> driver,
-                                      Driver<ConclusionController> controller, Driver<Monitor> monitor, Rule rule,
-                                      ConceptMap bounds, ConceptManager conceptManager, Supplier<String> debugName) {
+                                          Driver<ConclusionController> controller, Driver<Monitor> monitor, Rule rule,
+                                          ConceptMap bounds, ConceptManager conceptManager, Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.rule = rule;
             this.bounds = bounds;

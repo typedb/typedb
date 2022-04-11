@@ -84,10 +84,10 @@ public class RootConjunctionController extends ConjunctionController<ConceptMap,
         private final ReasonerConsumer reasonerConsumer;
 
         protected RootConjunctionReactiveBlock(Driver<RootConjunctionReactiveBlock> driver,
-                                           Driver<RootConjunctionController> controller, Driver<Monitor> monitor,
-                                           ConceptMap bounds, List<Resolvable<?>> plan,
-                                           Set<Identifier.Variable.Retrievable> filter,
-                                           ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
+                                               Driver<RootConjunctionController> controller, Driver<Monitor> monitor,
+                                               ConceptMap bounds, List<Resolvable<?>> plan,
+                                               Set<Identifier.Variable.Retrievable> filter,
+                                               ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, monitor, bounds, plan, debugName);
             this.filter = filter;
             this.reasonerConsumer = reasonerConsumer;
