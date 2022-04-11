@@ -34,6 +34,8 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.Operator;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
+import java.util.function.Supplier;
+
 import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
 
 public class MaterialisationController extends Controller<Materialisable, Void, Either<ConceptMap, Materialisation>,
@@ -81,7 +83,7 @@ public class MaterialisationController extends Controller<Materialisable, Void, 
         protected MaterialisationReactiveBlock(
                 Driver<MaterialisationReactiveBlock> driver, Driver<MaterialisationController> controller,
                 Driver<Monitor> monitor, Materialisable materialisable, TraversalEngine traversalEng,
-                ConceptManager conceptMgr, java.util.function.Supplier debugName) {
+                ConceptManager conceptMgr, Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.materialisable = materialisable;
             this.traversalEng = traversalEng;

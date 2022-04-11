@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
@@ -29,6 +30,8 @@ import com.vaticle.typedb.core.reasoner.computation.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.computation.reactive.Source;
 import com.vaticle.typedb.core.reasoner.computation.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
+
+import java.util.function.Supplier;
 
 public class RetrievableController extends Controller<ConceptMap, Void, ConceptMap,
         Request<?, ?, Void>, RetrievableController.RetrievableReactiveBlock, RetrievableController> {
@@ -67,12 +70,12 @@ public class RetrievableController extends Controller<ConceptMap, Void, ConceptM
     protected static class RetrievableReactiveBlock extends ReactiveBlock<Void, ConceptMap,
                 Request<?, ?, Void>, RetrievableReactiveBlock> {
 
-        private final java.util.function.Supplier traversalSupplier;
+        private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 
         protected RetrievableReactiveBlock(Driver<RetrievableReactiveBlock> driver, Driver<RetrievableController> controller,
                                        Driver<Monitor> monitor,
-                                       java.util.function.Supplier traversalSupplier,
-                                       java.util.function.Supplier debugName) {
+                                       Supplier<FunctionalIterator<ConceptMap>> traversalSupplier,
+                                       Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.traversalSupplier = traversalSupplier;
         }

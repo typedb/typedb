@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
@@ -40,6 +41,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
@@ -112,14 +114,14 @@ public class ConcludableController extends Controller<ConceptMap, Map<Variable, 
         private final ConceptMap bounds;
         private final Set<Variable.Retrievable> unboundVars;
         private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
-        private final java.util.function.Supplier traversalSuppplier;
+        private final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
         private final Set<ConclusionRequest> requestedConnections;
 
         public ConcludableReactiveBlock(Driver<ConcludableReactiveBlock> driver, Driver<ConcludableController> controller,
                                     Driver<Monitor> monitor, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
-                                    java.util.function.Supplier traversalSuppplier,
-                                    java.util.function.Supplier debugName) {
+                                    Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
+                                    Supplier<String> debugName) {
             super(driver, controller, monitor, debugName);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
