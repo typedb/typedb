@@ -59,7 +59,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
         this.done = false;
         this.required = new AtomicInteger();
         this.isPulling = false;
-        this.controllerRegistry.registerRootConjunctionController(conjunction, filter, this);  // TODO: Doesn't indicate that this also triggers the setup of the upstream controllers and creates a reactiveBlock and connects if back to this producer. Clean up this storyline.
+        this.controllerRegistry.registerRootConjunctionController(conjunction, filter, this);  // TODO: Doesn't indicate that this also triggers the setup of the upstream controllers and creates a reactiveBlock and connects it back to this producer. Clean up this storyline.
         if (options.traceInference()) {
             Tracer.initialise(options.reasonerDebuggerDir());
             Tracer.get().startDefaultTrace();
@@ -102,7 +102,9 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
     public void receiveAnswer(ConceptMap answer) {
         isPulling = false;
         // if (options.traceInference()) Tracer.get().finishDefaultTrace();
+        // TODO: The explainables can always be given
         if (options.explain() && !answer.explainables().isEmpty()) {
+            // TODO: Explainables recorded here
             explainablesManager.setAndRecordExplainables(answer);
         }
         queue.put(answer);

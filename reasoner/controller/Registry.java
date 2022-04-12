@@ -57,8 +57,8 @@ public class Registry {
 
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
-    private final Map<Concludable, Actor.Driver<ConcludableController>> concludableControllers;
-    private final Map<Actor.Driver<ConcludableController>, Set<Concludable>> controllerConcludables;
+    private final Map<Concludable, Actor.Driver<ConcludableController.Match>> concludableControllers;
+    private final Map<Actor.Driver<ConcludableController.Match>, Set<Concludable>> controllerConcludables;
     private final Map<Rule, Actor.Driver<ConditionController>> ruleConditions;
     private final Map<Rule, Actor.Driver<ConclusionController>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Set<Actor.Driver<? extends AbstractController<?, ?, ?, ?, ?, ?>>> controllers;
@@ -141,6 +141,14 @@ public class Registry {
         if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
     }
 
+//    public void registerExplainableRoot(Concludable concludable, ReasonerConsumer reasonerConsumer) {
+//        controller = Actor.driver(
+//                driver -> new RootResolver.Explain(driver, concludable, monitor, this, reasonerConsumer), executorService);
+//        controller.execute(RootDisjunctionController::initialise);
+//        controllers.add(controller);
+//        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+//    }
+
     public Actor.Driver<NestedConjunctionController> registerNestedConjunctionController(Conjunction conjunction) {
         LOG.debug("Creating Nested Conjunction for: '{}'", conjunction);
         Actor.Driver<NestedConjunctionController> controller =
@@ -171,9 +179,9 @@ public class Registry {
             controllerView = resolverViewOpt.get();
             controllerConcludables.get(controllerView.controller()).add(concludable);
         } else {
-            Actor.Driver<ConcludableController> controller =
-                    Actor.driver(driver -> new ConcludableController(driver, concludable, executorService, monitor,
-                                                                     this), executorService);
+            Actor.Driver<ConcludableController.Match> controller =
+                    Actor.driver(driver -> new ConcludableController.Match(
+                            driver, concludable, executorService, monitor, this), executorService);
             controller.execute(ConcludableController::initialise);
             controllerView = ResolverView.concludable(controller, identity(concludable));
             controllers.add(controller);
@@ -191,7 +199,7 @@ public class Registry {
     }
 
     private Optional<ResolverView.MappedConcludable> getConcludableResolver(Concludable concludable) {
-        for (Map.Entry<Concludable, Actor.Driver<ConcludableController>> c : concludableControllers.entrySet()) {
+        for (Map.Entry<Concludable, Actor.Driver<ConcludableController.Match>> c : concludableControllers.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
             Optional<AlphaEquivalence> alphaEquality = concludable.alphaEquals(c.getKey()).first();
             if (alphaEquality.isPresent()) {
@@ -255,24 +263,13 @@ public class Registry {
         return controller;
     }
 
-//    public Actor.Driver<RootResolver.Explain> explainer(Conjunction conjunction,
-//                                                        BiConsumer<Request, Explain.Finished> requestAnswered,
-//                                                        Consumer<Request> requestFailed, Consumer<Throwable> exception) {
-//        Actor.Driver<RootResolver.Explain> resolver = Actor.driver(
-//                driver -> new RootResolver.Explain(
-//                        driver, conjunction, requestAnswered, requestFailed, exception, monitor, this), executorService);
-//        resolvers.add(resolver);
-//        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-//        return resolver;
-//    }
-
     public void setExecutorService(ActorExecutorGroup executorService) {
         this.executorService = executorService;
     }
 
     public static abstract class ResolverView {
 
-        public static MappedConcludable concludable(Actor.Driver<ConcludableController> controller, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
+        public static MappedConcludable concludable(Actor.Driver<ConcludableController.Match> controller, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
             return new MappedConcludable(controller, mapping);
         }
 
@@ -287,11 +284,11 @@ public class Registry {
         public abstract Actor.Driver<? extends AbstractController<?, ?, ?, ?, ?, ?>> controller();
 
         public static class MappedConcludable extends ResolverView {
-            private final Actor.Driver<ConcludableController> resolver;
+            private final Actor.Driver<ConcludableController.Match> controller;
             private final Map<Variable.Retrievable, Variable.Retrievable> mapping;
 
-            public MappedConcludable(Actor.Driver<ConcludableController> resolver, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
-                this.resolver = resolver;
+            public MappedConcludable(Actor.Driver<ConcludableController.Match> controller, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
+                this.controller = controller;
                 this.mapping = mapping;
             }
 
@@ -300,8 +297,8 @@ public class Registry {
             }
 
             @Override
-            public Actor.Driver<ConcludableController> controller() {
-                return resolver;
+            public Actor.Driver<ConcludableController.Match> controller() {
+                return controller;
             }
         }
 

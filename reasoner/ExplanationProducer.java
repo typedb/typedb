@@ -21,7 +21,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
-import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -48,8 +48,8 @@ public class ExplanationProducer implements Producer<Explanation> {
     private int requestTraceIdCounter;
     private Queue<Explanation> queue;
 
-    public ExplanationProducer(Conjunction conjunction, ConceptMap bounds, Options.Query options,
-                               Registry registry, ExplainablesManager explainablesManager) {
+    public ExplanationProducer(Concludable concludable, ConceptMap bounds, Options.Query options,
+                               Registry controllerRegistry, ExplainablesManager explainablesManager) {
         this.bounds = bounds;
         this.explainablesManager = explainablesManager;
         this.options = options;
@@ -58,10 +58,13 @@ public class ExplanationProducer implements Producer<Explanation> {
         this.required = new AtomicInteger();
         this.processing = new AtomicInteger();
         this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR : 1;
-//        this.explainer = registry.explainer(conjunction, this::requestAnswered, this::requestFailed, this::exception);
+//        controllerRegistry.registerExplainableRoot(concludable, this);
         this.requestTraceIdCounter = 0;
         this.traceId = UUID.randomUUID();
-        if (options.traceInference()) Tracer.initialise(options.reasonerDebuggerDir());
+        if (options.traceInference()) {
+            Tracer.initialise(options.reasonerDebuggerDir());
+            Tracer.get().startDefaultTrace();
+        }
     }
 
     @Override

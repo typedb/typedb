@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.concurrent.producer.Producers;
 import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.Negation;
@@ -205,10 +206,11 @@ public class Reasoner {
     }
 
     public FunctionalIterator<Explanation> explain(long explainableId, Context.Query defaultContext) {
-        Conjunction explainableConjunction = explainablesManager.getConjunction(explainableId);
+        Concludable explainableConcludable = explainablesManager.getConcludable(explainableId);
         ConceptMap explainableBounds = explainablesManager.getBounds(explainableId);
         return Producers.produce(
-                list(new ExplanationProducer(explainableConjunction, explainableBounds, defaultContext.options(), controllerRegistry, explainablesManager)),
+                list(new ExplanationProducer(explainableConcludable, explainableBounds, defaultContext.options(),
+                                             controllerRegistry, explainablesManager)),
                 Either.first(Arguments.Query.Producer.INCREMENTAL),
                 async1()
         );
