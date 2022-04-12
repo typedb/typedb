@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
@@ -48,11 +49,11 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ConcludableController<INPUT, OUTPUT,
         REQ extends AbstractRequest<Conclusion, ConceptMap, INPUT>,
-        REACTIVE_BLOCK extends AbstractReactiveBlock<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
+        REACTIVE_BLOCK extends ConcludableController.ReactiveBlock<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
         CONTROLLER extends ConcludableController<INPUT, OUTPUT, ?, REACTIVE_BLOCK, CONTROLLER>
         > extends AbstractController<ConceptMap, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, CONTROLLER> {
 
-    protected final Map<Conclusion, Driver<ConclusionController>> conclusionControllers;
+    protected final Map<Conclusion, Driver<? extends ConclusionController<INPUT, ?, ?>>> conclusionControllers;
     protected final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
     protected final Driver<Monitor> monitor;
     protected final Registry registry;
@@ -73,22 +74,21 @@ public abstract class ConcludableController<INPUT, OUTPUT,
     public void setUpUpstreamControllers() {
         concludable.getApplicableRules(registry.conceptManager(), registry.logicManager())
                 .forEachRemaining(rule -> {
-                    Driver<ConclusionController> controller = registry.registerConclusionController(rule.conclusion());
+                    Driver<? extends ConclusionController<INPUT, ?, ?>> controller = registerConclusionController(rule);
                     conclusionControllers.put(rule.conclusion(), controller);
                     conclusionUnifiers.put(rule.conclusion(), concludable.getUnifiers(rule).toSet());
                 });
     }
 
-    @Override
-    protected abstract REACTIVE_BLOCK createReactiveBlockFromDriver(Driver<REACTIVE_BLOCK> reactiveBlockDriver, ConceptMap bounds);
+    protected abstract Driver<? extends ConclusionController<INPUT, ?, ?>> registerConclusionController(Rule rule);
 
     public static class Match extends ConcludableController<Map<Variable, Concept>, ConceptMap,
             ReactiveBlock.Match.Request, ConcludableController.ReactiveBlock.Match, Match> {
 
         private final Set<Variable.Retrievable> unboundVars;
 
-        public Match(Driver<Match> driver, Concludable concludable,
-                     ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry) {
+        public Match(Driver<Match> driver, Concludable concludable, ActorExecutorGroup executorService,
+                     Driver<Monitor> monitor, Registry registry) {
             super(driver, concludable, executorService, monitor, registry);
             this.unboundVars = unboundVars();
         }
@@ -127,6 +127,11 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                     .execute(actor -> actor.resolveReactiveBlock(new AbstractReactiveBlock.Connector<>(req.inputId(), req.bounds())));
         }
 
+        @Override
+        public Driver<ConclusionController.Match> registerConclusionController(Rule rule) {
+            return registry.registerMatchConclusionController(rule.conclusion());
+        }
+
     }
 
     protected abstract static class ReactiveBlock<
@@ -139,8 +144,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         private final ConceptMap bounds;
         private final Set<Variable.Retrievable> unboundVars;
         private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
-        private final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
         private final Set<REQ> requestedConnections;
+        protected final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
 
         public ReactiveBlock(Driver<REACTIVE_BLOCK> driver,
                              Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller,
@@ -160,8 +165,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         @Override
         public void setUp() {
             setOutputRouter(PoolingStream.fanInFanOut(this));
-            // TODO: How do we do a find first optimisation and also know that we're done? This needs to be local to
-            //  this reactiveBlock because in general we couldn't call all upstream work done.
+            // TODO: How do we do a find first optimisation (when unbound vars is empty) and also know that we're done?
+            //  This needs to be local to this reactiveBlock because in general we couldn't call all upstream work done.
 
             mayAddTraversal();
 
@@ -184,9 +189,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         protected abstract REQ createRequest(Reactive.Identifier<INPUT, ?> identifier, Conclusion conclusion,
                                              ConceptMap bounds);
 
-        protected void mayAddTraversal() {
-            connectToRouter(Source.create(this, new Operator.Supplier<>(traversalSuppplier)));
-        }
+        protected void mayAddTraversal() {};
 
         protected abstract Map<Variable, Concept> convertToUnunifiable(INPUT conclusionAns);
 
@@ -211,6 +214,11 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             @Override
             protected void connectToRouter(Publisher<ConceptMap> toConnect) {
                 toConnect.registerSubscriber(outputRouter());
+            }
+
+            @Override
+            protected void mayAddTraversal() {
+                connectToRouter(Source.create(this, new Operator.Supplier<>(traversalSuppplier)));
             }
 
             @Override

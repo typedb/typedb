@@ -60,7 +60,7 @@ public class Registry {
     private final Map<Concludable, Actor.Driver<ConcludableController.Match>> concludableControllers;
     private final Map<Actor.Driver<ConcludableController.Match>, Set<Concludable>> controllerConcludables;
     private final Map<Rule, Actor.Driver<ConditionController>> ruleConditions;
-    private final Map<Rule, Actor.Driver<ConclusionController>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
+    private final Map<Rule, Actor.Driver<ConclusionController.Match>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Set<Actor.Driver<? extends AbstractController<?, ?, ?, ?, ?, ?>>> controllers;
     private final TraversalEngine traversalEngine;
     private final boolean tracing;
@@ -236,12 +236,12 @@ public class Registry {
                 .collect(Collectors.toSet());
     }
 
-    public Actor.Driver<ConclusionController> registerConclusionController(Rule.Conclusion conclusion) {
+    public Actor.Driver<ConclusionController.Match> registerMatchConclusionController(Rule.Conclusion conclusion) {
         LOG.debug("Register ConclusionController: '{}'", conclusion);
-        Actor.Driver<ConclusionController> controller = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> {
-            Actor.Driver<ConclusionController> c = Actor.driver(
-                    driver -> new ConclusionController(driver, conclusion, executorService,
-                                                       materialisationController, monitor, this), executorService);
+        Actor.Driver<ConclusionController.Match> controller = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> {
+            Actor.Driver<ConclusionController.Match> c = Actor.driver(
+                    driver -> new ConclusionController.Match(driver, conclusion, executorService,
+                                                             materialisationController, monitor, this), executorService);
             c.execute(ConclusionController::initialise);
             return c;
         });
