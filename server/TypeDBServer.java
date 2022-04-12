@@ -270,10 +270,10 @@ public class TypeDBServer implements AutoCloseable {
         TypeDBServer server = new TypeDBServer(subcmdServer.config(), subcmdServer.isDebug());
         server.start();
         Instant end = Instant.now();
-        server.logger().info("- version: {}", Version.VERSION);
-        server.logger().info("- listening to address: {}:{}", server.address().getHostString(), server.address().getPort());
-        server.logger().info("- data directory configured to: {}", server.dataDir());
-        server.logger().info("- bootup completed in: {} ms", Duration.between(start, end).toMillis());
+        server.logger().info("version: {}", Version.VERSION);
+        server.logger().info("listening to address: {}:{}", server.address().getHostString(), server.address().getPort());
+        server.logger().info("data directory configured to: {}", server.dataDir());
+        server.logger().info("bootup completed in: {} ms", Duration.between(start, end).toMillis());
         server.logger().info("...");
         server.serve();
     }
