@@ -44,12 +44,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 
 public class GraphProcedure implements PermutationProcedure {
@@ -104,7 +102,8 @@ public class GraphProcedure implements PermutationProcedure {
     }
 
     public ProcedureVertex<?, ?> vertex(int pos) {
-        return orderedVertices[pos - 1];
+        assert 0 <= pos && pos < orderedVertices.length;
+        return orderedVertices[pos];
     }
 
     public int edgesCount() {
@@ -229,35 +228,24 @@ public class GraphProcedure implements PermutationProcedure {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GraphProcedure that = (GraphProcedure) o;
-        return vertices.equals(that.vertices) && Arrays.equals(orderedVertices, that.orderedVertices);
+        return Arrays.equals(orderedVertices, that.orderedVertices);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(vertices);
-        result = 31 * result + Arrays.hashCode(orderedVertices);
-        return result;
+        return Arrays.hashCode(orderedVertices);
     }
 
     @Override
     public String toString() {
-        // TODO: change the printing to be vertex-centric, rather than edge-centric
         StringBuilder str = new StringBuilder();
         str.append("Graph Procedure: {");
-        Set<ProcedureEdge<?, ?>> procedureEdges = iterate(vertices.values())
-                .flatMap(v -> link(iterate(v.outs()), iterate(v.ins()))).toSet();
-        List<ProcedureEdge<?, ?>> sortedEdges = new ArrayList<>(procedureEdges);
-        sortedEdges.sort(Comparator.comparing(ProcedureEdge::order));
-        List<ProcedureVertex<?, ?>> procedureVertices = new ArrayList<>(vertices.values());
-        procedureVertices.sort(Comparator.comparing(v -> v.id().toString()));
-
-        str.append("\n\tvertices:");
-        for (ProcedureVertex<?, ?> v : procedureVertices) {
-            str.append("\n\t\t").append(v);
-        }
-        str.append("\n\tedges:");
-        for (ProcedureEdge<?, ?> e : sortedEdges) {
-            str.append("\n\t\t").append(e);
+        for (int i = 0; i < vertexCount(); i++) {
+            ProcedureVertex<?, ?> vertex = orderedVertices[i];
+            str.append("\n\t").append(i).append(": ").append(vertex);
+            for (ProcedureEdge<?, ?> edge : vertex.ins()) {
+                str.append("\n\t\t").append(edge);
+            }
         }
         str.append("\n}");
         return str.toString();
