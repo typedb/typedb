@@ -97,11 +97,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(ThingVertex.Write.class));
     }
 
-    @Override
-    public int compareTo(ThingVertex o) {
-        return iid.compareTo(o.iid());
-    }
-
     public static class Read extends ThingVertexImpl {
 
         protected final ThingAdjacency.Out outs;

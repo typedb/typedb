@@ -265,11 +265,6 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         ins.commit();
     }
 
-    @Override
-    public int compareTo(TypeVertex o) {
-        return iid.compareTo(o.iid());
-    }
-
     public static class Buffered extends TypeVertexImpl {
 
         private final AtomicBoolean isCommitted;
