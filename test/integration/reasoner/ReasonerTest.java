@@ -44,7 +44,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED_WITH_CAUSE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_TERMINATED_WITH_CAUSE;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -171,7 +171,7 @@ public class ReasonerTest {
                 try {
                     List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x isa is-still-good;").asMatch()).toList();
                 } catch (TypeDBException e) {
-                    assertEquals(e.code().get(), RESOLUTION_TERMINATED_WITH_CAUSE.code());
+                    assertEquals(e.code().get(), REASONING_TERMINATED_WITH_CAUSE.code());
                     return;
                 }
                 fail();

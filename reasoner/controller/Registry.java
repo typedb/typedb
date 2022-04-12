@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED_WITH_CAUSE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_TERMINATED_WITH_CAUSE;
 import static java.util.stream.Collectors.toMap;
 
 public class Registry {
@@ -126,7 +126,7 @@ public class Registry {
                                                                      monitor, this, reasonerConsumer), executorService);
         controller.execute(RootConjunctionController::initialise);
         controllers.add(controller);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
     }
 
     public void registerRootDisjunctionController(Disjunction disjunction,
@@ -138,7 +138,7 @@ public class Registry {
                                                                      monitor, this, reasonerConsumer), executorService);
         controller.execute(RootDisjunctionController::initialise);
         controllers.add(controller);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
     }
 
     public Actor.Driver<NestedConjunctionController> registerNestedConjunctionController(Conjunction conjunction) {
@@ -148,7 +148,7 @@ public class Registry {
                              executorService);
         controller.execute(ConjunctionController::initialise);
         controllers.add(controller);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
     }
 
@@ -159,7 +159,7 @@ public class Registry {
                              executorService);
         controller.execute(NestedDisjunctionController::initialise);
         controllers.add(controller);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
     }
 
@@ -182,7 +182,7 @@ public class Registry {
             concludables.add(concludable);
             controllerConcludables.put(controllerView.controller(), concludables);
         }
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controllerView;
     }
 
@@ -206,7 +206,7 @@ public class Registry {
         Actor.Driver<RetrievableController> controller = Actor.driver(
                 driver -> new RetrievableController(driver, retrievable, executorService, monitor, this), executorService);
         controllers.add(controller);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return ResolverView.retrievable(controller, retrievable.retrieves());
     }
 
@@ -216,7 +216,7 @@ public class Registry {
                 driver -> new NegationController(driver, negated, executorService, monitor, this), executorService);
         negationController.execute(NegationController::initialise);
         controllers.add(negationController);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         Set<Variable.Retrievable> filter = filter(conjunction, negated);
         return ResolverView.negation(negationController, filter);
     }
@@ -238,7 +238,7 @@ public class Registry {
             return c;
         });
         controllers.add(controller);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
     }
 
@@ -251,7 +251,7 @@ public class Registry {
             return c;
         });
         controllers.add(controller);
-        if (terminated.get()) throw TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;
     }
 

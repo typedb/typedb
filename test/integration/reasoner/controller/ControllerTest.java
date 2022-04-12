@@ -52,7 +52,7 @@ import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED_WITH_CAUSE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_TERMINATED_WITH_CAUSE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.utils.Util.resolvedConjunction;
 import static com.vaticle.typedb.core.reasoner.utils.Util.resolvedDisjunction;
@@ -145,7 +145,7 @@ public class ControllerTest {
                 Exception e = new RuntimeException();
                 registry.terminate(e);
                 Throwable receivedException = answerProducer.exceptions().poll(100, TimeUnit.MILLISECONDS);
-                assertEquals(TypeDBException.of(RESOLUTION_TERMINATED_WITH_CAUSE, e), receivedException);
+                assertEquals(TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, e), receivedException);
             }
         }
     }
