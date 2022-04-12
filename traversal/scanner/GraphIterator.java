@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
+import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,9 @@ import java.util.TreeMap;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.intersect;
 import static java.util.stream.Collectors.toMap;
 
 @NotThreadSafe
@@ -132,37 +135,58 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private boolean computeFirstBranch(int pos) {
-        ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        Identifier toID = edge.to().id();
-        Identifier fromId = edge.from().id();
-        Forwardable<? extends Vertex<?, ?>, Order.Asc> toIter = branch(answer.get(fromId), edge);
+        ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
+        Identifier vertexID = vertex.id();
+
+        Forwardable<? extends Vertex<?, ?>, Order.Asc> toIter = branchVertex(vertex);
 
         if (toIter.hasNext()) {
-            iterators.put(toID, toIter);
-            answer.put(toID, toIter.next());
-            if (pos == edgeCount) return true;
+            iterators.put(vertexID, toIter);
+            answer.put(vertexID, toIter.next());
+            if (pos == vertexCount) return true;
             while (!computeFirst(pos + 1)) {
-                if (pos == branchSeekStack.peekLastPos()) {
-                    branchSeekStack.popLastPos();
-                    if (toIter.hasNext()) answer.put(toID, toIter.next());
-                    else {
-                        popScope(pos);
-                        answer.remove(toID);
-                        branchFailure(edge);
-                        return false;
-                    }
-                } else {
-                    popScope(pos);
-                    answer.remove(toID);
-                    toIter.recycle();
+                if (toIter.hasNext()) answer.put(vertexID, toIter.next());
+                else {
+                    answer.remove(vertexID);
+                    popScopes(pos);
+//                    branchFailure(pos);
                     return false;
                 }
+
+//                if (pos == branchSeekStack.peekLastPos()) {
+//                    branchSeekStack.popLastPos();
+//                    if (toIter.hasNext()) answer.put(toID, toIter.next());
+//                    else {
+//                        popScope(pos);
+//                        answer.remove(toID);
+//                        branchFailure(edge);
+//                        return false;
+//                    }
+//                } else {
+//                    popScope(pos);
+//                    answer.remove(toID);
+//                    toIter.recycle();
+//                    return false;
+//                }
             }
+            // TODO if it is not permutationRequired, at this point we should finish/limit the iterator.
             return true;
         } else {
-            branchFailure(edge);
+            popScopes(pos);
+//            branchFailure(pos);
             return false;
         }
+    }
+
+    private Forwardable<? extends Vertex<?, ?>, Order.Asc> branchVertex(ProcedureVertex<?, ?> vertex) {
+        assert iterate(vertex.ins()).allMatch(e -> answer.containsKey(e.from().id()));
+        // TODO: if we can do an incremental intersection, starting from the earliest predecessor to the latest one
+        //       then we can immediately detect where the intersection failed and seek back to that point
+        //       rather than first going back to the predecessor, then the previous predecessor, up to the one that caused the failure
+        // TODO: we may also be able to implement this idea eagerly from the start of an edge, rather than lazily from the end of an edge and fail earlier.
+        //       however this will cause more iterators to be opened to test for the existence of an intersection (?) Also, what about scopes?
+        // TODO: another thing to consider is that this will not take advantage of intersecting N iterators, only 2 at a time. So we won't exactly get min(1...n) iter size operations...
+        return intersect(iterate(vertex.ins()).map(edge -> branch(answer.get(edge.from().id()), edge)), ASC);
     }
 
     private boolean computeFirstClosure(int pos) {

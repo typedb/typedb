@@ -100,6 +100,10 @@ public class GraphProcedure implements PermutationProcedure {
         return edges.length;
     }
 
+    public int vertexCount() {
+        return vertices.size();
+    }
+
     private void registerVertex(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
                                 Set<PlannerEdge.Directional<?, ?>> registeredEdges) {
         if (registeredVertices.contains(plannerVertex)) return;
