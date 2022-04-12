@@ -56,7 +56,7 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
             // TODO: Code duplicated in PoolingStream
             subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
             publisherActions.monitorCreateAnswers(1);
-            publisherActions.subscriberReceive(subscriber, operator().next(subscriber));  // TODO: If the operator isn't tracking which subscribers have seen this packet then it needs to be sent to all subscribers. So far this is never the case.
+            publisherActions.subscriberReceive(subscriber, operator().next(subscriber));
         } else {
             reactiveBlock().monitor().execute(actor -> actor.sourceFinished(identifier()));
         }

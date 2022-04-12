@@ -41,22 +41,12 @@ public interface Operator {
         OUTPUT next(Reactive.Subscriber<OUTPUT> subscriber);
     }
 
-    interface Accepter<INPUT> extends Operator {
-
-        void accept(Reactive.Publisher<INPUT> publisher, INPUT packet);
-
-    }
-
     interface Transformer<INPUT, OUTPUT> {
 
         Set<Reactive.Publisher<INPUT>> initialNewPublishers();
 
         Either<Reactive.Publisher<INPUT>, Set<OUTPUT>> accept(Reactive.Publisher<INPUT> publisher, INPUT packet);
 
-    }
-
-    interface Sink<INPUT> extends Accepter<INPUT> {
-        // TODO: Add methods to usefully retrieve items from the sink
     }
 
     interface Pool<INPUT, OUTPUT> {
@@ -67,10 +57,6 @@ public interface Operator {
 
         OUTPUT next(Reactive.Subscriber<OUTPUT> subscriber);
 
-    }
-
-    interface Bridge<PACKET> extends Accepter<PACKET>, Source<PACKET> {
-        // TODO: To be used for negation
     }
 
     class Map<INPUT, OUTPUT> implements Transformer<INPUT, OUTPUT> {
@@ -88,7 +74,6 @@ public interface Operator {
 
         @Override
         public Either<Reactive.Publisher<INPUT>, Set<OUTPUT>> accept(Reactive.Publisher<INPUT> publisher, INPUT packet) {
-            // TODO: Here and elsewhere the publisher argument is unused
             return Either.second(set(mappingFunc.apply(packet)));
         }
 

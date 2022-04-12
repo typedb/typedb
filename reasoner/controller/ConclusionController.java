@@ -197,7 +197,6 @@ public class ConclusionController extends AbstractController<ConceptMap, Either<
         }
 
         private void mayRequestCondition(ConditionRequest conditionRequest) {
-            // TODO: Does this method achieve anything?
             if (!conditionRequests.contains(conditionRequest)) {
                 conditionRequests.add(conditionRequest);
                 requestConnection(conditionRequest);

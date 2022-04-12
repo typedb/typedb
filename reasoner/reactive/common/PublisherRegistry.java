@@ -27,7 +27,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public abstract class PublisherRegistry<PACKET> {  // TODO: Rename Publisher Registry
+public abstract class PublisherRegistry<PACKET> {
 
     public abstract boolean add(Publisher<PACKET> publisher);
 

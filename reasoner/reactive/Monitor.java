@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.controller.AbstractController;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
@@ -37,7 +36,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 public class Monitor extends Actor<Monitor> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Monitor.class);
     private final Registry registry;
     private boolean terminated;
     private final Map<Reactive.Identifier<?, ?>, ReactiveNode> reactiveNodes;

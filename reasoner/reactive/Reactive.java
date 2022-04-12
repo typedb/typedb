@@ -39,8 +39,6 @@ public interface Reactive {
 
     }
 
-    // TODO: Rename all local variables from subscriber to subscriber and from publisher to publisher throughout
-
     interface Publisher<PACKET> extends Reactive {
 
         void pull(Subscriber<PACKET> subscriber);
