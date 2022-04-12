@@ -100,7 +100,7 @@ public class SessionService implements AutoCloseable {
     }
 
     private void mayStartIdleTimeout() {
-        if (transactionServices.isEmpty()) {
+        if (isOpen() && transactionServices.isEmpty()) {
             idleTimeoutTask = scheduled().schedule(this::idleTimeout, options.sessionIdleTimeoutMillis(), MILLISECONDS);
         }
     }
