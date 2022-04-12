@@ -21,8 +21,8 @@ package com.vaticle.typedb.core.traversal.procedure;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
@@ -42,16 +42,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicReference;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
@@ -62,13 +60,11 @@ public abstract class ProcedureVertex<
         > extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
     private final boolean isStartingVertex;
-    private final AtomicReference<Set<Integer>> dependedEdgeOrders;
-    private ProcedureEdge<?, ?> branchEdge;
+    private ProcedureEdge<?, ?> lastInEdge;
 
     ProcedureVertex(Identifier identifier, boolean isStartingVertex) {
         super(identifier);
         this.isStartingVertex = isStartingVertex;
-        this.dependedEdgeOrders = new AtomicReference<>(null);
     }
 
     public abstract Forwardable<? extends VERTEX, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters);
@@ -76,26 +72,16 @@ public abstract class ProcedureVertex<
     @Override
     public void in(ProcedureEdge<?, ?> edge) {
         super.in(edge);
-        if (branchEdge == null || edge.order() < branchEdge.order()) branchEdge = edge;
+        if (lastInEdge == null || edge.order() > lastInEdge.order()) lastInEdge = edge;
     }
 
     public boolean isStartingVertex() {
         return isStartingVertex;
     }
 
-    public Set<Integer> dependedEdgeOrders() {
-        dependedEdgeOrders.compareAndSet(null, computeDependedEdgeOrders());
-        return dependedEdgeOrders.get();
-    }
-
-    private Set<Integer> computeDependedEdgeOrders() {
-        if (ins().isEmpty()) return set();
-        else return set(branchEdge().from().dependedEdgeOrders(), branchEdge().order());
-    }
-
-    public ProcedureEdge<?, ?> branchEdge() {
+    public ProcedureEdge<?, ?> lastInEdge() {
         if (ins().isEmpty() || isStartingVertex()) return null;
-        else return branchEdge;
+        else return lastInEdge;
     }
 
     public Thing asThing() {

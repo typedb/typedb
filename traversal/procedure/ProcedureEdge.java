@@ -133,7 +133,7 @@ public abstract class ProcedureEdge<
     }
 
     public boolean isClosureEdge() {
-        return to().isStartingVertex() || order() > to().branchEdge().order();
+        return to().isStartingVertex() || order() > to().lastInEdge().order();
     }
 
     public boolean onlyStartsFromAttribute() {
@@ -177,7 +177,7 @@ public abstract class ProcedureEdge<
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ProcedureEdge<?, ?> that = (ProcedureEdge<?, ?>) o;
-        return order == that.order && direction == that.direction;
+        return order == that.order && direction == that.direction; // TODO remove order -- note will break CombinationProcedure/Finder
     }
 
     @Override
@@ -339,11 +339,6 @@ public abstract class ProcedureEdge<
                 return super.toString() + String.format(" { isTransitive: %s }", isTransitive);
             }
 
-            @Override
-            public ProcedureEdge<?, ?> reverse() {
-                throw TypeDBException.of(UNSUPPORTED_OPERATION);
-            }
-
             static class Forward extends Isa<ProcedureVertex.Thing, ProcedureVertex.Type> {
 
                 Forward(ProcedureVertex.Thing thing, ProcedureVertex.Type type, int order, boolean isTransitive) {
@@ -364,6 +359,11 @@ public abstract class ProcedureEdge<
                                          Traversal.Parameters params) {
                     assert fromVertex.isThing() && toVertex.isType();
                     return isaTypes(fromVertex.asThing()).findFirst(toVertex.asType()).isPresent();
+                }
+
+                @Override
+                public ProcedureEdge<?, ?> reverse() {
+                    return new Backward(to(), from(), order(), isTransitive);
                 }
             }
 
@@ -393,6 +393,11 @@ public abstract class ProcedureEdge<
                                          Traversal.Parameters params) {
                     assert fromVertex.isType() && toVertex.isThing();
                     return isaTypes(toVertex.asThing()).findFirst(fromVertex.asType()).isPresent();
+                }
+
+                @Override
+                public ProcedureEdge<?, ?> reverse() {
+                    return new Forward(to(), from(), order(), isTransitive);
                 }
             }
         }
@@ -810,11 +815,6 @@ public abstract class ProcedureEdge<
                 }
             }
 
-            @Override
-            public ProcedureEdge<?, ?> reverse() {
-                throw TypeDBException.of(UNSUPPORTED_OPERATION);
-            }
-
             public abstract Forwardable<? extends ThingVertex, Order.Asc> branch(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                                  Traversal.Parameters params);
 
@@ -898,6 +898,11 @@ public abstract class ProcedureEdge<
                                              Traversal.Parameters params) {
                         return fromVertex.asThing().outs().edge(HAS, toVertex.asThing()) != null;
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Backward(to, from, order());
+                    }
                 }
 
                 static class Backward extends Has {
@@ -936,6 +941,11 @@ public abstract class ProcedureEdge<
                                              Vertex<?, ?> toVertex, Traversal.Parameters params) {
                         return fromVertex.asThing().ins().edge(HAS, toVertex.asThing()) != null;
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Forward(to, from, order());
+                    }
                 }
             }
 
@@ -963,6 +973,11 @@ public abstract class ProcedureEdge<
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
                         return fromVertex.asThing().outs().edge(PLAYING, toVertex.asThing()) != null;
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Backward(to, from, order());
                     }
                 }
 
@@ -999,6 +1014,11 @@ public abstract class ProcedureEdge<
                                              Traversal.Parameters params) {
                         return fromVertex.asThing().ins().edge(PLAYING, toVertex.asThing()) != null;
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Forward(to, from, order());
+                    }
                 }
             }
 
@@ -1032,6 +1052,11 @@ public abstract class ProcedureEdge<
                                              Traversal.Parameters params) {
                         return fromVertex.asThing().outs().edge(RELATING, toVertex.asThing()) != null;
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Backward(to, from, order());
+                    }
                 }
 
                 static class Backward extends Relating {
@@ -1064,6 +1089,11 @@ public abstract class ProcedureEdge<
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
                         return fromVertex.asThing().ins().edge(RELATING, toVertex.asThing()) != null;
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Forward(to, from, order());
                     }
 
                     @Override
@@ -1197,6 +1227,11 @@ public abstract class ProcedureEdge<
                             return false;
                         }
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Backward(to, from, order(), roleTypes);
+                    }
                 }
 
                 static class Backward extends RolePlayer {
@@ -1265,6 +1300,11 @@ public abstract class ProcedureEdge<
                     @Override
                     public boolean onlyEndsAtRelation() {
                         return true;
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Forward(to, from, order(), roleTypes);
                     }
                 }
             }

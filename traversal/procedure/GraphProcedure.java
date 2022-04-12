@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,6 +49,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 
 public class GraphProcedure implements PermutationProcedure {
@@ -55,34 +57,43 @@ public class GraphProcedure implements PermutationProcedure {
     private static final Logger LOG = LoggerFactory.getLogger(GraphProcedure.class);
 
     private final Map<Identifier, ProcedureVertex<?, ?>> vertices;
-    private final ProcedureEdge<?, ?>[] edges;
+    private final ProcedureVertex<?, ?>[] orderedVertices;
     private ProcedureVertex<?, ?> startVertex;
 
-    private GraphProcedure(int edgeSize) {
+    private GraphProcedure(int vertexCount) {
         vertices = new HashMap<>();
-        edges = new ProcedureEdge<?, ?>[edgeSize];
+        orderedVertices = new ProcedureVertex<?, ?>[vertexCount];
     }
 
     public static GraphProcedure create(GraphPlanner planner) {
-        GraphProcedure procedure = new GraphProcedure(planner.edges().size());
+        GraphProcedure procedure = new GraphProcedure(planner.vertices().size());
         Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
         Set<PlannerEdge.Directional<?, ?>> registeredEdges = new HashSet<>();
         planner.vertices().forEach(vertex -> procedure.registerVertex(vertex, registeredVertices, registeredEdges));
+        procedure.orderVertices();
         return procedure;
     }
 
-    public static GraphProcedure.Builder builder(int edgeSize) {
-        GraphProcedure procedure = new GraphProcedure(edgeSize);
+    private void orderVertices() {
+        List<ProcedureVertex<?, ?>> vertexList = iterate(vertices.values()).toList();
+        vertexList.sort(Comparator.comparing(v -> v.lastInEdge() == null ? 0 : v.lastInEdge().order()));
+        for (int i = 0; i < vertexList.size(); i++) {
+            orderedVertices[i] = vertexList.get(i);
+        }
+    }
+
+    public static GraphProcedure.Builder builder(int vertexSize) {
+        GraphProcedure procedure = new GraphProcedure(vertexSize);
         return procedure.new Builder();
     }
 
-    public FunctionalIterator<ProcedureVertex<?, ?>> vertices() {
-        return iterate(vertices.values());
+    public Collection<ProcedureVertex<?, ?>> vertices() {
+        return vertices.values();
     }
 
     public ProcedureVertex<?, ?> startVertex() {
         if (startVertex == null) {
-            startVertex = this.vertices().filter(ProcedureVertex::isStartingVertex)
+            startVertex = iterate(vertices()).filter(ProcedureVertex::isStartingVertex)
                     .first().orElseThrow(() -> TypeDBException.of(ILLEGAL_STATE));
         }
         return startVertex;
@@ -92,16 +103,17 @@ public class GraphProcedure implements PermutationProcedure {
         return vertices.get(identifier);
     }
 
-    public ProcedureEdge<?, ?> edge(int pos) {
-        return edges[pos - 1];
+    public ProcedureVertex<?, ?> vertex(int pos) {
+        return orderedVertices[pos - 1];
     }
 
     public int edgesCount() {
-        return edges.length;
+//        return edges.length;
+        return -1;
     }
 
     public int vertexCount() {
-        return vertices.size();
+        return orderedVertices.length;
     }
 
     private void registerVertex(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
@@ -137,7 +149,6 @@ public class GraphProcedure implements PermutationProcedure {
     }
 
     public void registerEdge(ProcedureEdge<?, ?> edge) {
-        edges[edge.order() - 1] = edge;
         edge.from().out(edge);
         edge.to().in(edge);
     }
@@ -218,22 +229,25 @@ public class GraphProcedure implements PermutationProcedure {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GraphProcedure that = (GraphProcedure) o;
-        return vertices.equals(that.vertices) && Arrays.equals(edges, that.edges) && startVertex().equals(that.startVertex());
+        return vertices.equals(that.vertices) && Arrays.equals(orderedVertices, that.orderedVertices);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(vertices, startVertex);
-        result = 31 * result + Arrays.hashCode(edges);
+        int result = Objects.hash(vertices);
+        result = 31 * result + Arrays.hashCode(orderedVertices);
         return result;
     }
 
     @Override
     public String toString() {
+        // TODO: change the printing to be vertex-centric, rather than edge-centric
         StringBuilder str = new StringBuilder();
         str.append("Graph Procedure: {");
-        List<ProcedureEdge<?, ?>> procedureEdges = Arrays.asList(edges);
-        procedureEdges.sort(Comparator.comparing(ProcedureEdge::order));
+        Set<ProcedureEdge<?, ?>> procedureEdges = iterate(vertices.values())
+                .flatMap(v -> link(iterate(v.outs()), iterate(v.ins()))).toSet();
+        List<ProcedureEdge<?, ?>> sortedEdges = new ArrayList<>(procedureEdges);
+        sortedEdges.sort(Comparator.comparing(ProcedureEdge::order));
         List<ProcedureVertex<?, ?>> procedureVertices = new ArrayList<>(vertices.values());
         procedureVertices.sort(Comparator.comparing(v -> v.id().toString()));
 
@@ -242,7 +256,7 @@ public class GraphProcedure implements PermutationProcedure {
             str.append("\n\t\t").append(v);
         }
         str.append("\n\tedges:");
-        for (ProcedureEdge<?, ?> e : procedureEdges) {
+        for (ProcedureEdge<?, ?> e : sortedEdges) {
             str.append("\n\t\t").append(e);
         }
         str.append("\n}");
@@ -252,7 +266,6 @@ public class GraphProcedure implements PermutationProcedure {
     public class Builder {
 
         public GraphProcedure build() {
-            assert iterate(edges).noneMatch(Objects::isNull);
             return GraphProcedure.this;
         }
 
