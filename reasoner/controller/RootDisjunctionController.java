@@ -71,7 +71,7 @@ public class RootDisjunctionController
 
         private final Set<Identifier.Variable.Retrievable> filter;
         private final ReasonerConsumer reasonerConsumer;
-        private RootSink reasonerEntryPoint;
+        private RootSink rootSink;
 
         protected ReactiveBlock(Driver<ReactiveBlock> driver,
                                 Driver<RootDisjunctionController> controller, Driver<Monitor> monitor,
@@ -86,13 +86,13 @@ public class RootDisjunctionController
         @Override
         public void setUp() {
             super.setUp();
-            reasonerEntryPoint = new RootSink(this, reasonerConsumer);
-            outputRouter().registerSubscriber(reasonerEntryPoint);
+            rootSink = new RootSink(this, reasonerConsumer);
+            outputRouter().registerSubscriber(rootSink);
         }
 
         @Override
         public void rootPull() {
-            reasonerEntryPoint.pull();
+            rootSink.pull();
         }
 
         @Override
@@ -105,8 +105,8 @@ public class RootDisjunctionController
         public void onFinished(Reactive.Identifier<?, ?> finishable) {
             assert !done;
 //            done = true;
-            assert finishable == reasonerEntryPoint.identifier();
-            reasonerEntryPoint.finished();
+            assert finishable == rootSink.identifier();
+            rootSink.finished();
         }
     }
 }

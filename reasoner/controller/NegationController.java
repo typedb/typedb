@@ -163,7 +163,7 @@ public class NegationController extends AbstractController<
                 subscriberActions.traceReceive(publisher, conceptMap);
                 publisherRegistry().recordReceive(publisher);
                 answerFound = true;
-                reactiveBlock().monitor().execute(actor -> actor.rootFinalised(identifier()));
+                reactiveBlock().monitor().execute(actor -> actor.rootFinished(identifier()));
             }
 
             @Override
@@ -171,7 +171,7 @@ public class NegationController extends AbstractController<
                 assert !answerFound;
                 reactiveBlock().monitor().execute(actor -> actor.createAnswer(identifier()));
                 iterate(subscriberRegistry().subscribers()).forEachRemaining(r -> r.receive(this, bounds));
-                reactiveBlock().monitor().execute(actor -> actor.rootFinalised(identifier()));
+                reactiveBlock().monitor().execute(actor -> actor.sourceFinished(identifier()));
             }
         }
 

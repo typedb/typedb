@@ -84,7 +84,6 @@ public class RootSink implements Reactive.Subscriber.Finishable<ConceptMap>, Rea
     @Override
     public void finished() {
         reasonerConsumer.finished();
-        reactiveBlock().monitor().execute(actor -> actor.rootFinalised(identifier()));
     }
 
     protected PublisherRegistry.Single<ConceptMap> publisherRegistry() {

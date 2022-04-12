@@ -69,13 +69,11 @@ public class Monitor extends Actor<Monitor> {
         rootNode.setGraph(reactiveGraph);
     }
 
-    public void rootFinalised(Reactive.Identifier<?, ?> root) {
-        // TODO: Improve this by having two separate finish states for a negation so that it can be finished as a
-        //  root prior to incrementing the in-flight answer count. In this way either it receives a message from the
-        //  monitor to say it's done, or it sends the monitor a message to tell that it's finished
+    public void rootFinished(Reactive.Identifier<?, ?> root) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.rootFinalised(root, driver()));
         if (terminated) return;
         RootNode rootNode = getNode(root).asRoot();
+        rootNode.graph().setFinished();
         rootNode.setFinished();
         rootNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
     }
@@ -132,7 +130,8 @@ public class Monitor extends Actor<Monitor> {
         private final Set<SourceNode> nestedSources;
         private boolean finished;
 
-        ReactiveGraph(Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock, RootNode rootNode, Driver<Monitor> monitor) {
+        ReactiveGraph(Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock, RootNode rootNode,
+                      Driver<Monitor> monitor) {
             this.rootReactiveBlock = rootReactiveBlock;
             this.rootNode = rootNode;
             this.monitor = monitor;
@@ -152,7 +151,7 @@ public class Monitor extends Actor<Monitor> {
 
         public void addReactiveNode(ReactiveNode toAdd) {
             if (!toAdd.equals(rootNode)) {
-                if (toAdd.isSource()) nestedSources.add(toAdd.asSource());
+                if (toAdd.isSource() && !toAdd.equals(rootNode)) nestedSources.add(toAdd.asSource());
                 else reactives.add(toAdd);
             }
         }
@@ -181,7 +180,10 @@ public class Monitor extends Actor<Monitor> {
         }
 
         void checkFinished() {
-            if (!finished && sourcesFinished() && activeAnswers() == 0 && activeFrontiers() == 0) finishRootNode();
+            if (!finished && sourcesFinished() && activeAnswers() == 0 && activeFrontiers() == 0) {
+                setFinished();
+                finishRootNode();
+            }
         }
 
         public Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock() {
@@ -349,11 +351,6 @@ public class Monitor extends Actor<Monitor> {
             return set(graph());
         }
 
-        @Override
-        protected void setFinished() {
-            super.setFinished();
-            graph().setFinished();
-        }
     }
 
     @Override

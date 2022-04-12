@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 
 import java.util.function.Function;
 
-public interface ReactiveActions {
+public interface ReactiveActions {  // TODO: Can we find a better name?
 
     interface PublisherActions<OUTPUT> extends ReactiveActions {
 
