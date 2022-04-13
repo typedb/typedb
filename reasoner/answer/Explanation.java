@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.answer;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
-import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.Map;
@@ -29,18 +29,18 @@ import java.util.Set;
 
 public class Explanation extends PartialExplanation {
 
-    private final Map<Retrievable, Set<Retrievable>> variableMapping;
+    private final Map<Retrievable, Set<Variable>> variableMapping;
     private final int hash;
 
-    public Explanation(Rule rule, Map<Retrievable, Set<Retrievable>> variableMapping,
-                       Map<Identifier.Variable, Concept> conclusionAnswer,
+    public Explanation(Rule rule, Map<Retrievable, Set<Variable>> variableMapping,
+                       Map<Variable, Concept> conclusionAnswer,
                        ConceptMap conditionAnswer) {
         super(rule, conclusionAnswer, conditionAnswer);
         this.variableMapping = variableMapping;
         this.hash = Objects.hash(super.hashCode(), variableMapping);
     }
 
-    public Map<Retrievable, Set<Retrievable>> variableMapping() {
+    public Map<Retrievable, Set<Variable>> variableMapping() {
         return variableMapping;
     }
 

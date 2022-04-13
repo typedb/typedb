@@ -61,6 +61,7 @@ public class Registry {
     private final Map<Actor.Driver<ConcludableController.Match>, Set<Concludable>> controllerConcludables;
     private final Map<Rule, Actor.Driver<ConditionController>> ruleConditions;
     private final Map<Rule, Actor.Driver<ConclusionController.Match>> ruleConclusions; // by Rule not Rule.Conclusion because well defined equality exists
+    private final Map<Rule, Actor.Driver<ConclusionController.Explain>> explainRuleConclusions;
     private final Set<Actor.Driver<? extends AbstractController<?, ?, ?, ?, ?, ?>>> controllers;
     private final TraversalEngine traversalEngine;
     private final boolean tracing;
@@ -80,6 +81,7 @@ public class Registry {
         this.controllerConcludables = new ConcurrentHashMap<>();
         this.ruleConditions = new ConcurrentHashMap<>();
         this.ruleConclusions = new ConcurrentHashMap<>();
+        this.explainRuleConclusions = new ConcurrentHashMap<>();
         this.controllers = new ConcurrentSet<>();
         this.terminated = new AtomicBoolean(false);
         this.tracing = tracing;
@@ -245,6 +247,23 @@ public class Registry {
             c.execute(ConclusionController::initialise);
             return c;
         });
+        controllers.add(controller);
+        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+        return controller;
+    }
+
+    public Actor.Driver<ConclusionController.Explain> registerExplainConclusionController(Rule.Conclusion conclusion) {
+        LOG.debug("Register Explain ConclusionController: '{}'", conclusion);
+        Actor.Driver<ConclusionController.Explain> controller = explainRuleConclusions.computeIfAbsent(
+                conclusion.rule(), r -> {
+                    Actor.Driver<ConclusionController.Explain> c = Actor.driver(
+                            driver -> new ConclusionController.Explain(
+                                    driver, conclusion, executorService, materialisationController, monitor, this
+                            ), executorService);
+                    c.execute(ConclusionController::initialise);
+                    return c;
+                }
+        );
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
         return controller;

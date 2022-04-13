@@ -35,6 +35,7 @@ import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -499,8 +500,12 @@ public class ExplanationTest {
         assertEquals(explanationsCount, explanations.size());
 
         explanations.forEach(explanation -> {
-            Map<Retrievable, Set<Retrievable>> mapping = explanation.variableMapping();
-            ConceptMap projected = applyMapping(mapping, ans);
+            Map<Retrievable, Set<Variable>> mapping = explanation.variableMapping();
+            Map<Retrievable, Set<Retrievable>> retrievableMapping = new HashMap<>();
+            mapping.forEach((k, v) -> retrievableMapping.put(
+                    k, iterate(v).filter(Identifier::isRetrievable).map(Variable::asRetrievable).toSet()
+            ));
+            ConceptMap projected = applyMapping(retrievableMapping, ans);
             projected.concepts().forEach((var, concept) -> {
                 assertTrue(explanation.conclusionAnswer().containsKey(var));
                 assertEquals(explanation.conclusionAnswer().get(var), concept);

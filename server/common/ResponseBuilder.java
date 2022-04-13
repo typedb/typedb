@@ -748,7 +748,7 @@ public class ResponseBuilder {
             builder.setRule(protoRule(explanation.rule()));
             explanation.variableMapping().forEach((from, tos) -> {
                 LogicProto.Explanation.VarList.Builder listBuilder = LogicProto.Explanation.VarList.newBuilder();
-                tos.forEach(var -> listBuilder.addVars(var.name()));
+                tos.forEach(var -> listBuilder.addVars(var.reference().name()));
                 builder.putVarMapping(from.name(), listBuilder.build());
             });
             // builder.setConclusion(conceptMap(explanation.conclusionAnswer()));  // TODO: Update the protocol
@@ -783,7 +783,7 @@ public class ResponseBuilder {
             );
             Map<String, Map<String, ConceptMap.Explainable>> ownedExtracted = new HashMap<>();
             explainables.ownerships().forEach((ownership, explainable) -> {
-                Map<String, ConceptMap.Explainable> owned = ownedExtracted.computeIfAbsent(ownership.first().name(), (val) -> new HashMap<String, ConceptMap.Explainable>());
+                Map<String, ConceptMap.Explainable> owned = ownedExtracted.computeIfAbsent(ownership.first().name(), (val) -> new HashMap<>());
                 owned.put(ownership.second().name(), explainable);
             });
             ownedExtracted.forEach((owner, owned) -> {
