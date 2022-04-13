@@ -245,7 +245,7 @@ public class GraphProcedure implements PermutationProcedure {
             ProcedureVertex<?, ?> vertex = orderedVertices[i];
             str.append("\n\t").append(i).append(": ").append(vertex);
             for (ProcedureEdge<?, ?> edge : vertex.ins()) {
-                str.append("\n\t\t").append(edge);
+                str.append("\n\t\t\t").append(edge);
             }
         }
         str.append("\n}");

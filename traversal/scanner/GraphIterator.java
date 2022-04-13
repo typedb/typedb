@@ -119,9 +119,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         Vertex<?, ?> candidate = iterator.next();
         while (!verify(pos, vertex, candidate)) {
-            if (vertex.isScope()) popScopes(vertex);
+            mayPopScopes(vertex);
             if (iterator.hasNext()) candidate = iterator.next();
-            else return false;
+            else {
+                iterators.remove(vertex.id());
+                return false;
+            }
         }
         answer.put(vertex.id(), candidate);
         return computeFirst(pos + 1);
@@ -137,7 +140,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         Vertex<?, ?> candidate = null;
         while (!verified) {
             if (!iterator.hasNext()) {
-                if (vertex.isScope()) popScopes(vertex);
+                iterators.remove(vertex.id());
+                mayPopScopes(vertex);
                 if (!(computeNext(pos - 1))) return false;
                 else iterator = iterators.get(vertex.id());
             }
@@ -165,7 +169,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                         intersect(branch(candidate, edge), iterators.get(to.id())) :
                         branch(candidate, edge);
                 if (!toIter.hasNext()) {
-                    iteratorsModified.forEach(v -> renewIterator(v, pos));
+                    iteratorsModified.forEach(v -> {
+                        iterators.remove(v.id());
+                        renewIterator(v, pos);
+                    });
                     return false;
                 } else {
                     iteratorsModified.add(to);
@@ -177,8 +184,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void renewIterator(ProcedureVertex<?, ?> vertex, int upTo) {
-        iterators.remove(vertex.id());
-        if (vertex.isScope()) popScopes(vertex);
+        mayPopScopes(vertex);
         List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
         for (ProcedureEdge<?, ?> edge : vertex.ins()) {
             if (edge.from().equals(vertex) || edge.from().order() >= upTo) continue;
@@ -187,9 +193,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         iterators.put(vertex.id(), intersect(iterate(iters), ASC));
     }
 
-    private void popScopes(ProcedureVertex<?, ?> vertex) {
-        assert vertex.isScope();
-        scopes.get(vertex.id().asVariable()).clear();
+    private void mayPopScopes(ProcedureVertex<?, ?> vertex) {
+        if (vertex.id().isVariable() && scopes.isScoped(vertex.id().asVariable())) {
+            scopes.get(vertex.id().asVariable()).clear();
+        }
     }
 
     @Override
@@ -221,8 +228,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             toIter = edge.branch(graphMgr, fromVertex, params).filter(role -> {
                 if (scoped.contains(role.asThing())) return false;
                 else {
-                    if (scoped.containsSource(edge)) scoped.replace(role.asThing(), edge);
-                    else scoped.record(role.asThing(), edge);
+                    if (scoped.containsSource(edge)) scoped.replace(role.asThing(), edge.to());
+                    else scoped.record(role.asThing(), edge.to());
                     return true;
                 }
             });
@@ -279,6 +286,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         public Scoped get(Identifier.Variable scope) {
             assert scoped.containsKey(scope);
             return scoped.get(scope);
+        }
+
+        public boolean isScoped(Identifier.Variable scope) {
+            return scoped.containsKey(scope);
         }
 
         public static class Scoped {
