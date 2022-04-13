@@ -77,6 +77,7 @@ public class GraphProcedure implements PermutationProcedure {
         vertexList.sort(Comparator.comparing(v -> v.lastInEdge() == null ? 0 : v.lastInEdge().order()));
         for (int i = 0; i < vertexList.size(); i++) {
             orderedVertices[i] = vertexList.get(i);
+            orderedVertices[i].setOrder(i);
         }
     }
 

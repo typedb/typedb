@@ -61,6 +61,7 @@ public abstract class ProcedureVertex<
 
     private final boolean isStartingVertex;
     private ProcedureEdge<?, ?> lastInEdge;
+    private int order;
 
     ProcedureVertex(Identifier identifier, boolean isStartingVertex) {
         super(identifier);
@@ -90,6 +91,18 @@ public abstract class ProcedureVertex<
 
     public ProcedureVertex.Type asType() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(ProcedureVertex.Type.class));
+    }
+
+    public int order() {
+        return order;
+    }
+
+    void setOrder(int order) {
+        this.order = order;
+    }
+
+    public boolean isScope() {
+        return false;
     }
 
     @Override
@@ -252,6 +265,13 @@ public abstract class ProcedureVertex<
                 default:
                     throw TypeDBException.of(ILLEGAL_STATE);
             }
+        }
+
+        @Override
+        public boolean isScope() {
+            // TODO: cache
+            return iterate(ins()).anyMatch(edge -> edge.isRolePlayer() || edge.from().id().isScoped()) ||
+                    iterate(outs()).anyMatch(edge -> edge.isRolePlayer() || edge.to().id().isScoped());
         }
 
         static Forwardable<AttributeVertex<?>, Order.Asc> filterAttributes(Forwardable<? extends ThingVertex, Order.Asc> iterator) {

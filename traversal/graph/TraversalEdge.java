@@ -24,7 +24,7 @@ public abstract class TraversalEdge<VERTEX_FROM extends TraversalVertex<?, ?>, V
     protected final VERTEX_TO to;
     protected final String symbol;
 
-    public TraversalEdge(VERTEX_FROM from, VERTEX_TO to, String symbol) {
+    protected TraversalEdge(VERTEX_FROM from, VERTEX_TO to, String symbol) {
         this.from = from;
         this.to = to;
         this.symbol = symbol;

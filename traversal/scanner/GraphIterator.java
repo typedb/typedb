@@ -22,14 +22,13 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
-import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
@@ -37,23 +36,22 @@ import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.concurrent.NotThreadSafe;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.TreeMap;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.intersect;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static java.util.stream.Collectors.toMap;
 
-@NotThreadSafe
 public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphIterator.class);
@@ -61,38 +59,28 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private final GraphManager graphMgr;
     private final GraphProcedure procedure;
     private final Traversal.Parameters params;
-    private final Set<Retrievable> filter;
-    private final Map<Identifier, Forwardable<? extends Vertex<?, ?>, Order.Asc>> iterators;
+    private final Set<Identifier.Variable.Retrievable> filter;
     private final Map<Identifier, Vertex<?, ?>> answer;
+    private final Map<Identifier, Forwardable<Vertex<?, ?>, Order.Asc>> iterators;
     private final Scopes scopes;
-    private final BranchSeekStack branchSeekStack;
-    private final int edgeCount;
-    private int computeNextSeekPos;
+    private final int vertexCount;
     private State state;
 
     enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
-                         Traversal.Parameters params, Set<Retrievable> filter) {
-        assert procedure.edgesCount() > 0;
+                         Traversal.Parameters params, Set<Identifier.Variable.Retrievable> filter) {
+        assert procedure.vertexCount() > 1;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.params = params;
         this.filter = filter;
-        this.edgeCount = procedure.edgesCount();
-        this.iterators = new HashMap<>();
         this.scopes = new Scopes();
-        this.branchSeekStack = new BranchSeekStack(edgeCount);
         this.state = State.INIT;
         this.answer = new HashMap<>();
-
-        Identifier startId = procedure.startVertex().id();
-        this.answer.put(startId, start);
-        if (startId.isScoped()) {
-            Identifier.Variable scope = startId.asScoped().scope();
-            Scopes.Scoped scoped = scopes.getOrInitialise(scope);
-            scoped.push(start.asThing(), 0);
-        }
+        this.iterators = new HashMap<>();
+        this.iterators.put(procedure.startVertex().id(), iterateSorted(ASC, start));
+        this.vertexCount = procedure.vertexCount();
     }
 
     @Override
@@ -101,11 +89,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             if (state == State.COMPLETED) return false;
             else if (state == State.FETCHED) return true;
             else if (state == State.INIT) {
-                if (computeFirst(1)) state = State.FETCHED;
+                if (computeFirst(0)) state = State.FETCHED;
                 else setCompleted();
             } else if (state == State.EMPTY) {
-                computeNextSeekPos = edgeCount;
-                if (computeNext(edgeCount)) state = State.FETCHED;
+                if (computeNext(vertexCount - 1)) state = State.FETCHED;
                 else setCompleted();
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
@@ -124,182 +111,79 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
     }
 
-    private void setCompleted() {
-        state = State.COMPLETED;
-        recycle();
-    }
-
     private boolean computeFirst(int pos) {
-        if (answer.containsKey(procedure.edge(pos).to().id())) return computeFirstClosure(pos);
-        else return computeFirstBranch(pos);
-    }
-
-    private boolean computeFirstBranch(int pos) {
+        if (pos == vertexCount) return true;
         ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
-        Identifier vertexID = vertex.id();
+        Forwardable<Vertex<?, ?>, Order.Asc> iterator = iterators.get(vertex.id());
+        assert iterator.hasNext();
 
-        Forwardable<? extends Vertex<?, ?>, Order.Asc> toIter = branchVertex(vertex);
-
-        if (toIter.hasNext()) {
-            iterators.put(vertexID, toIter);
-            answer.put(vertexID, toIter.next());
-            if (pos == vertexCount) return true;
-            while (!computeFirst(pos + 1)) {
-                if (toIter.hasNext()) answer.put(vertexID, toIter.next());
-                else {
-                    answer.remove(vertexID);
-                    popScopes(pos);
-//                    branchFailure(pos);
-                    return false;
-                }
-
-//                if (pos == branchSeekStack.peekLastPos()) {
-//                    branchSeekStack.popLastPos();
-//                    if (toIter.hasNext()) answer.put(toID, toIter.next());
-//                    else {
-//                        popScope(pos);
-//                        answer.remove(toID);
-//                        branchFailure(edge);
-//                        return false;
-//                    }
-//                } else {
-//                    popScope(pos);
-//                    answer.remove(toID);
-//                    toIter.recycle();
-//                    return false;
-//                }
-            }
-            // TODO if it is not permutationRequired, at this point we should finish/limit the iterator.
-            return true;
-        } else {
-            popScopes(pos);
-//            branchFailure(pos);
-            return false;
+        Vertex<?, ?> candidate = iterator.next();
+        while (!verify(pos, vertex, candidate)) {
+            popScopes(vertex);
+            if (iterator.hasNext()) candidate = iterator.next();
+            else return false;
         }
+        answer.put(vertex.id(), candidate);
+        return computeFirst(pos + 1);
     }
 
-    private Forwardable<? extends Vertex<?, ?>, Order.Asc> branchVertex(ProcedureVertex<?, ?> vertex) {
-        assert iterate(vertex.ins()).allMatch(e -> answer.containsKey(e.from().id()));
-        // TODO: if we can do an incremental intersection, starting from the earliest predecessor to the latest one
-        //       then we can immediately detect where the intersection failed and seek back to that point
-        //       rather than first going back to the predecessor, then the previous predecessor, up to the one that caused the failure
-        // TODO: we may also be able to implement this idea eagerly from the start of an edge, rather than lazily from the end of an edge and fail earlier.
-        //       however this will cause more iterators to be opened to test for the existence of an intersection (?) Also, what about scopes?
-        // TODO: another thing to consider is that this will not take advantage of intersecting N iterators, only 2 at a time. So we won't exactly get min(1...n) iter size operations...
-        return intersect(iterate(vertex.ins()).map(edge -> branch(answer.get(edge.from().id()), edge)), ASC);
-    }
-
-    private boolean computeFirstClosure(int pos) {
-        ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        if (isClosure(edge, answer.get(edge.from().id()), answer.get(edge.to().id()))) {
-            if (pos == edgeCount) return true;
-            else if (computeFirst(pos + 1)) return true;
-            else {
-                popScope(pos);
+    private boolean verify(int pos, ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate) {
+        for (ProcedureEdge<?, ?> edge : vertex.outs()) {
+            ProcedureVertex<?, ?> to = edge.to();
+            if (to.equals(vertex) && !isClosure(edge, candidate, candidate)) {
                 return false;
             }
-        } else {
-            closureFailure(edge);
-            return false;
         }
+
+        Set<ProcedureVertex<?, ?>> iteratorsModified = new HashSet<>();
+        for (ProcedureEdge<?, ?> edge : vertex.outs()) {
+            ProcedureVertex<?, ?> to = edge.to();
+            if (!to.equals(vertex)) {
+                Forwardable<Vertex<?, ?>, Order.Asc> toIter = iterators.containsKey(to.id()) ?
+                        intersect(branch(candidate, edge), iterators.get(to.id())) :
+                        branch(candidate, edge);
+                if (!toIter.hasNext()) {
+                    iteratorsModified.forEach(v -> renewIterator(v, pos));
+                    return false;
+                } else {
+                    iteratorsModified.add(to);
+                    iterators.put(to.id(), toIter);
+                }
+            }
+        }
+        return true;
     }
 
-    private void branchFailure(ProcedureEdge<?, ?> edge) {
-        if (edge.onlyStartsFromRelation()) {
-            assert edge.from().id().isVariable();
-            scopes.get(edge.from().id().asVariable()).edgeOrders().forEach(pos -> {
-                if (!procedure.edge(pos).isClosureEdge()) branchSeekStack.addSeek(pos);
-            });
+    private void renewIterator(ProcedureVertex<?, ?> vertex, int upTo) {
+        iterators.remove(vertex.id());
+        if (vertex.isScope()) popScopes(vertex);
+        List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
+        for (ProcedureEdge<?, ?> edge : vertex.ins()) {
+            if (edge.from().equals(vertex) || edge.from().order() >= upTo) continue;
+            iters.add(branch(answer.get(edge.from().id()), edge));
         }
-        branchSeekStack.addSeeks(edge.from().dependedEdgeOrders());
+        iterators.put(vertex.id(), intersect(iterate(iters), ASC));
     }
 
-    private void closureFailure(ProcedureEdge<?, ?> edge) {
-        assert edge.from().id().isVariable();
-        if (edge.onlyStartsFromRelation()) {
-            branchSeekStack.addSeeks(scopes.get(edge.from().id().asVariable()).edgeOrders());
-            branchSeekStack.addSeeks(edge.to().dependedEdgeOrders());
-        } else if (edge.onlyEndsAtRelation()) {
-            branchSeekStack.addSeeks(edge.from().dependedEdgeOrders());
-            branchSeekStack.addSeeks(scopes.get(edge.to().id().asVariable()).edgeOrders());
-        } else {
-            branchSeekStack.addSeeks(edge.to().dependedEdgeOrders());
-            branchSeekStack.addSeeks(edge.from().dependedEdgeOrders());
-        }
+    private void popScopes(ProcedureVertex<?, ?> vertex) {
+        assert vertex.isScope();
+        scopes.get(vertex.id().asVariable()).clear();
     }
 
     private boolean computeNext(int pos) {
-        if (pos == 0) return false;
-
-        ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        Identifier toID = edge.to().id();
-
-        if (pos == computeNextSeekPos) {
-            computeNextSeekPos = edgeCount;
-        } else if (pos > computeNextSeekPos) {
-            if (!edge.isClosureEdge()) iterators.get(toID).recycle();
-            if (!backTrack(pos)) return false;
-
-            if (edge.isClosureEdge()) {
-                Vertex<?, ?> fromVertex = answer.get(edge.from().id());
-                Vertex<?, ?> toVertex = answer.get(edge.to().id());
-                if (isClosure(edge, fromVertex, toVertex)) return true;
-                else return computeNextClosure(pos);
-            } else {
-                Forwardable<? extends Vertex<?, ?>, Order.Asc> toIter = branch(answer.get(edge.from().id()), edge);
-                iterators.put(toID, toIter);
-            }
-        }
-
-        if (edge.isClosureEdge()) {
-            return computeNextClosure(pos);
-        } else if (iterators.get(toID).hasNext()) {
-            answer.put(toID, iterators.get(toID).next());
-            return true;
-        } else {
-            return computeNextBranch(pos);
-        }
+        return false;
     }
 
-    private boolean computeNextClosure(int pos) {
-        ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        do {
-
-            if (backTrack(pos)) {
-                Vertex<?, ?> fromVertex = answer.get(edge.from().id());
-                Vertex<?, ?> toVertex = answer.get(edge.to().id());
-                if (isClosure(edge, fromVertex, toVertex)) return true;
-            } else {
-                return false;
-            }
-        } while (true);
+    @Override
+    public VertexMap next() {
+        if (!hasNext()) throw new NoSuchElementException();
+        state = State.EMPTY;
+        return toVertexMap(answer);
     }
 
-    private boolean computeNextBranch(int pos) {
-        ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        Forwardable<? extends Vertex<?, ?>, Order.Asc> newIter;
-
-        do {
-            if (backTrack(pos)) {
-                Vertex<?, ?> fromVertex = answer.get(edge.from().id());
-                newIter = branch(fromVertex, edge);
-                if (!newIter.hasNext()) {
-                    if (edge.onlyStartsFromRelation() && !scopes.get(edge.from().id().asVariable()).isEmpty()) {
-                        computeNextSeekPos = scopes.get(edge.from().id().asVariable()).lastEdgeOrder();
-                    } else if (!edge.from().ins().isEmpty()) {
-                        computeNextSeekPos = edge.from().branchEdge().order();
-                    } else {
-                        assert edge.from().isStartingVertex() && !edge.onlyStartsFromRelation();
-                        computeNextSeekPos = 0;
-                    }
-                }
-            } else {
-                return false;
-            }
-        } while (!newIter.hasNext());
-        iterators.put(edge.to().id(), newIter);
-        answer.put(edge.to().id(), newIter.next());
-        return true;
+    private void setCompleted() {
+        state = State.COMPLETED;
+        recycle();
     }
 
     private boolean isClosure(ProcedureEdge<?, ?> edge, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex) {
@@ -311,7 +195,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
     }
 
-    private Forwardable<? extends Vertex<?, ?>, Order.Asc> branch(Vertex<?, ?> fromVertex, ProcedureEdge<?, ?> edge) {
+    private Forwardable<Vertex<?, ?>, Order.Asc> branch(Vertex<?, ?> fromVertex, ProcedureEdge<?, ?> edge) {
         Forwardable<? extends Vertex<?, ?>, Order.Asc> toIter;
         if (edge.to().id().isScoped()) {
             Identifier.Variable scope = edge.to().id().asScoped().scope();
@@ -319,8 +203,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             toIter = edge.branch(graphMgr, fromVertex, params).filter(role -> {
                 if (scoped.contains(role.asThing())) return false;
                 else {
-                    if (scoped.orderVisited(edge.order())) scoped.replaceLast(role.asThing(), edge.order());
-                    else scoped.push(role.asThing(), edge.order());
+                    if (scoped.containsSource(edge)) scoped.replace(role.asThing(), edge);
+                    else scoped.record(role.asThing(), edge);
                     return true;
                 }
             });
@@ -330,8 +214,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params).filter(thingAndRole -> {
                 if (scoped.contains(thingAndRole.value())) return false;
                 else {
-                    if (scoped.orderVisited(edge.order())) scoped.replaceLast(thingAndRole.value(), edge.order());
-                    else scoped.push(thingAndRole.value(), edge.order());
+                    if (scoped.containsSource(edge)) scoped.replace(thingAndRole.value(), edge);
+                    else scoped.record(thingAndRole.value(), edge);
                     return true;
                 }
             }).mapSorted(KeyValue::key, key -> KeyValue.of(key, null), ASC);
@@ -343,30 +227,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             //       an entire tree, where none of the leaves are referenced by name
             toIter = toIter.limit(1);
         }
-        return toIter;
-    }
 
-    private boolean backTrack(int pos) {
-        popScope(pos);
-        return computeNext(pos - 1);
-    }
-
-    private void popScope(int pos) {
-        ProcedureEdge<?, ?> edge = procedure.edge(pos);
-        if (edge.to().id().isScoped()) {
-            Identifier.Variable scope = edge.to().id().asScoped().scope();
-            if (scopes.get(scope).orderVisited(pos)) scopes.get(scope).popLast();
-        } else if (edge.isRolePlayer()) {
-            Identifier.Variable scope = edge.asRolePlayer().scope();
-            if (scopes.get(scope).orderVisited(pos)) scopes.get(scope).popLast();
-        }
-    }
-
-    @Override
-    public VertexMap next() {
-        if (!hasNext()) throw new NoSuchElementException();
-        state = State.EMPTY;
-        return toVertexMap(answer);
+        // TODO: this cast is a tradeoff between losing a lot of type safety in the ProcedureEdge branch() return type vs having a cast
+        return (Forwardable<Vertex<?, ?>, Order.Asc>) toIter;
     }
 
     private VertexMap toVertexMap(Map<Identifier, Vertex<?, ?>> answer) {
@@ -381,6 +244,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     public void recycle() {
         iterators.values().forEach(FunctionalIterator::recycle);
     }
+
 
     public static class Scopes {
 
@@ -402,100 +266,66 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         public static class Scoped {
 
             Set<ThingVertex> roles;
-            TreeMap<Integer, ThingVertex> visited;
+            Map<ProcedureVertex<?, ?>, ThingVertex> vertexSources;
+            Map<ProcedureEdge<?, ?>, ThingVertex> edgeSources;
 
             private Scoped() {
-                this.roles = new HashSet<>();
-                visited = new TreeMap<>();
-            }
-
-            public Collection<Integer> edgeOrders() {
-                return visited.keySet();
+                roles = new HashSet<>();
+                vertexSources = new HashMap<>();
+                edgeSources = new HashMap<>();
             }
 
             public boolean isEmpty() {
-                assert roles.size() == visited.size();
-                return visited.isEmpty();
-            }
-
-            public Integer lastEdgeOrder() {
-                assert !isEmpty();
-                return visited.lastKey();
+                return roles.isEmpty();
             }
 
             public boolean contains(ThingVertex roleVertex) {
                 return roles.contains(roleVertex);
             }
 
-            public void popLast() {
-                ThingVertex poppedRole = visited.remove(lastEdgeOrder());
-                assert roles.contains(poppedRole);
-                roles.remove(poppedRole);
+            public boolean containsSource(ProcedureVertex<?, ?> vertex) {
+                return vertexSources.containsKey(vertex);
             }
 
-            public void push(ThingVertex role, int order) {
-                assert (isEmpty() || order > lastEdgeOrder()) && !roles.contains(role);
-                visited.put(order, role);
+            public boolean containsSource(ProcedureEdge<?, ?> edge) {
+                return edgeSources.containsKey(edge);
+            }
+
+            public void record(ThingVertex role, ProcedureEdge<?, ?> edge) {
+                assert !roles.contains(role) && edge.isRolePlayer();
+                roles.add(role);
+                edgeSources.put(edge, role);
+            }
+
+            public void record(ThingVertex role, ProcedureVertex<?, ?> vertex) {
+                assert !roles.contains(role) && vertex.id().isScoped();
+                roles.add(role);
+                vertexSources.put(vertex, role);
+            }
+
+            public void replace(ThingVertex role, ProcedureEdge<?, ?> edge) {
+                assert edge.isRolePlayer();
+                ThingVertex oldRole = edgeSources.remove(edge);
+                assert roles.contains(oldRole);
+                roles.remove(oldRole);
+                edgeSources.put(edge, role);
                 roles.add(role);
             }
 
-            public void replaceLast(ThingVertex newRole, int order) {
-                assert order == lastEdgeOrder();
-                ThingVertex oldRole = visited.remove(order);
+            public void replace(ThingVertex role, ProcedureVertex<?, ?> vertex) {
+                assert vertex.id().isScoped();
+                ThingVertex oldRole = vertexSources.remove(vertex);
                 assert roles.contains(oldRole);
                 roles.remove(oldRole);
-                visited.put(order, newRole);
-                roles.add(newRole);
+                vertexSources.put(vertex, role);
+                roles.add(role);
             }
 
-            public boolean orderVisited(int order) {
-                return visited.containsKey(order);
+            public void clear() {
+                roles.clear();
+                vertexSources.clear();
+                edgeSources.clear();
             }
-        }
-    }
-
-    private class BranchSeekStack {
-
-        private boolean[] seek;
-        private int lastPos;
-
-        private BranchSeekStack(int size) {
-            seek = new boolean[size];
-            lastPos = 0;
-        }
-
-        private void addSeeks(Collection<Integer> seeks) {
-            seeks.forEach(this::setSeek);
-        }
-
-        public void addSeek(Integer pos) {
-            setSeek(pos);
-        }
-
-        private void setSeek(int pos) {
-            assert !procedure.edge(pos).isClosureEdge();
-            seek[pos - 1] = true;
-            if (pos > lastPos) lastPos = pos;
-        }
-
-        private int popLastPos() {
-            assert lastPos > 0;
-            seek[lastPos - 1] = false;
-            int currentLastPos = lastPos;
-
-            for (int p = lastPos - 1; p >= 0; p--) {
-                if (p > 0 && seek[p - 1]) {
-                    lastPos = p;
-                    break;
-                } else if (p == 0) {
-                    lastPos = 0;
-                }
-            }
-            return currentLastPos;
-        }
-
-        private int peekLastPos() {
-            return lastPos;
         }
     }
 }
