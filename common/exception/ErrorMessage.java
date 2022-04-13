@@ -278,13 +278,13 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_REGEX =
                 new Pattern(15, "The type variable '%s' has multiple 'regex' constraints.");
         public static final Pattern UNSATISFIABLE_PATTERN =
-                new Pattern(16, "The pattern '%s' can never be satisfied the current schema.");
+                new Pattern(16, "The pattern '%s' can never be satisfied in the current schema.");
         public static final Pattern UNSATISFIABLE_SUB_PATTERN =
-                new Pattern(17, "The pattern '%s' can never be satisfied the current schema, due to '%s'.");
+                new Pattern(17, "The pattern '%s' can never be satisfied in the current schema, due to '%s'.");
         public static final Pattern UNSATISFIABLE_PATTERN_VARIABLE =
-                new Pattern(18, "The pattern '%s' can never be satisfied the current schema, due to contradicting types for '%s'.");
+                new Pattern(18, "The pattern '%s' can never be satisfied in the current schema, due to contradicting types for '%s'.");
         public static final Pattern UNSATISFIABLE_PATTERN_VARIABLE_VALUE =
-                new Pattern(19, "The pattern '%s' can never be satisfied the current schema, due to contradicting attribute value types for '%s'.");
+                new Pattern(19, "The pattern '%s' can never be satisfied in the current schema, due to contradicting attribute value types for '%s'.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";
