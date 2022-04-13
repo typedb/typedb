@@ -71,6 +71,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
                          Traversal.Parameters params, Set<Identifier.Variable.Retrievable> filter) {
         assert procedure.vertexCount() > 1;
+        System.out.println(procedure.toString());
         this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.params = params;
@@ -119,7 +120,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         Vertex<?, ?> candidate = iterator.next();
         while (!verify(pos, vertex, candidate)) {
-            mayPopScopes(vertex);
+            mayPopAllScopes(vertex);
             if (iterator.hasNext()) candidate = iterator.next();
             else {
                 iterators.remove(vertex.id());
@@ -141,9 +142,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         while (!verified) {
             if (!iterator.hasNext()) {
                 iterators.remove(vertex.id());
-                mayPopScopes(vertex);
-                if (!(computeNext(pos - 1))) return false;
-                else iterator = iterators.get(vertex.id());
+                mayPopAllScopes(vertex);
+                if (!computeNext(pos - 1)) return false;
+                else {
+                    if (!iterators.containsKey(vertex.id())) renewIterator(vertex, pos);
+                    iterator = iterators.get(vertex.id());
+                }
             }
             candidate = iterator.next();
             verified = verify(pos, vertex, candidate);
@@ -169,6 +173,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                         intersect(branch(candidate, edge), iterators.get(to.id())) :
                         branch(candidate, edge);
                 if (!toIter.hasNext()) {
+                    mayPopScopesFromOutgoingEdges(vertex);
                     iteratorsModified.forEach(v -> {
                         iterators.remove(v.id());
                         renewIterator(v, pos);
@@ -184,7 +189,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void renewIterator(ProcedureVertex<?, ?> vertex, int upTo) {
-        mayPopScopes(vertex);
+        mayPopAllScopes(vertex);
         List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
         for (ProcedureEdge<?, ?> edge : vertex.ins()) {
             if (edge.from().equals(vertex) || edge.from().order() >= upTo) continue;
@@ -193,9 +198,19 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         iterators.put(vertex.id(), intersect(iterate(iters), ASC));
     }
 
-    private void mayPopScopes(ProcedureVertex<?, ?> vertex) {
+    private void mayPopAllScopes(ProcedureVertex<?, ?> vertex) {
         if (vertex.id().isVariable() && scopes.isScoped(vertex.id().asVariable())) {
             scopes.get(vertex.id().asVariable()).clear();
+        }
+    }
+
+    private void mayPopScopesFromOutgoingEdges(ProcedureVertex<?, ?> vertex) {
+        if (vertex.id().isVariable() && scopes.isScoped(vertex.id().asVariable())) {
+            for (ProcedureEdge<?, ?> edge : vertex.outs()) {
+                if (edge.isRolePlayer() && scopes.get(vertex.id().asVariable()).containsSource(edge)) {
+                    scopes.get(vertex.id().asVariable()).removeSource(edge);
+                }
+            }
         }
     }
 
@@ -339,6 +354,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 roles.remove(oldRole);
                 edgeSources.put(edge, role);
                 roles.add(role);
+            }
+
+            public void removeSource(ProcedureEdge<?, ?> edge) {
+                assert edge.isRolePlayer() && edgeSources.containsKey(edge);
+                ThingVertex role = edgeSources.remove(edge);
+                roles.remove(role);
             }
 
             public void replace(ThingVertex role, ProcedureVertex<?, ?> vertex) {
