@@ -478,7 +478,7 @@ public class ControllerTest {
         return transaction;
     }
 
-    private static class AnswerProducer implements ReasonerConsumer {
+    private static class AnswerProducer implements ReasonerConsumer<ConceptMap> {
 
         public LinkedBlockingQueue<ConceptMap> responses;
         public LinkedBlockingQueue<Throwable> exceptions;
@@ -503,7 +503,7 @@ public class ControllerTest {
         }
 
         @Override
-        public void initialise(Actor.Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootProcessor) {
+        public void initialise(Actor.Driver<? extends AbstractReactiveBlock<?, ConceptMap, ?, ?>> rootProcessor) {
             this.rootProcessor = rootProcessor;
             if (pullOnSet) pull();
         }

@@ -35,12 +35,12 @@ public class RootDisjunctionController
 
     private final Set<Identifier.Variable.Retrievable> filter;
     private final Driver<Monitor> monitor;
-    private final ReasonerConsumer reasonerConsumer;
+    private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
     public RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
                                      Set<Identifier.Variable.Retrievable> filter, ActorExecutorGroup executorService,
                                      Driver<Monitor> monitor, Registry registry,
-                                     ReasonerConsumer reasonerConsumer) {
+                                     ReasonerConsumer<ConceptMap> reasonerConsumer) {
         super(driver, disjunction, executorService, registry);
         this.filter = filter;
         this.monitor = monitor;
@@ -70,14 +70,14 @@ public class RootDisjunctionController
     protected static class ReactiveBlock extends DisjunctionController.ReactiveBlock<ReactiveBlock> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
-        private final ReasonerConsumer reasonerConsumer;
-        private RootSink rootSink;
+        private final ReasonerConsumer<ConceptMap> reasonerConsumer;
+        private RootSink<ConceptMap> rootSink;
 
         protected ReactiveBlock(Driver<ReactiveBlock> driver,
                                 Driver<RootDisjunctionController> controller, Driver<Monitor> monitor,
                                 Disjunction disjunction, ConceptMap bounds,
                                 Set<Identifier.Variable.Retrievable> filter,
-                                ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
+                                ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, monitor, disjunction, bounds, debugName);
             this.filter = filter;
             this.reasonerConsumer = reasonerConsumer;
@@ -86,7 +86,7 @@ public class RootDisjunctionController
         @Override
         public void setUp() {
             super.setUp();
-            rootSink = new RootSink(this, reasonerConsumer);
+            rootSink = new RootSink<>(this, reasonerConsumer);
             outputRouter().registerSubscriber(rootSink);
         }
 

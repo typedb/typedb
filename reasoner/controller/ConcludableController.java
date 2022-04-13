@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
+import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.answer.PartialExplanation;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
@@ -37,6 +38,7 @@ import com.vaticle.typedb.core.reasoner.reactive.Input;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Stream;
+import com.vaticle.typedb.core.reasoner.reactive.RootSink;
 import com.vaticle.typedb.core.reasoner.reactive.Source;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.utils.Traversal;
@@ -139,9 +141,21 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
     public static class Explain extends ConcludableController<PartialExplanation, Explanation, ReactiveBlock.Explain.Request, ReactiveBlock.Explain, Explain> {
 
-        public Explain(Driver<Explain> driver, Concludable concludable, ActorExecutorGroup executorService,
-                       Driver<Monitor> monitor, Registry registry) {
+        private final ConceptMap bounds;
+        private final ReasonerConsumer<Explanation> reasonerConsumer;
+
+        public Explain(Driver<Explain> driver, Concludable concludable, ConceptMap bounds,
+                       ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry,
+                       ReasonerConsumer<Explanation> reasonerConsumer) {
             super(driver, concludable, executorService, monitor, registry);
+            this.bounds = bounds;
+            this.reasonerConsumer = reasonerConsumer;
+        }
+
+        @Override
+        public void initialise() {
+            super.initialise();
+            createReactiveBlockIfAbsent(bounds);
         }
 
         @Override
@@ -149,8 +163,9 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                                                                       ConceptMap bounds) {
             // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
             //  concludable. They should be filtered before being passed to the concludableReactiveBlock's constructor
+            assert bounds.equals(this.bounds);
             return new ReactiveBlock.Explain(
-                    explainDriver, driver(), monitor, bounds, set(), conclusionUnifiers,
+                    explainDriver, driver(), monitor, bounds, set(), conclusionUnifiers, reasonerConsumer,
                     () -> Traversal.traversalIterator(registry, concludable.pattern(), bounds),
                     () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
             );
@@ -265,13 +280,32 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
         public static class Explain extends ReactiveBlock<PartialExplanation, Explanation, Explain.Request, Explain> {
 
+            private final ReasonerConsumer<Explanation> reasonerConsumer;
+            private RootSink<Explanation> rootSink;
+
             public Explain(
                     Driver<Explain> driver, Driver<ConcludableController.Explain> controller, Driver<Monitor> monitor,
                     ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
-                    Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, Supplier<String> debugName
+                    ReasonerConsumer<Explanation> reasonerConsumer,
+                    Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
+                    Supplier<String> debugName
             ) {
-                super(driver, controller, monitor, bounds, unboundVars, conclusionUnifiers, traversalSuppplier, debugName);
+                super(driver, controller, monitor, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
+                      debugName);
+                this.reasonerConsumer = reasonerConsumer;
+            }
+
+            @Override
+            public void setUp() {
+                super.setUp();
+                rootSink = new RootSink<>(this, reasonerConsumer);
+                outputRouter().registerSubscriber(rootSink);
+            }
+
+            @Override
+            public void rootPull() {
+                rootSink.pull();
             }
 
             @Override

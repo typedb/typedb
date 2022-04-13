@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.LogicManager;
@@ -33,6 +34,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
+import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -121,7 +123,7 @@ public class Registry {
     }
 
     public void registerRootConjunctionController(Conjunction conjunction, Set<Variable.Retrievable> filter,
-                                                  ReasonerConsumer reasonerConsumer) {
+                                                  ReasonerConsumer<ConceptMap> reasonerConsumer) {
         LOG.debug("Creating Root Conjunction for: '{}'", conjunction);
         Actor.Driver<RootConjunctionController> controller =
                 Actor.driver(driver -> new RootConjunctionController(driver, conjunction, filter, executorService,
@@ -133,7 +135,7 @@ public class Registry {
 
     public void registerRootDisjunctionController(Disjunction disjunction,
                                                   Set<Variable.Retrievable> filter,
-                                                  ReasonerConsumer reasonerConsumer) {
+                                                  ReasonerConsumer<ConceptMap> reasonerConsumer) {
         LOG.debug("Creating Root Disjunction for: '{}'", disjunction);
         Actor.Driver<RootDisjunctionController> controller =
                 Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, filter, executorService,
@@ -143,13 +145,14 @@ public class Registry {
         if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
     }
 
-//    public void registerExplainableRoot(Concludable concludable, ReasonerConsumer reasonerConsumer) {
-//        controller = Actor.driver(
-//                driver -> new RootResolver.Explain(driver, concludable, monitor, this, reasonerConsumer), executorService);
-//        controller.execute(RootDisjunctionController::initialise);
-//        controllers.add(controller);
-//        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
-//    }
+    public void registerExplainableRoot(Concludable concludable, ConceptMap bounds, ReasonerConsumer<Explanation> reasonerConsumer) {
+        Actor.Driver<ConcludableController.Explain> controller = Actor.driver(
+                driver -> new ConcludableController.Explain(driver, concludable, bounds, executorService, monitor, this,
+                                                            reasonerConsumer), executorService);
+        controller.execute(ConcludableController.Explain::initialise);
+        controllers.add(controller);
+        if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
+    }
 
     public Actor.Driver<NestedConjunctionController> registerNestedConjunctionController(Conjunction conjunction) {
         LOG.debug("Creating Nested Conjunction for: '{}'", conjunction);

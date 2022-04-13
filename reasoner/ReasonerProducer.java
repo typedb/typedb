@@ -21,8 +21,10 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
@@ -36,22 +38,21 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @ThreadSafe
-public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer { // TODO: Rename to MatchProducer and create abstract supertype
+public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, ReasonerConsumer<ANSWER> { // TODO: Rename to MatchProducer and create abstract supertype
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
-    private final AtomicInteger required;
-    private final Options.Query options;
     private final Registry controllerRegistry;
-    private final ExplainablesManager explainablesManager;
     private boolean done;
-    private Queue<ConceptMap> queue;
-    private Actor.Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock;
-    private boolean isPulling;
+    private Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock;
+    protected final AtomicInteger required;
+    protected final Options.Query options;
+    protected final ExplainablesManager explainablesManager;
+    protected Queue<ANSWER> queue;
+    protected boolean isPulling;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
-    public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
-                            Registry controllerRegistry, ExplainablesManager explainablesManager) {
+    public ReasonerProducer(Options.Query options, Registry controllerRegistry, ExplainablesManager explainablesManager) {
         this.options = options;
         this.controllerRegistry = controllerRegistry;
         this.explainablesManager = explainablesManager;
@@ -59,38 +60,25 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
         this.done = false;
         this.required = new AtomicInteger();
         this.isPulling = false;
-        this.controllerRegistry.registerRootConjunctionController(conjunction, filter, this);  // TODO: Doesn't indicate that this also triggers the setup of the upstream controllers and creates a reactiveBlock and connects it back to this producer. Clean up this storyline.
         if (options.traceInference()) {
             Tracer.initialise(options.reasonerDebuggerDir());
             Tracer.get().startDefaultTrace();
         }
     }
 
-    public ReasonerProducer(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
-                            Registry controllerRegistry, ExplainablesManager explainablesManager) {
-        this.options = options;
-        this.controllerRegistry = controllerRegistry;
-        this.explainablesManager = explainablesManager;
-        this.queue = null;
-        this.done = false;
-        this.required = new AtomicInteger();
-        this.isPulling = false;
-        this.controllerRegistry.registerRootDisjunctionController(disjunction, filter, this);
-        if (options.traceInference()) {
-            Tracer.initialise(options.reasonerDebuggerDir());
-            Tracer.get().startDefaultTrace();
-        }
+    protected Registry controllerRegistry() {
+        return controllerRegistry;
     }
 
     @Override
-    public void initialise(Actor.Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock) {
+    public void initialise(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock) {
         assert this.rootReactiveBlock == null;
         this.rootReactiveBlock = rootReactiveBlock;
         if (required.get() > 0) pull();
     }
 
     @Override
-    public synchronized void produce(Queue<ConceptMap> queue, int request, Executor executor) {
+    public synchronized void produce(Queue<ANSWER> queue, int request, Executor executor) {
         assert this.queue == null || this.queue == queue;
         assert request > 0;
         this.queue = queue;
@@ -98,20 +86,7 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
         if (rootReactiveBlock != null && !isPulling) pull();
     }
 
-    @Override
-    public void receiveAnswer(ConceptMap answer) {
-        isPulling = false;
-        // if (options.traceInference()) Tracer.get().finishDefaultTrace();
-        // TODO: The explainables can always be given
-        if (options.explain() && !answer.explainables().isEmpty()) {
-            // TODO: Explainables recorded here
-            explainablesManager.setAndRecordExplainables(answer);
-        }
-        queue.put(answer);
-        if (required.decrementAndGet() > 0) pull();
-    }
-
-    private void pull() {
+    protected void pull() {
         assert rootReactiveBlock != null;
         isPulling = true;
         rootReactiveBlock.execute(actor -> actor.rootPull());
@@ -147,4 +122,53 @@ public class ReasonerProducer implements Producer<ConceptMap>, ReasonerConsumer 
 
     }
 
+    public static class Match extends ReasonerProducer<ConceptMap> {
+
+        public Match(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
+                     Registry controllerRegistry, ExplainablesManager explainablesManager) {
+            super(options, controllerRegistry, explainablesManager);
+            controllerRegistry().registerRootConjunctionController(conjunction, filter, this);  // TODO: Doesn't indicate that this also triggers the setup of the upstream controllers and creates a reactiveBlock and connects it back to this producer. Clean up this storyline.
+        }
+
+        public Match(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
+                     Registry controllerRegistry, ExplainablesManager explainablesManager) {
+            super(options, controllerRegistry, explainablesManager);
+            controllerRegistry().registerRootDisjunctionController(disjunction, filter, this);  // TODO: Doesn't indicate that this also triggers the setup of the upstream controllers and creates a reactiveBlock and connects it back to this producer. Clean up this storyline.
+        }
+
+        @Override
+        public void receiveAnswer(ConceptMap answer) {
+            isPulling = false;
+            // if (options.traceInference()) Tracer.get().finishDefaultTrace();
+            // TODO: The explainables can always be given
+            if (options.explain() && !answer.explainables().isEmpty()) {
+                // TODO: Explainables recorded here
+                explainablesManager.setAndRecordExplainables(answer);
+            }
+            queue.put(answer);
+            if (required.decrementAndGet() > 0) pull();
+        }
+
+    }
+
+    public static class Explain extends ReasonerProducer<Explanation> {
+
+        public Explain(Concludable concludable, ConceptMap bounds, Options.Query options, Registry controllerRegistry,
+                       ExplainablesManager explainablesManager) {
+            super(options, controllerRegistry, explainablesManager);
+            controllerRegistry.registerExplainableRoot(concludable, bounds, this);
+        }
+
+        @Override
+        public void receiveAnswer(Explanation explanation) {
+            isPulling = false;
+            // if (options.traceInference()) Tracer.get().finishDefaultTrace();
+            if (!explanation.conditionAnswer().explainables().isEmpty()) {
+                explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
+            }
+            queue.put(explanation);
+            if (required.decrementAndGet() > 0) pull();
+        }
+
+    }
 }

@@ -26,18 +26,18 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer.Trace;
 import javax.annotation.Nullable;
 import java.util.UUID;
 
-public class RootSink implements Reactive.Subscriber.Finishable<ConceptMap>, Reactive.Subscriber<ConceptMap> {
+public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>, Reactive.Subscriber<PACKET> {
 
     private final Identifier<?, ?> identifier;
     private final UUID traceId = UUID.randomUUID();
-    private final ReasonerConsumer reasonerConsumer;
-    private final PublisherRegistry.Single<ConceptMap> publisherRegistry;
-    private final AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock;
-    private final AbstractReactive.SubscriberActionsImpl<ConceptMap> subscriberActions;
+    private final ReasonerConsumer<PACKET> reasonerConsumer;
+    private final PublisherRegistry.Single<PACKET> publisherRegistry;
+    private final AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
+    private final AbstractReactive.SubscriberActionsImpl<PACKET> subscriberActions;
     private boolean isPulling;
     private int traceCounter = 0;
 
-    public RootSink(AbstractReactiveBlock<ConceptMap, ?, ?, ?> reactiveBlock, ReasonerConsumer reasonerConsumer) {
+    public RootSink(AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock, ReasonerConsumer<PACKET> reasonerConsumer) {
         this.publisherRegistry = new PublisherRegistry.Single<>();
         this.reactiveBlock = reactiveBlock;
         this.subscriberActions = new AbstractReactive.SubscriberActionsImpl<>(this);
@@ -59,7 +59,7 @@ public class RootSink implements Reactive.Subscriber.Finishable<ConceptMap>, Rea
     }
 
     @Override
-    public void receive(@Nullable Publisher<ConceptMap> publisher, ConceptMap packet) {
+    public void receive(@Nullable Publisher<PACKET> publisher, PACKET packet) {
         subscriberActions.traceReceive(publisher, packet);
         publisherRegistry().recordReceive(publisher);
         isPulling = false;
@@ -68,7 +68,7 @@ public class RootSink implements Reactive.Subscriber.Finishable<ConceptMap>, Rea
     }
 
     @Override
-    public void registerPublisher(Publisher<ConceptMap> publisher) {
+    public void registerPublisher(Publisher<PACKET> publisher) {
         if (publisherRegistry().add(publisher)) subscriberActions.registerPath(publisher);
         if (isPulling && publisherRegistry().setPulling()) publisher.pull(this);
     }
@@ -86,12 +86,12 @@ public class RootSink implements Reactive.Subscriber.Finishable<ConceptMap>, Rea
         reasonerConsumer.finished();
     }
 
-    protected PublisherRegistry.Single<ConceptMap> publisherRegistry() {
+    protected PublisherRegistry.Single<PACKET> publisherRegistry() {
         return publisherRegistry;
     }
 
     @Override
-    public AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock() {
+    public AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock() {
         return reactiveBlock;
     }
 }

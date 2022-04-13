@@ -40,12 +40,12 @@ public class RootConjunctionController
 
     private final Set<Identifier.Variable.Retrievable> filter;
     private final Driver<Monitor> monitor;
-    private final ReasonerConsumer reasonerConsumer;
+    private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
     public RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
                                      Set<Identifier.Variable.Retrievable> filter, ActorExecutorGroup executorService,
                                      Driver<Monitor> monitor, Registry registry,
-                                     ReasonerConsumer reasonerConsumer) {
+                                     ReasonerConsumer<ConceptMap> reasonerConsumer) {
         super(driver, conjunction, executorService, registry);
         this.filter = filter;
         this.monitor = monitor;
@@ -82,14 +82,14 @@ public class RootConjunctionController
     protected static class ReactiveBlock extends ConjunctionController.ReactiveBlock<ConceptMap, ReactiveBlock> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
-        private RootSink rootSink;
-        private final ReasonerConsumer reasonerConsumer;
+        private RootSink<ConceptMap> rootSink;
+        private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
         protected ReactiveBlock(Driver<ReactiveBlock> driver,
                                 Driver<RootConjunctionController> controller, Driver<Monitor> monitor,
                                 ConceptMap bounds, List<Resolvable<?>> plan,
                                 Set<Identifier.Variable.Retrievable> filter,
-                                ReasonerConsumer reasonerConsumer, Supplier<String> debugName) {
+                                ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, monitor, bounds, plan, debugName);
             this.filter = filter;
             this.reasonerConsumer = reasonerConsumer;
@@ -103,7 +103,7 @@ public class RootConjunctionController
                             .map(conceptMap -> conceptMap.filter(filter))
                             .distinct()
             );
-            rootSink = new RootSink(this, reasonerConsumer);
+            rootSink = new RootSink<>(this, reasonerConsumer);
             outputRouter().registerSubscriber(rootSink);
         }
 

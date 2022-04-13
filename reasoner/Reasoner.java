@@ -148,9 +148,9 @@ public class Reasoner {
 
     public FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter,
                                                            Context.Query context) {
-        ReasonerProducer producer = disjunction.conjunctions().size() == 1
-                ? new ReasonerProducer(disjunction.conjunctions().get(0), filter, context.options(), controllerRegistry, explainablesManager)
-                : new ReasonerProducer(disjunction, filter, context.options(), controllerRegistry, explainablesManager);
+        ReasonerProducer.Match producer = disjunction.conjunctions().size() == 1
+                ? new ReasonerProducer.Match(disjunction.conjunctions().get(0), filter, context.options(), controllerRegistry, explainablesManager)
+                : new ReasonerProducer.Match(disjunction, filter, context.options(), controllerRegistry, explainablesManager);
         return produce(producer, context.producer(), async1());
     }
 
@@ -209,8 +209,8 @@ public class Reasoner {
         Concludable explainableConcludable = explainablesManager.getConcludable(explainableId);
         ConceptMap explainableBounds = explainablesManager.getBounds(explainableId);
         return Producers.produce(
-                list(new ExplanationProducer(explainableConcludable, explainableBounds, defaultContext.options(),
-                                             controllerRegistry, explainablesManager)),
+                list(new ReasonerProducer.Explain(explainableConcludable, explainableBounds, defaultContext.options(),
+                                                  controllerRegistry, explainablesManager)),
                 Either.first(Arguments.Query.Producer.INCREMENTAL),
                 async1()
         );
