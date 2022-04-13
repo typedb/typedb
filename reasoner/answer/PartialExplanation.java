@@ -21,40 +21,49 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.traversal.common.Identifier;
-import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
-public class Explanation extends PartialExplanation {
+public class PartialExplanation {
 
-    private final Map<Retrievable, Set<Retrievable>> variableMapping;
+    private final Rule rule;
+    private final Map<Identifier.Variable, Concept> conclusionAnswer;
+    private final ConceptMap conditionAnswer;
     private final int hash;
 
-    public Explanation(Rule rule, Map<Retrievable, Set<Retrievable>> variableMapping,
-                       Map<Identifier.Variable, Concept> conclusionAnswer,
-                       ConceptMap conditionAnswer) {
-        super(rule, conclusionAnswer, conditionAnswer);
-        this.variableMapping = variableMapping;
-        this.hash = Objects.hash(super.hashCode(), variableMapping);
+    public PartialExplanation(Rule rule, Map<Identifier.Variable, Concept> conclusionAnswer, ConceptMap conditionAnswer) {
+        this.rule = rule;
+        this.conclusionAnswer = conclusionAnswer;
+        this.conditionAnswer = conditionAnswer;
+        this.hash = Objects.hash(rule, conclusionAnswer, conditionAnswer);
     }
 
-    public Map<Retrievable, Set<Retrievable>> variableMapping() {
-        return variableMapping;
+    public Rule rule() {
+        return rule;
+    }
+
+
+    public Map<Identifier.Variable, Concept> conclusionAnswer() {
+        return conclusionAnswer;
+    }
+
+    public ConceptMap conditionAnswer() {
+        return conditionAnswer;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        Explanation that = (Explanation) o;
-        return variableMapping.equals(that.variableMapping);
+        final PartialExplanation that = (PartialExplanation) o;
+        return Objects.equals(rule, that.rule) &&
+                Objects.equals(conclusionAnswer, that.conclusionAnswer) &&
+                Objects.equals(conditionAnswer, that.conditionAnswer);
     }
 
     @Override
     public int hashCode() {
-        return this.hash;
+        return hash;
     }
 }

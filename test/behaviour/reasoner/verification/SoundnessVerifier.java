@@ -80,9 +80,9 @@ class SoundnessVerifier {
                 .map(materialisation -> materialisation.boundConclusion().pattern().bounds());
         if (recordedThen.isPresent()) {
             // Update the inferred variables mapping between the two reasoners
-            assert recordedThen.get().concepts().keySet().equals(explanation.conclusionAnswer().concepts().keySet());
+            assert recordedThen.get().concepts().keySet().equals(explanation.conclusionAnswer().keySet());
             recordedThen.get().concepts().forEach((var, recordedConcept) -> {
-                Concept inferredConcept = explanation.conclusionAnswer().concepts().get(var);
+                Concept inferredConcept = explanation.conclusionAnswer().get(var);
                 if (inferredConceptMapping.containsKey(inferredConcept)) {
                     // Check that the mapping stored is one-to-one
                     assert inferredConceptMapping.get(inferredConcept).equals(recordedConcept);

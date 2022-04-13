@@ -751,7 +751,7 @@ public class ResponseBuilder {
                 tos.forEach(var -> listBuilder.addVars(var.name()));
                 builder.putVarMapping(from.name(), listBuilder.build());
             });
-            builder.setConclusion(conceptMap(explanation.conclusionAnswer()));
+            // builder.setConclusion(conceptMap(explanation.conclusionAnswer()));  // TODO: Update the protocol
             builder.setCondition(conceptMap(explanation.conditionAnswer()));
             return builder.build();
         }
