@@ -270,8 +270,8 @@ public abstract class ProcedureVertex<
         @Override
         public boolean isScope() {
             // TODO: cache
-            return iterate(ins()).anyMatch(edge -> edge.isRolePlayer() || edge.from().id().isScoped()) ||
-                    iterate(outs()).anyMatch(edge -> edge.isRolePlayer() || edge.to().id().isScoped());
+            return iterate(ins()).anyMatch(edge -> edge.onlyEndsAtRelation()|| edge.from().id().isScoped()) ||
+                    iterate(outs()).anyMatch(edge -> edge.onlyStartsFromRelation() || edge.to().id().isScoped());
         }
 
         static Forwardable<AttributeVertex<?>, Order.Asc> filterAttributes(Forwardable<? extends ThingVertex, Order.Asc> iterator) {

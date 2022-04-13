@@ -119,12 +119,34 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         Vertex<?, ?> candidate = iterator.next();
         while (!verify(pos, vertex, candidate)) {
-            popScopes(vertex);
+            if (vertex.isScope()) popScopes(vertex);
             if (iterator.hasNext()) candidate = iterator.next();
             else return false;
         }
         answer.put(vertex.id(), candidate);
         return computeFirst(pos + 1);
+    }
+
+    private boolean computeNext(int pos) {
+        assert pos < vertexCount;
+        if (pos == -1) return false;
+
+        ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
+        Forwardable<Vertex<?, ?>, Order.Asc> iterator = iterators.get(vertex.id());
+        boolean verified = false;
+        Vertex<?, ?> candidate = null;
+        while (!verified) {
+            if (!iterator.hasNext()) {
+                if (vertex.isScope()) popScopes(vertex);
+                if (!(computeNext(pos - 1))) return false;
+                else iterator = iterators.get(vertex.id());
+            }
+            candidate = iterator.next();
+            verified = verify(pos, vertex, candidate);
+        }
+
+        answer.put(vertex.id(), candidate);
+        return true;
     }
 
     private boolean verify(int pos, ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate) {
@@ -168,10 +190,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private void popScopes(ProcedureVertex<?, ?> vertex) {
         assert vertex.isScope();
         scopes.get(vertex.id().asVariable()).clear();
-    }
-
-    private boolean computeNext(int pos) {
-        return false;
     }
 
     @Override
