@@ -37,12 +37,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
@@ -153,9 +155,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             if (!iterator.hasNext()) {
                 iterators.remove(vertex.id());
                 mayUnscope(vertex);
+                mayUnscopeIns(vertex);
                 if (!computeNext(pos - 1)) return false;
                 else {
-                    if (!iterators.containsKey(vertex.id())) renewIterator(vertex, pos);
+                    if (!iterators.containsKey(vertex.id())) renewIteratorFromIns(vertex, pos);
                     iterator = iterators.get(vertex.id());
                 }
             }
@@ -168,29 +171,29 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private boolean verify(int pos, ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate) {
+        // TODO vertex should cache self-closures from ins and outs
         for (ProcedureEdge<?, ?> edge : vertex.outs()) {
-            ProcedureVertex<?, ?> to = edge.to();
-            if (to.equals(vertex) && !isClosure(edge, candidate, candidate)) {
+            if (edge.to().equals(vertex) && !isClosure(edge, candidate, candidate)) {
                 return false;
             }
         }
 
-        Set<ProcedureEdge<?, ?>> intersectionFound = new HashSet<>();
-        for (ProcedureEdge<?, ?> edge : vertex.outs()) {
+        Set<ProcedureEdge<?, ?>> forwardVerified = new HashSet<>();
+        // TODO for the backtracking to be correct when getting scope multiplicity, we must go over the out edges in order of destination...
+        for (ProcedureEdge<?, ?> edge : vertex.orderedOuts()) {
             ProcedureVertex<?, ?> to = edge.to();
             if (!to.equals(vertex)) {
                 Forwardable<Vertex<?, ?>, Order.Asc> toIter = iterators.containsKey(to.id()) ?
                         intersect(branch(candidate, edge), iterators.get(to.id())) :
                         branch(candidate, edge);
                 if (!toIter.hasNext()) {
-                    mayUnscope(intersectionFound);
-                    intersectionFound.forEach(e -> {
+                    forwardVerified.forEach(e -> {
                         iterators.remove(e.to().id());
-                        renewIterator(e.to(), pos);
+                        renewIteratorFromIns(e.to(), pos);
                     });
                     return false;
                 } else {
-                    intersectionFound.add(edge);
+                    forwardVerified.add(edge);
                     iterators.put(to.id(), toIter);
                 }
             }
@@ -204,16 +207,20 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
     }
 
-    private void mayUnscope(Set<ProcedureEdge<?, ?>> edges) {
-        for (ProcedureEdge<?, ?> edge : edges) {
-            if (edge.isRolePlayer()) scopes.get(edge.asRolePlayer().scope()).removeSource(edge);
+    private void mayUnscopeIns(ProcedureVertex<?, ?> vertex) {
+        for (ProcedureEdge<?, ?> edge : vertex.ins()) {
+            if (edge.isRolePlayer()) {
+                Scopes.Scoped scoped = scopes.get(edge.asRolePlayer().scope());
+                if (scoped.containsSource(edge)) scoped.removeSource(edge);
+            }
         }
     }
 
-    private void renewIterator(ProcedureVertex<?, ?> vertex, int upTo) {
+    private void renewIteratorFromIns(ProcedureVertex<?, ?> vertex, int maxInOrder) {
+        mayUnscopeIns(vertex);
         List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
         for (ProcedureEdge<?, ?> edge : vertex.ins()) {
-            if (edge.from().equals(vertex) || edge.from().order() >= upTo) continue;
+            if (edge.from().equals(vertex) || edge.from().order() >= maxInOrder) continue;
             iters.add(branch(answer.get(edge.from().id()), edge));
         }
         iterators.put(vertex.id(), intersect(iterate(iters), ASC));

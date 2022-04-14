@@ -37,11 +37,13 @@ import com.vaticle.typedb.core.traversal.predicate.Predicate;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -95,6 +97,14 @@ public abstract class ProcedureVertex<
 
     public int order() {
         return order;
+    }
+
+    private List<ProcedureEdge<?, ?>> orderedEdges;
+    public List<ProcedureEdge<?, ?>> orderedOuts() {
+        if (orderedEdges == null) {
+            orderedEdges = outs().stream().sorted(Comparator.comparingInt(e -> e.to().order())).collect(Collectors.toList());
+        }
+        return orderedEdges;
     }
 
     void setOrder(int order) {

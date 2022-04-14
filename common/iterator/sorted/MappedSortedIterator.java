@@ -90,8 +90,9 @@ public class MappedSortedIterator<
         if (!hasNext()) throw new NoSuchElementException();
         assert last == null || order.isValidNext(last, next) : "Sorted mapped iterator produces out of order values";
         last = next;
+        next = null;
         state = State.EMPTY;
-        return next;
+        return last;
     }
 
     @Override
