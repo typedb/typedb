@@ -123,7 +123,7 @@ public abstract class ConjunctionController<OUTPUT,
     protected static ConceptMap merge(ConceptMap c1, ConceptMap c2) {
         Map<Variable.Retrievable, Concept> compounded = new HashMap<>(c1.concepts());
         compounded.putAll(c2.concepts());
-        return new ConceptMap(compounded);
+        return new ConceptMap(compounded, c1.explainables().merge(c2.explainables()));
     }
 
     @Override

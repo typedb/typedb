@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.reactive.RootSink;
 import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -39,15 +40,17 @@ public class RootConjunctionController
         extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.ReactiveBlock> {
 
     private final Set<Identifier.Variable.Retrievable> filter;
+    private final boolean explain;
     private final Driver<Monitor> monitor;
     private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
     public RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
-                                     Set<Identifier.Variable.Retrievable> filter, ActorExecutorGroup executorService,
+                                     Set<Identifier.Variable.Retrievable> filter, boolean explain, ActorExecutorGroup executorService,
                                      Driver<Monitor> monitor, Registry registry,
                                      ReasonerConsumer<ConceptMap> reasonerConsumer) {
         super(driver, conjunction, executorService, registry);
         this.filter = filter;
+        this.explain = explain;
         this.monitor = monitor;
         this.reasonerConsumer = reasonerConsumer;
     }
@@ -61,7 +64,7 @@ public class RootConjunctionController
     @Override
     protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
         return new ReactiveBlock(
-                reactiveBlockDriver, driver(), monitor, bounds, plan(), filter, reasonerConsumer,
+                reactiveBlockDriver, driver(), monitor, bounds, plan(), filter, explain, reasonerConsumer,
                 () -> ReactiveBlock.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -83,26 +86,28 @@ public class RootConjunctionController
 
         private final Set<Identifier.Variable.Retrievable> filter;
         private RootSink<ConceptMap> rootSink;
+        private final boolean explain;
         private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
         protected ReactiveBlock(Driver<ReactiveBlock> driver,
                                 Driver<RootConjunctionController> controller, Driver<Monitor> monitor,
                                 ConceptMap bounds, List<Resolvable<?>> plan,
                                 Set<Identifier.Variable.Retrievable> filter,
-                                ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
+                                boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, monitor, bounds, plan, debugName);
             this.filter = filter;
+            this.explain = explain;
             this.reasonerConsumer = reasonerConsumer;
         }
 
         @Override
         public void setUp() {
-            setOutputRouter(
-                    TransformationStream.fanIn(this, new CompoundOperator(this, plan, bounds))
-                            .buffer()
-                            .map(conceptMap -> conceptMap.filter(filter))
-                            .distinct()
-            );
+            Stream<ConceptMap, ConceptMap> op = TransformationStream.fanIn(
+                    this, new CompoundOperator(this, plan, bounds)
+            ).buffer();
+            if (!explain) op = op.map(conceptMap -> conceptMap.filter(filter));
+            op = op.distinct();
+            setOutputRouter(op);
             rootSink = new RootSink<>(this, reasonerConsumer);
             outputRouter().registerSubscriber(rootSink);
         }

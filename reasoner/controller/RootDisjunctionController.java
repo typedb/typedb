@@ -34,15 +34,17 @@ public class RootDisjunctionController
         extends DisjunctionController<RootDisjunctionController.ReactiveBlock, RootDisjunctionController> {
 
     private final Set<Identifier.Variable.Retrievable> filter;
+    private final boolean explain;
     private final Driver<Monitor> monitor;
     private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
     public RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
-                                     Set<Identifier.Variable.Retrievable> filter, ActorExecutorGroup executorService,
-                                     Driver<Monitor> monitor, Registry registry,
+                                     Set<Identifier.Variable.Retrievable> filter, boolean explain,
+                                     ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry,
                                      ReasonerConsumer<ConceptMap> reasonerConsumer) {
         super(driver, disjunction, executorService, registry);
         this.filter = filter;
+        this.explain = explain;
         this.monitor = monitor;
         this.reasonerConsumer = reasonerConsumer;
     }
@@ -56,7 +58,7 @@ public class RootDisjunctionController
     @Override
     protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
         return new ReactiveBlock(
-                reactiveBlockDriver, driver(), monitor, disjunction, bounds, filter, reasonerConsumer,
+                reactiveBlockDriver, driver(), monitor, disjunction, bounds, filter, explain, reasonerConsumer,
                 () -> ReactiveBlock.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -70,16 +72,18 @@ public class RootDisjunctionController
     protected static class ReactiveBlock extends DisjunctionController.ReactiveBlock<ReactiveBlock> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
+        private final boolean explain;
         private final ReasonerConsumer<ConceptMap> reasonerConsumer;
         private RootSink<ConceptMap> rootSink;
 
         protected ReactiveBlock(Driver<ReactiveBlock> driver,
                                 Driver<RootDisjunctionController> controller, Driver<Monitor> monitor,
                                 Disjunction disjunction, ConceptMap bounds,
-                                Set<Identifier.Variable.Retrievable> filter,
+                                Set<Identifier.Variable.Retrievable> filter, boolean explain,
                                 ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, monitor, disjunction, bounds, debugName);
             this.filter = filter;
+            this.explain = explain;
             this.reasonerConsumer = reasonerConsumer;
         }
 
@@ -98,7 +102,10 @@ public class RootDisjunctionController
         @Override
         protected Reactive.Stream<ConceptMap, ConceptMap> getOutputRouter(Reactive.Stream<ConceptMap, ConceptMap> fanIn) {
             // Simply here to be overridden by root disjuntion to avoid duplicating setUp
-            return fanIn.map(conceptMap -> conceptMap.filter(filter)).distinct();
+            Reactive.Stream<ConceptMap, ConceptMap> op = fanIn;
+            if (!explain) op = op.map(conceptMap -> conceptMap.filter(filter));
+            op = op.distinct();
+            return op;
         }
 
         @Override

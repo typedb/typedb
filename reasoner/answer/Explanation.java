@@ -33,8 +33,7 @@ public class Explanation extends PartialExplanation {
     private final int hash;
 
     public Explanation(Rule rule, Map<Retrievable, Set<Variable>> variableMapping,
-                       Map<Variable, Concept> conclusionAnswer,
-                       ConceptMap conditionAnswer) {
+                       Map<Variable, Concept> conclusionAnswer, ConceptMap conditionAnswer) {
         super(rule, conclusionAnswer, conditionAnswer);
         this.variableMapping = variableMapping;
         this.hash = Objects.hash(super.hashCode(), variableMapping);

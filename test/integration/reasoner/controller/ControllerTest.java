@@ -138,7 +138,7 @@ public class ControllerTest {
                 Registry registry = transaction.reasoner().controllerRegistry();
                 AnswerProducer answerProducer = new AnswerProducer();
                 try {
-                    registry.registerRootConjunctionController(conjunctionPattern, new HashSet<>(), answerProducer);
+                    registry.registerRootConjunctionController(conjunctionPattern, new HashSet<>(), options.explain(), answerProducer);
                 } catch (TypeDBException e) {
                     fail();
                 }
@@ -541,7 +541,7 @@ public class ControllerTest {
         AnswerProducer answerProducer = new AnswerProducer();
         answerProducer.getNextAnswer();
         try {
-             registry.registerRootDisjunctionController(disjunction, filter, answerProducer);
+             registry.registerRootDisjunctionController(disjunction, filter, options.explain(), answerProducer);
         } catch (TypeDBException e) {
             fail();
             return;
@@ -562,7 +562,7 @@ public class ControllerTest {
         AnswerProducer answerProducer = new AnswerProducer();
         answerProducer.getNextAnswer();
         try {
-            registry.registerRootConjunctionController(conjunction, filter, answerProducer);
+            registry.registerRootConjunctionController(conjunction, filter, options.explain(), answerProducer);
         } catch (TypeDBException e) {
             fail();
             return;

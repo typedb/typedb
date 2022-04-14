@@ -123,29 +123,29 @@ public class Registry {
     }
 
     public void registerRootConjunctionController(Conjunction conjunction, Set<Variable.Retrievable> filter,
-                                                  ReasonerConsumer<ConceptMap> reasonerConsumer) {
+                                                  boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         LOG.debug("Creating Root Conjunction for: '{}'", conjunction);
         Actor.Driver<RootConjunctionController> controller =
-                Actor.driver(driver -> new RootConjunctionController(driver, conjunction, filter, executorService,
+                Actor.driver(driver -> new RootConjunctionController(driver, conjunction, filter, explain, executorService,
                                                                      monitor, this, reasonerConsumer), executorService);
         controller.execute(RootConjunctionController::initialise);
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
     }
 
-    public void registerRootDisjunctionController(Disjunction disjunction,
-                                                  Set<Variable.Retrievable> filter,
-                                                  ReasonerConsumer<ConceptMap> reasonerConsumer) {
+    public void registerRootDisjunctionController(Disjunction disjunction, Set<Variable.Retrievable> filter,
+                                                  boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         LOG.debug("Creating Root Disjunction for: '{}'", disjunction);
         Actor.Driver<RootDisjunctionController> controller =
-                Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, filter, executorService,
+                Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, filter, explain, executorService,
                                                                      monitor, this, reasonerConsumer), executorService);
         controller.execute(RootDisjunctionController::initialise);
         controllers.add(controller);
         if (terminated.get()) throw TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, terminationCause); // guard races without synchronized
     }
 
-    public void registerExplainableRoot(Concludable concludable, ConceptMap bounds, ReasonerConsumer<Explanation> reasonerConsumer) {
+    public void registerExplainableRoot(Concludable concludable, ConceptMap bounds,
+                                        ReasonerConsumer<Explanation> reasonerConsumer) {
         Actor.Driver<ConcludableController.Explain> controller = Actor.driver(
                 driver -> new ConcludableController.Explain(driver, concludable, bounds, executorService, monitor, this,
                                                             reasonerConsumer), executorService);

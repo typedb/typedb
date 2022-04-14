@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.Concept;
@@ -37,7 +38,6 @@ import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Input;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.reactive.RootSink;
 import com.vaticle.typedb.core.reasoner.reactive.Source;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
@@ -51,6 +51,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ConcludableController<INPUT, OUTPUT,
@@ -112,7 +113,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
             //  concludable. They should be filtered before being passed to the concludableReactiveBlock's constructor
             return new ReactiveBlock.Match(
-                    matchDriver, driver(), monitor, bounds, unboundVars, conclusionUnifiers,
+                    matchDriver, driver(), concludable, monitor, bounds, unboundVars, conclusionUnifiers,
                     () -> Traversal.traversalIterator(registry, concludable.pattern(), bounds),
                     () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
             );
@@ -222,8 +223,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             });
         }
 
-        protected abstract Stream<INPUT, OUTPUT> buildOutput(Publisher<INPUT> input, Unifier unifier,
-                                                             Unifier.Requirements.Instance requirements);
+        protected abstract Publisher<OUTPUT> buildOutput(Publisher<INPUT> input, Unifier unifier,
+                                                         Unifier.Requirements.Instance requirements);
 
         protected abstract REQ createRequest(Reactive.Identifier<INPUT, ?> identifier, Conclusion conclusion,
                                              ConceptMap bounds);
@@ -239,14 +240,17 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
         public static class Match extends ReactiveBlock<Map<Variable, Concept>, ConceptMap, Match.Request, Match> {
 
+            private final Concludable concludable;
+
             public Match(
-                    Driver<Match> driver, Driver<ConcludableController.Match> controller, Driver<Monitor> monitor,
-                    ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
+                    Driver<Match> driver, Driver<ConcludableController.Match> controller, Concludable concludable,
+                    Driver<Monitor> monitor, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, Supplier<String> debugName
             ) {
                 super(driver, controller, monitor, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
                       debugName);
+                this.concludable = concludable;
             }
 
             @Override
@@ -255,10 +259,23 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
 
             @Override
-            protected Stream<Map<Variable, Concept>, ConceptMap> buildOutput(Publisher<Map<Variable, Concept>> input,
-                                                                             Unifier unifier,
-                                                                             Unifier.Requirements.Instance requirements) {
-                return input.flatMap(conclusionAns -> unifier.unUnify(conclusionAns, requirements));
+            protected Publisher<ConceptMap> buildOutput(Publisher<Map<Variable, Concept>> input,
+                                                        Unifier unifier,
+                                                        Unifier.Requirements.Instance requirements) {
+                return input.flatMap(conclusionAns -> unifier.unUnify(conclusionAns, requirements))
+                        .map(this::withExplainable);
+            }
+
+            protected ConceptMap withExplainable(ConceptMap conceptMap) {
+                if (concludable.isRelation() || concludable.isAttribute() || concludable.isIsa()) {
+                    return conceptMap.withExplainableConcept(concludable.generating().get().id(), concludable.pattern());
+                } else if (concludable.isHas()) {
+                    return conceptMap.withExplainableAttrOwnership(
+                            concludable.asHas().owner().id(), concludable.asHas().attribute().id(), concludable.pattern()
+                    );
+                } else {
+                    throw TypeDBException.of(ILLEGAL_STATE);
+                }
             }
 
             @Override
@@ -309,9 +326,9 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
 
             @Override
-            protected Stream<PartialExplanation, Explanation> buildOutput(Publisher<PartialExplanation> input,
-                                                                          Unifier unifier,
-                                                                          Unifier.Requirements.Instance requirements) {
+            protected Publisher<Explanation> buildOutput(Publisher<PartialExplanation> input,
+                                                         Unifier unifier,
+                                                         Unifier.Requirements.Instance requirements) {
                 return input.flatMap(p -> Iterators.single(
                         new Explanation(p.rule(), unifier.mapping(), p.conclusionAnswer(), p.conditionAnswer())
                 ));
@@ -320,6 +337,15 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             @Override
             protected void mayAddTraversal() {
                 // No traversal when explaining
+            }
+
+
+            @Override
+            public void onFinished(Reactive.Identifier<?, ?> finishable) {
+                assert !done;
+//            done = true;
+                assert finishable == rootSink.identifier();
+                rootSink.finished();
             }
 
             @Override

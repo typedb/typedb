@@ -28,18 +28,18 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.answer.PartialExplanation;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
-import com.vaticle.typedb.core.reasoner.reactive.Monitor;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.ConditionRequest;
+import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.MaterialiserRequest;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.reactive.Input;
+import com.vaticle.typedb.core.reasoner.reactive.Monitor;
+import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Stream;
-import com.vaticle.typedb.core.reasoner.reactive.Input;
-import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.ConditionRequest;
-import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.MaterialiserRequest;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashMap;
@@ -308,23 +308,25 @@ public abstract class ConclusionController<
 
             @Override
             public Either<Publisher<Either<ConceptMap, Map<Variable, Concept>>>, Set<OUTPUT>> accept(
-                    Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher, Either<ConceptMap, Map<Variable, Concept>> packet) {
+                    Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher,
+                    Either<ConceptMap, Map<Variable, Concept>> packet
+            ) {
                 if (packet.isFirst()) {
                     Input<Either<ConceptMap, Materialisation>> materialisationInput = reactiveBlock().createInput();
-                    mayStoreConditionAnswer(materialisationInput, packet.first());
                     reactiveBlock().mayRequestMaterialiser(new MaterialiserRequest(
                             materialisationInput.identifier(), null,
                             reactiveBlock().rule().conclusion().materialisable(packet.first(), reactiveBlock().conceptManager))
                     );
                     Publisher<Either<ConceptMap, Map<Variable, Concept>>> op = materialisationInput
                             .map(m -> Either.second(m.second().bindToConclusion(reactiveBlock().rule().conclusion(), packet.first())));
+                    mayStoreConditionAnswer(op, packet.first());
                     return Either.first(op);
                 } else {
                     return Either.second(set(packageAnswer(publisher, packet.second())));
                 }
             }
 
-            protected abstract void mayStoreConditionAnswer(Publisher<Either<ConceptMap, Materialisation>> materialisationInput, ConceptMap conditionAnswer);
+            protected abstract void mayStoreConditionAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> materialisationInput, ConceptMap conditionAnswer);
 
             protected abstract OUTPUT packageAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher, Map<Variable, Concept> conclusionAnswer);
 
@@ -335,7 +337,7 @@ public abstract class ConclusionController<
                 }
 
                 @Override
-                protected void mayStoreConditionAnswer(Publisher<Either<ConceptMap, Materialisation>> materialisationInput, ConceptMap conditionAnswer) {}
+                protected void mayStoreConditionAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> materialisationInput, ConceptMap conditionAnswer) {}
 
                 @Override
                 protected Map<Variable, Concept> packageAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher, Map<Variable, Concept> conclusionAnswer) {
@@ -345,7 +347,7 @@ public abstract class ConclusionController<
 
             public static class Explain extends ConclusionOperator<PartialExplanation> {
 
-                private final Map<Publisher<Either<ConceptMap, Materialisation>>, ConceptMap> conditionAnswers;
+                private final Map<Publisher<Either<ConceptMap, Map<Variable, Concept>>>, ConceptMap> conditionAnswers;
 
                 private Explain(ReactiveBlock<?, ?> reactiveBlock) {
                     super(reactiveBlock);
@@ -353,7 +355,7 @@ public abstract class ConclusionController<
                 }
 
                 @Override
-                protected void mayStoreConditionAnswer(Publisher<Either<ConceptMap, Materialisation>> materialisationInput, ConceptMap conditionAnswer) {
+                protected void mayStoreConditionAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> materialisationInput, ConceptMap conditionAnswer) {
                     conditionAnswers.put(materialisationInput, conditionAnswer);
                 }
 
