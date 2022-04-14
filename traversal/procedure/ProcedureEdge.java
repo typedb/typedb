@@ -1220,7 +1220,7 @@ public abstract class ProcedureEdge<
                         closures.forward(KeyValue.of(player, null));
                         Optional<KeyValue<ThingVertex, ThingVertex>> next = closures.first();
                         if (next.isPresent() && next.get().key().equals(player)) {
-                            scoped.record(next.get().value(), this);
+                            scoped.record(this, next.get().value());
                             return true;
                         } else {
                             return false;
@@ -1289,7 +1289,7 @@ public abstract class ProcedureEdge<
                         closures.forward(KeyValue.of(rel, null));
                         Optional<KeyValue<ThingVertex, ThingVertex>> next = closures.first();
                         if (next.isPresent() && next.get().key().equals(rel)) {
-                            scoped.record(next.get().value(), this);
+                            scoped.record(this, next.get().value());
                             return true;
                         } else {
                             return false;
