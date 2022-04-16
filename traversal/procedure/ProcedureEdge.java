@@ -706,7 +706,6 @@ public abstract class ProcedureEdge<
                         super(from, to, order, FORWARD);
                     }
 
-
                     @Override
                     public boolean onlyStartsFromRelationType() {
                         return true;

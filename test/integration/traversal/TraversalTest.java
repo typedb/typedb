@@ -81,7 +81,7 @@ public class TraversalTest {
                             "friendship sub relation, " +
                             "  relates friend, " +
                             "  owns ref;" +
-                            "name sub attribute, value string; "+
+                            "name sub attribute, value string; " +
                             "ref sub attribute, value long; "
             );
             transaction.query().define(query);
@@ -104,7 +104,6 @@ public class TraversalTest {
      * that because of the Seek optimisation jumps too far back and fails to generate other closure candidates, and
      * misses an answer.
      **/
-    @Ignore
     @Test
     public void backtrack_seeks_do_not_skip_answers() {
         session = databaseMgr.session(database, Arguments.Session.Type.DATA);
@@ -137,25 +136,26 @@ public class TraversalTest {
                     5: ($rel:$role:$friend:1 <--[PLAYING]--* $friend)
             */
             GraphProcedure.Builder proc = GraphProcedure.builder(5);
-            ProcedureVertex.Type rel_type = proc.namedType("rel-type", true);
+            ProcedureVertex.Type rel_type = proc.namedType(0, "rel-type", true);
             rel_type.props().labels(set(Label.of("friendship")));
 
-            ProcedureVertex.Type role_type = proc.namedType("role-type");
+            ProcedureVertex.Type role_type = proc.namedType(1, "role-type");
             role_type.props().labels(set(Label.of("friend", "friendship")));
 
-            ProcedureVertex.Thing rel = proc.namedThing("rel");
+            ProcedureVertex.Thing rel = proc.namedThing(2, "rel");
             rel.props().types(set(Label.of("friendship")));
 
-            ProcedureVertex.Thing friend = proc.namedThing("friend");
+            ProcedureVertex.Thing friend = proc.namedThing(4, "friend");
             friend.props().types(set(Label.of("dog")));
 
-            ProcedureVertex.Thing role = proc.scopedThing(rel, role_type, friend, 0);
+            ProcedureVertex.Thing role = proc.scopedThing(3, rel, role_type, friend, 0);
+            role.props().types(set(Label.of("friend", "friendship")));
 
-            proc.forwardRelates(1, rel_type, role_type );
-            proc.backwardIsa(2, rel_type, rel, true);
-            proc.backwardIsa(3, role_type, role, true);
-            proc.forwardRelating(4, rel, role);
-            proc.backwardPlaying(5, role, friend);
+            proc.forwardRelates(rel_type, role_type);
+            proc.backwardIsa(rel_type, rel, true);
+            proc.backwardIsa(role_type, role, true);
+            proc.forwardRelating(rel, role);
+            proc.backwardPlaying(role, friend);
 
             Traversal.Parameters params = new Traversal.Parameters();
 
@@ -203,7 +203,7 @@ public class TraversalTest {
         }
 
         try (CoreTransaction transaction = session.transaction(READ)) {
-            GraphProcedure.Builder proc = GraphProcedure.builder(10);
+            GraphProcedure.Builder proc = GraphProcedure.builder(9);
             /*
             vertices:
             $_0 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end) // Alex
@@ -216,38 +216,50 @@ public class TraversalTest {
             $x [thing] { hasIID: false, types: [person], predicates: [] }
             $y [thing] { hasIID: false, types: [person], predicates: [] }
 
+            edges:
+            1: ($n <--[HAS]--* $x)
+            2: ($n <--[HAS]--* $y)
+            3: ($x *--[HAS]--> $_0)
+            4: ($x <--[ROLEPLAYER]--* $refl) { roleTypes: [friendship:friend] }
+            5: ($x <--[ROLEPLAYER]--* $refl) { roleTypes: [friendship:friend] }
+            6: ($x <--[ROLEPLAYER]--* $f1) { roleTypes: [friendship:friend] }
+            7: ($y *--[HAS]--> $_1)
+            8: ($y <--[ROLEPLAYER]--* $f1) { roleTypes: [friendship:friend] }
+            9: ($refl *--[HAS]--> $r1)
+            10: ($f1 *--[HAS]--> $r2)
              */
 
-            ProcedureVertex.Thing _0 = proc.anonymousThing(0);
+            ProcedureVertex.Thing n = proc.namedThing(0, "n", true);
+            n.props().types(set(Label.of("lastname")));
+
+            ProcedureVertex.Thing x = proc.namedThing(1, "x");
+            x.props().types(set(Label.of("person")));
+
+            ProcedureVertex.Thing y = proc.namedThing(2, "y");
+            y.props().types(set(Label.of("person")));
+
+            ProcedureVertex.Thing _0 = proc.anonymousThing(3, 0);
             _0.props().predicate(Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ));
             _0.props().types(set(Label.of("name")));
 
-            ProcedureVertex.Thing _1 = proc.anonymousThing(1);
+            ProcedureVertex.Thing refl = proc.namedThing(4, "refl");
+            refl.props().types(set(Label.of("friendship")));
+
+            ProcedureVertex.Thing f1 = proc.namedThing(5, "f1");
+            f1.props().types(set(Label.of("friendship")));
+
+            ProcedureVertex.Thing _1 = proc.anonymousThing(6, 1);
             _1.props().predicate(Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ));
             _1.props().types(set(Label.of("name")));
 
-            ProcedureVertex.Thing f1 = proc.namedThing("f1");
-            f1.props().types(set(Label.of("friendship")));
-
-            ProcedureVertex.Thing refl = proc.namedThing("refl");
-            refl.props().types(set(Label.of("friendship")));
-
-            ProcedureVertex.Thing n = proc.namedThing("n", true);
-            n.props().types(set(Label.of("lastname")));
-
-            ProcedureVertex.Thing r1 = proc.namedThing("r1");
+            ProcedureVertex.Thing r1 = proc.namedThing(7, "r1");
             r1.props().predicate(Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG));
             r1.props().types(set(Label.of("ref")));
 
-            ProcedureVertex.Thing r2 = proc.namedThing("r2");
+            ProcedureVertex.Thing r2 = proc.namedThing(8, "r2");
             r2.props().predicate(Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG));
             r2.props().types(set(Label.of("ref")));
 
-            ProcedureVertex.Thing x = proc.namedThing("x");
-            x.props().types(set(Label.of("person")));
-
-            ProcedureVertex.Thing y = proc.namedThing("y");
-            y.props().types(set(Label.of("person")));
 
             GraphTraversal.Thing.Parameters params = new GraphTraversal.Thing.Parameters();
             params.pushValue(_0.id().asVariable(),
@@ -263,29 +275,16 @@ public class TraversalTest {
                     Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG),
                     new GraphTraversal.Thing.Parameters.Value(1L));
 
-            /*
-            edges:
-            1: ($n <--[HAS]--* $x)
-            2: ($n <--[HAS]--* $y)
-            3: ($x *--[HAS]--> $_0)
-            4: ($x <--[ROLEPLAYER]--* $refl) { roleTypes: [friendship:friend] }
-            5: ($x <--[ROLEPLAYER]--* $refl) { roleTypes: [friendship:friend] }
-            6: ($x <--[ROLEPLAYER]--* $f1) { roleTypes: [friendship:friend] }
-            7: ($y *--[HAS]--> $_1)
-            8: ($y <--[ROLEPLAYER]--* $f1) { roleTypes: [friendship:friend] }
-            9: ($refl *--[HAS]--> $r1)
-            10: ($f1 *--[HAS]--> $r2)
-             */
-            proc.backwardHas(1, n, x);
-            proc.backwardHas(2, n, y);
-            proc.forwardHas(3, x, _0);
-            proc.backwardRolePlayer(4, x, refl, set(Label.of("friend", "friendship")));
-            proc.backwardRolePlayer(5, x, refl, set(Label.of("friend", "friendship")));
-            proc.backwardRolePlayer(6, x, f1, set(Label.of("friend", "friendship")));
-            proc.forwardHas(7, y, _1);
-            proc.backwardRolePlayer(8, y, f1, set(Label.of("friend", "friendship")));
-            proc.forwardHas(9, refl, r1);
-            proc.forwardHas(10, f1, r2);
+            proc.backwardHas(n, x);
+            proc.backwardHas(n, y);
+            proc.forwardHas(x, _0);
+            proc.backwardRolePlayer(x, refl, set(Label.of("friend", "friendship")));
+            proc.backwardRolePlayer(x, refl, set(Label.of("friend", "friendship")));
+            proc.backwardRolePlayer(x, f1, set(Label.of("friend", "friendship")));
+            proc.forwardHas(y, _1);
+            proc.backwardRolePlayer(y, f1, set(Label.of("friend", "friendship")));
+            proc.forwardHas(refl, r1);
+            proc.forwardHas(f1, r2);
 
             Set<Identifier.Variable.Retrievable> filter = set(
                     n.id().asVariable().asRetrievable(),

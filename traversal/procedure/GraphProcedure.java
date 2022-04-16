@@ -258,36 +258,51 @@ public class GraphProcedure implements PermutationProcedure {
             return GraphProcedure.this;
         }
 
-        public ProcedureVertex.Type labelledType(String label) {
-            return labelledType(label, false);
+        public ProcedureVertex.Type labelledType(int order, String label) {
+            return labelledType(order, label, false);
         }
 
-        public ProcedureVertex.Type labelledType(String label, boolean isStart) {
-            return typeVertex(Identifier.Variable.of(Reference.label(label)), isStart);
+        public ProcedureVertex.Type labelledType(int order, String label, boolean isStart) {
+            ProcedureVertex.Type vertex = typeVertex(Identifier.Variable.of(Reference.label(label)), isStart);
+            setOrder(order, vertex);
+            return vertex;
         }
 
-        public ProcedureVertex.Type namedType(String name) {
-            return namedType(name, false);
+        public ProcedureVertex.Type namedType(int order, String name) {
+            return namedType(order, name, false);
         }
 
-        public ProcedureVertex.Type namedType(String name, boolean isStart) {
-            return typeVertex(Identifier.Variable.of(Reference.name(name)), isStart);
+        public ProcedureVertex.Type namedType(int order, String name, boolean isStart) {
+            ProcedureVertex.Type vertex = typeVertex(Identifier.Variable.of(Reference.name(name)), isStart);
+            setOrder(order, vertex);
+            return vertex;
         }
 
-        public ProcedureVertex.Thing namedThing(String name) {
-            return namedThing(name, false);
+        public ProcedureVertex.Thing namedThing(int order, String name) {
+            return namedThing(order, name, false);
         }
 
-        public ProcedureVertex.Thing namedThing(String name, boolean isStart) {
-            return thingVertex(Identifier.Variable.of(Reference.name(name)), isStart);
+        public ProcedureVertex.Thing namedThing(int order, String name, boolean isStart) {
+            ProcedureVertex.Thing vertex = thingVertex(Identifier.Variable.of(Reference.name(name)), isStart);
+            setOrder(order, vertex);
+            return vertex;
         }
 
-        public ProcedureVertex.Thing anonymousThing(int id) {
-            return thingVertex(Identifier.Variable.anon(id), false);
+        public ProcedureVertex.Thing anonymousThing(int order, int id) {
+            ProcedureVertex.Thing vertex = thingVertex(Identifier.Variable.anon(id), false);
+            setOrder(order, vertex);
+            return vertex;
         }
 
-        public ProcedureVertex.Thing scopedThing(ProcedureVertex.Thing relation, ProcedureVertex.Type roleType, ProcedureVertex.Thing player, int repetition) {
-            return thingVertex(Identifier.Scoped.of(relation.id().asVariable(), roleType.id().asVariable(), player.id().asVariable(), repetition), false);
+        public ProcedureVertex.Thing scopedThing(int order, ProcedureVertex.Thing relation, ProcedureVertex.Type roleType, ProcedureVertex.Thing player, int repetition) {
+            ProcedureVertex.Thing vertex = thingVertex(Identifier.Scoped.of(relation.id().asVariable(), roleType.id().asVariable(), player.id().asVariable(), repetition), false);
+            setOrder(order, vertex);
+            return vertex;
+        }
+
+        private void setOrder(int order, ProcedureVertex<?, ?> vertex) {
+            orderedVertices[order] = vertex;
+            vertex.setOrder(order);
         }
 
         public ProcedureVertex.Type setLabel(ProcedureVertex.Type type, Label label) {
@@ -306,157 +321,157 @@ public class GraphProcedure implements PermutationProcedure {
         }
 
         public ProcedureEdge.Native.Type.Sub.Forward forwardSub(
-                int order, ProcedureVertex.Type child, ProcedureVertex.Type parent, boolean isTransitive) {
+                 ProcedureVertex.Type child, ProcedureVertex.Type parent, boolean isTransitive) {
             ProcedureEdge.Native.Type.Sub.Forward edge =
-                    new ProcedureEdge.Native.Type.Sub.Forward(child, parent, order, isTransitive);
+                    new ProcedureEdge.Native.Type.Sub.Forward(child, parent, -1, isTransitive);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Type.Sub.Backward backwardSub(
-                int order, ProcedureVertex.Type parent, ProcedureVertex.Type child, boolean isTransitive) {
+                 ProcedureVertex.Type parent, ProcedureVertex.Type child, boolean isTransitive) {
             ProcedureEdge.Native.Type.Sub.Backward edge =
-                    new ProcedureEdge.Native.Type.Sub.Backward(parent, child, order, isTransitive);
+                    new ProcedureEdge.Native.Type.Sub.Backward(parent, child, -1, isTransitive);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Type.Plays.Forward forwardPlays(
-                int order, ProcedureVertex.Type player, ProcedureVertex.Type roleType) {
+                 ProcedureVertex.Type player, ProcedureVertex.Type roleType) {
             ProcedureEdge.Native.Type.Plays.Forward edge =
-                    new ProcedureEdge.Native.Type.Plays.Forward(player, roleType, order);
+                    new ProcedureEdge.Native.Type.Plays.Forward(player, roleType, -1);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Type.Plays.Backward backwardPlays(
-                int order, ProcedureVertex.Type roleType, ProcedureVertex.Type player) {
+                 ProcedureVertex.Type roleType, ProcedureVertex.Type player) {
             ProcedureEdge.Native.Type.Plays.Backward edge =
-                    new ProcedureEdge.Native.Type.Plays.Backward(roleType, player, order);
+                    new ProcedureEdge.Native.Type.Plays.Backward(roleType, player, -1);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Type.Owns.Forward forwardOwns(
-                int order, ProcedureVertex.Type owner, ProcedureVertex.Type att, boolean isKey) {
+                 ProcedureVertex.Type owner, ProcedureVertex.Type att, boolean isKey) {
             ProcedureEdge.Native.Type.Owns.Forward edge =
-                    new ProcedureEdge.Native.Type.Owns.Forward(owner, att, order, isKey);
+                    new ProcedureEdge.Native.Type.Owns.Forward(owner, att, -1, isKey);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Type.Owns.Backward backwardOwns(
-                int order, ProcedureVertex.Type att, ProcedureVertex.Type owner, boolean isKey) {
+                 ProcedureVertex.Type att, ProcedureVertex.Type owner, boolean isKey) {
             ProcedureEdge.Native.Type.Owns.Backward edge =
-                    new ProcedureEdge.Native.Type.Owns.Backward(att, owner, order, isKey);
+                    new ProcedureEdge.Native.Type.Owns.Backward(att, owner, -1, isKey);
             registerEdge(edge);
             return edge;
         }
 
-        public ProcedureEdge.Equal forwardEqual(int order, ProcedureVertex.Type from, ProcedureVertex.Type to) {
-            ProcedureEdge.Equal edge = new ProcedureEdge.Equal(from, to, order, Encoding.Direction.Edge.FORWARD);
+        public ProcedureEdge.Equal forwardEqual( ProcedureVertex.Type from, ProcedureVertex.Type to) {
+            ProcedureEdge.Equal edge = new ProcedureEdge.Equal(from, to, -1, Encoding.Direction.Edge.FORWARD);
             registerEdge(edge);
             return edge;
         }
 
-        public ProcedureEdge.Equal backwardEqual(int order, ProcedureVertex.Type from, ProcedureVertex.Type to) {
-            ProcedureEdge.Equal edge = new ProcedureEdge.Equal(from, to, order, Encoding.Direction.Edge.BACKWARD);
+        public ProcedureEdge.Equal backwardEqual( ProcedureVertex.Type from, ProcedureVertex.Type to) {
+            ProcedureEdge.Equal edge = new ProcedureEdge.Equal(from, to, -1, Encoding.Direction.Edge.BACKWARD);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Isa.Forward forwardIsa(
-                int order, ProcedureVertex.Thing thing, ProcedureVertex.Type type, boolean isTransitive) {
+                 ProcedureVertex.Thing thing, ProcedureVertex.Type type, boolean isTransitive) {
             ProcedureEdge.Native.Isa.Forward edge =
-                    new ProcedureEdge.Native.Isa.Forward(thing, type, order, isTransitive);
+                    new ProcedureEdge.Native.Isa.Forward(thing, type, -1, isTransitive);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Isa.Backward backwardIsa(
-                int order, ProcedureVertex.Type type, ProcedureVertex.Thing thing, boolean isTransitive) {
+                 ProcedureVertex.Type type, ProcedureVertex.Thing thing, boolean isTransitive) {
             ProcedureEdge.Native.Isa.Backward edge =
-                    new ProcedureEdge.Native.Isa.Backward(type, thing, order, isTransitive);
+                    new ProcedureEdge.Native.Isa.Backward(type, thing, -1, isTransitive);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Type.Relates.Forward forwardRelates(
-                int order, ProcedureVertex.Type relationType, ProcedureVertex.Type roleType) {
+                 ProcedureVertex.Type relationType, ProcedureVertex.Type roleType) {
             ProcedureEdge.Native.Type.Relates.Forward edge =
-                    new ProcedureEdge.Native.Type.Relates.Forward(relationType, roleType, order);
+                    new ProcedureEdge.Native.Type.Relates.Forward(relationType, roleType, -1);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Type.Relates.Backward backwardRelates(
-                int order, ProcedureVertex.Type roleType, ProcedureVertex.Type relationType) {
+                 ProcedureVertex.Type roleType, ProcedureVertex.Type relationType) {
             ProcedureEdge.Native.Type.Relates.Backward edge =
-                    new ProcedureEdge.Native.Type.Relates.Backward(roleType, relationType, order);
+                    new ProcedureEdge.Native.Type.Relates.Backward(roleType, relationType, -1);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Thing.Has.Forward forwardHas(
-                int order, ProcedureVertex.Thing owner, ProcedureVertex.Thing attribute) {
+                 ProcedureVertex.Thing owner, ProcedureVertex.Thing attribute) {
             ProcedureEdge.Native.Thing.Has.Forward edge =
-                    new ProcedureEdge.Native.Thing.Has.Forward(owner, attribute, order);
+                    new ProcedureEdge.Native.Thing.Has.Forward(owner, attribute, -1);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Thing.Has.Backward backwardHas(
-                int order, ProcedureVertex.Thing attribute, ProcedureVertex.Thing owner) {
+                 ProcedureVertex.Thing attribute, ProcedureVertex.Thing owner) {
             ProcedureEdge.Native.Thing.Has.Backward edge =
-                    new ProcedureEdge.Native.Thing.Has.Backward(attribute, owner, order);
+                    new ProcedureEdge.Native.Thing.Has.Backward(attribute, owner, -1);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Thing.Relating.Forward forwardRelating(
-                int order, ProcedureVertex.Thing relation, ProcedureVertex.Thing role) {
+                 ProcedureVertex.Thing relation, ProcedureVertex.Thing role) {
             ProcedureEdge.Native.Thing.Relating.Forward edge =
-                    new ProcedureEdge.Native.Thing.Relating.Forward(relation, role, order);
+                    new ProcedureEdge.Native.Thing.Relating.Forward(relation, role, -1);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Thing.Relating.Backward backwardRelating(
-                int order, ProcedureVertex.Thing role, ProcedureVertex.Thing relation) {
+                 ProcedureVertex.Thing role, ProcedureVertex.Thing relation) {
             ProcedureEdge.Native.Thing.Relating.Backward edge =
-                    new ProcedureEdge.Native.Thing.Relating.Backward(role, relation, order);
+                    new ProcedureEdge.Native.Thing.Relating.Backward(role, relation, -1);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Thing.Playing.Forward forwardPlaying(
-                int order, ProcedureVertex.Thing player, ProcedureVertex.Thing role) {
+                 ProcedureVertex.Thing player, ProcedureVertex.Thing role) {
             ProcedureEdge.Native.Thing.Playing.Forward edge =
-                    new ProcedureEdge.Native.Thing.Playing.Forward(player, role, order);
+                    new ProcedureEdge.Native.Thing.Playing.Forward(player, role, -1);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Thing.Playing.Backward backwardPlaying(
-                int order, ProcedureVertex.Thing role, ProcedureVertex.Thing player) {
+                 ProcedureVertex.Thing role, ProcedureVertex.Thing player) {
             ProcedureEdge.Native.Thing.Playing.Backward edge =
-                    new ProcedureEdge.Native.Thing.Playing.Backward(role, player, order);
+                    new ProcedureEdge.Native.Thing.Playing.Backward(role, player, -1);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Thing.RolePlayer.Forward forwardRolePlayer(
-                int order, ProcedureVertex.Thing relation, ProcedureVertex.Thing player, Set<Label> roleTypes) {
+                 ProcedureVertex.Thing relation, ProcedureVertex.Thing player, Set<Label> roleTypes) {
             ProcedureEdge.Native.Thing.RolePlayer.Forward edge =
-                    new ProcedureEdge.Native.Thing.RolePlayer.Forward(relation, player, order, roleTypes);
+                    new ProcedureEdge.Native.Thing.RolePlayer.Forward(relation, player, -1, roleTypes);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Thing.RolePlayer.Backward backwardRolePlayer(
-                int order, ProcedureVertex.Thing player, ProcedureVertex.Thing relation, Set<Label> roleTypes) {
+                 ProcedureVertex.Thing player, ProcedureVertex.Thing relation, Set<Label> roleTypes) {
             ProcedureEdge.Native.Thing.RolePlayer.Backward edge =
-                    new ProcedureEdge.Native.Thing.RolePlayer.Backward(player, relation, order, roleTypes);
+                    new ProcedureEdge.Native.Thing.RolePlayer.Backward(player, relation, -1, roleTypes);
             registerEdge(edge);
             return edge;
         }
