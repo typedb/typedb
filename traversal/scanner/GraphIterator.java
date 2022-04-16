@@ -131,16 +131,24 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         assert iterator.hasNext();
 
         Vertex<?, ?> candidate = iterator.next();
-        while (!verify(pos, vertex, candidate)) {
-            mayUnscope(vertex);
-            if (iterator.hasNext()) candidate = iterator.next();
-            else {
-                iterators.remove(vertex.id());
-                return false;
+
+        while (true) {
+            boolean verified = verify(pos, vertex, candidate);
+            if (verified) {
+                answer.put(vertex.id(), candidate);
+                if (!computeFirst(pos + 1)) {
+                    verified = false;
+                }
             }
+            if (!verified) {
+                mayUnscope(vertex);
+                if (iterator.hasNext()) candidate = iterator.next();
+                else {
+                    iterators.remove(vertex.id());
+                    return false;
+                }
+            } else return true;
         }
-        answer.put(vertex.id(), candidate);
-        return computeFirst(pos + 1);
     }
 
     private boolean computeNext(int pos) {
@@ -179,7 +187,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         Set<ProcedureEdge<?, ?>> forwardVerified = new HashSet<>();
-        // TODO for the backtracking to be correct when getting scope multiplicity, we must go over the out edges in order of destination...
+        // TODO for the backtracking to be correct when getting scope multiplicity, we must go over the out edges in order of destination, otherwise we lose answers due to scoping filtering
         for (ProcedureEdge<?, ?> edge : vertex.orderedOuts()) {
             ProcedureVertex<?, ?> to = edge.to();
             if (!to.equals(vertex)) {
@@ -253,7 +261,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             Identifier.Variable scope = edge.to().id().asScoped().scope();
             Scopes.Scoped scoped = scopes.getOrInitialise(scope);
             toIter = edge.branch(graphMgr, fromVertex, params).filter(role -> {
-                if (scoped.contains(role.asThing())) return false;
+                if (!scoped.isScopedBy(edge.to(), role.asThing()) && scoped.contains(role.asThing())) return false;
                 else {
                     recordScoped(scoped, edge.to(), role.asThing());
                     return true;
@@ -323,10 +331,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             return scoped.get(scope);
         }
 
-        public boolean isScoped(Identifier.Variable scope) {
-            return scoped.containsKey(scope);
-        }
-
         public static class Scoped {
 
             Set<ThingVertex> roles;
@@ -343,8 +347,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 return roles.isEmpty();
             }
 
-            public boolean contains(ThingVertex roleVertex) {
-                return roles.contains(roleVertex);
+            public boolean contains(ThingVertex role) {
+                return roles.contains(role);
             }
 
             public boolean containsSource(ProcedureVertex<?, ?> vertex) {
@@ -353,6 +357,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
             public boolean containsSource(ProcedureEdge<?, ?> edge) {
                 return edgeSources.containsKey(edge);
+            }
+
+            public boolean isScopedBy(ProcedureVertex<?, ?> source, ThingVertex role) {
+                ThingVertex scopedBySource = vertexSources.get(source);
+                return scopedBySource != null && scopedBySource.equals(role);
             }
 
             public void record(ProcedureEdge<?, ?> source, ThingVertex role) {
