@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -63,7 +64,9 @@ public abstract class ProcedureVertex<
 
     private final boolean isStartingVertex;
     private ProcedureEdge<?, ?> lastInEdge;
+    private Set<Identifier.Variable> scopedBy;
     private int order;
+
 
     ProcedureVertex(Identifier identifier, boolean isStartingVertex) {
         super(identifier);
@@ -99,12 +102,13 @@ public abstract class ProcedureVertex<
         return order;
     }
 
-    private List<ProcedureEdge<?, ?>> orderedEdges;
-    public List<ProcedureEdge<?, ?>> orderedOuts() {
-        if (orderedEdges == null) {
-            orderedEdges = outs().stream().sorted(Comparator.comparingInt(e -> e.to().order())).collect(Collectors.toList());
-        }
-        return orderedEdges;
+    public Set<Identifier.Variable> scopedBy() {
+        if (scopedBy == null) scopedBy = computeScopedBy();
+        return scopedBy;
+    }
+
+    Set<Identifier.Variable> computeScopedBy() {
+        return set();
     }
 
     void setOrder(int order) {
@@ -138,6 +142,12 @@ public abstract class ProcedureVertex<
         @Override
         public Thing asThing() {
             return this;
+        }
+
+        @Override
+        Set<Identifier.Variable> computeScopedBy() {
+            if (id().isScoped()) return set(id().asScoped().scope());
+            else return iterate(ins()).filter(ProcedureEdge::isRolePlayer).map(e -> e.asRolePlayer().scope()).toSet();
         }
 
         @Override

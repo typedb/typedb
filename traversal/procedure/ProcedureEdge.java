@@ -1215,7 +1215,7 @@ public abstract class ProcedureEdge<
                                                 .edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type())
                                                 .toAndOptimised(),
                                         ASC
-                                ).filter(kv -> kv.key().equals(player) && !scoped.contains(kv.value()));
+                                ).filter(kv -> kv.key().equals(player));
                         closures.forward(KeyValue.of(player, null));
                         Optional<KeyValue<ThingVertex, ThingVertex>> next = closures.first();
                         if (next.isPresent() && next.get().key().equals(player)) {
@@ -1284,7 +1284,7 @@ public abstract class ProcedureEdge<
                                         rt -> player.ins().edge(ROLEPLAYER, rt, rel.iid().prefix(), rel.iid().type())
                                                 .fromAndOptimised(),
                                         ASC
-                                ).filter(kv -> kv.key().equals(rel) && !scoped.contains(kv.value()));
+                                ).filter(kv -> kv.key().equals(rel));
                         closures.forward(KeyValue.of(rel, null));
                         Optional<KeyValue<ThingVertex, ThingVertex>> next = closures.first();
                         if (next.isPresent() && next.get().key().equals(rel)) {
