@@ -70,29 +70,186 @@ public class TraversalTest {
         databaseMgr = CoreDatabaseManager.open(options);
         databaseMgr.create(database);
         session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
-        try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
-            TypeQLDefine query = TypeQL.parseQuery(
-                    "define " +
-                            "person sub entity, " +
-                            "  plays friendship:friend, " +
-                            "  owns name;" +
-                            "dog sub entity," +
-                            "  plays friendship:friend; " +
-                            "friendship sub relation, " +
-                            "  relates friend, " +
-                            "  owns ref;" +
-                            "name sub attribute, value string; " +
-                            "ref sub attribute, value long; "
-            );
-            transaction.query().define(query);
-            transaction.commit();
-        }
-        session.close();
+
     }
 
     @AfterClass
     public static void teardown() {
         databaseMgr.close();
+    }
+
+    @Test
+    public void mixed_variable_and_edge_role_players() {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery(
+                    "define " +
+                            "person sub entity, " +
+                            "  plays employment:employee; " +
+                            "company sub entity, " +
+                            "  plays employment:employer;" +
+                            "employment sub relation, " +
+                            "  relates employer, " +
+                            "  relates employee; "
+            );
+            transaction.query().define(query);
+            transaction.commit();
+        }
+        session.close();
+
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
+        // note: must insert in separate Tx's so that the relations are retrieved in a specific order later
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery(
+                    "insert " +
+                            "$x isa company;" +
+                            "$y isa person;" +
+                            "(employer: $x, employee: $y) isa employment;").asInsert()
+            );
+            transaction.commit();
+        }
+        try (CoreTransaction transaction = session.transaction(READ)) {
+            /*
+            match (employer: $e, $role: $x) isa employment;
+            */
+            /*
+            Edges:
+            	0: $_0 [thing] { hasIID: false, types: [employment], predicates: [] } (start)
+            	1: $_0:$role:$x:1 [thing] { hasIID: false, types: [employment:employer, employment:employee], predicates: [] }
+            			1: ($_0 *--[RELATING]--> $_0:$role:$x:1)
+            	2: $e [thing] { hasIID: false, types: [company], predicates: [] } (end)
+            			2: ($_0 *--[ROLEPLAYER]--> $e) { roleTypes: [employment:employer] }
+            	3: $x [thing] { hasIID: false, types: [person, company], predicates: [] } (end)
+            			3: ($_0:$role:$x:1 <--[PLAYING]--* $x)
+            	4: $role [type] { labels: [employment:employer, relation:role, employment:employee], abstract: false, value: [], regex: null } (end)
+            			4: ($_0:$role:$x:1 *--[ISA]--> $role) { isTransitive: true }
+            */
+            GraphProcedure.Builder proc = GraphProcedure.builder(5);
+            ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0, true);
+            _0.props().types(set(Label.of("employment")));
+
+            ProcedureVertex.Thing e = proc.namedThing(2, "e");
+            e.props().types(set(Label.of("company")));
+
+            ProcedureVertex.Type role = proc.namedType(4, "role");
+            role.props().labels(set(Label.of("employer", "employment"), Label.of("employee", "employment"), Label.of("role", "relation")));
+
+            ProcedureVertex.Thing x = proc.namedThing(3, "x");
+            x.props().types(set(Label.of("person"), Label.of("company")));
+
+            ProcedureVertex.Thing role_inst = proc.scopedThing(1, _0, role, x, 0);
+            role_inst.props().types(set(Label.of("employer", "employment"), Label.of("employee", "employment")));
+
+            proc.forwardRelating(_0, role_inst);
+            proc.backwardPlaying(role_inst, x);
+            proc.forwardIsa(role_inst, role, true);
+            proc.forwardRolePlayer(_0, e, set(Label.of("employer", "employment")));
+
+            Traversal.Parameters params = new Traversal.Parameters();
+
+            Set<Identifier.Variable.Retrievable> filter = set(
+                    _0.id().asVariable().asRetrievable(),
+                    e.id().asVariable().asRetrievable(),
+                    x.id().asVariable().asRetrievable(),
+                    role.id().asVariable().asRetrievable()
+            );
+
+            GraphProcedure procedure = proc.build();
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+            assertEquals(2, vertices.count());
+        }
+    }
+
+
+    @Test
+    public void test() {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery(
+                    "define " +
+                            "person sub entity," +
+                            "  owns name," +
+                            "  owns age," +
+                            "  plays friendship:friend," +
+                            "  plays employment:employee;" +
+                            "company sub entity," +
+                            "  owns name," +
+                            "  plays employment:employer;" +
+                            "place sub entity," +
+                            "  owns name," +
+                            "  plays location-hierarchy:subordinate," +
+                            "  plays location-hierarchy:superior;" +
+                            "friendship sub relation," +
+                            "  relates friend;" +
+                            "employment sub relation," +
+                            "  relates employee," +
+                            "  relates employer;" +
+                            "location-hierarchy sub relation," +
+                            "  relates subordinate," +
+                            "  relates superior;" +
+                            "name sub attribute, value string;" +
+                            "age sub attribute, value long;"
+            );
+            transaction.query().define(query);
+            transaction.commit();
+        }
+        session.close();
+
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
+        try (CoreTransaction transaction = session.transaction(READ)) {
+            /*
+            Edges:
+	        0: $_5 [type] { labels: [], abstract: false, value: [], regex: null } (start)
+	        1: $_6 [type] { labels: [link:to], abstract: false, value: [], regex: null } (end)
+	        		1: ($_5 *--[SUB]--> $_6) { isTransitive: true }
+	        2: $_1 [type] { labels: [link], abstract: false, value: [], regex: null }
+	        		2: ($_5 <--[RELATES]--* $_1)
+	        3: $y [type] { labels: [traversable, vertex, node], abstract: false, value: [], regex: null } (end)
+	        		3: ($_5 <--[PLAYS]--* $y)
+	        4: $_3 [type] { labels: [], abstract: false, value: [], regex: null }
+	        		4: ($_1 *--[RELATES]--> $_3)
+	        5: $x [type] { labels: [traversable, vertex, node], abstract: false, value: [], regex: null } (end)
+	        		5: ($_3 <--[PLAYS]--* $x)
+	        6: $_4 [type] { labels: [link:from], abstract: false, value: [], regex: null } (end)
+	        		6: ($_3 *--[SUB]--> $_4) { isTransitive: true }
+	        7: $_2 [type] { labels: [link], abstract: false, value: [], regex: null } (end)
+	        		7: ($_1 *--[SUB]--> $_2) { isTransitive: true }
+            */
+
+
+
+            GraphProcedure.Builder proc = GraphProcedure.builder(5);
+            ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0, true);
+            _0.props().types(set(Label.of("employment")));
+
+            ProcedureVertex.Thing e = proc.namedThing(2, "e");
+            e.props().types(set(Label.of("company")));
+
+            ProcedureVertex.Type role = proc.namedType(4, "role");
+            role.props().labels(set(Label.of("employer", "employment"), Label.of("employee", "employment"), Label.of("role", "relation")));
+
+            ProcedureVertex.Thing x = proc.namedThing(3, "x");
+            x.props().types(set(Label.of("person"), Label.of("company")));
+
+            ProcedureVertex.Thing role_inst = proc.scopedThing(1, _0, role, x, 0);
+            role_inst.props().types(set(Label.of("employer", "employment"), Label.of("employee", "employment")));
+
+            proc.forwardRelating(_0, role_inst);
+            proc.backwardPlaying(role_inst, x);
+            proc.forwardIsa(role_inst, role, true);
+            proc.forwardRolePlayer(_0, e, set(Label.of("employer", "employment")));
+
+            Traversal.Parameters params = new Traversal.Parameters();
+
+            Set<Identifier.Variable.Retrievable> filter = set(
+                    _0.id().asVariable().asRetrievable(),
+                    e.id().asVariable().asRetrievable(),
+                    x.id().asVariable().asRetrievable(),
+                    role.id().asVariable().asRetrievable()
+            );
+
+            GraphProcedure procedure = proc.build();
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+            assertEquals(2, vertices.count());
+        }
     }
 
     /**
@@ -106,6 +263,23 @@ public class TraversalTest {
      **/
     @Test
     public void backtrack_seeks_do_not_skip_answers() {
+        try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery(
+                    "define " +
+                            "person sub entity, " +
+                            "  plays friendship:friend, " +
+                            "  owns name;" +
+                            "dog sub entity," +
+                            "  plays friendship:friend; " +
+                            "friendship sub relation, " +
+                            "  relates friend; " +
+                            "name sub attribute, value string; "
+            );
+            transaction.query().define(query);
+            transaction.commit();
+        }
+        session.close();
+
         session = databaseMgr.session(database, Arguments.Session.Type.DATA);
         // note: must insert in separate Tx's so that the relations are retrieved in a specific order later
         try (CoreTransaction transaction = session.transaction(WRITE)) {
@@ -174,11 +348,21 @@ public class TraversalTest {
 
     @Test
     public void test_closure_backtrack_clears_scopes() {
-        session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
-            TypeQLDefine query = TypeQL.parseQuery("define " +
-                    "lastname sub attribute, value string; " +
-                    "person sub entity, owns lastname; "
+            TypeQLDefine query = TypeQL.parseQuery(
+                    "define " +
+                            "person sub entity, " +
+                            "  plays friendship:friend, " +
+                            "  owns name," +
+                            "  owns lastname;" +
+                            "dog sub entity," +
+                            "  plays friendship:friend; " +
+                            "friendship sub relation, " +
+                            "  relates friend," +
+                            "  owns ref; " +
+                            "name sub attribute, value string; " +
+                            "lastname sub attribute, value string;" +
+                            "ref sub attribute, value long;"
             );
             transaction.query().define(query);
             transaction.commit();
