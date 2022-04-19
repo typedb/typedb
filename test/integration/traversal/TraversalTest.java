@@ -37,7 +37,9 @@ import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -64,17 +66,16 @@ public class TraversalTest {
     private static CoreDatabaseManager databaseMgr;
     private static CoreSession session;
 
-    @BeforeClass
-    public static void setup() throws IOException {
+    @Before
+    public void setup() throws IOException {
         Util.resetDirectory(dataDir);
         databaseMgr = CoreDatabaseManager.open(options);
         databaseMgr.create(database);
         session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
-
     }
 
-    @AfterClass
-    public static void teardown() {
+    @After
+    public void teardown() {
         databaseMgr.close();
     }
 
@@ -113,15 +114,15 @@ public class TraversalTest {
             */
             /*
             Edges:
-            	0: $_0 [thing] { hasIID: false, types: [employment], predicates: [] } (start)
-            	1: $_0:$role:$x:1 [thing] { hasIID: false, types: [employment:employer, employment:employee], predicates: [] }
-            			1: ($_0 *--[RELATING]--> $_0:$role:$x:1)
-            	2: $e [thing] { hasIID: false, types: [company], predicates: [] } (end)
-            			2: ($_0 *--[ROLEPLAYER]--> $e) { roleTypes: [employment:employer] }
-            	3: $x [thing] { hasIID: false, types: [person, company], predicates: [] } (end)
-            			3: ($_0:$role:$x:1 <--[PLAYING]--* $x)
-            	4: $role [type] { labels: [employment:employer, relation:role, employment:employee], abstract: false, value: [], regex: null } (end)
-            			4: ($_0:$role:$x:1 *--[ISA]--> $role) { isTransitive: true }
+                0: $_0 [thing] { hasIID: false, types: [employment], predicates: [] } (start)
+                1: $_0:$role:$x:1 [thing] { hasIID: false, types: [employment:employer, employment:employee], predicates: [] }
+                        1: ($_0 *--[RELATING]--> $_0:$role:$x:1)
+                2: $e [thing] { hasIID: false, types: [company], predicates: [] } (end)
+                        2: ($_0 *--[ROLEPLAYER]--> $e) { roleTypes: [employment:employer] }
+                3: $x [thing] { hasIID: false, types: [person, company], predicates: [] } (end)
+                        3: ($_0:$role:$x:1 <--[PLAYING]--* $x)
+                4: $role [type] { labels: [employment:employer, relation:role, employment:employee], abstract: false, value: [], regex: null } (end)
+                        4: ($_0:$role:$x:1 *--[ISA]--> $role) { isTransitive: true }
             */
             GraphProcedure.Builder proc = GraphProcedure.builder(5);
             ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0, true);
@@ -194,24 +195,24 @@ public class TraversalTest {
         session.close();
 
         session = databaseMgr.session(database, Arguments.Session.Type.DATA);
-        try (CoreTransaction transaction = session.transaction(READ)) {
+//        try (CoreTransaction transaction = session.transaction(READ)) {
             /*
             Edges:
-	        0: $_5 [type] { labels: [], abstract: false, value: [], regex: null } (start)
-	        1: $_6 [type] { labels: [link:to], abstract: false, value: [], regex: null } (end)
-	        		1: ($_5 *--[SUB]--> $_6) { isTransitive: true }
-	        2: $_1 [type] { labels: [link], abstract: false, value: [], regex: null }
-	        		2: ($_5 <--[RELATES]--* $_1)
-	        3: $y [type] { labels: [traversable, vertex, node], abstract: false, value: [], regex: null } (end)
-	        		3: ($_5 <--[PLAYS]--* $y)
-	        4: $_3 [type] { labels: [], abstract: false, value: [], regex: null }
-	        		4: ($_1 *--[RELATES]--> $_3)
-	        5: $x [type] { labels: [traversable, vertex, node], abstract: false, value: [], regex: null } (end)
-	        		5: ($_3 <--[PLAYS]--* $x)
-	        6: $_4 [type] { labels: [link:from], abstract: false, value: [], regex: null } (end)
-	        		6: ($_3 *--[SUB]--> $_4) { isTransitive: true }
-	        7: $_2 [type] { labels: [link], abstract: false, value: [], regex: null } (end)
-	        		7: ($_1 *--[SUB]--> $_2) { isTransitive: true }
+            0: $_5 [type] { labels: [], abstract: false, value: [], regex: null } (start)
+            1: $_6 [type] { labels: [link:to], abstract: false, value: [], regex: null } (end)
+                    1: ($_5 *--[SUB]--> $_6) { isTransitive: true }
+            2: $_1 [type] { labels: [link], abstract: false, value: [], regex: null }
+                    2: ($_5 <--[RELATES]--* $_1)
+            3: $y [type] { labels: [traversable, vertex, node], abstract: false, value: [], regex: null } (end)
+                    3: ($_5 <--[PLAYS]--* $y)
+            4: $_3 [type] { labels: [], abstract: false, value: [], regex: null }
+                    4: ($_1 *--[RELATES]--> $_3)
+            5: $x [type] { labels: [traversable, vertex, node], abstract: false, value: [], regex: null } (end)
+                    5: ($_3 <--[PLAYS]--* $x)
+            6: $_4 [type] { labels: [link:from], abstract: false, value: [], regex: null } (end)
+                    6: ($_3 *--[SUB]--> $_4) { isTransitive: true }
+            7: $_2 [type] { labels: [link], abstract: false, value: [], regex: null } (end)
+                    7: ($_1 *--[SUB]--> $_2) { isTransitive: true }
             */
 
             // TODO complete test
@@ -251,7 +252,7 @@ public class TraversalTest {
 //            GraphProcedure procedure = proc.build();
 //            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
 //            assertEquals(2, vertices.count());
-        }
+//        }
     }
 
     /**
