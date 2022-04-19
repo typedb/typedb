@@ -125,6 +125,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private boolean computeFirst(int pos) {
         if (pos == vertexCount) return true;
         ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
+        if (!iterators.containsKey(vertex.id())) renewIteratorFromInsUpTo(vertex, pos);
         Forwardable<Vertex<?, ?>, Order.Asc> iterator = iterators.get(vertex.id());
         assert iterator.hasNext();
 
@@ -187,7 +188,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private boolean verifyOuts(ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate, int pos) {
         Set<ProcedureEdge<?, ?>> verified = new HashSet<>();
-        for (ProcedureEdge<?, ?> edge : vertex.outs()) {
+        for (ProcedureEdge<?, ?> edge : vertex.orderedOuts()) {
             ProcedureVertex<?, ?> to = edge.to();
             if (!to.equals(vertex)) {
                 Forwardable<Vertex<?, ?>, Order.Asc> toIter = iterators.containsKey(to.id()) ?

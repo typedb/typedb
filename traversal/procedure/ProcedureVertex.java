@@ -102,6 +102,14 @@ public abstract class ProcedureVertex<
         return order;
     }
 
+    private List<ProcedureEdge<?, ?>> orderedEdges;
+    public List<ProcedureEdge<?, ?>> orderedOuts() {
+        if (orderedEdges == null) {
+            orderedEdges = outs().stream().sorted(Comparator.comparingInt(e -> e.to().order())).collect(Collectors.toList());
+        }
+        return orderedEdges;
+    }
+
     public Set<Identifier.Variable> scopedBy() {
         if (scopedBy == null) scopedBy = computeScopedBy();
         return scopedBy;
