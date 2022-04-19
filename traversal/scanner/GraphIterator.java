@@ -37,14 +37,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
@@ -132,23 +130,22 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         Vertex<?, ?> candidate = iterator.next();
 
-        while (true) {
-            boolean verified = verify(pos, vertex, candidate);
-            if (verified) {
+        boolean retry = true;
+        while (retry) {
+            if (verify(pos, vertex, candidate)) {
                 answer.put(vertex.id(), candidate);
-                if (!computeFirst(pos + 1)) {
-                    verified = false;
-                }
+                retry = !computeFirst(pos + 1);
             }
-            if (!verified) {
+            if (retry) {
                 mayUnscope(vertex);
                 if (iterator.hasNext()) candidate = iterator.next();
                 else {
                     iterators.remove(vertex.id());
                     return false;
                 }
-            } else return true;
+            }
         }
+        return true;
     }
 
     private boolean computeNext(int pos) {
@@ -166,8 +163,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 mayUnscopeIns(vertex);
                 if (!computeNext(pos - 1)) return false;
                 else {
-                    if (!iterators.containsKey(vertex.id())) renewIteratorFromIns(vertex, pos);
+                    if (!iterators.containsKey(vertex.id())) renewIteratorFromInsUpTo(vertex, pos);
                     iterator = iterators.get(vertex.id());
+                    if (!iterator.hasNext()) return false;
                 }
             }
             candidate = iterator.next();
@@ -197,7 +195,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 if (!toIter.hasNext()) {
                     forwardVerified.forEach(e -> {
                         iterators.remove(e.to().id());
-                        renewIteratorFromIns(e.to(), pos);
+                        renewIteratorFromInsUpTo(e.to(), pos);
                     });
                     return false;
                 } else {
@@ -224,7 +222,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
     }
 
-    private void renewIteratorFromIns(ProcedureVertex<?, ?> vertex, int maxInOrder) {
+    private void renewIteratorFromInsUpTo(ProcedureVertex<?, ?> vertex, int maxInOrder) {
         mayUnscopeIns(vertex);
         List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
         for (ProcedureEdge<?, ?> edge : vertex.ins()) {

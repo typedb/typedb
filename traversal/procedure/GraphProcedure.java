@@ -289,7 +289,11 @@ public class GraphProcedure implements PermutationProcedure {
         }
 
         public ProcedureVertex.Thing anonymousThing(int order, int id) {
-            ProcedureVertex.Thing vertex = thingVertex(Identifier.Variable.anon(id), false);
+            return anonymousThing(order, id, false);
+        }
+
+        public ProcedureVertex.Thing anonymousThing(int order, int id, boolean isStart) {
+            ProcedureVertex.Thing vertex = thingVertex(Identifier.Variable.anon(id), isStart);
             setOrder(order, vertex);
             return vertex;
         }
