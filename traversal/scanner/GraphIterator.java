@@ -132,9 +132,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         boolean retry = true;
         while (retry) {
-            if (verify(pos, vertex, candidate)) {
+            if (verifyOuts(pos, vertex, candidate)) {
                 answer.put(vertex.id(), candidate);
-                retry = !computeFirst(pos + 1);
+                retry = !computeFirst(pos + 1);// TODO just return true
             }
             if (retry) {
                 mayUnscope(vertex);
@@ -169,14 +169,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 }
             }
             candidate = iterator.next();
-            verified = verify(pos, vertex, candidate);
+            verified = verifyOuts(pos, vertex, candidate);
         }
 
         answer.put(vertex.id(), candidate);
         return true;
     }
 
-    private boolean verify(int pos, ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate) {
+    private boolean verifyOuts(int pos, ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate) {
         // TODO vertex should cache self-closures from ins and outs
         for (ProcedureEdge<?, ?> edge : vertex.outs()) {
             if (edge.to().equals(vertex) && !isClosure(edge, candidate, candidate)) {
