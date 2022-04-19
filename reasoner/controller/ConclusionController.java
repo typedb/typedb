@@ -241,8 +241,7 @@ public abstract class ConclusionController<
 
         protected abstract ConclusionOperator<OUTPUT> createOperator();
 
-        private static Either<ConceptMap, Map<Variable, Concept>> convertConclusionInput(Either<ConceptMap,
-                Materialisation> input) {
+        private static Either<ConceptMap, Map<Variable, Concept>> convertConclusionInput(Either<ConceptMap, Materialisation> input) {
             return Either.first(input.first());
         }
 
@@ -313,13 +312,15 @@ public abstract class ConclusionController<
                     Either<ConceptMap, Map<Variable, Concept>> packet
             ) {
                 if (packet.isFirst()) {
+                    assert packet.first().concepts().keySet().containsAll(reactiveBlock().rule().condition().conjunction().retrieves());
                     Input<Either<ConceptMap, Materialisation>> materialisationInput = reactiveBlock().createInput();
+                    ConceptMap filteredConditionAns = packet.first().filter(reactiveBlock().rule().conclusion().retrievableIds());  // TODO: no explainables carried forwards
                     reactiveBlock().mayRequestMaterialiser(new MaterialiserRequest(
                             materialisationInput.identifier(), null,
-                            reactiveBlock().rule().conclusion().materialisable(packet.first(), reactiveBlock().conceptManager))
+                            reactiveBlock().rule().conclusion().materialisable(filteredConditionAns, reactiveBlock().conceptManager))
                     );
                     Publisher<Either<ConceptMap, Map<Variable, Concept>>> op = materialisationInput
-                            .map(m -> Either.second(m.second().bindToConclusion(reactiveBlock().rule().conclusion(), packet.first())));
+                            .map(m -> Either.second(m.second().bindToConclusion(reactiveBlock().rule().conclusion(), filteredConditionAns)));
                     mayStoreConditionAnswer(op, packet.first());
                     return Either.first(op);
                 } else {

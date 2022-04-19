@@ -329,9 +329,9 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             protected Publisher<Explanation> buildOutput(Publisher<PartialExplanation> input,
                                                          Unifier unifier,
                                                          Unifier.Requirements.Instance requirements) {
-                return input.flatMap(p -> Iterators.single(
-                        new Explanation(p.rule(), unifier.mapping(), p.conclusionAnswer(), p.conditionAnswer())
-                ));
+                return input.map(
+                        p -> new Explanation(p.rule(), unifier.mapping(), p.conclusionAnswer(), p.conditionAnswer())
+                );
             }
 
             @Override

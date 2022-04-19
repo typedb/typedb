@@ -106,7 +106,7 @@ public class ConceptMap implements Answer {
         Map<Retrievable, ? extends Concept> filtered = concepts.entrySet().stream()
                 .filter(e -> vars.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new ConceptMap(filtered, explainables());
+        return new ConceptMap(filtered);
     }
 
     public void forEach(BiConsumer<Retrievable, Concept> consumer) {

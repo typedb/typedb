@@ -76,7 +76,8 @@ public class ConditionController extends ConjunctionController<
         public void setUp() {
             setOutputRouter(
                     TransformationStream.fanIn(this, new CompoundOperator(this, plan, bounds))
-                            .map(Either::<ConceptMap, Materialisation>first).buffer()
+                            .map(Either::<ConceptMap, Materialisation>first)
+                            .buffer()
             );
         }
     }
