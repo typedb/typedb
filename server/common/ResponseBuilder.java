@@ -99,6 +99,14 @@ public class ResponseBuilder {
             return CoreDatabase.Schema.Res.newBuilder().setSchema(schema).build();
         }
 
+        public static CoreDatabase.TypeSchema.Res typeSchemaRes(String schema) {
+            return CoreDatabase.TypeSchema.Res.newBuilder().setSchema(schema).build();
+        }
+
+        public static CoreDatabase.RuleSchema.Res ruleSchemaRes(String schema) {
+            return CoreDatabase.RuleSchema.Res.newBuilder().setSchema(schema).build();
+        }
+
         public static CoreDatabase.Delete.Res deleteRes() {
             return CoreDatabase.Delete.Res.getDefaultInstance();
         }

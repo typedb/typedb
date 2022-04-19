@@ -27,16 +27,14 @@ import com.vaticle.typedb.protocol.SessionProto;
 import com.vaticle.typedb.protocol.TransactionProto;
 import com.vaticle.typedb.protocol.TypeDBGrpc;
 import io.grpc.stub.StreamObserver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
@@ -45,7 +43,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESS
 import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Database.deleteRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Database.ruleSchemaRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Database.schemaRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Database.typeSchemaRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.DatabaseManager.allRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.DatabaseManager.containsRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.DatabaseManager.createRes;
@@ -114,6 +114,30 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         try {
             String schema = databaseMgr.get(request.getName()).schema();
             responder.onNext(schemaRes(schema));
+            responder.onCompleted();
+        } catch (TypeDBException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public void databaseTypeSchema(CoreDatabase.TypeSchema.Req request, StreamObserver<CoreDatabase.TypeSchema.Res> responder) {
+        try {
+            String schema = databaseMgr.get(request.getName()).typeSchema();
+            responder.onNext(typeSchemaRes(schema));
+            responder.onCompleted();
+        } catch (TypeDBException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public void databaseRuleSchema(CoreDatabase.RuleSchema.Req request, StreamObserver<CoreDatabase.RuleSchema.Res> responder) {
+        try {
+            String schema = databaseMgr.get(request.getName()).ruleSchema();
+            responder.onNext(ruleSchemaRes(schema));
             responder.onCompleted();
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
