@@ -214,41 +214,43 @@ public class TraversalTest {
 	        		7: ($_1 *--[SUB]--> $_2) { isTransitive: true }
             */
 
+            // TODO complete test
 
 
-            GraphProcedure.Builder proc = GraphProcedure.builder(5);
-            ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0, true);
-            _0.props().types(set(Label.of("employment")));
 
-            ProcedureVertex.Thing e = proc.namedThing(2, "e");
-            e.props().types(set(Label.of("company")));
-
-            ProcedureVertex.Type role = proc.namedType(4, "role");
-            role.props().labels(set(Label.of("employer", "employment"), Label.of("employee", "employment"), Label.of("role", "relation")));
-
-            ProcedureVertex.Thing x = proc.namedThing(3, "x");
-            x.props().types(set(Label.of("person"), Label.of("company")));
-
-            ProcedureVertex.Thing role_inst = proc.scopedThing(1, _0, role, x, 0);
-            role_inst.props().types(set(Label.of("employer", "employment"), Label.of("employee", "employment")));
-
-            proc.forwardRelating(_0, role_inst);
-            proc.backwardPlaying(role_inst, x);
-            proc.forwardIsa(role_inst, role, true);
-            proc.forwardRolePlayer(_0, e, set(Label.of("employer", "employment")));
-
-            Traversal.Parameters params = new Traversal.Parameters();
-
-            Set<Identifier.Variable.Retrievable> filter = set(
-                    _0.id().asVariable().asRetrievable(),
-                    e.id().asVariable().asRetrievable(),
-                    x.id().asVariable().asRetrievable(),
-                    role.id().asVariable().asRetrievable()
-            );
-
-            GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
-            assertEquals(2, vertices.count());
+//            GraphProcedure.Builder proc = GraphProcedure.builder(5);
+//            ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0, true);
+//            _0.props().types(set(Label.of("employment")));
+//
+//            ProcedureVertex.Thing e = proc.namedThing(2, "e");
+//            e.props().types(set(Label.of("company")));
+//
+//            ProcedureVertex.Type role = proc.namedType(4, "role");
+//            role.props().labels(set(Label.of("employer", "employment"), Label.of("employee", "employment"), Label.of("role", "relation")));
+//
+//            ProcedureVertex.Thing x = proc.namedThing(3, "x");
+//            x.props().types(set(Label.of("person"), Label.of("company")));
+//
+//            ProcedureVertex.Thing role_inst = proc.scopedThing(1, _0, role, x, 0);
+//            role_inst.props().types(set(Label.of("employer", "employment"), Label.of("employee", "employment")));
+//
+//            proc.forwardRelating(_0, role_inst);
+//            proc.backwardPlaying(role_inst, x);
+//            proc.forwardIsa(role_inst, role, true);
+//            proc.forwardRolePlayer(_0, e, set(Label.of("employer", "employment")));
+//
+//            Traversal.Parameters params = new Traversal.Parameters();
+//
+//            Set<Identifier.Variable.Retrievable> filter = set(
+//                    _0.id().asVariable().asRetrievable(),
+//                    e.id().asVariable().asRetrievable(),
+//                    x.id().asVariable().asRetrievable(),
+//                    role.id().asVariable().asRetrievable()
+//            );
+//
+//            GraphProcedure procedure = proc.build();
+//            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+//            assertEquals(2, vertices.count());
         }
     }
 
