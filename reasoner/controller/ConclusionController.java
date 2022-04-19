@@ -231,7 +231,8 @@ public abstract class ConclusionController<
         public void setUp() {
             setOutputRouter(PoolingStream.fanOut(this));
             Input<Either<ConceptMap, Materialisation>> conditionInput = createInput();
-            mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), bounds));
+            ConceptMap filteredBounds = bounds.filter(rule.condition().conjunction().retrieves());
+            mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), filteredBounds));
             Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> conclusionReactive =
                     TransformationStream.fanIn(this, createOperator());
             conditionInput.map(ReactiveBlock::convertConclusionInput).registerSubscriber(conclusionReactive);
