@@ -131,7 +131,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         Vertex<?, ?> candidate = iterator.next();
 
         while (true) {
-            if (verifySelf(vertex, candidate) && verifyOuts(vertex, candidate, pos)) {
+            if (verifyVertex(vertex, candidate) && verifyOuts(vertex, candidate, pos)) {
                 answer.put(vertex.id(), candidate);
                 if (computeFirst(pos + 1)) return true;
             }
@@ -143,8 +143,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
     }
 
-    private boolean verifySelf(ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate) {
-        // TODO the vertex should hold onto loop
+    private boolean verifyVertex(ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate) {
+        // TODO the vertex should hold onto loop edges
         for (ProcedureEdge<?, ?> edge : vertex.outs()) {
             if (edge.to().equals(vertex) && !isClosure(edge, candidate, candidate)) {
                 return false;
@@ -153,7 +153,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         for (Identifier.Variable id : vertex.scopedBy()) {
             Scopes.Scoped scoped = scopes.get(id);
-            if (!scoped.isValid()) return false;
+            if (!scoped.isValidUpTo(vertex.order())) return false;
         }
         return true;
     }
@@ -178,7 +178,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
 
             candidate = iterator.next();
-            verified = verifySelf(vertex, candidate) && verifyOuts(vertex, candidate, pos);
+            verified = verifyVertex(vertex, candidate) && verifyOuts(vertex, candidate, pos);
         }
 
         answer.put(vertex.id(), candidate);
@@ -277,12 +277,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void recordScoped(Scopes.Scoped scoped, ProcedureVertex<?, ?> source, ThingVertex role) {
         if (scoped.containsSource(source)) scoped.replace(source, role.asThing());
-        else scoped.record(source, role.asThing());
+        else scoped.record(source, role.asThing(), source.order());
     }
 
     private void recordScoped(Scopes.Scoped scoped, ProcedureEdge<?, ?> source, ThingVertex role) {
         if (scoped.containsSource(source)) scoped.replace(source, role);
-        else scoped.record(source, role);
+        else scoped.record(source, role, source.to().order());
     }
 
     private VertexMap toVertexMap(Map<Identifier, Vertex<?, ?>> answer) {
@@ -318,12 +318,16 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         public static class Scoped {
 
-            Map<ProcedureVertex<?, ?>, ThingVertex> vertexSources;
-            Map<ProcedureEdge<?, ?>, ThingVertex> edgeSources;
+            private final Map<ProcedureVertex<?, ?>, ThingVertex> vertexSources;
+            private final Map<ProcedureEdge<?, ?>, ThingVertex> edgeSources;
+            private final Map<ProcedureVertex<?, ?>, Integer> vertexSourceOrders;
+            private final Map<ProcedureEdge<?, ?>, Integer> edgeSourceOrders;
 
             private Scoped() {
                 vertexSources = new HashMap<>();
                 edgeSources = new HashMap<>();
+                vertexSourceOrders = new HashMap<>();
+                edgeSourceOrders = new HashMap<>();
             }
 
             public boolean containsSource(ProcedureVertex<?, ?> vertex) {
@@ -334,14 +338,16 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 return edgeSources.containsKey(edge);
             }
 
-            public void record(ProcedureEdge<?, ?> source, ThingVertex role) {
+            public void record(ProcedureEdge<?, ?> source, ThingVertex role, int sourceOrder) {
                 assert source.isRolePlayer();
                 edgeSources.put(source, role);
+                edgeSourceOrders.put(source, sourceOrder);
             }
 
-            public void record(ProcedureVertex<?, ?> source, ThingVertex role) {
+            public void record(ProcedureVertex<?, ?> source, ThingVertex role, int sourceOrder) {
                 assert source.id().isScoped();
                 vertexSources.put(source, role);
+                vertexSourceOrders.put(source, sourceOrder);
             }
 
             public void replace(ProcedureEdge<?, ?> edge, ThingVertex role) {
@@ -359,11 +365,23 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 edgeSources.clear();
             }
 
-            // TODO: this needs to become an O(1) operation with some clever data structures...
-            public boolean isValid() {
-                Set<ThingVertex> roles = new HashSet<>(vertexSources.values());
-                roles.addAll(edgeSources.values());
-                return roles.size() == vertexSources.size() + edgeSources.size();
+            // TODO: this needs to become a sub-linear operation with some clever data structures...
+            public boolean isValidUpTo(int orderInclusive) {
+                Set<ThingVertex> roles = new HashSet<>();
+                int expectedRoles = 0;
+                for (Map.Entry<ProcedureEdge<?, ?>, ThingVertex> entry : edgeSources.entrySet()) {
+                    if (edgeSourceOrders.get(entry.getKey()) <= orderInclusive) {
+                        expectedRoles++;
+                        roles.add(entry.getValue());
+                    }
+                }
+                for (Map.Entry<ProcedureVertex<?, ?>, ThingVertex> entry : vertexSources.entrySet()) {
+                    if (vertexSourceOrders.get(entry.getKey()) <= orderInclusive) {
+                        expectedRoles++;
+                        roles.add(entry.getValue());
+                    }
+                }
+                return roles.size() == expectedRoles;
             }
         }
     }
