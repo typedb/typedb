@@ -20,6 +20,8 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -50,6 +52,7 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.reasoner.reactive.TransformationStream.fanIn;
 
 public abstract class ConclusionController<
         OUTPUT,
@@ -233,8 +236,7 @@ public abstract class ConclusionController<
             Input<Either<ConceptMap, Materialisation>> conditionInput = createInput();
             ConceptMap filteredBounds = bounds.filter(rule.condition().conjunction().retrieves());
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), filteredBounds));
-            Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> conclusionReactive =
-                    TransformationStream.fanIn(this, createOperator());
+            Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> conclusionReactive = fanIn(this, createOperator());
             conditionInput.map(ReactiveBlock::convertConclusionInput).registerSubscriber(conclusionReactive);
             conclusionReactive.registerSubscriber(outputRouter());
         }
@@ -320,12 +322,26 @@ public abstract class ConclusionController<
                             reactiveBlock().rule().conclusion().materialisable(filteredConditionAns, reactiveBlock().conceptManager))
                     );
                     Publisher<Either<ConceptMap, Map<Variable, Concept>>> op = materialisationInput
-                            .map(m -> Either.second(m.second().bindToConclusion(reactiveBlock().rule().conclusion(), filteredConditionAns)));
+                            .map(m -> m.second().bindToConclusion(reactiveBlock().rule().conclusion(), filteredConditionAns))
+                            .flatMap(m -> merge(m, reactiveBlock().bounds))
+                            .map(Either::second);
                     mayStoreConditionAnswer(op, packet.first());
                     return Either.first(op);
                 } else {
                     return Either.second(set(packageAnswer(publisher, packet.second())));
                 }
+            }
+
+            private static FunctionalIterator<Map<Variable, Concept>> merge(Map<Variable, Concept> materialisation, ConceptMap bounds) {
+                for (Map.Entry<Variable, Concept> entry : materialisation.entrySet()) {
+                    Variable v = entry.getKey();
+                    Concept c = entry.getValue();
+                    if (v.isRetrievable() && bounds.contains(v.asRetrievable())
+                            && !bounds.get(v.asRetrievable()).equals(c)) {
+                        return Iterators.empty();
+                    }
+                }
+                return Iterators.single(materialisation);
             }
 
             protected abstract void mayStoreConditionAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> materialisationInput, ConceptMap conditionAnswer);

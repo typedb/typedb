@@ -480,7 +480,7 @@ public class ExplanationTest {
 
                 assertEquals(txn.logic().getRule("marriage-is-friendship"), explanation.rule());
                 assertEquals(2, explanation.variableMapping().size());
-                assertEquals(3, explanation.conclusionAnswer().size());
+                assertEquals(5, explanation.conclusionAnswer().size());
 
                 ConceptMap marriageIsFriendshipAnswer = explanation.conditionAnswer();
                 assertEquals(1, marriageIsFriendshipAnswer.explainables().iterator().count());
