@@ -255,7 +255,16 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             @Override
             protected void mayAddTraversal() {
-                Source.create(this, new Operator.Supplier<>(traversalSuppplier)).registerSubscriber(outputRouter());
+                Source.create(this, new Operator.Supplier<>(traversalSuppplier))
+                        .flatMap(Match::filterInferred)
+                        .registerSubscriber(outputRouter());
+            }
+
+            private static FunctionalIterator<ConceptMap> filterInferred(ConceptMap conceptMap) {
+                for (Concept c : conceptMap.concepts().values()) {
+                    if (c.isThing() && c.asThing().isInferred()) return Iterators.empty();
+                }
+                return Iterators.single(conceptMap);
             }
 
             @Override
