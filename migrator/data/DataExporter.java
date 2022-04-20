@@ -37,6 +37,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -180,7 +181,7 @@ public class DataExporter {
         } else if (attribute.isDouble()) {
             valueObject.setDouble(attribute.asDouble().getValue());
         } else if (attribute.isDateTime()) {
-            valueObject.setDatetime(attribute.asDateTime().getValue().atZone(ZoneId.of("Z")).toInstant().toEpochMilli());
+            valueObject.setDatetime(attribute.asDateTime().getValue().atZone(ZoneOffset.UTC).toInstant().toEpochMilli());
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
