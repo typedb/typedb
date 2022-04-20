@@ -256,11 +256,14 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             @Override
             protected void mayAddTraversal() {
                 Source.create(this, new Operator.Supplier<>(traversalSuppplier))
-                        .flatMap(Match::filterInferred)
+                        .flatMap(this::filterInferred)
                         .registerSubscriber(outputRouter());
             }
 
-            private static FunctionalIterator<ConceptMap> filterInferred(ConceptMap conceptMap) {
+            private FunctionalIterator<ConceptMap> filterInferred(ConceptMap conceptMap) {
+                // TODO: Requires duplicate effort to filter out inferred concludable answers. Instead create a new
+                //  traversal mode that skips inferred concepts
+                if (concludable.isInferredAnswer(conceptMap)) return Iterators.empty();
                 for (Concept c : conceptMap.concepts().values()) {
                     if (c.isThing() && c.asThing().isInferred()) return Iterators.empty();
                 }

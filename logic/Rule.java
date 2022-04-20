@@ -761,7 +761,8 @@ public class Rule {
                 }
 
                 public static Optional<Materialisation> materialise(Materialisable.Has.Explicit materialisable) {
-                    Attribute attribute = putAttribute(materialisable.attrType(), materialisable.value());
+                    Attribute attribute = getAttribute(materialisable.attrType(), materialisable.value())
+                            .orElseGet(() -> putAttribute(materialisable.attrType(), materialisable.value()));
                     if (materialisable.owner().hasNonInferred(attribute)) return Optional.empty();
                     else {
                         materialisable.owner().setHas(attribute, true);
@@ -782,6 +783,15 @@ public class Rule {
                     thenConcepts.put(attribute().id(), attribute);
                     thenConcepts.put(owner().id(), declaredOwner);
                     return thenConcepts;
+                }
+
+                private static Optional<Attribute> getAttribute(AttributeType attrType, ValueConstraint<?> value) {
+                    if (attrType.isDateTime()) return Optional.ofNullable(attrType.asDateTime().get(value.asDateTime().value()));
+                    else if (attrType.isBoolean()) return Optional.ofNullable(attrType.asBoolean().get(value.asBoolean().value()));
+                    else if (attrType.isDouble()) return Optional.ofNullable(attrType.asDouble().get(value.asDouble().value()));
+                    else if (attrType.isLong()) return Optional.ofNullable(attrType.asLong().get(value.asLong().value()));
+                    else if (attrType.isString()) return Optional.ofNullable(attrType.asString().get(value.asString().value()));
+                    else throw TypeDBException.of(ILLEGAL_STATE);
                 }
 
                 private static Attribute putAttribute(AttributeType attrType, ValueConstraint<?> value) {
