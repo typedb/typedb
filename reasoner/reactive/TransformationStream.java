@@ -117,4 +117,10 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
     public Stream<OUTPUT, OUTPUT> buffer() {
         return publisherActions.buffer(this);
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + ":" + operator().getClass().getSimpleName();
+    }
+
 }

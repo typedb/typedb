@@ -241,7 +241,7 @@ public final class Tracer {
             write(String.format("%s -> %s [style=bold,label=%s,color=%s];",
                                 doubleQuotes(escapeNewlines(escapeDoubleQuotes(fromId))),
                                 doubleQuotes(escapeNewlines(escapeDoubleQuotes(toId))),
-                                doubleQuotes(label),
+                                doubleQuotes(escapeNewlines(escapeDoubleQuotes(label))),
                                 doubleQuotes(colour)));
 
         }

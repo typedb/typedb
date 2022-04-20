@@ -70,4 +70,9 @@ public class Output<PACKET> implements Reactive.Subscriber<PACKET> {
         assert receivingInput == null;
         receivingInput = inputId;
     }
+
+    @Override
+    public String toString() {
+        return reactiveBlock.debugName().get() + ":" + getClass().getSimpleName();
+    }
 }

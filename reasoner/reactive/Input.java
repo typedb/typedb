@@ -103,4 +103,9 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
         subscriber.receive(this, packet);
     }
 
+    @Override
+    public String toString() {
+        return reactiveBlock.debugName().get() + ":" + getClass().getSimpleName();
+    }
+
 }

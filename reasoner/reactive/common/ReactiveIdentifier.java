@@ -26,13 +26,13 @@ import java.util.Objects;
 
 public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier<P_IN, P_OUT> {
     private final Actor.Driver<? extends AbstractReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock;
-    private final Class<? extends Reactive> reactiveClass;
+    private final Reactive reactive;
     private final long scopedId;
 
     public ReactiveIdentifier(Actor.Driver<? extends AbstractReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock,
-                              Class<? extends Reactive> reactiveClass, long scopedId) {
+                              Reactive reactive, long scopedId) {
         this.reactiveBlock = reactiveBlock;
-        this.reactiveClass = reactiveClass;
+        this.reactive = reactive;
         this.scopedId = scopedId;
     }
 
@@ -43,17 +43,17 @@ public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier<P_IN
         ReactiveIdentifier<?, ?> that = (ReactiveIdentifier<?, ?>) o;
         return scopedId == that.scopedId &&
                 reactiveBlock.equals(that.reactiveBlock) &&
-                reactiveClass.equals(that.reactiveClass);
+                reactive.equals(that.reactive);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(reactiveBlock, reactiveClass, scopedId);
+        return Objects.hash(reactiveBlock, reactive, scopedId);
     }
 
     @Override
     public String toString() {
-        return reactiveBlock.debugName().get() + ":" + reactiveClass +":" + scopedId;
+        return "@" + Integer.toHexString(reactiveBlock().hashCode()) + ":" + reactive.toString() +":" + scopedId;
     }
 
     @Override

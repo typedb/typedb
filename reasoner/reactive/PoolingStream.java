@@ -123,4 +123,9 @@ public class PoolingStream<PACKET> extends AbstractStream<PACKET, PACKET> {
         return publisherActions.buffer(this);
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + ":" + operator().getClass().getSimpleName();
+    }
+
 }

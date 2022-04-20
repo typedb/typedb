@@ -182,7 +182,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
     }
 
     public Identifier<INPUT, OUTPUT> registerReactive(Reactive reactive) {
-        return new ReactiveIdentifier<>(driver(), reactive.getClass(), incrementReactiveCounter());
+        return new ReactiveIdentifier<>(driver(), reactive, incrementReactiveCounter());
     }
 
     public static class Connector<BOUNDS, PACKET> {
