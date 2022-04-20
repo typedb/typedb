@@ -191,12 +191,12 @@ public class ReasonerSteps {
 
     @Then("verify answers are sound")
     public void verify_answers_are_sound() {
-//         correctnessVerifier.verifySoundness(typeQLQuery);
+        correctnessVerifier.verifySoundness(typeQLQuery);
     }
 
     @Then("verify answers are complete")
     public void verify_answers_are_complete() {
-//         correctnessVerifier.verifyCompleteness(typeQLQuery);
+        correctnessVerifier.verifyCompleteness(typeQLQuery);
     }
 
     private static void resetDirectory() throws IOException {

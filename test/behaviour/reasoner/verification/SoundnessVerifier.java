@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.SoundnessException;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
@@ -34,6 +35,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 class SoundnessVerifier {
 
@@ -80,7 +83,11 @@ class SoundnessVerifier {
                 .map(materialisation -> materialisation.boundConclusion().pattern().bounds());
         if (recordedThen.isPresent()) {
             // Update the inferred variables mapping between the two reasoners
-            assert recordedThen.get().concepts().keySet().equals(explanation.conclusionAnswer().keySet());
+            assert recordedThen.get().concepts().keySet().equals(
+                    iterate(explanation.conclusionAnswer().keySet())
+                            .filter(Identifier::isRetrievable)
+                            .map(Identifier.Variable::asRetrievable).toSet()
+            );  // TODO: use unfiltered set of variables
             recordedThen.get().concepts().forEach((var, recordedConcept) -> {
                 Concept inferredConcept = explanation.conclusionAnswer().get(var);
                 if (inferredConceptMapping.containsKey(inferredConcept)) {
