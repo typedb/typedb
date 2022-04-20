@@ -186,21 +186,25 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private boolean verifyOuts(ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate, int pos) {
-        Set<ProcedureEdge<?, ?>> verified = new HashSet<>();
+        Set<ProcedureEdge<?, ?>> renewIfFail = new HashSet<>();
         for (ProcedureEdge<?, ?> edge : vertex.orderedOuts()) {
             ProcedureVertex<?, ?> to = edge.to();
             if (!to.equals(vertex)) {
-                Forwardable<Vertex<?, ?>, Order.Asc> toIter = iterators.containsKey(to.id()) ?
-                        intersect(branch(candidate, edge), iterators.get(to.id())) :
-                        branch(candidate, edge);
+                Forwardable<Vertex<?, ?>, Order.Asc> toIter;
+                if (iterators.containsKey(to.id())) {
+                    toIter = intersect(branch(candidate, edge), iterators.get(to.id()));
+                    renewIfFail.add(edge);
+                } else {
+                    toIter = branch(candidate, edge);
+                }
+
                 if (!toIter.hasNext()) {
-                    verified.forEach(e -> {
+                    renewIfFail.forEach(e -> {
                         iterators.remove(e.to().id());
                         renewIteratorFromInsUpTo(e.to(), pos);
                     });
                     return false;
                 } else {
-                    verified.add(edge);
                     iterators.put(to.id(), toIter);
                 }
             }
