@@ -205,13 +205,15 @@ public final class ConceptManager {
         }
     }
 
-    public void exportTypes(StringBuilder stringBuilder) {
+    public String exportTypes() {
+        StringBuilder stringBuilder = new StringBuilder();
         getRootAttributeType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(x -> writeAttributeType(stringBuilder, x));
         getRootRelationType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(x -> writeRelationType(stringBuilder, x));
         getRootEntityType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(x -> writeEntityType(stringBuilder, x));
+        return stringBuilder.toString();
     }
 
     public TypeDBException exception(ErrorMessage error) {
