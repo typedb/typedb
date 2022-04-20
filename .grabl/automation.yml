@@ -81,10 +81,10 @@ build:
       image: vaticle-ubuntu-20.04
       command: |
         bazel test //test/integration/reasoner:test-controller --test_output=streamed
-#    test-integration-test-explanation:
-#      image: vaticle-ubuntu-20.04
-#      command: |
-#        bazel test //test/integration/reasoner:test-explanation --test_output=streamed
+    test-integration-test-explanation:
+      image: vaticle-ubuntu-20.04
+      command: |
+        bazel test //test/integration/reasoner:test-explanation --test_output=streamed
     test-integration-test-planner:
       image: vaticle-ubuntu-20.04
       command: |
