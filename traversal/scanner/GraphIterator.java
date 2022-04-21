@@ -36,6 +36,7 @@ import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -124,24 +125,78 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private boolean computeFirst(int pos) {
         if (pos == vertexCount) return true;
         ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
-        if (!iterators.containsKey(vertex.id())) renewIteratorFromInsUpTo(vertex, pos);
-        Forwardable<Vertex<?, ?>, Order.Asc> iterator = iterators.get(vertex.id());
+        Forwardable<Vertex<?, ?>, Order.Asc> iterator = getOrCreateIterator(vertex);
         assert iterator.hasNext();
 
-        Vertex<?, ?> candidate = iterator.next();
+        Vertex<?, ?> candidate;
+        do {
+            candidate = iterator.next();
+            if (!verifyVertex(vertex, candidate)) continue;
+            answer.put(vertex.id(), candidate);
+
+            if (!verifyOuts(vertex, candidate, pos)) {
+                answer.remove(vertex.id());
+                continue;
+            }
+
+            if (computeFirst(pos + 1)) return true;
+            else {
+                answer.remove(vertex.id());
+                vertex.outs().forEach(e -> resetIterator(e.to(), null));
+            }
+        } while (iterator.hasNext());
+
+        iterators.remove(vertex.id());
+        return false;
+    }
+
+    private boolean computeNext(int pos) {
+        assert pos < vertexCount;
+        if (pos == -1) return false;
+
+        ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
+        Forwardable<Vertex<?, ?>, Order.Asc> iterator = iterators.get(vertex.id());
+        Vertex<?, ?> candidate;
 
         while (true) {
-            if (verifyVertex(vertex, candidate) && verifyOuts(vertex, candidate, pos)) {
+            answer.remove(vertex.id());
+            if (iterator.hasNext()) {
+                candidate = iterator.next();
+                if (!verifyVertex(vertex, candidate)) continue;
                 answer.put(vertex.id(), candidate);
-                if (computeFirst(pos + 1)) return true;
-            }
-            if (iterator.hasNext()) candidate = iterator.next();
-            else {
-                vertex.outs().forEach(e -> renewIteratorFromInsUpTo(e.to(), pos)); // TODO: this is redundant if verifyOuts failed? Also need to exclude loops
+
+                if (!verifyOuts(vertex, candidate, pos)) {
+                    answer.remove(vertex.id());
+                    continue;
+                }
+
+                return true;
+            } else {
                 iterators.remove(vertex.id());
-                return false;
+                if (!computeNext(pos - 1)) return false;
+                else {
+                    iterator = getOrCreateIterator(vertex);
+                    assert iterator.hasNext();
+                }
             }
         }
+    }
+
+    private Forwardable<Vertex<?, ?>, Order.Asc> getOrCreateIterator(ProcedureVertex<?, ?> vertex) {
+        if (!iterators.containsKey(vertex.id())) resetIterator(vertex, null);
+        return iterators.get(vertex.id());
+    }
+
+    private void resetIterator(ProcedureVertex<?, ?> vertex, @Nullable ProcedureVertex<?, ?> exclude) {
+        List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
+        for (ProcedureEdge<?, ?> edge : vertex.ins()) {
+            if (exclude != null && exclude.equals(edge.from())) continue;
+            Vertex<?, ?> from = answer.get(edge.from().id());
+            if (from != null) iters.add(branch(from, edge));
+        }
+        if (iters.size() == 1) iterators.put(vertex.id(), iters.get(0));
+        else if (iters.size() > 1) iterators.put(vertex.id(), intersect(iterate(iters), ASC));
+        else iterators.remove(vertex.id());
     }
 
     private boolean verifyVertex(ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate) {
@@ -159,52 +214,21 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         return true;
     }
 
-    private boolean computeNext(int pos) {
-        assert pos < vertexCount;
-        if (pos == -1) return false;
-
-        ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
-        Forwardable<Vertex<?, ?>, Order.Asc> iterator = iterators.get(vertex.id());
-        boolean verified = false;
-        Vertex<?, ?> candidate = null;
-        while (!verified) {
-            if (!iterator.hasNext()) {
-                vertex.outs().forEach(e -> renewIteratorFromInsUpTo(e.to(), pos));
-                iterators.remove(vertex.id());
-                if (!computeNext(pos - 1)) return false;
-                else {
-                    if (!iterators.containsKey(vertex.id())) renewIteratorFromInsUpTo(vertex, pos);
-                    iterator = iterators.get(vertex.id());
-                    assert iterator.hasNext();
-                }
-            }
-
-            candidate = iterator.next();
-            verified = verifyVertex(vertex, candidate) && verifyOuts(vertex, candidate, pos);
-        }
-
-        answer.put(vertex.id(), candidate);
-        return true;
-    }
-
     private boolean verifyOuts(ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate, int pos) {
-        Set<ProcedureEdge<?, ?>> renewIfFail = new HashSet<>();
+        Set<ProcedureEdge<?, ?>> resetIfFail = new HashSet<>();
         for (ProcedureEdge<?, ?> edge : vertex.orderedOuts()) {
             ProcedureVertex<?, ?> to = edge.to();
             if (!to.equals(vertex)) {
                 Forwardable<Vertex<?, ?>, Order.Asc> toIter;
                 if (iterators.containsKey(to.id())) {
                     toIter = intersect(branch(candidate, edge), iterators.get(to.id()));
-                    renewIfFail.add(edge);
+                    resetIfFail.add(edge);
                 } else {
                     toIter = branch(candidate, edge);
                 }
 
                 if (!toIter.hasNext()) {
-                    renewIfFail.forEach(e -> {
-                        iterators.remove(e.to().id());
-                        renewIteratorFromInsUpTo(e.to(), pos);
-                    });
+                    resetIfFail.forEach(e -> resetIterator(e.to(), vertex));
                     return false;
                 } else {
                     iterators.put(to.id(), toIter);
@@ -212,17 +236,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
         }
         return true;
-    }
-
-    private void renewIteratorFromInsUpTo(ProcedureVertex<?, ?> vertex, int maxInOrder) {
-        List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
-        for (ProcedureEdge<?, ?> edge : vertex.ins()) {
-            if (edge.from().equals(vertex) || edge.from().order() >= maxInOrder) continue;
-            iters.add(branch(answer.get(edge.from().id()), edge));
-        }
-        if (iters.size() == 1) iterators.put(vertex.id(), iters.get(0));
-        else if (iters.size() > 1) iterators.put(vertex.id(), intersect(iterate(iters), ASC));
-        else iterators.remove(vertex.id());
     }
 
     @Override
