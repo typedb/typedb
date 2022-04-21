@@ -134,7 +134,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             if (!verifyVertex(vertex, candidate)) continue;
             answer.put(vertex.id(), candidate);
 
-            if (!verifyOuts(vertex, candidate, pos)) {
+            if (!verifyOuts(vertex, candidate)) {
                 answer.remove(vertex.id());
                 continue;
             }
@@ -165,13 +165,13 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 if (!verifyVertex(vertex, candidate)) continue;
                 answer.put(vertex.id(), candidate);
 
-                if (!verifyOuts(vertex, candidate, pos)) {
+                if (!verifyOuts(vertex, candidate)) {
                     answer.remove(vertex.id());
-                    continue;
+                } else {
+                    return true;
                 }
-
-                return true;
             } else {
+                vertex.outs().forEach(e -> resetIterator(e.to(), null));
                 iterators.remove(vertex.id());
                 if (!computeNext(pos - 1)) return false;
                 else {
@@ -214,7 +214,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         return true;
     }
 
-    private boolean verifyOuts(ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate, int pos) {
+    private boolean verifyOuts(ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate) {
         Set<ProcedureEdge<?, ?>> resetIfFail = new HashSet<>();
         for (ProcedureEdge<?, ?> edge : vertex.orderedOuts()) {
             ProcedureVertex<?, ?> to = edge.to();
