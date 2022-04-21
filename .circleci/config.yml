@@ -65,14 +65,16 @@ jobs:
 workflows:
   typedb:
     jobs:
-      - test-assembly-mac-zip:
-          filters:
-            branches:
-              only:
-                - master
-      - test-assembly-windows-zip:
-          filters:
-            branches:
-              only:
-                - master
+      - test-assembly-mac-zip
+      - test-assembly-windows-zip
+      # - test-assembly-mac-zip:
+      #     filters:
+      #       branches:
+      #         only:
+      #           - master
+      # - test-assembly-windows-zip:
+      #     filters:
+      #       branches:
+      #         only:
+      #           - master
 
