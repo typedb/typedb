@@ -67,7 +67,6 @@ public abstract class ProcedureVertex<
     private Set<Identifier.Variable> scopedBy;
     private int order;
 
-
     ProcedureVertex(Identifier identifier, boolean isStartingVertex) {
         super(identifier);
         this.isStartingVertex = isStartingVertex;

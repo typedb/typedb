@@ -137,6 +137,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
             if (iterator.hasNext()) candidate = iterator.next();
             else {
+                vertex.outs().forEach(e -> renewIteratorFromInsUpTo(e.to(), pos)); // TODO: this is redundant if verifyOuts failed? Also need to exclude loops
                 iterators.remove(vertex.id());
                 return false;
             }
@@ -168,6 +169,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         Vertex<?, ?> candidate = null;
         while (!verified) {
             if (!iterator.hasNext()) {
+                vertex.outs().forEach(e -> renewIteratorFromInsUpTo(e.to(), pos));
                 iterators.remove(vertex.id());
                 if (!computeNext(pos - 1)) return false;
                 else {
@@ -218,7 +220,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             if (edge.from().equals(vertex) || edge.from().order() >= maxInOrder) continue;
             iters.add(branch(answer.get(edge.from().id()), edge));
         }
-        iterators.put(vertex.id(), intersect(iterate(iters), ASC));
+        if (iters.size() == 1) iterators.put(vertex.id(), iters.get(0));
+        else if (iters.size() > 1) iterators.put(vertex.id(), intersect(iterate(iters), ASC));
+        else iterators.remove(vertex.id());
     }
 
     @Override

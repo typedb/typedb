@@ -176,12 +176,13 @@ public abstract class ProcedureEdge<
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ProcedureEdge<?, ?> that = (ProcedureEdge<?, ?>) o;
-        return order == that.order && direction == that.direction; // TODO remove order -- note will break CombinationProcedure/Finder
+        return from().equals(that.from()) && to().equals(that.to()) &&
+                order == that.order && direction == that.direction; // TODO remove order -- note will break CombinationProcedure/Finder
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(order, direction);
+        return Objects.hash(from(), to(), order, direction);
     }
 
     @Override
@@ -234,8 +235,8 @@ public abstract class ProcedureEdge<
 
         private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
 
-        private Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
-                          Encoding.Direction.Edge direction, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
+        Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
+                  Encoding.Direction.Edge direction, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, order, direction, predicate.toString());
             this.predicate = predicate;
         }
