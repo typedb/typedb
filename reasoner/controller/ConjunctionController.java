@@ -144,6 +144,7 @@ public abstract class ConjunctionController<OUTPUT,
             ConceptMap newPID = mapping.transform(req.bounds());
             Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
                     .withMap(mapping::unTransform)
+                    .withMap(c -> withExplainableIfInferred(c, req.controllerId()))
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.resolveReactiveBlock(connector));
         } else if (connectionRequest.isNegated()) {
@@ -154,6 +155,24 @@ public abstract class ConjunctionController<OUTPUT,
                     .withMap(c -> merge(c, req.bounds()))
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.resolveReactiveBlock(connector));
+        } else {
+            throw TypeDBException.of(ILLEGAL_STATE);
+        }
+    }
+
+    private static ConceptMap withExplainableIfInferred(ConceptMap answer, Concludable concludable) {
+        // TODO: Having to do a check here for whether the answer is inferred is an extra expense compared with doing it in the concludable
+        if (concludable.isInferredAnswer(answer)) return withExplainable(answer, concludable);
+        else return answer;
+    }
+
+    protected static ConceptMap withExplainable(ConceptMap conceptMap, Concludable concludable) {
+        if (concludable.isRelation() || concludable.isAttribute() || concludable.isIsa()) {
+            return conceptMap.withExplainableConcept(concludable.generating().get().id(), concludable.pattern());
+        } else if (concludable.isHas()) {
+            return conceptMap.withExplainableAttrOwnership(
+                    concludable.asHas().owner().id(), concludable.asHas().attribute().id(), concludable.pattern()
+            );
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }

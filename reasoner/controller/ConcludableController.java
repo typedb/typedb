@@ -274,20 +274,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             protected Publisher<ConceptMap> buildOutput(Publisher<Map<Variable, Concept>> input,
                                                         Unifier unifier,
                                                         Unifier.Requirements.Instance requirements) {
-                return input.flatMap(conclusionAns -> unifier.unUnify(conclusionAns, requirements))
-                        .map(this::withExplainable);
-            }
-
-            protected ConceptMap withExplainable(ConceptMap conceptMap) {
-                if (concludable.isRelation() || concludable.isAttribute() || concludable.isIsa()) {
-                    return conceptMap.withExplainableConcept(concludable.generating().get().id(), concludable.pattern());
-                } else if (concludable.isHas()) {
-                    return conceptMap.withExplainableAttrOwnership(
-                            concludable.asHas().owner().id(), concludable.asHas().attribute().id(), concludable.pattern()
-                    );
-                } else {
-                    throw TypeDBException.of(ILLEGAL_STATE);
-                }
+                return input.flatMap(conclusionAns -> unifier.unUnify(conclusionAns, requirements));
             }
 
             @Override

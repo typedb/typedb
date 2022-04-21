@@ -491,6 +491,7 @@ public class ExplanationTest {
 
     private List<Explanation> assertSingleExplainableExplanations(ConceptMap ans, int anonymousConcepts, int explainablesCount,
                                                                   int explanationsCount, CoreTransaction txn) {
+        checkExplainableVars(ans);
         List<ConceptMap.Explainable> explainables = ans.explainables().iterator().toList();
         assertEquals(anonymousConcepts, iterate(ans.concepts().keySet()).filter(Identifier::isAnonymous).count());
         assertEquals(explainablesCount, explainables.size());
@@ -498,7 +499,6 @@ public class ExplanationTest {
         assertNotEquals(NOT_IDENTIFIED, explainable.id());
         List<Explanation> explanations = txn.query().explain(explainable.id()).toList();
         assertEquals(explanationsCount, explanations.size());
-
         explanations.forEach(explanation -> {
             Map<Retrievable, Set<Variable>> mapping = explanation.variableMapping();
             Map<Retrievable, Set<Retrievable>> retrievableMapping = new HashMap<>();
@@ -512,6 +512,13 @@ public class ExplanationTest {
             });
         });
         return explanations;
+    }
+
+    private static void checkExplainableVars(ConceptMap ans) {
+        ans.explainables().relations().keySet().forEach(v -> assertTrue(ans.contains(v)));
+        ans.explainables().attributes().keySet().forEach(v -> assertTrue(ans.contains(v)));
+        ans.explainables().ownerships().keySet().forEach(
+                pair -> assertTrue(ans.contains(pair.first()) && ans.contains(pair.second())));
     }
 
     private ConceptMap applyMapping(Map<Retrievable, Set<Retrievable>> mapping, ConceptMap completeMap) {
