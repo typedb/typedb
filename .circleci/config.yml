@@ -46,8 +46,8 @@ jobs:
       xcode: "12.4.0"
     working_directory: ~/typedb
     steps:
-      - install-bazel-mac
       - checkout
+      - install-bazel-mac
       - run-bazel:
           command: bazel test //test/assembly:assembly --test_output=errors
 
