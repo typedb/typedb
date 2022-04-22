@@ -53,6 +53,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.reasoner.controller.ConcludableController.ReactiveBlock.Match.withExplainable;
 
 public abstract class ConjunctionController<OUTPUT,
         CONTROLLER extends ConjunctionController<OUTPUT, CONTROLLER, REACTIVE_BLOCK>,
@@ -120,10 +121,10 @@ public abstract class ConjunctionController<OUTPUT,
         return plan;
     }
 
-    protected static ConceptMap merge(ConceptMap c1, ConceptMap c2) {
-        Map<Variable.Retrievable, Concept> compounded = new HashMap<>(c1.concepts());
-        compounded.putAll(c2.concepts());
-        return new ConceptMap(compounded, c1.explainables().merge(c2.explainables()));
+    protected static ConceptMap merge(ConceptMap into, ConceptMap from) {
+        Map<Variable.Retrievable, Concept> compounded = new HashMap<>(into.concepts());
+        compounded.putAll(from.concepts());
+        return new ConceptMap(compounded, into.explainables().merge(from.explainables()));
     }
 
     @Override
@@ -144,7 +145,7 @@ public abstract class ConjunctionController<OUTPUT,
             ConceptMap newPID = mapping.transform(req.bounds());
             Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
                     .withMap(mapping::unTransform)
-                    .withMap(c -> withExplainableIfInferred(c, req.controllerId()))
+                    .withMap(c -> remapExplainable(c, req.controllerId()))
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.resolveReactiveBlock(connector));
         } else if (connectionRequest.isNegated()) {
@@ -160,22 +161,11 @@ public abstract class ConjunctionController<OUTPUT,
         }
     }
 
-    private static ConceptMap withExplainableIfInferred(ConceptMap answer, Concludable concludable) {
-        // TODO: Having to do a check here for whether the answer is inferred is an extra expense compared with doing it in the concludable
-        if (concludable.isInferredAnswer(answer)) return withExplainable(answer, concludable);
-        else return answer;
-    }
-
-    protected static ConceptMap withExplainable(ConceptMap conceptMap, Concludable concludable) {
-        if (concludable.isRelation() || concludable.isAttribute() || concludable.isIsa()) {
-            return conceptMap.withExplainableConcept(concludable.generating().get().id(), concludable.pattern());
-        } else if (concludable.isHas()) {
-            return conceptMap.withExplainableAttrOwnership(
-                    concludable.asHas().owner().id(), concludable.asHas().attribute().id(), concludable.pattern()
-            );
-        } else {
-            throw TypeDBException.of(ILLEGAL_STATE);
-        }
+    private static ConceptMap remapExplainable(ConceptMap answer, Concludable concludable) {
+        List<ConceptMap.Explainable> explainables = answer.explainables().iterator().toList();
+        assert explainables.size() <= 1;
+        if (explainables.isEmpty()) return answer;
+        else return withExplainable(new ConceptMap(answer.concepts()), concludable);
     }
 
     public static class Request<CONTROLLER_ID> extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap> {
@@ -269,7 +259,7 @@ public abstract class ConjunctionController<OUTPUT,
                         return Either.first(follower);
                     }
                 } else {
-                    ConceptMap compoundedPacket = merge(mergedPacket, publisherPackets.get(publisher));
+                    ConceptMap compoundedPacket = merge(publisherPackets.get(publisher), mergedPacket);
                     return Either.second(set(compoundedPacket));
                 }
             }
