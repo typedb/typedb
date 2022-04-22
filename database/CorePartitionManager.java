@@ -65,7 +65,7 @@ public abstract class CorePartitionManager {
 
     abstract Set<Key.Partition> partitions();
 
-    void close() {
+    protected void close() {
         descriptors.forEach(descriptor -> descriptor.getOptions().close());
         handles.forEach(AbstractImmutableNativeReference::close);
     }

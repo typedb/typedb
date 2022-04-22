@@ -128,7 +128,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         }
     }
 
-    void notifyClosed() {
+    protected void notifyClosed() {
         session.closed(this);
     }
 
@@ -181,17 +181,15 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             return this;
         }
 
-        TypeGraph graph() {
+        protected TypeGraph graph() {
             return graphMgr.schema();
         }
 
-        RocksStorage.Schema schemaStorage() {
-            if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
+        protected RocksStorage.Schema schemaStorage() {
             return schemaStorage;
         }
 
-        RocksStorage.Data dataStorage() {
-            if (!isOpen.get()) throw TypeDBException.of(TRANSACTION_CLOSED);
+        protected RocksStorage.Data dataStorage() {
             return dataStorage;
         }
 
@@ -358,7 +356,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
         }
 
         @Override
-        void notifyClosed() {
+        protected void notifyClosed() {
             if (type().isWrite()) session.database().isolationMgr().closed(this);
             super.notifyClosed();
         }
