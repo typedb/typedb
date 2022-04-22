@@ -135,7 +135,7 @@ public class CoreDatabase implements TypeDB.Database {
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         isolationMgr = new IsolationManager();
-        statisticsCorrector = new StatisticsCorrector();
+        statisticsCorrector = createStatisticsCorrector();
         sessions = new ConcurrentHashMap<>();
         rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
                 options().storageIndexCacheSize(), LOG.isDebugEnabled(), ROCKS_LOG_PERIOD);
@@ -143,6 +143,10 @@ public class CoreDatabase implements TypeDB.Database {
         schemaLockWriteRequests = new AtomicInteger(0);
         nextTransactionID = new AtomicLong(0);
         isOpen = new AtomicBoolean(false);
+    }
+
+    protected StatisticsCorrector createStatisticsCorrector() {
+        return new StatisticsCorrector();
     }
 
     static CoreDatabase createAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
@@ -178,7 +182,7 @@ public class CoreDatabase implements TypeDB.Database {
         statisticsCorrector.initialise();
     }
 
-    private void openSchema() {
+    protected void openSchema() {
         try {
             List<ColumnFamilyDescriptor> schemaDescriptors = CorePartitionManager.Schema.descriptors(rocksConfiguration.schema());
             List<ColumnFamilyHandle> schemaHandles = new ArrayList<>();
@@ -188,17 +192,18 @@ public class CoreDatabase implements TypeDB.Database {
                     schemaDescriptors,
                     schemaHandles
             );
-            rocksSchemaPartitionMgr = partitionManagerSchema(schemaDescriptors, schemaHandles);
+            rocksSchemaPartitionMgr = createPartitionMgrSchema(schemaDescriptors, schemaHandles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
     }
 
-    protected CorePartitionManager.Schema partitionManagerSchema(List<ColumnFamilyDescriptor> schemaDescriptors, List<ColumnFamilyHandle> schemaHandles) {
+    protected CorePartitionManager.Schema createPartitionMgrSchema(List<ColumnFamilyDescriptor> schemaDescriptors,
+                                                                   List<ColumnFamilyHandle> schemaHandles) {
         return new CorePartitionManager.Schema(schemaDescriptors, schemaHandles);
     }
 
-    private void openAndInitialiseData() {
+    protected void openAndInitialiseData() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -210,14 +215,15 @@ public class CoreDatabase implements TypeDB.Database {
             );
             assert dataHandles.size() == 1;
             dataHandles.addAll(rocksData.createColumnFamilies(dataDescriptors.subList(1, dataDescriptors.size())));
-            rocksDataPartitionMgr = partitionManagerData(dataDescriptors, dataHandles);
+            rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
         mayInitRocksDataLogger();
     }
 
-    protected CorePartitionManager.Data partitionManagerData(List<ColumnFamilyDescriptor> dataDescriptors, List<ColumnFamilyHandle> dataHandles) {
+    protected CorePartitionManager.Data createPartitionMgrData(List<ColumnFamilyDescriptor> dataDescriptors,
+                                                               List<ColumnFamilyHandle> dataHandles) {
         return new CorePartitionManager.Data(dataDescriptors, dataHandles);
     }
 
@@ -235,7 +241,7 @@ public class CoreDatabase implements TypeDB.Database {
         statisticsCorrector.initialiseAndCleanUp();
     }
 
-    private void openData() {
+    protected void openData() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -246,7 +252,7 @@ public class CoreDatabase implements TypeDB.Database {
                     dataHandles
             );
             assert dataDescriptors.size() == dataHandles.size();
-            rocksDataPartitionMgr = partitionManagerData(dataDescriptors, dataHandles);
+            rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
@@ -265,7 +271,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    private void initialiseEncodingVersion() {
+    protected void initialiseEncodingVersion() {
         try {
             rocksSchema.put(
                     rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
@@ -277,7 +283,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    private void validateEncodingVersion() {
+    protected void validateEncodingVersion() {
         try {
             byte[] encodingBytes = rocksSchema.get(
                     rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
@@ -340,7 +346,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    private synchronized void cacheClose() {
+    protected synchronized void cacheClose() {
         if (cache != null) cache.close();
     }
 
@@ -368,7 +374,7 @@ public class CoreDatabase implements TypeDB.Database {
         return isolationMgr;
     }
 
-    StatisticsCorrector statisticsCorrector() {
+    protected StatisticsCorrector statisticsCorrector() {
         return statisticsCorrector;
     }
 
@@ -473,7 +479,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    static class IsolationManager {
+    public static class IsolationManager {
 
         private final ConcurrentMap<CoreTransaction.Data, CommitState> commitStates;
         private final ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> commitTimeline;
@@ -491,7 +497,7 @@ public class CoreDatabase implements TypeDB.Database {
             commitStates.put(transaction, CommitState.UNCOMMITTED);
         }
 
-        Set<CoreTransaction.Data> validateOverlappingAndStartCommit(CoreTransaction.Data txn) {
+        public Set<CoreTransaction.Data> validateOverlappingAndStartCommit(CoreTransaction.Data txn) {
             Set<CoreTransaction.Data> transactions;
             synchronized (this) {
                 transactions = commitMayConflict(txn);
@@ -520,7 +526,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        void committed(CoreTransaction.Data txn) {
+        public void committed(CoreTransaction.Data txn) {
             assert commitStates.get(txn) == CommitState.COMMITTING && txn.snapshotEnd().isPresent();
             commitStates.put(txn, CommitState.COMMITTED);
             commitTimeline.compute(txn.snapshotEnd().get(), (snapshot, committed) -> {
@@ -566,14 +572,14 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    class StatisticsCorrector {
+    public class StatisticsCorrector {
 
-        private final ConcurrentSet<CompletableFuture<Void>> corrections;
+        protected final ConcurrentSet<CompletableFuture<Void>> corrections;
         private final ConcurrentSet<Long> deletedTxnIDs;
-        private final AtomicBoolean correctionRequired;
-        private CoreSession.Data session;
+        protected final AtomicBoolean correctionRequired;
+        protected CoreSession.Data session;
 
-        StatisticsCorrector() {
+        protected StatisticsCorrector() {
             corrections = new ConcurrentSet<>();
             deletedTxnIDs = new ConcurrentSet<>();
             correctionRequired = new AtomicBoolean(false);
@@ -583,7 +589,7 @@ public class CoreDatabase implements TypeDB.Database {
             session = createAndOpenSession(DATA, new Options.Session()).asData();
         }
 
-        void initialiseAndCleanUp() {
+        public void initialiseAndCleanUp() {
             initialise();
             LOG.debug("Cleaning up statistics metadata.");
             correctMiscounts();
@@ -619,7 +625,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        void committed(CoreTransaction.Data transaction) {
+        public void committed(CoreTransaction.Data transaction) {
             if (mayMiscount(transaction) && correctionRequired.compareAndSet(false, true)) {
                 submitCorrection();
 
@@ -650,41 +656,45 @@ public class CoreDatabase implements TypeDB.Database {
          * Scan through all attributes that may need to be corrected (eg. have been over/under counted),
          * and correct them if we have enough information to do so.
          */
-        private void correctMiscounts() {
+        protected void correctMiscounts() {
             // note: take copy before open a snapshotted transaction
-            Set<Long> deletableTxnIDs = new HashSet<>(deletedTxnIDs);
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
-                boolean[] modified = new boolean[]{false};
-                boolean[] miscountCorrected = new boolean[]{false};
-                Set<Long> openTxnIDs = isolationMgr.getNotCommitted().map(t -> t.id).toSet();
-                txn.dataStorage.iterate(StatisticsKey.Miscountable.prefix()).forEachRemaining(kv -> {
-                    StatisticsKey.Miscountable item = kv.key();
-                    List<Long> txnIDsCausingMiscount = kv.value().decodeLongs();
+                correctMiscounts(txn);
+            }
+        }
 
-                    if (anyCommitted(txnIDsCausingMiscount, txn.dataStorage)) {
-                        correctMiscount(item, txn);
-                        miscountCorrected[0] = true;
-                        txn.dataStorage.deleteUntracked(item);
-                        modified[0] = true;
-                    } else if (noneOpen(txnIDsCausingMiscount, openTxnIDs)) {
-                        txn.dataStorage.deleteUntracked(item);
-                        modified[0] = true;
-                    } else {
-                        // transaction IDs causing miscount are not deletable
-                        deletableTxnIDs.removeAll(txnIDsCausingMiscount);
-                    }
-                });
-                if (!deletableTxnIDs.isEmpty()) {
-                    for (Long txnID : deletableTxnIDs) {
-                        txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
-                    }
-                    deletedTxnIDs.removeAll(deletableTxnIDs);
+        protected void correctMiscounts(CoreTransaction.Data txn) {
+            Set<Long> deletableTxnIDs = new HashSet<>(deletedTxnIDs);
+            boolean[] modified = new boolean[]{false};
+            boolean[] miscountCorrected = new boolean[]{false};
+            Set<Long> openTxnIDs = isolationMgr.getNotCommitted().map(t -> t.id).toSet();
+            txn.dataStorage.iterate(StatisticsKey.Miscountable.prefix()).forEachRemaining(kv -> {
+                StatisticsKey.Miscountable item = kv.key();
+                List<Long> txnIDsCausingMiscount = kv.value().decodeLongs();
+
+                if (anyCommitted(txnIDsCausingMiscount, txn.dataStorage)) {
+                    correctMiscount(item, txn);
+                    miscountCorrected[0] = true;
+                    txn.dataStorage.deleteUntracked(item);
                     modified[0] = true;
+                } else if (noneOpen(txnIDsCausingMiscount, openTxnIDs)) {
+                    txn.dataStorage.deleteUntracked(item);
+                    modified[0] = true;
+                } else {
+                    // transaction IDs causing miscount are not deletable
+                    deletableTxnIDs.removeAll(txnIDsCausingMiscount);
                 }
-                if (modified[0]) {
-                    if (miscountCorrected[0]) txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
-                    txn.commit();
+            });
+            if (!deletableTxnIDs.isEmpty()) {
+                for (Long txnID : deletableTxnIDs) {
+                    txn.dataStorage.deleteUntracked(StatisticsKey.txnCommitted(txnID));
                 }
+                deletedTxnIDs.removeAll(deletableTxnIDs);
+                modified[0] = true;
+            }
+            if (modified[0]) {
+                if (miscountCorrected[0]) txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
+                txn.commit();
             }
         }
 
@@ -721,7 +731,7 @@ public class CoreDatabase implements TypeDB.Database {
             return iterate(txnIDs).noneMatch(openTxnIDs::contains);
         }
 
-        void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
+        public void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
             recordMiscountableCauses(txn, overlappingTxn);
             txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
         }
@@ -780,7 +790,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        void close() {
+        protected void close() {
             try {
                 correctionRequired.set(false);
                 for (CompletableFuture<Void> correction : corrections) {

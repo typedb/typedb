@@ -133,6 +133,20 @@ public abstract class CoreSession implements TypeDB.Session {
             return this;
         }
 
+        protected CoreTransaction.Schema initialisationTransaction() {
+            if (!isOpen.get()) throw TypeDBException.of(SESSION_CLOSED);
+            try {
+                if (!writeLock.tryLock(new Options.Transaction().schemaLockTimeoutMillis(), MILLISECONDS)) {
+                    throw TypeDBException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
+                }
+            } catch (InterruptedException e) {
+                throw TypeDBException.of(e);
+            }
+            CoreTransaction.Schema transaction = txSchemaFactory.initialisationTransaction(this);
+            transactions.put(transaction, 0L);
+            return transaction;
+        }
+
         @Override
         public CoreTransaction.Schema transaction(Arguments.Transaction.Type type) {
             return transaction(type, new Options.Transaction());
@@ -154,20 +168,6 @@ public abstract class CoreSession implements TypeDB.Session {
             transactions.put(transaction, 0L);
             return transaction;
 
-        }
-
-        CoreTransaction.Schema initialisationTransaction() {
-            if (!isOpen.get()) throw TypeDBException.of(SESSION_CLOSED);
-            try {
-                if (!writeLock.tryLock(new Options.Transaction().schemaLockTimeoutMillis(), MILLISECONDS)) {
-                    throw TypeDBException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
-                }
-            } catch (InterruptedException e) {
-                throw TypeDBException.of(e);
-            }
-            CoreTransaction.Schema transaction = txSchemaFactory.initialisationTransaction(this);
-            transactions.put(transaction, 0L);
-            return transaction;
         }
 
         @Override

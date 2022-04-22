@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 
 public final class CoreFactory implements Factory {
+
     private Database databaseFactory;
     private Session sessionFactory;
     private TransactionSchema transactionSchemaFactory;
