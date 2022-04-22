@@ -135,7 +135,7 @@ public class CoreDatabase implements TypeDB.Database {
         schemaKeyGenerator = new KeyGenerator.Schema.Persisted();
         dataKeyGenerator = new KeyGenerator.Data.Persisted();
         isolationMgr = new IsolationManager();
-        statisticsCorrector = statsCorrectorFactory();
+        statisticsCorrector = createStatisticsCorrector();
         sessions = new ConcurrentHashMap<>();
         rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
                 options().storageIndexCacheSize(), LOG.isDebugEnabled(), ROCKS_LOG_PERIOD);
@@ -145,7 +145,7 @@ public class CoreDatabase implements TypeDB.Database {
         isOpen = new AtomicBoolean(false);
     }
 
-    protected StatisticsCorrector statsCorrectorFactory() {
+    protected StatisticsCorrector createStatisticsCorrector() {
         return new StatisticsCorrector();
     }
 
@@ -192,14 +192,14 @@ public class CoreDatabase implements TypeDB.Database {
                     schemaDescriptors,
                     schemaHandles
             );
-            rocksSchemaPartitionMgr = partitionMgrSchemaFactory(schemaDescriptors, schemaHandles);
+            rocksSchemaPartitionMgr = createPartitionMgrSchema(schemaDescriptors, schemaHandles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
     }
 
-    protected CorePartitionManager.Schema partitionMgrSchemaFactory(List<ColumnFamilyDescriptor> schemaDescriptors,
-                                                                    List<ColumnFamilyHandle> schemaHandles) {
+    protected CorePartitionManager.Schema createPartitionMgrSchema(List<ColumnFamilyDescriptor> schemaDescriptors,
+                                                                   List<ColumnFamilyHandle> schemaHandles) {
         return new CorePartitionManager.Schema(schemaDescriptors, schemaHandles);
     }
 
@@ -215,15 +215,15 @@ public class CoreDatabase implements TypeDB.Database {
             );
             assert dataHandles.size() == 1;
             dataHandles.addAll(rocksData.createColumnFamilies(dataDescriptors.subList(1, dataDescriptors.size())));
-            rocksDataPartitionMgr = partitionMgrDataFactory(dataDescriptors, dataHandles);
+            rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
         mayInitRocksDataLogger();
     }
 
-    protected CorePartitionManager.Data partitionMgrDataFactory(List<ColumnFamilyDescriptor> dataDescriptors,
-                                                                List<ColumnFamilyHandle> dataHandles) {
+    protected CorePartitionManager.Data createPartitionMgrData(List<ColumnFamilyDescriptor> dataDescriptors,
+                                                               List<ColumnFamilyHandle> dataHandles) {
         return new CorePartitionManager.Data(dataDescriptors, dataHandles);
     }
 
@@ -252,7 +252,7 @@ public class CoreDatabase implements TypeDB.Database {
                     dataHandles
             );
             assert dataDescriptors.size() == dataHandles.size();
-            rocksDataPartitionMgr = partitionMgrDataFactory(dataDescriptors, dataHandles);
+            rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
