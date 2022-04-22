@@ -625,10 +625,6 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        public boolean isOpen() {
-            return session != null;
-        }
-
         public void committed(CoreTransaction.Data transaction) {
             if (mayMiscount(transaction) && correctionRequired.compareAndSet(false, true)) {
                 submitCorrection();
