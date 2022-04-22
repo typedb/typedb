@@ -259,7 +259,7 @@ public abstract class ConjunctionController<OUTPUT,
                         return Either.first(follower);
                     }
                 } else {
-                    ConceptMap compoundedPacket = merge(publisherPackets.get(publisher), mergedPacket);
+                    ConceptMap compoundedPacket = merge(mergedPacket, publisherPackets.get(publisher));
                     return Either.second(set(compoundedPacket));
                 }
             }
