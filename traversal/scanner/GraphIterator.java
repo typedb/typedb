@@ -172,7 +172,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             if (iterator.hasNext()) {
                 candidate = iterator.next();
                 if (!verifyVertex(vertex, candidate)) {
-                    prepareFail(vertex, vertex); // TODO: optimise not calling this over and over again?
+                    recordFail(vertex, vertex); // TODO: optimise not calling this over and over again?
                     continue;
                 }
 
@@ -181,28 +181,28 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 if (!verifyOuts(vertex, candidate)) {
                     answer.remove(vertex.id());
                 } else {
-                    prepareSuccess(vertex);
+                    recordSuccess(vertex);
                     break;
                 }
             } else {
                 vertex.outs().forEach(e -> resetIterator(e.to(), null));
                 iterators.remove(vertex.id());
-                prepareFail(vertex, vertex);
+                recordFail(vertex, vertex);
                 stepDirection = StepDirection.BACKWARD;
                 break;
             }
         }
     }
 
-    private void prepareFail(ProcedureVertex<?, ?> failed, ProcedureVertex<?, ?> from) {
+    private void recordFail(ProcedureVertex<?, ?> failed, ProcedureVertex<?, ?> from) {
         failed.ins().forEach(e -> {
-            if (!e.from().equals(from)) {
+            if (e.from().order() < from.order()) {
                 backward.add(e.from().order());
             }
         });
     }
 
-    private void prepareSuccess(ProcedureVertex<?, ?> vertex) {
+    private void recordSuccess(ProcedureVertex<?, ?> vertex) {
         forward.add(vertex.order() + 1);
     }
 
@@ -315,7 +315,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 }
 
                 if (!toIter.hasNext()) {
-                    prepareFail(to, vertex);
+                    recordFail(to, vertex);
                     resetIfFail.forEach(e -> resetIterator(e.to(), vertex));
                     return false;
                 } else {
