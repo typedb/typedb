@@ -260,6 +260,7 @@ public abstract class ConjunctionController<OUTPUT,
                     }
                 } else {
                     ConceptMap compoundedPacket = merge(mergedPacket, publisherPackets.get(publisher));
+                    assert compoundedPacket.equals(merge(publisherPackets.get(publisher), mergedPacket));
                     return Either.second(set(compoundedPacket));
                 }
             }

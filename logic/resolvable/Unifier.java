@@ -127,9 +127,15 @@ public class Unifier {
         List<Variable.Name> namedTypeNames = new ArrayList<>();
         List<FunctionalIterator<Type>> namedTypeSupers = new ArrayList<>();
         initialConcepts.forEach((id, concept) -> {
-            if (id.isName() && concept.isType() && !instanceRequirements.hasRestriction(id)) {
+            if (id.isName() && concept.isType()) {
                 namedTypeNames.add(id.asName());
-                namedTypeSupers.add(concept.asType().getSupertypes().map(t -> t));
+                if (!instanceRequirements.hasRestriction(id)) {
+                    namedTypeSupers.add(concept.asType().getSupertypes().map(t -> t));
+                } else {
+                    namedTypeSupers.add(concept.asType().getSupertypes()
+                                                .filter(t -> t.equals(instanceRequirements.restriction(id)))
+                                                .map(t -> t));
+                }
             } else fixedConcepts.put(id, concept);
         });
 
@@ -182,9 +188,9 @@ public class Unifier {
 
     public static class Builder {
 
-        private Map<Retrievable, Set<Variable>> unifier;
-        private Requirements.Constraint requirements;
-        private Requirements.Constraint unifiedRequirements;
+        private final Map<Retrievable, Set<Variable>> unifier;
+        private final Requirements.Constraint requirements;
+        private final Requirements.Constraint unifiedRequirements;
 
         public Builder() {
             this(new HashMap<>(), new Requirements.Constraint(), new Requirements.Constraint());
@@ -388,6 +394,11 @@ public class Unifier {
                     }
                 }
                 return true;
+            }
+
+            public Concept restriction(Retrievable var) {
+                assert hasRestriction(var);
+                return requireCompatible.get(var);
             }
 
             public boolean hasRestriction(Retrievable var) {
