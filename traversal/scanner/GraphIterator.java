@@ -206,82 +206,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         forward.add(vertex.order() + 1);
     }
 
-//
-//    private boolean computeFirst(int pos) {
-//        if (pos == vertexCount) return true;
-//        ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
-//        Forwardable<Vertex<?, ?>, Order.Asc> iterator = getOrCreateIterator(vertex);
-//        assert iterator.hasNext();
-//
-//        Vertex<?, ?> candidate;
-//        do {
-//            candidate = iterator.next();
-//            if (!verifyVertex(vertex, candidate)) continue;
-//            answer.put(vertex.id(), candidate);
-//
-//            if (!verifyOuts(vertex, candidate)) {
-//                answer.remove(vertex.id());
-//                continue;
-//            }
-//
-//            if (computeFirst(pos + 1)) return true;
-//            else {
-//                answer.remove(vertex.id());
-//                vertex.outs().forEach(e -> resetIterator(e.to(), null));
-//            }
-//        } while (iterator.hasNext());
-//
-//        iterators.remove(vertex.id());
-//        return false;
-//    }
-//
-//    private boolean computeNext(int pos) {
-//        assert pos < vertexCount;
-//        if (pos == -1) return false;
-//
-//        ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
-//        Forwardable<Vertex<?, ?>, Order.Asc> iterator = iterators.get(vertex.id());
-//        Vertex<?, ?> candidate;
-//
-//        while (true) {
-//            answer.remove(vertex.id());
-//            if (iterator.hasNext()) {
-//                candidate = iterator.next();
-//                if (!verifyVertex(vertex, candidate)) continue;
-//                answer.put(vertex.id(), candidate);
-//
-//                if (!verifyOuts(vertex, candidate)) {
-//                    answer.remove(vertex.id());
-//                } else {
-//                    return true;
-//                }
-//            } else {
-//                vertex.outs().forEach(e -> resetIterator(e.to(), null));
-//                iterators.remove(vertex.id());
-//                if (!computeNext(pos - 1)) return false;
-//                else {
-//                    iterator = getOrCreateIterator(vertex);
-//                    assert iterator.hasNext();
-//                }
-//            }
-//        }
-//    }
-
     private Forwardable<Vertex<?, ?>, Order.Asc> getOrCreateIterator(ProcedureVertex<?, ?> vertex) {
         if (!iterators.containsKey(vertex.id())) resetIterator(vertex, null);
         return iterators.get(vertex.id());
-    }
-
-    private void resetIterator(ProcedureVertex<?, ?> vertex, @Nullable ProcedureVertex<?, ?> exclude) {
-        List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
-        for (ProcedureEdge<?, ?> edge : vertex.ins()) {
-            if (exclude != null && exclude.equals(edge.from())) continue;
-            Vertex<?, ?> from = answer.get(edge.from().id());
-            if (from != null) iters.add(branch(from, edge));
-        }
-        if (iters.size() == 1) iterators.put(vertex.id(), iters.get(0));
-        else if (iters.size() > 1) iterators.put(vertex.id(), intersect(iterate(iters), ASC));
-        else iterators.remove(vertex.id());
     }
 
     private boolean verifyVertex(ProcedureVertex<?, ?> vertex, Vertex<?, ?> candidate) {
@@ -324,6 +251,18 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
         }
         return true;
+    }
+
+    private void resetIterator(ProcedureVertex<?, ?> vertex, @Nullable ProcedureVertex<?, ?> exclude) {
+        List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
+        for (ProcedureEdge<?, ?> edge : vertex.ins()) {
+            if (exclude != null && exclude.equals(edge.from())) continue;
+            Vertex<?, ?> from = answer.get(edge.from().id());
+            if (from != null) iters.add(branch(from, edge));
+        }
+        if (iters.size() == 1) iterators.put(vertex.id(), iters.get(0));
+        else if (iters.size() > 1) iterators.put(vertex.id(), intersect(iterate(iters), ASC));
+        else iterators.remove(vertex.id());
     }
 
     @Override
