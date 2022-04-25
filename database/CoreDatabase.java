@@ -585,7 +585,7 @@ public class CoreDatabase implements TypeDB.Database {
             correctionRequired = new AtomicBoolean(false);
         }
 
-        void initialise() {
+        protected void initialise() {
             session = createAndOpenSession(DATA, new Options.Session()).asData();
         }
 
