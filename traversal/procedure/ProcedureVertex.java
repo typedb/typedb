@@ -37,7 +37,9 @@ import com.vaticle.typedb.core.traversal.predicate.Predicate;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -66,6 +68,8 @@ public abstract class ProcedureVertex<
     private ProcedureEdge<?, ?> lastInEdge;
     private Set<Identifier.Variable> scopedBy;
     private int order;
+    private List<ProcedureEdge<?, ?>> orderedEdges;
+    private Set<ProcedureVertex<?, ?>> transitiveOuts;
 
     ProcedureVertex(Identifier identifier, boolean isStartingVertex) {
         super(identifier);
@@ -101,12 +105,22 @@ public abstract class ProcedureVertex<
         return order;
     }
 
-    private List<ProcedureEdge<?, ?>> orderedEdges;
     public List<ProcedureEdge<?, ?>> orderedOuts() {
         if (orderedEdges == null) {
             orderedEdges = outs().stream().sorted(Comparator.comparingInt(e -> e.to().order())).collect(Collectors.toList());
         }
         return orderedEdges;
+    }
+
+    public Set<ProcedureVertex<?, ?>> transitiveOuts() {
+        if (transitiveOuts == null) {
+            transitiveOuts = new HashSet<>();
+            outs().forEach(edge -> {
+                transitiveOuts.add(edge.to());
+                if (!edge.to().equals(this)) transitiveOuts.addAll(edge.to().transitiveOuts());
+            });
+        }
+        return transitiveOuts;
     }
 
     public Set<Identifier.Variable> scopedBy() {

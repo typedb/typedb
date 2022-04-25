@@ -57,6 +57,7 @@ public class GraphProcedure implements PermutationProcedure {
     private final Map<Identifier, ProcedureVertex<?, ?>> vertices;
     private final ProcedureVertex<?, ?>[] orderedVertices;
     private ProcedureVertex<?, ?> startVertex;
+    private Set<ProcedureVertex<?, ?>> endVertices;
 
     private GraphProcedure(int vertexCount) {
         vertices = new HashMap<>();
@@ -96,6 +97,15 @@ public class GraphProcedure implements PermutationProcedure {
                     .first().orElseThrow(() -> TypeDBException.of(ILLEGAL_STATE));
         }
         return startVertex;
+    }
+
+    public Set<ProcedureVertex<?, ?>> endVertices() {
+        if (endVertices == null) {
+            endVertices = iterate(vertices()).filter(v ->
+                    iterate(v.outs()).filter(e -> !e.to().equals(v)).first().isEmpty()
+            ).toSet();
+        }
+        return endVertices;
     }
 
     public ProcedureVertex<?, ?> vertex(Identifier identifier) {

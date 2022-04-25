@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.TreeSet;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
@@ -63,6 +64,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private final Set<Identifier.Variable.Retrievable> filter;
     private final Map<Identifier, Vertex<?, ?>> answer;
     private final Map<Identifier, Forwardable<Vertex<?, ?>, Order.Asc>> iterators;
+
+    private final TreeSet<Integer> forward;
+    private final TreeSet<Integer> backward;
+    private StepDirection stepDirection;
+
+    private enum StepDirection { FORWARD, BACKWARD; }
+
+
     private final Scopes scopes;
     private final int vertexCount;
     private final Vertex<?, ?> start;
@@ -83,6 +92,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         this.iterators = new HashMap<>();
         this.start = start;
         this.vertexCount = procedure.vertexCount();
+
+        forward = new TreeSet<>(); // TODO write our own array-based fixed-length sorted binary tree
+        backward = new TreeSet<>(); // TODO write our own array-based fixed-length sorted binary tree
+        stepDirection = StepDirection.FORWARD;
     }
 
     @Override
@@ -92,10 +105,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             else if (state == State.FETCHED) return true;
             else if (state == State.INIT) {
                 initialiseStart();
-                if (computeFirst(0)) state = State.FETCHED;
+                if (compute()) state = State.FETCHED;
                 else setCompleted();
             } else if (state == State.EMPTY) {
-                if (computeNext(vertexCount - 1)) state = State.FETCHED;
+                initialiseEnds();
+                if (compute()) state = State.FETCHED;
                 else setCompleted();
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
@@ -120,67 +134,138 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             recordScoped(scoped, procedure.startVertex(), start.asThing());
         }
         iterators.put(procedure.startVertex().id(), iterateSorted(ASC, start));
+        forward.add(0);
+        stepDirection = StepDirection.FORWARD;
     }
 
-    private boolean computeFirst(int pos) {
-        if (pos == vertexCount) return true;
+    private void initialiseEnds() {
+        forward.clear();
+        backward.clear();
+        procedure.endVertices().forEach(v -> backward.add(v.order()));
+        stepDirection = StepDirection.BACKWARD;
+    }
+
+    private boolean compute() {
+        while ((stepDirection == StepDirection.BACKWARD && !backward.isEmpty()) ||
+                (stepDirection == StepDirection.FORWARD && !forward.isEmpty())) {
+            if (stepDirection == StepDirection.BACKWARD) stepBackward(backward.pollLast());
+            else stepForward(forward.pollFirst());
+        }
+        return stepDirection == StepDirection.FORWARD;
+    }
+
+    private void stepBackward(Integer pos) {
+        procedure.vertex(pos).transitiveOuts().forEach(v -> forward.remove(v.order()));
+        forward.add(pos);
+        stepDirection = StepDirection.FORWARD;
+    }
+
+    private void stepForward(Integer pos) {
+        if (pos == vertexCount) return;
+
         ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
         Forwardable<Vertex<?, ?>, Order.Asc> iterator = getOrCreateIterator(vertex);
-        assert iterator.hasNext();
-
-        Vertex<?, ?> candidate;
-        do {
-            candidate = iterator.next();
-            if (!verifyVertex(vertex, candidate)) continue;
-            answer.put(vertex.id(), candidate);
-
-            if (!verifyOuts(vertex, candidate)) {
-                answer.remove(vertex.id());
-                continue;
-            }
-
-            if (computeFirst(pos + 1)) return true;
-            else {
-                answer.remove(vertex.id());
-                vertex.outs().forEach(e -> resetIterator(e.to(), null));
-            }
-        } while (iterator.hasNext());
-
-        iterators.remove(vertex.id());
-        return false;
-    }
-
-    private boolean computeNext(int pos) {
-        assert pos < vertexCount;
-        if (pos == -1) return false;
-
-        ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
-        Forwardable<Vertex<?, ?>, Order.Asc> iterator = iterators.get(vertex.id());
         Vertex<?, ?> candidate;
 
         while (true) {
             answer.remove(vertex.id());
             if (iterator.hasNext()) {
                 candidate = iterator.next();
-                if (!verifyVertex(vertex, candidate)) continue;
+                if (!verifyVertex(vertex, candidate)) {
+                    prepareFail(vertex, vertex); // TODO: optimise not calling this over and over again?
+                    continue;
+                }
+
                 answer.put(vertex.id(), candidate);
 
                 if (!verifyOuts(vertex, candidate)) {
                     answer.remove(vertex.id());
                 } else {
-                    return true;
+                    prepareSuccess(vertex);
+                    break;
                 }
             } else {
                 vertex.outs().forEach(e -> resetIterator(e.to(), null));
                 iterators.remove(vertex.id());
-                if (!computeNext(pos - 1)) return false;
-                else {
-                    iterator = getOrCreateIterator(vertex);
-                    assert iterator.hasNext();
-                }
+                prepareFail(vertex, vertex);
+                stepDirection = StepDirection.BACKWARD;
+                break;
             }
         }
     }
+
+    private void prepareFail(ProcedureVertex<?, ?> failed, ProcedureVertex<?, ?> from) {
+        failed.ins().forEach(e -> {
+            if (!e.from().equals(from)) {
+                backward.add(e.from().order());
+            }
+        });
+    }
+
+    private void prepareSuccess(ProcedureVertex<?, ?> vertex) {
+        forward.add(vertex.order() + 1);
+    }
+
+//
+//    private boolean computeFirst(int pos) {
+//        if (pos == vertexCount) return true;
+//        ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
+//        Forwardable<Vertex<?, ?>, Order.Asc> iterator = getOrCreateIterator(vertex);
+//        assert iterator.hasNext();
+//
+//        Vertex<?, ?> candidate;
+//        do {
+//            candidate = iterator.next();
+//            if (!verifyVertex(vertex, candidate)) continue;
+//            answer.put(vertex.id(), candidate);
+//
+//            if (!verifyOuts(vertex, candidate)) {
+//                answer.remove(vertex.id());
+//                continue;
+//            }
+//
+//            if (computeFirst(pos + 1)) return true;
+//            else {
+//                answer.remove(vertex.id());
+//                vertex.outs().forEach(e -> resetIterator(e.to(), null));
+//            }
+//        } while (iterator.hasNext());
+//
+//        iterators.remove(vertex.id());
+//        return false;
+//    }
+//
+//    private boolean computeNext(int pos) {
+//        assert pos < vertexCount;
+//        if (pos == -1) return false;
+//
+//        ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
+//        Forwardable<Vertex<?, ?>, Order.Asc> iterator = iterators.get(vertex.id());
+//        Vertex<?, ?> candidate;
+//
+//        while (true) {
+//            answer.remove(vertex.id());
+//            if (iterator.hasNext()) {
+//                candidate = iterator.next();
+//                if (!verifyVertex(vertex, candidate)) continue;
+//                answer.put(vertex.id(), candidate);
+//
+//                if (!verifyOuts(vertex, candidate)) {
+//                    answer.remove(vertex.id());
+//                } else {
+//                    return true;
+//                }
+//            } else {
+//                vertex.outs().forEach(e -> resetIterator(e.to(), null));
+//                iterators.remove(vertex.id());
+//                if (!computeNext(pos - 1)) return false;
+//                else {
+//                    iterator = getOrCreateIterator(vertex);
+//                    assert iterator.hasNext();
+//                }
+//            }
+//        }
+//    }
 
     private Forwardable<Vertex<?, ?>, Order.Asc> getOrCreateIterator(ProcedureVertex<?, ?> vertex) {
         if (!iterators.containsKey(vertex.id())) resetIterator(vertex, null);
@@ -209,7 +294,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         for (Identifier.Variable id : vertex.scopedBy()) {
             Scopes.Scoped scoped = scopes.get(id);
-            if (!scoped.isValidUpTo(vertex.order())) return false;
+            if (!scoped.isValidUpTo(vertex.order())) {
+                return false;
+            }
         }
         return true;
     }
@@ -228,6 +315,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 }
 
                 if (!toIter.hasNext()) {
+                    prepareFail(to, vertex);
                     resetIfFail.forEach(e -> resetIterator(e.to(), vertex));
                     return false;
                 } else {
