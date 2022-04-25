@@ -45,12 +45,12 @@ public class ExplainablesManager {
     public void setAndRecordExplainables(ConceptMap explainableMap) {
         explainableMap.explainables().iterator().forEachRemaining(explainable -> {
             long nextId = this.nextId.getAndIncrement();
-            explainable.setId(nextId);
             FunctionalIterator<Concludable> concludable = iterate(Concludable.create(explainable.conjunction()));
             assert concludable.hasNext();
             concludables.put(nextId, concludable.next());
             assert !concludable.hasNext();
             bounds.put(nextId, explainableMap);
+            explainable.setId(nextId);
         });
     }
 
