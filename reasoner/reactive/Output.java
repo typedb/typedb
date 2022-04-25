@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.utils.Tracer;
 /**
  * Governs an output from a reactiveBlock
  */
-public class Output<PACKET> implements Reactive.Subscriber<PACKET> {
+public class Output<PACKET> implements Reactive.Subscriber<PACKET> {  // TODO: Move into ReactiveBlock
 
     private final Identifier<?, PACKET> identifier;
     private final AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock;

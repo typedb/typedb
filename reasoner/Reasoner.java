@@ -195,7 +195,7 @@ public class Reasoner {
         } else {
             return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap).filter(
                     ans -> !iterate(conjunction.negations()).flatMap(n -> iterator(n.disjunction(), ans)).hasNext()
-            ).map(conceptMap -> conceptMap.filter(filter)).distinct();
+            ).map(conceptMap -> conceptMap.filter(filter)).distinct();  // TODO: we already do distinct() inside root controllers
         }
     }
 
