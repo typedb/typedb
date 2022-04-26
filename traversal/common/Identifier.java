@@ -78,7 +78,7 @@ public abstract class Identifier {
         private final int repetition;
         private final int hash;
 
-        private Scoped(Variable relation, Variable roleType, Variable player, int repetition) {
+        private Scoped(Variable relation, @Nullable Variable roleType, Variable player, int repetition) {
             this.relation = relation;
             this.roleType = roleType;
             this.player = player;
