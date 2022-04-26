@@ -172,7 +172,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             if (iterator.hasNext()) {
                 candidate = iterator.next();
                 if (!verifyVertex(vertex, candidate)) {
-                    recordFail(vertex, vertex); // TODO: optimise not calling this over and over again?
                     continue;
                 }
                 answer.put(vertex.id(), candidate);
@@ -213,6 +212,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         // TODO the vertex should hold onto loop edges
         for (ProcedureEdge<?, ?> edge : vertex.outs()) {
             if (edge.to().equals(vertex) && !isClosure(edge, candidate, candidate)) {
+                recordFail(vertex, vertex);
                 return false;
             }
         }
@@ -220,6 +220,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         for (Identifier.Variable id : vertex.scopedBy()) {
             Scopes.Scoped scoped = scopes.get(id);
             if (!scoped.isValidUpTo(vertex.order())) {
+                backward.addAll(scoped.scopedOrdersUpTo(vertex.order()));
                 return false;
             }
         }
@@ -428,6 +429,21 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                     }
                 }
                 return roles.size() == expectedRoles;
+            }
+
+            public Set<Integer> scopedOrdersUpTo(int order) {
+                Set<Integer> orders = new HashSet<>();
+                for (Map.Entry<ProcedureEdge<?, ?>, ThingVertex> entry : edgeSources.entrySet()) {
+                    if (edgeSourceOrders.get(entry.getKey()) < order) {
+                        orders.add(edgeSourceOrders.get(entry.getKey()));
+                    }
+                }
+                for (Map.Entry<ProcedureVertex<?, ?>, ThingVertex> entry : vertexSources.entrySet()) {
+                    if (vertexSourceOrders.get(entry.getKey()) < order) {
+                        orders.add(vertexSourceOrders.get(entry.getKey()));
+                    }
+                }
+                return orders;
             }
         }
     }
