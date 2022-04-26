@@ -204,20 +204,20 @@ public class TraversalTest {
         try (CoreTransaction transaction = session.transaction(READ)) {
             /*
             Edges:
-	        0: $_0 [thing] { hasIID: false, types: [reply-of], predicates: [] } (start)
-	        1: $s [thing] { hasIID: false, types: [post], predicates: [] }
-	        		1: ($_0 *--[ROLEPLAYER]--> $s) { roleTypes: [reply-of:reply] }
-	        2: $p [thing] { hasIID: false, types: [post], predicates: [] }
-	        		2: ($_0 *--[ROLEPLAYER]--> $p) { roleTypes: [reply-of:original] }
-	        3: $d1 [thing] { hasIID: false, types: [creation-date], predicates: [] }
-	        		3: ($s *--[HAS]--> $d1)
-	        4: $_1 [thing] { hasIID: false, types: [reply-of], predicates: [] }
-	        		4: ($p <--[ROLEPLAYER]--* $_1) { roleTypes: [reply-of:original] }
-	        5: $d2 [thing] { hasIID: false, types: [creation-date], predicates: [] }
-	        		5: ($d1 *--[< <var>]--> $d2)
-	        6: $r [thing] { hasIID: false, types: [post], predicates: [] } (end)
-	        		7: ($d2 <--[HAS]--* $r)
-	        		6: ($_1 *--[ROLEPLAYER]--> $r) { roleTypes: [reply-of:reply] }
+            0: $_0 [thing] { hasIID: false, types: [reply-of], predicates: [] } (start)
+            1: $s [thing] { hasIID: false, types: [post], predicates: [] }
+                    1: ($_0 *--[ROLEPLAYER]--> $s) { roleTypes: [reply-of:reply] }
+            2: $p [thing] { hasIID: false, types: [post], predicates: [] }
+                    2: ($_0 *--[ROLEPLAYER]--> $p) { roleTypes: [reply-of:original] }
+            3: $d1 [thing] { hasIID: false, types: [creation-date], predicates: [] }
+                    3: ($s *--[HAS]--> $d1)
+            4: $_1 [thing] { hasIID: false, types: [reply-of], predicates: [] }
+                    4: ($p <--[ROLEPLAYER]--* $_1) { roleTypes: [reply-of:original] }
+            5: $d2 [thing] { hasIID: false, types: [creation-date], predicates: [] }
+                    5: ($d1 *--[< <var>]--> $d2)
+            6: $r [thing] { hasIID: false, types: [post], predicates: [] } (end)
+                    7: ($d2 <--[HAS]--* $r)
+                    6: ($_1 *--[ROLEPLAYER]--> $r) { roleTypes: [reply-of:reply] }
             */
 
 
@@ -313,20 +313,20 @@ public class TraversalTest {
         try (CoreTransaction transaction = session.transaction(READ)) {
             /*
             Edges:
-	        0: $_0 [thing] { hasIID: false, types: [reply-of], predicates: [] } (start)
-	        1: $p [thing] { hasIID: false, types: [post], predicates: [] }
-	        		1: ($_0 *--[ROLEPLAYER]--> $p) { roleTypes: [reply-of:original] }
-	        2: $_1 [thing] { hasIID: false, types: [reply-of], predicates: [] }
-	        		2: ($p <--[ROLEPLAYER]--* $_1) { roleTypes: [reply-of:original] }
-	        3: $r [thing] { hasIID: false, types: [post], predicates: [] }
-	        		3: ($_1 *--[ROLEPLAYER]--> $r) { roleTypes: [reply-of:reply] }
-	        4: $s [thing] { hasIID: false, types: [post], predicates: [] }
-	        		4: ($_0 *--[ROLEPLAYER]--> $s) { roleTypes: [reply-of:reply] }
-	        5: $d1 [thing] { hasIID: false, types: [creation-date], predicates: [] }
-	        		6: ($s *--[HAS]--> $d1)
-	        6: $d2 [thing] { hasIID: false, types: [creation-date], predicates: [] } (end)
-	        		5: ($r *--[HAS]--> $d2)
-	        		7: ($d1 *--[< <var>]--> $d2)
+            0: $_0 [thing] { hasIID: false, types: [reply-of], predicates: [] } (start)
+            1: $p [thing] { hasIID: false, types: [post], predicates: [] }
+                    1: ($_0 *--[ROLEPLAYER]--> $p) { roleTypes: [reply-of:original] }
+            2: $_1 [thing] { hasIID: false, types: [reply-of], predicates: [] }
+                    2: ($p <--[ROLEPLAYER]--* $_1) { roleTypes: [reply-of:original] }
+            3: $r [thing] { hasIID: false, types: [post], predicates: [] }
+                    3: ($_1 *--[ROLEPLAYER]--> $r) { roleTypes: [reply-of:reply] }
+            4: $s [thing] { hasIID: false, types: [post], predicates: [] }
+                    4: ($_0 *--[ROLEPLAYER]--> $s) { roleTypes: [reply-of:reply] }
+            5: $d1 [thing] { hasIID: false, types: [creation-date], predicates: [] }
+                    6: ($s *--[HAS]--> $d1)
+            6: $d2 [thing] { hasIID: false, types: [creation-date], predicates: [] } (end)
+                    5: ($r *--[HAS]--> $d2)
+                    7: ($d1 *--[< <var>]--> $d2)
             */
 
 
