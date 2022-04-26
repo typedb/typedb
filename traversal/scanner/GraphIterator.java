@@ -71,7 +71,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private enum StepDirection { FORWARD, BACKWARD; }
 
-
     private final Scopes scopes;
     private final int vertexCount;
     private final Vertex<?, ?> start;
@@ -169,13 +168,13 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         while (true) {
             answer.remove(vertex.id());
+            vertex.outs().forEach(e -> resetIterator(e.to(), null));
             if (iterator.hasNext()) {
                 candidate = iterator.next();
                 if (!verifyVertex(vertex, candidate)) {
                     recordFail(vertex, vertex); // TODO: optimise not calling this over and over again?
                     continue;
                 }
-
                 answer.put(vertex.id(), candidate);
 
                 if (!verifyOuts(vertex, candidate)) {
@@ -185,7 +184,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                     break;
                 }
             } else {
-                vertex.outs().forEach(e -> resetIterator(e.to(), null));
                 iterators.remove(vertex.id());
                 recordFail(vertex, vertex);
                 stepDirection = StepDirection.BACKWARD;
