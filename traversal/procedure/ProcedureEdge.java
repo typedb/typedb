@@ -131,22 +131,6 @@ public abstract class ProcedureEdge<
         return direction;
     }
 
-    public boolean isClosureEdge() {
-        return to().isStartingVertex() || order() > to().lastInEdge().order();
-    }
-
-    public boolean onlyStartsFromAttribute() {
-        return false;
-    }
-
-    public boolean onlyStartsFromRelation() {
-        return false;
-    }
-
-    public boolean onlyEndsAtRelation() {
-        return false;
-    }
-
     public boolean onlyStartsFromAttributeType() {
         return false;
     }
@@ -239,11 +223,6 @@ public abstract class ProcedureEdge<
                   Encoding.Direction.Edge direction, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, order, direction, predicate.toString());
             this.predicate = predicate;
-        }
-
-        @Override
-        public boolean onlyStartsFromAttribute() {
-            return true;
         }
 
         @Override
@@ -911,11 +890,6 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromAttribute() {
-                        return true;
-                    }
-
-                    @Override
                     public Forwardable<? extends ThingVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing() && fromVertex.asThing().isAttribute();
@@ -1035,11 +1009,6 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRelation() {
-                        return true;
-                    }
-
-                    @Override
                     public Forwardable<? extends ThingVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing();
@@ -1095,10 +1064,6 @@ public abstract class ProcedureEdge<
                         return new Forward(to, from, order());
                     }
 
-                    @Override
-                    public boolean onlyEndsAtRelation() {
-                        return true;
-                    }
                 }
             }
 
@@ -1157,11 +1122,6 @@ public abstract class ProcedureEdge<
 
                     Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order, Set<Label> roleTypes) {
                         super(from, to, order, FORWARD, roleTypes);
-                    }
-
-                    @Override
-                    public boolean onlyStartsFromRelation() {
-                        return true;
                     }
 
                     @Override
@@ -1294,11 +1254,6 @@ public abstract class ProcedureEdge<
                         } else {
                             return false;
                         }
-                    }
-
-                    @Override
-                    public boolean onlyEndsAtRelation() {
-                        return true;
                     }
 
                     @Override

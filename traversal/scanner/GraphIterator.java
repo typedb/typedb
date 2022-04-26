@@ -176,7 +176,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 }
                 answer.put(vertex.id(), candidate);
 
-                if (!verifyOuts(vertex, candidate)) {
+                if (!verifyOuts(vertex, candidate)) { // TODO we don't need to reset iterators at the top if we already do it here!
                     answer.remove(vertex.id());
                 } else {
                     recordSuccess(vertex);
