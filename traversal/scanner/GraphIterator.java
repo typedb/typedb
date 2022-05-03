@@ -147,9 +147,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private void stepForward(int pos) {
         if (pos == vertexCount) return;
         VertexExplorer vertexExplorer = vertices[pos];
-        boolean verified = vertexExplorer.hasVerifiedVertex();
+        boolean success = vertexExplorer.tryFindVertex();
         recordVertexFailureCauses(vertexExplorer);
-        if (verified) forward.add(pos + 1);
+        if (success) forward.add(pos + 1);
         else {
             vertexExplorer.resetIterator();
             stepDirection = StepDirection.BACKWARD;
@@ -157,8 +157,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void recordVertexFailureCauses(VertexExplorer vertexExplorer) {
-        vertexExplorer.vertexFailureCauses().forEach(cause ->
-                vertices[cause].vertex.ins().forEach(e -> {
+        vertexExplorer.verifyFailureCauses().forEach(cause ->
+                cause.vertex.ins().forEach(e -> {
                     if (e.from().order() < vertexExplorer.vertex.order()) {
                         backward.add(e.from().order());
                     }
@@ -174,7 +174,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             vertices[v.order()].removeIns();
         });
         forward.add(pos);
-        vertexExplorer.resetAnswer();
+        vertexExplorer.prepareRetry();
         stepDirection = StepDirection.FORWARD;
     }
 
@@ -215,7 +215,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private final ProcedureVertex<?, ?> vertex;
         private final Set<ProcedureEdge<?, ?>> activeIns;
-        private final Set<VertexExplorer> answerFailureCauses;
+        private final Set<VertexExplorer> verifyFailureCauses;
         private Forwardable<Vertex<?, ?>, Order.Asc> iterator;
         private Vertex<?, ?> answer;
         private boolean isVerified;
@@ -223,11 +223,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private VertexExplorer(ProcedureVertex<?, ?> vertex) {
             this.vertex = vertex;
             this.activeIns = new HashSet<>();
-            this.answerFailureCauses = new HashSet<>();
+            this.verifyFailureCauses = new HashSet<>();
             this.isVerified = false;
         }
 
-        private boolean hasVerifiedVertex() {
+        private boolean tryFindVertex() {
             Forwardable<Vertex<?, ?>, Order.Asc> iter = getIterator();
             while (!isVerified && iter.hasNext()) {
                 answer = iter.next();
@@ -235,7 +235,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                     isVerified = true;
                 }
             }
-            if (!iter.hasNext()) answerFailureCauses.add(this);
+            if (!isVerified) verifyFailureCauses.add(this);
             return isVerified;
         }
 
@@ -243,17 +243,17 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             return answer;
         }
 
-        private void resetAnswer() {
+        private void prepareRetry() {
             answer = null;
             isVerified = false;
         }
 
-        private Set<VertexExplorer> vertexFailureCauses() {
-            return answerFailureCauses;
+        private Set<VertexExplorer> verifyFailureCauses() {
+            return verifyFailureCauses;
         }
 
         private void clearFailureCauses() {
-            answerFailureCauses.clear();
+            verifyFailureCauses.clear();
         }
 
         private boolean hasCandidate() {
@@ -266,7 +266,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             // TODO the vertex should hold onto loop edges
             for (ProcedureEdge<?, ?> edge : vertex.outs()) {
                 if (edge.to().equals(vertex) && !isClosure(edge, answer, answer)) {
-                    answerFailureCauses.add(vertices[vertex.order()]);
+                    verifyFailureCauses.add(vertices[vertex.order()]);
                     return false;
                 }
             }
@@ -274,7 +274,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             for (Identifier.Variable id : vertex.scopedBy()) {
                 Scopes.Scoped scoped = scopes.get(id);
                 if (!scoped.isValidUpTo(vertex.order())) {
-                    scoped.scopedOrdersUpTo(vertex.order()).forEach(order -> answerFailureCauses.add(vertices[order]));
+                    scoped.scopedOrdersUpTo(vertex.order()).forEach(order -> verifyFailureCauses.add(vertices[order]));
                     return false;
                 }
             }
@@ -300,8 +300,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                     resetIfFail.add(edge);
 
                     if (!toExplorer.hasCandidate()) {
-                        resetIfFail.forEach(e -> vertices[edge.to().order()].removeIn(e));
-                        answerFailureCauses.add(toExplorer);
+                        resetIfFail.forEach(e -> vertices[e.to().order()].removeIn(e));
+                        verifyFailureCauses.add(toExplorer);
                         return false;
                     }
                 }
@@ -488,24 +488,24 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
 
             public void record(ProcedureEdge<?, ?> source, ThingVertex role, int sourceOrder) {
-                assert source.isRolePlayer();
+                assert source.isRolePlayer() && role.type().isRoleType();
                 edgeSources.put(source, role);
                 edgeSourceOrders.put(source, sourceOrder);
             }
 
             public void record(ProcedureVertex<?, ?> source, ThingVertex role, int sourceOrder) {
-                assert source.id().isScoped();
+                assert source.id().isScoped() && role.type().isRoleType();
                 vertexSources.put(source, role);
                 vertexSourceOrders.put(source, sourceOrder);
             }
 
             public void replace(ProcedureEdge<?, ?> edge, ThingVertex role) {
-                assert edge.isRolePlayer();
+                assert edge.isRolePlayer() && role.type().isRoleType();
                 edgeSources.put(edge, role);
             }
 
             public void replace(ProcedureVertex<?, ?> vertex, ThingVertex role) {
-                assert vertex.id().isScoped();
+                assert vertex.id().isScoped() && role.type().isRoleType();
                 vertexSources.put(vertex, role);
             }
 
