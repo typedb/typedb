@@ -220,7 +220,6 @@ public class TraversalTest {
                     6: ($_1 *--[ROLEPLAYER]--> $r) { roleTypes: [reply-of:reply] }
             */
 
-
             GraphProcedure.Builder proc = GraphProcedure.builder(7);
             ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0, true);
             _0.props().types(set(Label.of("reply-of")));

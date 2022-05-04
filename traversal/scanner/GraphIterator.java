@@ -155,7 +155,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void initialiseEnds() {
         forward.clear();
-        backward.clear();
         procedure.endVertices().forEach(v -> backward.add(v.order()));
         stepDirection = StepDirection.BACKWARD;
     }
