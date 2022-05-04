@@ -151,13 +151,13 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         recordVertexFailureCauses(vertexExplorer);
         if (success) forward.add(pos + 1);
         else {
-            vertexExplorer.resetIterator();
+            vertexExplorer.reset();
             stepDirection = StepDirection.BACKWARD;
         }
     }
 
     private void recordVertexFailureCauses(VertexExplorer vertexExplorer) {
-        vertexExplorer.verifyFailureCauses().forEach(cause ->
+        vertexExplorer.vertexFailureCauses().forEach(cause ->
                 cause.vertex.ins().forEach(e -> {
                     if (e.from().order() < vertexExplorer.vertex.order()) {
                         backward.add(e.from().order());
@@ -177,39 +177,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         vertexExplorer.prepareRetry();
         stepDirection = StepDirection.FORWARD;
     }
-
-//
-//    private void stepForward(Integer pos) {
-//        if (pos == vertexCount) return;
-//
-//        ProcedureVertex<?, ?> vertex = procedure.vertex(pos);
-//        Forwardable<Vertex<?, ?>, Order.Asc> iterator = getOrCreateIterator(vertex);
-//        Vertex<?, ?> candidate;
-//
-//        while (true) {
-//            answer.remove(vertex.id());
-//            vertex.outs().forEach(e -> resetIterator(e.to(), null));
-//            if (iterator.hasNext()) {
-//                candidate = iterator.next();
-//                if (!verifyVertex(vertex, candidate)) {
-//                    continue;
-//                }
-//                answer.put(vertex.id(), candidate);
-//
-//                if (!verifyOuts(vertex, candidate)) { // TODO we don't need to reset iterators at the top if we already do it here!
-//                    answer.remove(vertex.id());
-//                } else {
-//                    recordSuccess(vertex);
-//                    break;
-//                }
-//            } else {
-//                iterators.remove(vertex.id());
-//                recordFail(vertex, vertex);
-//                stepDirection = StepDirection.BACKWARD;
-//                break;
-//            }
-//        }
-//    }
 
     private class VertexExplorer {
 
@@ -248,7 +215,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             isVerified = false;
         }
 
-        private Set<VertexExplorer> verifyFailureCauses() {
+        private Set<VertexExplorer> vertexFailureCauses() {
             return verifyFailureCauses;
         }
 
@@ -256,7 +223,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             verifyFailureCauses.clear();
         }
 
-        private boolean hasCandidate() {
+        private boolean hasUnverifiedVertex() {
             return getIterator().hasNext();
         }
 
@@ -271,14 +238,18 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 }
             }
 
+            boolean invalidScope = false;
             for (Identifier.Variable id : vertex.scopedBy()) {
                 Scopes.Scoped scoped = scopes.get(id);
                 if (!scoped.isValidUpTo(vertex.order())) {
+                    // TODO this won't work with how verifyFailureCauses works since that set contains failed vertices
+                    //      and then we work out elsewhere what could fail that and add all sources to backtrack to.
+                    //      however the other scoped vertices are the sources of the cause, not the failure
                     scoped.scopedOrdersUpTo(vertex.order()).forEach(order -> verifyFailureCauses.add(vertices[order]));
-                    return false;
+                    invalidScope = true;
                 }
             }
-            return true;
+            return !invalidScope;
         }
 
         private boolean isClosure(ProcedureEdge<?, ?> edge, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex) {
@@ -298,8 +269,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                     VertexExplorer toExplorer = vertices[to.order()];
                     toExplorer.addIn(edge);
                     resetIfFail.add(edge);
-
-                    if (!toExplorer.hasCandidate()) {
+                    if (!toExplorer.hasUnverifiedVertex()) {
                         resetIfFail.forEach(e -> vertices[e.to().order()].removeIn(e));
                         verifyFailureCauses.add(toExplorer);
                         return false;
@@ -326,7 +296,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 iterator = null;
             }
             answer = null;
-            isVerified = false; // TODO we don't need to re-verify because we can technically guarantee we only remove the failing edge
+            isVerified = false;
+            // TODO we don't need to re-verify because we can technically guarantee we only remove the failing edge
+            //      in fact we could seek to the last answer that we held on to to avoid recomputing a partial intersection?
         }
 
         public void removeIns() {
@@ -361,7 +333,16 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             return iterator;
         }
 
-        public void resetIterator() {
+        public void reset() {
+            if (iterator != null) {
+                iterator.recycle();
+                iterator = null;
+            }
+            answer = null;
+            isVerified = false;
+        }
+
+        public void recycle() {
             if (iterator != null) {
                 iterator.recycle();
                 iterator = null;
@@ -443,8 +424,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     @Override
     public void recycle() {
-//        iterators.values().forEach(FunctionalIterator::recycle);
-        // TODO
+        for (VertexExplorer vertex : vertices) {
+            vertex.recycle();
+        }
     }
 
 
