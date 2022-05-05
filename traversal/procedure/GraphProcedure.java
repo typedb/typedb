@@ -36,6 +36,7 @@ import com.vaticle.typeql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -311,8 +312,8 @@ public class GraphProcedure implements PermutationProcedure {
             return vertex;
         }
 
-        public ProcedureVertex.Thing scopedThing(int order, ProcedureVertex.Thing relation, ProcedureVertex.Type roleType, ProcedureVertex.Thing player, int repetition) {
-            ProcedureVertex.Thing vertex = thingVertex(Identifier.Scoped.of(relation.id().asVariable(), roleType.id().asVariable(), player.id().asVariable(), repetition), false);
+        public ProcedureVertex.Thing scopedThing(int order, ProcedureVertex.Thing relation, @Nullable ProcedureVertex.Type roleType, ProcedureVertex.Thing player, int repetition) {
+            ProcedureVertex.Thing vertex = thingVertex(Identifier.Scoped.of(relation.id().asVariable(), roleType != null ? roleType.id().asVariable() : null, player.id().asVariable(), repetition), false);
             setOrder(order, vertex);
             return vertex;
         }

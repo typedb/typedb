@@ -373,6 +373,144 @@ public class TraversalTest {
             assertEquals(10, vertices.count());
         }
     }
+
+    @Test
+    public void reflexive_and_nonreflexive() {
+        try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery(
+                    "define\n" +
+                            "      person sub entity," +
+                            "        plays friendship:friend," +
+                            "        owns name @key;" +
+                            "      lastname sub attribute, value string;" +
+                            "      person sub entity, owns lastname;" +
+                            "      friendship sub relation," +
+                            "        relates friend," +
+                            "        owns ref @key;" +
+                            "      name sub attribute, value string;" +
+                            "      ref sub attribute, value long;"
+            );
+            transaction.query().define(query);
+            transaction.commit();
+        }
+        session.close();
+
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery(
+                    "insert\n" +
+                            "      $x isa person,\n" +
+                            "        has lastname \"Smith\",\n" +
+                            "        has name \"Alex\";\n" +
+                            "      $y isa person,\n" +
+                            "        has lastname \"Smith\",\n" +
+                            "        has name \"John\";\n" +
+                            "      $r (friend: $x, friend: $y) isa friendship, has ref 1;\n" +
+                            "      $reflexive (friend: $x, friend: $x) isa friendship, has ref 3;").asInsert()
+            );
+            transaction.commit();
+        }
+
+        try (CoreTransaction transaction = session.transaction(READ)) {
+            /*
+            match
+            $x isa person, has name "Alex";
+            $y isa person, has name "John";
+            $refl (friend: $x, friend: $x) isa friendship, has ref 3;
+            $f1 (friend: $x, friend: $y) isa friendship, has ref 1;
+            */
+            /*
+	        0: $_3 [thing] { hasIID: false, types: [ref], predicates: [= <LONG>] } (start)
+	        1: $f1 [thing] { hasIID: false, types: [friendship], predicates: [] }
+	        		1: ($_3 <--[HAS]--* $f1)
+	        2: $x [thing] { hasIID: false, types: [person], predicates: [] }
+	        		2: ($f1 *--[ROLEPLAYER]--> $x) { roleTypes: [friendship:friend] }
+	        3: $y [thing] { hasIID: false, types: [person], predicates: [] }
+	        		3: ($f1 *--[ROLEPLAYER]--> $y) { roleTypes: [friendship:friend] }
+	        4: $_0 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end)
+	        		4: ($x *--[HAS]--> $_0)
+	        5: $refl:null:$x:2 [thing] { hasIID: false, types: [friendship:friend], predicates: [] }
+	        		5: ($x *--[PLAYING]--> $refl:null:$x:2)
+	        6: $_1 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end)
+	        		7: ($y *--[HAS]--> $_1)
+	        7: $refl [thing] { hasIID: false, types: [friendship], predicates: [] }
+	        		6: ($x <--[ROLEPLAYER]--* $refl) { roleTypes: [friendship:friend] }
+	        		8: ($refl:null:$x:2 <--[RELATING]--* $refl)
+            */
+            GraphProcedure.Builder proc = GraphProcedure.builder(8);
+
+            ProcedureVertex.Thing _3 = proc.anonymousThing(0, 3, true);
+            _3.props().predicate(Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG));
+            _3.props().types(set(Label.of("ref")));
+
+            ProcedureVertex.Thing f1 = proc.namedThing(1, "f1");
+            f1.props().types(set(Label.of("friendship")));
+
+            ProcedureVertex.Thing x = proc.namedThing(2, "x");
+            x.props().types(set(Label.of("person")));
+
+            ProcedureVertex.Thing y = proc.namedThing(3, "y");
+            y.props().types(set(Label.of("person")));
+
+            ProcedureVertex.Thing _0 = proc.anonymousThing(4, 0);
+            _0.props().predicate(Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ));
+            _0.props().types(set(Label.of("name")));
+
+            ProcedureVertex.Thing refl = proc.namedThing(7, "refl");
+            refl.props().types(set(Label.of("friendship")));
+
+            ProcedureVertex.Thing role = proc.scopedThing(5, refl, null, x, 2);
+            role.props().types(set(Label.of("friend", "friendship")));
+
+            ProcedureVertex.Thing _1 = proc.anonymousThing(6, 1);
+            _1.props().predicate(Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ));
+            _1.props().types(set(Label.of("name")));
+
+
+            proc.backwardHas(_3, f1);
+            proc.forwardRolePlayer(f1, x, set(Label.of("friend", "friendship")));
+            proc.forwardRolePlayer(f1, y, set(Label.of("friend", "friendship")));
+            proc.forwardHas(x, _0);
+            proc.forwardPlaying(x, role);
+            proc.forwardHas(y, _1);
+            proc.backwardRelating(role, refl);
+            proc.backwardRolePlayer(x, refl, set(Label.of("friend", "friendship")));
+
+
+            Traversal.Parameters params = new Traversal.Parameters();
+            params.pushValue(
+                    _3.id().asVariable(),
+                    Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG),
+                    new Traversal.Parameters.Value(1L)
+            );
+            params.pushValue(
+                    _0.id().asVariable(),
+                    Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ),
+                    new GraphTraversal.Thing.Parameters.Value("Alex")
+            );
+            params.pushValue(
+                    _1.id().asVariable(),
+                    Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ),
+                    new GraphTraversal.Thing.Parameters.Value("John")
+            );
+
+            Set<Identifier.Variable.Retrievable> filter = set(
+                    _3.id().asVariable().asRetrievable(),
+                    f1.id().asVariable().asRetrievable(),
+                    x.id().asVariable().asRetrievable(),
+                    y.id().asVariable().asRetrievable(),
+                    _1.id().asVariable().asRetrievable(),
+                    _0.id().asVariable().asRetrievable(),
+                    refl.id().asVariable().asRetrievable()
+            );
+
+            GraphProcedure procedure = proc.build();
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+            assertEquals(1, vertices.count());
+        }
+    }
+
+
     /**
      * This test is interesting because it invalidates a traversal optimisation we implemented called `SeekStack`
      * where we backtrack all the way back to the cause of a branch/closure failure, skipping all the query vertices

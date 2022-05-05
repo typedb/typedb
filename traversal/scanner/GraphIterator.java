@@ -75,6 +75,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
                          Traversal.Parameters params, Set<Identifier.Variable.Retrievable> filter) {
+        System.out.println(procedure);
         assert procedure.vertexCount() > 1;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
@@ -190,6 +191,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void stepBackward(int pos) {
+        System.out.println("Backtracking at pos: " + pos);
         VertexScanner vertexScanner = vertices[pos];
         vertexScanner.vertex.transitiveOuts().forEach(v -> {
             forward.remove(v.order());
@@ -321,8 +323,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             assert inputEdges.contains(edge);
             inputEdges.remove(edge);
             resetIterator();
-            // TODO don't need to completely re-set because we can technically guarantee we only remove the failing edge
-            //      in fact we could seek to the last answer that we held on to to avoid recomputing a partial intersection?
         }
 
         private void reset() {
@@ -405,10 +405,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private void recordScoped(Scopes.Scoped scoped, ProcedureEdge<?, ?> source, ThingVertex role) {
             if (scoped.containsSource(source)) scoped.replace(source, role);
-            else {
-                if (source.direction().isForward()) scoped.record(source, role, source.to().order());
-                else scoped.record(source, role, source.from().order());
-            }
+            else scoped.record(source, role, source.to().order());
         }
     }
 
