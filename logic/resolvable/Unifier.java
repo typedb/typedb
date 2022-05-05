@@ -186,6 +186,22 @@ public class Unifier {
         return "{" + unifier.entrySet().stream().map(e -> e.getKey() + "->" + e.getValue()).collect(Collectors.joining(",")) + "}";
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Unifier unifier1 = (Unifier) o;
+        return unifier.equals(unifier1.unifier) &&
+                reverseUnifier.equals(unifier1.reverseUnifier) &&
+                requirements.equals(unifier1.requirements) &&
+                unifiedRequirements.equals(unifier1.unifiedRequirements);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(unifier, reverseUnifier, requirements, unifiedRequirements);
+    }
+
     public static class Builder {
 
         private final Map<Retrievable, Set<Variable>> unifier;
@@ -364,6 +380,21 @@ public class Unifier {
                 isaExplicit.forEach(((identifier, labels) -> isaExplicitCopy.put(identifier, new HashSet<>(labels))));
                 predicates.forEach((predicatesCopy::put));
                 return new Constraint(typesCopy, isaExplicitCopy, predicatesCopy);
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                Constraint that = (Constraint) o;
+                return types.equals(that.types) &&
+                        isaExplicit.equals(that.isaExplicit) &&
+                        predicates.equals(that.predicates);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(types, isaExplicit, predicates);
             }
         }
 

@@ -385,7 +385,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             Set<RolePlayer> thenRolePlayers = relationConclusion.relation().players();
 
             return matchRolePlayers(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
-                    .map(mapping -> convertRPMappingToUnifier(mapping, unifierBuilder.clone(), conceptMgr));
+                    .map(mapping -> convertRPMappingToUnifier(mapping, unifierBuilder.clone(), conceptMgr)).distinct();
         }
 
         private FunctionalIterator<Map<RolePlayer, Set<RolePlayer>>> matchRolePlayers(
