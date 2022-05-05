@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.test.behaviour.reasoner.verification;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.TypeDB.Transaction;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -25,7 +26,10 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMap.Explainable;
+import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
+import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConcludable;
+import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConjunction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.SoundnessException;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
@@ -33,9 +37,11 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
@@ -98,17 +104,44 @@ class SoundnessVerifier {
                 .first().isEmpty();
     }
 
-    private void verifyAnswerAndCollectExplanations(ConceptMap answer, Transaction tx) {
+    private void verifyAnswerAndCollectExplanations(TypeQLMatch inferenceQuery, ConceptMap answer, Transaction tx) {
         verifyExplainableVars(answer);
         answer.explainables().iterator().forEachRemaining(explainable -> {
-            tx.query().explain(explainable.id()).forEachRemaining(explanation -> {
+            List<Explanation> explanations = tx.query().explain(explainable.id()).toList();
+            iterate(explanations).forEachRemaining(explanation -> {
                 // This check is valid given that there is no mechanism for recursion termination given by the UX of
                 // explanations, so we do it ourselves
                 if (collectedExplanations.contains(explanation)) return;
                 else collectedExplanations.add(explanation);
-                verifyAnswerAndCollectExplanations(explanation.conditionAnswer(), tx);
+                verifyAnswerAndCollectExplanations(inferenceQuery, explanation.conditionAnswer(), tx);
                 verifyVariableMapping(answer, explainable, explanation);
             });
+            verifyNumberOfExplanations(tx, inferenceQuery, answer, explainable, explanations);
+        });
+    }
+
+    private void verifyNumberOfExplanations(Transaction tx, TypeQLMatch inferenceQuery, ConceptMap answer, Explainable explainable, List<Explanation> explanations) {
+        Set<BoundConcludable> boundConcludable = BoundConjunction.create(
+                explainable.conjunction(), mapInferredConcepts(answer.filter(explainable.conjunction().retrieves()))
+        ).boundConcludables();
+        assert boundConcludable.size() == 1;
+        boundConcludable.forEach(bc -> {
+            bc.concludable().getApplicableRules(tx.concepts(), tx.logic());
+            AtomicInteger numExplanationsExpected = new AtomicInteger();
+            materialiser.concludableMaterialisations(bc).forEachRemaining(materialisation -> {
+                bc.concludable().getUnifiers(materialisation.boundConclusion().conclusion().rule()).forEachRemaining(unifier -> {
+                    Optional<Pair<ConceptMap, Unifier.Requirements.Instance>> boundsAndRequirements = unifier.unify(bc.pattern().bounds());
+                    assert boundsAndRequirements.isPresent();
+                    numExplanationsExpected.getAndAdd(unifier.unUnify(materialisation.boundConclusion().bounds(), boundsAndRequirements.get().second()).toSet().size());
+                });
+            });
+            if (explanations.size() != numExplanationsExpected.get()) {
+                throw new SoundnessException(String.format(
+                        "Soundness testing found an incorrect number of explanations for query \"%s\" for explainable" +
+                                " \"%s\".\nExplanations expected: %s\nExplanations found: %s",
+                        inferenceQuery, explainable.conjunction(), numExplanationsExpected, explanations.size()
+                ));
+            }
         });
     }
 
@@ -187,9 +220,9 @@ class SoundnessVerifier {
         }
     }
 
-    private ConceptMap mapInferredConcepts(ConceptMap conditionAnswer) {
+    private ConceptMap mapInferredConcepts(ConceptMap inferredAnswer) {
         Map<Retrievable, Concept> substituted = new HashMap<>();
-        conditionAnswer.concepts().forEach((var, concept) -> {
+        inferredAnswer.concepts().forEach((var, concept) -> {
             if (inferredConceptMapping.containsKey(concept)) {
                 substituted.put(var, inferredConceptMapping.get(concept));
             } else {

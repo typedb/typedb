@@ -19,15 +19,18 @@
 package com.vaticle.typedb.core.test.behaviour.reasoner.verification;
 
 import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -137,7 +140,7 @@ public class BoundPattern {
 
         BoundConcludable removeInferredBound() {
             // Remove the bound for the variable that the conclusion may generate
-            Set<Identifier.Variable.Retrievable> nonGenerating = new HashSet<>(unboundConcludable.retrieves());
+            Set<Variable.Retrievable> nonGenerating = new HashSet<>(unboundConcludable.retrieves());
             if (unboundConcludable.generating().isPresent()) {
                 nonGenerating.remove(unboundConcludable.generating().get().id());
             }
@@ -156,21 +159,38 @@ public class BoundPattern {
     static class BoundConclusion {
         private final BoundConjunction conjunction;
         private final Rule.Conclusion unboundConclusion;
+        private final Map<Variable, Concept> bounds;
 
-        private BoundConclusion(BoundConjunction conjunction, Rule.Conclusion unboundConclusion) {
+        private BoundConclusion(BoundConjunction conjunction, Rule.Conclusion unboundConclusion, Map<Variable, Concept> bounds) {
             this.conjunction = conjunction;
             this.unboundConclusion = unboundConclusion;
+            this.bounds = bounds;
             assert this.unboundConclusion.conjunction().retrieves().containsAll(conjunction.bounds().concepts().keySet());
         }
 
-        public static BoundConclusion create(Rule.Conclusion conclusion, ConceptMap conclusionAnswer) {
-            return new BoundConclusion(BoundConjunction.create(conclusion.conjunction(), conclusionAnswer), conclusion);
+        public static BoundConclusion create(Rule.Conclusion conclusion, Map<Variable, Concept> conclusionAnswer) {
+            return new BoundConclusion(BoundConjunction.create(
+                    conclusion.conjunction(),
+                    new ConceptMap(filterRetrievable(conclusionAnswer))
+            ), conclusion, conclusionAnswer);
+        }
+
+        private static Map<Variable.Retrievable, Concept> filterRetrievable(Map<Variable, Concept> concepts) {
+            Map<Variable.Retrievable, Concept> newMap = new HashMap<>();
+            concepts.forEach((var, concept) -> {
+                if (var.isRetrievable()) newMap.put(var.asRetrievable(), concept);
+            });
+            return newMap;
         }
 
         public BoundConclusion removeInferredBound() {
-            Set<Identifier.Variable.Retrievable> nonGenerating = new HashSet<>(unboundConclusion.retrievableIds());
+            Set<Variable.Retrievable> nonGenerating = new HashSet<>(unboundConclusion.retrievableIds());
             if (unboundConclusion.generating().isPresent()) nonGenerating.remove(unboundConclusion.generating().get().id());
-            return BoundConclusion.create(unboundConclusion, conjunction.bounds().filter(nonGenerating));
+            Map<Variable, Concept> nonGeneratingBounds = new HashMap<>();
+            bounds().forEach((v, c) -> {
+                if (v.isRetrievable() && nonGenerating.contains(v.asRetrievable())) nonGeneratingBounds.put(v, c);
+            });
+            return BoundConclusion.create(unboundConclusion, nonGeneratingBounds);
         }
 
         public BoundConjunction pattern() {
@@ -179,6 +199,10 @@ public class BoundPattern {
 
         public Rule.Conclusion conclusion() {
             return unboundConclusion;
+        }
+
+        public Map<Variable, Concept> bounds() {
+            return bounds;
         }
 
         Optional<Thing> inferredThing() {
