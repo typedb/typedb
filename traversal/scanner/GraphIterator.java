@@ -154,7 +154,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void initialiseEnds() {
-        forward.clear();
+        assert forward.isEmpty();
         procedure.endVertices().forEach(v -> backward.add(v.order()));
         stepDirection = StepDirection.BACKWARD;
     }
@@ -193,7 +193,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         VertexScanner vertexScanner = vertices[pos];
         vertexScanner.vertex.transitiveOuts().forEach(v -> {
             forward.remove(v.order());
-            vertices[v.order()].reset();
+        });
+        vertexScanner.vertex.outs().forEach(e -> {
+            vertices[e.to().order()].removeInputEdge(e);
         });
         forward.add(pos);
         vertexScanner.clearAnswer();

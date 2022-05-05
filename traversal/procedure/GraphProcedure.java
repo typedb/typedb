@@ -208,7 +208,10 @@ public class GraphProcedure implements PermutationProcedure {
         } else {
             // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
             return async(startVertex().iterator(graphMgr, params).map(
-                    v -> new GraphIterator(graphMgr, v, this, params, filter)
+                    v -> {
+                        // TODO sometimes we seem to be generating duplicate answers, which should never be possible!
+                        return new GraphIterator(graphMgr, v, this, params, filter);
+                    }
             ), parallelisation).distinct();
         }
     }
