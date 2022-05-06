@@ -488,6 +488,20 @@ public class ResponseBuilder {
                                 attributeTypes.stream().map(Type::protoType).collect(toList()))));
             }
 
+            public static TransactionProto.Transaction.ResPart getOwnsExplicitResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.AttributeType> attributeTypes) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetOwnsExplicitResPart(
+                        ConceptProto.ThingType.GetOwnsExplicit.ResPart.newBuilder().addAllAttributeTypes(
+                                attributeTypes.stream().map(Type::protoType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.Res getOwnsOverriddenRes(
+                    UUID reqID, com.vaticle.typedb.core.concept.type.AttributeType attributeType) {
+                ConceptProto.ThingType.GetOwnsOverridden.Res.Builder getOwnsOverridden = ConceptProto.ThingType.GetOwnsOverridden.Res.newBuilder();
+                if (attributeType != null) getOwnsOverridden.setType(protoType(attributeType));
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeGetOwnsOverriddenRes(getOwnsOverridden));
+            }
+
             public static TransactionProto.Transaction.Res setOwnsRes(UUID reqID) {
                 return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSetOwnsRes(
                         ConceptProto.ThingType.SetOwns.Res.getDefaultInstance()
