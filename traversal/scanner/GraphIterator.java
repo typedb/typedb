@@ -209,6 +209,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private final ProcedureVertex<?, ?> procedureVertex;
         private final Set<ProcedureEdge<?, ?>> inputs;
+        private final Map<ProcedureEdge<?, ?>, Vertex<?, ?>> intersectionBeforeInput;
+        private ProcedureEdge<?, ?> lastRemovedInput;
         private final Set<VertexScanner> failureCauses;
         private Forwardable<Vertex<?, ?>, Order.Asc> iterator;
         private Vertex<?, ?> vertex;
@@ -217,6 +219,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private VertexScanner(ProcedureVertex<?, ?> procedureVertex) {
             this.procedureVertex = procedureVertex;
             this.inputs = new HashSet<>();
+            this.intersectionBeforeInput = new HashMap<>();
             this.failureCauses = new HashSet<>();
             this.isVertexVerified = false;
         }
@@ -310,7 +313,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private void addInput(ProcedureEdge<?, ?> edge) {
             assert !inputs.contains(edge);
             inputs.add(edge);
-            if (iterator != null) {
+            if (iterator != null && iterator.hasNext()) {
+                intersectionBeforeInput.put(edge, iterator.peek());
                 iterator = intersect(branch(vertexScanners[edge.from().order()].currentVertex(), edge), iterator);
             }
             isVertexVerified = false;
@@ -319,11 +323,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private void removeInput(ProcedureEdge<?, ?> edge) {
             inputs.remove(edge);
+            lastRemovedInput = edge;
             resetScan();
         }
 
         private void clearInputs() {
             inputs.clear();
+            lastRemovedInput = null;
+            intersectionBeforeInput.clear();
             resetScan();
         }
 
@@ -350,10 +357,16 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> getIterator() {
-            assert !inputs.isEmpty() || procedureVertex.isStartingVertex();
+            assert procedureVertex.isStartingVertex() || !inputs.isEmpty();
             if (iterator == null) {
                 if (procedureVertex.isStartingVertex()) iterator = createIteratorFromStart();
-                else iterator = createIteratorFromInputs();
+                else {
+                    iterator = createIteratorFromInputs();
+                    // TODO confirm this is being cleared correctly so we don't come forward and have an old forward() we do
+                    if (lastRemovedInput != null && intersectionBeforeInput.containsKey(lastRemovedInput)) {
+                        iterator.forward(intersectionBeforeInput.get(lastRemovedInput));
+                    }
+                }
             }
             return iterator;
         }
