@@ -75,7 +75,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
                          Traversal.Parameters params, Set<Identifier.Variable.Retrievable> filter) {
-        System.out.println(procedure);
+//        System.out.println(procedure);
         assert procedure.vertexCount() > 1;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
@@ -170,7 +170,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void stepForward(int pos) {
-        System.out.println("Forward at pos: " + pos);
+//        System.out.println("Forward at pos: " + pos);
         if (pos == vertexCount) return;
         VertexScanner vertexScanner = vertices[pos];
         boolean success = vertexScanner.tryFindVertex();
@@ -192,7 +192,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void stepBackward(int pos) {
-        System.out.println("Backtracking at pos: " + pos);
+//        System.out.println("Backtracking at pos: " + pos);
         VertexScanner vertexScanner = vertices[pos];
         vertexScanner.vertex.transitiveOuts().forEach(v -> {
             forward.remove(v.order());
