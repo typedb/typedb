@@ -170,6 +170,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void stepForward(int pos) {
+        System.out.println("Forward at pos: " + pos);
         if (pos == vertexCount) return;
         VertexScanner vertexScanner = vertices[pos];
         boolean success = vertexScanner.tryFindVertex();
@@ -195,10 +196,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         VertexScanner vertexScanner = vertices[pos];
         vertexScanner.vertex.transitiveOuts().forEach(v -> {
             forward.remove(v.order());
+            v.outs().forEach(e -> vertices[e.to().order()].removeInputEdge(e));
         });
-        vertexScanner.vertex.outs().forEach(e -> {
-            vertices[e.to().order()].removeInputEdge(e);
-        });
+        vertexScanner.vertex.outs().forEach(e -> vertices[e.to().order()].removeInputEdge(e));
+
         forward.add(pos);
         vertexScanner.clearAnswer();
         stepDirection = StepDirection.FORWARD;
@@ -320,7 +321,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private void removeInputEdge(ProcedureEdge<?, ?> edge) {
-            assert inputEdges.contains(edge);
             inputEdges.remove(edge);
             resetIterator();
         }
