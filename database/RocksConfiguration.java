@@ -176,6 +176,7 @@ public class RocksConfiguration {
             configureSST(options);
             configureCompression(options);
             options.setTableFormatConfig(tableOptions(true, true));
+            options.setOptimizeFiltersForHits(true);
             return options;
         }
 
@@ -204,6 +205,7 @@ public class RocksConfiguration {
             configureCompression(options);
             configurePrefixExtractor(options, Key.Partition.FIXED_START_EDGE.fixedStartBytes().get());
             options.setTableFormatConfig(tableOptions(true, false));
+            options.setOptimizeFiltersForHits(true);
             return options;
         }
 
@@ -214,6 +216,7 @@ public class RocksConfiguration {
             configureCompression(options);
             configurePrefixExtractor(options, Key.Partition.OPTIMISATION_EDGE.fixedStartBytes().get());
             options.setTableFormatConfig(tableOptions(true, false));
+            options.setOptimizeFiltersForHits(true);
             return options;
         }
 
