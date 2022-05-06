@@ -151,9 +151,9 @@
 @maven//:org_objenesis_objenesis
 @maven//:org_objenesis_objenesis_2_5
 @maven//:org_rocksdb_rocksdbjni
-@maven//:org_rocksdb_rocksdbjni_6_20_3
+@maven//:org_rocksdb_rocksdbjni_6_26_1
 @maven//:org_rocksdb_rocksdbjni_dev_mac
-@maven//:org_rocksdb_rocksdbjni_dev_mac_6_20_3
+@maven//:org_rocksdb_rocksdbjni_dev_mac_6_26_1
 @maven//:org_slf4j_slf4j_api
 @maven//:org_slf4j_slf4j_api_1_7_32
 @maven//:org_yaml_snakeyaml
