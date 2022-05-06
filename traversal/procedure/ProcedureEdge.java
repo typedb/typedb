@@ -81,11 +81,13 @@ public abstract class ProcedureEdge<
 
     private final int order;
     private final Encoding.Direction.Edge direction;
+    private final int hash;
 
     private ProcedureEdge(VERTEX_FROM from, VERTEX_TO to, int order, Encoding.Direction.Edge direction, String symbol) {
         super(from, to, symbol);
         this.order = order;
         this.direction = direction;
+        this.hash = Objects.hash(from(), to(), order, direction);
     }
 
     public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
@@ -166,7 +168,7 @@ public abstract class ProcedureEdge<
 
     @Override
     public int hashCode() {
-        return Objects.hash(from(), to(), order, direction);
+        return hash;
     }
 
     @Override

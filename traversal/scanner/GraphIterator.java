@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeSet;
@@ -427,15 +428,15 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private final Map<Identifier.Variable, Scoped> scoped;
 
-        public Scopes() {
+        private Scopes() {
             this.scoped = new HashMap<>();
         }
 
-        public Scoped getOrInitialise(Identifier.Variable scope) {
+        private Scoped getOrInitialise(Identifier.Variable scope) {
             return scoped.computeIfAbsent(scope, s -> new Scoped());
         }
 
-        public Scoped get(Identifier.Variable scope) {
+        private Scoped get(Identifier.Variable scope) {
             assert scoped.containsKey(scope);
             return scoped.get(scope);
         }
@@ -454,11 +455,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 edgeSourceOrders = new HashMap<>();
             }
 
-            public boolean containsSource(ProcedureVertex<?, ?> vertex) {
+            private boolean containsSource(ProcedureVertex<?, ?> vertex) {
                 return vertexSources.containsKey(vertex);
             }
 
-            public boolean containsSource(ProcedureEdge<?, ?> edge) {
+            private boolean containsSource(ProcedureEdge<?, ?> edge) {
                 return edgeSources.containsKey(edge);
             }
 
@@ -474,49 +475,42 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 vertexSourceOrders.put(source, sourceOrder);
             }
 
-            public void replace(ProcedureEdge<?, ?> edge, ThingVertex role) {
+            private void replace(ProcedureEdge<?, ?> edge, ThingVertex role) {
                 assert edge.isRolePlayer() && role.type().isRoleType();
                 edgeSources.put(edge, role);
             }
 
-            public void replace(ProcedureVertex<?, ?> vertex, ThingVertex role) {
+            private void replace(ProcedureVertex<?, ?> vertex, ThingVertex role) {
                 assert vertex.id().isScoped() && role.type().isRoleType();
                 vertexSources.put(vertex, role);
             }
 
-            public void clear() {
-                vertexSources.clear();
-                edgeSources.clear();
-            }
-
-            // TODO: this needs to become a sub-linear operation with some clever data structures...
-            public boolean isValidUpTo(int orderInclusive) {
+            private boolean isValidUpTo(int order) {
                 Set<ThingVertex> roles = new HashSet<>();
-                int expectedRoles = 0;
                 for (Map.Entry<ProcedureEdge<?, ?>, ThingVertex> entry : edgeSources.entrySet()) {
-                    if (edgeSourceOrders.get(entry.getKey()) <= orderInclusive) {
-                        expectedRoles++;
-                        roles.add(entry.getValue());
+                    if (edgeSourceOrders.get(entry.getKey()) <= order) {
+                        if (roles.contains(entry.getValue())) return false;
+                        else roles.add(entry.getValue());
                     }
                 }
                 for (Map.Entry<ProcedureVertex<?, ?>, ThingVertex> entry : vertexSources.entrySet()) {
-                    if (vertexSourceOrders.get(entry.getKey()) <= orderInclusive) {
-                        expectedRoles++;
-                        roles.add(entry.getValue());
+                    if (vertexSourceOrders.get(entry.getKey()) <= order) {
+                        if (roles.contains(entry.getValue())) return false;
+                        else roles.add(entry.getValue());
                     }
                 }
-                return roles.size() == expectedRoles;
+                return true;
             }
 
-            public Set<Integer> scopedOrdersUpTo(int orderInclusive) {
+            private Set<Integer> scopedOrdersUpTo(int order) {
                 Set<Integer> orders = new HashSet<>();
                 for (Map.Entry<ProcedureEdge<?, ?>, ThingVertex> entry : edgeSources.entrySet()) {
-                    if (edgeSourceOrders.get(entry.getKey()) <= orderInclusive) {
+                    if (edgeSourceOrders.get(entry.getKey()) <= order) {
                         orders.add(edgeSourceOrders.get(entry.getKey()));
                     }
                 }
                 for (Map.Entry<ProcedureVertex<?, ?>, ThingVertex> entry : vertexSources.entrySet()) {
-                    if (vertexSourceOrders.get(entry.getKey()) <= orderInclusive) {
+                    if (vertexSourceOrders.get(entry.getKey()) <= order) {
                         orders.add(vertexSourceOrders.get(entry.getKey()));
                     }
                 }
