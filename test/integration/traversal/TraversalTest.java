@@ -420,22 +420,22 @@ public class TraversalTest {
             $f1 (friend: $x, friend: $y) isa friendship, has ref 1;
             */
             /*
-	        0: $_3 [thing] { hasIID: false, types: [ref], predicates: [= <LONG>] } (start)
-	        1: $f1 [thing] { hasIID: false, types: [friendship], predicates: [] }
-	        		1: ($_3 <--[HAS]--* $f1)
-	        2: $x [thing] { hasIID: false, types: [person], predicates: [] }
-	        		2: ($f1 *--[ROLEPLAYER]--> $x) { roleTypes: [friendship:friend] }
-	        3: $y [thing] { hasIID: false, types: [person], predicates: [] }
-	        		3: ($f1 *--[ROLEPLAYER]--> $y) { roleTypes: [friendship:friend] }
-	        4: $_0 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end)
-	        		4: ($x *--[HAS]--> $_0)
-	        5: $refl:null:$x:2 [thing] { hasIID: false, types: [friendship:friend], predicates: [] }
-	        		5: ($x *--[PLAYING]--> $refl:null:$x:2)
-	        6: $_1 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end)
-	        		7: ($y *--[HAS]--> $_1)
-	        7: $refl [thing] { hasIID: false, types: [friendship], predicates: [] }
-	        		6: ($x <--[ROLEPLAYER]--* $refl) { roleTypes: [friendship:friend] }
-	        		8: ($refl:null:$x:2 <--[RELATING]--* $refl)
+            0: $_3 [thing] { hasIID: false, types: [ref], predicates: [= <LONG>] } (start)
+            1: $f1 [thing] { hasIID: false, types: [friendship], predicates: [] }
+                    1: ($_3 <--[HAS]--* $f1)
+            2: $x [thing] { hasIID: false, types: [person], predicates: [] }
+                    2: ($f1 *--[ROLEPLAYER]--> $x) { roleTypes: [friendship:friend] }
+            3: $y [thing] { hasIID: false, types: [person], predicates: [] }
+                    3: ($f1 *--[ROLEPLAYER]--> $y) { roleTypes: [friendship:friend] }
+            4: $_0 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end)
+                    4: ($x *--[HAS]--> $_0)
+            5: $refl:null:$x:2 [thing] { hasIID: false, types: [friendship:friend], predicates: [] }
+                    5: ($x *--[PLAYING]--> $refl:null:$x:2)
+            6: $_1 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end)
+                    7: ($y *--[HAS]--> $_1)
+            7: $refl [thing] { hasIID: false, types: [friendship], predicates: [] }
+                    6: ($x <--[ROLEPLAYER]--* $refl) { roleTypes: [friendship:friend] }
+                    8: ($refl:null:$x:2 <--[RELATING]--* $refl)
             */
             GraphProcedure.Builder proc = GraphProcedure.builder(8);
 
