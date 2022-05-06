@@ -65,13 +65,8 @@ import static java.util.stream.Collectors.toList;
 public class ResponseBuilder {
 
     public static StatusRuntimeException exception(Throwable e) {
-        if (e instanceof StatusRuntimeException) {
-            return (StatusRuntimeException) e;
-        } else {
-            return Status.INTERNAL.withDescription(
-                    e.getMessage() + "\n\nPlease check server logs for the stack trace."
-            ).asRuntimeException();
-        }
+        if (e instanceof StatusRuntimeException) return (StatusRuntimeException) e;
+        else return Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException();
     }
 
     public static ByteString UUIDAsByteString(UUID uuid) {
