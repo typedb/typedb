@@ -33,6 +33,7 @@ import java.util.Set;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Monitor extends Actor<Monitor> {
 
@@ -75,7 +76,7 @@ public class Monitor extends Actor<Monitor> {
         RootNode rootNode = getNode(root).asRoot();
         rootNode.graph().setFinished();
         rootNode.setFinished();
-        rootNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
+        rootNode.activeGraphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
     public void registerSource(Reactive.Identifier<?, ?> source) {
@@ -92,7 +93,7 @@ public class Monitor extends Actor<Monitor> {
         if (terminated) return;
         ReactiveNode sourceNode = getNode(source);
         sourceNode.asSource().setFinished();
-        sourceNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
+        sourceNode.activeGraphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
     public void registerPath(Reactive.Identifier<?, ?> subscriber, Reactive.Identifier<?, ?> publisher) {
@@ -104,7 +105,7 @@ public class Monitor extends Actor<Monitor> {
         // We could be learning about a new subscriber or publisher or both.
         // Propagate any graphs the subscriber belongs to to the publisher.
         subscriberNode.propagateReactiveGraphs();
-        subscriberNode.graphMemberships().forEach(ReactiveGraph::checkFinished);  // In case a root connects to an already complete graph it should terminate straight away  TODO: very inefficient
+        subscriberNode.activeGraphMemberships().forEach(ReactiveGraph::checkFinished);  // In case a root connects to an already complete graph it should terminate straight away  TODO: very inefficient
     }
 
     public void createAnswer(Reactive.Identifier<?, ?> publisher) {
@@ -118,7 +119,7 @@ public class Monitor extends Actor<Monitor> {
         if (terminated) return;
         ReactiveNode subscriberNode = getOrCreateNode(subscriber);
         subscriberNode.consumeAnswer();
-        subscriberNode.graphMemberships().forEach(ReactiveGraph::checkFinished);
+        subscriberNode.activeGraphMemberships().forEach(ReactiveGraph::checkFinished);
     }
 
     private static class ReactiveGraph {  // TODO: A graph can effectively be a source node within another graph
@@ -220,6 +221,8 @@ public class Monitor extends Actor<Monitor> {
         }
 
         public long frontierForks() {
+            // TODO: We don't use this method in Source, which suggests this methods should belong in a sibling class
+            //  to source rather than this parent class.
             if (publishers.size() == 0) return 1;
             else return publishers.size();
         }
@@ -246,8 +249,8 @@ public class Monitor extends Actor<Monitor> {
             return addGraphMemberships(reactiveGraphs);
         }
 
-        public Set<ReactiveGraph> graphMemberships() {
-            return graphMemberships;
+        public Set<ReactiveGraph> activeGraphMemberships() {
+            return iterate(graphMemberships).filter(g -> !g.finished).toSet();
         }
 
         public boolean addGraphMemberships(Set<ReactiveGraph> reactiveGraphs) {
@@ -280,7 +283,7 @@ public class Monitor extends Actor<Monitor> {
         }
 
         protected Set<ReactiveGraph> graphsToPropagate() {
-            return graphMemberships();
+            return activeGraphMemberships();
         }
     }
 
@@ -348,7 +351,8 @@ public class Monitor extends Actor<Monitor> {
 
         @Override
         protected Set<ReactiveGraph> graphsToPropagate() {
-            return set(graph());
+            if (isFinished()) return set();
+            else return set(graph());
         }
 
     }
