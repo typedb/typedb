@@ -41,7 +41,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeSet;
@@ -209,8 +208,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private final ProcedureVertex<?, ?> procedureVertex;
         private final Set<ProcedureEdge<?, ?>> inputs;
-        private final Map<ProcedureEdge<?, ?>, Vertex<?, ?>> intersectionBeforeInput;
-        private ProcedureEdge<?, ?> lastRemovedInput;
+        private final Map<Set<ProcedureEdge<?, ?>>, Vertex<?, ?>> lastIntersection;
         private final Set<VertexScanner> failureCauses;
         private Forwardable<Vertex<?, ?>, Order.Asc> iterator;
         private Vertex<?, ?> vertex;
@@ -219,7 +217,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private VertexScanner(ProcedureVertex<?, ?> procedureVertex) {
             this.procedureVertex = procedureVertex;
             this.inputs = new HashSet<>();
-            this.intersectionBeforeInput = new HashMap<>();
+            this.lastIntersection = new HashMap<>();
             this.failureCauses = new HashSet<>();
             this.isVertexVerified = false;
         }
@@ -312,25 +310,24 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private void addInput(ProcedureEdge<?, ?> edge) {
             assert !inputs.contains(edge);
-            inputs.add(edge);
             if (iterator != null && iterator.hasNext()) {
-                intersectionBeforeInput.put(edge, iterator.peek());
+                lastIntersection.put(new HashSet<>(inputs), iterator.peek());
                 iterator = intersect(branch(vertexScanners[edge.from().order()].currentVertex(), edge), iterator);
             }
+            inputs.add(edge);
             isVertexVerified = false;
             vertex = null;
         }
 
         private void removeInput(ProcedureEdge<?, ?> edge) {
+            lastIntersection.remove(inputs);
             inputs.remove(edge);
-            lastRemovedInput = edge;
             resetScan();
         }
 
         private void clearInputs() {
             inputs.clear();
-            lastRemovedInput = null;
-            intersectionBeforeInput.clear();
+            lastIntersection.clear();
             resetScan();
         }
 
@@ -362,9 +359,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 if (procedureVertex.isStartingVertex()) iterator = createIteratorFromStart();
                 else {
                     iterator = createIteratorFromInputs();
-                    // TODO confirm this is being cleared correctly so we don't come forward and have an old forward() we do
-                    if (lastRemovedInput != null && intersectionBeforeInput.containsKey(lastRemovedInput)) {
-                        iterator.forward(intersectionBeforeInput.get(lastRemovedInput));
+                    if (lastIntersection.containsKey(inputs)) {
+                        iterator.forward(lastIntersection.get(inputs));
                     }
                 }
             }
