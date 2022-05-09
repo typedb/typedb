@@ -104,7 +104,8 @@ public class Monitor extends Actor<Monitor> {
         subscriberNode.addPublisher(publisherNode);
         // We could be learning about a new subscriber or publisher or both.
         // Propagate any graphs the subscriber belongs to to the publisher.
-        subscriberNode.propagateReactiveGraphs();
+        Set<ReactiveGraph> graphs = subscriberNode.graphsToPropagate();
+        if (!graphs.isEmpty()) subscriberNode.propagateReactiveGraphs(graphs);
         subscriberNode.activeGraphMemberships().forEach(ReactiveGraph::checkFinished);  // In case a root connects to an already complete graph it should terminate straight away  TODO: very inefficient
     }
 
@@ -244,9 +245,16 @@ public class Monitor extends Actor<Monitor> {
             assert isNew;
         }
 
-        public boolean addSubscriberGraphs(ReactiveNode subscriber, Set<ReactiveGraph> reactiveGraphs) {
-            reactiveGraphs.forEach(g -> subscribersByGraph.computeIfAbsent(g, n -> new HashSet<>()).add(subscriber));
-            return addGraphMemberships(reactiveGraphs);
+        public Set<ReactiveGraph> addSubscriberGraphs(ReactiveNode subscriber, Set<ReactiveGraph> reactiveGraphs) {
+            Set<ReactiveGraph> newGraphsFromSubscriber = new HashSet<>();
+            for (ReactiveGraph g : reactiveGraphs) {
+                subscribersByGraph.computeIfAbsent(g, n -> {
+                    newGraphsFromSubscriber.add(g);
+                    return new HashSet<>();
+                }).add(subscriber);
+            }
+            addGraphMemberships(reactiveGraphs);
+            return newGraphsFromSubscriber;
         }
 
         public Set<ReactiveGraph> activeGraphMemberships() {
@@ -258,12 +266,11 @@ public class Monitor extends Actor<Monitor> {
             return graphMemberships.addAll(reactiveGraphs);
         }
 
-        public void propagateReactiveGraphs() {
-            if (!graphsToPropagate().isEmpty()) {
-                publishers().forEach(publisher -> {
-                    if (publisher.addSubscriberGraphs(this, graphsToPropagate())) publisher.propagateReactiveGraphs();
-                });
-            }
+        public void propagateReactiveGraphs(Set<ReactiveGraph> graphs) {
+            publishers().forEach(publisher -> {
+                Set<ReactiveGraph> newGraphs = publisher.addSubscriberGraphs(this, graphs);
+                if (!newGraphs.isEmpty()) publisher.propagateReactiveGraphs(newGraphs);
+            });
         }
 
         public boolean isRoot() {
