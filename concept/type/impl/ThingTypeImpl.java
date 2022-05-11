@@ -45,6 +45,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_ROOT_TYPE_CANNOT_BE_OWNED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
@@ -59,8 +60,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OW
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_NO_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_VALUE_TYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
@@ -206,14 +207,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private void ownsKey(AttributeTypeImpl attributeType) {
-        validateIsNotDeleted();
-
         TypeVertex attVertex = attributeType.vertex;
         TypeEdge ownsEdge, ownsKeyEdge;
 
         if (vertex.outs().edge(OWNS_KEY, attVertex) != null) return;
 
-        if (!attributeType.isKeyable()) {
+        if (attributeType.isRoot()) {
+            throw exception(TypeDBException.of(ATTRIBUTE_ROOT_TYPE_CANNOT_BE_OWNED));
+        } else if (!attributeType.isKeyable()) {
             throw exception(TypeDBException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
         } else if (link(getSupertype().getOwns(attributeType.getValueType(), true),
                 getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
@@ -225,10 +226,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             getInstances().forEachRemaining(thing -> {
                 FunctionalIterator<? extends Attribute> attrs = thing.getHas(attributeType);
                 if (!attrs.hasNext())
-                    throw exception(TypeDBException.of(OWS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, vertex.label(), attVertex.label()));
+                    throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, vertex.label(), attVertex.label()));
                 Attribute attr = attrs.next();
                 if (attrs.hasNext())
-                    throw exception(TypeDBException.of(OWS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, vertex.label(), attVertex.label()));
+                    throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, vertex.label(), attVertex.label()));
                 else if (compareSize(attr.getOwners(this), 1) != 0) {
                     throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attVertex.label(), vertex.label()));
                 }
@@ -249,9 +250,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private void ownsAttribute(AttributeTypeImpl attributeType) {
-        validateIsNotDeleted();
         Forwardable<AttributeType, Order.Asc> owns = getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getOwns, ASC);
-        if (owns.findFirst(attributeType).isPresent()) {
+        if (attributeType.isRoot()) {
+            throw exception(TypeDBException.of(ATTRIBUTE_ROOT_TYPE_CANNOT_BE_OWNED));
+        } else if (owns.findFirst(attributeType).isPresent()) {
             throw exception(TypeDBException.of(OWNS_ATT_NOT_AVAILABLE, attributeType.getLabel()));
         }
 
