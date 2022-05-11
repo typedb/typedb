@@ -182,7 +182,8 @@ public final class ConceptManager {
     public void validateTypes() {
         List<TypeDBException> exceptions = graphMgr.schema().bufferedTypes().parallel()
                 .filter(TypeVertex::isModified)
-                .map(v -> TypeImpl.of(graphMgr, v).validate())
+                .flatMap(v -> TypeImpl.of(graphMgr, v).getSubtypes().stream())
+                .distinct().map(TypeImpl::validate)
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
         if (!exceptions.isEmpty()) throw exception(TypeDBException.of(exceptions));
     }
