@@ -185,7 +185,7 @@ public class Monitor extends Actor<Monitor> {
     private static class ReactiveNode {
 
         private final Set<ReactiveNode> publishers;
-        private final Map<ReactiveGraph, Set<ReactiveNode>> subscribersByGraph;
+        protected final Map<ReactiveGraph, Set<ReactiveNode>> subscribersByGraph;
         protected final Reactive.Identifier<?, ?> reactive;
         private long answersCreated;
         private long answersConsumed;
@@ -379,18 +379,12 @@ public class Monitor extends Actor<Monitor> {
         public void setGraph(ReactiveGraph reactiveGraph) {
             assert this.reactiveGraph == null;
             this.reactiveGraph = reactiveGraph;
+            subscribersByGraph.computeIfAbsent(graph(), ignored -> new HashSet<>());
         }
 
         public ReactiveGraph graph() {
             assert reactiveGraph != null;
             return reactiveGraph;
-        }
-
-        @Override
-        protected void consumeAnswer() {
-            super.consumeAnswer();
-            logAnswerDelta(-1, "consumeAnswer in Root", graph());
-            graph().updateAnswerCount(-1);
         }
 
         @Override
@@ -401,15 +395,8 @@ public class Monitor extends Actor<Monitor> {
 
         @Override
         protected void synchroniseGraphCounts(ReactiveGraph graph) {
-            if (graph.equals(graph())) {
-                // TODO: We never hit this code path in a nested scenario
-                LOG.debug("Frontiers {} from synchroniseGraphCounts() in Root {} for graph {}", frontierForks(), reactive, graph.hashCode());
-                graph.updateFrontiersCount(frontierForks());
-                logAnswerDelta(-answersConsumed(), "synchroniseGraphCounts in Root", graph);
-                graph.updateAnswerCount(-answersConsumed());
-            } else {
-                super.synchroniseGraphCounts(graph);
-            }
+            assert !graph.equals(graph());
+            super.synchroniseGraphCounts(graph);
         }
 
         protected void propagateReactiveGraphs(Set<ReactiveGraph> toPropagate) {
