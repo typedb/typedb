@@ -44,13 +44,15 @@ import com.vaticle.typedb.protocol.SessionProto;
 import com.vaticle.typedb.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+
+import javax.annotation.Nullable;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
+
 import static com.google.protobuf.ByteString.copyFrom;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeUUID;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -629,8 +631,16 @@ public class ResponseBuilder {
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> owners) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setAttributeTypeGetOwnersResPart(
                         ConceptProto.AttributeType.GetOwners.ResPart.newBuilder().addAllOwners(
-                                owners.stream().map(Type::protoType).collect(toList()))
-                ));
+                                owners.stream().map(Type::protoType).collect(toList())
+                        )));
+            }
+
+            public static TransactionProto.Transaction.ResPart getOwnersExplicitResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> owners) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setAttributeTypeGetOwnersExplicitResPart(
+                        ConceptProto.AttributeType.GetOwnersExplicit.ResPart.newBuilder().addAllOwners(
+                                owners.stream().map(Type::protoType).collect(toList())
+                        )));
             }
         }
     }

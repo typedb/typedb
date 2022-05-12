@@ -30,10 +30,12 @@ import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.server.TransactionService;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.TransactionProto.Transaction;
+
+import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
+
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
@@ -42,6 +44,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNO
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_SUPERTYPE_ENCODING;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.RequestReader.valueType;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getOwnersExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getOwnersResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getRegexRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getRes;
@@ -197,6 +200,8 @@ public class TypeService {
                 return;
             case ATTRIBUTE_TYPE_GET_OWNERS_REQ:
                 getOwners(type.asAttributeType(), typeReq.getAttributeTypeGetOwnersReq().getOnlyKey(), reqID);
+            case ATTRIBUTE_TYPE_GET_OWNERS_EXPLICIT_REQ:
+                getOwnersExplicit(type.asAttributeType(), typeReq.getAttributeTypeGetOwnersExplicitReq().getOnlyKey(), reqID);
                 return;
             case REQ_NOT_SET:
             default:
@@ -353,7 +358,12 @@ public class TypeService {
 
     private void getOwners(AttributeType attributeType, boolean onlyKey, UUID reqID) {
         transactionSvc.stream(attributeType.getOwners(onlyKey), reqID,
-                owners -> getOwnersResPart(reqID, owners));
+                              owners -> getOwnersResPart(reqID, owners));
+    }
+
+    private void getOwnersExplicit(AttributeType attributeType, boolean onlyKey, UUID reqID) {
+        transactionSvc.stream(attributeType.getOwnersExplicit(onlyKey), reqID,
+                              owners -> getOwnersExplicitResPart(reqID, owners));
     }
 
     private void put(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, UUID reqID) {
