@@ -101,7 +101,7 @@ public class Monitor extends Actor<Monitor> {
         subscriberNode.addPublisher(publisherNode);
         // We could be learning about a new subscriber or publisher or both.
         // Propagate any graphs the subscriber belongs to to the publisher.
-        subscriberNode.propagateReactiveGraphs(subscriberNode.activeUpstreamGraphMemberships());
+        subscriberNode.propagateGraphsUpstream(subscriberNode.activeUpstreamGraphs());
     }
 
     public void createAnswer(Reactive.Identifier<?, ?> publisher) {
@@ -215,7 +215,13 @@ public class Monitor extends Actor<Monitor> {
         }
 
         protected void logAnswerDelta(long delta, String methodName, ReactiveGraph graph) {
+            // TODO: Remove
             LOG.debug("Answers {} from {} in Node {} for graph {}", delta, methodName, reactive, graph.hashCode());
+        }
+
+        private void logFrontierDelta(long delta, String methodName, ReactiveGraph graph) {
+            // TODO: Remove
+            if (delta != 0) LOG.debug("Frontiers {} from {} in Node {} for graph {}", delta, methodName, reactive, graph.hashCode());
         }
 
         protected void createAnswer() {
@@ -230,7 +236,7 @@ public class Monitor extends Actor<Monitor> {
         protected void consumeAnswer() {
             answersConsumed += 1;
             LOG.debug("Answer consumed by {}", reactive);
-            iterate(activeDownstreamGraphMemberships()).forEachRemaining(graph -> {
+            iterate(activeDownstreamGraphs()).forEachRemaining(graph -> {
                 logAnswerDelta(-1, "consumeAnswer", graph);
                 graph.updateAnswerCount(-1);
             });
@@ -245,14 +251,15 @@ public class Monitor extends Actor<Monitor> {
             assert isNew;
             if (publishers.size() > 1) {
                 // TODO: The graphs we update for is wrong here? I've changed the above inequality
-                iterate(activeUpstreamGraphMemberships()).forEachRemaining(graph -> {
-                    LOG.debug("Frontiers 1 from addPublisher() in Node {} for graph {}", reactive, graph.hashCode());
+                iterate(activeUpstreamGraphs()).forEachRemaining(graph -> {
+                    logFrontierDelta(1, "addPublisher", graph);
                     graph.updateFrontiersCount(1);
                 });
             }
         }
 
         public Set<ReactiveGraph> addGraphs(Set<ReactiveGraph> graphs, ReactiveNode subscriber) {
+            // TODO: This gets messy because we can't use the activeDownstreamGraphs only, we have to reach in and see the graphs per subscriber instead
             Set<ReactiveGraph> newGraphsFromSubscriber = new HashSet<>();
             for (ReactiveGraph graph : graphs) {
                 Set<ReactiveNode> subscribers = subscribersByGraph.get(graph);
@@ -262,7 +269,8 @@ public class Monitor extends Actor<Monitor> {
                     synchroniseGraphCounts(graph);
                 } else {
                     if (subscribers.add(subscriber)) {
-                        LOG.debug("Frontiers -1 from addSubscriberForGraphs()");
+                        graph.updateAnswerCount(answersCreated(graph) - answersConsumed());
+                        logFrontierDelta(-1, "addGraphs", graph);
                         graph.updateFrontiersCount(-1);
                     }
                 }
@@ -273,24 +281,24 @@ public class Monitor extends Actor<Monitor> {
         protected void synchroniseGraphCounts(ReactiveGraph graph) {
             logAnswerDelta(answersCreated(graph) - answersConsumed(), "synchroniseGraphCounts", graph);
             graph.updateAnswerCount(answersCreated(graph) - answersConsumed());
-            if (frontierForks() - frontierJoins(graph) > 0) LOG.debug("Frontiers {} from synchroniseGraphCounts() in Node {} for graph {}", frontierForks() - frontierJoins(graph), reactive, graph.hashCode());
+            logFrontierDelta(frontierForks() - frontierJoins(graph), "synchroniseGraphCounts", graph);
             graph.updateFrontiersCount(frontierForks() - frontierJoins(graph));
         }
 
-        public Set<ReactiveGraph> activeDownstreamGraphMemberships() {
+        public Set<ReactiveGraph> activeDownstreamGraphs() {
             return iterate(subscribersByGraph.keySet()).filter(g -> !g.finished).toSet();
         }
 
-        protected void propagateReactiveGraphs(Set<ReactiveGraph> toPropagate) {
-            if (!toPropagate.isEmpty()) {
-                publishers().forEach(publisher -> {
-                    publisher.propagateReactiveGraphs(publisher.addGraphs(toPropagate, this));
-                });
-            }
+        protected Set<ReactiveGraph> activeUpstreamGraphs() {
+            return activeDownstreamGraphs();
         }
 
-        protected Set<ReactiveGraph> activeUpstreamGraphMemberships() {
-            return activeDownstreamGraphMemberships();
+        protected void propagateGraphsUpstream(Set<ReactiveGraph> toPropagate) {
+            if (!toPropagate.isEmpty()) {
+                publishers().forEach(
+                        publisher -> publisher.propagateGraphsUpstream(publisher.addGraphs(toPropagate, this))
+                );
+            }
         }
 
         public RootNode asRoot() {
@@ -317,7 +325,7 @@ public class Monitor extends Actor<Monitor> {
 
         protected void setFinished() {
             finished = true;
-            iterate(activeDownstreamGraphMemberships()).forEachRemaining(g -> g.sourceFinished(this));
+            iterate(activeDownstreamGraphs()).forEachRemaining(g -> g.sourceFinished(this));
         }
 
         @Override
@@ -331,7 +339,7 @@ public class Monitor extends Actor<Monitor> {
             if (isFinished()) graph.sourceFinished(this);
             logAnswerDelta(answersCreated(graph), "synchroniseGraphCounts in Source", graph);
             graph.updateAnswerCount(answersCreated(graph));
-            LOG.debug("Frontiers {} from synchroniseGraphCounts() in Source {} for graph {}", - frontierJoins(graph), reactive, graph.hashCode());  // TODO: Remove debug statements
+            logAnswerDelta(-frontierJoins(graph), "synchroniseGraphCounts", graph);
             graph.updateFrontiersCount(-frontierJoins(graph));
         }
     }
@@ -356,7 +364,6 @@ public class Monitor extends Actor<Monitor> {
         public void setGraph(ReactiveGraph reactiveGraph) {
             assert this.reactiveGraph == null;
             this.reactiveGraph = reactiveGraph;
-            subscribersByGraph.computeIfAbsent(graph(), ignored -> new HashSet<>());
         }
 
         public ReactiveGraph graph() {
@@ -365,9 +372,14 @@ public class Monitor extends Actor<Monitor> {
         }
 
         @Override
-        protected Set<ReactiveGraph> activeUpstreamGraphMemberships() {
+        protected Set<ReactiveGraph> activeUpstreamGraphs() {
             if (isFinished()) return set();
             else return set(graph());
+        }
+
+        @Override
+        public Set<ReactiveGraph> activeDownstreamGraphs() {
+            return set(super.activeDownstreamGraphs(), graph());
         }
 
         @Override
@@ -376,13 +388,13 @@ public class Monitor extends Actor<Monitor> {
             super.synchroniseGraphCounts(graph);
         }
 
-        protected void propagateReactiveGraphs(Set<ReactiveGraph> toPropagate) {
+        protected void propagateGraphsUpstream(Set<ReactiveGraph> toPropagate) {
             if (!toPropagate.isEmpty()) {
-                publishers().forEach(publisher -> {
-                    Set<ReactiveGraph> toPropagateOn = new HashSet<>(toPropagate);
-                    toPropagateOn.retainAll(activeUpstreamGraphMemberships());
-                    publisher.propagateReactiveGraphs(publisher.addGraphs(toPropagateOn, this));
-                });
+                Set<ReactiveGraph> toPropagateOnwards = new HashSet<>(toPropagate);
+                toPropagateOnwards.retainAll(activeUpstreamGraphs());  // TODO: Limits to active upstream, not implied by the method name
+                publishers().forEach(
+                        publisher -> publisher.propagateGraphsUpstream(publisher.addGraphs(toPropagateOnwards, this))
+                );
             }
         }
 
