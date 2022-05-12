@@ -43,7 +43,8 @@ public class Monitor extends Actor<Monitor> {
     private final Map<Reactive.Identifier<?, ?>, ReactiveNode> reactiveNodes;
 
     public Monitor(Driver<Monitor> driver, Registry registry) {
-        super(driver, Monitor.class::getSimpleName); this.registry = registry;  // TODO: Does it matter that this depends upon the Registry?
+        super(driver, Monitor.class::getSimpleName);
+        this.registry = registry;  // TODO: Does it matter that this depends upon the Registry?
         this.reactiveNodes = new HashMap<>();
     }
 
@@ -100,7 +101,7 @@ public class Monitor extends Actor<Monitor> {
         subscriberNode.addPublisher(publisherNode);
         // We could be learning about a new subscriber or publisher or both.
         // Propagate any graphs the subscriber belongs to to the publisher.
-        subscriberNode.propagateReactiveGraphs(subscriberNode.graphsToPropagate());
+        subscriberNode.propagateReactiveGraphs(subscriberNode.activeUpstreamGraphMemberships());
     }
 
     public void createAnswer(Reactive.Identifier<?, ?> publisher) {
@@ -155,10 +156,6 @@ public class Monitor extends Actor<Monitor> {
                     finishRootNode();
                 }
             }
-        }
-
-        public Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock() {
-            return rootReactiveBlock;
         }
 
         public void updateAnswerCount(long delta) {
@@ -233,8 +230,7 @@ public class Monitor extends Actor<Monitor> {
         protected void consumeAnswer() {
             answersConsumed += 1;
             LOG.debug("Answer consumed by {}", reactive);
-            // TODO: This skips telling the graph about consumed answers if this is a root node
-            iterate(activeGraphMemberships()).forEachRemaining(graph -> {
+            iterate(activeDownstreamGraphMemberships()).forEachRemaining(graph -> {
                 logAnswerDelta(-1, "consumeAnswer", graph);
                 graph.updateAnswerCount(-1);
             });
@@ -249,14 +245,14 @@ public class Monitor extends Actor<Monitor> {
             assert isNew;
             if (publishers.size() > 1) {
                 // TODO: The graphs we update for is wrong here? I've changed the above inequality
-                iterate(graphsToPropagate()).forEachRemaining(graph -> {
+                iterate(activeUpstreamGraphMemberships()).forEachRemaining(graph -> {
                     LOG.debug("Frontiers 1 from addPublisher() in Node {} for graph {}", reactive, graph.hashCode());
                     graph.updateFrontiersCount(1);
                 });
             }
         }
 
-        public Set<ReactiveGraph> addSubscriberForGraphs(ReactiveNode subscriber, Set<ReactiveGraph> graphs) {
+        public Set<ReactiveGraph> addGraphs(Set<ReactiveGraph> graphs, ReactiveNode subscriber) {
             Set<ReactiveGraph> newGraphsFromSubscriber = new HashSet<>();
             for (ReactiveGraph graph : graphs) {
                 Set<ReactiveNode> subscribers = subscribersByGraph.get(graph);
@@ -281,37 +277,28 @@ public class Monitor extends Actor<Monitor> {
             graph.updateFrontiersCount(frontierForks() - frontierJoins(graph));
         }
 
-        public Set<ReactiveGraph> activeGraphMemberships() {
+        public Set<ReactiveGraph> activeDownstreamGraphMemberships() {
             return iterate(subscribersByGraph.keySet()).filter(g -> !g.finished).toSet();
         }
 
         protected void propagateReactiveGraphs(Set<ReactiveGraph> toPropagate) {
             if (!toPropagate.isEmpty()) {
                 publishers().forEach(publisher -> {
-                    Set<ReactiveGraph> gs = publisher.addSubscriberForGraphs(this, toPropagate);
-                    publisher.propagateReactiveGraphs(gs);
+                    publisher.propagateReactiveGraphs(publisher.addGraphs(toPropagate, this));
                 });
             }
         }
 
-        public boolean isRoot() {
-            return false;
+        protected Set<ReactiveGraph> activeUpstreamGraphMemberships() {
+            return activeDownstreamGraphMemberships();
         }
 
         public RootNode asRoot() {
             throw TypeDBException.of(ILLEGAL_CAST);
         }
 
-        public boolean isSource() {
-            return false;
-        }
-
         public SourceNode asSource() {
             throw TypeDBException.of(ILLEGAL_CAST);
-        }
-
-        protected Set<ReactiveGraph> graphsToPropagate() {
-            return activeGraphMemberships();
         }
     }
 
@@ -330,12 +317,7 @@ public class Monitor extends Actor<Monitor> {
 
         protected void setFinished() {
             finished = true;
-            iterate(activeGraphMemberships()).forEachRemaining(g -> g.sourceFinished(this));
-        }
-
-        @Override
-        public boolean isSource() {
-            return true;
+            iterate(activeDownstreamGraphMemberships()).forEachRemaining(g -> g.sourceFinished(this));
         }
 
         @Override
@@ -367,11 +349,6 @@ public class Monitor extends Actor<Monitor> {
         }
 
         @Override
-        public boolean isRoot() {
-            return true;
-        }
-
-        @Override
         public RootNode asRoot() {
             return this;
         }
@@ -388,7 +365,7 @@ public class Monitor extends Actor<Monitor> {
         }
 
         @Override
-        protected Set<ReactiveGraph> graphsToPropagate() {
+        protected Set<ReactiveGraph> activeUpstreamGraphMemberships() {
             if (isFinished()) return set();
             else return set(graph());
         }
@@ -403,9 +380,8 @@ public class Monitor extends Actor<Monitor> {
             if (!toPropagate.isEmpty()) {
                 publishers().forEach(publisher -> {
                     Set<ReactiveGraph> toPropagateOn = new HashSet<>(toPropagate);
-                    toPropagateOn.retainAll(graphsToPropagate());
-                    Set<ReactiveGraph> gs = publisher.addSubscriberForGraphs(this, toPropagateOn);
-                    publisher.propagateReactiveGraphs(gs);
+                    toPropagateOn.retainAll(activeUpstreamGraphMemberships());
+                    publisher.propagateReactiveGraphs(publisher.addGraphs(toPropagateOn, this));
                 });
             }
         }
@@ -426,9 +402,7 @@ public class Monitor extends Actor<Monitor> {
         }
         LOG.error("Actor exception", e);
         registry.terminate(e);
-        reactiveNodes.values().forEach(node -> {
-            if (node.isRoot()) node.asRoot().graph().rootReactiveBlock().execute(actor -> actor.exception(e));
-        });
+        // TODO: Do we need to send the exception to anywhere else if we already terminate the registry?
     }
 
     public void terminate(Throwable cause) {
