@@ -93,10 +93,14 @@ public class Monitor extends Actor<Monitor> {
         if (terminated) return;
         ReactiveNode subscriberNode = reactiveNodes.computeIfAbsent(subscriber, n -> new ReactiveNode(subscriber));
         ReactiveNode publisherNode = reactiveNodes.computeIfAbsent(publisher, n -> new ReactiveNode(publisher));
-        subscriberNode.addPublisher(publisherNode);
+        addPath(subscriberNode, publisherNode);
+    }
+
+    private void addPath(ReactiveNode subscriberNode, ReactiveNode publisherNode) {
+        subscriberNode.fork(publisherNode);
         // We could be learning about a new subscriber or publisher or both.
         // Propagate any roots the subscriber belongs to to the publisher.
-        subscriberNode.propagateRootsUpstream(subscriberNode.activeUpstreamRoots());
+        publisherNode.addRootsViaSubscriber(subscriberNode.activeUpstreamRoots(), subscriberNode);
     }
 
     public void createAnswer(Reactive.Identifier<?, ?> publisher) {
@@ -115,7 +119,7 @@ public class Monitor extends Actor<Monitor> {
     private static class ReactiveNode {
 
         private final Set<ReactiveNode> publishers;
-        protected final Map<RootNode, Set<ReactiveNode>> subscribersByRoot;
+        protected final Map<RootNode, Set<ReactiveNode>> downstreamRoots;
         protected final Reactive.Identifier<?, ?> reactive;
         private long answersCreated;
         private long answersConsumed;
@@ -123,24 +127,24 @@ public class Monitor extends Actor<Monitor> {
         ReactiveNode(Reactive.Identifier<?, ?> reactive) {
             this.reactive = reactive;
             this.publishers = new HashSet<>();
-            this.subscribersByRoot = new HashMap<>();
+            this.downstreamRoots = new HashMap<>();
             this.answersCreated = 0;
             this.answersConsumed = 0;
         }
 
-        public long answersCreated(RootNode rootNode) {
-            return answersCreated * subscribersByRoot.get(rootNode).size();
+        public long totalAnswersCreated(RootNode rootNode) {
+            return answersCreated * downstreamRoots.get(rootNode).size();
         }
 
-        public long answersConsumed() {
+        public long totalAnswersConsumed() {
             return answersConsumed;
         }
 
-        public long frontierJoins(RootNode rootNode) {
-            return subscribersByRoot.get(rootNode).size();
+        public long totalFrontierJoins(RootNode rootNode) {
+            return downstreamRoots.get(rootNode).size();
         }
 
-        public long frontierForks() {
+        public long totalFrontierForks() {
             // TODO: We don't use this method in Source, which suggests this methods should belong in a sibling class
             //  to source rather than this parent class.
             if (publishers.size() == 0) return 1;
@@ -149,7 +153,7 @@ public class Monitor extends Actor<Monitor> {
 
         protected void logAnswerDelta(long delta, String methodName, RootNode rootNode) {
             // TODO: Remove
-            LOG.debug("Answers {} from {} in Node {} for rootNode {}", delta, methodName, reactive, rootNode.hashCode());
+            if (delta != 0) LOG.debug("Answers {} from {} in Node {} for rootNode {}", delta, methodName, reactive, rootNode.hashCode());
         }
 
         private void logFrontierDelta(long delta, String methodName, RootNode rootNode) {
@@ -160,7 +164,7 @@ public class Monitor extends Actor<Monitor> {
         protected void createAnswer() {
             answersCreated += 1;
             // TODO: We should remove the inactive roots from subscribersByRoot
-            subscribersByRoot.forEach((root, subs) -> {
+            downstreamRoots.forEach((root, subs) -> {
                 logAnswerDelta(subs.size(), "createAnswer", root);
                 root.updateAnswerCount(subs.size());
             });
@@ -169,7 +173,7 @@ public class Monitor extends Actor<Monitor> {
         protected void consumeAnswer() {
             answersConsumed += 1;
             LOG.debug("Answer consumed by {}", reactive);
-            iterate(activeDownstreamRoots()).forEachRemaining(root -> {
+            iterate(activeUpstreamRoots()).forEachRemaining(root -> {
                 logAnswerDelta(-1, "consumeAnswer", root);
                 root.updateAnswerCount(-1);
             });
@@ -179,7 +183,7 @@ public class Monitor extends Actor<Monitor> {
             return publishers;
         }
 
-        public void addPublisher(ReactiveNode publisherNode) {
+        public void fork(ReactiveNode publisherNode) {
             boolean isNew = publishers.add(publisherNode);
             assert isNew;
             if (publishers.size() > 1) {
@@ -191,47 +195,47 @@ public class Monitor extends Actor<Monitor> {
             }
         }
 
-        public Set<RootNode> addRoots(Set<RootNode> rootNodes, ReactiveNode subscriber) {
-            // TODO: This gets messy because we can't use the activeDownstreamRoots only, we have to reach in and see the roots per subscriber instead
+        public void addRootsViaSubscriber(Set<RootNode> rootNodes, ReactiveNode subscriber) {
             Set<RootNode> newRootsFromSubscriber = new HashSet<>();
             for (RootNode root : rootNodes) {
-                Set<ReactiveNode> subscribers = subscribersByRoot.get(root);
+                Set<ReactiveNode> subscribers = downstreamRoots.get(root);
                 if (subscribers == null) {
-                    subscribersByRoot.computeIfAbsent(root, ignored -> new HashSet<>()).add(subscriber);
+                    downstreamRoots.computeIfAbsent(root, ignored -> new HashSet<>()).add(subscriber);
                     newRootsFromSubscriber.add(root);
-                    synchroniseRootCounts(root);
-                } else {
-                    if (subscribers.add(subscriber)) {
-                        root.updateAnswerCount(answersCreated(root) - answersConsumed());
-                        logFrontierDelta(-1, "addRoots", root);
-                        root.updateFrontiersCount(-1);
-                    }
+                    synchroniseRoot(root);
+                } else if (subscribers.add(subscriber)) {
+                    synchroniseRootExtraSubscriber(root);
                 }
             }
-            return newRootsFromSubscriber;
-        }
-
-        protected void synchroniseRootCounts(RootNode rootNode) {
-            logAnswerDelta(answersCreated(rootNode) - answersConsumed(), "synchroniseRootCounts", rootNode);
-            rootNode.updateAnswerCount(answersCreated(rootNode) - answersConsumed());
-            logFrontierDelta(frontierForks() - frontierJoins(rootNode), "synchroniseRootCounts", rootNode);
-            rootNode.updateFrontiersCount(frontierForks() - frontierJoins(rootNode));
-        }
-
-        public Set<RootNode> activeDownstreamRoots() {
-            return iterate(subscribersByRoot.keySet()).filter(g -> !g.finished).toSet();
-        }
-
-        protected Set<RootNode> activeUpstreamRoots() {
-            return activeDownstreamRoots();
+            propagateRootsUpstream(newRootsFromSubscriber);
         }
 
         protected void propagateRootsUpstream(Set<RootNode> toPropagate) {
             if (!toPropagate.isEmpty()) {
-                publishers().forEach(
-                        publisher -> publisher.propagateRootsUpstream(publisher.addRoots(toPropagate, this))
-                );
+                publishers().forEach(publisher -> publisher.addRootsViaSubscriber(toPropagate, this));
             }
+        }
+
+        protected void synchroniseRootExtraSubscriber(RootNode rootNode) {
+            logAnswerDelta(totalAnswersCreated(rootNode), "synchroniseRootExtraSubscriber", rootNode);
+            rootNode.updateAnswerCount(answersCreated);
+            logFrontierDelta(-1, "synchroniseRootExtraSubscriber", rootNode);
+            rootNode.updateFrontiersCount(-1);
+        }
+
+        protected void synchroniseRoot(RootNode rootNode) {
+            logAnswerDelta(totalAnswersCreated(rootNode) - totalAnswersConsumed(), "synchroniseRootCounts", rootNode);
+            rootNode.updateAnswerCount(totalAnswersCreated(rootNode) - totalAnswersConsumed());
+            logFrontierDelta(totalFrontierForks() - totalFrontierJoins(rootNode), "synchroniseRootCounts", rootNode);
+            rootNode.updateFrontiersCount(totalFrontierForks() - totalFrontierJoins(rootNode));
+        }
+
+        public Set<RootNode> activeDownstreamRoots() {
+            return iterate(downstreamRoots.keySet()).filter(g -> !g.finished).toSet();
+        }
+
+        protected Set<RootNode> activeUpstreamRoots() {
+            return activeDownstreamRoots();
         }
 
         public RootNode asRoot() {
@@ -241,6 +245,7 @@ public class Monitor extends Actor<Monitor> {
         public SourceNode asSource() {
             throw TypeDBException.of(ILLEGAL_CAST);
         }
+
     }
 
     private static class SourceNode extends ReactiveNode {
@@ -267,14 +272,15 @@ public class Monitor extends Actor<Monitor> {
         }
 
         @Override
-        protected void synchroniseRootCounts(RootNode rootNode) {
+        protected void synchroniseRoot(RootNode rootNode) {
             rootNode.addSource(this);
             if (isFinished()) rootNode.sourceFinished(this);
-            logAnswerDelta(answersCreated(rootNode), "synchroniseRootCounts in Source", rootNode);
-            rootNode.updateAnswerCount(answersCreated(rootNode));
-            logAnswerDelta(-frontierJoins(rootNode), "synchroniseRootCounts", rootNode);
-            rootNode.updateFrontiersCount(-frontierJoins(rootNode));
+            logAnswerDelta(totalAnswersCreated(rootNode), "synchroniseRootCounts in Source", rootNode);
+            rootNode.updateAnswerCount(totalAnswersCreated(rootNode));
+            logAnswerDelta(-totalFrontierJoins(rootNode), "synchroniseRootCounts", rootNode);
+            rootNode.updateFrontiersCount(-totalFrontierJoins(rootNode));
         }
+
     }
 
     private static class RootNode extends SourceNode {
@@ -307,23 +313,16 @@ public class Monitor extends Actor<Monitor> {
         }
 
         @Override
-        public Set<RootNode> activeDownstreamRoots() {
-            return set(super.activeDownstreamRoots(), this);
-        }
-
-        @Override
-        protected void synchroniseRootCounts(RootNode rootNode) {
+        protected void synchroniseRoot(RootNode rootNode) {
             assert !rootNode.equals(this);
-            super.synchroniseRootCounts(rootNode);
+            super.synchroniseRoot(rootNode);
         }
 
         protected void propagateRootsUpstream(Set<RootNode> toPropagate) {
             if (!toPropagate.isEmpty()) {
                 Set<RootNode> toPropagateOnwards = new HashSet<>(toPropagate);
                 toPropagateOnwards.retainAll(activeUpstreamRoots());  // TODO: Limits to active upstream, not implied by the method name
-                publishers().forEach(
-                        publisher -> publisher.propagateRootsUpstream(publisher.addRoots(toPropagateOnwards, this))
-                );
+                publishers().forEach(publisher -> publisher.addRootsViaSubscriber(toPropagateOnwards, this));
             }
         }
 
