@@ -65,18 +65,13 @@ public class Monitor extends Actor<Monitor> {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerRoot(root, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the root, or a duplicate node will be created.
-        RootNode rootNode = new RootNode(root);
-        putNode(root, rootNode);
-        ReactiveGraph reactiveGraph = new ReactiveGraph(reactiveBlock, rootNode, driver());
-        rootNode.setGraph(reactiveGraph);
+        putNode(root, new RootNode(root, reactiveBlock, driver()));
     }
 
     public void rootFinished(Reactive.Identifier<?, ?> root) {
         Tracer.getIfEnabled().ifPresent(tracer -> tracer.rootFinalised(root, driver()));
         if (terminated) return;
-        RootNode rootNode = getNode(root).asRoot();
-        rootNode.graph().setFinished();
-        rootNode.setFinished();
+        getNode(root).asRoot().setFinished();
     }
 
     public void registerSource(Reactive.Identifier<?, ?> source) {
@@ -100,8 +95,8 @@ public class Monitor extends Actor<Monitor> {
         ReactiveNode publisherNode = reactiveNodes.computeIfAbsent(publisher, n -> new ReactiveNode(publisher));
         subscriberNode.addPublisher(publisherNode);
         // We could be learning about a new subscriber or publisher or both.
-        // Propagate any graphs the subscriber belongs to to the publisher.
-        subscriberNode.propagateGraphsUpstream(subscriberNode.activeUpstreamGraphs());
+        // Propagate any roots the subscriber belongs to to the publisher.
+        subscriberNode.propagateRootsUpstream(subscriberNode.activeUpstreamRoots());
     }
 
     public void createAnswer(Reactive.Identifier<?, ?> publisher) {
@@ -117,34 +112,224 @@ public class Monitor extends Actor<Monitor> {
         subscriberNode.consumeAnswer();
     }
 
-    private static class ReactiveGraph {  // TODO: A graph can effectively be a source node within another graph
+    private static class ReactiveNode {
+
+        private final Set<ReactiveNode> publishers;
+        protected final Map<RootNode, Set<ReactiveNode>> subscribersByRoot;
+        protected final Reactive.Identifier<?, ?> reactive;
+        private long answersCreated;
+        private long answersConsumed;
+
+        ReactiveNode(Reactive.Identifier<?, ?> reactive) {
+            this.reactive = reactive;
+            this.publishers = new HashSet<>();
+            this.subscribersByRoot = new HashMap<>();
+            this.answersCreated = 0;
+            this.answersConsumed = 0;
+        }
+
+        public long answersCreated(RootNode rootNode) {
+            return answersCreated * subscribersByRoot.get(rootNode).size();
+        }
+
+        public long answersConsumed() {
+            return answersConsumed;
+        }
+
+        public long frontierJoins(RootNode rootNode) {
+            return subscribersByRoot.get(rootNode).size();
+        }
+
+        public long frontierForks() {
+            // TODO: We don't use this method in Source, which suggests this methods should belong in a sibling class
+            //  to source rather than this parent class.
+            if (publishers.size() == 0) return 1;
+            else return publishers.size();
+        }
+
+        protected void logAnswerDelta(long delta, String methodName, RootNode rootNode) {
+            // TODO: Remove
+            LOG.debug("Answers {} from {} in Node {} for rootNode {}", delta, methodName, reactive, rootNode.hashCode());
+        }
+
+        private void logFrontierDelta(long delta, String methodName, RootNode rootNode) {
+            // TODO: Remove
+            if (delta != 0) LOG.debug("Frontiers {} from {} in Node {} for rootNode {}", delta, methodName, reactive, rootNode.hashCode());
+        }
+
+        protected void createAnswer() {
+            answersCreated += 1;
+            // TODO: We should remove the inactive roots from subscribersByRoot
+            subscribersByRoot.forEach((root, subs) -> {
+                logAnswerDelta(subs.size(), "createAnswer", root);
+                root.updateAnswerCount(subs.size());
+            });
+        }
+
+        protected void consumeAnswer() {
+            answersConsumed += 1;
+            LOG.debug("Answer consumed by {}", reactive);
+            iterate(activeDownstreamRoots()).forEachRemaining(root -> {
+                logAnswerDelta(-1, "consumeAnswer", root);
+                root.updateAnswerCount(-1);
+            });
+        }
+
+        public Set<ReactiveNode> publishers() {
+            return publishers;
+        }
+
+        public void addPublisher(ReactiveNode publisherNode) {
+            boolean isNew = publishers.add(publisherNode);
+            assert isNew;
+            if (publishers.size() > 1) {
+                // TODO: The roots we update for is wrong here? I've changed the above inequality
+                iterate(activeUpstreamRoots()).forEachRemaining(root -> {
+                    logFrontierDelta(1, "addPublisher", root);
+                    root.updateFrontiersCount(1);
+                });
+            }
+        }
+
+        public Set<RootNode> addRoots(Set<RootNode> rootNodes, ReactiveNode subscriber) {
+            // TODO: This gets messy because we can't use the activeDownstreamRoots only, we have to reach in and see the roots per subscriber instead
+            Set<RootNode> newRootsFromSubscriber = new HashSet<>();
+            for (RootNode root : rootNodes) {
+                Set<ReactiveNode> subscribers = subscribersByRoot.get(root);
+                if (subscribers == null) {
+                    subscribersByRoot.computeIfAbsent(root, ignored -> new HashSet<>()).add(subscriber);
+                    newRootsFromSubscriber.add(root);
+                    synchroniseRootCounts(root);
+                } else {
+                    if (subscribers.add(subscriber)) {
+                        root.updateAnswerCount(answersCreated(root) - answersConsumed());
+                        logFrontierDelta(-1, "addRoots", root);
+                        root.updateFrontiersCount(-1);
+                    }
+                }
+            }
+            return newRootsFromSubscriber;
+        }
+
+        protected void synchroniseRootCounts(RootNode rootNode) {
+            logAnswerDelta(answersCreated(rootNode) - answersConsumed(), "synchroniseRootCounts", rootNode);
+            rootNode.updateAnswerCount(answersCreated(rootNode) - answersConsumed());
+            logFrontierDelta(frontierForks() - frontierJoins(rootNode), "synchroniseRootCounts", rootNode);
+            rootNode.updateFrontiersCount(frontierForks() - frontierJoins(rootNode));
+        }
+
+        public Set<RootNode> activeDownstreamRoots() {
+            return iterate(subscribersByRoot.keySet()).filter(g -> !g.finished).toSet();
+        }
+
+        protected Set<RootNode> activeUpstreamRoots() {
+            return activeDownstreamRoots();
+        }
+
+        protected void propagateRootsUpstream(Set<RootNode> toPropagate) {
+            if (!toPropagate.isEmpty()) {
+                publishers().forEach(
+                        publisher -> publisher.propagateRootsUpstream(publisher.addRoots(toPropagate, this))
+                );
+            }
+        }
+
+        public RootNode asRoot() {
+            throw TypeDBException.of(ILLEGAL_CAST);
+        }
+
+        public SourceNode asSource() {
+            throw TypeDBException.of(ILLEGAL_CAST);
+        }
+    }
+
+    private static class SourceNode extends ReactiveNode {
+
+        protected boolean finished;
+
+        SourceNode(Reactive.Identifier<?, ?> source) {
+            super(source);
+            this.finished = false;
+        }
+
+        public boolean isFinished() {
+            return finished;
+        }
+
+        protected void setFinished() {
+            finished = true;
+            iterate(activeDownstreamRoots()).forEachRemaining(g -> g.sourceFinished(this));
+        }
+
+        @Override
+        public SourceNode asSource() {
+            return this;
+        }
+
+        @Override
+        protected void synchroniseRootCounts(RootNode rootNode) {
+            rootNode.addSource(this);
+            if (isFinished()) rootNode.sourceFinished(this);
+            logAnswerDelta(answersCreated(rootNode), "synchroniseRootCounts in Source", rootNode);
+            rootNode.updateAnswerCount(answersCreated(rootNode));
+            logAnswerDelta(-frontierJoins(rootNode), "synchroniseRootCounts", rootNode);
+            rootNode.updateFrontiersCount(-frontierJoins(rootNode));
+        }
+    }
+
+    private static class RootNode extends SourceNode {
 
         private final Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock;
-        private final RootNode rootNode;
         private final Driver<Monitor> monitor;
         private final Set<SourceNode> activeSources;
-        private boolean finished;
         private long activeFrontiers;
         private long activeAnswers;
 
-        ReactiveGraph(Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock, RootNode rootNode,
-                      Driver<Monitor> monitor) {
+        RootNode(Reactive.Identifier<?, ?> root, Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock,
+                 Driver<Monitor> monitor) {
+            super(root);
             this.rootReactiveBlock = rootReactiveBlock;
-            this.rootNode = rootNode;
             this.monitor = monitor;
             this.activeSources = new HashSet<>();
-            this.finished = false;
             this.activeFrontiers = 1;
             this.activeAnswers = 0;
         }
 
-        private void setFinished() {
-            finished = true;
+        @Override
+        public RootNode asRoot() {
+            return this;
+        }
+
+        @Override
+        protected Set<RootNode> activeUpstreamRoots() {
+            if (isFinished()) return set();
+            else return set(this);
+        }
+
+        @Override
+        public Set<RootNode> activeDownstreamRoots() {
+            return set(super.activeDownstreamRoots(), this);
+        }
+
+        @Override
+        protected void synchroniseRootCounts(RootNode rootNode) {
+            assert !rootNode.equals(this);
+            super.synchroniseRootCounts(rootNode);
+        }
+
+        protected void propagateRootsUpstream(Set<RootNode> toPropagate) {
+            if (!toPropagate.isEmpty()) {
+                Set<RootNode> toPropagateOnwards = new HashSet<>(toPropagate);
+                toPropagateOnwards.retainAll(activeUpstreamRoots());  // TODO: Limits to active upstream, not implied by the method name
+                publishers().forEach(
+                        publisher -> publisher.propagateRootsUpstream(publisher.addRoots(toPropagateOnwards, this))
+                );
+            }
         }
 
         private void finishRootNode() {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.finishRootNode(rootNode.root(), monitor));
-            rootReactiveBlock.execute(actor -> actor.onFinished(rootNode.root()));
+            Tracer.getIfEnabled().ifPresent(tracer -> tracer.finishRootNode(reactive, monitor));
+            rootReactiveBlock.execute(actor -> actor.onFinished(reactive));
         }
 
         void checkFinished() {
@@ -176,226 +361,6 @@ public class Monitor extends Actor<Monitor> {
             boolean contained = activeSources.remove(sourceNode);
             assert contained;
             checkFinished();
-        }
-    }
-
-    private static class ReactiveNode {
-
-        private final Set<ReactiveNode> publishers;
-        protected final Map<ReactiveGraph, Set<ReactiveNode>> subscribersByGraph;
-        protected final Reactive.Identifier<?, ?> reactive;
-        private long answersCreated;
-        private long answersConsumed;
-
-        ReactiveNode(Reactive.Identifier<?, ?> reactive) {
-            this.reactive = reactive;
-            this.publishers = new HashSet<>();
-            this.subscribersByGraph = new HashMap<>();
-            this.answersCreated = 0;
-            this.answersConsumed = 0;
-        }
-
-        public long answersCreated(ReactiveGraph reactiveGraph) {
-            return answersCreated * subscribersByGraph.get(reactiveGraph).size();
-        }
-
-        public long answersConsumed() {
-            return answersConsumed;
-        }
-
-        public long frontierJoins(ReactiveGraph reactiveGraph) {
-            return subscribersByGraph.get(reactiveGraph).size();
-        }
-
-        public long frontierForks() {
-            // TODO: We don't use this method in Source, which suggests this methods should belong in a sibling class
-            //  to source rather than this parent class.
-            if (publishers.size() == 0) return 1;
-            else return publishers.size();
-        }
-
-        protected void logAnswerDelta(long delta, String methodName, ReactiveGraph graph) {
-            // TODO: Remove
-            LOG.debug("Answers {} from {} in Node {} for graph {}", delta, methodName, reactive, graph.hashCode());
-        }
-
-        private void logFrontierDelta(long delta, String methodName, ReactiveGraph graph) {
-            // TODO: Remove
-            if (delta != 0) LOG.debug("Frontiers {} from {} in Node {} for graph {}", delta, methodName, reactive, graph.hashCode());
-        }
-
-        protected void createAnswer() {
-            answersCreated += 1;
-            // TODO: We should remove the inactive graphs from subscribersByGraph and graphMemberships. In fact we should just use the one map and use the keys for the graph memberships
-            subscribersByGraph.forEach((graph, subs) -> {
-                logAnswerDelta(subs.size(), "createAnswer", graph);
-                graph.updateAnswerCount(subs.size());
-            });
-        }
-
-        protected void consumeAnswer() {
-            answersConsumed += 1;
-            LOG.debug("Answer consumed by {}", reactive);
-            iterate(activeDownstreamGraphs()).forEachRemaining(graph -> {
-                logAnswerDelta(-1, "consumeAnswer", graph);
-                graph.updateAnswerCount(-1);
-            });
-        }
-
-        public Set<ReactiveNode> publishers() {
-            return publishers;
-        }
-
-        public void addPublisher(ReactiveNode publisherNode) {
-            boolean isNew = publishers.add(publisherNode);
-            assert isNew;
-            if (publishers.size() > 1) {
-                // TODO: The graphs we update for is wrong here? I've changed the above inequality
-                iterate(activeUpstreamGraphs()).forEachRemaining(graph -> {
-                    logFrontierDelta(1, "addPublisher", graph);
-                    graph.updateFrontiersCount(1);
-                });
-            }
-        }
-
-        public Set<ReactiveGraph> addGraphs(Set<ReactiveGraph> graphs, ReactiveNode subscriber) {
-            // TODO: This gets messy because we can't use the activeDownstreamGraphs only, we have to reach in and see the graphs per subscriber instead
-            Set<ReactiveGraph> newGraphsFromSubscriber = new HashSet<>();
-            for (ReactiveGraph graph : graphs) {
-                Set<ReactiveNode> subscribers = subscribersByGraph.get(graph);
-                if (subscribers == null) {
-                    subscribersByGraph.computeIfAbsent(graph, ignored -> new HashSet<>()).add(subscriber);
-                    newGraphsFromSubscriber.add(graph);
-                    synchroniseGraphCounts(graph);
-                } else {
-                    if (subscribers.add(subscriber)) {
-                        graph.updateAnswerCount(answersCreated(graph) - answersConsumed());
-                        logFrontierDelta(-1, "addGraphs", graph);
-                        graph.updateFrontiersCount(-1);
-                    }
-                }
-            }
-            return newGraphsFromSubscriber;
-        }
-
-        protected void synchroniseGraphCounts(ReactiveGraph graph) {
-            logAnswerDelta(answersCreated(graph) - answersConsumed(), "synchroniseGraphCounts", graph);
-            graph.updateAnswerCount(answersCreated(graph) - answersConsumed());
-            logFrontierDelta(frontierForks() - frontierJoins(graph), "synchroniseGraphCounts", graph);
-            graph.updateFrontiersCount(frontierForks() - frontierJoins(graph));
-        }
-
-        public Set<ReactiveGraph> activeDownstreamGraphs() {
-            return iterate(subscribersByGraph.keySet()).filter(g -> !g.finished).toSet();
-        }
-
-        protected Set<ReactiveGraph> activeUpstreamGraphs() {
-            return activeDownstreamGraphs();
-        }
-
-        protected void propagateGraphsUpstream(Set<ReactiveGraph> toPropagate) {
-            if (!toPropagate.isEmpty()) {
-                publishers().forEach(
-                        publisher -> publisher.propagateGraphsUpstream(publisher.addGraphs(toPropagate, this))
-                );
-            }
-        }
-
-        public RootNode asRoot() {
-            throw TypeDBException.of(ILLEGAL_CAST);
-        }
-
-        public SourceNode asSource() {
-            throw TypeDBException.of(ILLEGAL_CAST);
-        }
-    }
-
-    private static class SourceNode extends ReactiveNode {
-
-        private boolean finished;
-
-        SourceNode(Reactive.Identifier<?, ?> source) {
-            super(source);
-            this.finished = false;
-        }
-
-        public boolean isFinished() {
-            return finished;
-        }
-
-        protected void setFinished() {
-            finished = true;
-            iterate(activeDownstreamGraphs()).forEachRemaining(g -> g.sourceFinished(this));
-        }
-
-        @Override
-        public SourceNode asSource() {
-            return this;
-        }
-
-        @Override
-        protected void synchroniseGraphCounts(ReactiveGraph graph) {
-            graph.addSource(this);
-            if (isFinished()) graph.sourceFinished(this);
-            logAnswerDelta(answersCreated(graph), "synchroniseGraphCounts in Source", graph);
-            graph.updateAnswerCount(answersCreated(graph));
-            logAnswerDelta(-frontierJoins(graph), "synchroniseGraphCounts", graph);
-            graph.updateFrontiersCount(-frontierJoins(graph));
-        }
-    }
-
-    private static class RootNode extends SourceNode {
-
-        private ReactiveGraph reactiveGraph;
-
-        RootNode(Reactive.Identifier<?, ?> root) {
-            super(root);
-        }
-
-        public Reactive.Identifier<?, ?> root() {
-            return reactive;
-        }
-
-        @Override
-        public RootNode asRoot() {
-            return this;
-        }
-
-        public void setGraph(ReactiveGraph reactiveGraph) {
-            assert this.reactiveGraph == null;
-            this.reactiveGraph = reactiveGraph;
-        }
-
-        public ReactiveGraph graph() {
-            assert reactiveGraph != null;
-            return reactiveGraph;
-        }
-
-        @Override
-        protected Set<ReactiveGraph> activeUpstreamGraphs() {
-            if (isFinished()) return set();
-            else return set(graph());
-        }
-
-        @Override
-        public Set<ReactiveGraph> activeDownstreamGraphs() {
-            return set(super.activeDownstreamGraphs(), graph());
-        }
-
-        @Override
-        protected void synchroniseGraphCounts(ReactiveGraph graph) {
-            assert !graph.equals(graph());
-            super.synchroniseGraphCounts(graph);
-        }
-
-        protected void propagateGraphsUpstream(Set<ReactiveGraph> toPropagate) {
-            if (!toPropagate.isEmpty()) {
-                Set<ReactiveGraph> toPropagateOnwards = new HashSet<>(toPropagate);
-                toPropagateOnwards.retainAll(activeUpstreamGraphs());  // TODO: Limits to active upstream, not implied by the method name
-                publishers().forEach(
-                        publisher -> publisher.propagateGraphsUpstream(publisher.addGraphs(toPropagateOnwards, this))
-                );
-            }
         }
 
     }
