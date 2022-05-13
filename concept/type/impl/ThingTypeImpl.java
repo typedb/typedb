@@ -53,7 +53,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.IN
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_HAS_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDE_NOT_AVAILABLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATT_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATT_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_NO_INSTANCES;
@@ -451,7 +451,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private List<TypeDBException> validateOwnedAttributeTypesNotAbstract() {
         if (isAbstract()) return Collections.emptyList();
         else return getOwns().filter(Type::isAbstract).map(
-                attType -> TypeDBException.of(OWNS_ABSTRACT_ATT_TYPE, getLabel(), attType.getLabel())
+                attType -> TypeDBException.of(OWNS_ABSTRACT_ATTRIBUTE_TYPE, getLabel(), attType.getLabel())
         ).toList();
     }
 

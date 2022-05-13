@@ -455,7 +455,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(6, "The type '%s' is referenced in rules '%s', and cannot be deleted.");
         public static final TypeWrite CYCLIC_TYPE_HIERARCHY =
                 new TypeWrite(7, "There is a cyclic type hierarchy, which is not allowed: '%s'.");
-        public static final TypeWrite OWNS_ABSTRACT_ATT_TYPE =
+        public static final TypeWrite OWNS_ABSTRACT_ATTRIBUTE_TYPE =
                 new TypeWrite(8, "The type '%s' is not abstract, and thus cannot own an abstract attribute type '%s'.");
         public static final TypeWrite OVERRIDDEN_NOT_SUPERTYPE =
                 new TypeWrite(9, "The type '%s' cannot override '%s' as it is not a supertype.");

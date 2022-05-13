@@ -47,7 +47,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.AT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATT_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
@@ -186,7 +186,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     private List<TypeDBException> validateOwnersNotAbstract() {
         if (!isAbstract()) return Collections.emptyList();
         else return getOwners().filter(o -> !o.isAbstract()).map(
-                owner -> TypeDBException.of(OWNS_ABSTRACT_ATT_TYPE, owner.getLabel(), getLabel())
+                owner -> TypeDBException.of(OWNS_ABSTRACT_ATTRIBUTE_TYPE, owner.getLabel(), getLabel())
         ).toList();
     }
 

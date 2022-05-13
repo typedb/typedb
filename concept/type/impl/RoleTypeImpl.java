@@ -31,11 +31,13 @@ import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
@@ -142,7 +144,16 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public List<TypeDBException> validate() {
-        return super.validate();
+        List<TypeDBException> exceptions = super.validate();
+        exceptions.addAll(validatePlayersNotAbstract());
+        return exceptions;
+    }
+
+    private List<TypeDBException> validatePlayersNotAbstract() {
+        if (!isAbstract()) return Collections.emptyList();
+        else return getPlayers().filter(o -> !o.isAbstract()).map(
+                player -> TypeDBException.of(PLAYS_ABSTRACT_ROLE_TYPE, player.getLabel(), getLabel())
+        ).toList();
     }
 
     @Override
