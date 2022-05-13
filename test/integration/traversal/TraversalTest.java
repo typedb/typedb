@@ -58,7 +58,7 @@ public class TraversalTest {
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageIndexCacheSize(MB).storageDataCacheSize(MB);
-    private static String database = "query-test";
+    private static final String database = "query-test";
 
     private static CoreDatabaseManager databaseMgr;
     private static CoreSession session;
@@ -95,7 +95,6 @@ public class TraversalTest {
         session.close();
 
         session = databaseMgr.session(database, Arguments.Session.Type.DATA);
-        // note: must insert in separate Tx's so that the relations are retrieved in a specific order later
         try (CoreTransaction transaction = session.transaction(WRITE)) {
             transaction.query().insert(TypeQL.parseQuery(
                     "insert " +
@@ -111,15 +110,15 @@ public class TraversalTest {
             */
             /*
             Edges:
-                0: $_0 [thing] { hasIID: false, types: [employment], predicates: [] } (start)
-                1: $_0:$role:$x:1 [thing] { hasIID: false, types: [employment:employer, employment:employee], predicates: [] }
-                        1: ($_0 *--[RELATING]--> $_0:$role:$x:1)
-                2: $e [thing] { hasIID: false, types: [company], predicates: [] } (end)
-                        2: ($_0 *--[ROLEPLAYER]--> $e) { roleTypes: [employment:employer] }
-                3: $x [thing] { hasIID: false, types: [person, company], predicates: [] } (end)
-                        3: ($_0:$role:$x:1 <--[PLAYING]--* $x)
-                4: $role [type] { labels: [employment:employer, relation:role, employment:employee], abstract: false, value: [], regex: null } (end)
-                        4: ($_0:$role:$x:1 *--[ISA]--> $role) { isTransitive: true }
+            0: $_0 [thing] { hasIID: false, types: [employment], predicates: [] } (start)
+            1: $_0:$role:$x:1 [thing] { hasIID: false, types: [employment:employer, employment:employee], predicates: [] }
+                    1: ($_0 *--[RELATING]--> $_0:$role:$x:1)
+            2: $e [thing] { hasIID: false, types: [company], predicates: [] } (end)
+                    2: ($_0 *--[ROLEPLAYER]--> $e) { roleTypes: [employment:employer] }
+            3: $x [thing] { hasIID: false, types: [person, company], predicates: [] } (end)
+                    3: ($_0:$role:$x:1 <--[PLAYING]--* $x)
+            4: $role [type] { labels: [employment:employer, relation:role, employment:employee], abstract: false, value: [], regex: null } (end)
+                    4: ($_0:$role:$x:1 *--[ISA]--> $role) { isTransitive: true }
             */
             GraphProcedure.Builder proc = GraphProcedure.builder(5);
             ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0, true);
@@ -158,49 +157,8 @@ public class TraversalTest {
     }
 
     @Test
-    public void test_fails_after_0_originally() {
-        try (CoreTransaction transaction = session.transaction(WRITE)) {
-            TypeQLDefine query = TypeQL.parseQuery(
-                    "define " +
-                            "post sub entity," +
-                            "    plays reply-of:original," +
-                            "    plays reply-of:reply," +
-                            "    plays message-succession:predecessor," +
-                            "    plays message-succession:successor," +
-                            "    owns creation-date;" +
-                            "reply-of sub relation," +
-                            "    relates original," +
-                            "    relates reply;" +
-                            "message-succession sub relation," +
-                            "    relates predecessor," +
-                            "    relates successor;" +
-                            "creation-date sub attribute, value datetime;"
-            );
-            transaction.query().define(query);
-            transaction.commit();
-        }
-        session.close();
-
-        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
-
-        // note: must insert in separate Tx's so that the relations are retrieved in a specific order later
-        try (CoreTransaction transaction = session.transaction(WRITE)) {
-            transaction.query().insert(TypeQL.parseQuery(
-                    "insert " +
-                            "$x isa post, has creation-date 2020-07-01;" +
-                            "$x1 isa post, has creation-date 2020-07-02;" +
-                            "$x2 isa post, has creation-date 2020-07-03;" +
-                            "$x3 isa post, has creation-date 2020-07-04;" +
-                            "$x4 isa post, has creation-date 2020-07-05;" +
-                            "$x5 isa post, has creation-date 2020-07-06;" +
-                            "(original:$x, reply:$x1) isa reply-of;" +
-                            "(original:$x, reply:$x2) isa reply-of;" +
-                            "(original:$x, reply:$x3) isa reply-of;" +
-                            "(original:$x, reply:$x4) isa reply-of;" +
-                            "(original:$x, reply:$x5) isa reply-of;").asInsert()
-            );
-            transaction.commit();
-        }
+    public void roleplayer_scoping_test_1() {
+        preparePostsSchemaAndData();
         try (CoreTransaction transaction = session.transaction(READ)) {
             /*
             Edges:
@@ -266,49 +224,8 @@ public class TraversalTest {
     }
 
     @Test
-    public void test_fails_after_1_originally() {
-        try (CoreTransaction transaction = session.transaction(WRITE)) {
-            TypeQLDefine query = TypeQL.parseQuery(
-                    "define " +
-                            "post sub entity," +
-                            "    plays reply-of:original," +
-                            "    plays reply-of:reply," +
-                            "    plays message-succession:predecessor," +
-                            "    plays message-succession:successor," +
-                            "    owns creation-date;" +
-                            "reply-of sub relation," +
-                            "    relates original," +
-                            "    relates reply;" +
-                            "message-succession sub relation," +
-                            "    relates predecessor," +
-                            "    relates successor;" +
-                            "creation-date sub attribute, value datetime;"
-            );
-            transaction.query().define(query);
-            transaction.commit();
-        }
-        session.close();
-
-        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
-
-        // note: must insert in separate Tx's so that the relations are retrieved in a specific order later
-        try (CoreTransaction transaction = session.transaction(WRITE)) {
-            transaction.query().insert(TypeQL.parseQuery(
-                    "insert " +
-                            "$x isa post, has creation-date 2020-07-01;" +
-                            "$x1 isa post, has creation-date 2020-07-02;" +
-                            "$x2 isa post, has creation-date 2020-07-03;" +
-                            "$x3 isa post, has creation-date 2020-07-04;" +
-                            "$x4 isa post, has creation-date 2020-07-05;" +
-                            "$x5 isa post, has creation-date 2020-07-06;" +
-                            "(original:$x, reply:$x1) isa reply-of;" +
-                            "(original:$x, reply:$x2) isa reply-of;" +
-                            "(original:$x, reply:$x3) isa reply-of;" +
-                            "(original:$x, reply:$x4) isa reply-of;" +
-                            "(original:$x, reply:$x5) isa reply-of;").asInsert()
-            );
-            transaction.commit();
-        }
+    public void roleplayer_scoping_test_2() {
+        preparePostsSchemaAndData();
         try (CoreTransaction transaction = session.transaction(READ)) {
             /*
             Edges:
@@ -327,7 +244,6 @@ public class TraversalTest {
                     5: ($r *--[HAS]--> $d2)
                     7: ($d1 *--[< <var>]--> $d2)
             */
-
 
             GraphProcedure.Builder proc = GraphProcedure.builder(7);
             ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0, true);
@@ -374,11 +290,55 @@ public class TraversalTest {
         }
     }
 
+    private void preparePostsSchemaAndData() {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery(
+                    "define " +
+                            "post sub entity," +
+                            "    plays reply-of:original," +
+                            "    plays reply-of:reply," +
+                            "    plays message-succession:predecessor," +
+                            "    plays message-succession:successor," +
+                            "    owns creation-date;" +
+                            "reply-of sub relation," +
+                            "    relates original," +
+                            "    relates reply;" +
+                            "message-succession sub relation," +
+                            "    relates predecessor," +
+                            "    relates successor;" +
+                            "creation-date sub attribute, value datetime;"
+            );
+            transaction.query().define(query);
+            transaction.commit();
+        }
+        session.close();
+
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
+
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery(
+                    "insert " +
+                            "$x isa post, has creation-date 2020-07-01;" +
+                            "$x1 isa post, has creation-date 2020-07-02;" +
+                            "$x2 isa post, has creation-date 2020-07-03;" +
+                            "$x3 isa post, has creation-date 2020-07-04;" +
+                            "$x4 isa post, has creation-date 2020-07-05;" +
+                            "$x5 isa post, has creation-date 2020-07-06;" +
+                            "(original:$x, reply:$x1) isa reply-of;" +
+                            "(original:$x, reply:$x2) isa reply-of;" +
+                            "(original:$x, reply:$x3) isa reply-of;" +
+                            "(original:$x, reply:$x4) isa reply-of;" +
+                            "(original:$x, reply:$x5) isa reply-of;").asInsert()
+            );
+            transaction.commit();
+        }
+    }
+
     @Test
-    public void reflexive_and_nonreflexive() {
+    public void reflexive_and_nonreflexive_relations() {
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery(
-                    "define\n" +
+                    "define " +
                             "      person sub entity," +
                             "        plays friendship:friend," +
                             "        owns name @key;" +
@@ -398,15 +358,15 @@ public class TraversalTest {
         session = databaseMgr.session(database, Arguments.Session.Type.DATA);
         try (CoreTransaction transaction = session.transaction(WRITE)) {
             transaction.query().insert(TypeQL.parseQuery(
-                    "insert\n" +
-                            "      $x isa person,\n" +
-                            "        has lastname \"Smith\",\n" +
-                            "        has name \"Alex\";\n" +
-                            "      $y isa person,\n" +
-                            "        has lastname \"Smith\",\n" +
-                            "        has name \"John\";\n" +
-                            "      $r (friend: $x, friend: $y) isa friendship, has ref 1;\n" +
-                            "      $reflexive (friend: $x, friend: $x) isa friendship, has ref 3;").asInsert()
+                    "insert " +
+                            "$x isa person, " +
+                            "  has lastname \"Smith\", " +
+                            "  has name \"Alex\"; " +
+                            "$y isa person, " +
+                            "  has lastname \"Smith\", " +
+                            "  has name \"John\"; " +
+                            "$r (friend: $x, friend: $y) isa friendship, has ref 1; " +
+                            "$reflexive (friend: $x, friend: $x) isa friendship, has ref 3;").asInsert()
             );
             transaction.commit();
         }
@@ -502,101 +462,6 @@ public class TraversalTest {
                     _1.id().asVariable().asRetrievable(),
                     _0.id().asVariable().asRetrievable(),
                     refl.id().asVariable().asRetrievable()
-            );
-
-            GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
-            assertEquals(1, vertices.count());
-        }
-    }
-
-
-    /**
-     * This test is interesting because it invalidates a traversal optimisation we implemented called `SeekStack`
-     * where we backtrack all the way back to the cause of a branch/closure failure, skipping all the query vertices
-     * that are planned in the middle.
-     *
-     * However this test shows that it is possible to successfully do a closure, then do perform a branch failure
-     * that because of the Seek optimisation jumps too far back and fails to generate other closure candidates, and
-     * misses an answer.
-     **/
-    @Test
-    public void backtrack_seeks_do_not_skip_answers() {
-        try (TypeDB.Transaction transaction = session.transaction(WRITE)) {
-            TypeQLDefine query = TypeQL.parseQuery(
-                    "define " +
-                            "person sub entity, " +
-                            "  plays friendship:friend, " +
-                            "  owns name;" +
-                            "dog sub entity," +
-                            "  plays friendship:friend; " +
-                            "friendship sub relation, " +
-                            "  relates friend; " +
-                            "name sub attribute, value string; "
-            );
-            transaction.query().define(query);
-            transaction.commit();
-        }
-        session.close();
-
-        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
-        // note: must insert in separate Tx's so that the relations are retrieved in a specific order later
-        try (CoreTransaction transaction = session.transaction(WRITE)) {
-            transaction.query().insert(TypeQL.parseQuery(
-                    "insert $x isa person; (friend: $x) isa friendship;").asInsert()
-            );
-            transaction.commit();
-        }
-        try (CoreTransaction transaction = session.transaction(WRITE)) {
-            transaction.query().insert(TypeQL.parseQuery("insert" +
-                    "$y isa dog; (friend: $y) isa friendship;").asInsert());
-            transaction.commit();
-        }
-        try (CoreTransaction transaction = session.transaction(READ)) {
-            /*
-            match
-            $rel ($role: $friend);
-            $friend isa dog;
-            $rel isa $rel-type;
-            $rel-type type friendship, relates $role;
-            $role type friendship:friend;
-            */
-            /*
-                    1: ($rel-type *--[RELATES]--> $role)
-                    2: ($rel-type <--[ISA]--* $rel) { isTransitive: true }
-                    3: ($role <--[ISA]--* $rel:$role:$friend:1) { isTransitive: true }
-                    4: ($rel *--[RELATING]--> $rel:$role:$friend:1)
-                    5: ($rel:$role:$friend:1 <--[PLAYING]--* $friend)
-            */
-            GraphProcedure.Builder proc = GraphProcedure.builder(5);
-            ProcedureVertex.Type rel_type = proc.namedType(0, "rel-type", true);
-            rel_type.props().labels(set(Label.of("friendship")));
-
-            ProcedureVertex.Type role_type = proc.namedType(1, "role-type");
-            role_type.props().labels(set(Label.of("friend", "friendship")));
-
-            ProcedureVertex.Thing rel = proc.namedThing(2, "rel");
-            rel.props().types(set(Label.of("friendship")));
-
-            ProcedureVertex.Thing friend = proc.namedThing(4, "friend");
-            friend.props().types(set(Label.of("dog")));
-
-            ProcedureVertex.Thing role = proc.scopedThing(3, rel, role_type, friend, 0);
-            role.props().types(set(Label.of("friend", "friendship")));
-
-            proc.forwardRelates(rel_type, role_type);
-            proc.backwardIsa(rel_type, rel, true);
-            proc.backwardIsa(role_type, role, true);
-            proc.forwardRelating(rel, role);
-            proc.backwardPlaying(role, friend);
-
-            Traversal.Parameters params = new Traversal.Parameters();
-
-            Set<Identifier.Variable.Retrievable> filter = set(
-                    rel_type.id().asVariable().asRetrievable(),
-                    role_type.id().asVariable().asRetrievable(),
-                    rel.id().asVariable().asRetrievable(),
-                    friend.id().asVariable().asRetrievable()
             );
 
             GraphProcedure procedure = proc.build();
@@ -747,6 +612,4 @@ public class TraversalTest {
         }
         session.close();
     }
-
 }
-

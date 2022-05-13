@@ -74,6 +74,10 @@ public class GraphProcedure implements PermutationProcedure {
         return procedure;
     }
 
+    /**
+     * TODO: this is a compatibility layer to translate edge-ordered procedures into vertex-ordered procedures
+     *       we need to remove it once the query planner natively orders vertices instead of edges
+     */
     private void orderVertices() {
         List<ProcedureVertex<?, ?>> vertexList = iterate(vertices.values()).toList();
         vertexList.sort(Comparator.comparing(v -> v.lastInEdge() == null ? 0 : v.lastInEdge().order()));
@@ -103,7 +107,7 @@ public class GraphProcedure implements PermutationProcedure {
     public Set<ProcedureVertex<?, ?>> endVertices() {
         if (endVertices == null) {
             endVertices = iterate(vertices()).filter(v ->
-                    iterate(v.outs()).filter(e -> !e.to().equals(v)).first().isEmpty()
+                    iterate(v.outs()).filter(e -> !v.loops().contains(e)).first().isEmpty()
             ).toSet();
         }
         return endVertices;
@@ -116,11 +120,6 @@ public class GraphProcedure implements PermutationProcedure {
     public ProcedureVertex<?, ?> vertex(int pos) {
         assert 0 <= pos && pos < orderedVertices.length;
         return orderedVertices[pos];
-    }
-
-    public int edgesCount() {
-//        return edges.length;
-        return -1;
     }
 
     public int vertexCount() {
@@ -204,13 +203,25 @@ public class GraphProcedure implements PermutationProcedure {
         if (startVertex().id().isRetrievable() && filter.contains(startVertex().id().asVariable().asRetrievable())) {
             return async(startVertex().iterator(graphMgr, params).map(
                     // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                    v -> new GraphIterator(graphMgr, v, this, params, filter).distinct()
+                    v -> {
+
+                        List<VertexMap> answers = new GraphIterator(graphMgr, v, this, params, filter).toList();
+                        if (answers.size() != new HashSet<>(answers).size()) {
+                            throw new RuntimeException("FOUND");
+                        }
+
+                        return new GraphIterator(graphMgr, v, this, params, filter).distinct();
+                    }
             ), parallelisation);
         } else {
             // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
             return async(startVertex().iterator(graphMgr, params).map(
                     v -> {
-                        // TODO sometimes we seem to be generating duplicate answers, which should never be possible!
+
+                        List<VertexMap> answers = new GraphIterator(graphMgr, v, this, params, filter).toList();
+                        if (answers.size() != new HashSet<>(answers).size()) {
+                            throw new RuntimeException("FOUND");
+                        }
                         return new GraphIterator(graphMgr, v, this, params, filter);
                     }
             ), parallelisation).distinct();

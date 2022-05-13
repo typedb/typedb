@@ -17,58 +17,10 @@
 
 Feature: Debugging Space
 
-  Background: Open connection and create a simple extensible schema
+  Background:
     Given connection has been opened
+    Given connection delete all databases
     Given connection does not have any database
-    Given connection create database: typedb
-    Given connection open schema session for database: typedb
-    Given session opens transaction of type: write
 
-    Given typeql define
-      """
-      define
-      person sub entity,
-        plays friendship:friend,
-        owns name @key;
-      friendship sub relation,
-        relates friend,
-        owns ref @key;
-      name sub attribute, value string;
-      ref sub attribute, value long;
-      """
-    Given transaction commits
-
-    Given connection close all sessions
-    Given connection open data session for database: typedb
-    Given session opens transaction of type: write
-
-
-  Scenario: repeated role players can be deleted from a relation
-    Given get answers of typeql insert
-      """
-      insert
-      $x isa person, has name "Alex";
-      $y isa person, has name "Bob";
-      $r (friend: $x, friend: $x, friend: $y) isa friendship, has ref 0;
-      """
-    Then uniquely identify answer concepts
-      | x             | y            | r         |
-      | key:name:Alex | key:name:Bob | key:ref:0 |
-    Given transaction commits
-    When session opens transaction of type: write
-    When get answers of typeql match
-      """
-      match
-        $r (friend: $x, friend: $x) isa friendship;
-      """
-    Then answer size is: 1
-    Then transaction commits
-
-    When session opens transaction of type: read
-    When get answers of typeql match
-      """
-      match $r (friend: $x) isa friendship;
-      """
-    Then uniquely identify answer concepts
-      | r         | x            |
-      | key:ref:0 | key:name:Bob |
+  # Paste any scenarios below for debugging.
+  # Do not commit any changes to this file.
