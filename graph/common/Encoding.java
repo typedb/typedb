@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
@@ -374,7 +375,7 @@ public class Encoding {
         DOUBLE(30, Double.class, true, false, TypeQLArg.ValueType.DOUBLE),
         STRING(40, String.class, true, true, TypeQLArg.ValueType.STRING),
         DATETIME(50, LocalDateTime.class, true, true, TypeQLArg.ValueType.DATETIME);
-        public static final ZoneId TIME_ZONE_ID = ZoneId.of("Z");
+        public static final ZoneId TIME_ZONE_ID = ZoneOffset.UTC;
         public static final Charset STRING_ENCODING = UTF_8;
         public static final int STRING_SIZE_ENCODING = SHORT_SIZE;
         public static final int STRING_MAX_SIZE = SHORT_UNSIGNED_MAX_VALUE;
@@ -990,7 +991,7 @@ public class Encoding {
 
         @SafeVarargs
         static <T> ByteMap<T> create(Pair<Byte, T>... byteIndices) {
-            ArrayList<T> indexList = new ArrayList<>(Collections.nCopies(255, (T) null));
+            ArrayList<T> indexList = new ArrayList<>(Collections.nCopies(255, null));
             for (Pair<Byte, T> index : byteIndices) indexList.set(index.first() + 128, index.second());
             return new ByteMap<>(indexList);
         }

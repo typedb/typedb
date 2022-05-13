@@ -67,13 +67,8 @@ import static java.util.stream.Collectors.toList;
 public class ResponseBuilder {
 
     public static StatusRuntimeException exception(Throwable e) {
-        if (e instanceof StatusRuntimeException) {
-            return (StatusRuntimeException) e;
-        } else {
-            return Status.INTERNAL.withDescription(
-                    e.getMessage() + "\n\nPlease check server logs for the stack trace."
-            ).asRuntimeException();
-        }
+        if (e instanceof StatusRuntimeException) return (StatusRuntimeException) e;
+        else return Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException();
     }
 
     public static ByteString UUIDAsByteString(UUID uuid) {
@@ -99,6 +94,14 @@ public class ResponseBuilder {
 
         public static CoreDatabase.Schema.Res schemaRes(String schema) {
             return CoreDatabase.Schema.Res.newBuilder().setSchema(schema).build();
+        }
+
+        public static CoreDatabase.TypeSchema.Res typeSchemaRes(String schema) {
+            return CoreDatabase.TypeSchema.Res.newBuilder().setSchema(schema).build();
+        }
+
+        public static CoreDatabase.RuleSchema.Res ruleSchemaRes(String schema) {
+            return CoreDatabase.RuleSchema.Res.newBuilder().setSchema(schema).build();
         }
 
         public static CoreDatabase.Delete.Res deleteRes() {
@@ -428,6 +431,13 @@ public class ResponseBuilder {
                             types.stream().map(Type::protoType).collect(toList()))));
         }
 
+        public static TransactionProto.Transaction.ResPart getSubtypesExplicitResPart(
+                UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.Type> types) {
+            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setTypeGetSubtypesExplicitResPart(
+                    ConceptProto.Type.GetSubtypesExplicit.ResPart.newBuilder().addAllTypes(
+                            types.stream().map(Type::protoType).collect(toList()))));
+        }
+
         public static class RoleType {
 
             public static TransactionProto.Transaction.ResPart getRelationTypesResPart(
@@ -454,6 +464,13 @@ public class ResponseBuilder {
                                 things.stream().map(Concept::protoThing).collect(toList()))));
             }
 
+            public static TransactionProto.Transaction.ResPart getInstancesExplicitResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> things) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetInstancesExplicitResPart(
+                        ConceptProto.ThingType.GetInstancesExplicit.ResPart.newBuilder().addAllThings(
+                                things.stream().map(Concept::protoThing).collect(toList()))));
+            }
+
             public static TransactionProto.Transaction.Res setAbstractRes(UUID reqID) {
                 return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSetAbstractRes(
                         ConceptProto.ThingType.SetAbstract.Res.getDefaultInstance()
@@ -471,6 +488,20 @@ public class ResponseBuilder {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetOwnsResPart(
                         ConceptProto.ThingType.GetOwns.ResPart.newBuilder().addAllAttributeTypes(
                                 attributeTypes.stream().map(Type::protoType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.ResPart getOwnsExplicitResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.AttributeType> attributeTypes) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetOwnsExplicitResPart(
+                        ConceptProto.ThingType.GetOwnsExplicit.ResPart.newBuilder().addAllAttributeTypes(
+                                attributeTypes.stream().map(Type::protoType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.Res getOwnsOverriddenRes(
+                    UUID reqID, com.vaticle.typedb.core.concept.type.AttributeType attributeType) {
+                ConceptProto.ThingType.GetOwnsOverridden.Res.Builder getOwnsOverridden = ConceptProto.ThingType.GetOwnsOverridden.Res.newBuilder();
+                if (attributeType != null) getOwnsOverridden.setType(protoType(attributeType));
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeGetOwnsOverriddenRes(getOwnsOverridden));
             }
 
             public static TransactionProto.Transaction.Res setOwnsRes(UUID reqID) {
@@ -600,8 +631,16 @@ public class ResponseBuilder {
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> owners) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setAttributeTypeGetOwnersResPart(
                         ConceptProto.AttributeType.GetOwners.ResPart.newBuilder().addAllOwners(
-                                owners.stream().map(Type::protoType).collect(toList()))
-                ));
+                                owners.stream().map(Type::protoType).collect(toList())
+                        )));
+            }
+
+            public static TransactionProto.Transaction.ResPart getOwnersExplicitResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> owners) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setAttributeTypeGetOwnersExplicitResPart(
+                        ConceptProto.AttributeType.GetOwnersExplicit.ResPart.newBuilder().addAllOwners(
+                                owners.stream().map(Type::protoType).collect(toList())
+                        )));
             }
         }
     }

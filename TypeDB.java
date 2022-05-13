@@ -66,6 +66,10 @@ public interface TypeDB {
 
         String schema();
 
+        String typeSchema();
+
+        String ruleSchema();
+
         void delete();
     }
 

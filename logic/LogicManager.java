@@ -174,8 +174,10 @@ public class LogicManager {
         return cycle;
     }
 
-    public void exportRules(StringBuilder builder) {
+    public String exportRules() {
+        StringBuilder builder = new StringBuilder();
         rules().stream().sorted(comparing(Rule::getLabel)).forEach(x -> writeRule(builder, x));
+        return builder.toString();
     }
 
     private static class RuleDependency {

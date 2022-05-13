@@ -182,7 +182,8 @@ public final class ConceptManager {
     public void validateTypes() {
         List<TypeDBException> exceptions = graphMgr.schema().bufferedTypes().parallel()
                 .filter(TypeVertex::isModified)
-                .map(v -> TypeImpl.of(graphMgr, v).validate())
+                .flatMap(v -> TypeImpl.of(graphMgr, v).getSubtypes().stream())
+                .distinct().map(TypeImpl::validate)
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
         if (!exceptions.isEmpty()) throw exception(TypeDBException.of(exceptions));
     }
@@ -198,20 +199,22 @@ public final class ConceptManager {
             ProducerIterator<Void> validationIterator = produce(async(iterate(lists).map(
                     list -> iterate(list).map(t -> {
                         t.validate();
-                        return (Void) null;
+                        return null;
                     })
             ), PARALLELISATION_FACTOR), Either.first(EXHAUSTIVE), async1());
             while (validationIterator.hasNext()) validationIterator.next();
         }
     }
 
-    public void exportTypes(StringBuilder stringBuilder) {
+    public String exportTypes() {
+        StringBuilder stringBuilder = new StringBuilder();
         getRootAttributeType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(x -> writeAttributeType(stringBuilder, x));
         getRootRelationType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(x -> writeRelationType(stringBuilder, x));
         getRootEntityType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(x -> writeEntityType(stringBuilder, x));
+        return stringBuilder.toString();
     }
 
     public TypeDBException exception(ErrorMessage error) {

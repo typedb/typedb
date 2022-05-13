@@ -55,6 +55,10 @@ public interface AttributeType extends ThingType {
 
     Forwardable<? extends ThingType, Order.Asc> getOwners(boolean onlyKey);
 
+    Forwardable<? extends ThingType, Order.Asc> getOwnersExplicit();
+
+    Forwardable<? extends ThingType, Order.Asc> getOwnersExplicit(boolean onlyKey);
+
     boolean isBoolean();
 
     boolean isLong();

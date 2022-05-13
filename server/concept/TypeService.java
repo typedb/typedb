@@ -18,6 +18,7 @@
 package com.vaticle.typedb.core.server.concept;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -43,6 +44,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNO
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_SUPERTYPE_ENCODING;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.RequestReader.valueType;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getOwnersExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getOwnersResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getRegexRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getRes;
@@ -56,7 +58,10 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.Relatio
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.unsetRelatesRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayersResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getRelationTypesResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsExplicitResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsOverriddenRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setAbstractRes;
@@ -66,6 +71,7 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingTy
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.unsetOwnsRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.unsetPlaysRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.deleteRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSubtypesExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSubtypesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSupertypeRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSupertypesResPart;
@@ -73,7 +79,6 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.isAbstr
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.setLabelRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.setSupertypeRes;
 import static com.vaticle.typedb.protocol.ConceptProto.RelationType.SetRelates.Req.OverriddenCase.OVERRIDDEN_LABEL;
-import static com.vaticle.typedb.protocol.ConceptProto.ThingType.GetOwns.Req.FilterCase.VALUE_TYPE;
 import static java.time.Instant.ofEpochMilli;
 import static java.time.ZoneOffset.UTC;
 
@@ -117,6 +122,9 @@ public class TypeService {
             case TYPE_GET_SUBTYPES_REQ:
                 getSubtypes(type, reqID);
                 return;
+            case TYPE_GET_SUBTYPES_EXPLICIT_REQ:
+                getSubtypesExplicit(type, reqID);
+                return;
             case ROLE_TYPE_GET_RELATION_TYPES_REQ:
                 getRelationTypes(type.asRoleType(), reqID);
                 return;
@@ -144,8 +152,17 @@ public class TypeService {
             case THING_TYPE_GET_INSTANCES_REQ:
                 getInstances(type.asThingType(), reqID);
                 return;
+            case THING_TYPE_GET_INSTANCES_EXPLICIT_REQ:
+                getInstancesExplicit(type.asThingType(), reqID);
+                return;
             case THING_TYPE_GET_OWNS_REQ:
-                getOwns(type.asThingType(), typeReq, reqID);
+                getOwns(type.asThingType(), typeReq.getThingTypeGetOwnsReq(), reqID);
+                return;
+            case THING_TYPE_GET_OWNS_EXPLICIT_REQ:
+                getOwnsExplicit(type.asThingType(), typeReq.getThingTypeGetOwnsExplicitReq(), reqID);
+                return;
+            case THING_TYPE_GET_OWNS_OVERRIDDEN_REQ:
+                getOwnsOverridden(type.asThingType(), typeReq.getThingTypeGetOwnsOverriddenReq(), reqID);
                 return;
             case THING_TYPE_GET_PLAYS_REQ:
                 getPlays(type.asThingType(), reqID);
@@ -183,6 +200,8 @@ public class TypeService {
                 return;
             case ATTRIBUTE_TYPE_GET_OWNERS_REQ:
                 getOwners(type.asAttributeType(), typeReq.getAttributeTypeGetOwnersReq().getOnlyKey(), reqID);
+            case ATTRIBUTE_TYPE_GET_OWNERS_EXPLICIT_REQ:
+                getOwnersExplicit(type.asAttributeType(), typeReq.getAttributeTypeGetOwnersExplicitReq().getOnlyKey(), reqID);
                 return;
             case REQ_NOT_SET:
             default:
@@ -246,46 +265,62 @@ public class TypeService {
 
     private void getSupertypes(Type type, UUID reqID) {
         transactionSvc.stream(type.getSupertypes(), reqID,
-                types -> getSupertypesResPart(reqID, types));
+                              types -> getSupertypesResPart(reqID, types));
     }
 
     private void getSubtypes(Type type, UUID reqID) {
         transactionSvc.stream(type.getSubtypes(), reqID,
-                types -> getSubtypesResPart(reqID, types));
+                              types -> getSubtypesResPart(reqID, types));
+    }
+
+    private void getSubtypesExplicit(Type type, UUID reqID) {
+        transactionSvc.stream(type.getSubtypesExplicit(), reqID,
+                              types -> getSubtypesExplicitResPart(reqID, types));
     }
 
     private void getInstances(ThingType thingType, UUID reqID) {
         transactionSvc.stream(thingType.getInstances(), reqID,
-                things -> getInstancesResPart(reqID, things));
+                              things -> getInstancesResPart(reqID, things));
     }
 
-    private void getOwns(ThingType thingType, ConceptProto.Type.Req typeReq, UUID reqID) {
-        if (typeReq.getThingTypeGetOwnsReq().getFilterCase() == VALUE_TYPE) {
-            getOwns(thingType, valueType(typeReq.getThingTypeGetOwnsReq().getValueType()),
-                    typeReq.getThingTypeGetOwnsReq().getKeysOnly(), reqID);
-        } else {
-            getOwns(thingType, typeReq.getThingTypeGetOwnsReq().getKeysOnly(), reqID);
-        }
+    private void getInstancesExplicit(ThingType thingType, UUID reqID) {
+        transactionSvc.stream(thingType.getInstancesExplicit(), reqID,
+                              things -> getInstancesExplicitResPart(reqID, things));
     }
 
-    private void getOwns(ThingType thingType, boolean keysOnly, UUID reqID) {
-        transactionSvc.stream(thingType.getOwns(keysOnly), reqID,
-                attributeTypes -> getOwnsResPart(reqID, attributeTypes));
+    private void getOwns(ThingType thingType, ConceptProto.ThingType.GetOwns.Req getOwnsReq, UUID reqID) {
+        if (getOwnsReq.getFilterCase() == ConceptProto.ThingType.GetOwns.Req.FilterCase.VALUE_TYPE) {
+            getOwnsStream(reqID, thingType.getOwns(
+                    valueType(getOwnsReq.getValueType()),
+                    getOwnsReq.getKeysOnly()
+            ));
+        } else getOwnsStream(reqID, thingType.getOwns(getOwnsReq.getKeysOnly()));
     }
 
-    private void getOwns(ThingType thingType, AttributeType.ValueType valueType,
-                         boolean keysOnly, UUID reqID) {
-        transactionSvc.stream(thingType.getOwns(valueType, keysOnly), reqID,
-                attributeTypes -> getOwnsResPart(reqID, attributeTypes));
+    private void getOwnsStream(UUID reqID, SortedIterator.Forwardable<AttributeType, SortedIterator.Order.Asc> atts) {
+        transactionSvc.stream(atts, reqID, attributeTypes -> getOwnsResPart(reqID, attributeTypes));
     }
 
-    private void getPlays(ThingType thingType, UUID reqID) {
-        transactionSvc.stream(thingType.getPlays(), reqID,
-                roleTypes -> getPlaysResPart(reqID, roleTypes));
+    private void getOwnsExplicit(ThingType thingType, ConceptProto.ThingType.GetOwnsExplicit.Req getOwnsExplicitReq,
+                                 UUID reqID) {
+        if (getOwnsExplicitReq.getFilterCase() == ConceptProto.ThingType.GetOwnsExplicit.Req.FilterCase.VALUE_TYPE) {
+            getOwnsStream(reqID, thingType.getOwnsExplicit(
+                    valueType(getOwnsExplicitReq.getValueType()),
+                    getOwnsExplicitReq.getKeysOnly()
+            ));
+        } else getOwnsExplicitStream(reqID, thingType.getOwnsExplicit(getOwnsExplicitReq.getKeysOnly()));
     }
 
-    private void setOwns(ThingType thingType, ConceptProto.ThingType.SetOwns.Req setOwnsRequest,
-                         UUID reqID) {
+    private void getOwnsExplicitStream(UUID reqID, SortedIterator.Forwardable<AttributeType, SortedIterator.Order.Asc> atts) {
+        transactionSvc.stream(atts, reqID, attributeTypes -> getOwnsExplicitResPart(reqID, attributeTypes));
+    }
+
+    private void getOwnsOverridden(ThingType thingType, ConceptProto.ThingType.GetOwnsOverridden.Req getOwnsOverriddenReq, UUID reqID) {
+        AttributeType attributeType = getThingType(getOwnsOverriddenReq.getAttributeType()).asAttributeType();
+        transactionSvc.respond(getOwnsOverriddenRes(reqID, thingType.getOwnsOverridden(attributeType)));
+    }
+
+    private void setOwns(ThingType thingType, ConceptProto.ThingType.SetOwns.Req setOwnsRequest, UUID reqID) {
         AttributeType attributeType = getThingType(setOwnsRequest.getAttributeType()).asAttributeType();
         boolean isKey = setOwnsRequest.getIsKey();
 
@@ -298,21 +333,22 @@ public class TypeService {
         transactionSvc.respond(setOwnsRes(reqID));
     }
 
-    private void setPlays(ThingType thingType, ConceptProto.ThingType.SetPlays.Req setPlaysRequest,
-                          UUID reqID) {
+    private void unsetOwns(ThingType thingType, ConceptProto.Type protoAttributeType, UUID reqID) {
+        thingType.unsetOwns(getThingType(protoAttributeType).asAttributeType());
+        transactionSvc.respond(unsetOwnsRes(reqID));
+    }
+
+    private void getPlays(ThingType thingType, UUID reqID) {
+        transactionSvc.stream(thingType.getPlays(), reqID, roleTypes -> getPlaysResPart(reqID, roleTypes));
+    }
+
+    private void setPlays(ThingType thingType, ConceptProto.ThingType.SetPlays.Req setPlaysRequest, UUID reqID) {
         RoleType role = getRoleType(setPlaysRequest.getRole());
         if (setPlaysRequest.hasOverriddenRole()) {
             RoleType overriddenRole = getRoleType(setPlaysRequest.getOverriddenRole());
             thingType.setPlays(role, overriddenRole);
-        } else {
-            thingType.setPlays(role);
-        }
+        } else thingType.setPlays(role);
         transactionSvc.respond(setPlaysRes(reqID));
-    }
-
-    private void unsetOwns(ThingType thingType, ConceptProto.Type protoAttributeType, UUID reqID) {
-        thingType.unsetOwns(getThingType(protoAttributeType).asAttributeType());
-        transactionSvc.respond(unsetOwnsRes(reqID));
     }
 
     private void unsetPlays(ThingType thingType, ConceptProto.Type protoRoleType, UUID reqID) {
@@ -322,7 +358,12 @@ public class TypeService {
 
     private void getOwners(AttributeType attributeType, boolean onlyKey, UUID reqID) {
         transactionSvc.stream(attributeType.getOwners(onlyKey), reqID,
-                owners -> getOwnersResPart(reqID, owners));
+                              owners -> getOwnersResPart(reqID, owners));
+    }
+
+    private void getOwnersExplicit(AttributeType attributeType, boolean onlyKey, UUID reqID) {
+        transactionSvc.stream(attributeType.getOwnersExplicit(onlyKey), reqID,
+                              owners -> getOwnersExplicitResPart(reqID, owners));
     }
 
     private void put(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, UUID reqID) {
