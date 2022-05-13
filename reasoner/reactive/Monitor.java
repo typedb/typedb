@@ -151,33 +151,17 @@ public class Monitor extends Actor<Monitor> {
             else return publishers.size();
         }
 
-        protected void logAnswerDelta(long delta, String methodName, RootNode rootNode) {
-            // TODO: Remove
-            if (delta != 0) LOG.debug("Answers {} from {} in Node {} for rootNode {}", delta, methodName, reactive, rootNode.hashCode());
-        }
-
-        private void logFrontierDelta(long delta, String methodName, RootNode rootNode) {
-            // TODO: Remove
-            if (delta != 0) LOG.debug("Frontiers {} from {} in Node {} for rootNode {}", delta, methodName, reactive, rootNode.hashCode());
-        }
-
         protected void createAnswer() {
-            LOG.debug("Answer created by {}", reactive);  // TODO: Remove
             answersCreated += 1;
             // TODO: We should remove the inactive roots from subscribersByRoot
             downstreamRoots.forEach((root, subs) -> {
-                logAnswerDelta(subs.size(), "createAnswer", root);
                 root.updateAnswerCount(subs.size());
             });
         }
 
         protected void consumeAnswer() {
             answersConsumed += 1;
-            LOG.debug("Answer consumed by {}", reactive);  // TODO: Remove
-            iterate(activeUpstreamRoots()).forEachRemaining(root -> {
-                logAnswerDelta(-1, "consumeAnswer", root);
-                root.updateAnswerCount(-1);
-            });
+            iterate(activeUpstreamRoots()).forEachRemaining(root -> root.updateAnswerCount(-1));
         }
 
         public Set<ReactiveNode> publishers() {
@@ -188,11 +172,7 @@ public class Monitor extends Actor<Monitor> {
             boolean isNew = publishers.add(publisherNode);
             assert isNew;
             if (publishers.size() > 1) {
-                // TODO: The roots we update for is wrong here? I've changed the above inequality
-                iterate(activeUpstreamRoots()).forEachRemaining(root -> {
-                    logFrontierDelta(1, "addPublisher", root);
-                    root.updateFrontiersCount(1);
-                });
+                iterate(activeUpstreamRoots()).forEachRemaining(root -> root.updateFrontiersCount(1));
             }
         }
 
@@ -218,16 +198,12 @@ public class Monitor extends Actor<Monitor> {
         }
 
         protected void synchroniseRootExtraSubscriber(RootNode rootNode) {
-            logAnswerDelta(totalAnswersCreated(rootNode), "synchroniseRootExtraSubscriber", rootNode);
             rootNode.updateAnswerCount(answersCreated);
-            logFrontierDelta(-1, "synchroniseRootExtraSubscriber", rootNode);
             rootNode.updateFrontiersCount(-1);
         }
 
         protected void synchroniseRoot(RootNode rootNode) {
-            logAnswerDelta(totalAnswersCreated(rootNode) - totalAnswersConsumed(), "synchroniseRootCounts", rootNode);
             rootNode.updateAnswerCount(totalAnswersCreated(rootNode) - totalAnswersConsumed());
-            logFrontierDelta(totalFrontierForks() - totalFrontierJoins(rootNode), "synchroniseRootCounts", rootNode);
             rootNode.updateFrontiersCount(totalFrontierForks() - totalFrontierJoins(rootNode));
         }
 
@@ -276,9 +252,7 @@ public class Monitor extends Actor<Monitor> {
         protected void synchroniseRoot(RootNode rootNode) {
             rootNode.addSource(this);
             if (isFinished()) rootNode.sourceFinished(this);
-            logAnswerDelta(totalAnswersCreated(rootNode), "synchroniseRootCounts in Source", rootNode);
             rootNode.updateAnswerCount(totalAnswersCreated(rootNode));
-            logAnswerDelta(-totalFrontierJoins(rootNode), "synchroniseRootCounts", rootNode);
             rootNode.updateFrontiersCount(-totalFrontierJoins(rootNode));
         }
 
