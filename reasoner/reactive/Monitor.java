@@ -162,6 +162,7 @@ public class Monitor extends Actor<Monitor> {
         }
 
         protected void createAnswer() {
+            LOG.debug("Answer created by {}", reactive);  // TODO: Remove
             answersCreated += 1;
             // TODO: We should remove the inactive roots from subscribersByRoot
             downstreamRoots.forEach((root, subs) -> {
@@ -172,7 +173,7 @@ public class Monitor extends Actor<Monitor> {
 
         protected void consumeAnswer() {
             answersConsumed += 1;
-            LOG.debug("Answer consumed by {}", reactive);
+            LOG.debug("Answer consumed by {}", reactive);  // TODO: Remove
             iterate(activeUpstreamRoots()).forEachRemaining(root -> {
                 logAnswerDelta(-1, "consumeAnswer", root);
                 root.updateAnswerCount(-1);
@@ -320,9 +321,7 @@ public class Monitor extends Actor<Monitor> {
 
         protected void propagateRootsUpstream(Set<RootNode> toPropagate) {
             if (!toPropagate.isEmpty()) {
-                Set<RootNode> toPropagateOnwards = new HashSet<>(toPropagate);
-                toPropagateOnwards.retainAll(activeUpstreamRoots());  // TODO: Limits to active upstream, not implied by the method name
-                publishers().forEach(publisher -> publisher.addRootsViaSubscriber(toPropagateOnwards, this));
+                publishers().forEach(publisher -> publisher.addRootsViaSubscriber(activeUpstreamRoots(), this));
             }
         }
 
@@ -333,11 +332,13 @@ public class Monitor extends Actor<Monitor> {
 
         void checkFinished() {
             if (!finished && activeSources.isEmpty()){
-                assert activeAnswers >= 0;
                 assert activeFrontiers >= 0;
-                if (activeAnswers == 0 && activeFrontiers == 0) {
-                    setFinished();
-                    finishRootNode();
+                if (activeFrontiers == 0) {
+                    assert activeAnswers >= 0;
+                    if (activeAnswers == 0) {
+                        finished = true;
+                        finishRootNode();
+                    }
                 }
             }
         }
