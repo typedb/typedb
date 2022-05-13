@@ -104,7 +104,7 @@ public abstract class AbstractController<
 
     public void terminate(Throwable cause) {
         LOG.debug("Actor terminated.", cause);
-        this.terminated = true;
+        terminated = true;
         reactiveBlocks.values().forEach(p -> p.execute(actor -> actor.terminate(cause)));
     }
 

@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.utils.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,13 +37,11 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public class Monitor extends Actor<Monitor> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Monitor.class);
-    private final Registry registry;
     private boolean terminated;
     private final Map<Reactive.Identifier<?, ?>, ReactiveNode> reactiveNodes;
 
-    public Monitor(Driver<Monitor> driver, Registry registry) {
+    public Monitor(Driver<Monitor> driver) {
         super(driver, Monitor.class::getSimpleName);
-        this.registry = registry;  // TODO: Does it matter that this depends upon the Registry?
         this.reactiveNodes = new HashMap<>();
     }
 
@@ -145,18 +142,13 @@ public class Monitor extends Actor<Monitor> {
         }
 
         public long totalFrontierForks() {
-            // TODO: We don't use this method in Source, which suggests this methods should belong in a sibling class
-            //  to source rather than this parent class.
             if (publishers.size() == 0) return 1;
             else return publishers.size();
         }
 
         protected void createAnswer() {
             answersCreated += 1;
-            // TODO: We should remove the inactive roots from subscribersByRoot
-            downstreamRoots.forEach((root, subs) -> {
-                root.updateAnswerCount(subs.size());
-            });
+            downstreamRoots.forEach((root, subs) -> root.updateAnswerCount(subs.size()));
         }
 
         protected void consumeAnswer() {
@@ -213,6 +205,10 @@ public class Monitor extends Actor<Monitor> {
 
         protected Set<RootNode> activeUpstreamRoots() {
             return activeDownstreamRoots();
+        }
+
+        public boolean isRoot() {
+            return false;
         }
 
         public RootNode asRoot() {
@@ -277,11 +273,6 @@ public class Monitor extends Actor<Monitor> {
         }
 
         @Override
-        public RootNode asRoot() {
-            return this;
-        }
-
-        @Override
         protected Set<RootNode> activeUpstreamRoots() {
             if (isFinished()) return set();
             else return set(this);
@@ -336,6 +327,16 @@ public class Monitor extends Actor<Monitor> {
             checkFinished();
         }
 
+        @Override
+        public boolean isRoot() {
+            return true;
+        }
+
+        @Override
+        public RootNode asRoot() {
+            return this;
+        }
+
     }
 
     @Override
@@ -344,19 +345,24 @@ public class Monitor extends Actor<Monitor> {
             String code = ((TypeDBException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Monitor interrupted by resource close: {}", e.getMessage());
-                registry.terminate(e);
+                propagateThrowableToRootReactiveBlocks(e);
                 return;
             } else {
                 LOG.debug("Monitor interrupted by TypeDB exception: {}", e.getMessage());
             }
         }
         LOG.error("Actor exception", e);
-        registry.terminate(e);
-        // TODO: Do we need to send the exception to anywhere else if we already terminate the registry?
+        propagateThrowableToRootReactiveBlocks(e);
+    }
+
+    private void propagateThrowableToRootReactiveBlocks(Throwable e) {
+        iterate(reactiveNodes.values())
+                .filter(ReactiveNode::isRoot)
+                .forEachRemaining(node -> node.asRoot().rootReactiveBlock.execute(actor -> actor.exception(e)));
     }
 
     public void terminate(Throwable cause) {
-        LOG.debug("Actor terminated.", cause);
+        LOG.debug("Monitor terminated.", cause);
         this.terminated = true;
     }
 

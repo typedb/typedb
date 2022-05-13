@@ -87,7 +87,7 @@ public class Registry {
         this.controllers = new ConcurrentSet<>();
         this.terminated = new AtomicBoolean(false);
         this.tracing = tracing;
-        this.monitor = Actor.driver(driver -> new Monitor(driver, this), executorService);
+        this.monitor = Actor.driver(Monitor::new, executorService);
         this.materialisationController = Actor.driver(driver -> new MaterialisationController(
                 driver, executorService, monitor, this, traversalEngine(), conceptManager()), executorService
         );
