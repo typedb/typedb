@@ -117,7 +117,7 @@ public class CombinationProcedure {
             if (!visitedEdges.contains(structureEdge)) {
                 visitedEdges.add(structureEdge);
                 ProcedureVertex.Type to = registerVertex(structureEdge.to().asType());
-                ProcedureEdge<?, ?> edge = createOut(from, to, structureEdge, visitedEdges.size());
+                ProcedureEdge<?, ?> edge = createOut(from, to, structureEdge);
                 forwardEdges.computeIfAbsent(from, (v) -> new HashSet<>()).add(edge);
                 reverseEdges.computeIfAbsent(to, (v) -> new HashSet<>()).add(edge.reverse());
                 nextVertices.add(structureEdge.to().asType());
@@ -133,7 +133,7 @@ public class CombinationProcedure {
             if (!visitedEdges.contains(structureEdge)) {
                 visitedEdges.add(structureEdge);
                 ProcedureVertex.Type from = registerVertex(structureEdge.from().asType());
-                ProcedureEdge<?, ?> edge = createIn(to, from, structureEdge, visitedEdges.size());
+                ProcedureEdge<?, ?> edge = createIn(to, from, structureEdge);
                 forwardEdges.computeIfAbsent(to, (v1) -> new HashSet<>()).add(edge);
                 reverseEdges.computeIfAbsent(from, (v) -> new HashSet<>()).add(edge.reverse());
                 nextVertices.add(structureEdge.from().asType());
@@ -143,15 +143,15 @@ public class CombinationProcedure {
     }
 
     private ProcedureEdge<?, ?> createOut(ProcedureVertex.Type from, ProcedureVertex.Type to,
-                                          StructureEdge<?, ?> structureEdge, int order) {
-        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, order, true);
+                                          StructureEdge<?, ?> structureEdge) {
+        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, -1, true);
         registerEdge(edge);
         return edge;
     }
 
     private ProcedureEdge<?, ?> createIn(ProcedureVertex.Type from, ProcedureVertex.Type to,
-                                         StructureEdge<?, ?> structureEdge, int order) {
-        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, order, false);
+                                         StructureEdge<?, ?> structureEdge) {
+        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, -1, false);
         registerEdge(edge);
         return edge;
     }

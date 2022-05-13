@@ -162,8 +162,7 @@ public abstract class ProcedureEdge<
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ProcedureEdge<?, ?> that = (ProcedureEdge<?, ?>) o;
-        return from().equals(that.from()) && to().equals(that.to()) &&
-                order == that.order && direction == that.direction; // TODO remove order -- note will break CombinationProcedure/Finder
+        return from().equals(that.from()) && to().equals(that.to()) && direction == that.direction;
     }
 
     @Override

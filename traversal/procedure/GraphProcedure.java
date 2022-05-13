@@ -207,7 +207,8 @@ public class GraphProcedure implements PermutationProcedure {
 
                         List<VertexMap> answers = new GraphIterator(graphMgr, v, this, params, filter).toList();
                         if (answers.size() != new HashSet<>(answers).size()) {
-                            throw new RuntimeException("FOUND");
+                            System.out.println("FOUND");
+//                            throw new RuntimeException("FOUND");
                         }
 
                         return new GraphIterator(graphMgr, v, this, params, filter).distinct();
@@ -217,10 +218,10 @@ public class GraphProcedure implements PermutationProcedure {
             // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
             return async(startVertex().iterator(graphMgr, params).map(
                     v -> {
-
                         List<VertexMap> answers = new GraphIterator(graphMgr, v, this, params, filter).toList();
                         if (answers.size() != new HashSet<>(answers).size()) {
-                            throw new RuntimeException("FOUND");
+                            System.out.println("FOUND");
+//                            throw new RuntimeException("FOUND");
                         }
                         return new GraphIterator(graphMgr, v, this, params, filter);
                     }
