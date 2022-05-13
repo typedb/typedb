@@ -76,7 +76,7 @@ public class GraphProcedure implements PermutationProcedure {
 
     /**
      * TODO: this is a compatibility layer to translate edge-ordered procedures into vertex-ordered procedures
-     *       we need to remove it once the query planner natively orders vertices instead of edges
+     * we need to remove it once the query planner natively orders vertices instead of edges
      */
     private void orderVertices() {
         List<ProcedureVertex<?, ?>> vertexList = iterate(vertices.values()).toList();
@@ -106,9 +106,7 @@ public class GraphProcedure implements PermutationProcedure {
 
     public Set<ProcedureVertex<?, ?>> endVertices() {
         if (endVertices == null) {
-            endVertices = iterate(vertices()).filter(v ->
-                    iterate(v.outs()).filter(e -> !v.loops().contains(e)).first().isEmpty()
-            ).toSet();
+            endVertices = iterate(vertices()).filter(v -> v.outs().isEmpty()).toSet();
         }
         return endVertices;
     }
@@ -148,6 +146,12 @@ public class GraphProcedure implements PermutationProcedure {
                 registerEdge(plannerEdge);
             }
         });
+        plannerVertex.loops().forEach(plannerEdge -> {
+            if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
+                registeredEdges.add(plannerEdge);
+                registerEdge(plannerEdge);
+            }
+        });
         adjacents.forEach(v -> registerVertex(v, registeredVertices, registeredEdges));
     }
 
@@ -159,8 +163,12 @@ public class GraphProcedure implements PermutationProcedure {
     }
 
     public void registerEdge(ProcedureEdge<?, ?> edge) {
-        edge.from().out(edge);
-        edge.to().in(edge);
+        if (edge.from().equals(edge.to())) {
+            edge.from().loop(edge);
+        } else {
+            edge.from().out(edge);
+            edge.to().in(edge);
+        }
     }
 
     private ProcedureVertex<?, ?> vertex(PlannerVertex<?> plannerVertex) {
@@ -169,23 +177,19 @@ public class GraphProcedure implements PermutationProcedure {
     }
 
     private ProcedureVertex.Thing thingVertex(PlannerVertex.Thing plannerVertex) {
-        return thingVertex(plannerVertex.id(), plannerVertex.isStartingVertex());
+        return thingVertex(plannerVertex.id());
     }
 
     private ProcedureVertex.Type typeVertex(PlannerVertex.Type plannerVertex) {
-        return typeVertex(plannerVertex.id(), plannerVertex.isStartingVertex());
+        return typeVertex(plannerVertex.id());
     }
 
-    private ProcedureVertex.Thing thingVertex(Identifier identifier, boolean isStart) {
-        return vertices.computeIfAbsent(
-                identifier, id -> new ProcedureVertex.Thing(id, isStart)
-        ).asThing();
+    private ProcedureVertex.Thing thingVertex(Identifier identifier) {
+        return vertices.computeIfAbsent(identifier, ProcedureVertex.Thing::new).asThing();
     }
 
-    private ProcedureVertex.Type typeVertex(Identifier identifier, boolean isStart) {
-        return vertices.computeIfAbsent(
-                identifier, id -> new ProcedureVertex.Type(id, isStart)
-        ).asType();
+    private ProcedureVertex.Type typeVertex(Identifier identifier) {
+        return vertices.computeIfAbsent(identifier, ProcedureVertex.Type::new).asType();
     }
 
     private void assertWithinFilterBounds(Set<Identifier.Variable.Retrievable> filter) {
@@ -285,47 +289,31 @@ public class GraphProcedure implements PermutationProcedure {
         }
 
         public ProcedureVertex.Type labelledType(int order, String label) {
-            return labelledType(order, label, false);
-        }
-
-        public ProcedureVertex.Type labelledType(int order, String label, boolean isStart) {
-            ProcedureVertex.Type vertex = typeVertex(Identifier.Variable.of(Reference.label(label)), isStart);
+            ProcedureVertex.Type vertex = typeVertex(Identifier.Variable.of(Reference.label(label)));
             setOrder(order, vertex);
             return vertex;
         }
 
         public ProcedureVertex.Type namedType(int order, String name) {
-            return namedType(order, name, false);
-        }
-
-        public ProcedureVertex.Type namedType(int order, String name, boolean isStart) {
-            ProcedureVertex.Type vertex = typeVertex(Identifier.Variable.of(Reference.name(name)), isStart);
+            ProcedureVertex.Type vertex = typeVertex(Identifier.Variable.of(Reference.name(name)));
             setOrder(order, vertex);
             return vertex;
         }
 
         public ProcedureVertex.Thing namedThing(int order, String name) {
-            return namedThing(order, name, false);
-        }
-
-        public ProcedureVertex.Thing namedThing(int order, String name, boolean isStart) {
-            ProcedureVertex.Thing vertex = thingVertex(Identifier.Variable.of(Reference.name(name)), isStart);
+            ProcedureVertex.Thing vertex = thingVertex(Identifier.Variable.of(Reference.name(name)));
             setOrder(order, vertex);
             return vertex;
         }
 
         public ProcedureVertex.Thing anonymousThing(int order, int id) {
-            return anonymousThing(order, id, false);
-        }
-
-        public ProcedureVertex.Thing anonymousThing(int order, int id, boolean isStart) {
-            ProcedureVertex.Thing vertex = thingVertex(Identifier.Variable.anon(id), isStart);
+            ProcedureVertex.Thing vertex = thingVertex(Identifier.Variable.anon(id));
             setOrder(order, vertex);
             return vertex;
         }
 
         public ProcedureVertex.Thing scopedThing(int order, ProcedureVertex.Thing relation, @Nullable ProcedureVertex.Type roleType, ProcedureVertex.Thing player, int repetition) {
-            ProcedureVertex.Thing vertex = thingVertex(Identifier.Scoped.of(relation.id().asVariable(), roleType != null ? roleType.id().asVariable() : null, player.id().asVariable(), repetition), false);
+            ProcedureVertex.Thing vertex = thingVertex(Identifier.Scoped.of(relation.id().asVariable(), roleType != null ? roleType.id().asVariable() : null, player.id().asVariable(), repetition));
             setOrder(order, vertex);
             return vertex;
         }

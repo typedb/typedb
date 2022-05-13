@@ -291,15 +291,13 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private boolean verifyOutEdges() {
             Set<ProcedureEdge<?, ?>> edges = new HashSet<>();
             for (ProcedureEdge<?, ?> edge : procedureVertex.orderedOuts()) {
-                if (!edge.to().equals(procedureVertex)) {
-                    VertexScanner toExplorer = vertexScanners[edge.to().order()];
-                    toExplorer.addInput(edge);
-                    edges.add(edge);
-                    if (!toExplorer.mayHaveVertex()) {
-                        edges.forEach(e -> vertexScanners[e.to().order()].removeInput(e));
-                        toExplorer.inputScanners().forEachRemaining(this::addVerifyFailureCause);
-                        return false;
-                    }
+                VertexScanner toExplorer = vertexScanners[edge.to().order()];
+                toExplorer.addInput(edge);
+                edges.add(edge);
+                if (!toExplorer.mayHaveVertex()) {
+                    edges.forEach(e -> vertexScanners[e.to().order()].removeInput(e));
+                    toExplorer.inputScanners().forEachRemaining(this::addVerifyFailureCause);
+                    return false;
                 }
             }
             return true;
@@ -310,8 +308,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private FunctionalIterator<VertexScanner> transitiveOutputScanners() {
-            return iterate(procedureVertex.transitiveOuts()).map(vertex -> vertexScanners[vertex.order()])
-                    .filter(scanner -> !scanner.equals(this));
+            return iterate(procedureVertex.transitiveOuts()).map(vertex -> vertexScanners[vertex.order()]);
         }
 
         private void addInput(ProcedureEdge<?, ?> edge) {

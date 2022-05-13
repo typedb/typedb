@@ -121,7 +121,7 @@ public class TraversalTest {
                     4: ($_0:$role:$x:1 *--[ISA]--> $role) { isTransitive: true }
             */
             GraphProcedure.Builder proc = GraphProcedure.builder(5);
-            ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0, true);
+            ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0);
             _0.props().types(set(Label.of("employment")));
 
             ProcedureVertex.Thing e = proc.namedThing(2, "e");
@@ -179,7 +179,7 @@ public class TraversalTest {
             */
 
             GraphProcedure.Builder proc = GraphProcedure.builder(7);
-            ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0, true);
+            ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0);
             _0.props().types(set(Label.of("reply-of")));
 
             ProcedureVertex.Thing s = proc.namedThing(1, "s");
@@ -246,7 +246,7 @@ public class TraversalTest {
             */
 
             GraphProcedure.Builder proc = GraphProcedure.builder(7);
-            ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0, true);
+            ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0);
             _0.props().types(set(Label.of("reply-of")));
 
             ProcedureVertex.Thing p = proc.namedThing(1, "p");
@@ -399,7 +399,7 @@ public class TraversalTest {
             */
             GraphProcedure.Builder proc = GraphProcedure.builder(8);
 
-            ProcedureVertex.Thing _3 = proc.anonymousThing(0, 3, true);
+            ProcedureVertex.Thing _3 = proc.anonymousThing(0, 3);
             _3.props().predicate(Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG));
             _3.props().types(set(Label.of("ref")));
 
@@ -537,7 +537,7 @@ public class TraversalTest {
             10: ($f1 *--[HAS]--> $r2)
              */
 
-            ProcedureVertex.Thing n = proc.namedThing(0, "n", true);
+            ProcedureVertex.Thing n = proc.namedThing(0, "n");
             n.props().types(set(Label.of("lastname")));
 
             ProcedureVertex.Thing x = proc.namedThing(1, "x");

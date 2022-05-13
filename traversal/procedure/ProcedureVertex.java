@@ -37,7 +37,6 @@ import com.vaticle.typedb.core.traversal.predicate.Predicate;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -45,7 +44,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -58,22 +56,21 @@ import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.For
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
+import static java.util.stream.Collectors.toList;
 
 public abstract class ProcedureVertex<
         VERTEX extends Vertex<?, ?>,
         PROPERTIES extends TraversalVertex.Properties
         > extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
-    private final boolean isStartingVertex;
     private ProcedureEdge<?, ?> lastInEdge;
     private Set<Identifier.Variable> scopedBy;
     private int order;
-    private List<ProcedureEdge<?, ?>> orderedEdges;
+    private List<ProcedureEdge<?, ?>> orderedOuts;
     private Set<ProcedureVertex<?, ?>> transitiveOuts;
 
-    ProcedureVertex(Identifier identifier, boolean isStartingVertex) {
+    ProcedureVertex(Identifier identifier) {
         super(identifier);
-        this.isStartingVertex = isStartingVertex;
     }
 
     public abstract Forwardable<? extends VERTEX, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters);
@@ -84,13 +81,16 @@ public abstract class ProcedureVertex<
         if (lastInEdge == null || edge.order() > lastInEdge.order()) lastInEdge = edge;
     }
 
+    /**
+     * TODO: in the next iteration, we can multiple starting vertices and we'll have to distinguish the start
+     * versus vertices without in edges
+     */
     public boolean isStartingVertex() {
-        return isStartingVertex;
+        return order() == 0;
     }
 
     public ProcedureEdge<?, ?> lastInEdge() {
-        if (ins().isEmpty() || isStartingVertex()) return null;
-        else return lastInEdge;
+        return lastInEdge;
     }
 
     public Thing asThing() {
@@ -106,18 +106,18 @@ public abstract class ProcedureVertex<
     }
 
     public List<ProcedureEdge<?, ?>> orderedOuts() {
-        if (orderedEdges == null) {
-            orderedEdges = outs().stream().sorted(Comparator.comparingInt(e -> e.to().order())).collect(Collectors.toList());
+        if (orderedOuts == null) {
+            orderedOuts = outs().stream().sorted(Comparator.comparingInt(e -> e.to().order())).collect(toList());
         }
-        return orderedEdges;
+        return orderedOuts;
     }
 
     public Set<ProcedureVertex<?, ?>> transitiveOuts() {
         if (transitiveOuts == null) {
             HashSet<ProcedureVertex<?, ?>> transitive = new HashSet<>();
-            outs().forEach(edge -> {
+            orderedOuts().forEach(edge -> {
                 transitive.add(edge.to());
-                if (!edge.to().equals(this)) transitive.addAll(edge.to().transitiveOuts());
+                transitive.addAll(edge.to().transitiveOuts());
             });
             transitiveOuts = transitive;
         }
@@ -140,15 +140,14 @@ public abstract class ProcedureVertex<
     @Override
     public String toString() {
         String str = super.toString();
-        if (isStartingVertex) str += " (start)";
-        if (outs().isEmpty()) str += " (end)";
+        if (isStartingVertex()) str += " (start)";
         return str;
     }
 
     public static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
 
-        Thing(Identifier identifier, boolean isStartingVertex) {
-            super(identifier, isStartingVertex);
+        Thing(Identifier identifier) {
+            super(identifier);
         }
 
         @Override
@@ -317,8 +316,8 @@ public abstract class ProcedureVertex<
 
     public static class Type extends ProcedureVertex<TypeVertex, Properties.Type> {
 
-        Type(Identifier identifier, boolean isStartingVertex) {
-            super(identifier, isStartingVertex);
+        Type(Identifier identifier) {
+            super(identifier);
         }
 
         @Override

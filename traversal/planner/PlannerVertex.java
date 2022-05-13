@@ -100,6 +100,13 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         out(edge.backward());
     }
 
+    void loop(PlannerEdge<?, ?> edge) {
+        assert edge.forward().from().equals(edge.forward().to());
+        assert edge.backward().from().equals(edge.forward().to());
+        loop(edge.forward());
+        loop(edge.backward());
+    }
+
     void initialiseVariables() {
         assert planner != null;
         varIsStartingVertex = planner.optimiser().booleanVar(varPrefix + "is_starting_vertex");
@@ -113,8 +120,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     void initialiseConstraints() {
         assert ins().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
         assert outs().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
+        assert loops().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
         initialiseConstraintsForIncomingEdges();
         initialiseConstraintsForOutgoingEdges();
+        // TODO: do we need to initialise any constraints for the loop edges?
         initialiseConstraintsForVertexFlow();
         isInitialisedConstraints = true;
     }

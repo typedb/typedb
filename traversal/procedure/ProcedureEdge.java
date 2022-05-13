@@ -173,9 +173,9 @@ public abstract class ProcedureEdge<
     @Override
     public String toString() {
         if (direction.isForward()) {
-            return String.format("%s: (%s *--[%s]--> %s)", order, from.id(), symbol, to.id());
+            return String.format("(%s *--[%s]--> %s)", from.id(), symbol, to.id());
         } else {
-            return String.format("%s: (%s <--[%s]--* %s)", order, from.id(), symbol, to.id());
+            return String.format("(%s <--[%s]--* %s)", from.id(), symbol, to.id());
         }
     }
 

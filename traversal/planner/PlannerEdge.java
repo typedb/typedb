@@ -212,9 +212,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         private void initialiseConstraintsForOrderSequence() {
-            Set<Directional<?, ?>> previousEdges = iterate(from.ins()).filter(
-                    edge -> !edge.isSelfClosure() && !edge.equals(this.opposite)
-            ).toSet();
+            Set<Directional<?, ?>> previousEdges = iterate(from.ins()).filter(edge -> !edge.equals(this.opposite)).toSet();
             int i = 0;
             for (Directional<?, ?> previousEdge : previousEdges) {
                 String name = conPrefix + "order_sequence_" + i++;
@@ -226,6 +224,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             }
         }
 
+        /**
+         * TODO: This should become its own type of edge that doesn't need to be planned as an edge
+         */
         protected boolean isSelfClosure() {
             return from.equals(to);
         }

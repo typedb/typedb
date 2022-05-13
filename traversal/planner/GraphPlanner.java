@@ -178,6 +178,12 @@ public class GraphPlanner implements Planner {
                 registerEdge(structureEdge);
             }
         });
+        structureVertex.loops().forEach(structureEdge -> {
+            if (!registeredEdges.contains(structureEdge)) {
+                registeredEdges.add(structureEdge);
+                registerEdge(structureEdge);
+            }
+        });
         adjacents.forEach(v -> registerVertex(v, registeredVertices, registeredEdges));
     }
 
@@ -186,8 +192,13 @@ public class GraphPlanner implements Planner {
         PlannerVertex<?> to = vertex(structureEdge.to());
         PlannerEdge<?, ?> edge = PlannerEdge.of(from, to, structureEdge);
         edges.add(edge);
-        from.out(edge);
-        to.in(edge);
+        if (from.equals(to)) {
+            from.loop(edge);
+            to.loop(edge);
+        } else {
+            from.out(edge);
+            to.in(edge);
+        }
     }
 
     private PlannerVertex<?> vertex(StructureVertex<?> structureVertex) {
@@ -421,9 +432,10 @@ public class GraphPlanner implements Planner {
                 List<PlannerEdge.Directional<?, ?>> outgoing = new ArrayList<>();
                 vertex.outs().stream().filter(e -> !e.hasInitialValue()).sorted(comparing(e -> e.costLastRecorded))
                         .forEachOrdered(edge -> {
-                            if (!(edge.isSelfClosure() && edge.direction().isBackward())) outgoing.add(edge);
+                            if (!edge.direction().isBackward()) outgoing.add(edge);
                             else edge.setInitialUnselected();
                         });
+                vertex.loops().forEach(PlannerEdge.Directional::setInitialUnselected);
                 if (!outgoing.isEmpty()) {
                     vertex.setHasOutgoingEdgesInitial();
                     outgoing.forEach(e -> {

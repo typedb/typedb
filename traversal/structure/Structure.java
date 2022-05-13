@@ -77,16 +77,12 @@ public class Structure {
 
     public void equalEdge(StructureVertex<?> from, StructureVertex<?> to) {
         StructureEdge.Equal edge = new StructureEdge.Equal(from, to);
-        edges.add(edge);
-        from.out(edge);
-        to.in(edge);
+        recordEdge(edge);
     }
 
     public void predicateEdge(StructureVertex.Thing from, StructureVertex.Thing to, Predicate.Variable predicate) {
         StructureEdge.Predicate edge = new StructureEdge.Predicate(from, to, predicate);
-        edges.add(edge);
-        from.out(edge);
-        to.in(edge);
+        recordEdge(edge);
     }
 
     public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding) {
@@ -95,9 +91,7 @@ public class Structure {
 
     public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, boolean isTransitive) {
         StructureEdge.Native<?, ?> edge = new StructureEdge.Native<>(from, to, encoding, isTransitive);
-        edges.add(edge);
-        from.out(edge);
-        to.in(edge);
+        recordEdge(edge);
     }
 
     public void rolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, int repetition) {
@@ -106,9 +100,17 @@ public class Structure {
 
     public void rolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes, int repetition) {
         StructureEdge.Native.RolePlayer edge = new StructureEdge.Native.RolePlayer(from, to, roleTypes, repetition);
+        recordEdge(edge);
+    }
+
+    private void recordEdge(StructureEdge<?, ?> edge) {
         edges.add(edge);
-        from.out(edge);
-        to.in(edge);
+        if (edge.from().equals(edge.to())) {
+            edge.from().loop(edge);
+        } else {
+            edge.from().out(edge);
+            edge.to().in(edge);
+        }
     }
 
     public List<Structure> asGraphs() {
@@ -150,6 +152,12 @@ public class Structure {
                 edgesToVisit.remove(incoming);
                 newStructure.edges.add(incoming);
                 adjacents.add(incoming.from());
+            }
+        });
+        vertex.loops().forEach(loop -> {
+            if (edgesToVisit.contains(loop)) {
+                edgesToVisit.remove(loop);
+                newStructure.edges.add(loop);
             }
         });
         adjacents.forEach(v -> splitGraph(v, newStructure, verticesToVisit, edgesToVisit));
