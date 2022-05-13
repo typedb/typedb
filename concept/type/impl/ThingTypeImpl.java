@@ -45,7 +45,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_ROOT_TYPE_CANNOT_BE_OWNED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
@@ -64,6 +64,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OW
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ROLE_TYPE_CANNOT_BE_PLAYED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
@@ -213,7 +214,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (vertex.outs().edge(OWNS_KEY, attVertex) != null) return;
 
         if (attributeType.isRoot()) {
-            throw exception(TypeDBException.of(ATTRIBUTE_ROOT_TYPE_CANNOT_BE_OWNED));
+            throw exception(TypeDBException.of(ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED));
         } else if (!attributeType.isKeyable()) {
             throw exception(TypeDBException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
         } else if (link(getSupertype().getOwns(attributeType.getValueType(), true),
@@ -252,7 +253,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private void ownsAttribute(AttributeTypeImpl attributeType) {
         Forwardable<AttributeType, Order.Asc> owns = getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getOwns, ASC);
         if (attributeType.isRoot()) {
-            throw exception(TypeDBException.of(ATTRIBUTE_ROOT_TYPE_CANNOT_BE_OWNED));
+            throw exception(TypeDBException.of(ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED));
         } else if (owns.findFirst(attributeType).isPresent()) {
             throw exception(TypeDBException.of(OWNS_ATT_NOT_AVAILABLE, attributeType.getLabel()));
         }
@@ -361,7 +362,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType) {
         validateIsNotDeleted();
-        if (getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getPlays, ASC).findFirst(roleType).isPresent()) {
+        if (roleType.isRoot()) {
+            throw exception(TypeDBException.of(ROOT_ROLE_TYPE_CANNOT_BE_PLAYED));
+        } else if (getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getPlays, ASC).findFirst(roleType).isPresent()) {
             throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, roleType.getLabel()));
         }
         vertex.outs().put(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
