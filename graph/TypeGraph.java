@@ -296,7 +296,8 @@ public class TypeGraph {
     private FunctionalIterator<TypeVertex> ownersOfAttTypeNonKey(TypeVertex attType) {
         return attType.ins().edge(OWNS).from()
                 .flatMap(owner -> tree(owner, o -> o.ins().edge(SUB).from().filter(s ->
-                        overriddensOwns(s).noneMatch(ov -> ov.equals(attType))
+                        overriddensOwns(s).noneMatch(ov -> ov.equals(attType)) &&
+                                overriddensOwnsKey(s).noneMatch(ov -> ov.equals(attType))
                 )));
     }
 
