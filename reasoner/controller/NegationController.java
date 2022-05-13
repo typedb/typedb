@@ -162,8 +162,8 @@ public class NegationController extends AbstractController<
             public void receive(Publisher<ConceptMap> publisher, ConceptMap conceptMap) {
                 subscriberActions.traceReceive(publisher, conceptMap);
                 publisherRegistry().recordReceive(publisher);
+                if (!answerFound) reactiveBlock().monitor().execute(actor -> actor.rootFinished(identifier()));
                 answerFound = true;
-                reactiveBlock().monitor().execute(actor -> actor.rootFinished(identifier()));
             }
 
             @Override
