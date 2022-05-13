@@ -199,7 +199,7 @@ public final class ConceptManager {
             ProducerIterator<Void> validationIterator = produce(async(iterate(lists).map(
                     list -> iterate(list).map(t -> {
                         t.validate();
-                        return (Void) null;
+                        return null;
                     })
             ), PARALLELISATION_FACTOR), Either.first(EXHAUSTIVE), async1());
             while (validationIterator.hasNext()) validationIterator.next();

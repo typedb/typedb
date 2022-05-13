@@ -991,7 +991,7 @@ public class Encoding {
 
         @SafeVarargs
         static <T> ByteMap<T> create(Pair<Byte, T>... byteIndices) {
-            ArrayList<T> indexList = new ArrayList<>(Collections.nCopies(255, (T) null));
+            ArrayList<T> indexList = new ArrayList<>(Collections.nCopies(255, null));
             for (Pair<Byte, T> index : byteIndices) indexList.set(index.first() + 128, index.second());
             return new ByteMap<>(indexList);
         }

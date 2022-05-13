@@ -185,7 +185,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
         if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
         else if ((edge = vertex.outs().edge(OWNS, attVertex)) != null) edge.delete();
-        else if (this.getOwns().findFirst((AttributeTypeImpl) attributeType).isPresent()) {
+        else if (this.getOwns().findFirst(attributeType).isPresent()) {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS,
                     this.getLabel().toString(), attributeType.getLabel().toString()));
         } else {
