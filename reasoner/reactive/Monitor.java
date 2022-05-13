@@ -336,7 +336,6 @@ public class Monitor extends Actor<Monitor> {
                 if (activeFrontiers == 0) {
                     assert activeAnswers >= 0;
                     if (activeAnswers == 0) {
-                        finished = true;
                         finishRootNode();
                     }
                 }
