@@ -110,8 +110,6 @@ public class RootDisjunctionController
 
         @Override
         public void onFinished(Reactive.Identifier<?, ?> finishable) {
-            assert !done;
-            done = true;
             assert finishable == rootSink.identifier();
             rootSink.finished();
         }

@@ -55,7 +55,6 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
     private final Driver<Monitor> monitor;
     private Reactive.Stream<OUTPUT,OUTPUT> outputRouter;
     private boolean terminated;
-    protected boolean done;
     private long reactiveCounter;
 
     protected AbstractReactiveBlock(Driver<REACTIVE_BLOCK> driver,
@@ -66,7 +65,6 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
         this.controller = controller;
         this.inputs = new HashMap<>();
         this.outputs = new HashMap<>();
-        this.done = false;
         this.monitor = monitor;
         this.reactiveCounter = 0;
         this.pullRetries = new HashMap<>();
@@ -87,12 +85,10 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
     }
 
     public void pull(Identifier<?, ?> outputId) {
-        assert !done;
         outputs.get(outputId).pull();
     }
 
     public void receive(Identifier<?, INPUT> publisherId, INPUT input, Identifier<?, ?> inputId) {
-        assert !done;
         inputs.get(inputId).receive(publisherId, input);
     }
 
@@ -107,13 +103,11 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
     }
 
     protected void requestConnection(REQ req) {
-        assert !done;
         if (isTerminated()) return;
         controller.execute(actor -> actor.resolveController(req));
     }
 
     public void establishConnection(Connector<?, OUTPUT> connector) {
-        assert !done;
         if (isTerminated()) return;
         Output<OUTPUT> output = createOutput();
         output.setSubscriber(connector.inputId());
@@ -123,21 +117,18 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
     }
 
     protected void finishConnection(Identifier<INPUT, ?> inputId, Identifier<?, INPUT> outputId) {
-        assert !done;
         Input<INPUT> input = inputs.get(inputId);
         input.setOutput(outputId);
         input.pull();
     }
 
     protected Input<INPUT> createInput() {
-        assert !done;
         Input<INPUT> input = new Input<>(this);
         inputs.put(input.identifier(), input);
         return input;
     }
 
     protected Output<OUTPUT> createOutput() {
-        assert !done;
         Output<OUTPUT> output = new Output<>(this);
         outputs.put(output.identifier(), output);
         return output;

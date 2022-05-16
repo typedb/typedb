@@ -114,8 +114,6 @@ public class NegationController extends AbstractController<
 
         @Override
         public void onFinished(Reactive.Identifier<?, ?> finishable) {
-            assert !done;
-            done = true;
             assert finishable == negation.identifier();
             negation.finished();
         }
