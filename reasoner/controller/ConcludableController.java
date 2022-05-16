@@ -160,6 +160,12 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         }
 
         @Override
+        public void terminate(Throwable cause) {
+            super.terminate(cause);
+            reasonerConsumer.exception(cause);
+        }
+
+        @Override
         protected ReactiveBlock.Explain createReactiveBlockFromDriver(Driver<ReactiveBlock.Explain> explainDriver,
                                                                       ConceptMap bounds) {
             // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular

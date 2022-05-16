@@ -64,9 +64,9 @@ public class RootDisjunctionController
     }
 
     @Override
-    public void exception(Throwable e) {
-        super.exception(e);
-        reasonerConsumer.exception(e);
+    public void terminate(Throwable cause) {
+        super.terminate(cause);
+        reasonerConsumer.exception(cause);
     }
 
     protected static class ReactiveBlock extends DisjunctionController.ReactiveBlock<ReactiveBlock> {
