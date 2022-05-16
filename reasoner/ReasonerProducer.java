@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @ThreadSafe
@@ -43,11 +44,11 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
     private final Registry controllerRegistry;
-    private boolean done;
-    private Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock;
+    private final AtomicBoolean done;
     protected final AtomicInteger required;
     protected final Options.Query options;
     protected final ExplainablesManager explainablesManager;
+    private Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock;
     protected Queue<ANSWER> queue;
     protected boolean isPulling;
 
@@ -57,7 +58,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         this.controllerRegistry = controllerRegistry;
         this.explainablesManager = explainablesManager;
         this.queue = null;
-        this.done = false;
+        this.done = new AtomicBoolean(false);
         this.required = new AtomicInteger();
         this.isPulling = false;
         if (options.traceInference()) {
@@ -101,8 +102,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     }
 
     private void finish() {
-        if (!done) {
-            done = true;
+        if (!done.getAndSet(true)) {
             required.set(0);
             queue.done();
         }
@@ -110,8 +110,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
 
     @Override
     public void exception(Throwable e) {
-        if (!done) {
-            done = true;
+        if (!done.getAndSet(true)) {
             required.set(0);
             queue.done(e);
         }
