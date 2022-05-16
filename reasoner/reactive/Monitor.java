@@ -261,6 +261,7 @@ public class Monitor extends Actor<Monitor> {
         private final Set<SourceNode> activeSources;
         private long activeFrontiers;
         private long activeAnswers;
+        private boolean finishing;
 
         RootNode(Reactive.Identifier<?, ?> root, Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock,
                  Driver<Monitor> monitor) {
@@ -270,6 +271,7 @@ public class Monitor extends Actor<Monitor> {
             this.activeSources = new HashSet<>();
             this.activeFrontiers = 1;
             this.activeAnswers = 0;
+            this.finishing = false;
         }
 
         @Override
@@ -296,11 +298,13 @@ public class Monitor extends Actor<Monitor> {
         }
 
         void checkFinished() {
+            assert !finishing;
             if (!finished && activeSources.isEmpty()){
                 assert activeFrontiers >= 0;
                 if (activeFrontiers == 0) {
                     assert activeAnswers >= 0;
                     if (activeAnswers == 0) {
+                        finishing = true;
                         finishRootNode();
                     }
                 }
