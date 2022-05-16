@@ -117,7 +117,7 @@ public class CombinationFinder {
                 Set<TypeVertex> toTypes = toTypes(procedureEdge);
                 changed = addOrIntersect(procedureEdge.to().id(), toTypes) || changed;
                 if (combination.get(procedureEdge.to().id()).isEmpty()) return State.EMPTY;
-                if (!procedureEdge.to().isStartingVertex()) {
+                if (!procedure.startVertex().equals(procedureEdge.to())) {
                     toVisit.add(procedureEdge.to().asType());
                 }
             }

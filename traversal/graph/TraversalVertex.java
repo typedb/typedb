@@ -23,7 +23,10 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -31,17 +34,17 @@ import java.util.Set;
 public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTIES extends TraversalVertex.Properties> {
 
     private final Identifier identifier;
-    private final Set<EDGE> outgoing;
-    private final Set<EDGE> incoming;
-    private final Set<EDGE> looping;
+    private final List<EDGE> outgoing;
+    private final List<EDGE> incoming;
+    private final List<EDGE> looping;
     private final int hash;
     private PROPERTIES properties;
 
     protected TraversalVertex(Identifier identifier) {
         this.identifier = identifier;
-        this.outgoing = new HashSet<>();
-        this.incoming = new HashSet<>();
-        this.looping = new HashSet<>();
+        this.outgoing = new ArrayList<>();
+        this.incoming = new ArrayList<>();
+        this.looping = new ArrayList<>();
         this.properties = newProperties();
         this.hash = Objects.hash(identifier);
     }
@@ -60,15 +63,15 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
         return identifier;
     }
 
-    public Set<EDGE> outs() {
+    public Collection<EDGE> outs() {
         return outgoing;
     }
 
-    public Set<EDGE> ins() {
+    public Collection<EDGE> ins() {
         return incoming;
     }
 
-    public Set<EDGE> loops() {
+    public Collection<EDGE> loops() {
         return looping;
     }
 

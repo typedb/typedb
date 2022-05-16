@@ -78,6 +78,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
                          Traversal.Parameters params, Set<Identifier.Variable.Retrievable> filter) {
+        System.out.println(procedure);
         assert procedure.vertexCount() > 1;
         this.graphMgr = graphMgr;
         this.procedure = procedure;

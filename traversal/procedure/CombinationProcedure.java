@@ -117,7 +117,7 @@ public class CombinationProcedure {
         return procedureVertex;
     }
 
-    private Set<StructureVertex.Type> registerOutEdges(ProcedureVertex.Type from, Set<StructureEdge<?, ?>> outs,
+    private Set<StructureVertex.Type> registerOutEdges(ProcedureVertex.Type from, Collection<StructureEdge<?, ?>> outs,
                                                        Set<StructureEdge<?, ?>> visitedEdges) {
         Set<StructureVertex.Type> nextVertices = new HashSet<>();
         outs.forEach(structureEdge -> {
@@ -133,7 +133,7 @@ public class CombinationProcedure {
         return nextVertices;
     }
 
-    private Set<StructureVertex.Type> registerInEdges(ProcedureVertex.Type to, Set<StructureEdge<?, ?>> ins,
+    private Set<StructureVertex.Type> registerInEdges(ProcedureVertex.Type to, Collection<StructureEdge<?, ?>> ins,
                                                       Set<StructureEdge<?, ?>> visitedEdges) {
         Set<StructureVertex.Type> nextVertices = new HashSet<>();
         ins.forEach(structureEdge -> {
@@ -149,7 +149,7 @@ public class CombinationProcedure {
         return nextVertices;
     }
 
-    private void registerLoopEdges(ProcedureVertex.Type from, Set<StructureEdge<?, ?>> loops,
+    private void registerLoopEdges(ProcedureVertex.Type from, Collection<StructureEdge<?, ?>> loops,
                                    Set<StructureEdge<?, ?>> visitedEdges) {
         loops.forEach(structureEdge -> {
             if (!visitedEdges.contains(structureEdge)) {
