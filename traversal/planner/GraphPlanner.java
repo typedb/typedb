@@ -431,12 +431,10 @@ public class GraphPlanner implements Planner {
                 PlannerVertex<?> vertex = queue.iterator().next();
                 List<PlannerEdge.Directional<?, ?>> outgoing = new ArrayList<>();
                 vertex.outs().stream().filter(e -> !e.hasInitialValue()).sorted(comparing(e -> e.costLastRecorded))
-                        .forEachOrdered(edge -> {
-                            if (edge.direction().isForward()) outgoing.add(edge);
-                            else edge.setInitialUnselected();
-                        });
+                        .forEachOrdered(outgoing::add);
                 vertex.loops().forEach(e -> {
-                    if (e.direction().isForward())e.setInitialValue(++edgeCount);
+                    if (e.direction().isForward()) e.setInitialValue(++edgeCount);
+                    else e.setInitialUnselected();
                 });
                 if (!outgoing.isEmpty()) {
                     vertex.setHasOutgoingEdgesInitial();

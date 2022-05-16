@@ -84,7 +84,7 @@ public class CombinationProcedure {
     }
 
     public Set<ProcedureEdge<?, ?>> loopEdges(ProcedureVertex.Type vertex) {
-        return loopEdges.get(vertex);
+        return loopEdges.computeIfAbsent(vertex, (v) -> new HashSet<>());
     }
 
     private void registerBFS(StructureVertex.Type start) {

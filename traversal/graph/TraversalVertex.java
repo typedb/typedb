@@ -83,7 +83,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
     }
 
     public void loop(EDGE edge) {
-        assert edge.to().equals(this) && !edge.from().equals(edge.to());
+        assert edge.to().equals(this) && edge.from().equals(edge.to());
         looping.add(edge);
     }
 
