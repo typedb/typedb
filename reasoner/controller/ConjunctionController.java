@@ -39,7 +39,7 @@ import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.controller.Registry.ResolverView;
-import com.vaticle.typedb.core.reasoner.utils.Planner;
+import com.vaticle.typedb.core.reasoner.common.Planner;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.ArrayList;

@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
+import com.vaticle.typedb.core.reasoner.common.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

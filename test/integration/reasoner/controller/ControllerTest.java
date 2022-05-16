@@ -27,12 +27,13 @@ import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
+import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
+import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
@@ -54,8 +55,6 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_TERMINATED_WITH_CAUSE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.utils.Util.resolvedConjunction;
-import static com.vaticle.typedb.core.reasoner.utils.Util.resolvedDisjunction;
 import static java.lang.Thread.sleep;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNull;
@@ -461,6 +460,18 @@ public class ControllerTest {
                 createRootAndAssertResponses(transaction, conjunctionPattern, 6L, 3L);
             }
         }
+    }
+
+    public static Disjunction resolvedDisjunction(String query, LogicManager logicMgr) {
+        Disjunction disjunction = Disjunction.create(TypeQL.parsePattern(query).asConjunction().normalise());
+        logicMgr.typeInference().applyCombination(disjunction);
+        return disjunction;
+    }
+
+    public static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
+        Disjunction disjunction = resolvedDisjunction(query, logicMgr);
+        assert disjunction.conjunctions().size() == 1;
+        return disjunction.conjunctions().get(0);
     }
 
     private CoreSession schemaSession() {

@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.Source;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
-import com.vaticle.typedb.core.reasoner.utils.Traversal;
+import com.vaticle.typedb.core.reasoner.common.Traversal;
 
 import java.util.function.Supplier;
 

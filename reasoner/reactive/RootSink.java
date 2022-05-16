@@ -19,9 +19,8 @@
 package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.utils.Tracer.Trace;
+import com.vaticle.typedb.core.reasoner.common.Tracer.Trace;
 
 import javax.annotation.Nullable;
 import java.util.UUID;

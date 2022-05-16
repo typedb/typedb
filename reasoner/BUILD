@@ -36,7 +36,7 @@ native_java_libraries(
         "reactive/common/*.java",
         "controller/*.java",
         "answer/*.java",
-        "utils/*.java",
+        "common/*.java",
         ], exclude = ["*Test.java", "**/*Test.java"],
     ),
     native_libraries_deps = [

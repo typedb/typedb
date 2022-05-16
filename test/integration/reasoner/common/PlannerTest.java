@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.utils;
+package com.vaticle.typedb.core.reasoner.common;
 
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
@@ -30,6 +30,8 @@ import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -46,7 +48,6 @@ import java.util.Set;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
-import static com.vaticle.typedb.core.reasoner.utils.Util.resolvedConjunction;
 import static junit.framework.TestCase.assertEquals;
 
 public class PlannerTest {
@@ -183,6 +184,18 @@ public class PlannerTest {
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
+    }
+
+    public static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
+        Disjunction disjunction = resolvedDisjunction(query, logicMgr);
+        assert disjunction.conjunctions().size() == 1;
+        return disjunction.conjunctions().get(0);
+    }
+
+    public static Disjunction resolvedDisjunction(String query, LogicManager logicMgr) {
+        Disjunction disjunction = Disjunction.create(TypeQL.parsePattern(query).asConjunction().normalise());
+        logicMgr.typeInference().applyCombination(disjunction);
+        return disjunction;
     }
 
 }

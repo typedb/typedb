@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.reasoner.reactive.Reactive.Identifier;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Subscriber;
 import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveIdentifier;
-import com.vaticle.typedb.core.reasoner.utils.Tracer;
+import com.vaticle.typedb.core.reasoner.common.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
