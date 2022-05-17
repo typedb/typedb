@@ -525,7 +525,7 @@ public class ControllerTest {
         }
 
         @Override
-        public void finished() {
+        public void finish() {
             doneReceived.set(true);
         }
 

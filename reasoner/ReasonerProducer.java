@@ -44,12 +44,13 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
 
     private final Registry controllerRegistry;
     private final AtomicBoolean done;
-    protected final AtomicInteger required;
+    protected final AtomicInteger requiredAnswers;
     protected final Options.Query options;
     protected final ExplainablesManager explainablesManager;
     private Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock;
     protected Queue<ANSWER> queue;
     protected boolean isPulling;
+    private boolean finishedEagerly;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Options.Query options, Registry controllerRegistry, ExplainablesManager explainablesManager) {
@@ -58,8 +59,9 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         this.explainablesManager = explainablesManager;
         this.queue = null;
         this.done = new AtomicBoolean(false);
-        this.required = new AtomicInteger();
+        this.requiredAnswers = new AtomicInteger();
         this.isPulling = false;
+        this.finishedEagerly = false;
     }
 
     protected Registry controllerRegistry() {
@@ -70,16 +72,20 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     public void initialise(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock) {
         assert this.rootReactiveBlock == null;
         this.rootReactiveBlock = rootReactiveBlock;
-        if (required.get() > 0) pull();
+        if (requiredAnswers.get() > 0) pull();
     }
 
     @Override
-    public synchronized void produce(Queue<ANSWER> queue, int request, Executor executor) {
+    public synchronized void produce(Queue<ANSWER> queue, int requestedAnswers, Executor executor) {
         assert this.queue == null || this.queue == queue;
-        assert request > 0;
-        this.queue = queue;
-        required.addAndGet(request); // TODO: improve variable naming here for required and request
-        if (rootReactiveBlock != null && !isPulling) pull();
+        assert requestedAnswers > 0;
+        if (finishedEagerly) {
+            queue.done();
+        } else {
+            this.queue = queue;
+            requiredAnswers.addAndGet(requestedAnswers);
+            if (rootReactiveBlock != null && !isPulling) pull();
+        }
     }
 
     protected void pull() {
@@ -89,23 +95,28 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     }
 
     @Override
-    public void finished() {
+    public void finish() {
         // note: root resolver calls this single-threaded, so is thread safe
         LOG.trace("All answers found.");
-        finish();
-    }
-
-    private void finish() {
         if (!done.getAndSet(true)) {
-            required.set(0);
-            queue.done();
+            if (queue == null) {
+                finishedEagerly = true;
+                // Possible if there are no answers and another query has already determined this for a given
+                // resolvable, so the monitor declares finish before produce has even been called
+                assert !isPulling;
+                assert requiredAnswers.get() == 0;
+            }
+            else {
+                requiredAnswers.set(0);
+                queue.done();
+            }
         }
     }
 
     @Override
     public void exception(Throwable e) {
         if (!done.getAndSet(true)) {
-            required.set(0);
+            requiredAnswers.set(0);
             queue.done(e);
         }
     }
@@ -137,7 +148,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
                 explainablesManager.setAndRecordExplainables(answer);
             }
             queue.put(answer);
-            if (required.decrementAndGet() > 0) pull();
+            if (requiredAnswers.decrementAndGet() > 0) pull();
         }
 
     }
@@ -157,7 +168,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
                 explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
             }
             queue.put(explanation);
-            if (required.decrementAndGet() > 0) pull();
+            if (requiredAnswers.decrementAndGet() > 0) pull();
         }
 
     }

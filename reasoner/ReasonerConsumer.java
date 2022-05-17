@@ -27,7 +27,7 @@ public interface ReasonerConsumer<ANSWER> {
 
     void receiveAnswer(ANSWER answer);
 
-    void finished();
+    void finish();
 
     void exception(Throwable e);
 
