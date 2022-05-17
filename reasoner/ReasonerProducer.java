@@ -22,8 +22,6 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
@@ -50,7 +48,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     private Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock;
     protected Queue<ANSWER> queue;
     protected boolean isPulling;
-    private boolean finishedEagerly;
+    protected boolean initialised;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Options.Query options, Registry controllerRegistry, ExplainablesManager explainablesManager) {
@@ -61,7 +59,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         this.done = new AtomicBoolean(false);
         this.requiredAnswers = new AtomicInteger();
         this.isPulling = false;
-        this.finishedEagerly = false;
+        this.initialised = false;
     }
 
     protected Registry controllerRegistry() {
@@ -69,7 +67,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     }
 
     @Override
-    public void initialise(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock) {
+    public void rootReactiveBlockFinalised(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock) {
         assert this.rootReactiveBlock == null;
         this.rootReactiveBlock = rootReactiveBlock;
         if (requiredAnswers.get() > 0) pull();
@@ -79,14 +77,13 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     public synchronized void produce(Queue<ANSWER> queue, int requestedAnswers, Executor executor) {
         assert this.queue == null || this.queue == queue;
         assert requestedAnswers > 0;
-        if (finishedEagerly) {
-            queue.done();
-        } else {
-            this.queue = queue;
-            requiredAnswers.addAndGet(requestedAnswers);
-            if (rootReactiveBlock != null && !isPulling) pull();
-        }
+        if (!initialised) initialiseRoot();
+        this.queue = queue;
+        requiredAnswers.addAndGet(requestedAnswers);
+        if (rootReactiveBlock != null && !isPulling) pull();
     }
+
+    protected abstract void initialiseRoot();
 
     protected void pull() {
         assert rootReactiveBlock != null;
@@ -100,9 +97,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         LOG.trace("All answers found.");
         if (!done.getAndSet(true)) {
             if (queue == null) {
-                finishedEagerly = true;
-                // Possible if there are no answers and another query has already determined this for a given
-                // resolvable, so the monitor declares finish before produce has even been called
+                initialised = true;
                 assert !isPulling;
                 assert requiredAnswers.get() == 0;
             }
@@ -126,18 +121,10 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
 
     }
 
-    public static class Match extends ReasonerProducer<ConceptMap> {
+    public static abstract class Match extends ReasonerProducer<ConceptMap> {
 
-        public Match(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
-                     Registry controllerRegistry, ExplainablesManager explainablesManager) {
+        public Match(Options.Query options, Registry controllerRegistry, ExplainablesManager explainablesManager) {
             super(options, controllerRegistry, explainablesManager);
-            controllerRegistry().registerRootConjunction(conjunction, filter, options.explain(), this);
-        }
-
-        public Match(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
-                     Registry controllerRegistry, ExplainablesManager explainablesManager) {
-            super(options, controllerRegistry, explainablesManager);
-            controllerRegistry().registerRootDisjunction(disjunction, filter, options.explain(), this);
         }
 
         @Override
@@ -152,14 +139,63 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
             if (requiredAnswers.decrementAndGet() > 0) pull();
         }
 
+        public static class Conjunction extends Match {
+
+            private final com.vaticle.typedb.core.pattern.Conjunction conjunction;
+            private final Set<Identifier.Variable.Retrievable> filter;
+
+            public Conjunction(com.vaticle.typedb.core.pattern.Conjunction conjunction,
+                               Set<Identifier.Variable.Retrievable> filter, Options.Query options,
+                               Registry controllerRegistry, ExplainablesManager explainablesManager) {
+                super(options, controllerRegistry, explainablesManager);
+                this.conjunction = conjunction;
+                this.filter = filter;
+            }
+
+            @Override
+            protected void initialiseRoot() {
+                controllerRegistry().registerRootConjunction(conjunction, filter, options.explain(), this);
+                initialised = true;
+            }
+        }
+
+        public static class Disjunction extends Match {
+
+            private final com.vaticle.typedb.core.pattern.Disjunction disjunction;
+            private final Set<Identifier.Variable.Retrievable> filter;
+
+            public Disjunction(com.vaticle.typedb.core.pattern.Disjunction disjunction,
+                               Set<Identifier.Variable.Retrievable> filter, Options.Query options,
+                               Registry controllerRegistry, ExplainablesManager explainablesManager) {
+                super(options, controllerRegistry, explainablesManager);
+                this.disjunction = disjunction;
+                this.filter = filter;
+            }
+
+            @Override
+            protected void initialiseRoot() {
+                controllerRegistry().registerRootDisjunction(disjunction, filter, options.explain(), this);
+                initialised = true;
+            }
+        }
     }
 
     public static class Explain extends ReasonerProducer<Explanation> {
 
+        private final Concludable concludable;
+        private final ConceptMap bounds;
+
         public Explain(Concludable concludable, ConceptMap bounds, Options.Query options, Registry controllerRegistry,
                        ExplainablesManager explainablesManager) {
             super(options, controllerRegistry, explainablesManager);
-            controllerRegistry.registerExplainableRoot(concludable, bounds, this);
+            this.concludable = concludable;
+            this.bounds = bounds;
+        }
+
+        @Override
+        protected void initialiseRoot() {
+            controllerRegistry().registerExplainableRoot(concludable, bounds, this);
+            initialised = true;
         }
 
         @Override
@@ -171,6 +207,5 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
             queue.put(explanation);
             if (requiredAnswers.decrementAndGet() > 0) pull();
         }
-
     }
 }

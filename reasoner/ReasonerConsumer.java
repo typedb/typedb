@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 
 public interface ReasonerConsumer<ANSWER> {
 
-    void initialise(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock);
+    void rootReactiveBlockFinalised(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock);
 
     void receiveAnswer(ANSWER answer);
 

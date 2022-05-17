@@ -507,7 +507,7 @@ public class ControllerTest {
         }
 
         @Override
-        public void initialise(Actor.Driver<? extends AbstractReactiveBlock<?, ConceptMap, ?, ?>> rootProcessor) {
+        public void rootReactiveBlockFinalised(Actor.Driver<? extends AbstractReactiveBlock<?, ConceptMap, ?, ?>> rootProcessor) {
             this.rootProcessor = rootProcessor;
             if (pullOnSet) pull();
         }
