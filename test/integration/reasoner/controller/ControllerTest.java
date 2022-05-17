@@ -207,11 +207,6 @@ public class ControllerTest {
 
     @Test
     public void test_simple_rule() throws InterruptedException {
-        // TODO: We would like to reach into the reasoner to check that:
-        //  - 3 answers come from the direct traversal at the root,
-        //  - 3 answers come from the concludable via the rule and its retrievable, checking their sent/received messages
-        //  are consistent with our expectation.
-
         try (CoreSession session = schemaSession()) {
             try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 transaction.query().define(TypeQL.parseQuery(

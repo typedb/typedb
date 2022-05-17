@@ -58,8 +58,6 @@ public class NegationController extends AbstractController<
 
     @Override
     public void setUpUpstreamControllers() {
-        // TODO: If there is only one conjunction in the disjunction we could theoretically skip the disjunction, but
-        //  this is architecturally difficult.
         disjunctionContoller = registry().registerNestedDisjunction(negated.pattern());
     }
 
@@ -125,7 +123,7 @@ public class NegationController extends AbstractController<
 
         private static class NegationStream
                 extends TransformationStream<ConceptMap, ConceptMap> implements Finishable<ConceptMap> {
-            // TODO: Negation should be modelled as both a source and a sink, called a Bridge for now. It is a Source
+            // TODO: Negation should be modelled as both a source and a sink, possible name: Bridge. It is a Source
             //  for the graph downstream and a Sink for the graph upstream
 
             private final ConceptMap bounds;

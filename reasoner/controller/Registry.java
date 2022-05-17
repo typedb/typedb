@@ -208,7 +208,8 @@ public class Registry {
 
     private Optional<ResolverView.MappedConcludable> getConcludable(Concludable concludable) {
         for (Map.Entry<Concludable, Actor.Driver<ConcludableController.Match>> c : concludableControllers.entrySet()) {
-            // TODO: This needs to be optimised from a linear search to use an alpha hash
+            // TODO: This needs to be optimised from a linear search to use an alpha hash - defer this in case alpha
+            //  equivalence is no longer used.
             Optional<AlphaEquivalence> alphaEquality = concludable.alphaEquals(c.getKey()).first();
             if (alphaEquality.isPresent()) {
                 return Optional.of(ResolverView.concludable(c.getValue(), alphaEquality.get().retrievableMapping()));
