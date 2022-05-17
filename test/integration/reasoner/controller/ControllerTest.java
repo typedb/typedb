@@ -67,7 +67,7 @@ public class ControllerTest {
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("computation-graph-test");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
-            .storageDataCacheSize(MB).storageIndexCacheSize(MB).traceInference(false);
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB).traceInference(false).explain(true);
     private static final String database = "computation-graph-test";
     private static CoreDatabaseManager databaseMgr;
 
@@ -586,14 +586,14 @@ public class ControllerTest {
                 answersFound += 1;
                 System.out.println(answersFound + " answers found");
                 System.out.println(answer);
-//                if (answer.explainables().iterator().count() > 0) {  // TODO: Re-enable when explanation are back
-//                    explainableAnswersFound++;
-//                }
+                if (answer.explainables().iterator().count() > 0) {
+                    explainableAnswersFound++;
+                }
             }
         }
 
         assertEquals(answerCount, answersFound);
-        // assertEquals(explainableAnswers, explainableAnswersFound);  // TODO: Re-enable when explanation are back
+        assertEquals(explainableAnswers, explainableAnswersFound);
         ConceptMap answer = responses.poll(500, TimeUnit.MILLISECONDS);  // Poll for one more answer, expecting failure
         assertNull(answer);
         assertTrue(doneReceived.get());
