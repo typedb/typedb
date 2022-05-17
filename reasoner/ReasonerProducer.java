@@ -143,7 +143,8 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         @Override
         public void receiveAnswer(ConceptMap answer) {
             isPulling = false;
-            // TODO: The explainables can always be given
+            // TODO: The explainables can always be given. The only blocked to removing the explain flag is that
+            //  `match get` filters should be ignored for an explainable answer
             if (options.explain() && !answer.explainables().isEmpty()) {
                 explainablesManager.setAndRecordExplainables(answer);
             }
