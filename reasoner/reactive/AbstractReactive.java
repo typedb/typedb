@@ -18,10 +18,9 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveActions;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
-import com.vaticle.typedb.core.reasoner.common.Tracer;
+import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveActions;
 
 import java.util.function.Function;
 

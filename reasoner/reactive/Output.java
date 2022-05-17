@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import com.vaticle.typedb.core.reasoner.common.Tracer;
-
 /**
  * Governs an output from a reactiveBlock
  */

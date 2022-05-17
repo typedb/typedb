@@ -18,8 +18,8 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
+import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
 
 import javax.annotation.Nullable;
 

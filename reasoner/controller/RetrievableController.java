@@ -21,12 +21,12 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
+import com.vaticle.typedb.core.reasoner.common.Traversal;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
-import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.Source;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
-import com.vaticle.typedb.core.reasoner.common.Traversal;
 
 import java.util.function.Supplier;
 

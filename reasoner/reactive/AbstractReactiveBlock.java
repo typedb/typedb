@@ -21,12 +21,12 @@ package com.vaticle.typedb.core.reasoner.reactive;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.controller.AbstractController;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Identifier;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Subscriber;
 import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveIdentifier;
-import com.vaticle.typedb.core.reasoner.common.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

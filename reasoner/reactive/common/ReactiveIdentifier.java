@@ -18,9 +18,9 @@
 
 package com.vaticle.typedb.core.reasoner.reactive.common;
 
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 
 import java.util.Objects;
 

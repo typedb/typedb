@@ -18,10 +18,10 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
-import com.vaticle.typedb.core.reasoner.reactive.common.SubscriberRegistry;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
+import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.reactive.common.SubscriberRegistry;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
