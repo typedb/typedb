@@ -64,7 +64,8 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
 
     @Override
     public void registerPublisher(Publisher<PACKET> publisher) {
-        if (publisherRegistry().add(publisher)) subscriberActions.registerPath(publisher);
+        publisherRegistry().add(publisher);
+        subscriberActions.registerPath(publisher);
         if (isPulling && publisherRegistry().setPulling()) publisher.pull(this);
     }
 

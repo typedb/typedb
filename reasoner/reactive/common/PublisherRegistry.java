@@ -29,7 +29,7 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 
 public abstract class PublisherRegistry<PACKET> {
 
-    public abstract boolean add(Publisher<PACKET> publisher);
+    public abstract void add(Publisher<PACKET> publisher);
 
     public abstract void recordReceive(Publisher<PACKET> publisher);
 
@@ -50,12 +50,10 @@ public abstract class PublisherRegistry<PACKET> {
         }
 
         @Override
-        public boolean add(Publisher<PACKET> publisher) {
+        public void add(Publisher<PACKET> publisher) {
             assert publisher != null;
-            assert this.publisher == null || publisher == this.publisher;  // TODO: Tighten this to allow adding only once
-            boolean isNew = this.publisher == null;
+            assert this.publisher == null;
             this.publisher = publisher;
-            return isNew;
         }
 
         public boolean setPulling() {
@@ -104,20 +102,16 @@ public abstract class PublisherRegistry<PACKET> {
         }
 
         @Override
-        public boolean add(Publisher<PACKET> publisher) {
+        public void add(Publisher<PACKET> publisher) {
             assert publisher != null;
-            return publisherPullState.putIfAbsent(publisher, false) == null;
+            assert publisherPullState.get(publisher) == null;
+            publisherPullState.put(publisher, false);
         }
 
         @Override
         public void recordReceive(Publisher<PACKET> publisher) {
             assert publisherPullState.containsKey(publisher);
             publisherPullState.put(publisher, false);
-        }
-
-        public boolean isPulling(Publisher<PACKET> publisher) {
-            assert publisherPullState.containsKey(publisher);
-            return publisherPullState.get(publisher);
         }
 
         @Override

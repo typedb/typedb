@@ -52,7 +52,8 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
 
     @Override
     public void registerPublisher(Publisher<INPUT> publisher) {
-        if (publisherRegistry().add(publisher)) subscriberActions.registerPath(publisher);
+        publisherRegistry().add(publisher);
+        subscriberActions.registerPath(publisher);
         if (subscriberRegistry().anyPulling() && publisherRegistry().setPulling(publisher)) propagatePull(publisher);
     }
 
