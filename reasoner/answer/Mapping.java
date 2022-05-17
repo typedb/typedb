@@ -58,7 +58,7 @@ public class Mapping {
                 transformed.put(mapped, concept);
             }
         }
-        return new ConceptMap(transformed, conceptMap.explainables());  // TODO: Not convinced we need this because transform is only applied on the way down
+        return new ConceptMap(transformed);
     }
 
     public ConceptMap unTransform(ConceptMap conceptMap) {
