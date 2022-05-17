@@ -119,8 +119,8 @@ public class Registry {
         }
     }
 
-    public void registerRootConjunctionController(Conjunction conjunction, Set<Variable.Retrievable> filter,
-                                                  boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
+    public void registerRootConjunction(Conjunction conjunction, Set<Variable.Retrievable> filter,
+                                        boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         LOG.debug("Creating Root Conjunction for: '{}'", conjunction);
         Actor.Driver<RootConjunctionController> controller =
                 Actor.driver(driver -> new RootConjunctionController(
@@ -131,8 +131,8 @@ public class Registry {
         if (terminated.get()) throw terminationCause; // guard races without synchronized
     }
 
-    public void registerRootDisjunctionController(Disjunction disjunction, Set<Variable.Retrievable> filter,
-                                                  boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
+    public void registerRootDisjunction(Disjunction disjunction, Set<Variable.Retrievable> filter,
+                                        boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         LOG.debug("Creating Root Disjunction for: '{}'", disjunction);
         Actor.Driver<RootDisjunctionController> controller =
                 Actor.driver(driver -> new RootDisjunctionController(
@@ -156,7 +156,7 @@ public class Registry {
         if (terminated.get()) throw terminationCause; // guard races without synchronized
     }
 
-    public Actor.Driver<NestedConjunctionController> registerNestedConjunctionController(Conjunction conjunction) {
+    public Actor.Driver<NestedConjunctionController> registerNestedConjunction(Conjunction conjunction) {
         LOG.debug("Creating Nested Conjunction for: '{}'", conjunction);
         Actor.Driver<NestedConjunctionController> controller =
                 Actor.driver(driver -> new NestedConjunctionController(driver, conjunction, controllerContext),
@@ -167,7 +167,7 @@ public class Registry {
         return controller;
     }
 
-    public Actor.Driver<NestedDisjunctionController> registerNestedDisjunctionController(Disjunction disjunction) {
+    public Actor.Driver<NestedDisjunctionController> registerNestedDisjunction(Disjunction disjunction) {
         LOG.debug("Creating Nested Disjunction for: '{}'", disjunction);
         Actor.Driver<NestedDisjunctionController> controller =
                 Actor.driver(driver -> new NestedDisjunctionController(driver, disjunction, controllerContext),
@@ -178,9 +178,9 @@ public class Registry {
         return controller;
     }
 
-    public ResolverView.MappedConcludable registerConcludableController(Concludable concludable) {
+    public ResolverView.MappedConcludable registerOrGetConcludable(Concludable concludable) {
         LOG.debug("Register ConcludableResolver: '{}'", concludable.pattern());
-        Optional<ResolverView.MappedConcludable> resolverViewOpt = getConcludableResolver(concludable);
+        Optional<ResolverView.MappedConcludable> resolverViewOpt = getConcludable(concludable);
         ResolverView.MappedConcludable controllerView;
         if (resolverViewOpt.isPresent()) {
             controllerView = resolverViewOpt.get();
@@ -206,7 +206,7 @@ public class Registry {
         return conjunctionResolvable.retrieves().stream().collect(toMap(Function.identity(), Function.identity()));
     }
 
-    private Optional<ResolverView.MappedConcludable> getConcludableResolver(Concludable concludable) {
+    private Optional<ResolverView.MappedConcludable> getConcludable(Concludable concludable) {
         for (Map.Entry<Concludable, Actor.Driver<ConcludableController.Match>> c : concludableControllers.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash
             Optional<AlphaEquivalence> alphaEquality = concludable.alphaEquals(c.getKey()).first();
@@ -217,7 +217,7 @@ public class Registry {
         return Optional.empty();
     }
 
-    public ResolverView.FilteredRetrievable registerRetrievableController(Retrievable retrievable) {
+    public ResolverView.FilteredRetrievable registerRetrievable(Retrievable retrievable) {
         LOG.debug("Register RetrievableController: '{}'", retrievable.pattern());
         Actor.Driver<RetrievableController> controller = Actor.driver(
                 driver -> new RetrievableController(driver, retrievable, controllerContext), controllerContext.executorService());
@@ -226,7 +226,7 @@ public class Registry {
         return ResolverView.retrievable(controller, retrievable.retrieves());
     }
 
-    public ResolverView.FilteredNegation registerNegationController(Negated negated, Conjunction conjunction) {
+    public ResolverView.FilteredNegation registerNegation(Negated negated, Conjunction conjunction) {
         LOG.debug("Creating NegationController for : {}", negated);
         Actor.Driver<NegationController> negationController = Actor.driver(
                 driver -> new NegationController(driver, negated, controllerContext), controllerContext.executorService());
@@ -244,7 +244,7 @@ public class Registry {
                 .collect(Collectors.toSet());
     }
 
-    public Actor.Driver<ConclusionController.Match> registerMatchConclusionController(Rule.Conclusion conclusion) {
+    public Actor.Driver<ConclusionController.Match> registerOrGetMatchConclusion(Rule.Conclusion conclusion) {
         LOG.debug("Register ConclusionController: '{}'", conclusion);
         Actor.Driver<ConclusionController.Match> controller = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> {
             Actor.Driver<ConclusionController.Match> c = Actor.driver(
@@ -260,7 +260,7 @@ public class Registry {
         return controller;
     }
 
-    public Actor.Driver<ConclusionController.Explain> registerExplainConclusionController(Rule.Conclusion conclusion) {
+    public Actor.Driver<ConclusionController.Explain> registerExplainConclusion(Rule.Conclusion conclusion) {
         LOG.debug("Register Explain ConclusionController: '{}'", conclusion);
         Actor.Driver<ConclusionController.Explain> controller = explainRuleConclusions.computeIfAbsent(
                 conclusion.rule(), r -> {
@@ -277,7 +277,7 @@ public class Registry {
         return controller;
     }
 
-    public Actor.Driver<ConditionController> registerConditionController(Rule.Condition condition) {
+    public Actor.Driver<ConditionController> registerCondition(Rule.Condition condition) {
         LOG.debug("Register ConditionController: '{}'", condition);
         Actor.Driver<ConditionController> controller = ruleConditions.computeIfAbsent(condition.rule(), r -> {
             Actor.Driver<ConditionController> c = Actor.driver(

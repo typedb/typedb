@@ -131,13 +131,13 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         public Match(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
                      Registry controllerRegistry, ExplainablesManager explainablesManager) {
             super(options, controllerRegistry, explainablesManager);
-            controllerRegistry().registerRootConjunctionController(conjunction, filter, options.explain(), this);  // TODO: Doesn't indicate that this also triggers the setup of the upstream controllers and creates a reactiveBlock and connects it back to this producer. Clean up this storyline.
+            controllerRegistry().registerRootConjunction(conjunction, filter, options.explain(), this);
         }
 
         public Match(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
                      Registry controllerRegistry, ExplainablesManager explainablesManager) {
             super(options, controllerRegistry, explainablesManager);
-            controllerRegistry().registerRootDisjunctionController(disjunction, filter, options.explain(), this);  // TODO: Doesn't indicate that this also triggers the setup of the upstream controllers and creates a reactiveBlock and connects it back to this producer. Clean up this storyline.
+            controllerRegistry().registerRootDisjunction(disjunction, filter, options.explain(), this);
         }
 
         @Override

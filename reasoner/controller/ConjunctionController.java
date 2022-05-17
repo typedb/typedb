@@ -91,15 +91,15 @@ public abstract class ConjunctionController<OUTPUT,
         resolvables.addAll(concludables);
         resolvables.addAll(retrievables);
         iterate(concludables).forEachRemaining(c -> {
-            concludableControllers.put(c, registry().registerConcludableController(c));
+            concludableControllers.put(c, registry().registerOrGetConcludable(c));
         });
         iterate(retrievables).forEachRemaining(r -> {
-            retrievableControllers.put(r, registry().registerRetrievableController(r));
+            retrievableControllers.put(r, registry().registerRetrievable(r));
         });
         iterate(conjunction.negations()).forEachRemaining(negation -> {
             Negated negated = new Negated(negation);
             try {
-                negationControllers.put(negated, registry().registerNegationController(negated, conjunction));
+                negationControllers.put(negated, registry().registerNegation(negated, conjunction));
                 negateds.add(negated);
             } catch (TypeDBException e) {
                 terminate(e);

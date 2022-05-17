@@ -61,7 +61,7 @@ public class NegationController extends AbstractController<
     public void setUpUpstreamControllers() {
         // TODO: If there is only one conjunction in the disjunction we could theoretically skip the disjunction, but
         //  this is architecturally difficult.
-        disjunctionContoller = registry().registerNestedDisjunctionController(negated.pattern());
+        disjunctionContoller = registry().registerNestedDisjunction(negated.pattern());
     }
 
     @Override
