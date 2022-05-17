@@ -67,7 +67,7 @@ public abstract class ProcedureVertex<
     private ProcedureEdge<?, ?> lastInEdge;
     private List<ProcedureEdge<?, ?>> orderedOuts;
     private Set<ProcedureVertex<?, ?>> transitiveOuts;
-    private Set<Identifier.Variable> scopedBy;
+    private Set<Identifier.Variable> scopesVisited;
 
     ProcedureVertex(Identifier identifier) {
         super(identifier);
@@ -116,7 +116,7 @@ public abstract class ProcedureVertex<
     public Set<ProcedureVertex<?, ?>> transitiveOuts() {
         if (transitiveOuts == null) {
             HashSet<ProcedureVertex<?, ?>> transitive = new HashSet<>();
-            orderedOuts().forEach(edge -> {
+            outs().forEach(edge -> {
                 transitive.add(edge.to());
                 transitive.addAll(edge.to().transitiveOuts());
             });
@@ -126,8 +126,8 @@ public abstract class ProcedureVertex<
     }
 
     public Set<Identifier.Variable> scopesVisited() {
-        if (scopedBy == null) scopedBy = computeScopesVisited();
-        return scopedBy;
+        if (scopesVisited == null) scopesVisited = computeScopesVisited();
+        return scopesVisited;
     }
 
     Set<Identifier.Variable> computeScopesVisited() {
@@ -142,6 +142,7 @@ public abstract class ProcedureVertex<
     public String toString() {
         String str = super.toString();
         if (isStartingVertex()) str += " (start)";
+        if (outs().isEmpty()) str += " (end)";
         return str;
     }
 
