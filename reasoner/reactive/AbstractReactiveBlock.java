@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.controller.AbstractController;
@@ -290,4 +291,149 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
         }
 
     }
+
+    /**
+     * Governs an input to a reactiveBlock
+     */
+    public static class Input<PACKET> implements Publisher<PACKET> {
+
+        private final Identifier<PACKET, ?> identifier;
+        private final AbstractReactiveBlock<PACKET, ?, ?, ?> reactiveBlock;
+        private final AbstractReactive.PublisherActionsImpl<PACKET> publisherActions;
+        private boolean ready;
+        private Identifier<?, PACKET> providingOutput;
+        private Subscriber<PACKET> subscriber;
+
+        public Input(AbstractReactiveBlock<PACKET, ?, ?, ?> reactiveBlock) {
+            this.reactiveBlock = reactiveBlock;
+            this.identifier = reactiveBlock.registerReactive(this);
+            this.ready = false;
+            this.publisherActions = new AbstractReactive.PublisherActionsImpl<>(this, reactiveBlock.context());
+        }
+
+        @Override
+        public AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock() {
+            return reactiveBlock;
+        }
+
+        @Override
+        public Identifier<PACKET, ?> identifier() {
+            return identifier;
+        }
+
+        public void setOutput(Identifier<?, PACKET> outputId) {
+            assert providingOutput == null;
+            providingOutput = outputId;
+            reactiveBlock().monitor().execute(actor -> actor.registerPath(identifier(), outputId));
+            assert !ready;
+            ready = true;
+        }
+
+        public void pull() {
+            pull(subscriber);
+        }
+
+        @Override
+        public void pull(Subscriber<PACKET> subscriber) {
+            assert subscriber.equals(this.subscriber);
+            reactiveBlock().tracer().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+            if (ready) providingOutput.reactiveBlock().execute(actor -> actor.pull(providingOutput));
+        }
+
+        @Override
+        public void registerSubscriber(Subscriber<PACKET> subscriber) {
+            assert this.subscriber == null;
+            this.subscriber = subscriber;
+            subscriber.registerPublisher(this);
+        }
+
+        @Override
+        public <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function) {
+            return publisherActions.map(this, function);
+        }
+
+        @Override
+        public <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function) {
+            return publisherActions.flatMap(this, function);
+        }
+
+        @Override
+        public Stream<PACKET, PACKET> buffer() {
+            return publisherActions.buffer(this);
+        }
+
+        @Override
+        public Stream<PACKET, PACKET> distinct() {
+            return publisherActions.distinct(this);
+        }
+
+        public void receive(Identifier<?, PACKET> outputId, PACKET packet) {
+            reactiveBlock().tracer().ifPresent(tracer -> tracer.receive(outputId, identifier(), packet));
+            subscriber.receive(this, packet);
+        }
+
+        @Override
+        public String toString() {
+            return reactiveBlock.debugName().get() + ":" + getClass().getSimpleName();
+        }
+
+    }
+
+    /**
+     * Governs an output from a reactiveBlock
+     */
+    public static class Output<PACKET> implements Subscriber<PACKET> {
+
+        private final Identifier<?, PACKET> identifier;
+        private final AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
+        private final AbstractReactive.SubscriberActionsImpl<PACKET> subscriberActions;
+        private Identifier<PACKET, ?> receivingInput;
+        private Publisher<PACKET> publisher;
+
+        public Output(AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock) {
+            this.reactiveBlock = reactiveBlock;
+            this.identifier = reactiveBlock().registerReactive(this);
+            this.subscriberActions = new AbstractReactive.SubscriberActionsImpl<>(this, reactiveBlock().context());
+        }
+
+        @Override
+        public Identifier<?, PACKET> identifier() {
+            return identifier;
+        }
+
+        @Override
+        public AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock() {
+            return reactiveBlock;
+        }
+
+        @Override
+        public void receive(Publisher<PACKET> publisher, PACKET packet) {
+            subscriberActions.traceReceive(publisher, packet);
+            receivingInput.reactiveBlock().execute(actor -> actor.receive(identifier(), packet, receivingInput));
+        }
+
+        public void pull() {
+            assert publisher != null;
+            reactiveBlock().context().tracer().ifPresent(tracer -> tracer.pull(receivingInput, identifier()));
+            publisher.pull(this);
+        }
+
+        @Override
+        public void registerPublisher(Publisher<PACKET> publisher) {
+            assert this.publisher == null;
+            this.publisher = publisher;
+            subscriberActions.registerPath(publisher);
+        }
+
+        public void setSubscriber(Identifier<PACKET, ?> inputId) {
+            assert receivingInput == null;
+            receivingInput = inputId;
+        }
+
+        @Override
+        public String toString() {
+            return reactiveBlock().debugName().get() + ":" + getClass().getSimpleName();
+        }
+    }
+
 }

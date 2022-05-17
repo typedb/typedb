@@ -33,7 +33,6 @@ import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.MaterialiserRequest;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
-import com.vaticle.typedb.core.reasoner.reactive.Input;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
