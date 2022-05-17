@@ -35,6 +35,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -66,16 +67,13 @@ public class Registry {
     private final Map<Rule, Actor.Driver<ConclusionController.Explain>> explainRuleConclusions;
     private final Set<Actor.Driver<? extends AbstractController<?, ?, ?, ?, ?, ?>>> controllers;
     private final TraversalEngine traversalEngine;
-    private final boolean tracing;
+    private final AbstractController.Context controllerContext;
     private final Actor.Driver<MaterialisationController> materialisationController;
     private final AtomicBoolean terminated;
-    private final Actor.Driver<Monitor> monitor;
     private TypeDBException terminationCause;
-    private ActorExecutorGroup executorService;
 
     public Registry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                    LogicManager logicMgr, boolean tracing) {
-        this.executorService = executorService;
+                    LogicManager logicMgr, com.vaticle.typedb.core.common.parameters.Context.Query context) {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
@@ -86,10 +84,16 @@ public class Registry {
         this.explainRuleConclusions = new ConcurrentHashMap<>();
         this.controllers = new ConcurrentSet<>();
         this.terminated = new AtomicBoolean(false);
-        this.tracing = tracing;
-        this.monitor = Actor.driver(Monitor::new, executorService);
+        Tracer tracer = null;
+        if (context.options().traceInference()) {
+            tracer = new Tracer(context.transactionId(), context.options().reasonerDebuggerDir());
+        }
+        Tracer finalTracer = tracer;
+        this.controllerContext = new AbstractController.Context(
+                executorService, this, Actor.driver(driver -> new Monitor(driver, finalTracer), executorService), tracer
+        );
         this.materialisationController = Actor.driver(driver -> new MaterialisationController(
-                driver, executorService, monitor, this, traversalEngine(), conceptManager()), executorService
+                driver, controllerContext, traversalEngine(), conceptManager()), executorService
         );
     }
 
@@ -105,21 +109,13 @@ public class Registry {
         return logicMgr;
     }
 
-    public Actor.Driver<Monitor> monitor() {
-        return monitor;
-    }
-
-    public boolean tracing() {
-        return tracing;
-    }
-
     public void terminate(Throwable e) {
         TypeDBException cause = TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, e);
         if (terminated.compareAndSet(false, true)) {
             terminationCause = cause;
             controllers.forEach(actor -> actor.execute(r -> r.terminate(cause)));
             materialisationController.execute(actor -> actor.terminate(cause));
-            monitor.execute(actor -> actor.terminate(cause));
+            controllerContext.reactiveBlock().monitor().execute(actor -> actor.terminate(cause));
         }
     }
 
@@ -127,8 +123,9 @@ public class Registry {
                                                   boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         LOG.debug("Creating Root Conjunction for: '{}'", conjunction);
         Actor.Driver<RootConjunctionController> controller =
-                Actor.driver(driver -> new RootConjunctionController(driver, conjunction, filter, explain, executorService,
-                                                                     monitor, this, reasonerConsumer), executorService);
+                Actor.driver(driver -> new RootConjunctionController(
+                        driver, conjunction, filter, explain, controllerContext, reasonerConsumer
+                ), controllerContext.executorService());
         controller.execute(RootConjunctionController::initialise);
         controllers.add(controller);
         if (terminated.get()) throw terminationCause; // guard races without synchronized
@@ -138,8 +135,10 @@ public class Registry {
                                                   boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         LOG.debug("Creating Root Disjunction for: '{}'", disjunction);
         Actor.Driver<RootDisjunctionController> controller =
-                Actor.driver(driver -> new RootDisjunctionController(driver, disjunction, filter, explain, executorService,
-                                                                     monitor, this, reasonerConsumer), executorService);
+                Actor.driver(driver -> new RootDisjunctionController(
+                                     driver, disjunction, filter, explain, controllerContext, reasonerConsumer
+                             ), controllerContext.executorService()
+                );
         controller.execute(RootDisjunctionController::initialise);
         controllers.add(controller);
         if (terminated.get()) throw terminationCause; // guard races without synchronized
@@ -148,8 +147,10 @@ public class Registry {
     public void registerExplainableRoot(Concludable concludable, ConceptMap bounds,
                                         ReasonerConsumer<Explanation> reasonerConsumer) {
         Actor.Driver<ConcludableController.Explain> controller = Actor.driver(
-                driver -> new ConcludableController.Explain(driver, concludable, bounds, executorService, monitor, this,
-                                                            reasonerConsumer), executorService);
+                driver -> new ConcludableController.Explain(
+                        driver, concludable, bounds, controllerContext, reasonerConsumer
+                ), controllerContext.executorService()
+        );
         controller.execute(ConcludableController.Explain::initialise);
         controllers.add(controller);
         if (terminated.get()) throw terminationCause; // guard races without synchronized
@@ -158,8 +159,8 @@ public class Registry {
     public Actor.Driver<NestedConjunctionController> registerNestedConjunctionController(Conjunction conjunction) {
         LOG.debug("Creating Nested Conjunction for: '{}'", conjunction);
         Actor.Driver<NestedConjunctionController> controller =
-                Actor.driver(driver -> new NestedConjunctionController(driver, conjunction, executorService, monitor, this),
-                             executorService);
+                Actor.driver(driver -> new NestedConjunctionController(driver, conjunction, controllerContext),
+                             controllerContext.executorService());
         controller.execute(ConjunctionController::initialise);
         controllers.add(controller);
         if (terminated.get()) throw terminationCause; // guard races without synchronized
@@ -169,8 +170,8 @@ public class Registry {
     public Actor.Driver<NestedDisjunctionController> registerNestedDisjunctionController(Disjunction disjunction) {
         LOG.debug("Creating Nested Disjunction for: '{}'", disjunction);
         Actor.Driver<NestedDisjunctionController> controller =
-                Actor.driver(driver -> new NestedDisjunctionController(driver, disjunction, executorService, monitor, this),
-                             executorService);
+                Actor.driver(driver -> new NestedDisjunctionController(driver, disjunction, controllerContext),
+                             controllerContext.executorService());
         controller.execute(NestedDisjunctionController::initialise);
         controllers.add(controller);
         if (terminated.get()) throw terminationCause; // guard races without synchronized
@@ -185,9 +186,10 @@ public class Registry {
             controllerView = resolverViewOpt.get();
             controllerConcludables.get(controllerView.controller()).add(concludable);
         } else {
-            Actor.Driver<ConcludableController.Match> controller =
-                    Actor.driver(driver -> new ConcludableController.Match(
-                            driver, concludable, executorService, monitor, this), executorService);
+            Actor.Driver<ConcludableController.Match> controller = Actor.driver(
+                    driver -> new ConcludableController.Match(driver, concludable, controllerContext),
+                    controllerContext.executorService()
+            );
             controller.execute(ConcludableController::initialise);
             controllerView = ResolverView.concludable(controller, identity(concludable));
             controllers.add(controller);
@@ -218,7 +220,7 @@ public class Registry {
     public ResolverView.FilteredRetrievable registerRetrievableController(Retrievable retrievable) {
         LOG.debug("Register RetrievableController: '{}'", retrievable.pattern());
         Actor.Driver<RetrievableController> controller = Actor.driver(
-                driver -> new RetrievableController(driver, retrievable, executorService, monitor, this), executorService);
+                driver -> new RetrievableController(driver, retrievable, controllerContext), controllerContext.executorService());
         controllers.add(controller);
         if (terminated.get()) throw terminationCause; // guard races without synchronized
         return ResolverView.retrievable(controller, retrievable.retrieves());
@@ -227,7 +229,7 @@ public class Registry {
     public ResolverView.FilteredNegation registerNegationController(Negated negated, Conjunction conjunction) {
         LOG.debug("Creating NegationController for : {}", negated);
         Actor.Driver<NegationController> negationController = Actor.driver(
-                driver -> new NegationController(driver, negated, executorService, monitor, this), executorService);
+                driver -> new NegationController(driver, negated, controllerContext), controllerContext.executorService());
         negationController.execute(NegationController::initialise);
         controllers.add(negationController);
         if (terminated.get()) throw terminationCause; // guard races without synchronized
@@ -246,8 +248,10 @@ public class Registry {
         LOG.debug("Register ConclusionController: '{}'", conclusion);
         Actor.Driver<ConclusionController.Match> controller = ruleConclusions.computeIfAbsent(conclusion.rule(), r -> {
             Actor.Driver<ConclusionController.Match> c = Actor.driver(
-                    driver -> new ConclusionController.Match(driver, conclusion, executorService,
-                                                             materialisationController, monitor, this), executorService);
+                    driver -> new ConclusionController.Match(
+                            driver, conclusion, materialisationController, controllerContext
+                    ), controllerContext.executorService()
+            );
             c.execute(ConclusionController::initialise);
             return c;
         });
@@ -262,8 +266,8 @@ public class Registry {
                 conclusion.rule(), r -> {
                     Actor.Driver<ConclusionController.Explain> c = Actor.driver(
                             driver -> new ConclusionController.Explain(
-                                    driver, conclusion, executorService, materialisationController, monitor, this
-                            ), executorService);
+                                    driver, conclusion, materialisationController, controllerContext
+                            ), controllerContext.executorService());
                     c.execute(ConclusionController::initialise);
                     return c;
                 }
@@ -277,7 +281,9 @@ public class Registry {
         LOG.debug("Register ConditionController: '{}'", condition);
         Actor.Driver<ConditionController> controller = ruleConditions.computeIfAbsent(condition.rule(), r -> {
             Actor.Driver<ConditionController> c = Actor.driver(
-                    driver -> new ConditionController(driver, condition, executorService, monitor, this), executorService);
+                    driver -> new ConditionController(driver, condition, controllerContext),
+                    controllerContext.executorService()
+            );
             c.execute(ConditionController::initialise);
             return c;
         });
@@ -287,7 +293,11 @@ public class Registry {
     }
 
     public void setExecutorService(ActorExecutorGroup executorService) {
-        this.executorService = executorService;
+        this.controllerContext.setExecutorService(executorService);
+    }
+
+    public void close() {
+        controllerContext.tracer().ifPresent(Tracer::finishTrace);
     }
 
     public static abstract class ResolverView {

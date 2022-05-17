@@ -48,9 +48,11 @@ public abstract class AbstractReactive implements Reactive {
     public static class SubscriberActionsImpl<INPUT> implements ReactiveActions.SubscriberActions<INPUT> {
 
         private final Subscriber<INPUT> subscriber;
+        private final AbstractReactiveBlock.Context context;
 
-        public SubscriberActionsImpl(Subscriber<INPUT> subscriber) {
+        public SubscriberActionsImpl(Subscriber<INPUT> subscriber, AbstractReactiveBlock.Context context) {
             this.subscriber = subscriber;
+            this.context = context;
         }
 
         @Override
@@ -60,7 +62,7 @@ public abstract class AbstractReactive implements Reactive {
 
         @Override
         public void traceReceive(Publisher<INPUT> publisher, INPUT packet) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(publisher.identifier(), subscriber.identifier(), packet));
+            context.tracer().ifPresent(tracer -> tracer.receive(publisher.identifier(), subscriber.identifier(), packet));
         }
 
         @Override
@@ -72,9 +74,11 @@ public abstract class AbstractReactive implements Reactive {
     public static class PublisherActionsImpl<OUTPUT> implements ReactiveActions.PublisherActions<OUTPUT> {
 
         private final Publisher<OUTPUT> publisher;
+        private final AbstractReactiveBlock.Context context;
 
-        public PublisherActionsImpl(Publisher<OUTPUT> publisher) {
+        public PublisherActionsImpl(Publisher<OUTPUT> publisher, AbstractReactiveBlock.Context context) {
             this.publisher = publisher;
+            this.context = context;
         }
 
         @Override
@@ -98,7 +102,7 @@ public abstract class AbstractReactive implements Reactive {
 
         @Override
         public void tracePull(Subscriber<OUTPUT> subscriber) {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), publisher.identifier()));
+            context.tracer().ifPresent(tracer -> tracer.pull(subscriber.identifier(), publisher.identifier()));
         }
 
         @Override

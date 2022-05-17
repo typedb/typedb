@@ -33,7 +33,6 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
-import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
@@ -64,12 +63,11 @@ import static org.junit.Assert.fail;
 
 public class ControllerTest {
 
-    private static final Boolean tracing = false;
-    private static final boolean preventHanging = true;
+    private static final boolean PREVENT_HANGING = true;
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("computation-graph-test");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
-            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB).traceInference(false);
     private static final String database = "computation-graph-test";
     private static CoreDatabaseManager databaseMgr;
 
@@ -544,10 +542,6 @@ public class ControllerTest {
     private void createRootAndAssertResponses(CoreTransaction transaction, Disjunction disjunction,
                                               Set<Identifier.Variable.Retrievable> filter, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
-        if (tracing) {
-            Tracer.initialise(options.reasonerDebuggerDir());
-            Tracer.get().startDefaultTrace();
-        }
         Registry registry = transaction.reasoner().controllerRegistry();
         AnswerProducer answerProducer = new AnswerProducer();
         answerProducer.getNextAnswer();
@@ -562,10 +556,6 @@ public class ControllerTest {
 
     private void createRootAndAssertResponses(CoreTransaction transaction, Conjunction conjunction, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
-        if (tracing) {
-            Tracer.initialise(options.reasonerDebuggerDir());
-            Tracer.get().startDefaultTrace();
-        }
         Registry registry = transaction.reasoner().controllerRegistry();
         Set<Identifier.Variable.Retrievable> filter = new HashSet<>();
         iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName).map(Identifier.Variable::asName)
@@ -589,7 +579,7 @@ public class ControllerTest {
         int explainableAnswersFound = 0;
         for (int i = 0; i < n - 1; i++) {
             ConceptMap answer;
-            if (preventHanging) answer = responses.poll(500, TimeUnit.MILLISECONDS);// polling prevents the test hanging
+            if (PREVENT_HANGING) answer = responses.poll(500, TimeUnit.MILLISECONDS);// polling prevents the test hanging
             else answer = responses.take();
 
             if (answer != null) {
@@ -602,30 +592,12 @@ public class ControllerTest {
             }
         }
 
-        try {
-            assertEquals(answerCount, answersFound);
-            // assertEquals(explainableAnswers, explainableAnswersFound);  // TODO: Re-enable when explanation are back
-            ConceptMap answer = responses.poll(500, TimeUnit.MILLISECONDS);  // Poll for one more answer, expecting failure
-            assertNull(answer);
-            assertTrue(doneReceived.get());
-            assertTrue(responses.isEmpty());
-        } catch (Throwable e) {
-            sleepFor(1000);
-            if (tracing) Tracer.get().finishDefaultTrace();  // TODO: Not nice that we start tracing in a different method
-            throw e;
-        }
-        if (tracing) {
-            sleepFor(1000);
-            Tracer.get().finishDefaultTrace();  // TODO: Not nice that we start tracing in a different method
-        }
+        assertEquals(answerCount, answersFound);
+        // assertEquals(explainableAnswers, explainableAnswersFound);  // TODO: Re-enable when explanation are back
+        ConceptMap answer = responses.poll(500, TimeUnit.MILLISECONDS);  // Poll for one more answer, expecting failure
+        assertNull(answer);
+        assertTrue(doneReceived.get());
+        assertTrue(responses.isEmpty());
         System.out.println("Time : " + (System.currentTimeMillis() - startTime));
-    }
-
-    private void sleepFor(int n) {
-        try {
-            sleep(n);  // To ensure we see any ongoing work after the done signal is given
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 }

@@ -22,7 +22,6 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
@@ -75,10 +74,8 @@ public abstract class ConjunctionController<OUTPUT,
     private final Map<Negated, ResolverView.FilteredNegation> negationControllers;
     private List<Resolvable<?>> plan;
 
-    public ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction,
-                                 ActorExecutorGroup executorService, Registry registry) {
-        super(driver, executorService, registry,
-              () -> ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")");
+    public ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction, Context context) {
+        super(driver, context, () -> ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")");
         this.conjunction = conjunction;
         this.resolvables = new HashSet<>();
         this.negateds = new HashSet<>();
@@ -200,7 +197,7 @@ public abstract class ConjunctionController<OUTPUT,
 
     }
 
-    protected static abstract class ReactiveBlock<OUTPUT, REACTIVE_BLOCK extends ReactiveBlock<OUTPUT, REACTIVE_BLOCK>>
+    protected abstract static class ReactiveBlock<OUTPUT, REACTIVE_BLOCK extends ReactiveBlock<OUTPUT, REACTIVE_BLOCK>>
             extends AbstractReactiveBlock<ConceptMap, OUTPUT, Request<?>, REACTIVE_BLOCK> {
 
         protected final ConceptMap bounds;
@@ -208,9 +205,9 @@ public abstract class ConjunctionController<OUTPUT,
 
         protected ReactiveBlock(Driver<REACTIVE_BLOCK> driver,
                                 Driver<? extends ConjunctionController<OUTPUT, ?, REACTIVE_BLOCK>> controller,
-                                Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
+                                Context context, ConceptMap bounds, List<Resolvable<?>> plan,
                                 Supplier<String> debugName) {
-            super(driver, controller, monitor, debugName);
+            super(driver, controller, context, debugName);
             this.bounds = bounds;
             this.plan = plan;
         }

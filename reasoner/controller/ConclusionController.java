@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
@@ -40,7 +39,6 @@ import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Stream;
-import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
@@ -69,18 +67,13 @@ public abstract class ConclusionController<
 
     protected final Rule.Conclusion conclusion;
     protected final Driver<MaterialisationController> materialisationController;
-    protected final Driver<Monitor> monitor;
     protected Driver<ConditionController> conditionController;
 
     public ConclusionController(Driver<CONTROLLER> driver, Rule.Conclusion conclusion,
-                                ActorExecutorGroup executorService,
-                                Driver<MaterialisationController> materialisationController, Driver<Monitor> monitor,
-                                Registry registry) {
-        super(driver, executorService, registry,
-              () -> ConclusionController.class.getSimpleName() + "(pattern: " + conclusion + ")");
+                                Driver<MaterialisationController> materialisationController, Context context) {
+        super(driver, context, () -> ConclusionController.class.getSimpleName() + "(pattern: " + conclusion + ")");
         this.conclusion = conclusion;
         this.materialisationController = materialisationController;
-        this.monitor = monitor;
     }
 
     @Override
@@ -104,17 +97,17 @@ public abstract class ConclusionController<
 
     public static class Match extends ConclusionController<Map<Variable, Concept>, ReactiveBlock.Match, Match> {
 
-        public Match(Driver<Match> driver, Rule.Conclusion conclusion, ActorExecutorGroup executorService,
-                     Driver<MaterialisationController> materialisationController, Driver<Monitor> monitor,
-                     Registry registry) {
-            super(driver, conclusion, executorService, materialisationController, monitor, registry);
+        public Match(Driver<Match> driver, Rule.Conclusion conclusion,
+                     Driver<MaterialisationController> materialisationController, Context context) {
+            super(driver, conclusion, materialisationController, context);
         }
 
         @Override
         protected ReactiveBlock.Match createReactiveBlockFromDriver(Driver<ReactiveBlock.Match> reactiveBlockDriver,
                                                                     ConceptMap bounds) {
             return new ReactiveBlock.Match(
-                    reactiveBlockDriver, driver(), monitor, conclusion.rule(), bounds, registry().conceptManager(),
+                    reactiveBlockDriver, driver(), reactiveBlockContext(), conclusion.rule(), bounds,
+                    registry().conceptManager(),
                     () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + conclusion + ", bounds: " + bounds + ")"
             );
         }
@@ -123,17 +116,17 @@ public abstract class ConclusionController<
 
     public static class Explain extends ConclusionController<PartialExplanation, ReactiveBlock.Explain, Explain> {
 
-        public Explain(Driver<Explain> driver, Rule.Conclusion conclusion, ActorExecutorGroup executorService,
-                       Driver<MaterialisationController> materialisationController, Driver<Monitor> monitor,
-                       Registry registry) {
-            super(driver, conclusion, executorService, materialisationController, monitor, registry);
+        public Explain(Driver<Explain> driver, Rule.Conclusion conclusion,
+                       Driver<MaterialisationController> materialisationController, Context context) {
+            super(driver, conclusion, materialisationController, context);
         }
 
         @Override
         protected ReactiveBlock.Explain createReactiveBlockFromDriver(Driver<ReactiveBlock.Explain> reactiveBlockDriver,
                                                                       ConceptMap bounds) {
             return new ReactiveBlock.Explain(
-                    reactiveBlockDriver, driver(), monitor, conclusion.rule(), bounds, registry().conceptManager(),
+                    reactiveBlockDriver, driver(), reactiveBlockContext(), conclusion.rule(), bounds,
+                    registry().conceptManager(),
                     () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + conclusion + ", bounds: " + bounds + ")"
             );
         }
@@ -216,9 +209,9 @@ public abstract class ConclusionController<
 
         protected ReactiveBlock(Driver<REACTIVE_BLOCK> driver,
                                 Driver<? extends ConclusionController<OUTPUT, REACTIVE_BLOCK, ?>> controller,
-                                Driver<Monitor> monitor, Rule rule, ConceptMap bounds, ConceptManager conceptManager,
+                                Context context, Rule rule, ConceptMap bounds, ConceptManager conceptManager,
                                 Supplier<String> debugName) {
-            super(driver, controller, monitor, debugName);
+            super(driver, controller, context, debugName);
             this.rule = rule;
             this.bounds = bounds;
             this.conceptManager = conceptManager;
@@ -264,10 +257,9 @@ public abstract class ConclusionController<
 
         public static class Match extends ReactiveBlock<Map<Variable, Concept>, Match> {
 
-            protected Match(Driver<Match> driver, Driver<ConclusionController.Match> controller,
-                            Driver<Monitor> monitor, Rule rule, ConceptMap bounds, ConceptManager conceptManager,
-                            Supplier<String> debugName) {
-                super(driver, controller, monitor, rule, bounds, conceptManager, debugName);
+            protected Match(Driver<Match> driver, Driver<ConclusionController.Match> controller, Context context,
+                            Rule rule, ConceptMap bounds, ConceptManager conceptManager, Supplier<String> debugName) {
+                super(driver, controller, context, rule, bounds, conceptManager, debugName);
             }
 
             @Override
@@ -278,10 +270,11 @@ public abstract class ConclusionController<
 
         public static class Explain extends ReactiveBlock<PartialExplanation, Explain> {
 
-            protected Explain(Driver<Explain> driver, Driver<? extends ConclusionController<PartialExplanation,
-                    Explain, ?>> controller, Driver<Monitor> monitor, Rule rule, ConceptMap bounds,
-                              ConceptManager conceptManager, Supplier<String> debugName) {
-                super(driver, controller, monitor, rule, bounds, conceptManager, debugName);
+            protected Explain(Driver<Explain> driver,
+                              Driver<? extends ConclusionController<PartialExplanation, Explain, ?>> controller,
+                              Context context, Rule rule, ConceptMap bounds, ConceptManager conceptManager,
+                              Supplier<String> debugName) {
+                super(driver, controller, context, rule, bounds, conceptManager, debugName);
             }
 
             @Override

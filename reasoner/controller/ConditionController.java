@@ -20,12 +20,10 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
-import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
 
@@ -41,13 +39,10 @@ public class ConditionController extends ConjunctionController<
     // Either<> here is just to match the input to ConclusionController, but this class only ever returns ConceptMap
 
     private final Rule.Condition condition;
-    private final Driver<Monitor> monitor;
 
-    public ConditionController(Driver<ConditionController> driver, Rule.Condition condition,
-                               ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry) {
-        super(driver, condition.conjunction(), executorService, registry);
+    public ConditionController(Driver<ConditionController> driver, Rule.Condition condition, Context context) {
+        super(driver, condition.conjunction(), context);
         this.condition = condition;
-        this.monitor = monitor;
     }
 
     @Override
@@ -59,7 +54,7 @@ public class ConditionController extends ConjunctionController<
     protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver,
                                                           ConceptMap bounds) {
         return new ReactiveBlock(
-                reactiveBlockDriver, driver(), monitor, bounds, plan(),
+                reactiveBlockDriver, driver(), reactiveBlockContext(), bounds, plan(),
                 () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
         );
     }
@@ -68,9 +63,9 @@ public class ConditionController extends ConjunctionController<
             extends ConjunctionController.ReactiveBlock<Either<ConceptMap, Materialisation>, ReactiveBlock> {
 
         protected ReactiveBlock(Driver<ReactiveBlock> driver, Driver<ConditionController> controller,
-                                Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
+                                Context context, ConceptMap bounds, List<Resolvable<?>> plan,
                                 Supplier<String> debugName) {
-            super(driver, controller, monitor, bounds, plan, debugName);
+            super(driver, controller, context, bounds, plan, debugName);
         }
 
         @Override

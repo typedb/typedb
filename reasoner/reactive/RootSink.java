@@ -20,26 +20,22 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.common.Tracer.Trace;
 
 import javax.annotation.Nullable;
-import java.util.UUID;
 
 public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>, Reactive.Subscriber<PACKET> {
 
     private final Identifier<?, ?> identifier;
-    private final UUID traceId = UUID.randomUUID();
     private final ReasonerConsumer<PACKET> reasonerConsumer;
     private final PublisherRegistry.Single<PACKET> publisherRegistry;
     private final AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
     private final AbstractReactive.SubscriberActionsImpl<PACKET> subscriberActions;
     private boolean isPulling;
-    private int traceCounter = 0;
 
     public RootSink(AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock, ReasonerConsumer<PACKET> reasonerConsumer) {
         this.publisherRegistry = new PublisherRegistry.Single<>();
         this.reactiveBlock = reactiveBlock;
-        this.subscriberActions = new AbstractReactive.SubscriberActionsImpl<>(this);
+        this.subscriberActions = new AbstractReactive.SubscriberActionsImpl<>(this, reactiveBlock.context());
         this.identifier = reactiveBlock().registerReactive(this);
         this.reasonerConsumer = reasonerConsumer;
         this.isPulling = false;
@@ -70,10 +66,6 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
     public void registerPublisher(Publisher<PACKET> publisher) {
         if (publisherRegistry().add(publisher)) subscriberActions.registerPath(publisher);
         if (isPulling && publisherRegistry().setPulling()) publisher.pull(this);
-    }
-
-    public Trace trace() {
-        return Trace.create(traceId, traceCounter);
     }
 
     public void exception(Throwable e) {

@@ -30,11 +30,13 @@ import com.vaticle.typedb.core.reasoner.common.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -49,23 +51,22 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
     private static final Logger LOG = LoggerFactory.getLogger(AbstractReactiveBlock.class);
 
     private final Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller;
+    private final Context context;
     private final Map<Identifier<?, ?>, Input<INPUT>> inputs;
     private final Map<Identifier<?, ?>, Output<OUTPUT>> outputs;
     private final Map<Pair<Identifier<?, ?>, Identifier<?, ?>>, Runnable> pullRetries;
-    private final Driver<Monitor> monitor;
     private Reactive.Stream<OUTPUT,OUTPUT> outputRouter;
     private boolean terminated;
     private long reactiveCounter;
 
     protected AbstractReactiveBlock(Driver<REACTIVE_BLOCK> driver,
                                     Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller,
-                                    Driver<Monitor> monitor,
-                                    Supplier<String> debugName) {
+                                    Context context, Supplier<String> debugName) {
         super(driver, debugName);
         this.controller = controller;
+        this.context = context;
         this.inputs = new HashMap<>();
         this.outputs = new HashMap<>();
-        this.monitor = monitor;
         this.reactiveCounter = 0;
         this.pullRetries = new HashMap<>();
     }
@@ -98,7 +99,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
     }
 
     protected void pullRetry(Identifier<?, ?> publisher, Identifier<?, ?> subscriber) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pullRetry(subscriber, publisher));
+        tracer().ifPresent(tracer -> tracer.pullRetry(subscriber, publisher));
         pullRetries.get(new Pair<Identifier<?, ?>, Identifier<?, ?>>(publisher, subscriber)).run();
     }
 
@@ -135,7 +136,15 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
     }
 
     public Driver<Monitor> monitor() {
-        return monitor;
+        return context.monitor();
+    }
+
+    Optional<Tracer> tracer() {
+        return context.tracer();
+    }
+
+    public Context context() {
+        return context;
     }
 
     public void onFinished(Identifier<?, ?> finishable) {
@@ -260,5 +269,25 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
             }
 
         }
+    }
+
+    public static class Context {
+
+        private final Driver<Monitor> monitor;
+        @Nullable private final Tracer tracer;
+
+        public Context(Driver<Monitor> monitor, @Nullable Tracer tracer) {
+            this.monitor = monitor;
+            this.tracer = tracer;
+        }
+
+        public Optional<Tracer> tracer() {
+            return Optional.ofNullable(tracer);
+        }
+
+        public Driver<Monitor> monitor() {
+            return monitor;
+        }
+
     }
 }

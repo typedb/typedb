@@ -20,11 +20,9 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
 
 import java.util.List;
@@ -37,12 +35,9 @@ public class NestedConjunctionController extends ConjunctionController<
         NestedConjunctionController.NestedConjunctionReactiveBlock
         > {
 
-    private final Driver<Monitor> monitor;
-
     public NestedConjunctionController(Driver<NestedConjunctionController> driver, Conjunction conjunction,
-                                       ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry) {
-        super(driver, conjunction, executorService, registry);
-        this.monitor = monitor;
+                                       Context context) {
+        super(driver, conjunction, context);
     }
 
     @Override
@@ -58,7 +53,7 @@ public class NestedConjunctionController extends ConjunctionController<
             ConceptMap bounds
     ) {
         return new NestedConjunctionReactiveBlock(
-                reactiveBlockDriver, driver(), monitor, bounds, plan(),
+                reactiveBlockDriver, driver(), reactiveBlockContext(), bounds, plan(),
                 () -> NestedConjunctionReactiveBlock.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -67,10 +62,10 @@ public class NestedConjunctionController extends ConjunctionController<
             extends ConjunctionController.ReactiveBlock<ConceptMap, NestedConjunctionReactiveBlock> {
 
         protected NestedConjunctionReactiveBlock(Driver<NestedConjunctionReactiveBlock> driver,
-                                                 Driver<NestedConjunctionController> controller,
-                                                 Driver<Monitor> monitor, ConceptMap bounds, List<Resolvable<?>> plan,
+                                                 Driver<NestedConjunctionController> controller, Context context,
+                                                 ConceptMap bounds, List<Resolvable<?>> plan,
                                                  Supplier<String> debugName) {
-            super(driver, controller, monitor, bounds, plan, debugName);
+            super(driver, controller, context, bounds, plan, debugName);
         }
 
         @Override

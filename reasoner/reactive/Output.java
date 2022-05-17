@@ -34,7 +34,7 @@ public class Output<PACKET> implements Reactive.Subscriber<PACKET> {  // TODO: M
     public Output(AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock) {
         this.reactiveBlock = reactiveBlock;
         this.identifier = reactiveBlock().registerReactive(this);
-        this.subscriberActions = new AbstractReactive.SubscriberActionsImpl<>(this);
+        this.subscriberActions = new AbstractReactive.SubscriberActionsImpl<>(this, reactiveBlock().context());
     }
 
     @Override
@@ -55,7 +55,7 @@ public class Output<PACKET> implements Reactive.Subscriber<PACKET> {  // TODO: M
 
     public void pull() {
         assert publisher != null;
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(receivingInput, identifier()));
+        reactiveBlock().context().tracer().ifPresent(tracer -> tracer.pull(receivingInput, identifier()));
         publisher.pull(this);
     }
 
@@ -73,6 +73,6 @@ public class Output<PACKET> implements Reactive.Subscriber<PACKET> {  // TODO: M
 
     @Override
     public String toString() {
-        return reactiveBlock.debugName().get() + ":" + getClass().getSimpleName();
+        return reactiveBlock().debugName().get() + ":" + getClass().getSimpleName();
     }
 }

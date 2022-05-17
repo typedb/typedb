@@ -19,10 +19,8 @@
 package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.RootSink;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -35,17 +33,14 @@ public class RootDisjunctionController
 
     private final Set<Identifier.Variable.Retrievable> filter;
     private final boolean explain;
-    private final Driver<Monitor> monitor;
     private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
     public RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
                                      Set<Identifier.Variable.Retrievable> filter, boolean explain,
-                                     ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry,
-                                     ReasonerConsumer<ConceptMap> reasonerConsumer) {
-        super(driver, disjunction, executorService, registry);
+                                     Context context, ReasonerConsumer<ConceptMap> reasonerConsumer) {
+        super(driver, disjunction, context);
         this.filter = filter;
         this.explain = explain;
-        this.monitor = monitor;
         this.reasonerConsumer = reasonerConsumer;
     }
 
@@ -58,7 +53,8 @@ public class RootDisjunctionController
     @Override
     protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
         return new ReactiveBlock(
-                reactiveBlockDriver, driver(), monitor, disjunction, bounds, filter, explain, reasonerConsumer,
+                reactiveBlockDriver, driver(), reactiveBlockContext(), disjunction, bounds, filter, explain,
+                reasonerConsumer,
                 () -> ReactiveBlock.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
@@ -76,12 +72,11 @@ public class RootDisjunctionController
         private final ReasonerConsumer<ConceptMap> reasonerConsumer;
         private RootSink<ConceptMap> rootSink;
 
-        protected ReactiveBlock(Driver<ReactiveBlock> driver,
-                                Driver<RootDisjunctionController> controller, Driver<Monitor> monitor,
-                                Disjunction disjunction, ConceptMap bounds,
+        protected ReactiveBlock(Driver<ReactiveBlock> driver, Driver<RootDisjunctionController> controller,
+                                Context context, Disjunction disjunction, ConceptMap bounds,
                                 Set<Identifier.Variable.Retrievable> filter, boolean explain,
                                 ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
-            super(driver, controller, monitor, disjunction, bounds, debugName);
+            super(driver, controller, context, disjunction, bounds, debugName);
             this.filter = filter;
             this.explain = explain;
             this.reasonerConsumer = reasonerConsumer;

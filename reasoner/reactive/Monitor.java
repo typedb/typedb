@@ -24,9 +24,11 @@ import com.vaticle.typedb.core.reasoner.common.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -39,10 +41,16 @@ public class Monitor extends Actor<Monitor> {
     private static final Logger LOG = LoggerFactory.getLogger(Monitor.class);
     private boolean terminated;
     private final Map<Reactive.Identifier<?, ?>, ReactiveNode> reactiveNodes;
+    @Nullable private final Tracer tracer;
 
-    public Monitor(Driver<Monitor> driver) {
+    public Monitor(Driver<Monitor> driver, @Nullable Tracer tracer) {
         super(driver, Monitor.class::getSimpleName);
+        this.tracer = tracer;
         this.reactiveNodes = new HashMap<>();
+    }
+
+    private Optional<Tracer> tracer() {
+        return Optional.ofNullable(tracer);
     }
 
     private ReactiveNode getNode(Reactive.Identifier<?, ?> reactive) {
@@ -59,20 +67,20 @@ public class Monitor extends Actor<Monitor> {
     }
 
     public <R> void registerRoot(Driver<? extends AbstractReactiveBlock<R, ?, ?, ?>> reactiveBlock, Reactive.Identifier<?, ?> root) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerRoot(root, driver()));
+        tracer().ifPresent(tracer -> tracer.registerRoot(root, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the root, or a duplicate node will be created.
         putNode(root, new RootNode(root, reactiveBlock, driver()));
     }
 
     public void rootFinished(Reactive.Identifier<?, ?> root) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.rootFinalised(root, driver()));
+        tracer().ifPresent(tracer -> tracer.rootFinalised(root, driver()));
         if (terminated) return;
         getNode(root).asRoot().setFinished();
     }
 
     public void registerSource(Reactive.Identifier<?, ?> source) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerSource(source, driver()));
+        tracer().ifPresent(tracer -> tracer.registerSource(source, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the source, or a duplicate node will be created.
         assert reactiveNodes.get(source) == null;
@@ -80,13 +88,13 @@ public class Monitor extends Actor<Monitor> {
     }
 
     public void sourceFinished(Reactive.Identifier<?, ?> source) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.sourceFinished(source, driver()));
+        tracer().ifPresent(tracer -> tracer.sourceFinished(source, driver()));
         if (terminated) return;
         getNode(source).asSource().setFinished();
     }
 
     public void registerPath(Reactive.Identifier<?, ?> subscriber, Reactive.Identifier<?, ?> publisher) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.registerPath(subscriber, publisher, driver()));
+        tracer().ifPresent(tracer -> tracer.registerPath(subscriber, publisher, driver()));
         if (terminated) return;
         ReactiveNode subscriberNode = reactiveNodes.computeIfAbsent(subscriber, n -> new ReactiveNode(subscriber));
         ReactiveNode publisherNode = reactiveNodes.computeIfAbsent(publisher, n -> new ReactiveNode(publisher));
@@ -101,13 +109,13 @@ public class Monitor extends Actor<Monitor> {
     }
 
     public void createAnswer(Reactive.Identifier<?, ?> publisher) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.createAnswer(publisher, driver()));
+        tracer().ifPresent(tracer -> tracer.createAnswer(publisher, driver()));
         if (terminated) return;
         getOrCreateNode(publisher).createAnswer();
     }
 
     public void consumeAnswer(Reactive.Identifier<?, ?> subscriber) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.consumeAnswer(subscriber, driver()));
+        tracer().ifPresent(tracer -> tracer.consumeAnswer(subscriber, driver()));
         if (terminated) return;
         ReactiveNode subscriberNode = getOrCreateNode(subscriber);
         subscriberNode.consumeAnswer();
@@ -254,7 +262,7 @@ public class Monitor extends Actor<Monitor> {
 
     }
 
-    private static class RootNode extends SourceNode {
+    private class RootNode extends SourceNode {
 
         private final Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock;
         private final Driver<Monitor> monitor;
@@ -293,7 +301,7 @@ public class Monitor extends Actor<Monitor> {
         }
 
         private void finishRootNode() {
-            Tracer.getIfEnabled().ifPresent(tracer -> tracer.finishRootNode(reactive, monitor));
+            tracer().ifPresent(tracer -> tracer.finishRootNode(reactive, monitor));
             rootReactiveBlock.execute(actor -> actor.onFinished(reactive));
         }
 

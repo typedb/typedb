@@ -25,9 +25,8 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.controller.Registry;
-import com.vaticle.typedb.core.reasoner.common.Tracer;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @ThreadSafe
-public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, ReasonerConsumer<ANSWER> { // TODO: Rename to MatchProducer and create abstract supertype
+public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, ReasonerConsumer<ANSWER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
@@ -61,10 +60,6 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         this.done = new AtomicBoolean(false);
         this.required = new AtomicInteger();
         this.isPulling = false;
-        if (options.traceInference()) {
-            Tracer.initialise(options.reasonerDebuggerDir());
-            Tracer.get().startDefaultTrace();
-        }
     }
 
     protected Registry controllerRegistry() {
@@ -97,7 +92,6 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     public void finished() {
         // note: root resolver calls this single-threaded, so is thread safe
         LOG.trace("All answers found.");
-//        if (options.traceInference()) Tracer.get().finishDefaultTrace();
         finish();
     }
 
@@ -138,10 +132,8 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         @Override
         public void receiveAnswer(ConceptMap answer) {
             isPulling = false;
-            // if (options.traceInference()) Tracer.get().finishDefaultTrace();
             // TODO: The explainables can always be given
             if (options.explain() && !answer.explainables().isEmpty()) {
-                // TODO: Explainables recorded here
                 explainablesManager.setAndRecordExplainables(answer);
             }
             queue.put(answer);
@@ -161,7 +153,6 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         @Override
         public void receiveAnswer(Explanation explanation) {
             isPulling = false;
-            // if (options.traceInference()) Tracer.get().finishDefaultTrace();
             if (!explanation.conditionAnswer().explainables().isEmpty()) {
                 explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
             }

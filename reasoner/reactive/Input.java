@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.common.Tracer;
 
 import java.util.function.Function;
 
@@ -39,7 +38,7 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
         this.reactiveBlock = reactiveBlock;
         this.identifier = reactiveBlock.registerReactive(this);
         this.ready = false;
-        this.publisherActions = new AbstractReactive.PublisherActionsImpl<>(this);
+        this.publisherActions = new AbstractReactive.PublisherActionsImpl<>(this, reactiveBlock.context());
     }
 
     @Override
@@ -67,7 +66,7 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
     @Override
     public void pull(Subscriber<PACKET> subscriber) {
         assert subscriber.equals(this.subscriber);
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+        reactiveBlock().tracer().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
         if (ready) providingOutput.reactiveBlock().execute(actor -> actor.pull(providingOutput));
     }
 
@@ -99,7 +98,7 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
     }
 
     public void receive(Identifier<?, PACKET> outputId, PACKET packet) {
-        Tracer.getIfEnabled().ifPresent(tracer -> tracer.receive(outputId, identifier(), packet));
+        reactiveBlock().tracer().ifPresent(tracer -> tracer.receive(outputId, identifier(), packet));
         subscriber.receive(this, packet);
     }
 

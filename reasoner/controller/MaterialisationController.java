@@ -22,10 +22,8 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
-import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
@@ -49,13 +47,10 @@ public class MaterialisationController extends AbstractController<
 
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
-    private final Driver<Monitor> monitor;
 
-    public MaterialisationController(Driver<MaterialisationController> driver, ActorExecutorGroup executorService,
-                                     Driver<Monitor> monitor, Registry registry, TraversalEngine traversalEng,
-                                     ConceptManager conceptMgr) {
-        super(driver, executorService, registry, MaterialisationController.class::getSimpleName);
-        this.monitor = monitor;
+    public MaterialisationController(Driver<MaterialisationController> driver, Context context,
+                                     TraversalEngine traversalEng, ConceptManager conceptMgr) {
+        super(driver, context, MaterialisationController.class::getSimpleName);
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
     }
@@ -70,7 +65,7 @@ public class MaterialisationController extends AbstractController<
             Driver<ReactiveBlock> reactiveBlockDriver, Materialisable materialisable
     ) {
         return new ReactiveBlock(
-                reactiveBlockDriver, driver(), monitor, materialisable, traversalEng, conceptMgr,
+                reactiveBlockDriver, driver(), reactiveBlockContext(), materialisable, traversalEng, conceptMgr,
                 () -> ReactiveBlock.class.getSimpleName() + "(Materialisable: " + materialisable + ")"
         );
     }
@@ -87,12 +82,10 @@ public class MaterialisationController extends AbstractController<
         private final TraversalEngine traversalEng;
         private final ConceptManager conceptMgr;
 
-        protected ReactiveBlock(Driver<ReactiveBlock> driver,
-                                Driver<MaterialisationController> controller,
-                                Driver<Monitor> monitor, Materialisable materialisable,
-                                TraversalEngine traversalEng, ConceptManager conceptMgr,
-                                Supplier<String> debugName) {
-            super(driver, controller, monitor, debugName);
+        protected ReactiveBlock(Driver<ReactiveBlock> driver, Driver<MaterialisationController> controller,
+                                Context context, Materialisable materialisable, TraversalEngine traversalEng,
+                                ConceptManager conceptMgr, Supplier<String> debugName) {
+            super(driver, controller, context, debugName);
             this.materialisable = materialisable;
             this.traversalEng = traversalEng;
             this.conceptMgr = conceptMgr;

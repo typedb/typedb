@@ -20,9 +20,7 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
-import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
@@ -42,16 +40,11 @@ public class RetrievableController extends AbstractController<
         > {
 
     private final Retrievable retrievable;
-    private final Driver<Monitor> monitor;
-    private final Registry registry;
 
     public RetrievableController(Driver<RetrievableController> driver, Retrievable retrievable,
-                                 ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry) {
-        super(driver, executorService, registry,
-              () -> RetrievableController.class.getSimpleName() + "(pattern: " + retrievable + ")");
+                                 Context context) {
+        super(driver, context, () -> RetrievableController.class.getSimpleName() + "(pattern: " + retrievable + ")");
         this.retrievable = retrievable;
-        this.monitor = monitor;
-        this.registry = registry;
     }
 
     @Override
@@ -60,10 +53,14 @@ public class RetrievableController extends AbstractController<
     }
 
     @Override
-    protected RetrievableReactiveBlock createReactiveBlockFromDriver(Driver<RetrievableReactiveBlock> reactiveBlockDriver, ConceptMap conceptMap) {
+    protected RetrievableReactiveBlock createReactiveBlockFromDriver(
+            Driver<RetrievableReactiveBlock> reactiveBlockDriver, ConceptMap conceptMap
+    ) {
         return new RetrievableReactiveBlock(
-                reactiveBlockDriver, driver(), monitor, () -> Traversal.traversalIterator(registry, retrievable.pattern(), conceptMap),
-                () -> RetrievableReactiveBlock.class.getSimpleName() + "(pattern: " + retrievable.pattern() + ", bounds: " + conceptMap.toString() + ")"
+                reactiveBlockDriver, driver(), reactiveBlockContext(),
+                () -> Traversal.traversalIterator(registry(), retrievable.pattern(), conceptMap),
+                () -> RetrievableReactiveBlock.class.getSimpleName() + "(pattern: " + retrievable.pattern() +
+                        ", bounds: " + conceptMap.toString() + ")"
         );
     }
 
@@ -82,10 +79,10 @@ public class RetrievableController extends AbstractController<
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 
         protected RetrievableReactiveBlock(Driver<RetrievableReactiveBlock> driver,
-                                           Driver<RetrievableController> controller, Driver<Monitor> monitor,
+                                           Driver<RetrievableController> controller, Context context,
                                            Supplier<FunctionalIterator<ConceptMap>> traversalSupplier,
                                            Supplier<String> debugName) {
-            super(driver, controller, monitor, debugName);
+            super(driver, controller, context, debugName);
             this.traversalSupplier = traversalSupplier;
         }
 

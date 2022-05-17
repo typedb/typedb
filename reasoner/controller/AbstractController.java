@@ -21,12 +21,16 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
+import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
@@ -40,19 +44,17 @@ public abstract class AbstractController<
         > extends Actor<CONTROLLER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractController.class);
+    private final Context context;
 
     private boolean terminated;
-    private final ActorExecutorGroup executorService;
-    private final Registry registry;
     protected final Map<REACTIVE_BLOCK_ID, Actor.Driver<REACTIVE_BLOCK>> reactiveBlocks;
 
-    protected AbstractController(Driver<CONTROLLER> driver, ActorExecutorGroup executorService, Registry registry,
+    protected AbstractController(Driver<CONTROLLER> driver, Context context,
                                  Supplier<String> debugName) {
         super(driver, debugName);
-        this.executorService = executorService;
+        this.context = context;
         this.reactiveBlocks = new HashMap<>();
         this.terminated = false;
-        this.registry = registry;
     }
 
     public void initialise() {
@@ -62,7 +64,19 @@ public abstract class AbstractController<
     protected abstract void setUpUpstreamControllers();
 
     protected Registry registry() {
-        return registry;
+        return context.registry();
+    }
+
+    protected Driver<Monitor> monitor() {
+        return context.monitor();
+    }
+
+    protected Optional<Tracer> tracer() {
+        return context.tracer();
+    }
+
+    protected AbstractReactiveBlock.Context reactiveBlockContext() {
+        return context.reactiveBlock();
     }
 
     public abstract void resolveController(REQ connectionRequest);
@@ -79,7 +93,9 @@ public abstract class AbstractController<
 
     private Actor.Driver<REACTIVE_BLOCK> createReactiveBlock(REACTIVE_BLOCK_ID reactiveBlockId) {
         if (isTerminated()) return null;  // TODO: Avoid returning null
-        Driver<REACTIVE_BLOCK> reactiveBlock = Actor.driver(d -> createReactiveBlockFromDriver(d, reactiveBlockId), executorService);
+        Driver<REACTIVE_BLOCK> reactiveBlock = Actor.driver(
+                d -> createReactiveBlockFromDriver(d, reactiveBlockId), context.executorService()
+        );
         reactiveBlock.execute(AbstractReactiveBlock::setUp);
         return reactiveBlock;
     }
@@ -92,14 +108,14 @@ public abstract class AbstractController<
             String code = ((TypeDBException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Controller interrupted by resource close: {}", e.getMessage());
-                registry.terminate(e);
+                context.registry().terminate(e);
                 return;
             } else {
                 LOG.debug("Controller interrupted by TypeDB exception: {}", e.getMessage());
             }
         }
         LOG.error("Actor exception", e);
-        registry.terminate(e);
+        context.registry().terminate(e);
     }
 
     public void terminate(Throwable cause) {
@@ -112,4 +128,47 @@ public abstract class AbstractController<
         return terminated;
     }
 
+    public static class Context {
+
+        private final AbstractReactiveBlock.Context reactiveBlockContext;
+        private ActorExecutorGroup executorService;
+        private final Registry registry;
+        private final Driver<Monitor> monitor;
+        @Nullable
+        private final Tracer tracer;
+
+        Context(ActorExecutorGroup executorService, Registry registry, Driver<Monitor> monitor,
+                @Nullable Tracer tracer) {
+            this.executorService = executorService;
+            this.registry = registry;
+            this.monitor = monitor;
+            this.tracer = tracer;
+            this.reactiveBlockContext = new AbstractReactiveBlock.Context(monitor, tracer);
+        }
+
+        public ActorExecutorGroup executorService() {
+            return executorService;
+        }
+
+        public void setExecutorService(ActorExecutorGroup executorService) {
+            this.executorService = executorService;
+        }
+
+        public Registry registry() {
+            return registry;
+        }
+
+        public Driver<Monitor> monitor() {
+            return monitor;
+        }
+
+        public Optional<Tracer> tracer() {
+            return Optional.ofNullable(tracer);
+        }
+
+        public AbstractReactiveBlock.Context reactiveBlock() {
+            return reactiveBlockContext;
+        }
+
+    }
 }

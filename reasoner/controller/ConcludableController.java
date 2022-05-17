@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -62,16 +61,10 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
     protected final Map<Conclusion, Driver<? extends ConclusionController<INPUT, ?, ?>>> conclusionControllers;
     protected final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
-    protected final Driver<Monitor> monitor;
-    protected final Registry registry;
     protected final Concludable concludable;
 
-    public ConcludableController(Driver<CONTROLLER> driver, Concludable concludable,
-                                 ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry) {
-        super(driver, executorService, registry,
-              () -> ConcludableController.class.getSimpleName() + "(pattern: " + concludable + ")");
-        this.monitor = monitor;
-        this.registry = registry;
+    public ConcludableController(Driver<CONTROLLER> driver, Concludable concludable, Context context) {
+        super(driver, context, () -> ConcludableController.class.getSimpleName() + "(pattern: " + concludable + ")");
         this.concludable = concludable;
         this.conclusionControllers = new HashMap<>();
         this.conclusionUnifiers = new HashMap<>();
@@ -79,7 +72,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
     @Override
     public void setUpUpstreamControllers() {
-        concludable.getApplicableRules(registry.conceptManager(), registry.logicManager())
+        concludable.getApplicableRules(registry().conceptManager(), registry().logicManager())
                 .forEachRemaining(rule -> {
                     Driver<? extends ConclusionController<INPUT, ?, ?>> controller = registerConclusionController(rule);
                     conclusionControllers.put(rule.conclusion(), controller);
@@ -101,9 +94,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
         private final Set<Variable.Retrievable> unboundVars;
 
-        public Match(Driver<Match> driver, Concludable concludable, ActorExecutorGroup executorService,
-                     Driver<Monitor> monitor, Registry registry) {
-            super(driver, concludable, executorService, monitor, registry);
+        public Match(Driver<Match> driver, Concludable concludable, Context context) {
+            super(driver, concludable, context);
             this.unboundVars = unboundVars();
         }
 
@@ -113,8 +105,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
             //  concludable. They should be filtered before being passed to the concludableReactiveBlock's constructor
             return new ReactiveBlock.Match(
-                    matchDriver, driver(), concludable, monitor, bounds, unboundVars, conclusionUnifiers,
-                    () -> Traversal.traversalIterator(registry, concludable.pattern(), bounds),
+                    matchDriver, driver(), concludable, reactiveBlockContext(), bounds, unboundVars, conclusionUnifiers,
+                    () -> Traversal.traversalIterator(registry(), concludable.pattern(), bounds),
                     () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
             );
         }
@@ -135,7 +127,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
         @Override
         public Driver<ConclusionController.Match> registerConclusionController(Rule rule) {
-            return registry.registerMatchConclusionController(rule.conclusion());
+            return registry().registerMatchConclusionController(rule.conclusion());
         }
 
     }
@@ -145,10 +137,9 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         private final ConceptMap bounds;
         private final ReasonerConsumer<Explanation> reasonerConsumer;
 
-        public Explain(Driver<Explain> driver, Concludable concludable, ConceptMap bounds,
-                       ActorExecutorGroup executorService, Driver<Monitor> monitor, Registry registry,
+        public Explain(Driver<Explain> driver, Concludable concludable, ConceptMap bounds, Context context,
                        ReasonerConsumer<Explanation> reasonerConsumer) {
-            super(driver, concludable, executorService, monitor, registry);
+            super(driver, concludable, context);
             this.bounds = bounds;
             this.reasonerConsumer = reasonerConsumer;
         }
@@ -172,15 +163,15 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             //  concludable. They should be filtered before being passed to the concludableReactiveBlock's constructor
             assert bounds.equals(this.bounds);
             return new ReactiveBlock.Explain(
-                    explainDriver, driver(), monitor, bounds, set(), conclusionUnifiers, reasonerConsumer,
-                    () -> Traversal.traversalIterator(registry, concludable.pattern(), bounds),
+                    explainDriver, driver(), reactiveBlockContext(), bounds, set(), conclusionUnifiers, reasonerConsumer,
+                    () -> Traversal.traversalIterator(registry(), concludable.pattern(), bounds),
                     () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
             );
         }
 
         @Override
         protected Driver<ConclusionController.Explain> registerConclusionController(Rule rule) {
-            return registry.registerExplainConclusionController(rule.conclusion());
+            return registry().registerExplainConclusionController(rule.conclusion());
         }
     }
 
@@ -197,14 +188,14 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         private final Set<REQ> requestedConnections;
         protected final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
 
-        public ReactiveBlock(Driver<REACTIVE_BLOCK> driver,
-                             Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller,
-                             Driver<Monitor> monitor, ConceptMap bounds,
-                             Set<Variable.Retrievable> unboundVars,
-                             Map<Conclusion, Set<Unifier>> conclusionUnifiers,
-                             Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
-                             Supplier<String> debugName) {
-            super(driver, controller, monitor, debugName);
+        protected ReactiveBlock(Driver<REACTIVE_BLOCK> driver,
+                                Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller,
+                                Context context, ConceptMap bounds,
+                                Set<Variable.Retrievable> unboundVars,
+                                Map<Conclusion, Set<Unifier>> conclusionUnifiers,
+                                Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
+                                Supplier<String> debugName) {
+            super(driver, controller, context, debugName);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
             this.conclusionUnifiers = conclusionUnifiers;
@@ -250,11 +241,11 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             public Match(
                     Driver<Match> driver, Driver<ConcludableController.Match> controller, Concludable concludable,
-                    Driver<Monitor> monitor, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
+                    Context context, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, Supplier<String> debugName
             ) {
-                super(driver, controller, monitor, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
+                super(driver, controller, context, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
                       debugName);
                 this.concludable = concludable;
             }
@@ -319,14 +310,14 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             private RootSink<Explanation> rootSink;
 
             public Explain(
-                    Driver<Explain> driver, Driver<ConcludableController.Explain> controller, Driver<Monitor> monitor,
+                    Driver<Explain> driver, Driver<ConcludableController.Explain> controller, Context context,
                     ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                     ReasonerConsumer<Explanation> reasonerConsumer,
                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
                     Supplier<String> debugName
             ) {
-                super(driver, controller, monitor, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
+                super(driver, controller, context, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
                       debugName);
                 this.reasonerConsumer = reasonerConsumer;
             }

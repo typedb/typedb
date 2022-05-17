@@ -33,46 +33,29 @@ import java.io.UnsupportedEncodingException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CALL_TO_FINISH_BEFORE_START;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CALL_TO_WRITE_BEFORE_START;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_HAS_NOT_BEEN_INITIALISED;
 
-public final class Tracer {
+public class Tracer {
 
     private static final Logger LOG = LoggerFactory.getLogger(Tracer.class);
+    private TraceWriter traceWriter;
+    private final long id;
+    private final Path logDir;
 
-    private static Tracer INSTANCE;
-    private static Path logDir = null;
-    private static final Map<Trace, RootRequestTracer> rootRequestTracers = new HashMap<>();
-    private final Trace defaultTrace;
-
-    private Tracer(Path logDir) {
-        Tracer.logDir = logDir;
-        this.defaultTrace = Tracer.Trace.create(UUID.randomUUID(), 0);
+    public Tracer(long id, Path logDir) {
+        this.id = id;
+        this.logDir = logDir;
     }
 
-    public static void initialise(Path logDir) {
-        if (Tracer.logDir != null && !Tracer.logDir.equals(logDir)) {
-            throw TypeDBException.of(ILLEGAL_STATE);
+    private TraceWriter traceWriter() {
+        if (traceWriter == null) {
+            traceWriter = new TraceWriter(id, logDir);
+            traceWriter.start();
         }
-        if (INSTANCE == null) {
-            INSTANCE = new Tracer(logDir);
-        }
-    }
-
-    public static Tracer get() {
-        if (INSTANCE == null) throw TypeDBException.of(REASONER_TRACING_HAS_NOT_BEEN_INITIALISED);
-        return INSTANCE;
-    }
-
-    public static Optional<Tracer> getIfEnabled() {
-        return Optional.ofNullable(INSTANCE);
+        return traceWriter;
     }
 
     public synchronized void pull(@Nullable Identifier<?, ?> subscriberId, Identifier<?, ?> publisherId) {
@@ -88,95 +71,84 @@ public final class Tracer {
         if (subscriberId == null) subscriberString = "root";
         else {
             subscriberString = subscriberId.toString();
-            addNodeGroup(subscriberId.toString(), subscriberId.toString(), defaultTrace);
+            traceWriter().addNodeGroup(subscriberId.toString(), subscriberId.toString());
         }
-        addMessage(subscriberString, publisherId.toString(), defaultTrace, edgeType, edgeLabel);
-        addNodeGroup(publisherId.toString(), publisherId.toString(), defaultTrace);
+        traceWriter().addMessage(subscriberString, publisherId.toString(), edgeType, edgeLabel);
+        traceWriter().addNodeGroup(publisherId.toString(), publisherId.toString());
     }
 
     public <PACKET> void receive(Identifier<?, ?> publisherId, Identifier<?, ?> subscriberId, PACKET packet) {
-        addMessage(publisherId.toString(), subscriberId.toString(), defaultTrace, EdgeType.RECEIVE, packet.toString());
-        addNodeGroup(subscriberId.toString(), subscriberId.toString(), defaultTrace);
-        addNodeGroup(publisherId.toString(), publisherId.toString(), defaultTrace);
+        traceWriter().addMessage(publisherId.toString(), subscriberId.toString(), EdgeType.RECEIVE, packet.toString());
+        traceWriter().addNodeGroup(subscriberId.toString(), subscriberId.toString());
+        traceWriter().addNodeGroup(publisherId.toString(), publisherId.toString());
     }
 
     public void registerRoot(Identifier<?, ?> root, Actor.Driver<Monitor> monitor) {
-        addMessage(root.toString(), monitor.debugName().get(), defaultTrace, EdgeType.ROOT, "reg_root");
+        traceWriter().addMessage(root.toString(), monitor.debugName().get(), EdgeType.ROOT, "reg_root");
     }
 
     public void rootFinalised(Identifier<?, ?> root, Actor.Driver<Monitor> monitor) {
-        addMessage(root.toString(), monitor.debugName().get(), defaultTrace, EdgeType.ROOT_FINALISED, "root_finished");
+        traceWriter().addMessage(root.toString(), monitor.debugName().get(), EdgeType.ROOT_FINALISED, "root_finished");
     }
 
     public void finishRootNode(Identifier<?, ?> root, Actor.Driver<Monitor> monitor) {
-        addMessage(monitor.debugName().get(), root.toString(), defaultTrace, EdgeType.ROOT_FINISH, "finished");
+        traceWriter().addMessage(monitor.debugName().get(), root.toString(), EdgeType.ROOT_FINISH, "finished");
     }
 
     public void registerPath(Identifier<?, ?> subscriber, @Nullable Identifier<?, ?> publisher, Actor.Driver<Monitor> monitor) {
         String publisherName;
         if (publisher == null) publisherName = "entry";  // TODO: Prevent publisher from ever being null
         else publisherName = publisher.toString();
-        addMessage(subscriber.toString(), monitor.debugName().get(), defaultTrace, EdgeType.REGISTER, "reg_" + publisherName);
+        traceWriter().addMessage(subscriber.toString(), monitor.debugName().get(), EdgeType.REGISTER, "reg_" + publisherName);
     }
 
     public void registerSource(Identifier<?, ?> source, Actor.Driver<Monitor> monitor) {
-        addMessage(source.toString(), monitor.debugName().get(), defaultTrace, EdgeType.SOURCE, "reg_source");
+        traceWriter().addMessage(source.toString(), monitor.debugName().get(), EdgeType.SOURCE, "reg_source");
     }
 
     public void sourceFinished(Identifier<?, ?> source, Actor.Driver<Monitor> monitor) {
-        addMessage(source.toString(), monitor.debugName().get(), defaultTrace, EdgeType.SOURCE_FINISH, "source_finished");
+        traceWriter().addMessage(source.toString(), monitor.debugName().get(), EdgeType.SOURCE_FINISH, "source_finished");
     }
 
     public void createAnswer(Identifier<?, ?> publisher, Actor.Driver<Monitor> monitor) {
-        addMessage(publisher.toString(), monitor.debugName().get(), defaultTrace, EdgeType.CREATE, "create");
+        traceWriter().addMessage(publisher.toString(), monitor.debugName().get(), EdgeType.CREATE, "create");
     }
 
     public void consumeAnswer(Identifier<?, ?> subscriber, Actor.Driver<Monitor> monitor) {
-        addMessage(subscriber.toString(), monitor.debugName().get(), defaultTrace, EdgeType.CONSUME, "consume");
+        traceWriter().addMessage(subscriber.toString(), monitor.debugName().get(), EdgeType.CONSUME, "consume");
     }
 
     public void forkFrontier(int numForks, Identifier<?, ?> forker, Actor.Driver<Monitor> monitor) {
-        addMessage(forker.toString(), monitor.debugName().get(), defaultTrace, EdgeType.FORK, "fork" + numForks);
+        traceWriter().addMessage(forker.toString(), monitor.debugName().get(), EdgeType.FORK, "fork" + numForks);
     }
 
-    private void addMessage(String sender, String subscriber, Trace trace, EdgeType edgeType, String label) {
-        rootRequestTracers.get(trace).addMessage(sender, subscriber, edgeType, label);
-    }
-
-    private void addNodeGroup(String node, String group, Trace trace) {
-        rootRequestTracers.get(trace).addNodeGroup(node, group);
-    }
-
-    public synchronized void startDefaultTrace() {
-        // TODO: Make tracing work for multiple queries in succession
-        Trace trace = defaultTrace;
-        if (!rootRequestTracers.containsKey(trace)) {
-            rootRequestTracers.put(trace, new RootRequestTracer(trace));
-            rootRequestTracers.get(trace).start();
-        }
-    }
-
-    public synchronized void finishDefaultTrace() {
-        rootRequestTracers.get(defaultTrace).finish();
+    public synchronized void finishTrace() {
+        if (traceWriter != null) traceWriter.finish();
     }
 
     public synchronized void exception() {
-        rootRequestTracers.forEach((r, t) -> t.finish());
+        if (traceWriter != null) traceWriter.finish();
     }
 
-    private static class RootRequestTracer {
+    private static class TraceWriter {
 
         private final AtomicReference<Path> path = new AtomicReference<>(null);
-        private final Trace trace;
+        private final long id;
+        private final Path logDir;
         private final Map<String, Integer> clusterMap;
         private int messageNumber = 0;
         private PrintWriter writer;
         private int clusterIndex;
 
-        private RootRequestTracer(Trace trace) {
-            this.trace = trace;
+        private TraceWriter(long id, Path logDir) {
+            this.id = id;
+            this.logDir = logDir;
             this.clusterMap = new HashMap<>();
             this.clusterIndex = 0;
+        }
+
+        private String filename() {
+            return String.format("reasoner_trace_transaction_id_%s.dot", id);
         }
 
         public void start() {
@@ -186,20 +158,16 @@ public final class Tracer {
                 File file = path.get().toFile();
                 boolean ignore = file.getParentFile().mkdirs();
                 writer = new PrintWriter(file, "UTF-8");
-                startFile();
+                write(String.format(
+                        "digraph request_%s {\n" +
+                                "graph [fontsize=10 fontname=arial width=0.5 clusterrank=global]\n" +
+                                "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
+                                "edge [fontsize=10 fontname=arial width=0.5]", id
+                ));
             } catch (FileNotFoundException | UnsupportedEncodingException e) {
                 e.printStackTrace();
                 LOG.trace("Resolution tracing failed to start writing");
             }
-        }
-
-        private void startFile() {
-            write(String.format(
-                    "digraph request_%s_%d {\n" +
-                            "graph [fontsize=10 fontname=arial width=0.5 clusterrank=global]\n" +
-                            "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
-                            "edge [fontsize=10 fontname=arial width=0.5]",
-                    trace.scope().toString().replace('-', '_'), trace.root()));
         }
 
         public void finish() {
@@ -213,10 +181,6 @@ public final class Tracer {
                 LOG.debug("Resolution tracing failed to write to file");
             }
             path.set(null);
-        }
-
-        private String filename() {
-            return String.format("reasoner_trace_request_%s_%d.dot", trace.scope(), trace.root());
         }
 
         private void endFile() {
@@ -292,51 +256,6 @@ public final class Tracer {
 
         public String colour() {
             return colour;
-        }
-    }
-
-    public static class Trace {
-
-        private final UUID scope;
-        private final int root;
-
-        private Trace(UUID scope, int root) {
-            this.scope = scope;
-            this.root = root;
-        }
-
-        public static Trace create(UUID scope, int rootRequestId) {
-            return new Trace(scope, rootRequestId);
-        }
-
-        public int root() {
-            return root;
-        }
-
-        public UUID scope() {
-            return scope;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Trace trace = (Trace) o;
-            return scope == trace.scope &&
-                    root == trace.root;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(scope, root);
-        }
-
-        @Override
-        public String toString() {
-            return "Trace{" +
-                    "root=" + root +
-                    ", scope=" + scope +
-                    '}';
         }
     }
 

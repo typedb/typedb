@@ -66,7 +66,9 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
     private CoreTransaction(CoreSession session, Arguments.Transaction.Type type, Options.Transaction options) {
         this.session = session;
-        this.context = new Context.Transaction(session.context(), options).type(type);
+        this.context = new Context.Transaction(session.context(), options)
+                .type(type)
+                .id(this.session.database().nextTransactionID());
     }
 
     void initialise(GraphManager graphMgr, TraversalCache traversalCache, LogicCache logicCache) {
@@ -89,6 +91,10 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
     @Override
     public Arguments.Transaction.Type type() {
         return context.transactionType();
+    }
+
+    public long id() {
+        return context.id();
     }
 
     @Override
@@ -134,7 +140,9 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
     abstract void delete();
 
-    protected abstract void closeResources();
+    protected void closeResources() {
+        reasoner.close();
+    }
 
     boolean isSchema() {
         return false;
@@ -251,6 +259,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
         @Override
         protected void closeResources() {
+            super.closeResources();
             schemaStorage.close();
             dataStorage.close();
         }
@@ -266,13 +275,11 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
         protected final RocksStorage.Data dataStorage;
         private final CoreDatabase.Cache cache;
-        final long id;
 
         public Data(CoreSession.Data session, Arguments.Transaction.Type type,
                     Options.Transaction options, Factory.Storage storageFactory) {
             super(session, type, options);
 
-            this.id = session.database().nextTransactionID();
             this.cache = session.database().cacheBorrow();
             this.dataStorage = storageFactory.storageData(session.database(), this);
             ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph());
@@ -351,6 +358,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
         @Override
         protected void closeResources() {
+            super.closeResources();
             session.database().cacheUnborrow(cache);
             dataStorage.close();
         }

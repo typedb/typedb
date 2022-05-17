@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
@@ -54,10 +53,8 @@ public abstract class DisjunctionController<
     private final List<Pair<Conjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
     protected Disjunction disjunction;
 
-    protected DisjunctionController(Driver<CONTROLLER> driver, Disjunction disjunction,
-                                    ActorExecutorGroup executorService, Registry registry) {
-        super(driver, executorService, registry,
-              () -> DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction + ")");
+    protected DisjunctionController(Driver<CONTROLLER> driver, Disjunction disjunction, Context context) {
+        super(driver, context, () -> DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction + ")");
         this.disjunction = disjunction;
         this.conjunctionControllers = new ArrayList<>();
     }
@@ -88,7 +85,7 @@ public abstract class DisjunctionController<
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    protected static abstract class ReactiveBlock<REACTIVE_BLOCK extends ReactiveBlock<REACTIVE_BLOCK>>
+    protected abstract static class ReactiveBlock<REACTIVE_BLOCK extends ReactiveBlock<REACTIVE_BLOCK>>
             extends AbstractReactiveBlock<ConceptMap, ConceptMap, Request, REACTIVE_BLOCK> {
 
         private final Disjunction disjunction;
@@ -96,9 +93,9 @@ public abstract class DisjunctionController<
 
         protected ReactiveBlock(Driver<REACTIVE_BLOCK> driver,
                                 Driver<? extends DisjunctionController<REACTIVE_BLOCK, ?>> controller,
-                                Driver<Monitor> monitor, Disjunction disjunction, ConceptMap bounds,
+                                Context context, Disjunction disjunction, ConceptMap bounds,
                                 Supplier<String> debugName) {
-            super(driver, controller, monitor, debugName);
+            super(driver, controller, context, debugName);
             this.disjunction = disjunction;
             this.bounds = bounds;
         }

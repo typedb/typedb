@@ -20,11 +20,9 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.controller.NegationController.ReactiveBlock.Request;
-import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.Input;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
@@ -52,15 +50,11 @@ public class NegationController extends AbstractController<
         > {
 
     private final Negated negated;
-    private final Driver<Monitor> monitor;
     private Driver<NestedDisjunctionController> disjunctionContoller;
 
-    public NegationController(Driver<NegationController> driver, Negated negated, ActorExecutorGroup executorService,
-                              Driver<Monitor> monitor, Registry registry) {
-        super(driver, executorService, registry,
-              () -> NegationController.class.getSimpleName() + "(pattern:" + negated + ")");
+    public NegationController(Driver<NegationController> driver, Negated negated, Context context) {
+        super(driver, context, () -> NegationController.class.getSimpleName() + "(pattern:" + negated + ")");
         this.negated = negated;
-        this.monitor = monitor;
     }
 
     @Override
@@ -73,7 +67,7 @@ public class NegationController extends AbstractController<
     @Override
     protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
         return new ReactiveBlock(
-                reactiveBlockDriver, driver(), monitor, negated, bounds,
+                reactiveBlockDriver, driver(), reactiveBlockContext(), negated, bounds,
                 () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + negated + ", bounds: " + bounds + ")"
         );
     }
@@ -93,10 +87,9 @@ public class NegationController extends AbstractController<
         private final ConceptMap bounds;
         private NegationStream negation;
 
-        protected ReactiveBlock(Driver<ReactiveBlock> driver, Driver<NegationController> controller,
-                                Driver<Monitor> monitor, Negated negated, ConceptMap bounds,
-                                Supplier<String> debugName) {
-            super(driver, controller, monitor, debugName);
+        protected ReactiveBlock(Driver<ReactiveBlock> driver, Driver<NegationController> controller, Context context,
+                                Negated negated, ConceptMap bounds, Supplier<String> debugName) {
+            super(driver, controller, context, debugName);
             this.negated = negated;
             this.bounds = bounds;
         }

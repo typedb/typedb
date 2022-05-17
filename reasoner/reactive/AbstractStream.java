@@ -35,8 +35,8 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
         super(reactiveBlock);
         this.subscriberRegistry = subscriberRegistry;
         this.publisherRegistry = publisherRegistry;
-        this.subscriberActions = new SubscriberActionsImpl<>(this);
-        this.publisherActions = new PublisherActionsImpl<>(this);
+        this.subscriberActions = new SubscriberActionsImpl<>(this, reactiveBlock.context());
+        this.publisherActions = new PublisherActionsImpl<>(this, reactiveBlock.context());
     }
 
     public SubscriberRegistry<OUTPUT> subscriberRegistry() { return subscriberRegistry; }

@@ -80,8 +80,7 @@ public class Reasoner {
         this.logicMgr = logicMgr;
         this.defaultContext = new Context.Query(context, new Options.Query());
         this.defaultContext.producer(Either.first(EXHAUSTIVE));
-        this.controllerRegistry = new Registry(actor(), traversalEng, conceptMgr, logicMgr,
-                                               defaultContext.options().traceInference());
+        this.controllerRegistry = new Registry(actor(), traversalEng, conceptMgr, logicMgr, defaultContext);
         this.explainablesManager = new ExplainablesManager();
     }
 
@@ -214,5 +213,9 @@ public class Reasoner {
                 Either.first(Arguments.Query.Producer.INCREMENTAL),
                 async1()
         );
+    }
+
+    public void close() {
+        controllerRegistry.close();
     }
 }

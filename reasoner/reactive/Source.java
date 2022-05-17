@@ -35,7 +35,7 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
         super(reactiveBlock);
         this.sourceOperator = sourceOperator;
         this.subscriberRegistry = new SubscriberRegistry.Single<>();
-        this.publisherActions = new AbstractStream.PublisherActionsImpl<>(this);
+        this.publisherActions = new AbstractStream.PublisherActionsImpl<>(this, reactiveBlock.context());
         reactiveBlock().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
