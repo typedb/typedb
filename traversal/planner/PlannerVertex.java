@@ -123,7 +123,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         assert loops().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
         initialiseConstraintsForIncomingEdges();
         initialiseConstraintsForOutgoingEdges();
-        // TODO: do we need to initialise any constraints for the loop edges?
         initialiseConstraintsForVertexFlow();
         isInitialisedConstraints = true;
     }

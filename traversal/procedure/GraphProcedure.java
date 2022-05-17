@@ -205,30 +205,13 @@ public class GraphProcedure implements PermutationProcedure {
         }
         assertWithinFilterBounds(filter);
         if (startVertex().id().isRetrievable() && filter.contains(startVertex().id().asVariable().asRetrievable())) {
-            return async(startVertex().iterator(graphMgr, params).map(
-                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                    v -> {
-
-                        List<VertexMap> answers = new GraphIterator(graphMgr, v, this, params, filter).toList();
-                        if (answers.size() != new HashSet<>(answers).size()) {
-                            System.out.println("FOUND");
-//                            throw new RuntimeException("FOUND");
-                        }
-
-                        return new GraphIterator(graphMgr, v, this, params, filter).distinct();
-                    }
+            return async(startVertex().iterator(graphMgr, params).map(v ->
+                    new GraphIterator(graphMgr, v, this, params, filter).distinct()
             ), parallelisation);
         } else {
             // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-            return async(startVertex().iterator(graphMgr, params).map(
-                    v -> {
-                        List<VertexMap> answers = new GraphIterator(graphMgr, v, this, params, filter).toList();
-                        if (answers.size() != new HashSet<>(answers).size()) {
-                            System.out.println("FOUND");
-//                            throw new RuntimeException("FOUND");
-                        }
-                        return new GraphIterator(graphMgr, v, this, params, filter);
-                    }
+            return async(startVertex().iterator(graphMgr, params).map(v ->
+                    new GraphIterator(graphMgr, v, this, params, filter)
             ), parallelisation).distinct();
         }
     }

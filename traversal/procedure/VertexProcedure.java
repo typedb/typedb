@@ -65,9 +65,7 @@ public class VertexProcedure implements PermutationProcedure {
     public String toString() {
         StringBuilder str = new StringBuilder();
         str.append("Vertex Procedure: {");
-        List<ProcedureEdge<?, ?>> procedureEdges = new ArrayList<>(vertex.outs());
-        procedureEdges.addAll(vertex.loops());
-        procedureEdges.sort(Comparator.comparing(ProcedureEdge::order));
+        List<ProcedureEdge<?, ?>> procedureEdges = new ArrayList<>(vertex.loops());
 
         str.append("\n\tvertex:");
         str.append("\n\t\t").append(vertex);

@@ -63,11 +63,11 @@ public abstract class ProcedureVertex<
         PROPERTIES extends TraversalVertex.Properties
         > extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
-    private ProcedureEdge<?, ?> lastInEdge;
-    private Set<Identifier.Variable> scopedBy;
     private int order;
+    private ProcedureEdge<?, ?> lastInEdge;
     private List<ProcedureEdge<?, ?>> orderedOuts;
     private Set<ProcedureVertex<?, ?>> transitiveOuts;
+    private Set<Identifier.Variable> scopedBy;
 
     ProcedureVertex(Identifier identifier) {
         super(identifier);
@@ -82,14 +82,15 @@ public abstract class ProcedureVertex<
     }
 
     /**
-     * TODO: in the next iteration, we can multiple starting vertices and we'll have to distinguish the start
-     * versus vertices without in edges
+     * TODO:
+     *  in the next iteration, we can multiple starting vertices and we'll have to distinguish the start
+     *  versus vertices without in edges
      */
     public boolean isStartingVertex() {
         return order() == 0;
     }
 
-    public ProcedureEdge<?, ?> lastInEdge() {
+    ProcedureEdge<?, ?> lastInEdge() {
         return lastInEdge;
     }
 
@@ -124,12 +125,12 @@ public abstract class ProcedureVertex<
         return transitiveOuts;
     }
 
-    public Set<Identifier.Variable> scopedBy() {
-        if (scopedBy == null) scopedBy = computeScopedBy();
+    public Set<Identifier.Variable> scopesVisited() {
+        if (scopedBy == null) scopedBy = computeScopesVisited();
         return scopedBy;
     }
 
-    Set<Identifier.Variable> computeScopedBy() {
+    Set<Identifier.Variable> computeScopesVisited() {
         return set();
     }
 
@@ -166,7 +167,7 @@ public abstract class ProcedureVertex<
         }
 
         @Override
-        Set<Identifier.Variable> computeScopedBy() {
+        Set<Identifier.Variable> computeScopesVisited() {
             if (id().isScoped()) return set(id().asScoped().scope());
             else return iterate(ins()).filter(ProcedureEdge::isRolePlayer).map(e -> e.asRolePlayer().scope()).toSet();
         }

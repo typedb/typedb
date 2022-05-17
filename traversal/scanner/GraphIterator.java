@@ -64,21 +64,20 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private final GraphProcedure procedure;
     private final Traversal.Parameters params;
     private final Set<Identifier.Variable.Retrievable> filter;
-    private final VertexScanner[] vertexScanners;
+    private final VertexVerifier[] vertexVerifiers;
     private final Scopes scopes;
     private final Vertex<?, ?> start;
-    private final TreeSet<Integer> verify;
-    private final TreeSet<Integer> retry;
+    private final TreeSet<Integer> forward;
+    private final TreeSet<Integer> backward;
     private ComputeStep computeStep;
     private State state;
 
-    private enum ComputeStep {VERIFY, RETRY}
+    private enum ComputeStep {FORWARD, BACKWARD}
 
     private enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
                          Traversal.Parameters params, Set<Identifier.Variable.Retrievable> filter) {
-        System.out.println(procedure);
         assert procedure.vertexCount() > 1;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
@@ -88,11 +87,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         this.state = State.INIT;
         this.scopes = new Scopes();
-        this.verify = new TreeSet<>();
-        this.retry = new TreeSet<>();
-        this.vertexScanners = new VertexScanner[procedure.vertexCount()];
-        for (int i = 0; i < vertexScanners.length; i++) {
-            vertexScanners[i] = new VertexScanner(procedure.vertex(i));
+        this.forward = new TreeSet<>();
+        this.backward = new TreeSet<>();
+        this.vertexVerifiers = new VertexVerifier[procedure.vertexCount()];
+        for (int i = 0; i < vertexVerifiers.length; i++) {
+            vertexVerifiers[i] = new VertexVerifier(procedure.vertex(i));
         }
     }
 
@@ -105,10 +104,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private VertexMap toVertexMap() {
         Map<Identifier.Variable.Retrievable, Vertex<?, ?>> answer = new HashMap<>();
-        for (int pos = 0; pos < vertexScanners.length; pos++) {
+        for (int pos = 0; pos < vertexVerifiers.length; pos++) {
             ProcedureVertex<?, ?> procedureVertex = procedure.vertex(pos);
             if (procedureVertex.id().isRetrievable() && filter.contains(procedureVertex.id().asVariable().asRetrievable())) {
-                answer.put(procedureVertex.id().asVariable().asRetrievable(), vertexScanners[pos].currentVertex());
+                answer.put(procedureVertex.id().asVariable().asRetrievable(), vertexVerifiers[pos].currentVertex());
             }
         }
 
@@ -151,75 +150,73 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void initialiseStart() {
-        verify.add(0);
-        computeStep = ComputeStep.VERIFY;
+        forward.add(0);
+        computeStep = ComputeStep.FORWARD;
     }
 
     private void initialiseEnds() {
-        assert verify.isEmpty();
-        procedure.endVertices().forEach(v -> retry.add(v.order()));
-        computeStep = ComputeStep.RETRY;
+        assert forward.isEmpty();
+        procedure.endVertices().forEach(v -> backward.add(v.order()));
+        computeStep = ComputeStep.BACKWARD;
     }
 
     private boolean computeAnswer() {
-        while ((computeStep == ComputeStep.VERIFY && !verify.isEmpty()) ||
-                (computeStep == ComputeStep.RETRY && !retry.isEmpty())) {
-            if (computeStep == ComputeStep.VERIFY) verify(verify.pollFirst());
-            else prepareRetry(retry.pollLast());
+        while ((computeStep == ComputeStep.FORWARD && !forward.isEmpty()) ||
+                (computeStep == ComputeStep.BACKWARD && !backward.isEmpty())) {
+            if (computeStep == ComputeStep.FORWARD) forward(forward.pollFirst());
+            else backward(backward.pollLast());
         }
-        return computeStep == ComputeStep.VERIFY;
+        return computeStep == ComputeStep.FORWARD;
     }
 
-    private void verify(int pos) {
-        if (pos == vertexScanners.length) return;
-        VertexScanner vertexScanner = vertexScanners[pos];
-        boolean verified = vertexScanner.hasVerifiedVertex();
-        transferRetriesRequired(vertexScanner);
-        if (verified) verify.add(pos + 1);
+    private void forward(int pos) {
+        if (pos == vertexVerifiers.length) return;
+        VertexVerifier vertexVerifier = vertexVerifiers[pos];
+        boolean verified = vertexVerifier.hasVerifiedVertex();
+        transferVerifyFailureCauses(vertexVerifier);
+        if (verified) forward.add(pos + 1);
         else {
-            vertexScanner.resetScan();
-            computeStep = ComputeStep.RETRY;
+            vertexVerifier.resetVerification();
+            computeStep = ComputeStep.BACKWARD;
         }
     }
 
-    private void transferRetriesRequired(VertexScanner vertexScanner) {
-        vertexScanner.verifyFailureCauses().forEach(cause -> {
-            if (cause != vertexScanner) {
-                retry.add(cause.procedureVertex.order());
-            }
+    private void transferVerifyFailureCauses(VertexVerifier vertexVerifier) {
+        vertexVerifier.verifyFailureCauses().forEach(cause -> {
+            if (cause != vertexVerifier) backward.add(cause.procedureVertex.order());
         });
-        vertexScanner.clearVerifyFailureCauses();
+        vertexVerifier.clearVerifyFailureCauses();
     }
 
-    private void prepareRetry(int pos) {
-        VertexScanner vertexScanner = vertexScanners[pos];
-        vertexScanner.clearCurrentVertex();
-        vertexScanner.transitiveOutputScanners().forEachRemaining(v -> verify.remove(v.procedureVertex.order()));
-        verify.add(pos);
-        computeStep = ComputeStep.VERIFY;
+    private void backward(int pos) {
+        VertexVerifier vertexVerifier = vertexVerifiers[pos];
+        vertexVerifier.clearCurrentVertex();
+        vertexVerifier.transitiveOutputScanners().forEachRemaining(v -> forward.remove(v.procedureVertex.order()));
+        forward.add(pos);
+        computeStep = ComputeStep.FORWARD;
     }
 
     @Override
     public void recycle() {
-        for (VertexScanner vertex : vertexScanners) {
+        for (VertexVerifier vertex : vertexVerifiers) {
             vertex.clear();
         }
     }
 
-    private class VertexScanner {
+    private class VertexVerifier {
 
         private final ProcedureVertex<?, ?> procedureVertex;
         private final Set<ProcedureEdge<?, ?>> inputs;
-        private final SortedMap<Set<ProcedureEdge<?, ?>>, Vertex<?, ?>> firstIntersectionForInputs;
-        private final Set<VertexScanner> verifyFailureCauses;
+        private final SortedMap<Set<ProcedureEdge<?, ?>>, Vertex<?, ?>> inputsIntersectionStart;
+        private final Set<VertexVerifier> verifyFailureCauses;
         private Forwardable<Vertex<?, ?>, Order.Asc> iterator;
         private Vertex<?, ?> vertex;
         private boolean isVertexVerified;
 
-        private VertexScanner(ProcedureVertex<?, ?> procedureVertex) {
+        private VertexVerifier(ProcedureVertex<?, ?> procedureVertex) {
             this.procedureVertex = procedureVertex;
             this.inputs = new HashSet<>();
-            this.firstIntersectionForInputs = new TreeMap<>(Comparator.comparing(Set::size));
+            this.inputsIntersectionStart = new TreeMap<>(Comparator.comparing(Set::size));
             this.verifyFailureCauses = new HashSet<>();
             this.isVertexVerified = false;
         }
@@ -244,11 +241,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             return vertex;
         }
 
-        private Set<VertexScanner> verifyFailureCauses() {
+        private Set<VertexVerifier> verifyFailureCauses() {
             return verifyFailureCauses;
         }
 
-        private void addVerifyFailureCause(VertexScanner scanner) {
+        private void addVerifyFailureCause(VertexVerifier scanner) {
             assert scanner.procedureVertex.order() <= procedureVertex.order();
             verifyFailureCauses.add(scanner);
         }
@@ -279,10 +276,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private boolean verifyScopes() {
             boolean invalid = false;
-            for (Identifier.Variable id : procedureVertex.scopedBy()) {
+            for (Identifier.Variable id : procedureVertex.scopesVisited()) {
                 Scopes.Scoped scoped = scopes.get(id);
                 if (!scoped.isValidUpTo(procedureVertex.order())) {
-                    scoped.scopedOrdersUpTo(procedureVertex.order()).forEach(order -> addVerifyFailureCause(vertexScanners[order]));
+                    scoped.scopedOrdersUpTo(procedureVertex.order()).forEach(order -> addVerifyFailureCause(vertexVerifiers[order]));
                     invalid = true;
                 }
             }
@@ -292,11 +289,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private boolean verifyOutEdges() {
             Set<ProcedureEdge<?, ?>> edges = new HashSet<>();
             for (ProcedureEdge<?, ?> edge : procedureVertex.orderedOuts()) {
-                VertexScanner toExplorer = vertexScanners[edge.to().order()];
+                VertexVerifier toExplorer = vertexVerifiers[edge.to().order()];
                 toExplorer.addInput(edge);
                 edges.add(edge);
                 if (!toExplorer.mayHaveVertex()) {
-                    edges.forEach(e -> vertexScanners[e.to().order()].removeInput(e));
+                    edges.forEach(e -> vertexVerifiers[e.to().order()].removeInput(e));
                     toExplorer.inputScanners().forEachRemaining(this::addVerifyFailureCause);
                     return false;
                 }
@@ -304,19 +301,19 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             return true;
         }
 
-        private FunctionalIterator<VertexScanner> inputScanners() {
-            return iterate(inputs).map(e -> vertexScanners[e.from().order()]);
+        private FunctionalIterator<VertexVerifier> inputScanners() {
+            return iterate(inputs).map(e -> vertexVerifiers[e.from().order()]);
         }
 
-        private FunctionalIterator<VertexScanner> transitiveOutputScanners() {
-            return iterate(procedureVertex.transitiveOuts()).map(vertex -> vertexScanners[vertex.order()]);
+        private FunctionalIterator<VertexVerifier> transitiveOutputScanners() {
+            return iterate(procedureVertex.transitiveOuts()).map(vertex -> vertexVerifiers[vertex.order()]);
         }
 
         private void addInput(ProcedureEdge<?, ?> edge) {
             assert !inputs.contains(edge);
             if (iterator != null && iterator.hasNext()) {
-                firstIntersectionForInputs.put(new HashSet<>(inputs), iterator.peek());
-                iterator = intersect(branch(vertexScanners[edge.from().order()].currentVertex(), edge), iterator);
+                inputsIntersectionStart.put(new HashSet<>(inputs), iterator.peek());
+                iterator = intersect(branch(vertexVerifiers[edge.from().order()].currentVertex(), edge), iterator);
             }
             inputs.add(edge);
             isVertexVerified = false;
@@ -324,9 +321,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private void removeInput(ProcedureEdge<?, ?> edge) {
-            firstIntersectionForInputs.remove(inputs);
+            inputsIntersectionStart.remove(inputs);
             inputs.remove(edge);
-            resetScan();
+            resetVerification();
         }
 
         public void clearCurrentVertex() {
@@ -334,21 +331,21 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 vertex = null;
                 isVertexVerified = false;
                 removeAsInputScanner();
-                transitiveOutputScanners().forEachRemaining(VertexScanner::removeAsInputScanner);
+                transitiveOutputScanners().forEachRemaining(VertexVerifier::removeAsInputScanner);
             }
         }
 
         private void removeAsInputScanner() {
-            procedureVertex.outs().forEach(e -> vertexScanners[e.to().order()].removeInput(e));
+            procedureVertex.outs().forEach(e -> vertexVerifiers[e.to().order()].removeInput(e));
         }
 
         private void clear() {
             inputs.clear();
-            firstIntersectionForInputs.clear();
-            resetScan();
+            inputsIntersectionStart.clear();
+            resetVerification();
         }
 
-        private void resetScan() {
+        private void resetVerification() {
             if (iterator != null) {
                 iterator.recycle();
                 iterator = null;
@@ -378,15 +375,15 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private Optional<Vertex<?, ?>> lastIntersection() {
-            if (firstIntersectionForInputs.isEmpty()) return Optional.empty();
-            else return Optional.ofNullable(firstIntersectionForInputs.get(firstIntersectionForInputs.lastKey()));
+            if (inputsIntersectionStart.isEmpty()) return Optional.empty();
+            else return Optional.ofNullable(inputsIntersectionStart.get(inputsIntersectionStart.lastKey()));
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromInputs() {
             List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
             for (ProcedureEdge<?, ?> edge : inputs) {
-                VertexScanner vertexScanner = vertexScanners[edge.from().order()];
-                iters.add(branch(vertexScanner.currentVertex(), edge));
+                VertexVerifier vertexVerifier = vertexVerifiers[edge.from().order()];
+                iters.add(branch(vertexVerifier.currentVertex(), edge));
             }
             if (iters.size() == 1) return iters.get(0);
             else return intersect(iterate(iters), ASC);

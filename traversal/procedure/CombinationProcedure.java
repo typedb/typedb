@@ -117,7 +117,7 @@ public class CombinationProcedure {
         return procedureVertex;
     }
 
-    private Set<StructureVertex.Type> registerOutEdges(ProcedureVertex.Type from, Collection<StructureEdge<?, ?>> outs,
+    private Set<StructureVertex.Type> registerOutEdges(ProcedureVertex.Type from, Set<StructureEdge<?, ?>> outs,
                                                        Set<StructureEdge<?, ?>> visitedEdges) {
         Set<StructureVertex.Type> nextVertices = new HashSet<>();
         outs.forEach(structureEdge -> {
@@ -133,7 +133,7 @@ public class CombinationProcedure {
         return nextVertices;
     }
 
-    private Set<StructureVertex.Type> registerInEdges(ProcedureVertex.Type to, Collection<StructureEdge<?, ?>> ins,
+    private Set<StructureVertex.Type> registerInEdges(ProcedureVertex.Type to, Set<StructureEdge<?, ?>> ins,
                                                       Set<StructureEdge<?, ?>> visitedEdges) {
         Set<StructureVertex.Type> nextVertices = new HashSet<>();
         ins.forEach(structureEdge -> {
@@ -149,7 +149,7 @@ public class CombinationProcedure {
         return nextVertices;
     }
 
-    private void registerLoopEdges(ProcedureVertex.Type from, Collection<StructureEdge<?, ?>> loops,
+    private void registerLoopEdges(ProcedureVertex.Type from, Set<StructureEdge<?, ?>> loops,
                                    Set<StructureEdge<?, ?>> visitedEdges) {
         loops.forEach(structureEdge -> {
             if (!visitedEdges.contains(structureEdge)) {
@@ -198,9 +198,9 @@ public class CombinationProcedure {
             str.append("\n\t\t").append(v);
         }
         str.append("\n\tedges:");
-        forwardEdges.values().stream().flatMap(Collection::stream).sorted(Comparator.comparing(ProcedureEdge::order))
+        forwardEdges.values().stream().flatMap(Set::stream).sorted(Comparator.comparing(ProcedureEdge::order))
                 .forEachOrdered(edge -> str.append("\n\t\t").append(edge));
-        loopEdges.values().stream().flatMap(Collection::stream).sorted(Comparator.comparing(ProcedureEdge::order))
+        loopEdges.values().stream().flatMap(Set::stream).sorted(Comparator.comparing(ProcedureEdge::order))
                 .forEachOrdered(edge -> str.append("\n\t\t").append(edge));
         str.append("\n}");
         return str.toString();

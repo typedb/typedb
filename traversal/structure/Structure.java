@@ -105,9 +105,8 @@ public class Structure {
 
     private void recordEdge(StructureEdge<?, ?> edge) {
         edges.add(edge);
-        if (edge.from().equals(edge.to())) {
-            edge.from().loop(edge);
-        } else {
+        if (edge.from().equals(edge.to())) edge.from().loop(edge);
+        else {
             edge.from().out(edge);
             edge.to().in(edge);
         }

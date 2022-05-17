@@ -192,10 +192,8 @@ public class GraphPlanner implements Planner {
         PlannerVertex<?> to = vertex(structureEdge.to());
         PlannerEdge<?, ?> edge = PlannerEdge.of(from, to, structureEdge);
         edges.add(edge);
-        if (from.equals(to)) {
-            from.loop(edge);
-            to.loop(edge);
-        } else {
+        if (from.equals(to)) from.loop(edge);
+        else {
             from.out(edge);
             to.in(edge);
         }
