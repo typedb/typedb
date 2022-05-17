@@ -595,12 +595,12 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Reasoner(3, "Reasoning is terminated, caused by '%s'.");
         public static final Reasoner REASONER_TRACING_CANNOT_BE_TOGGLED_PER_QUERY =
                 new Reasoner(4, "Reasoner tracing cannot be enabled/disabled per query. Try using Transaction options instead.");
-        public static final Reasoner REASONER_TRACING_HAS_NOT_BEEN_INITIALISED =
-                new Reasoner(5, "Attempted to get the reasoner tracer before it has been initialised.");
-        public static final Reasoner REASONER_TRACING_CALL_TO_FINISH_BEFORE_START =
-                new Reasoner(6, "Reasoner tracing has been instructed to finish without being started. Start the tracer before any reasoning takes place.");
-        public static final Reasoner REASONER_TRACING_CALL_TO_WRITE_BEFORE_START =
-                new Reasoner(7, "Reasoner tracing has been instructed to write without being started. Start the tracer before any reasoning takes place.");
+        public static final Reasoner REASONER_TRACING_DIRECTORY_COULD_NOT_BE_FOUND =
+                new Reasoner(5, "Reasoner tracing could not find or create the log directory provided.");
+        public static final Reasoner REASONER_TRACING_FILE_COULD_NOT_BE_FOUND =
+                new Reasoner(6, "Reasoner tracing file could not be found.");
+        public static final Reasoner REASONER_TRACING_WRITE_FAILED =
+                new Reasoner(7, "Reasoner tracing failed to write to file.");
 
         private static final String codePrefix = "RSN";
         private static final String messagePrefix = "Reasoner Error";

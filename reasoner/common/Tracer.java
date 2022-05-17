@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.reasoner.reactive.Reactive.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -35,8 +34,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CALL_TO_FINISH_BEFORE_START;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_CALL_TO_WRITE_BEFORE_START;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_FILE_COULD_NOT_BE_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_WRITE_FAILED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_DIRECTORY_COULD_NOT_BE_FOUND;
 
 public class Tracer {
 
@@ -58,7 +58,7 @@ public class Tracer {
         return traceWriter;
     }
 
-    public synchronized void pull(@Nullable Identifier<?, ?> subscriberId, Identifier<?, ?> publisherId) {
+    public synchronized void pull(Identifier<?, ?> subscriberId, Identifier<?, ?> publisherId) {
         pull(subscriberId, publisherId, EdgeType.PULL, "pull");
     }
 
@@ -66,7 +66,7 @@ public class Tracer {
         pull(subscriberId, publisherId, EdgeType.RETRY, "retry");
     }
 
-    private void pull(@Nullable Identifier<?, ?> subscriberId, Identifier<?, ?> publisherId, EdgeType edgeType, String edgeLabel) {
+    private void pull(Identifier<?, ?> subscriberId, Identifier<?, ?> publisherId, EdgeType edgeType, String edgeLabel) {
         String subscriberString;
         if (subscriberId == null) subscriberString = "root";
         else {
@@ -95,11 +95,8 @@ public class Tracer {
         traceWriter().addMessage(monitor.debugName().get(), root.toString(), EdgeType.ROOT_FINISH, "finished");
     }
 
-    public void registerPath(Identifier<?, ?> subscriber, @Nullable Identifier<?, ?> publisher, Actor.Driver<Monitor> monitor) {
-        String publisherName;
-        if (publisher == null) publisherName = "entry";  // TODO: Prevent publisher from ever being null
-        else publisherName = publisher.toString();
-        traceWriter().addMessage(subscriber.toString(), monitor.debugName().get(), EdgeType.REGISTER, "reg_" + publisherName);
+    public void registerPath(Identifier<?, ?> subscriber, Identifier<?, ?> publisher, Actor.Driver<Monitor> monitor) {
+        traceWriter().addMessage(subscriber.toString(), monitor.debugName().get(), EdgeType.REGISTER, "reg_" + publisher.toString());
     }
 
     public void registerSource(Identifier<?, ?> source, Actor.Driver<Monitor> monitor) {
@@ -116,10 +113,6 @@ public class Tracer {
 
     public void consumeAnswer(Identifier<?, ?> subscriber, Actor.Driver<Monitor> monitor) {
         traceWriter().addMessage(subscriber.toString(), monitor.debugName().get(), EdgeType.CONSUME, "consume");
-    }
-
-    public void forkFrontier(int numForks, Identifier<?, ?> forker, Actor.Driver<Monitor> monitor) {
-        traceWriter().addMessage(forker.toString(), monitor.debugName().get(), EdgeType.FORK, "fork" + numForks);
     }
 
     public synchronized void finishTrace() {
@@ -156,7 +149,9 @@ public class Tracer {
             try {
                 LOG.debug("Writing reasoner traces to {}", path.get().toAbsolutePath());
                 File file = path.get().toFile();
-                boolean ignore = file.getParentFile().mkdirs();
+                if (!file.getParentFile().mkdirs()) {
+                    throw TypeDBException.of(REASONER_TRACING_DIRECTORY_COULD_NOT_BE_FOUND);
+                }
                 writer = new PrintWriter(file, "UTF-8");
                 write(String.format(
                         "digraph request_%s {\n" +
@@ -171,7 +166,7 @@ public class Tracer {
         }
 
         public void finish() {
-            if (path.get() == null) throw TypeDBException.of(REASONER_TRACING_CALL_TO_FINISH_BEFORE_START);
+            if (path.get() == null) throw TypeDBException.of(REASONER_TRACING_FILE_COULD_NOT_BE_FOUND);
             endFile();
             try {
                 LOG.debug("Resolution traces written to {}", path.get().toAbsolutePath());
@@ -188,7 +183,7 @@ public class Tracer {
         }
 
         private void write(String toWrite) {
-            if (writer == null) throw TypeDBException.of(REASONER_TRACING_CALL_TO_WRITE_BEFORE_START);
+            if (writer == null) throw TypeDBException.of(REASONER_TRACING_WRITE_FAILED);
             writer.println(toWrite);
         }
 
