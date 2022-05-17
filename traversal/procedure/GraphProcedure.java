@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,45 +54,24 @@ public class GraphProcedure implements PermutationProcedure {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphProcedure.class);
 
-    private final Map<Identifier, ProcedureVertex<?, ?>> vertices;
-    private final ProcedureVertex<?, ?>[] orderedVertices;
+    private final ProcedureVertex<?, ?>[] vertices;
     private ProcedureVertex<?, ?> startVertex;
     private Set<ProcedureVertex<?, ?>> endVertices;
 
-    private GraphProcedure(int vertexCount) {
-        vertices = new HashMap<>();
-        orderedVertices = new ProcedureVertex<?, ?>[vertexCount];
+    private GraphProcedure(ProcedureVertex<?, ?>[] vertices) {
+        this.vertices = vertices;
     }
 
     public static GraphProcedure create(GraphPlanner planner) {
-        GraphProcedure procedure = new GraphProcedure(planner.vertices().size());
+        GraphProcedure.Builder builder = new Builder();
         Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
         Set<PlannerEdge.Directional<?, ?>> registeredEdges = new HashSet<>();
-        planner.vertices().forEach(vertex -> procedure.registerVertex(vertex, registeredVertices, registeredEdges));
-        procedure.orderVertices();
-        return procedure;
+        planner.vertices().forEach(vertex -> builder.registerVertex(vertex, registeredVertices, registeredEdges));
+        return builder.build();
     }
 
-    /**
-     * TODO: this is a compatibility layer to translate edge-ordered procedures into vertex-ordered procedures
-     * we need to remove it once the query planner natively orders vertices instead of edges
-     */
-    private void orderVertices() {
-        List<ProcedureVertex<?, ?>> vertexList = iterate(vertices.values()).toList();
-        vertexList.sort(Comparator.comparing(v -> v.lastInEdge() == null ? 0 : v.lastInEdge().order()));
-        for (int i = 0; i < vertexList.size(); i++) {
-            orderedVertices[i] = vertexList.get(i);
-            orderedVertices[i].setOrder(i);
-        }
-    }
-
-    public static GraphProcedure.Builder builder(int vertexSize) {
-        GraphProcedure procedure = new GraphProcedure(vertexSize);
-        return procedure.new Builder();
-    }
-
-    public Collection<ProcedureVertex<?, ?>> vertices() {
-        return vertices.values();
+    public ProcedureVertex<?, ?>[] vertices() {
+        return vertices;
     }
 
     public ProcedureVertex<?, ?> startVertex() {
@@ -111,89 +89,19 @@ public class GraphProcedure implements PermutationProcedure {
         return endVertices;
     }
 
-    public ProcedureVertex<?, ?> vertex(Identifier identifier) {
-        return vertices.get(identifier);
-    }
-
     public ProcedureVertex<?, ?> vertex(int pos) {
-        assert 0 <= pos && pos < orderedVertices.length;
-        return orderedVertices[pos];
+        assert 0 <= pos && pos < vertices.length;
+        return vertices[pos];
     }
 
     public int vertexCount() {
-        return orderedVertices.length;
-    }
-
-    private void registerVertex(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
-                                Set<PlannerEdge.Directional<?, ?>> registeredEdges) {
-        if (registeredVertices.contains(plannerVertex)) return;
-        registeredVertices.add(plannerVertex);
-        List<PlannerVertex<?>> adjacents = new ArrayList<>();
-        ProcedureVertex<?, ?> vertex = vertex(plannerVertex);
-        if (vertex.isThing()) vertex.asThing().props(plannerVertex.asThing().props());
-        else vertex.asType().props(plannerVertex.asType().props());
-        plannerVertex.outs().forEach(plannerEdge -> {
-            if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
-                registeredEdges.add(plannerEdge);
-                adjacents.add(plannerEdge.to());
-                registerEdge(plannerEdge);
-            }
-        });
-        plannerVertex.ins().forEach(plannerEdge -> {
-            if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
-                registeredEdges.add(plannerEdge);
-                adjacents.add(plannerEdge.from());
-                registerEdge(plannerEdge);
-            }
-        });
-        plannerVertex.loops().forEach(plannerEdge -> {
-            if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
-                registeredEdges.add(plannerEdge);
-                registerEdge(plannerEdge);
-            }
-        });
-        adjacents.forEach(v -> registerVertex(v, registeredVertices, registeredEdges));
-    }
-
-    private void registerEdge(PlannerEdge.Directional<?, ?> plannerEdge) {
-        ProcedureVertex<?, ?> from = vertex(plannerEdge.from());
-        ProcedureVertex<?, ?> to = vertex(plannerEdge.to());
-        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, plannerEdge);
-        registerEdge(edge);
-    }
-
-    public void registerEdge(ProcedureEdge<?, ?> edge) {
-        if (edge.from().equals(edge.to())) {
-            edge.from().loop(edge);
-        } else {
-            edge.from().out(edge);
-            edge.to().in(edge);
-        }
-    }
-
-    private ProcedureVertex<?, ?> vertex(PlannerVertex<?> plannerVertex) {
-        if (plannerVertex.isThing()) return thingVertex(plannerVertex.asThing());
-        else return typeVertex(plannerVertex.asType());
-    }
-
-    private ProcedureVertex.Thing thingVertex(PlannerVertex.Thing plannerVertex) {
-        return thingVertex(plannerVertex.id());
-    }
-
-    private ProcedureVertex.Type typeVertex(PlannerVertex.Type plannerVertex) {
-        return typeVertex(plannerVertex.id());
-    }
-
-    private ProcedureVertex.Thing thingVertex(Identifier identifier) {
-        return vertices.computeIfAbsent(identifier, ProcedureVertex.Thing::new).asThing();
-    }
-
-    private ProcedureVertex.Type typeVertex(Identifier identifier) {
-        return vertices.computeIfAbsent(identifier, ProcedureVertex.Type::new).asType();
+        return vertices.length;
     }
 
     private void assertWithinFilterBounds(Set<Identifier.Variable.Retrievable> filter) {
-        assert iterate(vertices.keySet()).anyMatch(filter::contains);
+        assert iterate(vertices).anyMatch(vertex ->
+                vertex.id().isRetrievable() && filter.contains(vertex.id().asVariable().asRetrievable())
+        );
     }
 
     @Override
@@ -242,12 +150,12 @@ public class GraphProcedure implements PermutationProcedure {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GraphProcedure that = (GraphProcedure) o;
-        return Arrays.equals(orderedVertices, that.orderedVertices);
+        return Arrays.equals(vertices, that.vertices);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(orderedVertices);
+        return Arrays.hashCode(vertices);
     }
 
     @Override
@@ -255,7 +163,7 @@ public class GraphProcedure implements PermutationProcedure {
         StringBuilder str = new StringBuilder();
         str.append("Graph Procedure: {");
         for (int i = 0; i < vertexCount(); i++) {
-            ProcedureVertex<?, ?> vertex = orderedVertices[i];
+            ProcedureVertex<?, ?> vertex = vertices[i];
             str.append("\n\t").append(i).append(": ").append(vertex);
             for (ProcedureEdge<?, ?> edge : vertex.ins()) {
                 str.append("\n\t\t\t").append(edge);
@@ -265,45 +173,131 @@ public class GraphProcedure implements PermutationProcedure {
         return str.toString();
     }
 
-    public class Builder {
+    public static class Builder {
+
+        Map<Identifier, ProcedureVertex<?, ?>> vertices;
+
+        public Builder() {
+            this.vertices = new HashMap<>();
+        }
 
         public GraphProcedure build() {
-            return GraphProcedure.this;
+            return new GraphProcedure(orderedVertices());
         }
+
+        /**
+         * TODO: this is a compatibility layer to translate edge-ordered procedures into vertex-ordered procedures
+         * we need to remove it once the query planner natively orders vertices instead of edges
+         */
+        private ProcedureVertex<?, ?>[] orderedVertices() {
+            ProcedureVertex<?, ?>[] orderedVertices = new ProcedureVertex[vertices.size()];
+            List<ProcedureVertex<?, ?>> vertexList = iterate(vertices.values()).toList();
+            vertexList.sort(Comparator.comparing(v -> v.lastInEdge() == null ? 0 : v.lastInEdge().order()));
+            for (int i = 0; i < vertexList.size(); i++) {
+                orderedVertices[i] = vertexList.get(i);
+                orderedVertices[i].setOrder(i);
+            }
+            return orderedVertices;
+        }
+
+        private void registerVertex(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
+                                    Set<PlannerEdge.Directional<?, ?>> registeredEdges) {
+            if (registeredVertices.contains(plannerVertex)) return;
+            registeredVertices.add(plannerVertex);
+            List<PlannerVertex<?>> adjacents = new ArrayList<>();
+            ProcedureVertex<?, ?> vertex = vertex(plannerVertex);
+            if (vertex.isThing()) vertex.asThing().props(plannerVertex.asThing().props());
+            else vertex.asType().props(plannerVertex.asType().props());
+            plannerVertex.outs().forEach(plannerEdge -> {
+                if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
+                    registeredEdges.add(plannerEdge);
+                    adjacents.add(plannerEdge.to());
+                    registerEdge(plannerEdge);
+                }
+            });
+            plannerVertex.ins().forEach(plannerEdge -> {
+                if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
+                    registeredEdges.add(plannerEdge);
+                    adjacents.add(plannerEdge.from());
+                    registerEdge(plannerEdge);
+                }
+            });
+            plannerVertex.loops().forEach(plannerEdge -> {
+                if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
+                    registeredEdges.add(plannerEdge);
+                    registerEdge(plannerEdge);
+                }
+            });
+            adjacents.forEach(v -> registerVertex(v, registeredVertices, registeredEdges));
+        }
+
+        private void registerEdge(PlannerEdge.Directional<?, ?> plannerEdge) {
+            ProcedureVertex<?, ?> from = vertex(plannerEdge.from());
+            ProcedureVertex<?, ?> to = vertex(plannerEdge.to());
+            ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, plannerEdge);
+            registerEdge(edge);
+        }
+
+        public void registerEdge(ProcedureEdge<?, ?> edge) {
+            if (edge.from().equals(edge.to())) {
+                edge.from().loop(edge);
+            } else {
+                edge.from().out(edge);
+                edge.to().in(edge);
+            }
+        }
+
+        private ProcedureVertex<?, ?> vertex(PlannerVertex<?> plannerVertex) {
+            if (plannerVertex.isThing()) return thingVertex(plannerVertex.asThing());
+            else return typeVertex(plannerVertex.asType());
+        }
+
+        private ProcedureVertex.Thing thingVertex(PlannerVertex.Thing plannerVertex) {
+            return thingVertex(plannerVertex.id());
+        }
+
+        private ProcedureVertex.Type typeVertex(PlannerVertex.Type plannerVertex) {
+            return typeVertex(plannerVertex.id());
+        }
+
+        private ProcedureVertex.Thing thingVertex(Identifier identifier) {
+            return vertices.computeIfAbsent(identifier, ProcedureVertex.Thing::new).asThing();
+        }
+
+        private ProcedureVertex.Type typeVertex(Identifier identifier) {
+            return vertices.computeIfAbsent(identifier, ProcedureVertex.Type::new).asType();
+        }
+
+        // ---- manual builder methods ----
 
         public ProcedureVertex.Type labelledType(int order, String label) {
             ProcedureVertex.Type vertex = typeVertex(Identifier.Variable.of(Reference.label(label)));
-            setOrder(order, vertex);
+            vertex.setOrder(order);
             return vertex;
         }
 
         public ProcedureVertex.Type namedType(int order, String name) {
             ProcedureVertex.Type vertex = typeVertex(Identifier.Variable.of(Reference.name(name)));
-            setOrder(order, vertex);
+            vertex.setOrder(order);
             return vertex;
         }
 
         public ProcedureVertex.Thing namedThing(int order, String name) {
             ProcedureVertex.Thing vertex = thingVertex(Identifier.Variable.of(Reference.name(name)));
-            setOrder(order, vertex);
+            vertex.setOrder(order);
             return vertex;
         }
 
         public ProcedureVertex.Thing anonymousThing(int order, int id) {
             ProcedureVertex.Thing vertex = thingVertex(Identifier.Variable.anon(id));
-            setOrder(order, vertex);
+            vertex.setOrder(order);
             return vertex;
         }
 
         public ProcedureVertex.Thing scopedThing(int order, ProcedureVertex.Thing relation, @Nullable ProcedureVertex.Type roleType, ProcedureVertex.Thing player, int repetition) {
             ProcedureVertex.Thing vertex = thingVertex(Identifier.Scoped.of(relation.id().asVariable(), roleType != null ? roleType.id().asVariable() : null, player.id().asVariable(), repetition));
-            setOrder(order, vertex);
-            return vertex;
-        }
-
-        private void setOrder(int order, ProcedureVertex<?, ?> vertex) {
-            orderedVertices[order] = vertex;
             vertex.setOrder(order);
+            return vertex;
         }
 
         public ProcedureVertex.Type setLabel(ProcedureVertex.Type type, Label label) {

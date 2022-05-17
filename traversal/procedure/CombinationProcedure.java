@@ -181,9 +181,8 @@ public class CombinationProcedure {
     }
 
     private void registerEdge(ProcedureEdge<?, ?> edge) {
-        if (edge.from().equals(edge.to())) {
-            edge.from().loop(edge);
-        } else {
+        if (edge.from().equals(edge.to())) edge.from().loop(edge);
+        else {
             edge.from().out(edge);
             edge.to().in(edge);
         }

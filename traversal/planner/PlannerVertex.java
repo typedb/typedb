@@ -113,7 +113,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         varIsEndingVertex = planner.optimiser().booleanVar(varPrefix + "is_ending_vertex");
         varHasIncomingEdges = planner.optimiser().booleanVar(varPrefix + "has_incoming_edges");
         varHasOutgoingEdges = planner.optimiser().booleanVar(varPrefix + "has_outgoing_edges");
-
         isInitialisedVariables = true;
     }
 

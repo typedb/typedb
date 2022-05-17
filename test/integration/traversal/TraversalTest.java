@@ -120,7 +120,7 @@ public class TraversalTest {
             4: $role [type] { labels: [employment:employer, relation:role, employment:employee], abstract: false, value: [], regex: null } (end)
                     4: ($_0:$role:$x:1 *--[ISA]--> $role) { isTransitive: true }
             */
-            GraphProcedure.Builder proc = GraphProcedure.builder(5);
+            GraphProcedure.Builder proc = new GraphProcedure.Builder();
             ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0);
             _0.props().types(set(Label.of("employment")));
 
@@ -178,7 +178,7 @@ public class TraversalTest {
                     6: ($_1 *--[ROLEPLAYER]--> $r) { roleTypes: [reply-of:reply] }
             */
 
-            GraphProcedure.Builder proc = GraphProcedure.builder(7);
+            GraphProcedure.Builder proc = new GraphProcedure.Builder();
             ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0);
             _0.props().types(set(Label.of("reply-of")));
 
@@ -245,7 +245,7 @@ public class TraversalTest {
                     7: ($d1 *--[< <var>]--> $d2)
             */
 
-            GraphProcedure.Builder proc = GraphProcedure.builder(7);
+            GraphProcedure.Builder proc = new GraphProcedure.Builder();
             ProcedureVertex.Thing _0 = proc.anonymousThing(0, 0);
             _0.props().types(set(Label.of("reply-of")));
 
@@ -397,7 +397,7 @@ public class TraversalTest {
                     6: ($x <--[ROLEPLAYER]--* $refl) { roleTypes: [friendship:friend] }
                     8: ($refl:null:$x:2 <--[RELATING]--* $refl)
             */
-            GraphProcedure.Builder proc = GraphProcedure.builder(8);
+            GraphProcedure.Builder proc = new GraphProcedure.Builder();
 
             ProcedureVertex.Thing _3 = proc.anonymousThing(0, 3);
             _3.props().predicate(Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG));
@@ -511,7 +511,7 @@ public class TraversalTest {
         }
 
         try (CoreTransaction transaction = session.transaction(READ)) {
-            GraphProcedure.Builder proc = GraphProcedure.builder(9);
+            GraphProcedure.Builder proc = new GraphProcedure.Builder();
             /*
             vertices:
             $_0 [thing] { hasIID: false, types: [name], predicates: [= <STRING>] } (end) // Alex

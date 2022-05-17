@@ -83,7 +83,7 @@ public abstract class ProcedureVertex<
 
     /**
      * TODO:
-     *  in the next iteration, we can multiple starting vertices and we'll have to distinguish the start
+     *  after query planning, we can multiple starting vertices and we'll have to distinguish the start
      *  versus vertices without in edges
      */
     public boolean isStartingVertex() {
