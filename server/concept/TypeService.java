@@ -200,6 +200,7 @@ public class TypeService {
                 return;
             case ATTRIBUTE_TYPE_GET_OWNERS_REQ:
                 getOwners(type.asAttributeType(), typeReq.getAttributeTypeGetOwnersReq().getOnlyKey(), reqID);
+                return;
             case ATTRIBUTE_TYPE_GET_OWNERS_EXPLICIT_REQ:
                 getOwnersExplicit(type.asAttributeType(), typeReq.getAttributeTypeGetOwnersExplicitReq().getOnlyKey(), reqID);
                 return;
