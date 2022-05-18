@@ -530,6 +530,13 @@ public class ResponseBuilder {
                                 roleTypes.stream().map(Type::protoType).collect(toList()))));
             }
 
+            public static TransactionProto.Transaction.Res getPlaysOverriddenRes(
+                    UUID reqID, com.vaticle.typedb.core.concept.type.RoleType roleType) {
+                ConceptProto.ThingType.GetPlaysOverridden.Res.Builder getPlaysOverridden = ConceptProto.ThingType.GetPlaysOverridden.Res.newBuilder();
+                if (roleType != null) getPlaysOverridden.setRoleType(protoType(roleType));
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeGetPlaysOverriddenRes(getPlaysOverridden));
+            }
+
             public static TransactionProto.Transaction.Res setPlaysRes(UUID reqID) {
                 return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSetPlaysRes(
                         ConceptProto.ThingType.SetPlays.Res.getDefaultInstance()
