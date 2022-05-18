@@ -92,7 +92,6 @@ public abstract class AbstractController<
     }
 
     private Actor.Driver<REACTIVE_BLOCK> createReactiveBlock(REACTIVE_BLOCK_ID reactiveBlockId) {
-        if (isTerminated()) return null;  // TODO: Avoid returning null
         Driver<REACTIVE_BLOCK> reactiveBlock = Actor.driver(
                 d -> createReactiveBlockFromDriver(d, reactiveBlockId), context.executorService()
         );
