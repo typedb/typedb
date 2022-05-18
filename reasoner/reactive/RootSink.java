@@ -69,10 +69,6 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
         if (isPulling && publisherRegistry().setPulling()) publisher.pull(this);
     }
 
-    public void exception(Throwable e) {
-        reasonerConsumer.exception(e);
-    }
-
     @Override
     public void finished() {
         reasonerConsumer.finish();
