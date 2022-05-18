@@ -74,6 +74,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RU
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.logic.Rule.Conclusion.*;
 import static com.vaticle.typedb.core.traversal.common.Identifier.Variable.anon;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COLON;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_CLOSE;
@@ -102,7 +103,7 @@ public class Rule {
         this.then = thenPattern(structure.then(), logicMgr);
         this.when = whenPattern(structure.when(), structure.then(), logicMgr);
         pruneThenResolvedTypes();
-        this.conclusion = Conclusion.create(this);
+        this.conclusion = create(this);
         this.condition = Condition.create(this);
     }
 
@@ -327,6 +328,8 @@ public class Rule {
             return rule().then();
         }
 
+        public abstract Materialisable materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr);
+
         /**
          * Perform a put operation on the `then` of the rule. This may insert a new fact, or return an existing inferred fact
          *
@@ -338,11 +341,11 @@ public class Rule {
         public static Optional<Materialisation> materialise(Materialisable materialisable, TraversalEngine traversalEng,
                                                             ConceptManager conceptMgr) {
             if (materialisable.isRelation()) {
-                return Conclusion.Relation.materialise(materialisable.asRelation(), traversalEng, conceptMgr);
+                return Relation.materialise(materialisable.asRelation(), traversalEng, conceptMgr);
             } else if (materialisable.isHasExplicit()) {
-                return Conclusion.Has.Explicit.materialise(materialisable.asHasExplicit());
+                return Has.Explicit.materialise(materialisable.asHasExplicit());
             } else if (materialisable.isHasVariable()) {
-                return Conclusion.Has.Variable.materialise(materialisable.asHasVariable());
+                return Has.Variable.materialise(materialisable.asHasVariable());
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
@@ -351,7 +354,7 @@ public class Rule {
         public Optional<Map<Identifier.Variable, Concept>> materialiseAndBind(ConceptMap whenConcepts,
                                                                               TraversalEngine traversalEng,
                                                                               ConceptManager conceptMgr) {
-            return Conclusion.materialise(materialisable(whenConcepts, conceptMgr), traversalEng, conceptMgr)
+            return materialise(materialisable(whenConcepts, conceptMgr), traversalEng, conceptMgr)
                     .map(materialisation -> materialisation.bindToConclusion(this, whenConcepts));
         }
 
@@ -438,8 +441,6 @@ public class Rule {
                 }
             });
         }
-
-        public abstract Materialisable materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr);
 
         public interface Isa {
             IsaConstraint isa();
