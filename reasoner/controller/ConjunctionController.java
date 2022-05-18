@@ -90,7 +90,7 @@ public abstract class ConjunctionController<OUTPUT,
         resolvables.addAll(concludables);
         resolvables.addAll(retrievables);
         iterate(concludables).forEachRemaining(c -> {
-            concludableControllers.put(c, registry().registerOrGetConcludable(c));
+            concludableControllers.put(c, registry().getOrRegisterConcludable(c));
         });
         iterate(retrievables).forEachRemaining(r -> {
             retrievableControllers.put(r, registry().registerRetrievable(r));

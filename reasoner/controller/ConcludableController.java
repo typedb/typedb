@@ -125,7 +125,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
         @Override
         public Driver<ConclusionController.Match> registerConclusionController(Rule rule) {
-            return registry().registerOrGetMatchConclusion(rule.conclusion());
+            return registry().getOrRegisterMatchConclusion(rule.conclusion());
         }
 
     }
@@ -169,7 +169,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
         @Override
         protected Driver<ConclusionController.Explain> registerConclusionController(Rule rule) {
-            return registry().registerExplainConclusion(rule.conclusion());
+            return registry().getOrRegisterExplainConclusion(rule.conclusion());
         }
     }
 

@@ -76,7 +76,7 @@ public abstract class ConclusionController<
 
     @Override
     public void setUpUpstreamControllers() {
-        conditionController = registry().registerCondition(conclusion.rule().condition());
+        conditionController = registry().getOrRegisterCondition(conclusion.rule().condition());
     }
 
     @Override
