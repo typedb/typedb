@@ -37,6 +37,12 @@ public class TypeDBException extends RuntimeException {
         errorMessage = null;
     }
 
+    private TypeDBException(ErrorMessage error, Throwable cause) {
+        super(error.message(cause), cause);
+        assert !getMessage().contains("%s");
+        this.errorMessage = error;
+    }
+
     private TypeDBException(ErrorMessage error, Object... parameters) {
         super(error.message(parameters));
         assert !getMessage().contains("%s");
@@ -50,6 +56,10 @@ public class TypeDBException extends RuntimeException {
 
     public static TypeDBException of(Throwable e) {
         return new TypeDBException(e);
+    }
+
+    public static TypeDBException of(ErrorMessage errorMessage, Throwable cause) {
+        return new TypeDBException(errorMessage, cause);
     }
 
     public static TypeDBException of(ErrorMessage errorMessage, Object... parameters) {

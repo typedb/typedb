@@ -49,6 +49,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     protected Queue<ANSWER> queue;
     protected boolean isPulling;
     protected boolean initialised;
+    private Throwable doneException;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     public ReasonerProducer(Options.Query options, Registry controllerRegistry, ExplainablesManager explainablesManager) {
@@ -77,10 +78,15 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     public synchronized void produce(Queue<ANSWER> queue, int requestedAnswers, Executor executor) {
         assert this.queue == null || this.queue == queue;
         assert requestedAnswers > 0;
-        if (!initialised) initialiseRoot();
-        this.queue = queue;
-        requiredAnswers.addAndGet(requestedAnswers);
-        if (rootReactiveBlock != null && !isPulling) pull();
+        if (!done.get()) {
+            this.queue = queue;
+            requiredAnswers.addAndGet(requestedAnswers);
+            if (!initialised) initialiseRoot();
+            if (rootReactiveBlock != null && !isPulling) pull();
+        } else {
+            if (doneException == null) queue.done();
+            else queue.done(doneException);
+        }
     }
 
     protected abstract void initialiseRoot();
@@ -97,11 +103,9 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         LOG.trace("All answers found.");
         if (!done.getAndSet(true)) {
             if (queue == null) {
-                initialised = true;
                 assert !isPulling;
                 assert requiredAnswers.get() == 0;
-            }
-            else {
+            } else {
                 requiredAnswers.set(0);
                 queue.done();
             }
@@ -111,8 +115,14 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     @Override
     public void exception(Throwable e) {
         if (!done.getAndSet(true)) {
-            requiredAnswers.set(0);
-            queue.done(e);
+            doneException = e;
+            if (queue == null) {
+                assert !isPulling;
+                assert requiredAnswers.get() == 0;
+            } else {
+                requiredAnswers.set(0);
+                queue.done(e.getCause());
+            }
         }
     }
 

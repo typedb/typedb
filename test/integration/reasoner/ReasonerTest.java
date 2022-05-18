@@ -167,11 +167,12 @@ public class ReasonerTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                txn.reasoner().controllerRegistry().terminate(new RuntimeException());
+                RuntimeException exception = new RuntimeException();
+                txn.reasoner().controllerRegistry().terminate(exception);
                 try {
                     List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x isa is-still-good;").asMatch()).toList();
                 } catch (TypeDBException e) {
-                    assertEquals(e.code().get(), REASONING_TERMINATED_WITH_CAUSE.code());
+                    assertEquals(e.getCause(), exception);
                     return;
                 }
                 fail();

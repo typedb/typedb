@@ -34,6 +34,8 @@ import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.concurrent.producer.Producers;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.Negation;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
@@ -86,15 +88,15 @@ public class Reasoner {
         return controllerRegistry;
     }
 
-    private boolean mayReason(com.vaticle.typedb.core.pattern.Disjunction disjunction, Context.Query context) {
+    private boolean mayReason(Disjunction disjunction, Context.Query context) {
         if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
             return false;
         }
         return mayReason(disjunction);
     }
 
-    private boolean mayReason(com.vaticle.typedb.core.pattern.Disjunction disjunction) {
-        for (com.vaticle.typedb.core.pattern.Conjunction conj : disjunction.conjunctions()) {
+    private boolean mayReason(Disjunction disjunction) {
+        for (Conjunction conj : disjunction.conjunctions()) {
             Set<Variable> vars = conj.variables();
             List<Negation> negs = conj.negations();
             if (iterate(vars).flatMap(v -> iterate(v.inferredTypes())).distinct().anyMatch(this::hasRule)) return true;
@@ -107,16 +109,16 @@ public class Reasoner {
         return logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext();
     }
 
-    public FunctionalIterator<ConceptMap> execute(com.vaticle.typedb.core.pattern.Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Context.Query context) {
+    public FunctionalIterator<ConceptMap> execute(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Context.Query context) {
         inferAndValidateTypes(disjunction);
         if (mayReason(disjunction, context)) return executeReasoner(disjunction, filter(modifiers.filter()), context);
         else return executeTraversal(disjunction, context, filter(modifiers.filter()));
     }
 
-    private void inferAndValidateTypes(com.vaticle.typedb.core.pattern.Disjunction disjunction) {
+    private void inferAndValidateTypes(Disjunction disjunction) {
         logicMgr.typeInference().applyCombination(disjunction);
         if (!disjunction.isCoherent()) {
-            Set<com.vaticle.typedb.core.pattern.Conjunction> causes = incoherentConjunctions(disjunction);
+            Set<Conjunction> causes = incoherentConjunctions(disjunction);
             if (set(disjunction.conjunctions()).equals(causes)) {
                 throw TypeDBException.of(UNSATISFIABLE_PATTERN, disjunction);
             } else {
@@ -131,10 +133,10 @@ public class Reasoner {
         return names;
     }
 
-    private Set<com.vaticle.typedb.core.pattern.Conjunction> incoherentConjunctions(com.vaticle.typedb.core.pattern.Disjunction disjunction) {
+    private Set<Conjunction> incoherentConjunctions(Disjunction disjunction) {
         assert !disjunction.isCoherent();
-        Set<com.vaticle.typedb.core.pattern.Conjunction> causes = new HashSet<>();
-        for (com.vaticle.typedb.core.pattern.Conjunction conj : disjunction.conjunctions()) {
+        Set<Conjunction> causes = new HashSet<>();
+        for (Conjunction conj : disjunction.conjunctions()) {
             // TODO: this logic can be more complete if it did not only assume the nested negation is to blame
             FunctionalIterator<Negation> incoherentNegs = iterate(conj.negations()).filter(n -> !n.isCoherent());
             if (!conj.isCoherent() && !incoherentNegs.hasNext()) causes.add(conj);
@@ -143,7 +145,7 @@ public class Reasoner {
         return causes;
     }
 
-    public FunctionalIterator<ConceptMap> executeReasoner(com.vaticle.typedb.core.pattern.Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter,
+    public FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter,
                                                           Context.Query context) {
         ReasonerProducer.Match producer = disjunction.conjunctions().size() == 1
                 ? new ReasonerProducer.Match.Conjunction(disjunction.conjunctions().get(0), filter, context.options(), controllerRegistry, explainablesManager)
@@ -151,17 +153,17 @@ public class Reasoner {
         return produce(producer, context.producer(), async1());
     }
 
-    public FunctionalIterator<ConceptMap> executeTraversal(com.vaticle.typedb.core.pattern.Disjunction disjunction, Context.Query context,
+    public FunctionalIterator<ConceptMap> executeTraversal(Disjunction disjunction, Context.Query context,
                                                            Set<Identifier.Variable.Retrievable> filter) {
         FunctionalIterator<ConceptMap> answers;
-        FunctionalIterator<com.vaticle.typedb.core.pattern.Conjunction> conjs = iterate(disjunction.conjunctions());
+        FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
         if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter));
         else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), async1());
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
     }
 
-    private Producer<ConceptMap> producer(com.vaticle.typedb.core.pattern.Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter,
+    private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter,
                                           Context.Query context) {
         if (conjunction.negations().isEmpty()) {
             return traversalEng.producer(
@@ -176,15 +178,15 @@ public class Reasoner {
         }
     }
 
-    private FunctionalIterator<ConceptMap> iterator(com.vaticle.typedb.core.pattern.Disjunction disjunction, ConceptMap bounds) {
+    private FunctionalIterator<ConceptMap> iterator(Disjunction disjunction, ConceptMap bounds) {
         return iterate(disjunction.conjunctions()).flatMap(c -> iterator(c, bounds));
     }
 
-    private FunctionalIterator<ConceptMap> iterator(com.vaticle.typedb.core.pattern.Conjunction conjunction, ConceptMap bounds) {
+    private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
         return iterator(bound(conjunction, bounds), set());
     }
 
-    private FunctionalIterator<ConceptMap> iterator(com.vaticle.typedb.core.pattern.Conjunction conjunction,
+    private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction,
                                                     Set<Identifier.Variable.Retrievable> filter) {
         if (!conjunction.isCoherent()) return Iterators.empty();
         if (conjunction.negations().isEmpty()) {
@@ -196,8 +198,8 @@ public class Reasoner {
         }
     }
 
-    private com.vaticle.typedb.core.pattern.Conjunction bound(com.vaticle.typedb.core.pattern.Conjunction conjunction, ConceptMap bounds) {
-        com.vaticle.typedb.core.pattern.Conjunction newClone = conjunction.clone();
+    private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
+        Conjunction newClone = conjunction.clone();
         newClone.bound(bounds.toMap(Type::getLabel, Thing::getIID));
         return newClone;
     }
