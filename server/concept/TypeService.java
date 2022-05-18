@@ -63,6 +63,7 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingTy
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsOverriddenRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setAbstractRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setOwnsRes;
@@ -166,6 +167,9 @@ public class TypeService {
                 return;
             case THING_TYPE_GET_PLAYS_REQ:
                 getPlays(type.asThingType(), reqID);
+                return;
+            case THING_TYPE_GET_PLAYS_EXPLICIT_REQ:
+                getPlaysExplicit(type.asThingType(), reqID);
                 return;
             case ENTITY_TYPE_CREATE_REQ:
                 create(type.asEntityType(), reqID);
@@ -341,6 +345,10 @@ public class TypeService {
 
     private void getPlays(ThingType thingType, UUID reqID) {
         transactionSvc.stream(thingType.getPlays(), reqID, roleTypes -> getPlaysResPart(reqID, roleTypes));
+    }
+
+    private void getPlaysExplicit(ThingType thingType, UUID reqID) {
+        transactionSvc.stream(thingType.getPlaysExplicit(), reqID, roleTypes -> getPlaysExplicitResPart(reqID, roleTypes));
     }
 
     private void setPlays(ThingType thingType, ConceptProto.ThingType.SetPlays.Req setPlaysRequest, UUID reqID) {
