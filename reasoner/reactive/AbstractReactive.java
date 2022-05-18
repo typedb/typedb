@@ -18,12 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.reactive;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
-import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveDelegate;
-
-import java.util.function.Function;
-
 public abstract class AbstractReactive implements Reactive {
 
     protected final AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock;
@@ -44,93 +38,4 @@ public abstract class AbstractReactive implements Reactive {
         return reactiveBlock;
     }
 
-    public static class SubscriberDelegateImpl<INPUT> implements ReactiveDelegate.SubscriberDelegate<INPUT> {
-
-        private final Subscriber<INPUT> subscriber;
-        private final AbstractReactiveBlock.Context context;
-
-        public SubscriberDelegateImpl(Subscriber<INPUT> subscriber, AbstractReactiveBlock.Context context) {
-            this.subscriber = subscriber;
-            this.context = context;
-        }
-
-        @Override
-        public void registerPath(Publisher<INPUT> publisher) {
-            subscriber.reactiveBlock().monitor().execute(actor -> actor.registerPath(subscriber.identifier(), publisher.identifier()));
-        }
-
-        @Override
-        public void traceReceive(Publisher<INPUT> publisher, INPUT packet) {
-            context.tracer().ifPresent(tracer -> tracer.receive(publisher.identifier(), subscriber.identifier(), packet));
-        }
-
-        @Override
-        public void rePullPublisher(Publisher<INPUT> publisher) {
-            subscriber.reactiveBlock().schedulePullRetry(publisher, subscriber);
-        }
-    }
-
-    public static class PublisherDelegateImpl<OUTPUT> implements ReactiveDelegate.PublisherDelegate<OUTPUT> {
-
-        private final Publisher<OUTPUT> publisher;
-        private final AbstractReactiveBlock.Context context;
-
-        public PublisherDelegateImpl(Publisher<OUTPUT> publisher, AbstractReactiveBlock.Context context) {
-            this.publisher = publisher;
-            this.context = context;
-        }
-
-        @Override
-        public void monitorCreateAnswers(int answersCreated) {
-            for (int i = 0; i < answersCreated; i++) {
-                publisher.reactiveBlock().monitor().execute(actor -> actor.createAnswer(publisher.identifier()));
-            }
-        }
-
-        @Override
-        public void monitorConsumeAnswers(int answersConsumed) {
-            for (int i = 0; i < answersConsumed; i++) {
-                publisher.reactiveBlock().monitor().execute(actor -> actor.consumeAnswer(publisher.identifier()));
-            }
-        }
-
-        @Override
-        public void subscriberReceive(Subscriber<OUTPUT> subscriber, OUTPUT packet) {
-            subscriber.receive(publisher, packet);
-        }
-
-        @Override
-        public void tracePull(Subscriber<OUTPUT> subscriber) {
-            context.tracer().ifPresent(tracer -> tracer.pull(subscriber.identifier(), publisher.identifier()));
-        }
-
-        @Override
-        public <MAPPED> Stream<OUTPUT, MAPPED> map(Publisher<OUTPUT> publisher, Function<OUTPUT, MAPPED> function) {
-            Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.reactiveBlock(), new Operator.Map<>(function));
-            publisher.registerSubscriber(newOp);
-            return newOp;
-        }
-
-        @Override
-        public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Publisher<OUTPUT> publisher,
-                                                       Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-            Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.reactiveBlock(), new Operator.FlatMap<>(function));
-            publisher.registerSubscriber(newOp);
-            return newOp;
-        }
-
-        @Override
-        public Stream<OUTPUT, OUTPUT> distinct(Publisher<OUTPUT> publisher) {
-            Stream<OUTPUT, OUTPUT> newOp = TransformationStream.single(publisher.reactiveBlock(), new Operator.Distinct<>());
-            publisher.registerSubscriber(newOp);
-            return newOp;
-        }
-
-        @Override
-        public Stream<OUTPUT, OUTPUT> buffer(Publisher<OUTPUT> publisher) {
-            Stream<OUTPUT, OUTPUT> newOp = PoolingStream.buffer(publisher.reactiveBlock());
-            publisher.registerSubscriber(newOp);
-            return newOp;
-        }
-    }
 }

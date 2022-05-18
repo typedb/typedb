@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.reactive.common.SubscriberDelegate;
 
 import javax.annotation.Nullable;
 
@@ -29,13 +30,13 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
     private final ReasonerConsumer<PACKET> reasonerConsumer;
     private final PublisherRegistry.Single<PACKET> publisherRegistry;
     private final AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
-    private final AbstractReactive.SubscriberDelegateImpl<PACKET> subscriberActions;
+    private final SubscriberDelegate<PACKET> subscriberActions;
     private boolean isPulling;
 
     public RootSink(AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock, ReasonerConsumer<PACKET> reasonerConsumer) {
         this.publisherRegistry = new PublisherRegistry.Single<>();
         this.reactiveBlock = reactiveBlock;
-        this.subscriberActions = new AbstractReactive.SubscriberDelegateImpl<>(this, reactiveBlock.context());
+        this.subscriberActions = new SubscriberDelegate<>(this, reactiveBlock.context());
         this.identifier = reactiveBlock().registerReactive(this);
         this.reasonerConsumer = reasonerConsumer;
         this.isPulling = false;

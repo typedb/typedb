@@ -27,7 +27,9 @@ import com.vaticle.typedb.core.reasoner.controller.AbstractController;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Identifier;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Subscriber;
+import com.vaticle.typedb.core.reasoner.reactive.common.PublisherDelegate;
 import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveIdentifier;
+import com.vaticle.typedb.core.reasoner.reactive.common.SubscriberDelegate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -299,7 +301,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
 
         private final Identifier<PACKET, ?> identifier;
         private final AbstractReactiveBlock<PACKET, ?, ?, ?> reactiveBlock;
-        private final AbstractReactive.PublisherDelegateImpl<PACKET> publisherActions;
+        private final PublisherDelegate<PACKET> publisherActions;
         private boolean ready;
         private Identifier<?, PACKET> providingOutput;
         private Subscriber<PACKET> subscriber;
@@ -308,7 +310,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
             this.reactiveBlock = reactiveBlock;
             this.identifier = reactiveBlock.registerReactive(this);
             this.ready = false;
-            this.publisherActions = new AbstractReactive.PublisherDelegateImpl<>(this, reactiveBlock.context());
+            this.publisherActions = new PublisherDelegate<>(this, reactiveBlock.context());
         }
 
         @Override
@@ -386,14 +388,14 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
 
         private final Identifier<?, PACKET> identifier;
         private final AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
-        private final AbstractReactive.SubscriberDelegateImpl<PACKET> subscriberActions;
+        private final SubscriberDelegate<PACKET> subscriberActions;
         private Identifier<PACKET, ?> receivingInput;
         private Publisher<PACKET> publisher;
 
         public Output(AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock) {
             this.reactiveBlock = reactiveBlock;
             this.identifier = reactiveBlock().registerReactive(this);
-            this.subscriberActions = new AbstractReactive.SubscriberDelegateImpl<>(this, reactiveBlock().context());
+            this.subscriberActions = new SubscriberDelegate<>(this, reactiveBlock().context());
         }
 
         @Override
