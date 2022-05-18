@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
-import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveActions;
+import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveDelegate;
 import com.vaticle.typedb.core.reasoner.reactive.common.SubscriberRegistry;
 
 import java.util.function.Function;
@@ -29,13 +29,13 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
 
     private final Operator.Source<PACKET> sourceOperator;
     private final SubscriberRegistry.Single<PACKET> subscriberRegistry;
-    private final ReactiveActions.PublisherActions<PACKET> publisherActions;
+    private final ReactiveDelegate.PublisherDelegate<PACKET> publisherActions;
 
     protected Source(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, Operator.Source<PACKET> sourceOperator) {
         super(reactiveBlock);
         this.sourceOperator = sourceOperator;
         this.subscriberRegistry = new SubscriberRegistry.Single<>();
-        this.publisherActions = new AbstractStream.PublisherActionsImpl<>(this, reactiveBlock.context());
+        this.publisherActions = new PublisherDelegateImpl<>(this, reactiveBlock.context());
         reactiveBlock().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 

@@ -299,7 +299,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
 
         private final Identifier<PACKET, ?> identifier;
         private final AbstractReactiveBlock<PACKET, ?, ?, ?> reactiveBlock;
-        private final AbstractReactive.PublisherActionsImpl<PACKET> publisherActions;
+        private final AbstractReactive.PublisherDelegateImpl<PACKET> publisherActions;
         private boolean ready;
         private Identifier<?, PACKET> providingOutput;
         private Subscriber<PACKET> subscriber;
@@ -308,7 +308,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
             this.reactiveBlock = reactiveBlock;
             this.identifier = reactiveBlock.registerReactive(this);
             this.ready = false;
-            this.publisherActions = new AbstractReactive.PublisherActionsImpl<>(this, reactiveBlock.context());
+            this.publisherActions = new AbstractReactive.PublisherDelegateImpl<>(this, reactiveBlock.context());
         }
 
         @Override
@@ -386,14 +386,14 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
 
         private final Identifier<?, PACKET> identifier;
         private final AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
-        private final AbstractReactive.SubscriberActionsImpl<PACKET> subscriberActions;
+        private final AbstractReactive.SubscriberDelegateImpl<PACKET> subscriberActions;
         private Identifier<PACKET, ?> receivingInput;
         private Publisher<PACKET> publisher;
 
         public Output(AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock) {
             this.reactiveBlock = reactiveBlock;
             this.identifier = reactiveBlock().registerReactive(this);
-            this.subscriberActions = new AbstractReactive.SubscriberActionsImpl<>(this, reactiveBlock().context());
+            this.subscriberActions = new AbstractReactive.SubscriberDelegateImpl<>(this, reactiveBlock().context());
         }
 
         @Override

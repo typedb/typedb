@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
-import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveActions;
+import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveDelegate;
 
 import java.util.function.Function;
 
@@ -44,12 +44,12 @@ public abstract class AbstractReactive implements Reactive {
         return reactiveBlock;
     }
 
-    public static class SubscriberActionsImpl<INPUT> implements ReactiveActions.SubscriberActions<INPUT> {
+    public static class SubscriberDelegateImpl<INPUT> implements ReactiveDelegate.SubscriberDelegate<INPUT> {
 
         private final Subscriber<INPUT> subscriber;
         private final AbstractReactiveBlock.Context context;
 
-        public SubscriberActionsImpl(Subscriber<INPUT> subscriber, AbstractReactiveBlock.Context context) {
+        public SubscriberDelegateImpl(Subscriber<INPUT> subscriber, AbstractReactiveBlock.Context context) {
             this.subscriber = subscriber;
             this.context = context;
         }
@@ -70,12 +70,12 @@ public abstract class AbstractReactive implements Reactive {
         }
     }
 
-    public static class PublisherActionsImpl<OUTPUT> implements ReactiveActions.PublisherActions<OUTPUT> {
+    public static class PublisherDelegateImpl<OUTPUT> implements ReactiveDelegate.PublisherDelegate<OUTPUT> {
 
         private final Publisher<OUTPUT> publisher;
         private final AbstractReactiveBlock.Context context;
 
-        public PublisherActionsImpl(Publisher<OUTPUT> publisher, AbstractReactiveBlock.Context context) {
+        public PublisherDelegateImpl(Publisher<OUTPUT> publisher, AbstractReactiveBlock.Context context) {
             this.publisher = publisher;
             this.context = context;
         }

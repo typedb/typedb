@@ -23,9 +23,9 @@ import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 
 import java.util.function.Function;
 
-public interface ReactiveActions {  // TODO: Can we find a better name?
+public interface ReactiveDelegate {  // TODO: Interfaces are only used once, consider collapsing
 
-    interface PublisherActions<OUTPUT> extends ReactiveActions {
+    interface PublisherDelegate<OUTPUT> extends ReactiveDelegate {
 
         void monitorCreateAnswers(int answersCreated);
 
@@ -47,7 +47,7 @@ public interface ReactiveActions {  // TODO: Can we find a better name?
 
     }
 
-    interface SubscriberActions<INPUT> extends ReactiveActions {
+    interface SubscriberDelegate<INPUT> extends ReactiveDelegate {
 
         void registerPath(Reactive.Publisher<INPUT> publisher);
 

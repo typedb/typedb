@@ -19,15 +19,15 @@
 package com.vaticle.typedb.core.reasoner.reactive;
 
 import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
-import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveActions;
+import com.vaticle.typedb.core.reasoner.reactive.common.ReactiveDelegate;
 import com.vaticle.typedb.core.reasoner.reactive.common.SubscriberRegistry;
 
 public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive implements Reactive.Stream<INPUT, OUTPUT> {
 
     private final SubscriberRegistry<OUTPUT> subscriberRegistry;
     private final PublisherRegistry<INPUT> publisherRegistry;
-    protected final ReactiveActions.SubscriberActions<INPUT> subscriberActions;
-    protected final ReactiveActions.PublisherActions<OUTPUT> publisherActions;
+    protected final ReactiveDelegate.SubscriberDelegate<INPUT> subscriberActions;
+    protected final ReactiveDelegate.PublisherDelegate<OUTPUT> publisherActions;
 
     protected AbstractStream(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock,
                              SubscriberRegistry<OUTPUT> subscriberRegistry,
@@ -35,8 +35,8 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
         super(reactiveBlock);
         this.subscriberRegistry = subscriberRegistry;
         this.publisherRegistry = publisherRegistry;
-        this.subscriberActions = new SubscriberActionsImpl<>(this, reactiveBlock.context());
-        this.publisherActions = new PublisherActionsImpl<>(this, reactiveBlock.context());
+        this.subscriberActions = new SubscriberDelegateImpl<>(this, reactiveBlock.context());
+        this.publisherActions = new PublisherDelegateImpl<>(this, reactiveBlock.context());
     }
 
     public SubscriberRegistry<OUTPUT> subscriberRegistry() { return subscriberRegistry; }

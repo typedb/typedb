@@ -29,13 +29,13 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
     private final ReasonerConsumer<PACKET> reasonerConsumer;
     private final PublisherRegistry.Single<PACKET> publisherRegistry;
     private final AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
-    private final AbstractReactive.SubscriberActionsImpl<PACKET> subscriberActions;
+    private final AbstractReactive.SubscriberDelegateImpl<PACKET> subscriberActions;
     private boolean isPulling;
 
     public RootSink(AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock, ReasonerConsumer<PACKET> reasonerConsumer) {
         this.publisherRegistry = new PublisherRegistry.Single<>();
         this.reactiveBlock = reactiveBlock;
-        this.subscriberActions = new AbstractReactive.SubscriberActionsImpl<>(this, reactiveBlock.context());
+        this.subscriberActions = new AbstractReactive.SubscriberDelegateImpl<>(this, reactiveBlock.context());
         this.identifier = reactiveBlock().registerReactive(this);
         this.reasonerConsumer = reasonerConsumer;
         this.isPulling = false;
