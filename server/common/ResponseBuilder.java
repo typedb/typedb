@@ -500,7 +500,7 @@ public class ResponseBuilder {
             public static TransactionProto.Transaction.Res getOwnsOverriddenRes(
                     UUID reqID, com.vaticle.typedb.core.concept.type.AttributeType attributeType) {
                 ConceptProto.ThingType.GetOwnsOverridden.Res.Builder getOwnsOverridden = ConceptProto.ThingType.GetOwnsOverridden.Res.newBuilder();
-                if (attributeType != null) getOwnsOverridden.setType(protoType(attributeType));
+                if (attributeType != null) getOwnsOverridden.setAttributeType(protoType(attributeType));
                 return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeGetOwnsOverriddenRes(getOwnsOverridden));
             }
 
@@ -519,14 +519,14 @@ public class ResponseBuilder {
             public static TransactionProto.Transaction.ResPart getPlaysResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> roleTypes) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetPlaysResPart(
-                        ConceptProto.ThingType.GetPlays.ResPart.newBuilder().addAllRoles(
+                        ConceptProto.ThingType.GetPlays.ResPart.newBuilder().addAllRoleTypes(
                                 roleTypes.stream().map(Type::protoType).collect(toList()))));
             }
 
             public static TransactionProto.Transaction.ResPart getPlaysExplicitResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> roleTypes) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetPlaysExplicitResPart(
-                        ConceptProto.ThingType.GetPlaysExplicit.ResPart.newBuilder().addAllRoles(
+                        ConceptProto.ThingType.GetPlaysExplicit.ResPart.newBuilder().addAllRoleTypes(
                                 roleTypes.stream().map(Type::protoType).collect(toList()))));
             }
 
@@ -578,7 +578,7 @@ public class ResponseBuilder {
             public static TransactionProto.Transaction.ResPart getRelatesResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> roleTypes) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRelationTypeGetRelatesResPart(
-                        ConceptProto.RelationType.GetRelates.ResPart.newBuilder().addAllRoles(
+                        ConceptProto.RelationType.GetRelates.ResPart.newBuilder().addAllRoleTypes(
                                 roleTypes.stream().map(Type::protoType).collect(toList()))
                 ));
             }
@@ -644,7 +644,7 @@ public class ResponseBuilder {
             public static TransactionProto.Transaction.ResPart getOwnersResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> owners) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setAttributeTypeGetOwnersResPart(
-                        ConceptProto.AttributeType.GetOwners.ResPart.newBuilder().addAllOwners(
+                        ConceptProto.AttributeType.GetOwners.ResPart.newBuilder().addAllThingTypes(
                                 owners.stream().map(Type::protoType).collect(toList())
                         )));
             }
@@ -652,7 +652,7 @@ public class ResponseBuilder {
             public static TransactionProto.Transaction.ResPart getOwnersExplicitResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> owners) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setAttributeTypeGetOwnersExplicitResPart(
-                        ConceptProto.AttributeType.GetOwnersExplicit.ResPart.newBuilder().addAllOwners(
+                        ConceptProto.AttributeType.GetOwnersExplicit.ResPart.newBuilder().addAllThingTypes(
                                 owners.stream().map(Type::protoType).collect(toList())
                         )));
             }

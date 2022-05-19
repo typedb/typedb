@@ -149,7 +149,7 @@ public class TypeService {
                 unsetOwns(type.asThingType(), typeReq.getThingTypeUnsetOwnsReq().getAttributeType(), reqID);
                 return;
             case THING_TYPE_UNSET_PLAYS_REQ:
-                unsetPlays(type.asThingType(), typeReq.getThingTypeUnsetPlaysReq().getRole(), reqID);
+                unsetPlays(type.asThingType(), typeReq.getThingTypeUnsetPlaysReq().getRoleType(), reqID);
                 return;
             case THING_TYPE_GET_INSTANCES_REQ:
                 getInstances(type.asThingType(), reqID);
@@ -361,9 +361,9 @@ public class TypeService {
     }
 
     private void setPlays(ThingType thingType, ConceptProto.ThingType.SetPlays.Req setPlaysRequest, UUID reqID) {
-        RoleType role = getRoleType(setPlaysRequest.getRole());
-        if (setPlaysRequest.hasOverriddenRole()) {
-            RoleType overriddenRole = getRoleType(setPlaysRequest.getOverriddenRole());
+        RoleType role = getRoleType(setPlaysRequest.getRoleType());
+        if (setPlaysRequest.hasOverriddenType()) {
+            RoleType overriddenRole = getRoleType(setPlaysRequest.getOverriddenType());
             thingType.setPlays(role, overriddenRole);
         } else thingType.setPlays(role);
         transactionSvc.respond(setPlaysRes(reqID));
