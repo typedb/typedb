@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector;
 import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 public abstract class AbstractController<
         REACTIVE_BLOCK_ID, INPUT, OUTPUT,
-        REQ extends AbstractReactiveBlock.Connector.AbstractRequest<?, ?, INPUT>,
+        REQ extends Connector.AbstractRequest<?, ?, INPUT>,
         REACTIVE_BLOCK extends AbstractReactiveBlock<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
         CONTROLLER extends AbstractController<REACTIVE_BLOCK_ID, INPUT, OUTPUT, ?, REACTIVE_BLOCK, CONTROLLER>
         > extends Actor<CONTROLLER> {
@@ -49,8 +50,7 @@ public abstract class AbstractController<
     private boolean terminated;
     protected final Map<REACTIVE_BLOCK_ID, Actor.Driver<REACTIVE_BLOCK>> reactiveBlocks;
 
-    protected AbstractController(Driver<CONTROLLER> driver, Context context,
-                                 Supplier<String> debugName) {
+    protected AbstractController(Driver<CONTROLLER> driver, Context context, Supplier<String> debugName) {
         super(driver, debugName);
         this.context = context;
         this.reactiveBlocks = new HashMap<>();
@@ -71,22 +71,18 @@ public abstract class AbstractController<
         return context.monitor();
     }
 
-    protected Optional<Tracer> tracer() {
-        return context.tracer();
-    }
-
     protected AbstractReactiveBlock.Context reactiveBlockContext() {
         return context.reactiveBlock();
     }
 
-    public abstract void resolveController(REQ connectionRequest);
+    public abstract void routeConnectionRequest(REQ connectionRequest);
 
-    public void resolveReactiveBlock(AbstractReactiveBlock.Connector<REACTIVE_BLOCK_ID, OUTPUT> connector) {
+    public void establishReactiveBlockConnection(Connector<REACTIVE_BLOCK_ID, OUTPUT> connector) {
         if (isTerminated()) return;
-        createReactiveBlockIfAbsent(connector.bounds()).execute(actor -> actor.establishConnection(connector));
+        getOrCreateReactiveBlock(connector.bounds()).execute(actor -> actor.establishConnection(connector));
     }
 
-    public Driver<REACTIVE_BLOCK> createReactiveBlockIfAbsent(REACTIVE_BLOCK_ID reactiveBlockId) {
+    public Driver<REACTIVE_BLOCK> getOrCreateReactiveBlock(REACTIVE_BLOCK_ID reactiveBlockId) {
         // TODO: We can do subsumption in the subtypes here
         return reactiveBlocks.computeIfAbsent(reactiveBlockId, this::createReactiveBlock);
     }

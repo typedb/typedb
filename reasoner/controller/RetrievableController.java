@@ -65,7 +65,7 @@ public class RetrievableController extends AbstractController<
     }
 
     @Override
-    public void resolveController(AbstractRequest<?, ?, Void> connectionRequest) {
+    public void routeConnectionRequest(AbstractRequest<?, ?, Void> connectionRequest) {
         // Nothing to do
     }
 

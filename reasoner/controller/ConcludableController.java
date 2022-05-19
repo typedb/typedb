@@ -81,10 +81,10 @@ public abstract class ConcludableController<INPUT, OUTPUT,
     protected abstract Driver<? extends ConclusionController<INPUT, ?, ?>> registerConclusionController(Rule rule);
 
     @Override
-    public void resolveController(REQ req) {
+    public void routeConnectionRequest(REQ req) {
         if (isTerminated()) return;
         conclusionControllers.get(req.controllerId())
-                .execute(actor -> actor.resolveReactiveBlock(new AbstractReactiveBlock.Connector<>(req.inputId(), req.bounds())));
+                .execute(actor -> actor.establishReactiveBlockConnection(new AbstractReactiveBlock.Connector<>(req.inputId(), req.bounds())));
     }
 
     public static class Match extends ConcludableController<Map<Variable, Concept>, ConceptMap,
@@ -145,7 +145,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         @Override
         public void initialise() {
             super.initialise();
-            createReactiveBlockIfAbsent(bounds);
+            getOrCreateReactiveBlock(bounds);
         }
 
         @Override

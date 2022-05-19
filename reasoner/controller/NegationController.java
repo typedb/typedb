@@ -70,9 +70,9 @@ public class NegationController extends AbstractController<
     }
 
     @Override
-    public void resolveController(Request req) {
+    public void routeConnectionRequest(Request req) {
         if (isTerminated()) return;
-        disjunctionContoller.execute(actor -> actor.resolveReactiveBlock(
+        disjunctionContoller.execute(actor -> actor.establishReactiveBlockConnection(
                 new AbstractReactiveBlock.Connector<>(req.inputId(), req.bounds())
         ));
     }

@@ -47,7 +47,7 @@ public class RootDisjunctionController
     @Override
     public void initialise() {
         setUpUpstreamControllers();
-        createReactiveBlockIfAbsent(new ConceptMap());
+        getOrCreateReactiveBlock(new ConceptMap());
     }
 
     @Override

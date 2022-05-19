@@ -66,10 +66,10 @@ public abstract class DisjunctionController<
     }
 
     @Override
-    public void resolveController(Request req) {
+    public void routeConnectionRequest(Request req) {
         if (isTerminated()) return;
         getConjunctionController(req.controllerId())
-                .execute(actor -> actor.resolveReactiveBlock(
+                .execute(actor -> actor.establishReactiveBlockConnection(
                         new AbstractReactiveBlock.Connector<>(
                                 req.inputId(), req.bounds()).withMap(c -> merge(c, req.bounds()))
                 ));

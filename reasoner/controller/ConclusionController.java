@@ -80,13 +80,13 @@ public abstract class ConclusionController<
     }
 
     @Override
-    public void resolveController(Request<?, ?> req) {
+    public void routeConnectionRequest(Request<?, ?> req) {
         if (isTerminated()) return;
         if (req.isCondition()) {
-            conditionController.execute(actor -> actor.resolveReactiveBlock(
+            conditionController.execute(actor -> actor.establishReactiveBlockConnection(
                     new AbstractReactiveBlock.Connector<>(req.asCondition().inputId(), req.asCondition().bounds())));
         } else if (req.isMaterialiser()) {
-            materialisationController.execute(actor -> actor.resolveReactiveBlock(
+            materialisationController.execute(actor -> actor.establishReactiveBlockConnection(
                     new AbstractReactiveBlock.Connector<>(req.asMaterialiser().inputId(), req.asMaterialiser().bounds())));
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);

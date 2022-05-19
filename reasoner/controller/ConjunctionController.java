@@ -123,7 +123,7 @@ public abstract class ConjunctionController<OUTPUT,
     }
 
     @Override
-    public void resolveController(Request<?> connectionRequest) {
+    public void routeConnectionRequest(Request<?> connectionRequest) {
         if (isTerminated()) return;
         if (connectionRequest.isRetrievable()) {
             ReactiveBlock.RetrievableRequest req = connectionRequest.asRetrievable();
@@ -132,7 +132,7 @@ public abstract class ConjunctionController<OUTPUT,
             Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
                     .withMap(c -> merge(c, req.bounds()))
                     .withNewBounds(newPID);
-            controllerView.controller().execute(actor -> actor.resolveReactiveBlock(connector));
+            controllerView.controller().execute(actor -> actor.establishReactiveBlockConnection(connector));
         } else if (connectionRequest.isConcludable()) {
             ReactiveBlock.ConcludableRequest req = connectionRequest.asConcludable();
             ResolverView.MappedConcludable controllerView = concludableControllers.get(req.controllerId());
@@ -142,7 +142,7 @@ public abstract class ConjunctionController<OUTPUT,
                     .withMap(mapping::unTransform)
                     .withMap(c -> remapExplainable(c, req.controllerId()))
                     .withNewBounds(newPID);
-            controllerView.controller().execute(actor -> actor.resolveReactiveBlock(connector));
+            controllerView.controller().execute(actor -> actor.establishReactiveBlockConnection(connector));
         } else if (connectionRequest.isNegated()) {
             ReactiveBlock.NegatedRequest req = connectionRequest.asNegated();
             ResolverView.FilteredNegation controllerView = negationControllers.get(req.controllerId());
@@ -150,7 +150,7 @@ public abstract class ConjunctionController<OUTPUT,
             Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
                     .withMap(c -> merge(c, req.bounds()))
                     .withNewBounds(newPID);
-            controllerView.controller().execute(actor -> actor.resolveReactiveBlock(connector));
+            controllerView.controller().execute(actor -> actor.establishReactiveBlockConnection(connector));
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }

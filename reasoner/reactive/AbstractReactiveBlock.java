@@ -108,7 +108,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
 
     protected void requestConnection(REQ req) {
         if (isTerminated()) return;
-        controller.execute(actor -> actor.resolveController(req));
+        controller.execute(actor -> actor.routeConnectionRequest(req));
     }
 
     public void establishConnection(Connector<?, OUTPUT> connector) {
