@@ -88,7 +88,7 @@ public class RetrievableController extends AbstractController<
 
         @Override
         public void setUp() {
-            setInitialReactive(PoolingStream.fanOut(this));
+            setHubReactive(PoolingStream.fanOut(this));
             Source.create(this, new Operator.Supplier<>(traversalSupplier)).registerSubscriber(outputRouter());
         }
     }

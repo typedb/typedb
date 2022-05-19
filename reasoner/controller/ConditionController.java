@@ -70,7 +70,7 @@ public class ConditionController extends ConjunctionController<
 
         @Override
         public void setUp() {
-            setInitialReactive(PoolingStream.fanOut(this));
+            setHubReactive(PoolingStream.fanOut(this));
             TransformationStream.fanIn(this, new CompoundOperator(this, plan, bounds))
                     .map(Either::<ConceptMap, Materialisation>first)
                     .buffer().registerSubscriber(outputRouter());

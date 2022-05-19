@@ -70,7 +70,7 @@ public class NestedConjunctionController extends ConjunctionController<
 
         @Override
         public void setUp() {
-            setInitialReactive(TransformationStream.fanIn(this, new CompoundOperator(this, plan, bounds)).buffer());
+            setHubReactive(TransformationStream.fanIn(this, new CompoundOperator(this, plan, bounds)).buffer());
         }
     }
 

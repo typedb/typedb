@@ -32,14 +32,14 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
     private final Identifier<PACKET, ?> identifier;
     private final AbstractProcessor<PACKET, ?, ?, ?> processor;
     private final PublisherDelegate<PACKET> publisherActions;
-    private boolean ready;
+    private boolean isReady;
     private Identifier<?, PACKET> outputPortId;
     private Subscriber<PACKET> subscriber;
 
     public InputPort(AbstractProcessor<PACKET, ?, ?, ?> processor) {
         this.processor = processor;
         this.identifier = processor.registerReactive(this);
-        this.ready = false;
+        this.isReady = false;
         this.publisherActions = new PublisherDelegate<>(this, processor.context());
     }
 
@@ -61,7 +61,7 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
     public void pull(Subscriber<PACKET> subscriber) {
         assert subscriber.equals(this.subscriber);
         processor().tracer().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
-        if (ready)
+        if (isReady)
             outputPortId.processor().execute(actor -> actor.pull(outputPortId));  // TODO: Store the processor
         // rather than getting it from the outputPort
     }
@@ -82,8 +82,8 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
         assert this.outputPortId == null;
         this.outputPortId = outputPortId;
         processor().monitor().execute(actor -> actor.registerPath(identifier(), outputPortId));
-        assert !ready;
-        ready = true;
+        assert !isReady;
+        isReady = true;
     }
 
     @Override

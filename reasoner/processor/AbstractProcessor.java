@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Identifier;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Subscriber;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.ReactiveIdentifier;
 import org.slf4j.Logger;
@@ -54,7 +55,7 @@ public abstract class AbstractProcessor<INPUT, OUTPUT,
     private final Map<Identifier<?, ?>, InputPort<INPUT>> inputPorts;  // TODO: inputPorts (sweeping rename)
     private final Map<Identifier<?, ?>, OutputPort<OUTPUT>> outputPorts;
     private final Map<Pair<Identifier<?, ?>, Identifier<?, ?>>, Runnable> pullRetries;
-    private Reactive.Stream<OUTPUT,OUTPUT> initialReactive;
+    private Stream<OUTPUT,OUTPUT> hubReactive;
     private boolean terminated;
     private long reactiveCounter;
 
@@ -72,12 +73,12 @@ public abstract class AbstractProcessor<INPUT, OUTPUT,
 
     public abstract void setUp();
 
-    protected void setInitialReactive(Reactive.Stream<OUTPUT, OUTPUT> initialReactive) {
-        this.initialReactive = initialReactive;
+    protected void setHubReactive(Stream<OUTPUT, OUTPUT> hubReactive) {
+        this.hubReactive = hubReactive;
     }
 
-    public Reactive.Stream<OUTPUT,OUTPUT> outputRouter() {  // TODO: initialReactive or hubReactive
-        return initialReactive;
+    public Stream<OUTPUT,OUTPUT> outputRouter() {
+        return hubReactive;
     }
 
     public void rootPull() {

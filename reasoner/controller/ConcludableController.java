@@ -204,7 +204,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
         @Override
         public void setUp() {
-            setInitialReactive(PoolingStream.fanInFanOut(this));
+            setHubReactive(PoolingStream.fanInFanOut(this));
             // TODO: How do we do a find first optimisation (when unbound vars is empty) and also know that we're done?
             //  This needs to be local to this processor because in general we couldn't call all upstream work done.
 
