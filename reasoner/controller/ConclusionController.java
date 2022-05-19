@@ -54,14 +54,14 @@ import static com.vaticle.typedb.core.reasoner.processor.reactive.Transformation
 
 public abstract class ConclusionController<
         OUTPUT,
-        REACTIVE_BLOCK extends AbstractProcessor<Either<ConceptMap, Materialisation>, OUTPUT, ?, REACTIVE_BLOCK>,
-        CONTROLLER extends ConclusionController<OUTPUT, REACTIVE_BLOCK, CONTROLLER>
+        PROCESSOR extends AbstractProcessor<Either<ConceptMap, Materialisation>, OUTPUT, ?, PROCESSOR>,
+        CONTROLLER extends ConclusionController<OUTPUT, PROCESSOR, CONTROLLER>
         > extends AbstractController<
         ConceptMap,
         Either<ConceptMap, Materialisation>,
         OUTPUT,
         ConclusionController.Request<?, ?>,
-        REACTIVE_BLOCK,
+        PROCESSOR,
         CONTROLLER
         > {
 
@@ -195,10 +195,10 @@ public abstract class ConclusionController<
         }
     }
 
-    protected abstract static class Processor<OUTPUT, REACTIVE_BLOCK extends Processor<OUTPUT, REACTIVE_BLOCK>>
+    protected abstract static class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>>
             extends AbstractProcessor<
                         Either<ConceptMap, Materialisation>, OUTPUT,
-                        Request<?, ?>, REACTIVE_BLOCK
+                        Request<?, ?>, PROCESSOR
                         > {
 
         private final Rule rule;
@@ -207,8 +207,8 @@ public abstract class ConclusionController<
         private final Set<ConditionRequest> conditionRequests;
         private final Set<MaterialiserRequest> materialisationRequests;
 
-        protected Processor(Driver<REACTIVE_BLOCK> driver,
-                                Driver<? extends ConclusionController<OUTPUT, REACTIVE_BLOCK, ?>> controller,
+        protected Processor(Driver<PROCESSOR> driver,
+                                Driver<? extends ConclusionController<OUTPUT, PROCESSOR, ?>> controller,
                                 Context context, Rule rule, ConceptMap bounds, ConceptManager conceptManager,
                                 Supplier<String> debugName) {
             super(driver, controller, context, debugName);

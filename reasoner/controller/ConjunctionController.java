@@ -54,14 +54,14 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.controller.ConcludableController.Processor.Match.withExplainable;
 
 public abstract class ConjunctionController<OUTPUT,
-        CONTROLLER extends ConjunctionController<OUTPUT, CONTROLLER, REACTIVE_BLOCK>,
-        REACTIVE_BLOCK extends AbstractProcessor<ConceptMap, OUTPUT, ?, REACTIVE_BLOCK>
+        CONTROLLER extends ConjunctionController<OUTPUT, CONTROLLER, PROCESSOR>,
+        PROCESSOR extends AbstractProcessor<ConceptMap, OUTPUT, ?, PROCESSOR>
         > extends AbstractController<
         ConceptMap,
         ConceptMap,
         OUTPUT,
         ConjunctionController.Request<?>,
-        REACTIVE_BLOCK,
+        PROCESSOR,
         CONTROLLER
         > {
 
@@ -196,14 +196,14 @@ public abstract class ConjunctionController<OUTPUT,
 
     }
 
-    protected abstract static class Processor<OUTPUT, REACTIVE_BLOCK extends Processor<OUTPUT, REACTIVE_BLOCK>>
-            extends AbstractProcessor<ConceptMap, OUTPUT, Request<?>, REACTIVE_BLOCK> {
+    protected abstract static class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>>
+            extends AbstractProcessor<ConceptMap, OUTPUT, Request<?>, PROCESSOR> {
 
         protected final ConceptMap bounds;
         protected final List<Resolvable<?>> plan;
 
-        protected Processor(Driver<REACTIVE_BLOCK> driver,
-                                Driver<? extends ConjunctionController<OUTPUT, ?, REACTIVE_BLOCK>> controller,
+        protected Processor(Driver<PROCESSOR> driver,
+                                Driver<? extends ConjunctionController<OUTPUT, ?, PROCESSOR>> controller,
                                 Context context, ConceptMap bounds, List<Resolvable<?>> plan,
                                 Supplier<String> debugName) {
             super(driver, controller, context, debugName);

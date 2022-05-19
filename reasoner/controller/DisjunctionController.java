@@ -46,9 +46,9 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.merge;
 
 public abstract class DisjunctionController<
-        REACTIVE_BLOCK extends DisjunctionController.Processor<REACTIVE_BLOCK>,
-        CONTROLLER extends DisjunctionController<REACTIVE_BLOCK, CONTROLLER>
-        > extends AbstractController<ConceptMap, ConceptMap, ConceptMap, Request, REACTIVE_BLOCK, CONTROLLER> {
+        PROCESSOR extends DisjunctionController.Processor<PROCESSOR>,
+        CONTROLLER extends DisjunctionController<PROCESSOR, CONTROLLER>
+        > extends AbstractController<ConceptMap, ConceptMap, ConceptMap, Request, PROCESSOR, CONTROLLER> {
 
     private final List<Pair<Conjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
     protected Disjunction disjunction;
@@ -85,14 +85,14 @@ public abstract class DisjunctionController<
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    protected abstract static class Processor<REACTIVE_BLOCK extends Processor<REACTIVE_BLOCK>>
-            extends AbstractProcessor<ConceptMap, ConceptMap, Request, REACTIVE_BLOCK> {
+    protected abstract static class Processor<PROCESSOR extends Processor<PROCESSOR>>
+            extends AbstractProcessor<ConceptMap, ConceptMap, Request, PROCESSOR> {
 
         private final Disjunction disjunction;
         private final ConceptMap bounds;
 
-        protected Processor(Driver<REACTIVE_BLOCK> driver,
-                                Driver<? extends DisjunctionController<REACTIVE_BLOCK, ?>> controller,
+        protected Processor(Driver<PROCESSOR> driver,
+                                Driver<? extends DisjunctionController<PROCESSOR, ?>> controller,
                                 Context context, Disjunction disjunction, ConceptMap bounds,
                                 Supplier<String> debugName) {
             super(driver, controller, context, debugName);

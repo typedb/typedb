@@ -55,9 +55,9 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ConcludableController<INPUT, OUTPUT,
         REQ extends AbstractRequest<Conclusion, ConceptMap, INPUT>,
-        REACTIVE_BLOCK extends ConcludableController.Processor<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
-        CONTROLLER extends ConcludableController<INPUT, OUTPUT, ?, REACTIVE_BLOCK, CONTROLLER>
-        > extends AbstractController<ConceptMap, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, CONTROLLER> {
+        PROCESSOR extends ConcludableController.Processor<INPUT, OUTPUT, ?, PROCESSOR>,
+        CONTROLLER extends ConcludableController<INPUT, OUTPUT, ?, PROCESSOR, CONTROLLER>
+        > extends AbstractController<ConceptMap, INPUT, OUTPUT, REQ, PROCESSOR, CONTROLLER> {
 
     protected final Map<Conclusion, Driver<? extends ConclusionController<INPUT, ?, ?>>> conclusionControllers;
     protected final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
@@ -178,8 +178,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             INPUT,
             OUTPUT,
             REQ extends Connector.AbstractRequest<?, ?, INPUT>,
-            REACTIVE_BLOCK extends AbstractProcessor<INPUT, OUTPUT, REQ, REACTIVE_BLOCK>
-            > extends AbstractProcessor<INPUT, OUTPUT, REQ, REACTIVE_BLOCK> {
+            PROCESSOR extends AbstractProcessor<INPUT, OUTPUT, REQ, PROCESSOR>
+            > extends AbstractProcessor<INPUT, OUTPUT, REQ, PROCESSOR> {
 
         private final ConceptMap bounds;
         private final Set<Variable.Retrievable> unboundVars;  // TODO: Can just use a boolean to indicate if fully bound
@@ -187,8 +187,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         private final Set<REQ> requestedConnections;
         protected final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
 
-        protected Processor(Driver<REACTIVE_BLOCK> driver,
-                                Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller,
+        protected Processor(Driver<PROCESSOR> driver,
+                                Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller,
                                 Context context, ConceptMap bounds,
                                 Set<Variable.Retrievable> unboundVars,
                                 Map<Conclusion, Set<Unifier>> conclusionUnifiers,

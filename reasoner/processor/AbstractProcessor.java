@@ -46,11 +46,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 public abstract class AbstractProcessor<INPUT, OUTPUT,
         REQ extends AbstractRequest<?, ?, INPUT>,
-        REACTIVE_BLOCK extends AbstractProcessor<INPUT, OUTPUT, REQ, REACTIVE_BLOCK>> extends Actor<REACTIVE_BLOCK> {
+        PROCESSOR extends AbstractProcessor<INPUT, OUTPUT, REQ, PROCESSOR>> extends Actor<PROCESSOR> {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractProcessor.class);
 
-    private final Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller;
+    private final Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller;
     private final Context context;
     private final Map<Identifier<?, ?>, InputPort<INPUT>> inputPorts;  // TODO: inputPorts (sweeping rename)
     private final Map<Identifier<?, ?>, OutputPort<OUTPUT>> outputPorts;
@@ -59,8 +59,8 @@ public abstract class AbstractProcessor<INPUT, OUTPUT,
     private boolean terminated;
     private long reactiveCounter;
 
-    protected AbstractProcessor(Driver<REACTIVE_BLOCK> driver,
-                                Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller,
+    protected AbstractProcessor(Driver<PROCESSOR> driver,
+                                Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller,
                                 Context context, Supplier<String> debugName) {
         super(driver, debugName);
         this.controller = controller;

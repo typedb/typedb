@@ -38,17 +38,17 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 
 public abstract class AbstractController<
-        REACTIVE_BLOCK_ID, INPUT, OUTPUT,
+        PROCESSOR_ID, INPUT, OUTPUT,
         REQ extends Connector.AbstractRequest<?, ?, INPUT>,
-        REACTIVE_BLOCK extends AbstractProcessor<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
-        CONTROLLER extends AbstractController<REACTIVE_BLOCK_ID, INPUT, OUTPUT, ?, REACTIVE_BLOCK, CONTROLLER>
+        PROCESSOR extends AbstractProcessor<INPUT, OUTPUT, ?, PROCESSOR>,
+        CONTROLLER extends AbstractController<PROCESSOR_ID, INPUT, OUTPUT, ?, PROCESSOR, CONTROLLER>
         > extends Actor<CONTROLLER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractController.class);
     private final Context context;
 
     private boolean terminated;
-    protected final Map<REACTIVE_BLOCK_ID, Actor.Driver<REACTIVE_BLOCK>> processors;
+    protected final Map<PROCESSOR_ID, Actor.Driver<PROCESSOR>> processors;
 
     protected AbstractController(Driver<CONTROLLER> driver, Context context, Supplier<String> debugName) {
         super(driver, debugName);
@@ -77,25 +77,25 @@ public abstract class AbstractController<
 
     public abstract void routeConnectionRequest(REQ connectionRequest);
 
-    public void establishProcessorConnection(Connector<REACTIVE_BLOCK_ID, OUTPUT> connector) {
+    public void establishProcessorConnection(Connector<PROCESSOR_ID, OUTPUT> connector) {
         if (isTerminated()) return;
         getOrCreateProcessor(connector.bounds()).execute(actor -> actor.establishConnection(connector));
     }
 
-    public Driver<REACTIVE_BLOCK> getOrCreateProcessor(REACTIVE_BLOCK_ID processorId) {
+    public Driver<PROCESSOR> getOrCreateProcessor(PROCESSOR_ID processorId) {
         // TODO: We can do subsumption in the subtypes here
         return processors.computeIfAbsent(processorId, this::createProcessor);
     }
 
-    private Actor.Driver<REACTIVE_BLOCK> createProcessor(REACTIVE_BLOCK_ID processorId) {
-        Driver<REACTIVE_BLOCK> processor = Actor.driver(
+    private Actor.Driver<PROCESSOR> createProcessor(PROCESSOR_ID processorId) {
+        Driver<PROCESSOR> processor = Actor.driver(
                 d -> createProcessorFromDriver(d, processorId), context.executorService()
         );
         processor.execute(AbstractProcessor::setUp);
         return processor;
     }
 
-    protected abstract REACTIVE_BLOCK createProcessorFromDriver(Driver<REACTIVE_BLOCK> processorDriver, REACTIVE_BLOCK_ID processorId);
+    protected abstract PROCESSOR createProcessorFromDriver(Driver<PROCESSOR> processorDriver, PROCESSOR_ID processorId);
 
     @Override
     public void exception(Throwable e) {
