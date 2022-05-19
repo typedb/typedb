@@ -25,11 +25,13 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.controller.DisjunctionController.Processor.Request;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor.Connector.AbstractRequest;
-import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.processor.Connector;
+import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.processor.Input;
+import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
@@ -70,7 +72,7 @@ public abstract class DisjunctionController<
         if (isTerminated()) return;
         getConjunctionController(req.controllerId())
                 .execute(actor -> actor.establishProcessorConnection(
-                        new AbstractProcessor.Connector<>(
+                        new Connector<>(
                                 req.inputId(), req.bounds()).withMap(c -> merge(c, req.bounds()))
                 ));
     }

@@ -31,13 +31,15 @@ import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.reasoner.answer.PartialExplanation;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.ConditionRequest;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.MaterialiserRequest;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor.Connector.AbstractRequest;
-import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive.Stream;
-import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.processor.Connector;
+import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.processor.Input;
+import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashMap;
@@ -48,7 +50,7 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.reasoner.reactive.TransformationStream.fanIn;
+import static com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream.fanIn;
 
 public abstract class ConclusionController<
         OUTPUT,
@@ -84,10 +86,10 @@ public abstract class ConclusionController<
         if (isTerminated()) return;
         if (req.isCondition()) {
             conditionController.execute(actor -> actor.establishProcessorConnection(
-                    new AbstractProcessor.Connector<>(req.asCondition().inputId(), req.asCondition().bounds())));
+                    new Connector<>(req.asCondition().inputId(), req.asCondition().bounds())));
         } else if (req.isMaterialiser()) {
             materialisationController.execute(actor -> actor.establishProcessorConnection(
-                    new AbstractProcessor.Connector<>(req.asMaterialiser().inputId(), req.asMaterialiser().bounds())));
+                    new Connector<>(req.asMaterialiser().inputId(), req.asMaterialiser().bounds())));
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }

@@ -22,9 +22,9 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor.Connector;
-import com.vaticle.typedb.core.reasoner.reactive.Monitor;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.processor.Connector;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

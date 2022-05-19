@@ -23,15 +23,17 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.controller.NegationController.Processor.Request;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive.Subscriber.Finishable;
-import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
-import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
-import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
-import com.vaticle.typedb.core.reasoner.reactive.common.SubscriberRegistry;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.processor.Connector;
+import com.vaticle.typedb.core.reasoner.processor.Input;
+import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Subscriber.Finishable;
+import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -73,7 +75,7 @@ public class NegationController extends AbstractController<
     public void routeConnectionRequest(Request req) {
         if (isTerminated()) return;
         disjunctionContoller.execute(actor -> actor.establishProcessorConnection(
-                new AbstractProcessor.Connector<>(req.inputId(), req.bounds())
+                new Connector<>(req.inputId(), req.bounds())
         ));
     }
 

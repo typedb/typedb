@@ -16,12 +16,13 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive;
+package com.vaticle.typedb.core.reasoner.processor.reactive;
 
-import com.vaticle.typedb.core.reasoner.reactive.common.PublisherDelegate;
-import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
-import com.vaticle.typedb.core.reasoner.reactive.common.SubscriberDelegate;
-import com.vaticle.typedb.core.reasoner.reactive.common.SubscriberRegistry;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherDelegate;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberDelegate;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
 
 public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive implements Reactive.Stream<INPUT, OUTPUT> {
 

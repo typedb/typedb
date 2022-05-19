@@ -21,8 +21,8 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.reactive.RootSink;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Set;

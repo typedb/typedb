@@ -16,11 +16,11 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive.common;
+package com.vaticle.typedb.core.reasoner.processor.reactive.common;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 
 import java.util.ArrayList;
 import java.util.HashMap;

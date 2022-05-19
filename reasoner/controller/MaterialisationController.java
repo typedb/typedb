@@ -25,11 +25,11 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Materialiser;
 import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor.Connector.AbstractRequest;
-import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
-import com.vaticle.typedb.core.reasoner.reactive.Source;
-import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Source;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import java.util.function.Supplier;

@@ -37,7 +37,7 @@ import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
-import com.vaticle.typedb.core.reasoner.reactive.Monitor;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import org.slf4j.Logger;

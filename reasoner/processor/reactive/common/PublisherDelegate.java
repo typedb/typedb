@@ -16,13 +16,13 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive.common;
+package com.vaticle.typedb.core.reasoner.processor.reactive.common;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
 
 import java.util.function.Function;
 

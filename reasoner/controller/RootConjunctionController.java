@@ -24,10 +24,10 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.reactive.Reactive.Stream;
-import com.vaticle.typedb.core.reasoner.reactive.RootSink;
-import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
+import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.List;

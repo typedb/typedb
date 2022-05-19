@@ -24,8 +24,8 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
-import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
-import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
 
 import java.util.List;
 import java.util.Set;

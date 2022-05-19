@@ -16,11 +16,12 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive;
+package com.vaticle.typedb.core.reasoner.processor.reactive;
 
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.reactive.common.PublisherRegistry;
-import com.vaticle.typedb.core.reasoner.reactive.common.SubscriberDelegate;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberDelegate;
 
 import javax.annotation.Nullable;
 

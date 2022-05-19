@@ -16,7 +16,9 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive;
+package com.vaticle.typedb.core.reasoner.processor.reactive;
+
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 
 public abstract class AbstractReactive implements Reactive {
 

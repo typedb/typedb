@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 
 public interface ReasonerConsumer<ANSWER> {
 

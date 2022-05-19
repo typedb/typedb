@@ -16,11 +16,12 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.reactive;
+package com.vaticle.typedb.core.reasoner.processor.reactive;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
