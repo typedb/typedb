@@ -42,17 +42,18 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
 
     private final Registry controllerRegistry;
     private final AtomicBoolean done;
-    protected final AtomicInteger requiredAnswers;
-    protected final Options.Query options;
-    protected final ExplainablesManager explainablesManager;
+    final AtomicInteger requiredAnswers;
+    final Options.Query options;
+    final ExplainablesManager explainablesManager;
     private Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock;
-    protected Queue<ANSWER> queue;
-    protected boolean isPulling;
-    protected boolean initialised;
     private Throwable doneException;
+    Queue<ANSWER> queue;
+    boolean isPulling;
+    boolean isInitialised;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
-    public ReasonerProducer(Options.Query options, Registry controllerRegistry, ExplainablesManager explainablesManager) {
+    protected ReasonerProducer(Options.Query options, Registry controllerRegistry,
+                               ExplainablesManager explainablesManager) {
         this.options = options;
         this.controllerRegistry = controllerRegistry;
         this.explainablesManager = explainablesManager;
@@ -60,18 +61,11 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         this.done = new AtomicBoolean(false);
         this.requiredAnswers = new AtomicInteger();
         this.isPulling = false;
-        this.initialised = false;
+        this.isInitialised = false;
     }
 
     protected Registry controllerRegistry() {
         return controllerRegistry;
-    }
-
-    @Override
-    public void rootReactiveBlockFinalised(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock) {
-        assert this.rootReactiveBlock == null;
-        this.rootReactiveBlock = rootReactiveBlock;
-        if (requiredAnswers.get() > 0) pull();
     }
 
     @Override
@@ -81,7 +75,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         if (!done.get()) {
             this.queue = queue;
             requiredAnswers.addAndGet(requestedAnswers);
-            if (!initialised) initialiseRoot();
+            if (!isInitialised) initialiseRoot();
             if (rootReactiveBlock != null && !isPulling) pull();
         } else {
             if (doneException == null) queue.done();
@@ -90,6 +84,13 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     }
 
     protected abstract void initialiseRoot();
+
+    @Override
+    public void rootReactiveBlockFinalised(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock) {
+        assert this.rootReactiveBlock == null;
+        this.rootReactiveBlock = rootReactiveBlock;
+        if (requiredAnswers.get() > 0) pull();
+    }
 
     protected void pull() {
         assert rootReactiveBlock != null;
@@ -165,7 +166,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
             @Override
             protected void initialiseRoot() {
                 controllerRegistry().registerRootConjunction(conjunction, filter, options.explain(), this);
-                initialised = true;
+                isInitialised = true;
             }
         }
 
@@ -185,7 +186,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
             @Override
             protected void initialiseRoot() {
                 controllerRegistry().registerRootDisjunction(disjunction, filter, options.explain(), this);
-                initialised = true;
+                isInitialised = true;
             }
         }
     }
@@ -205,7 +206,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         @Override
         protected void initialiseRoot() {
             controllerRegistry().registerExplainableRoot(concludable, bounds, this);
-            initialised = true;
+            isInitialised = true;
         }
 
         @Override
