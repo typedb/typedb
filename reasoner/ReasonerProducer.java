@@ -102,7 +102,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     abstract void initialiseRootController();
 
     @Override
-    public synchronized void rootReactiveBlockFinalised(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock) {
+    public synchronized void setRootReactiveBlock(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock) {
         assert this.rootReactiveBlock == null;
         this.rootReactiveBlock = rootReactiveBlock;
         state = READY;

@@ -92,8 +92,8 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
         outputs.get(outputId).pull();
     }
 
-    public void receive(Identifier<?, INPUT> publisherId, INPUT input, Identifier<?, ?> inputId) {
-        inputs.get(inputId).receive(publisherId, input);
+    public void receive(Identifier<?, ?> inputId, INPUT packet, Identifier<?, INPUT> publisherId) {
+        inputs.get(inputId).receive(publisherId, packet);
     }
 
     public <PACKET> void schedulePullRetry(Publisher<PACKET> publisher, Subscriber<PACKET> subscriber) {
@@ -411,7 +411,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
         @Override
         public void receive(Publisher<PACKET> publisher, PACKET packet) {
             subscriberActions.traceReceive(publisher, packet);
-            receivingInput.reactiveBlock().execute(actor -> actor.receive(identifier(), packet, receivingInput));
+            receivingInput.reactiveBlock().execute(actor -> actor.receive(receivingInput, packet, identifier()));
         }
 
         public void pull() {

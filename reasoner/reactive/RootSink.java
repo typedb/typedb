@@ -40,7 +40,7 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
         this.identifier = reactiveBlock().registerReactive(this);
         this.reasonerConsumer = reasonerConsumer;
         this.isPulling = false;
-        this.reasonerConsumer.rootReactiveBlockFinalised(reactiveBlock().driver());
+        this.reasonerConsumer.setRootReactiveBlock(reactiveBlock().driver());
         reactiveBlock().monitor().execute(actor -> actor.registerRoot(reactiveBlock().driver(), identifier()));
     }
 
