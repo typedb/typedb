@@ -60,7 +60,7 @@ public abstract class DisjunctionController<
     @Override
     public void setUpUpstreamControllers() {
         disjunction.conjunctions().forEach(conjunction -> {
-            Driver<NestedConjunctionController> controller = registry().registerNestedConjunction(conjunction);
+            Driver<NestedConjunctionController> controller = registry().createNestedConjunction(conjunction);
             conjunctionControllers.add(new Pair<>(conjunction, controller));
         });
     }

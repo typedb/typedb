@@ -63,7 +63,7 @@ public abstract class AbstractController<
 
     protected abstract void setUpUpstreamControllers();
 
-    protected Registry registry() {
+    protected ControllerRegistry registry() {
         return context.registry();
     }
 
@@ -127,11 +127,11 @@ public abstract class AbstractController<
 
         private final AbstractReactiveBlock.Context reactiveBlockContext;
         private ActorExecutorGroup executorService;
-        private final Registry registry;
+        private final ControllerRegistry registry;
         private final Driver<Monitor> monitor;
         private final Tracer tracer;
 
-        Context(ActorExecutorGroup executorService, Registry registry, Driver<Monitor> monitor,
+        Context(ActorExecutorGroup executorService, ControllerRegistry registry, Driver<Monitor> monitor,
                 @Nullable Tracer tracer) {
             this.executorService = executorService;
             this.registry = registry;
@@ -148,7 +148,7 @@ public abstract class AbstractController<
             this.executorService = executorService;
         }
 
-        public Registry registry() {
+        public ControllerRegistry registry() {
             return registry;
         }
 

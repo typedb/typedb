@@ -132,10 +132,10 @@ public class ControllerTest {
         try (CoreSession session = dataSession()) {
             try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; $p1 has age $a; }", transaction.logic());
-                Registry registry = transaction.reasoner().controllerRegistry();
+                ControllerRegistry registry = transaction.reasoner().controllerRegistry();
                 AnswerProducer answerProducer = new AnswerProducer();
                 try {
-                    registry.registerRootConjunction(conjunctionPattern, new HashSet<>(), options.explain(), answerProducer);
+                    registry.createRootConjunction(conjunctionPattern, new HashSet<>(), options.explain(), answerProducer);
                 } catch (TypeDBException e) {
                     fail();
                 }
@@ -537,11 +537,11 @@ public class ControllerTest {
     private void createRootAndAssertResponses(CoreTransaction transaction, Disjunction disjunction,
                                               Set<Identifier.Variable.Retrievable> filter, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
-        Registry registry = transaction.reasoner().controllerRegistry();
+        ControllerRegistry registry = transaction.reasoner().controllerRegistry();
         AnswerProducer answerProducer = new AnswerProducer();
         answerProducer.getNextAnswer();
         try {
-             registry.registerRootDisjunction(disjunction, filter, options.explain(), answerProducer);
+             registry.createRootDisjunction(disjunction, filter, options.explain(), answerProducer);
         } catch (TypeDBException e) {
             fail();
             return;
@@ -551,14 +551,14 @@ public class ControllerTest {
 
     private void createRootAndAssertResponses(CoreTransaction transaction, Conjunction conjunction, long answerCount,
                                               long explainableAnswers) throws InterruptedException {
-        Registry registry = transaction.reasoner().controllerRegistry();
+        ControllerRegistry registry = transaction.reasoner().controllerRegistry();
         Set<Identifier.Variable.Retrievable> filter = new HashSet<>();
         iterate(conjunction.variables()).map(Variable::id).filter(Identifier::isName).map(Identifier.Variable::asName)
                 .forEachRemaining(filter::add);
         AnswerProducer answerProducer = new AnswerProducer();
         answerProducer.getNextAnswer();
         try {
-            registry.registerRootConjunction(conjunction, filter, options.explain(), answerProducer);
+            registry.createRootConjunction(conjunction, filter, options.explain(), answerProducer);
         } catch (TypeDBException e) {
             fail();
             return;

@@ -29,7 +29,7 @@ import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.common.Planner;
-import com.vaticle.typedb.core.reasoner.controller.Registry.ResolverView;
+import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
@@ -67,9 +67,9 @@ public abstract class ConjunctionController<OUTPUT,
     protected final Conjunction conjunction;
     private final Set<Resolvable<?>> resolvables;
     private final Set<Negated> negateds;
-    private final Map<Retrievable, ResolverView.FilteredRetrievable> retrievableControllers;
-    private final Map<Concludable, ResolverView.MappedConcludable> concludableControllers;
-    private final Map<Negated, ResolverView.FilteredNegation> negationControllers;
+    private final Map<Retrievable, ControllerView.FilteredRetrievable> retrievableControllers;
+    private final Map<Concludable, ControllerView.MappedConcludable> concludableControllers;
+    private final Map<Negated, ControllerView.FilteredNegation> negationControllers;
     private List<Resolvable<?>> plan;
 
     public ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction, Context context) {
@@ -90,15 +90,15 @@ public abstract class ConjunctionController<OUTPUT,
         resolvables.addAll(concludables);
         resolvables.addAll(retrievables);
         iterate(concludables).forEachRemaining(c -> {
-            concludableControllers.put(c, registry().getOrRegisterConcludable(c));
+            concludableControllers.put(c, registry().getOrCreateConcludable(c));
         });
         iterate(retrievables).forEachRemaining(r -> {
-            retrievableControllers.put(r, registry().registerRetrievable(r));
+            retrievableControllers.put(r, registry().createRetrievable(r));
         });
         iterate(conjunction.negations()).forEachRemaining(negation -> {
             Negated negated = new Negated(negation);
             try {
-                negationControllers.put(negated, registry().registerNegation(negated, conjunction));
+                negationControllers.put(negated, registry().createNegation(negated, conjunction));
                 negateds.add(negated);
             } catch (TypeDBException e) {
                 terminate(e);
@@ -127,7 +127,7 @@ public abstract class ConjunctionController<OUTPUT,
         if (isTerminated()) return;
         if (connectionRequest.isRetrievable()) {
             ReactiveBlock.RetrievableRequest req = connectionRequest.asRetrievable();
-            ResolverView.FilteredRetrievable controllerView = retrievableControllers.get(req.controllerId());
+            ControllerRegistry.ControllerView.FilteredRetrievable controllerView = retrievableControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
             Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
                     .withMap(c -> merge(c, req.bounds()))
@@ -135,7 +135,7 @@ public abstract class ConjunctionController<OUTPUT,
             controllerView.controller().execute(actor -> actor.establishReactiveBlockConnection(connector));
         } else if (connectionRequest.isConcludable()) {
             ReactiveBlock.ConcludableRequest req = connectionRequest.asConcludable();
-            ResolverView.MappedConcludable controllerView = concludableControllers.get(req.controllerId());
+            ControllerView.MappedConcludable controllerView = concludableControllers.get(req.controllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
             ConceptMap newPID = mapping.transform(req.bounds());
             Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
@@ -145,7 +145,7 @@ public abstract class ConjunctionController<OUTPUT,
             controllerView.controller().execute(actor -> actor.establishReactiveBlockConnection(connector));
         } else if (connectionRequest.isNegated()) {
             ReactiveBlock.NegatedRequest req = connectionRequest.asNegated();
-            ResolverView.FilteredNegation controllerView = negationControllers.get(req.controllerId());
+            ControllerRegistry.ControllerView.FilteredNegation controllerView = negationControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
             Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
                     .withMap(c -> merge(c, req.bounds()))
