@@ -30,14 +30,14 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
     protected final SubscriberDelegate<INPUT> subscriberActions;
     protected final PublisherDelegate<OUTPUT> publisherActions;
 
-    protected AbstractStream(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock,
+    protected AbstractStream(AbstractProcessor<?, ?, ?, ?> processor,
                              SubscriberRegistry<OUTPUT> subscriberRegistry,
                              PublisherRegistry<INPUT> publisherRegistry) {
-        super(reactiveBlock);
+        super(processor);
         this.subscriberRegistry = subscriberRegistry;
         this.publisherRegistry = publisherRegistry;
-        this.subscriberActions = new SubscriberDelegate<>(this, reactiveBlock.context());
-        this.publisherActions = new PublisherDelegate<>(this, reactiveBlock.context());
+        this.subscriberActions = new SubscriberDelegate<>(this, processor.context());
+        this.publisherActions = new PublisherDelegate<>(this, processor.context());
     }
 
     public SubscriberRegistry<OUTPUT> subscriberRegistry() { return subscriberRegistry; }

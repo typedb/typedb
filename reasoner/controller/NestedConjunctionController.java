@@ -32,7 +32,7 @@ import java.util.function.Supplier;
 public class NestedConjunctionController extends ConjunctionController<
         ConceptMap,
         NestedConjunctionController,
-        NestedConjunctionController.NestedConjunctionReactiveBlock
+        NestedConjunctionController.NestedConjunctionProcessor
         > {
 
     public NestedConjunctionController(Driver<NestedConjunctionController> driver, Conjunction conjunction,
@@ -48,20 +48,20 @@ public class NestedConjunctionController extends ConjunctionController<
     }
 
     @Override
-    protected NestedConjunctionReactiveBlock createReactiveBlockFromDriver(
-            Driver<NestedConjunctionReactiveBlock> reactiveBlockDriver,
+    protected NestedConjunctionProcessor createProcessorFromDriver(
+            Driver<NestedConjunctionProcessor> processorDriver,
             ConceptMap bounds
     ) {
-        return new NestedConjunctionReactiveBlock(
-                reactiveBlockDriver, driver(), reactiveBlockContext(), bounds, plan(),
-                () -> NestedConjunctionReactiveBlock.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
+        return new NestedConjunctionProcessor(
+                processorDriver, driver(), processorContext(), bounds, plan(),
+                () -> NestedConjunctionProcessor.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
         );
     }
 
-    protected static class NestedConjunctionReactiveBlock
-            extends ConjunctionController.ReactiveBlock<ConceptMap, NestedConjunctionReactiveBlock> {
+    protected static class NestedConjunctionProcessor
+            extends ConjunctionController.Processor<ConceptMap, NestedConjunctionProcessor> {
 
-        protected NestedConjunctionReactiveBlock(Driver<NestedConjunctionReactiveBlock> driver,
+        protected NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
                                                  Driver<NestedConjunctionController> controller, Context context,
                                                  ConceptMap bounds, List<Resolvable<?>> plan,
                                                  Supplier<String> debugName) {

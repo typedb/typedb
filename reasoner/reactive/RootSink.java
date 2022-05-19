@@ -29,19 +29,19 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
     private final Identifier<?, ?> identifier;
     private final ReasonerConsumer<PACKET> reasonerConsumer;
     private final PublisherRegistry.Single<PACKET> publisherRegistry;
-    private final AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
+    private final AbstractProcessor<?, PACKET, ?, ?> processor;
     private final SubscriberDelegate<PACKET> subscriberActions;
     private boolean isPulling;
 
-    public RootSink(AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock, ReasonerConsumer<PACKET> reasonerConsumer) {
+    public RootSink(AbstractProcessor<?, PACKET, ?, ?> processor, ReasonerConsumer<PACKET> reasonerConsumer) {
         this.publisherRegistry = new PublisherRegistry.Single<>();
-        this.reactiveBlock = reactiveBlock;
-        this.subscriberActions = new SubscriberDelegate<>(this, reactiveBlock.context());
-        this.identifier = reactiveBlock().registerReactive(this);
+        this.processor = processor;
+        this.subscriberActions = new SubscriberDelegate<>(this, processor.context());
+        this.identifier = processor().registerReactive(this);
         this.reasonerConsumer = reasonerConsumer;
         this.isPulling = false;
-        this.reasonerConsumer.setRootReactiveBlock(reactiveBlock().driver());
-        reactiveBlock().monitor().execute(actor -> actor.registerRoot(reactiveBlock().driver(), identifier()));
+        this.reasonerConsumer.setRootProcessor(processor().driver());
+        processor().monitor().execute(actor -> actor.registerRoot(processor().driver(), identifier()));
     }
 
     @Override
@@ -60,7 +60,7 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
         publisherRegistry().recordReceive(publisher);
         isPulling = false;
         reasonerConsumer.receiveAnswer(packet);
-        reactiveBlock().monitor().execute(actor -> actor.consumeAnswer(identifier()));
+        processor().monitor().execute(actor -> actor.consumeAnswer(identifier()));
     }
 
     @Override
@@ -80,7 +80,7 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
     }
 
     @Override
-    public AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock() {
-        return reactiveBlock;
+    public AbstractProcessor<?, PACKET, ?, ?> processor() {
+        return processor;
     }
 }

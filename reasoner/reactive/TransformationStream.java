@@ -34,24 +34,24 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     private final Transformer<INPUT, OUTPUT> transformer;
 
-    protected TransformationStream(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock,
+    protected TransformationStream(AbstractProcessor<?, ?, ?, ?> processor,
                                    Transformer<INPUT, OUTPUT> transformer,
                                    SubscriberRegistry<OUTPUT> subscriberRegistry,
                                    PublisherRegistry<INPUT> publisherRegistry) {
-        super(reactiveBlock, subscriberRegistry, publisherRegistry);
+        super(processor, subscriberRegistry, publisherRegistry);
         this.transformer = transformer;
         registerNewPublishers(transformer.initialNewPublishers());
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> single(
-            AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, Transformer<INPUT, OUTPUT> transformer) {
-        return new TransformationStream<>(reactiveBlock, transformer, new SubscriberRegistry.Single<>(),
+            AbstractProcessor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
+        return new TransformationStream<>(processor, transformer, new SubscriberRegistry.Single<>(),
                                           new PublisherRegistry.Single<>());
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> fanIn(
-            AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, Transformer<INPUT, OUTPUT> transformer) {
-        return new TransformationStream<>(reactiveBlock, transformer, new SubscriberRegistry.Single<>(),
+            AbstractProcessor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
+        return new TransformationStream<>(processor, transformer, new SubscriberRegistry.Single<>(),
                                           new PublisherRegistry.Multi<>());
     }
 

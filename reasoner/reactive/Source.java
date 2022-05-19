@@ -31,17 +31,17 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
     private final SubscriberRegistry.Single<PACKET> subscriberRegistry;
     private final PublisherDelegate<PACKET> publisherActions;
 
-    protected Source(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, Operator.Source<PACKET> sourceOperator) {
-        super(reactiveBlock);
+    protected Source(AbstractProcessor<?, ?, ?, ?> processor, Operator.Source<PACKET> sourceOperator) {
+        super(processor);
         this.sourceOperator = sourceOperator;
         this.subscriberRegistry = new SubscriberRegistry.Single<>();
-        this.publisherActions = new PublisherDelegate<>(this, reactiveBlock.context());
-        reactiveBlock().monitor().execute(actor -> actor.registerSource(identifier()));
+        this.publisherActions = new PublisherDelegate<>(this, processor.context());
+        processor().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
-    public static <OUTPUT> Source<OUTPUT> create(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock,
+    public static <OUTPUT> Source<OUTPUT> create(AbstractProcessor<?, ?, ?, ?> processor,
                                                  Operator.Source<OUTPUT> operator) {
-        return new Source<>(reactiveBlock, operator);
+        return new Source<>(processor, operator);
     }
 
     private Operator.Source<PACKET> operator() {
@@ -58,7 +58,7 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
             publisherActions.monitorCreateAnswers(1);
             publisherActions.subscriberReceive(subscriber, operator().next(subscriber));
         } else {
-            reactiveBlock().monitor().execute(actor -> actor.sourceFinished(identifier()));
+            processor().monitor().execute(actor -> actor.sourceFinished(identifier()));
         }
     }
 

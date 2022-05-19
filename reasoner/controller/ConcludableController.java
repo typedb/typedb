@@ -31,8 +31,9 @@ import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.answer.PartialExplanation;
 import com.vaticle.typedb.core.reasoner.common.Traversal;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor.Connector;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
@@ -53,7 +54,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ConcludableController<INPUT, OUTPUT,
         REQ extends AbstractRequest<Conclusion, ConceptMap, INPUT>,
-        REACTIVE_BLOCK extends ConcludableController.ReactiveBlock<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
+        REACTIVE_BLOCK extends ConcludableController.Processor<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
         CONTROLLER extends ConcludableController<INPUT, OUTPUT, ?, REACTIVE_BLOCK, CONTROLLER>
         > extends AbstractController<ConceptMap, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, CONTROLLER> {
 
@@ -84,11 +85,11 @@ public abstract class ConcludableController<INPUT, OUTPUT,
     public void routeConnectionRequest(REQ req) {
         if (isTerminated()) return;
         conclusionControllers.get(req.controllerId())
-                .execute(actor -> actor.establishReactiveBlockConnection(new AbstractReactiveBlock.Connector<>(req.inputId(), req.bounds())));
+                .execute(actor -> actor.establishProcessorConnection(new Connector<>(req.inputId(), req.bounds())));
     }
 
-    public static class Match extends ConcludableController<Map<Variable, Concept>, ConceptMap,
-            ReactiveBlock.Match.Request, ReactiveBlock.Match, Match> {
+    public static class Match extends ConcludableController<Map<Variable, Concept>, ConceptMap, Processor.Match.Request,
+            Processor.Match, Match> {
 
         private final Set<Variable.Retrievable> unboundVars;
 
@@ -98,14 +99,13 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         }
 
         @Override
-        protected ReactiveBlock.Match createReactiveBlockFromDriver(Driver<ReactiveBlock.Match> matchDriver,
-                                                                    ConceptMap bounds) {
+        protected Processor.Match createProcessorFromDriver(Driver<Processor.Match> matchDriver, ConceptMap bounds) {
             // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
-            //  concludable. They should be filtered before being passed to the concludableReactiveBlock's constructor
-            return new ReactiveBlock.Match(
-                    matchDriver, driver(), concludable, reactiveBlockContext(), bounds, unboundVars, conclusionUnifiers,
+            //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
+            return new Processor.Match(
+                    matchDriver, driver(), concludable, processorContext(), bounds, unboundVars, conclusionUnifiers,
                     () -> Traversal.traversalIterator(registry(), concludable.pattern(), bounds),
-                    () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
+                    () -> Processor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
             );
         }
 
@@ -130,7 +130,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
     }
 
-    public static class Explain extends ConcludableController<PartialExplanation, Explanation, ReactiveBlock.Explain.Request, ReactiveBlock.Explain, Explain> {
+    public static class Explain extends ConcludableController<PartialExplanation, Explanation, Processor.Explain.Request, Processor.Explain, Explain> {
 
         private final ConceptMap bounds;
         private final ReasonerConsumer<Explanation> reasonerConsumer;
@@ -145,7 +145,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         @Override
         public void initialise() {
             super.initialise();
-            getOrCreateReactiveBlock(bounds);
+            getOrCreateProcessor(bounds);
         }
 
         @Override
@@ -155,15 +155,15 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         }
 
         @Override
-        protected ReactiveBlock.Explain createReactiveBlockFromDriver(Driver<ReactiveBlock.Explain> explainDriver,
+        protected Processor.Explain createProcessorFromDriver(Driver<Processor.Explain> explainDriver,
                                                                       ConceptMap bounds) {
             // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
-            //  concludable. They should be filtered before being passed to the concludableReactiveBlock's constructor
+            //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
             assert bounds.equals(this.bounds);
-            return new ReactiveBlock.Explain(
-                    explainDriver, driver(), reactiveBlockContext(), bounds, set(), conclusionUnifiers, reasonerConsumer,
+            return new Processor.Explain(
+                    explainDriver, driver(), processorContext(), bounds, set(), conclusionUnifiers, reasonerConsumer,
                     () -> Traversal.traversalIterator(registry(), concludable.pattern(), bounds),
-                    () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
+                    () -> Processor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
             );
         }
 
@@ -173,12 +173,12 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         }
     }
 
-    protected abstract static class ReactiveBlock<
+    protected abstract static class Processor<
             INPUT,
             OUTPUT,
-            REQ extends AbstractReactiveBlock.Connector.AbstractRequest<?, ?, INPUT>,
-            REACTIVE_BLOCK extends AbstractReactiveBlock<INPUT, OUTPUT, REQ, REACTIVE_BLOCK>
-            > extends AbstractReactiveBlock<INPUT, OUTPUT, REQ, REACTIVE_BLOCK> {
+            REQ extends Connector.AbstractRequest<?, ?, INPUT>,
+            REACTIVE_BLOCK extends AbstractProcessor<INPUT, OUTPUT, REQ, REACTIVE_BLOCK>
+            > extends AbstractProcessor<INPUT, OUTPUT, REQ, REACTIVE_BLOCK> {
 
         private final ConceptMap bounds;
         private final Set<Variable.Retrievable> unboundVars;  // TODO: Can just use a boolean to indicate if fully bound
@@ -186,7 +186,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         private final Set<REQ> requestedConnections;
         protected final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
 
-        protected ReactiveBlock(Driver<REACTIVE_BLOCK> driver,
+        protected Processor(Driver<REACTIVE_BLOCK> driver,
                                 Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller,
                                 Context context, ConceptMap bounds,
                                 Set<Variable.Retrievable> unboundVars,
@@ -205,7 +205,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         public void setUp() {
             setInitialReactive(PoolingStream.fanInFanOut(this));
             // TODO: How do we do a find first optimisation (when unbound vars is empty) and also know that we're done?
-            //  This needs to be local to this reactiveBlock because in general we couldn't call all upstream work done.
+            //  This needs to be local to this processor because in general we couldn't call all upstream work done.
 
             mayAddTraversal();
 
@@ -213,13 +213,13 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     Input<INPUT> input = createInput();
                     mayRequestConnection(createRequest(input.identifier(), conclusion, boundsAndRequirements.first()));
-                    buildOutput(input, unifier, boundsAndRequirements.second()).buffer().registerSubscriber(outputRouter());
+                    transformInput(input, unifier, boundsAndRequirements.second()).buffer().registerSubscriber(outputRouter());
                 }));
             });
         }
 
-        protected abstract Publisher<OUTPUT> buildOutput(Publisher<INPUT> input, Unifier unifier,
-                                                         Unifier.Requirements.Instance requirements);
+        protected abstract Publisher<OUTPUT> transformInput(Publisher<INPUT> input, Unifier unifier,
+                                                            Unifier.Requirements.Instance requirements);
 
         protected abstract REQ createRequest(Reactive.Identifier<INPUT, ?> identifier, Conclusion conclusion,
                                              ConceptMap bounds);
@@ -233,7 +233,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
         }
 
-        public static class Match extends ReactiveBlock<Map<Variable, Concept>, ConceptMap, Match.Request, Match> {
+        public static class Match extends Processor<Map<Variable, Concept>, ConceptMap, Match.Request, Match> {
 
             private final Concludable concludable;
 
@@ -266,9 +266,9 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
 
             @Override
-            protected Publisher<ConceptMap> buildOutput(Publisher<Map<Variable, Concept>> input,
-                                                        Unifier unifier,
-                                                        Unifier.Requirements.Instance requirements) {
+            protected Publisher<ConceptMap> transformInput(Publisher<Map<Variable, Concept>> input,
+                                                           Unifier unifier,
+                                                           Unifier.Requirements.Instance requirements) {
                 return input.flatMap(conclusionAns -> unifier.unUnify(conclusionAns, requirements))
                         .map(ans -> withExplainable(ans, concludable));
             }
@@ -294,15 +294,15 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             protected static class Request extends AbstractRequest<Conclusion, ConceptMap, Map<Variable, Concept>> {
 
                 public Request(Reactive.Identifier<Map<Variable, Concept>, ?> inputId, Conclusion controllerId,
-                               ConceptMap reactiveBlockId) {
-                    super(inputId, controllerId, reactiveBlockId);
+                               ConceptMap processorId) {
+                    super(inputId, controllerId, processorId);
                 }
 
             }
 
         }
 
-        public static class Explain extends ReactiveBlock<PartialExplanation, Explanation, Explain.Request, Explain> {
+        public static class Explain extends Processor<PartialExplanation, Explanation, Explain.Request, Explain> {
 
             private final ReasonerConsumer<Explanation> reasonerConsumer;
             private RootSink<Explanation> rootSink;
@@ -333,9 +333,9 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
 
             @Override
-            protected Publisher<Explanation> buildOutput(Publisher<PartialExplanation> input,
-                                                         Unifier unifier,
-                                                         Unifier.Requirements.Instance requirements) {
+            protected Publisher<Explanation> transformInput(Publisher<PartialExplanation> input,
+                                                            Unifier unifier,
+                                                            Unifier.Requirements.Instance requirements) {
                 return input.map(
                         p -> new Explanation(p.rule(), unifier.mapping(), p.conclusionAnswer(), p.conditionAnswer())
                 );

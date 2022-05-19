@@ -19,19 +19,19 @@
 package com.vaticle.typedb.core.reasoner.reactive.common;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 
 import java.util.Objects;
 
 public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier<P_IN, P_OUT> {
-    private final Actor.Driver<? extends AbstractReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock;
+    private final Actor.Driver<? extends AbstractProcessor<P_IN, P_OUT, ?, ?>> processor;
     private final Reactive reactive;
     private final long scopedId;
 
-    public ReactiveIdentifier(Actor.Driver<? extends AbstractReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock,
+    public ReactiveIdentifier(Actor.Driver<? extends AbstractProcessor<P_IN, P_OUT, ?, ?>> processor,
                               Reactive reactive, long scopedId) {
-        this.reactiveBlock = reactiveBlock;
+        this.processor = processor;
         this.reactive = reactive;
         this.scopedId = scopedId;
     }
@@ -42,23 +42,23 @@ public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier<P_IN
         if (o == null || getClass() != o.getClass()) return false;
         ReactiveIdentifier<?, ?> that = (ReactiveIdentifier<?, ?>) o;
         return scopedId == that.scopedId &&
-                reactiveBlock.equals(that.reactiveBlock) &&
+                processor.equals(that.processor) &&
                 reactive.equals(that.reactive);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(reactiveBlock, reactive, scopedId);
+        return Objects.hash(processor, reactive, scopedId);
     }
 
     @Override
     public String toString() {
-        return "@" + Integer.toHexString(reactiveBlock().hashCode()) + ":" + reactive.toString() +":" + scopedId;
+        return "@" + Integer.toHexString(processor().hashCode()) + ":" + reactive.toString() +":" + scopedId;
     }
 
     @Override
-    public Actor.Driver<? extends AbstractReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock() {
-        return reactiveBlock;
+    public Actor.Driver<? extends AbstractProcessor<P_IN, P_OUT, ?, ?>> processor() {
+        return processor;
     }
 
 }

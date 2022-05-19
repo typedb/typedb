@@ -32,37 +32,37 @@ public class PoolingStream<PACKET> extends AbstractStream<PACKET, PACKET> {
 
     private final Operator.Pool<PACKET, PACKET> pool;
 
-    protected PoolingStream(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock,
+    protected PoolingStream(AbstractProcessor<?, ?, ?, ?> processor,
                             Operator.Pool<PACKET, PACKET> pool,
                             SubscriberRegistry<PACKET> subscriberRegistry,
                             PublisherRegistry<PACKET> publisherRegistry) {
-        super(reactiveBlock, subscriberRegistry, publisherRegistry);
+        super(processor, subscriberRegistry, publisherRegistry);
         this.pool = pool;
     }
 
     public static <PACKET> PoolingStream<PACKET> fanOut(
-            AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock) {
-        return new PoolingStream<>(reactiveBlock, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
+            AbstractProcessor<?, ?, ?, ?> processor) {
+        return new PoolingStream<>(processor, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
                                    new PublisherRegistry.Single<>());
     }
 
     public static <PACKET> PoolingStream<PACKET> fanIn(
-            AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, Operator.Pool<PACKET, PACKET> pool) {
-        return new PoolingStream<>(reactiveBlock, pool, new SubscriberRegistry.Single<>(), new PublisherRegistry.Multi<>());
+            AbstractProcessor<?, ?, ?, ?> processor, Operator.Pool<PACKET, PACKET> pool) {
+        return new PoolingStream<>(processor, pool, new SubscriberRegistry.Single<>(), new PublisherRegistry.Multi<>());
     }
 
-    public static <PACKET> PoolingStream<PACKET> fanInFanOut(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock) {
-        return new PoolingStream<>(reactiveBlock, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
+    public static <PACKET> PoolingStream<PACKET> fanInFanOut(AbstractProcessor<?, ?, ?, ?> processor) {
+        return new PoolingStream<>(processor, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
                                    new PublisherRegistry.Multi<>());
     }
 
     public static <PACKET> PoolingStream<PACKET> buffer(
-            AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock) {
+            AbstractProcessor<?, ?, ?, ?> processor) {
         // TODO: The operator is not bound to the nature of the registries by type. We could not correctly use a FanOut
         //  operator here even though the types allow it. In fact what really changes in tandem is the signature of the
         //  receive() and pull() methods, as when there are multiple upstreams/downstreams we need to know which the
         //  message is from/to, but  not so for single upstream/downstreams
-        return new PoolingStream<>(reactiveBlock, new Operator.Buffer<>(), new SubscriberRegistry.Single<>(),
+        return new PoolingStream<>(processor, new Operator.Buffer<>(), new SubscriberRegistry.Single<>(),
                                    new PublisherRegistry.Single<>());
     }
 

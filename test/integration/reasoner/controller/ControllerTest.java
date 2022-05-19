@@ -32,7 +32,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
@@ -487,7 +487,7 @@ public class ControllerTest {
         public LinkedBlockingQueue<ConceptMap> responses;
         public LinkedBlockingQueue<Throwable> exceptions;
         public AtomicBoolean doneReceived;
-        private Actor.Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootProcessor;
+        private Actor.Driver<? extends AbstractProcessor<?, ?, ?, ?>> rootProcessor;
         private boolean pullOnSet;
 
         AnswerProducer() {
@@ -507,7 +507,7 @@ public class ControllerTest {
         }
 
         @Override
-        public void setRootReactiveBlock(Actor.Driver<? extends AbstractReactiveBlock<?, ConceptMap, ?, ?>> rootProcessor) {
+        public void setRootProcessor(Actor.Driver<? extends AbstractProcessor<?, ConceptMap, ?, ?>> rootProcessor) {
             this.rootProcessor = rootProcessor;
             if (pullOnSet) pull();
         }

@@ -22,8 +22,8 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor.Connector;
 import com.vaticle.typedb.core.reasoner.reactive.Monitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +40,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 public abstract class AbstractController<
         REACTIVE_BLOCK_ID, INPUT, OUTPUT,
         REQ extends Connector.AbstractRequest<?, ?, INPUT>,
-        REACTIVE_BLOCK extends AbstractReactiveBlock<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
+        REACTIVE_BLOCK extends AbstractProcessor<INPUT, OUTPUT, ?, REACTIVE_BLOCK>,
         CONTROLLER extends AbstractController<REACTIVE_BLOCK_ID, INPUT, OUTPUT, ?, REACTIVE_BLOCK, CONTROLLER>
         > extends Actor<CONTROLLER> {
 
@@ -48,12 +48,12 @@ public abstract class AbstractController<
     private final Context context;
 
     private boolean terminated;
-    protected final Map<REACTIVE_BLOCK_ID, Actor.Driver<REACTIVE_BLOCK>> reactiveBlocks;
+    protected final Map<REACTIVE_BLOCK_ID, Actor.Driver<REACTIVE_BLOCK>> processors;
 
     protected AbstractController(Driver<CONTROLLER> driver, Context context, Supplier<String> debugName) {
         super(driver, debugName);
         this.context = context;
-        this.reactiveBlocks = new HashMap<>();
+        this.processors = new HashMap<>();
         this.terminated = false;
     }
 
@@ -71,31 +71,31 @@ public abstract class AbstractController<
         return context.monitor();
     }
 
-    protected AbstractReactiveBlock.Context reactiveBlockContext() {
-        return context.reactiveBlock();
+    protected AbstractProcessor.Context processorContext() {
+        return context.processor();
     }
 
     public abstract void routeConnectionRequest(REQ connectionRequest);
 
-    public void establishReactiveBlockConnection(Connector<REACTIVE_BLOCK_ID, OUTPUT> connector) {
+    public void establishProcessorConnection(Connector<REACTIVE_BLOCK_ID, OUTPUT> connector) {
         if (isTerminated()) return;
-        getOrCreateReactiveBlock(connector.bounds()).execute(actor -> actor.establishConnection(connector));
+        getOrCreateProcessor(connector.bounds()).execute(actor -> actor.establishConnection(connector));
     }
 
-    public Driver<REACTIVE_BLOCK> getOrCreateReactiveBlock(REACTIVE_BLOCK_ID reactiveBlockId) {
+    public Driver<REACTIVE_BLOCK> getOrCreateProcessor(REACTIVE_BLOCK_ID processorId) {
         // TODO: We can do subsumption in the subtypes here
-        return reactiveBlocks.computeIfAbsent(reactiveBlockId, this::createReactiveBlock);
+        return processors.computeIfAbsent(processorId, this::createProcessor);
     }
 
-    private Actor.Driver<REACTIVE_BLOCK> createReactiveBlock(REACTIVE_BLOCK_ID reactiveBlockId) {
-        Driver<REACTIVE_BLOCK> reactiveBlock = Actor.driver(
-                d -> createReactiveBlockFromDriver(d, reactiveBlockId), context.executorService()
+    private Actor.Driver<REACTIVE_BLOCK> createProcessor(REACTIVE_BLOCK_ID processorId) {
+        Driver<REACTIVE_BLOCK> processor = Actor.driver(
+                d -> createProcessorFromDriver(d, processorId), context.executorService()
         );
-        reactiveBlock.execute(AbstractReactiveBlock::setUp);
-        return reactiveBlock;
+        processor.execute(AbstractProcessor::setUp);
+        return processor;
     }
 
-    protected abstract REACTIVE_BLOCK createReactiveBlockFromDriver(Driver<REACTIVE_BLOCK> reactiveBlockDriver, REACTIVE_BLOCK_ID reactiveBlockId);
+    protected abstract REACTIVE_BLOCK createProcessorFromDriver(Driver<REACTIVE_BLOCK> processorDriver, REACTIVE_BLOCK_ID processorId);
 
     @Override
     public void exception(Throwable e) {
@@ -116,7 +116,7 @@ public abstract class AbstractController<
     public void terminate(Throwable cause) {
         LOG.debug("Actor terminated.", cause);
         terminated = true;
-        reactiveBlocks.values().forEach(p -> p.execute(actor -> actor.terminate(cause)));
+        processors.values().forEach(p -> p.execute(actor -> actor.terminate(cause)));
     }
 
     public boolean isTerminated() {
@@ -125,7 +125,7 @@ public abstract class AbstractController<
 
     public static class Context {
 
-        private final AbstractReactiveBlock.Context reactiveBlockContext;
+        private final AbstractProcessor.Context processorContext;
         private ActorExecutorGroup executorService;
         private final ControllerRegistry registry;
         private final Driver<Monitor> monitor;
@@ -137,7 +137,7 @@ public abstract class AbstractController<
             this.registry = registry;
             this.monitor = monitor;
             this.tracer = tracer;
-            this.reactiveBlockContext = new AbstractReactiveBlock.Context(monitor, tracer);
+            this.processorContext = new AbstractProcessor.Context(monitor, tracer);
         }
 
         public ActorExecutorGroup executorService() {
@@ -160,8 +160,8 @@ public abstract class AbstractController<
             return Optional.ofNullable(tracer);
         }
 
-        public AbstractReactiveBlock.Context reactiveBlock() {
-            return reactiveBlockContext;
+        public AbstractProcessor.Context processor() {
+            return processorContext;
         }
 
     }

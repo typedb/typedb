@@ -29,7 +29,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 public class RootDisjunctionController
-        extends DisjunctionController<RootDisjunctionController.ReactiveBlock, RootDisjunctionController> {
+        extends DisjunctionController<RootDisjunctionController.Processor, RootDisjunctionController> {
 
     private final Set<Identifier.Variable.Retrievable> filter;
     private final boolean explain;
@@ -47,15 +47,15 @@ public class RootDisjunctionController
     @Override
     public void initialise() {
         setUpUpstreamControllers();
-        getOrCreateReactiveBlock(new ConceptMap());
+        getOrCreateProcessor(new ConceptMap());
     }
 
     @Override
-    protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
-        return new ReactiveBlock(
-                reactiveBlockDriver, driver(), reactiveBlockContext(), disjunction, bounds, filter, explain,
+    protected Processor createProcessorFromDriver(Driver<Processor> processorDriver, ConceptMap bounds) {
+        return new Processor(
+                processorDriver, driver(), processorContext(), disjunction, bounds, filter, explain,
                 reasonerConsumer,
-                () -> ReactiveBlock.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
+                () -> Processor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
 
@@ -65,14 +65,14 @@ public class RootDisjunctionController
         reasonerConsumer.exception(cause);
     }
 
-    protected static class ReactiveBlock extends DisjunctionController.ReactiveBlock<ReactiveBlock> {
+    protected static class Processor extends DisjunctionController.Processor<Processor> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
         private final boolean explain;
         private final ReasonerConsumer<ConceptMap> reasonerConsumer;
         private RootSink<ConceptMap> rootSink;
 
-        protected ReactiveBlock(Driver<ReactiveBlock> driver, Driver<RootDisjunctionController> controller,
+        protected Processor(Driver<Processor> driver, Driver<RootDisjunctionController> controller,
                                 Context context, Disjunction disjunction, ConceptMap bounds,
                                 Set<Identifier.Variable.Retrievable> filter, boolean explain,
                                 ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {

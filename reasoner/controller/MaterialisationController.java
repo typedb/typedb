@@ -25,8 +25,8 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Materialiser;
 import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.Source;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
@@ -39,7 +39,7 @@ public class MaterialisationController extends AbstractController<
         Void,
         Either<ConceptMap, Materialisation>,
         AbstractRequest<?, ?, Void>,
-        MaterialisationController.ReactiveBlock,
+        MaterialisationController.Processor,
         MaterialisationController
         > {
     // Either<> is just to match the input to ConclusionController, but this class only ever returns Materialisation
@@ -60,12 +60,12 @@ public class MaterialisationController extends AbstractController<
     }
 
     @Override
-    protected ReactiveBlock createReactiveBlockFromDriver(
-            Driver<ReactiveBlock> reactiveBlockDriver, Materialisable materialisable
+    protected Processor createProcessorFromDriver(
+            Driver<Processor> processorDriver, Materialisable materialisable
     ) {
-        return new ReactiveBlock(
-                reactiveBlockDriver, driver(), reactiveBlockContext(), materialisable, traversalEng, conceptMgr,
-                () -> ReactiveBlock.class.getSimpleName() + "(Materialisable: " + materialisable + ")"
+        return new Processor(
+                processorDriver, driver(), processorContext(), materialisable, traversalEng, conceptMgr,
+                () -> Processor.class.getSimpleName() + "(Materialisable: " + materialisable + ")"
         );
     }
 
@@ -74,14 +74,14 @@ public class MaterialisationController extends AbstractController<
         // Nothing to do
     }
 
-    public static class ReactiveBlock extends AbstractReactiveBlock<Void, Either<ConceptMap, Materialisation>,
-            AbstractRequest<?, ?, Void>, ReactiveBlock> {
+    public static class Processor extends AbstractProcessor<Void, Either<ConceptMap, Materialisation>,
+                AbstractRequest<?, ?, Void>, Processor> {
 
         private final Materialisable materialisable;
         private final TraversalEngine traversalEng;
         private final ConceptManager conceptMgr;
 
-        protected ReactiveBlock(Driver<ReactiveBlock> driver, Driver<MaterialisationController> controller,
+        protected Processor(Driver<Processor> driver, Driver<MaterialisationController> controller,
                                 Context context, Materialisable materialisable, TraversalEngine traversalEng,
                                 ConceptManager conceptMgr, Supplier<String> debugName) {
             super(driver, controller, context, debugName);

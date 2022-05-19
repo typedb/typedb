@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.controller.AbstractController;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Identifier;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Subscriber;
@@ -48,24 +48,24 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
-public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
+public abstract class AbstractProcessor<INPUT, OUTPUT,
         REQ extends AbstractRequest<?, ?, INPUT>,
-        REACTIVE_BLOCK extends AbstractReactiveBlock<INPUT, OUTPUT, REQ, REACTIVE_BLOCK>> extends Actor<REACTIVE_BLOCK> {  // TODO: Processor
+        REACTIVE_BLOCK extends AbstractProcessor<INPUT, OUTPUT, REQ, REACTIVE_BLOCK>> extends Actor<REACTIVE_BLOCK> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractReactiveBlock.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractProcessor.class);
 
     private final Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller;
     private final Context context;
-    private final Map<Identifier<?, ?>, Input<INPUT>> inputs;
+    private final Map<Identifier<?, ?>, Input<INPUT>> inputs;  // TODO: inputPorts (sweeping rename)
     private final Map<Identifier<?, ?>, Output<OUTPUT>> outputs;
     private final Map<Pair<Identifier<?, ?>, Identifier<?, ?>>, Runnable> pullRetries;
     private Reactive.Stream<OUTPUT,OUTPUT> initialReactive;
     private boolean terminated;
     private long reactiveCounter;
 
-    protected AbstractReactiveBlock(Driver<REACTIVE_BLOCK> driver,
-                                    Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller,
-                                    Context context, Supplier<String> debugName) {
+    protected AbstractProcessor(Driver<REACTIVE_BLOCK> driver,
+                                Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller,
+                                Context context, Supplier<String> debugName) {
         super(driver, debugName);
         this.controller = controller;
         this.context = context;
@@ -117,7 +117,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
         Output<OUTPUT> output = createOutput();
         output.setSubscriber(connector.inputId());
         connector.connectViaTransforms(outputRouter(), output);
-        connector.inputId().reactiveBlock().execute(
+        connector.inputId().processor().execute(
                 actor -> actor.finishConnection(connector.inputId(), output.identifier()));
     }
 
@@ -160,11 +160,11 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
         if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent()) {
             String code = ((TypeDBException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {
-                LOG.debug("ReactiveBlock interrupted by resource close: {}", e.getMessage());
+                LOG.debug("Processor interrupted by resource close: {}", e.getMessage());
                 controller.execute(actor -> actor.exception(e));
                 return;
             } else {
-                LOG.debug("ReactiveBlock interrupted by TypeDB exception: {}", e.getMessage());
+                LOG.debug("Processor interrupted by TypeDB exception: {}", e.getMessage());
             }
         }
         LOG.error("Actor exception", e);
@@ -233,9 +233,10 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
 
         public abstract static class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET> {
 
+            // TODO: Should hold on to the processor that sent the request
+            private final Identifier<PACKET, ?> inputId;  // TODO: requesterPortID
             private final CONTROLLER_ID controllerId;
             private final BOUNDS bounds;
-            private final Identifier<PACKET, ?> inputId;
 
             protected AbstractRequest(Identifier<PACKET, ?> inputId, CONTROLLER_ID controllerId,
                                       BOUNDS bounds) {
@@ -296,27 +297,27 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
     }
 
     /**
-     * Governs an input to a reactiveBlock
+     * Governs an input to a processor
      */
     public static class Input<PACKET> implements Publisher<PACKET> {
 
         private final Identifier<PACKET, ?> identifier;
-        private final AbstractReactiveBlock<PACKET, ?, ?, ?> reactiveBlock;
+        private final AbstractProcessor<PACKET, ?, ?, ?> processor;
         private final PublisherDelegate<PACKET> publisherActions;
         private boolean ready;
-        private Identifier<?, PACKET> providingOutput;
+        private Identifier<?, PACKET> providingOutput;  // TODO: Output PortID
         private Subscriber<PACKET> subscriber;
 
-        public Input(AbstractReactiveBlock<PACKET, ?, ?, ?> reactiveBlock) {
-            this.reactiveBlock = reactiveBlock;
-            this.identifier = reactiveBlock.registerReactive(this);
+        public Input(AbstractProcessor<PACKET, ?, ?, ?> processor) {
+            this.processor = processor;
+            this.identifier = processor.registerReactive(this);
             this.ready = false;
-            this.publisherActions = new PublisherDelegate<>(this, reactiveBlock.context());
+            this.publisherActions = new PublisherDelegate<>(this, processor.context());
         }
 
         @Override
-        public AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock() {
-            return reactiveBlock;
+        public AbstractProcessor<?, ?, ?, ?> processor() {
+            return processor;
         }
 
         @Override
@@ -327,7 +328,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
         public void setOutput(Identifier<?, PACKET> outputId) {
             assert providingOutput == null;
             providingOutput = outputId;
-            reactiveBlock().monitor().execute(actor -> actor.registerPath(identifier(), outputId));
+            processor().monitor().execute(actor -> actor.registerPath(identifier(), outputId));
             assert !ready;
             ready = true;
         }
@@ -339,8 +340,8 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
         @Override
         public void pull(Subscriber<PACKET> subscriber) {
             assert subscriber.equals(this.subscriber);
-            reactiveBlock().tracer().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
-            if (ready) providingOutput.reactiveBlock().execute(actor -> actor.pull(providingOutput));
+            processor().tracer().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
+            if (ready) providingOutput.processor().execute(actor -> actor.pull(providingOutput));  // TODO: Store the processor rather than getting it from the outputPort
         }
 
         @Override
@@ -371,32 +372,32 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
         }
 
         public void receive(Identifier<?, PACKET> outputId, PACKET packet) {
-            reactiveBlock().tracer().ifPresent(tracer -> tracer.receive(outputId, identifier(), packet));
+            processor().tracer().ifPresent(tracer -> tracer.receive(outputId, identifier(), packet));
             subscriber.receive(this, packet);
         }
 
         @Override
         public String toString() {
-            return reactiveBlock.debugName().get() + ":" + getClass().getSimpleName();
+            return processor.debugName().get() + ":" + getClass().getSimpleName();
         }
 
     }
 
     /**
-     * Governs an output from a reactiveBlock
+     * Governs an output from a processor
      */
     public static class Output<PACKET> implements Subscriber<PACKET> {
 
         private final Identifier<?, PACKET> identifier;
-        private final AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock;
+        private final AbstractProcessor<?, PACKET, ?, ?> processor;
         private final SubscriberDelegate<PACKET> subscriberActions;
         private Identifier<PACKET, ?> receivingInput;
         private Publisher<PACKET> publisher;
 
-        public Output(AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock) {
-            this.reactiveBlock = reactiveBlock;
-            this.identifier = reactiveBlock().registerReactive(this);
-            this.subscriberActions = new SubscriberDelegate<>(this, reactiveBlock().context());
+        public Output(AbstractProcessor<?, PACKET, ?, ?> processor) {
+            this.processor = processor;
+            this.identifier = processor().registerReactive(this);
+            this.subscriberActions = new SubscriberDelegate<>(this, processor().context());
         }
 
         @Override
@@ -405,19 +406,19 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
         }
 
         @Override
-        public AbstractReactiveBlock<?, PACKET, ?, ?> reactiveBlock() {
-            return reactiveBlock;
+        public AbstractProcessor<?, PACKET, ?, ?> processor() {
+            return processor;
         }
 
         @Override
         public void receive(Publisher<PACKET> publisher, PACKET packet) {
             subscriberActions.traceReceive(publisher, packet);
-            receivingInput.reactiveBlock().execute(actor -> actor.receive(receivingInput, packet, identifier()));
+            receivingInput.processor().execute(actor -> actor.receive(receivingInput, packet, identifier()));
         }
 
         public void pull() {
             assert publisher != null;
-            reactiveBlock().context().tracer().ifPresent(tracer -> tracer.pull(receivingInput, identifier()));
+            processor().context().tracer().ifPresent(tracer -> tracer.pull(receivingInput, identifier()));
             publisher.pull(this);
         }
 
@@ -435,7 +436,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
 
         @Override
         public String toString() {
-            return reactiveBlock().debugName().get() + ":" + getClass().getSimpleName();
+            return processor().debugName().get() + ":" + getClass().getSimpleName();
         }
     }
 

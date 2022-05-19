@@ -24,9 +24,9 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.controller.DisjunctionController.ReactiveBlock.Request;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.controller.DisjunctionController.Processor.Request;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
@@ -44,7 +44,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.merge;
 
 public abstract class DisjunctionController<
-        REACTIVE_BLOCK extends DisjunctionController.ReactiveBlock<REACTIVE_BLOCK>,
+        REACTIVE_BLOCK extends DisjunctionController.Processor<REACTIVE_BLOCK>,
         CONTROLLER extends DisjunctionController<REACTIVE_BLOCK, CONTROLLER>
         > extends AbstractController<ConceptMap, ConceptMap, ConceptMap, Request, REACTIVE_BLOCK, CONTROLLER> {
 
@@ -69,8 +69,8 @@ public abstract class DisjunctionController<
     public void routeConnectionRequest(Request req) {
         if (isTerminated()) return;
         getConjunctionController(req.controllerId())
-                .execute(actor -> actor.establishReactiveBlockConnection(
-                        new AbstractReactiveBlock.Connector<>(
+                .execute(actor -> actor.establishProcessorConnection(
+                        new AbstractProcessor.Connector<>(
                                 req.inputId(), req.bounds()).withMap(c -> merge(c, req.bounds()))
                 ));
     }
@@ -83,13 +83,13 @@ public abstract class DisjunctionController<
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    protected abstract static class ReactiveBlock<REACTIVE_BLOCK extends ReactiveBlock<REACTIVE_BLOCK>>
-            extends AbstractReactiveBlock<ConceptMap, ConceptMap, Request, REACTIVE_BLOCK> {
+    protected abstract static class Processor<REACTIVE_BLOCK extends Processor<REACTIVE_BLOCK>>
+            extends AbstractProcessor<ConceptMap, ConceptMap, Request, REACTIVE_BLOCK> {
 
         private final Disjunction disjunction;
         private final ConceptMap bounds;
 
-        protected ReactiveBlock(Driver<REACTIVE_BLOCK> driver,
+        protected Processor(Driver<REACTIVE_BLOCK> driver,
                                 Driver<? extends DisjunctionController<REACTIVE_BLOCK, ?>> controller,
                                 Context context, Disjunction disjunction, ConceptMap bounds,
                                 Supplier<String> debugName) {
@@ -121,8 +121,8 @@ public abstract class DisjunctionController<
         protected static class Request extends AbstractRequest<Conjunction, ConceptMap, ConceptMap> {
 
             protected Request(Reactive.Identifier<ConceptMap, ?> inputId, Conjunction controllerId,
-                              ConceptMap reactiveBlockId) {
-                super(inputId, controllerId, reactiveBlockId);
+                              ConceptMap processorId) {
+                super(inputId, controllerId, processorId);
             }
 
         }

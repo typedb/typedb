@@ -25,7 +25,7 @@ import java.util.function.Function;
 
 public interface Reactive {
 
-    AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock();  // TODO: It's weird to be able to access your subscriber/publisher's reactiveBlock, but this is needed for monitoring?
+    AbstractProcessor<?, ?, ?, ?> processor();  // TODO: It's weird to be able to access your subscriber/publisher's processor, but this is needed for monitoring?
 
     Identifier<?, ?> identifier();
 
@@ -33,9 +33,9 @@ public interface Reactive {
 
         String toString();
 
-        // TODO: Weird to have a reactiveBlock inside an Identifier, if anything we would expect to see a reactiveBlock ID
-        //  here, or use some kind of compound ID of Reactive + ReactiveBlock where we need it
-        Actor.Driver<? extends AbstractReactiveBlock<P_IN, P_OUT, ?, ?>> reactiveBlock();
+        // TODO: Weird to have a processor inside an Identifier, if anything we would expect to see a processor ID
+        //  here, or use some kind of compound ID of Reactive + Processor where we need it
+        Actor.Driver<? extends AbstractProcessor<P_IN, P_OUT, ?, ?>> processor();
 
     }
 

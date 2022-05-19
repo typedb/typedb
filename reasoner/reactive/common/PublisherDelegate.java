@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.reactive.common;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
@@ -29,22 +29,22 @@ import java.util.function.Function;
 public class PublisherDelegate<OUTPUT> {
 
     private final Reactive.Publisher<OUTPUT> publisher;
-    private final AbstractReactiveBlock.Context context;
+    private final AbstractProcessor.Context context;
 
-    public PublisherDelegate(Reactive.Publisher<OUTPUT> publisher, AbstractReactiveBlock.Context context) {
+    public PublisherDelegate(Reactive.Publisher<OUTPUT> publisher, AbstractProcessor.Context context) {
         this.publisher = publisher;
         this.context = context;
     }
 
     public void monitorCreateAnswers(int answersCreated) {
         for (int i = 0; i < answersCreated; i++) {
-            publisher.reactiveBlock().monitor().execute(actor -> actor.createAnswer(publisher.identifier()));
+            publisher.processor().monitor().execute(actor -> actor.createAnswer(publisher.identifier()));
         }
     }
 
     public void monitorConsumeAnswers(int answersConsumed) {
         for (int i = 0; i < answersConsumed; i++) {
-            publisher.reactiveBlock().monitor().execute(actor -> actor.consumeAnswer(publisher.identifier()));
+            publisher.processor().monitor().execute(actor -> actor.consumeAnswer(publisher.identifier()));
         }
     }
 
@@ -58,7 +58,7 @@ public class PublisherDelegate<OUTPUT> {
 
     public <MAPPED> Reactive.Stream<OUTPUT, MAPPED> map(Reactive.Publisher<OUTPUT> publisher, Function<OUTPUT,
             MAPPED> function) {
-        Reactive.Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.reactiveBlock(),
+        Reactive.Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(),
                                                                             new Operator.Map<>(function));
         publisher.registerSubscriber(newOp);
         return newOp;
@@ -66,21 +66,21 @@ public class PublisherDelegate<OUTPUT> {
 
     public <MAPPED> Reactive.Stream<OUTPUT, MAPPED> flatMap(Reactive.Publisher<OUTPUT> publisher,
                                                             Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-        Reactive.Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.reactiveBlock(),
+        Reactive.Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(),
                                                                             new Operator.FlatMap<>(function));
         publisher.registerSubscriber(newOp);
         return newOp;
     }
 
     public Reactive.Stream<OUTPUT, OUTPUT> distinct(Reactive.Publisher<OUTPUT> publisher) {
-        Reactive.Stream<OUTPUT, OUTPUT> newOp = TransformationStream.single(publisher.reactiveBlock(),
+        Reactive.Stream<OUTPUT, OUTPUT> newOp = TransformationStream.single(publisher.processor(),
                                                                             new Operator.Distinct<>());
         publisher.registerSubscriber(newOp);
         return newOp;
     }
 
     public Reactive.Stream<OUTPUT, OUTPUT> buffer(Reactive.Publisher<OUTPUT> publisher) {
-        Reactive.Stream<OUTPUT, OUTPUT> newOp = PoolingStream.buffer(publisher.reactiveBlock());
+        Reactive.Stream<OUTPUT, OUTPUT> newOp = PoolingStream.buffer(publisher.processor());
         publisher.registerSubscriber(newOp);
         return newOp;
     }

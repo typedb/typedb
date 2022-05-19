@@ -22,8 +22,8 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.controller.NegationController.ReactiveBlock.Request;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
+import com.vaticle.typedb.core.reasoner.controller.NegationController.Processor.Request;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
@@ -44,7 +44,7 @@ public class NegationController extends AbstractController<
         ConceptMap,
         ConceptMap,
         Request,
-        NegationController.ReactiveBlock,
+        NegationController.Processor,
         NegationController
         > {
 
@@ -62,29 +62,29 @@ public class NegationController extends AbstractController<
     }
 
     @Override
-    protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
-        return new ReactiveBlock(
-                reactiveBlockDriver, driver(), reactiveBlockContext(), negated, bounds,
-                () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + negated + ", bounds: " + bounds + ")"
+    protected Processor createProcessorFromDriver(Driver<Processor> processorDriver, ConceptMap bounds) {
+        return new Processor(
+                processorDriver, driver(), processorContext(), negated, bounds,
+                () -> Processor.class.getSimpleName() + "(pattern: " + negated + ", bounds: " + bounds + ")"
         );
     }
 
     @Override
     public void routeConnectionRequest(Request req) {
         if (isTerminated()) return;
-        disjunctionContoller.execute(actor -> actor.establishReactiveBlockConnection(
-                new AbstractReactiveBlock.Connector<>(req.inputId(), req.bounds())
+        disjunctionContoller.execute(actor -> actor.establishProcessorConnection(
+                new AbstractProcessor.Connector<>(req.inputId(), req.bounds())
         ));
     }
 
-    protected static class ReactiveBlock
-            extends AbstractReactiveBlock<ConceptMap, ConceptMap, Request, ReactiveBlock> {
+    protected static class Processor
+            extends AbstractProcessor<ConceptMap, ConceptMap, Request, Processor> {
 
         private final Negated negated;
         private final ConceptMap bounds;
         private NegationStream negation;
 
-        protected ReactiveBlock(Driver<ReactiveBlock> driver, Driver<NegationController> controller, Context context,
+        protected Processor(Driver<Processor> driver, Driver<NegationController> controller, Context context,
                                 Negated negated, ConceptMap bounds, Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.negated = negated;
@@ -129,8 +129,8 @@ public class NegationController extends AbstractController<
             private final ConceptMap bounds;
             private boolean answerFound;
 
-            protected NegationStream(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, ConceptMap bounds) {
-                super(reactiveBlock, new NegationOperator<>(), new SubscriberRegistry.Single<>(),
+            protected NegationStream(AbstractProcessor<?, ?, ?, ?> processor, ConceptMap bounds) {
+                super(processor, new NegationOperator<>(), new SubscriberRegistry.Single<>(),
                       new PublisherRegistry.Single<>());
                 this.bounds = bounds;
                 this.answerFound = false;
@@ -150,24 +150,24 @@ public class NegationController extends AbstractController<
             public void receive(Publisher<ConceptMap> publisher, ConceptMap conceptMap) {
                 subscriberActions.traceReceive(publisher, conceptMap);
                 publisherRegistry().recordReceive(publisher);
-                if (!answerFound) reactiveBlock().monitor().execute(actor -> actor.rootFinished(identifier()));
+                if (!answerFound) processor().monitor().execute(actor -> actor.rootFinished(identifier()));
                 answerFound = true;
             }
 
             @Override
             public void finished() {
                 assert !answerFound;
-                reactiveBlock().monitor().execute(actor -> actor.createAnswer(identifier()));
+                processor().monitor().execute(actor -> actor.createAnswer(identifier()));
                 iterate(subscriberRegistry().subscribers()).forEachRemaining(r -> r.receive(this, bounds));
-                reactiveBlock().monitor().execute(actor -> actor.sourceFinished(identifier()));
+                processor().monitor().execute(actor -> actor.sourceFinished(identifier()));
             }
         }
 
         protected static class Request extends Connector.AbstractRequest<Disjunction, ConceptMap, ConceptMap> {
 
             protected Request(Reactive.Identifier<ConceptMap, ?> inputId, Disjunction controllerId,
-                              ConceptMap reactiveBlockId) {
-                super(inputId, controllerId, reactiveBlockId);
+                              ConceptMap processorId) {
+                super(inputId, controllerId, processorId);
             }
 
         }

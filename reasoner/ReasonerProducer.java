@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     final AtomicInteger requiredAnswers;
     final Options.Query options;
     final ExplainablesManager explainablesManager;
-    private Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock;
+    private Actor.Driver<? extends AbstractProcessor<?, ANSWER, ?, ?>> rootProcessor;
     private Throwable exception;
     Queue<ANSWER> queue;
     State state;
@@ -102,9 +102,9 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     abstract void initialiseRootController();
 
     @Override
-    public synchronized void setRootReactiveBlock(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock) {
-        assert this.rootReactiveBlock == null;
-        this.rootReactiveBlock = rootReactiveBlock;
+    public synchronized void setRootProcessor(Actor.Driver<? extends AbstractProcessor<?, ANSWER, ?, ?>> rootProcessor) {
+        assert this.rootProcessor == null;
+        this.rootProcessor = rootProcessor;
         state = READY;
         if (requiredAnswers.get() > 0) pull();
     }
@@ -112,7 +112,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     protected synchronized void pull() {
         assert state == READY;
         state = PULLING;
-        rootReactiveBlock.execute(actor -> actor.rootPull());
+        rootProcessor.execute(actor -> actor.rootPull());
     }
 
     @Override

@@ -35,7 +35,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 public class RootConjunctionController
-        extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.ReactiveBlock> {
+        extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.Processor> {
 
     private final Set<Identifier.Variable.Retrievable> filter;
     private final boolean explain;
@@ -53,14 +53,14 @@ public class RootConjunctionController
     @Override
     public void initialise() {
         setUpUpstreamControllers();
-        getOrCreateReactiveBlock(new ConceptMap());
+        getOrCreateProcessor(new ConceptMap());
     }
 
     @Override
-    protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver, ConceptMap bounds) {
-        return new ReactiveBlock(
-                reactiveBlockDriver, driver(), reactiveBlockContext(), bounds, plan(), filter, explain, reasonerConsumer,
-                () -> ReactiveBlock.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
+    protected Processor createProcessorFromDriver(Driver<Processor> processorDriver, ConceptMap bounds) {
+        return new Processor(
+                processorDriver, driver(), processorContext(), bounds, plan(), filter, explain, reasonerConsumer,
+                () -> Processor.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
         );
     }
 
@@ -77,14 +77,14 @@ public class RootConjunctionController
         reasonerConsumer.exception(cause);
     }
 
-    protected static class ReactiveBlock extends ConjunctionController.ReactiveBlock<ConceptMap, ReactiveBlock> {
+    protected static class Processor extends ConjunctionController.Processor<ConceptMap, Processor> {
 
         private final Set<Identifier.Variable.Retrievable> filter;
         private RootSink<ConceptMap> rootSink;
         private final boolean explain;
         private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
-        protected ReactiveBlock(Driver<ReactiveBlock> driver, Driver<RootConjunctionController> controller,
+        protected Processor(Driver<Processor> driver, Driver<RootConjunctionController> controller,
                                 Context context, ConceptMap bounds, List<Resolvable<?>> plan,
                                 Set<Identifier.Variable.Retrievable> filter, boolean explain,
                                 ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {

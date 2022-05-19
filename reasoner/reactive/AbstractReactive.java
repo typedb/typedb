@@ -20,12 +20,12 @@ package com.vaticle.typedb.core.reasoner.reactive;
 
 public abstract class AbstractReactive implements Reactive {
 
-    protected final AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock;
+    protected final AbstractProcessor<?, ?, ?, ?> processor;
     protected final Reactive.Identifier<?, ?> identifier;
 
-    protected AbstractReactive(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock) {
-        this.reactiveBlock = reactiveBlock;
-        this.identifier = reactiveBlock().registerReactive(this);
+    protected AbstractReactive(AbstractProcessor<?, ?, ?, ?> processor) {
+        this.processor = processor;
+        this.identifier = processor().registerReactive(this);
     }
 
     @Override
@@ -34,8 +34,8 @@ public abstract class AbstractReactive implements Reactive {
     }
 
     @Override
-    public AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock() {
-        return reactiveBlock;
+    public AbstractProcessor<?, ?, ?, ?> processor() {
+        return processor;
     }
 
 }

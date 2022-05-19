@@ -19,11 +19,11 @@
 package com.vaticle.typedb.core.reasoner;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
 
 public interface ReasonerConsumer<ANSWER> {
 
-    void setRootReactiveBlock(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock);
+    void setRootProcessor(Actor.Driver<? extends AbstractProcessor<?, ANSWER, ?, ?>> rootProcessor);
 
     void receiveAnswer(ANSWER answer);
 

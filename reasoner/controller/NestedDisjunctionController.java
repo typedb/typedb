@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import java.util.function.Supplier;
 
 public class NestedDisjunctionController
-        extends DisjunctionController<NestedDisjunctionController.ReactiveBlock, NestedDisjunctionController>{
+        extends DisjunctionController<NestedDisjunctionController.Processor, NestedDisjunctionController>{
 
     public NestedDisjunctionController(Driver<NestedDisjunctionController> driver, Disjunction disjunction,
                                        Context context) {
@@ -32,18 +32,18 @@ public class NestedDisjunctionController
     }
 
     @Override
-    protected ReactiveBlock createReactiveBlockFromDriver(
-            Driver<ReactiveBlock> reactiveBlockDriver,
+    protected Processor createProcessorFromDriver(
+            Driver<Processor> processorDriver,
             ConceptMap bounds) {
-        return new ReactiveBlock(
-                reactiveBlockDriver, driver(), reactiveBlockContext(), disjunction, bounds,
-                () -> ReactiveBlock.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
+        return new Processor(
+                processorDriver, driver(), processorContext(), disjunction, bounds,
+                () -> Processor.class.getSimpleName() + "(pattern:" + disjunction + ", bounds: " + bounds + ")"
         );
     }
 
-    protected static class ReactiveBlock extends DisjunctionController.ReactiveBlock<ReactiveBlock> {
+    protected static class Processor extends DisjunctionController.Processor<Processor> {
 
-        protected ReactiveBlock(Driver<ReactiveBlock> driver,
+        protected Processor(Driver<Processor> driver,
                                 Driver<NestedDisjunctionController> controller, Context context,
                                 Disjunction disjunction, ConceptMap bounds, Supplier<String> debugName) {
             super(driver, controller, context, disjunction, bounds, debugName);

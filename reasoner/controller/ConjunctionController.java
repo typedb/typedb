@@ -30,9 +30,9 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.common.Planner;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector;
-import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor.Connector;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractProcessor.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.TransformationStream;
@@ -50,11 +50,11 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.controller.ConcludableController.ReactiveBlock.Match.withExplainable;
+import static com.vaticle.typedb.core.reasoner.controller.ConcludableController.Processor.Match.withExplainable;
 
 public abstract class ConjunctionController<OUTPUT,
         CONTROLLER extends ConjunctionController<OUTPUT, CONTROLLER, REACTIVE_BLOCK>,
-        REACTIVE_BLOCK extends AbstractReactiveBlock<ConceptMap, OUTPUT, ?, REACTIVE_BLOCK>
+        REACTIVE_BLOCK extends AbstractProcessor<ConceptMap, OUTPUT, ?, REACTIVE_BLOCK>
         > extends AbstractController<
         ConceptMap,
         ConceptMap,
@@ -126,15 +126,15 @@ public abstract class ConjunctionController<OUTPUT,
     public void routeConnectionRequest(Request<?> connectionRequest) {
         if (isTerminated()) return;
         if (connectionRequest.isRetrievable()) {
-            ReactiveBlock.RetrievableRequest req = connectionRequest.asRetrievable();
+            Processor.RetrievableRequest req = connectionRequest.asRetrievable();
             ControllerRegistry.ControllerView.FilteredRetrievable controllerView = retrievableControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
             Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
                     .withMap(c -> merge(c, req.bounds()))
                     .withNewBounds(newPID);
-            controllerView.controller().execute(actor -> actor.establishReactiveBlockConnection(connector));
+            controllerView.controller().execute(actor -> actor.establishProcessorConnection(connector));
         } else if (connectionRequest.isConcludable()) {
-            ReactiveBlock.ConcludableRequest req = connectionRequest.asConcludable();
+            Processor.ConcludableRequest req = connectionRequest.asConcludable();
             ControllerView.MappedConcludable controllerView = concludableControllers.get(req.controllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
             ConceptMap newPID = mapping.transform(req.bounds());
@@ -142,15 +142,15 @@ public abstract class ConjunctionController<OUTPUT,
                     .withMap(mapping::unTransform)
                     .withMap(c -> remapExplainable(c, req.controllerId()))
                     .withNewBounds(newPID);
-            controllerView.controller().execute(actor -> actor.establishReactiveBlockConnection(connector));
+            controllerView.controller().execute(actor -> actor.establishProcessorConnection(connector));
         } else if (connectionRequest.isNegated()) {
-            ReactiveBlock.NegatedRequest req = connectionRequest.asNegated();
+            Processor.NegatedRequest req = connectionRequest.asNegated();
             ControllerRegistry.ControllerView.FilteredNegation controllerView = negationControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
             Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
                     .withMap(c -> merge(c, req.bounds()))
                     .withNewBounds(newPID);
-            controllerView.controller().execute(actor -> actor.establishReactiveBlockConnection(connector));
+            controllerView.controller().execute(actor -> actor.establishProcessorConnection(connector));
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
@@ -173,7 +173,7 @@ public abstract class ConjunctionController<OUTPUT,
             return false;
         }
 
-        public ReactiveBlock.RetrievableRequest asRetrievable() {
+        public Processor.RetrievableRequest asRetrievable() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
@@ -181,7 +181,7 @@ public abstract class ConjunctionController<OUTPUT,
             return false;
         }
 
-        public ReactiveBlock.ConcludableRequest asConcludable() {
+        public Processor.ConcludableRequest asConcludable() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
@@ -189,19 +189,19 @@ public abstract class ConjunctionController<OUTPUT,
             return false;
         }
 
-        public ReactiveBlock.NegatedRequest asNegated() {
+        public Processor.NegatedRequest asNegated() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
     }
 
-    protected abstract static class ReactiveBlock<OUTPUT, REACTIVE_BLOCK extends ReactiveBlock<OUTPUT, REACTIVE_BLOCK>>
-            extends AbstractReactiveBlock<ConceptMap, OUTPUT, Request<?>, REACTIVE_BLOCK> {
+    protected abstract static class Processor<OUTPUT, REACTIVE_BLOCK extends Processor<OUTPUT, REACTIVE_BLOCK>>
+            extends AbstractProcessor<ConceptMap, OUTPUT, Request<?>, REACTIVE_BLOCK> {
 
         protected final ConceptMap bounds;
         protected final List<Resolvable<?>> plan;
 
-        protected ReactiveBlock(Driver<REACTIVE_BLOCK> driver,
+        protected Processor(Driver<REACTIVE_BLOCK> driver,
                                 Driver<? extends ConjunctionController<OUTPUT, ?, REACTIVE_BLOCK>> controller,
                                 Context context, ConceptMap bounds, List<Resolvable<?>> plan,
                                 Supplier<String> debugName) {
@@ -216,11 +216,11 @@ public abstract class ConjunctionController<OUTPUT,
             private final List<Resolvable<?>> remainingPlan;
             private final Map<Publisher<ConceptMap>, ConceptMap> publisherPackets;
             private final ConceptMap initialPacket;
-            private final AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock;
+            private final AbstractProcessor<?, ?, ?, ?> processor;
 
-            public CompoundOperator(AbstractReactiveBlock<?, ?, ?, ?> reactiveBlock, List<Resolvable<?>> plan,
+            public CompoundOperator(AbstractProcessor<?, ?, ?, ?> processor, List<Resolvable<?>> plan,
                                     ConceptMap initialPacket) {
-                this.reactiveBlock = reactiveBlock;
+                this.processor = processor;
                 assert plan.size() > 0;
                 this.initialPacket = initialPacket;
                 this.remainingPlan = new ArrayList<>(plan);
@@ -246,8 +246,8 @@ public abstract class ConjunctionController<OUTPUT,
                             follower = nextCompoundLeader(remainingPlan.get(0), mergedPacket);
                         } else {
                             follower = TransformationStream.fanIn(
-                                    reactiveBlock,
-                                    new CompoundOperator(reactiveBlock, remainingPlan, mergedPacket)
+                                    processor,
+                                    new CompoundOperator(processor, remainingPlan, mergedPacket)
                             ).buffer();
                         }
                         publisherPackets.put(follower, mergedPacket);
@@ -282,8 +282,8 @@ public abstract class ConjunctionController<OUTPUT,
         public static class RetrievableRequest extends Request<Retrievable> {
 
             public RetrievableRequest(Reactive.Identifier<ConceptMap, ?> inputId, Retrievable controllerId,
-                                      ConceptMap reactiveBlockId) {
-                super(inputId, controllerId, reactiveBlockId);
+                                      ConceptMap processorId) {
+                super(inputId, controllerId, processorId);
             }
 
             @Override
@@ -301,8 +301,8 @@ public abstract class ConjunctionController<OUTPUT,
         static class ConcludableRequest extends Request<Concludable> {
 
             public ConcludableRequest(Reactive.Identifier<ConceptMap, ?> inputId, Concludable controllerId,
-                                      ConceptMap reactiveBlockId) {
-                super(inputId, controllerId, reactiveBlockId);
+                                      ConceptMap processorId) {
+                super(inputId, controllerId, processorId);
             }
 
             public boolean isConcludable() {
@@ -318,8 +318,8 @@ public abstract class ConjunctionController<OUTPUT,
         static class NegatedRequest extends Request<Negated> {
 
             protected NegatedRequest(Reactive.Identifier<ConceptMap, ?> inputId, Negated controllerId,
-                                     ConceptMap reactiveBlockId) {
-                super(inputId, controllerId, reactiveBlockId);
+                                     ConceptMap processorId) {
+                super(inputId, controllerId, processorId);
             }
 
             public boolean isNegated() {

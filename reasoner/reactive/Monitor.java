@@ -66,11 +66,11 @@ public class Monitor extends Actor<Monitor> {
         assert exists == null;
     }
 
-    public <R> void registerRoot(Driver<? extends AbstractReactiveBlock<R, ?, ?, ?>> reactiveBlock, Reactive.Identifier<?, ?> root) {
+    public <R> void registerRoot(Driver<? extends AbstractProcessor<R, ?, ?, ?>> processor, Reactive.Identifier<?, ?> root) {
         tracer().ifPresent(tracer -> tracer.registerRoot(root, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the root, or a duplicate node will be created.
-        putNode(root, new RootNode(root, reactiveBlock, driver()));
+        putNode(root, new RootNode(root, processor, driver()));
     }
 
     public void rootFinished(Reactive.Identifier<?, ?> root) {
@@ -264,17 +264,17 @@ public class Monitor extends Actor<Monitor> {
 
     private class RootNode extends SourceNode {
 
-        private final Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock;
+        private final Driver<? extends AbstractProcessor<?, ?, ?, ?>> rootProcessor;
         private final Driver<Monitor> monitor;
         private final Set<SourceNode> activeSources;
         private long activeFrontiers;
         private long activeAnswers;
         private boolean finishing;
 
-        RootNode(Reactive.Identifier<?, ?> root, Driver<? extends AbstractReactiveBlock<?, ?, ?, ?>> rootReactiveBlock,
+        RootNode(Reactive.Identifier<?, ?> root, Driver<? extends AbstractProcessor<?, ?, ?, ?>> rootProcessor,
                  Driver<Monitor> monitor) {
             super(root);
-            this.rootReactiveBlock = rootReactiveBlock;
+            this.rootProcessor = rootProcessor;
             this.monitor = monitor;
             this.activeSources = new HashSet<>();
             this.activeFrontiers = 1;
@@ -302,7 +302,7 @@ public class Monitor extends Actor<Monitor> {
 
         private void finishRootNode() {
             tracer().ifPresent(tracer -> tracer.finishRootNode(reactive, monitor));
-            rootReactiveBlock.execute(actor -> actor.onFinished(reactive));
+            rootProcessor.execute(actor -> actor.onFinished(reactive));
         }
 
         void checkFinished() {
@@ -357,20 +357,20 @@ public class Monitor extends Actor<Monitor> {
             String code = ((TypeDBException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Monitor interrupted by resource close: {}", e.getMessage());
-                propagateThrowableToRootReactiveBlocks(e);
+                propagateThrowableToRootProcessors(e);
                 return;
             } else {
                 LOG.debug("Monitor interrupted by TypeDB exception: {}", e.getMessage());
             }
         }
         LOG.error("Actor exception", e);
-        propagateThrowableToRootReactiveBlocks(e);
+        propagateThrowableToRootProcessors(e);
     }
 
-    private void propagateThrowableToRootReactiveBlocks(Throwable e) {
+    private void propagateThrowableToRootProcessors(Throwable e) {
         iterate(reactiveNodes.values())
                 .filter(ReactiveNode::isRoot)
-                .forEachRemaining(node -> node.asRoot().rootReactiveBlock.execute(actor -> actor.exception(e)));
+                .forEachRemaining(node -> node.asRoot().rootProcessor.execute(actor -> actor.exception(e)));
     }
 
     public void terminate(Throwable cause) {

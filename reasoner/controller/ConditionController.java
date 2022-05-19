@@ -34,7 +34,7 @@ import java.util.function.Supplier;
 public class ConditionController extends ConjunctionController<
         Either<ConceptMap, Materialisation>,
         ConditionController,
-        ConditionController.ReactiveBlock
+        ConditionController.Processor
         > {
     // Either<> here is just to match the input to ConclusionController, but this class only ever returns ConceptMap
 
@@ -51,18 +51,18 @@ public class ConditionController extends ConjunctionController<
     }
 
     @Override
-    protected ReactiveBlock createReactiveBlockFromDriver(Driver<ReactiveBlock> reactiveBlockDriver,
+    protected Processor createProcessorFromDriver(Driver<Processor> processorDriver,
                                                           ConceptMap bounds) {
-        return new ReactiveBlock(
-                reactiveBlockDriver, driver(), reactiveBlockContext(), bounds, plan(),
-                () -> ReactiveBlock.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
+        return new Processor(
+                processorDriver, driver(), processorContext(), bounds, plan(),
+                () -> Processor.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
         );
     }
 
-    protected static class ReactiveBlock
-            extends ConjunctionController.ReactiveBlock<Either<ConceptMap, Materialisation>, ReactiveBlock> {
+    protected static class Processor
+            extends ConjunctionController.Processor<Either<ConceptMap, Materialisation>, Processor> {
 
-        protected ReactiveBlock(Driver<ReactiveBlock> driver, Driver<ConditionController> controller,
+        protected Processor(Driver<Processor> driver, Driver<ConditionController> controller,
                                 Context context, ConceptMap bounds, List<Resolvable<?>> plan,
                                 Supplier<String> debugName) {
             super(driver, controller, context, bounds, plan, debugName);

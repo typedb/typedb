@@ -115,7 +115,7 @@ public class ControllerRegistry {
             terminationCause = TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, e);
             controllers.forEach(actor -> actor.execute(r -> r.terminate(terminationCause)));
             materialisationController.execute(actor -> actor.terminate(terminationCause));
-            controllerContext.reactiveBlock().monitor().execute(actor -> actor.terminate(terminationCause));
+            controllerContext.processor().monitor().execute(actor -> actor.terminate(terminationCause));
         }
     }
 
