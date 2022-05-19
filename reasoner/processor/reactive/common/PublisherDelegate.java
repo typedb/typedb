@@ -22,16 +22,18 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
 
 import java.util.function.Function;
 
 public class PublisherDelegate<OUTPUT> {
 
-    private final Reactive.Publisher<OUTPUT> publisher;
+    private final Publisher<OUTPUT> publisher;
     private final AbstractProcessor.Context context;
 
-    public PublisherDelegate(Reactive.Publisher<OUTPUT> publisher, AbstractProcessor.Context context) {
+    public PublisherDelegate(Publisher<OUTPUT> publisher, AbstractProcessor.Context context) {
         this.publisher = publisher;
         this.context = context;
     }
@@ -56,31 +58,32 @@ public class PublisherDelegate<OUTPUT> {
         context.tracer().ifPresent(tracer -> tracer.pull(subscriber.identifier(), publisher.identifier()));
     }
 
-    public <MAPPED> Reactive.Stream<OUTPUT, MAPPED> map(Reactive.Publisher<OUTPUT> publisher, Function<OUTPUT,
-            MAPPED> function) {
-        Reactive.Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(),
-                                                                            new Operator.Map<>(function));
+    public <MAPPED> Stream<OUTPUT, MAPPED> map(Publisher<OUTPUT> publisher, Function<OUTPUT, MAPPED> function) {
+        Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(), new Operator.Map<>(function));
         publisher.registerSubscriber(newOp);
         return newOp;
     }
 
-    public <MAPPED> Reactive.Stream<OUTPUT, MAPPED> flatMap(Reactive.Publisher<OUTPUT> publisher,
-                                                            Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-        Reactive.Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(),
-                                                                            new Operator.FlatMap<>(function));
+    public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(
+            Publisher<OUTPUT> publisher, Function<OUTPUT, FunctionalIterator<MAPPED>> function
+    ) {
+        Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(
+                publisher.processor(), new Operator.FlatMap<>(function)
+        );
         publisher.registerSubscriber(newOp);
         return newOp;
     }
 
-    public Reactive.Stream<OUTPUT, OUTPUT> distinct(Reactive.Publisher<OUTPUT> publisher) {
-        Reactive.Stream<OUTPUT, OUTPUT> newOp = TransformationStream.single(publisher.processor(),
-                                                                            new Operator.Distinct<>());
+    public Stream<OUTPUT, OUTPUT> distinct(Publisher<OUTPUT> publisher) {
+        Stream<OUTPUT, OUTPUT> newOp = TransformationStream.single(
+                publisher.processor(), new Operator.Distinct<>()
+        );
         publisher.registerSubscriber(newOp);
         return newOp;
     }
 
-    public Reactive.Stream<OUTPUT, OUTPUT> buffer(Reactive.Publisher<OUTPUT> publisher) {
-        Reactive.Stream<OUTPUT, OUTPUT> newOp = PoolingStream.buffer(publisher.processor());
+    public Stream<OUTPUT, OUTPUT> buffer(Publisher<OUTPUT> publisher) {
+        Stream<OUTPUT, OUTPUT> newOp = PoolingStream.buffer(publisher.processor());
         publisher.registerSubscriber(newOp);
         return newOp;
     }

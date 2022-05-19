@@ -32,7 +32,7 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public interface Operator {
+public interface Operator {  // TODO: We should consider removing this in favour of subclasses of the base stream types
 
     interface Source<OUTPUT> {
 
