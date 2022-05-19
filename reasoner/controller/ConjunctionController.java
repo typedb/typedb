@@ -33,7 +33,7 @@ import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.Controller
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.Connector;
 import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
-import com.vaticle.typedb.core.reasoner.processor.Input;
+import com.vaticle.typedb.core.reasoner.processor.InputPort;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
@@ -130,7 +130,7 @@ public abstract class ConjunctionController<OUTPUT,
             Processor.RetrievableRequest req = connectionRequest.asRetrievable();
             ControllerRegistry.ControllerView.FilteredRetrievable controllerView = retrievableControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
-            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
+            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputPortId(), req.bounds())
                     .withMap(c -> merge(c, req.bounds()))
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.establishProcessorConnection(connector));
@@ -139,7 +139,7 @@ public abstract class ConjunctionController<OUTPUT,
             ControllerView.MappedConcludable controllerView = concludableControllers.get(req.controllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
             ConceptMap newPID = mapping.transform(req.bounds());
-            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
+            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputPortId(), req.bounds())
                     .withMap(mapping::unTransform)
                     .withMap(c -> remapExplainable(c, req.controllerId()))
                     .withNewBounds(newPID);
@@ -148,7 +148,7 @@ public abstract class ConjunctionController<OUTPUT,
             Processor.NegatedRequest req = connectionRequest.asNegated();
             ControllerRegistry.ControllerView.FilteredNegation controllerView = negationControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
-            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputId(), req.bounds())
+            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputPortId(), req.bounds())
                     .withMap(c -> merge(c, req.bounds()))
                     .withNewBounds(newPID);
             controllerView.controller().execute(actor -> actor.establishProcessorConnection(connector));
@@ -165,9 +165,9 @@ public abstract class ConjunctionController<OUTPUT,
     }
 
     public static class Request<CONTROLLER_ID> extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap> {
-        protected Request(Reactive.Identifier<ConceptMap, ?> inputId, CONTROLLER_ID controller_id,
+        protected Request(Reactive.Identifier<ConceptMap, ?> inputPortId, CONTROLLER_ID controller_id,
                           ConceptMap conceptMap) {
-            super(inputId, controller_id, conceptMap);
+            super(inputPortId, controller_id, conceptMap);
         }
 
         public boolean isRetrievable() {
@@ -263,8 +263,8 @@ public abstract class ConjunctionController<OUTPUT,
 
         }
 
-        protected Input<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
-            Input<ConceptMap> input = createInput();
+        protected InputPort<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
+            InputPort<ConceptMap> input = createInputPort();
             if (planElement.isRetrievable()) {
                 requestConnection(new RetrievableRequest(input.identifier(), planElement.asRetrievable(),
                                                          carriedBounds.filter(planElement.retrieves())));
@@ -282,9 +282,9 @@ public abstract class ConjunctionController<OUTPUT,
 
         public static class RetrievableRequest extends Request<Retrievable> {
 
-            public RetrievableRequest(Reactive.Identifier<ConceptMap, ?> inputId, Retrievable controllerId,
+            public RetrievableRequest(Reactive.Identifier<ConceptMap, ?> inputPortId, Retrievable controllerId,
                                       ConceptMap processorId) {
-                super(inputId, controllerId, processorId);
+                super(inputPortId, controllerId, processorId);
             }
 
             @Override
@@ -301,9 +301,9 @@ public abstract class ConjunctionController<OUTPUT,
 
         static class ConcludableRequest extends Request<Concludable> {
 
-            public ConcludableRequest(Reactive.Identifier<ConceptMap, ?> inputId, Concludable controllerId,
+            public ConcludableRequest(Reactive.Identifier<ConceptMap, ?> inputPortId, Concludable controllerId,
                                       ConceptMap processorId) {
-                super(inputId, controllerId, processorId);
+                super(inputPortId, controllerId, processorId);
             }
 
             public boolean isConcludable() {
@@ -318,9 +318,9 @@ public abstract class ConjunctionController<OUTPUT,
 
         static class NegatedRequest extends Request<Negated> {
 
-            protected NegatedRequest(Reactive.Identifier<ConceptMap, ?> inputId, Negated controllerId,
+            protected NegatedRequest(Reactive.Identifier<ConceptMap, ?> inputPortId, Negated controllerId,
                                      ConceptMap processorId) {
-                super(inputId, controllerId, processorId);
+                super(inputPortId, controllerId, processorId);
             }
 
             public boolean isNegated() {

@@ -27,24 +27,23 @@ import java.util.function.Function;
 
 public class Connector<BOUNDS, PACKET> {
 
-    private final Reactive.Identifier<PACKET, ?> inputId;
+    private final Reactive.Identifier<PACKET, ?> inputPortId;
     private final List<Function<PACKET, PACKET>> transforms;
     private final BOUNDS bounds;
 
-    public Connector(Reactive.Identifier<PACKET, ?> inputId, BOUNDS bounds) {
-        this.inputId = inputId;
+    public Connector(Reactive.Identifier<PACKET, ?> inputPortId, BOUNDS bounds) {
+        this.inputPortId = inputPortId;
         this.transforms = new ArrayList<>();
         this.bounds = bounds;
     }
 
-    public Connector(Reactive.Identifier<PACKET, ?> inputId, BOUNDS bounds, List<Function<PACKET, PACKET>> transforms) {
-        this.inputId = inputId;
+    public Connector(Reactive.Identifier<PACKET, ?> inputPortId, BOUNDS bounds, List<Function<PACKET, PACKET>> transforms) {
+        this.inputPortId = inputPortId;
         this.transforms = transforms;
         this.bounds = bounds;
     }
 
-    public void connectViaTransforms(Reactive.Stream<PACKET, PACKET> toConnect,
-                                     Output<PACKET> output) {
+    public void connectViaTransforms(Reactive.Stream<PACKET, PACKET> toConnect, OutputPort<PACKET> output) {
         Reactive.Publisher<PACKET> op = toConnect;
         for (Function<PACKET, PACKET> t : transforms) op = op.map(t);
         op.registerSubscriber(output);
@@ -54,36 +53,36 @@ public class Connector<BOUNDS, PACKET> {
         return bounds;
     }
 
-    public Reactive.Identifier<PACKET, ?> inputId() {
-        return inputId;
+    public Reactive.Identifier<PACKET, ?> inputPortId() {
+        return inputPortId;
     }
 
     public Connector<BOUNDS, PACKET> withMap(Function<PACKET, PACKET> function) {
         ArrayList<Function<PACKET, PACKET>> newTransforms = new ArrayList<>(transforms);
         newTransforms.add(function);
-        return new Connector<>(inputId, bounds, newTransforms);
+        return new Connector<>(inputPortId, bounds, newTransforms);
     }
 
     public Connector<BOUNDS, PACKET> withNewBounds(BOUNDS newBounds) {
-        return new Connector<>(inputId, newBounds, transforms);
+        return new Connector<>(inputPortId, newBounds, transforms);
     }
 
     public abstract static class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET> {
 
         // TODO: Should hold on to the processor that sent the request
-        private final Reactive.Identifier<PACKET, ?> inputId;  // TODO: requesterPortID
+        private final Reactive.Identifier<PACKET, ?> inputPortId;
         private final CONTROLLER_ID controllerId;
         private final BOUNDS bounds;
 
-        protected AbstractRequest(Reactive.Identifier<PACKET, ?> inputId, CONTROLLER_ID controllerId,
+        protected AbstractRequest(Reactive.Identifier<PACKET, ?> inputPortId, CONTROLLER_ID controllerId,
                                   BOUNDS bounds) {
-            this.inputId = inputId;
+            this.inputPortId = inputPortId;
             this.controllerId = controllerId;
             this.bounds = bounds;
         }
 
-        public Reactive.Identifier<PACKET, ?> inputId() {
-            return inputId;
+        public Reactive.Identifier<PACKET, ?> inputPortId() {
+            return inputPortId;
         }
 
         public CONTROLLER_ID controllerId() {
@@ -100,14 +99,14 @@ public class Connector<BOUNDS, PACKET> {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             AbstractRequest<?, ?, ?> request = (AbstractRequest<?, ?, ?>) o;
-            return inputId == request.inputId &&
+            return inputPortId == request.inputPortId &&
                     controllerId.equals(request.controllerId) &&
                     bounds.equals(request.bounds);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(controllerId, inputId, bounds);
+            return Objects.hash(controllerId, inputPortId, bounds);
         }
 
     }

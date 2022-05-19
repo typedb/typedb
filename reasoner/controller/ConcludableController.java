@@ -34,7 +34,7 @@ import com.vaticle.typedb.core.reasoner.common.Traversal;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.Connector;
 import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
-import com.vaticle.typedb.core.reasoner.processor.Input;
+import com.vaticle.typedb.core.reasoner.processor.InputPort;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
@@ -86,7 +86,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
     public void routeConnectionRequest(REQ req) {
         if (isTerminated()) return;
         conclusionControllers.get(req.controllerId())
-                .execute(actor -> actor.establishProcessorConnection(new Connector<>(req.inputId(), req.bounds())));
+                .execute(actor -> actor.establishProcessorConnection(new Connector<>(req.inputPortId(), req.bounds())));
     }
 
     public static class Match extends ConcludableController<Map<Variable, Concept>, ConceptMap, Processor.Match.Request,
@@ -212,9 +212,9 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
-                    Input<INPUT> input = createInput();
-                    mayRequestConnection(createRequest(input.identifier(), conclusion, boundsAndRequirements.first()));
-                    transformInput(input, unifier, boundsAndRequirements.second()).buffer().registerSubscriber(outputRouter());
+                    InputPort<INPUT> inputPort = createInputPort();
+                    mayRequestConnection(createRequest(inputPort.identifier(), conclusion, boundsAndRequirements.first()));
+                    transformInput(inputPort, unifier, boundsAndRequirements.second()).buffer().registerSubscriber(outputRouter());
                 }));
             });
         }
@@ -287,16 +287,16 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
 
             @Override
-            protected Request createRequest(Reactive.Identifier<Map<Variable, Concept>, ?> inputId,
+            protected Request createRequest(Reactive.Identifier<Map<Variable, Concept>, ?> inputPortId,
                                             Conclusion conclusion, ConceptMap bounds) {
-                return new Request(inputId, conclusion, bounds);
+                return new Request(inputPortId, conclusion, bounds);
             }
 
             protected static class Request extends AbstractRequest<Conclusion, ConceptMap, Map<Variable, Concept>> {
 
-                public Request(Reactive.Identifier<Map<Variable, Concept>, ?> inputId, Conclusion controllerId,
+                public Request(Reactive.Identifier<Map<Variable, Concept>, ?> inputPortId, Conclusion controllerId,
                                ConceptMap processorId) {
-                    super(inputId, controllerId, processorId);
+                    super(inputPortId, controllerId, processorId);
                 }
 
             }
@@ -355,16 +355,16 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
 
             @Override
-            protected Explain.Request createRequest(Reactive.Identifier<PartialExplanation, ?> inputId,
+            protected Explain.Request createRequest(Reactive.Identifier<PartialExplanation, ?> inputPortId,
                                                     Conclusion conclusion, ConceptMap bounds) {
-                return new Request(inputId, conclusion, bounds);
+                return new Request(inputPortId, conclusion, bounds);
             }
 
             protected static class Request extends AbstractRequest<Conclusion, ConceptMap, PartialExplanation> {
 
-                protected Request(Reactive.Identifier<PartialExplanation, ?> inputId, Conclusion conclusion,
+                protected Request(Reactive.Identifier<PartialExplanation, ?> inputPortId, Conclusion conclusion,
                                   ConceptMap conceptMap) {
-                    super(inputId, conclusion, conceptMap);
+                    super(inputPortId, conclusion, conceptMap);
                 }
             }
         }

@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.reasoner.controller.DisjunctionController.Process
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.Connector;
 import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
-import com.vaticle.typedb.core.reasoner.processor.Input;
+import com.vaticle.typedb.core.reasoner.processor.InputPort;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
@@ -73,7 +73,7 @@ public abstract class DisjunctionController<
         getConjunctionController(req.controllerId())
                 .execute(actor -> actor.establishProcessorConnection(
                         new Connector<>(
-                                req.inputId(), req.bounds()).withMap(c -> merge(c, req.bounds()))
+                                req.inputPortId(), req.bounds()).withMap(c -> merge(c, req.bounds()))
                 ));
     }
 
@@ -105,7 +105,7 @@ public abstract class DisjunctionController<
             PoolingStream<ConceptMap> fanIn = PoolingStream.fanIn(this, new Operator.Buffer<>());
             setInitialReactive(getOutputRouter(fanIn));
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
-                Input<ConceptMap> input = createInput();
+                InputPort<ConceptMap> input = createInputPort();
                 input.registerSubscriber(fanIn);
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
@@ -122,9 +122,9 @@ public abstract class DisjunctionController<
 
         protected static class Request extends AbstractRequest<Conjunction, ConceptMap, ConceptMap> {
 
-            protected Request(Reactive.Identifier<ConceptMap, ?> inputId, Conjunction controllerId,
+            protected Request(Reactive.Identifier<ConceptMap, ?> inputPortId, Conjunction controllerId,
                               ConceptMap processorId) {
-                super(inputId, controllerId, processorId);
+                super(inputPortId, controllerId, processorId);
             }
 
         }

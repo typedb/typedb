@@ -51,8 +51,8 @@ public abstract class AbstractProcessor<INPUT, OUTPUT,
 
     private final Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, REACTIVE_BLOCK, ?>> controller;
     private final Context context;
-    private final Map<Identifier<?, ?>, Input<INPUT>> inputs;  // TODO: inputPorts (sweeping rename)
-    private final Map<Identifier<?, ?>, Output<OUTPUT>> outputs;
+    private final Map<Identifier<?, ?>, InputPort<INPUT>> inputPorts;  // TODO: inputPorts (sweeping rename)
+    private final Map<Identifier<?, ?>, OutputPort<OUTPUT>> outputPorts;
     private final Map<Pair<Identifier<?, ?>, Identifier<?, ?>>, Runnable> pullRetries;
     private Reactive.Stream<OUTPUT,OUTPUT> initialReactive;
     private boolean terminated;
@@ -64,8 +64,8 @@ public abstract class AbstractProcessor<INPUT, OUTPUT,
         super(driver, debugName);
         this.controller = controller;
         this.context = context;
-        this.inputs = new HashMap<>();
-        this.outputs = new HashMap<>();
+        this.inputPorts = new HashMap<>();
+        this.outputPorts = new HashMap<>();
         this.reactiveCounter = 0;
         this.pullRetries = new HashMap<>();
     }
@@ -84,12 +84,12 @@ public abstract class AbstractProcessor<INPUT, OUTPUT,
         throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
-    public void pull(Identifier<?, ?> outputId) {
-        outputs.get(outputId).pull();
+    public void pull(Identifier<?, ?> outputPortId) {
+        outputPorts.get(outputPortId).pull();
     }
 
-    public void receive(Identifier<?, ?> inputId, INPUT packet, Identifier<?, INPUT> publisherId) {
-        inputs.get(inputId).receive(publisherId, packet);
+    public void receive(Identifier<?, ?> inputPortId, INPUT packet, Identifier<?, INPUT> publisherId) {
+        inputPorts.get(inputPortId).receive(publisherId, packet);
     }
 
     public <PACKET> void schedulePullRetry(Publisher<PACKET> publisher, Subscriber<PACKET> subscriber) {
@@ -109,29 +109,29 @@ public abstract class AbstractProcessor<INPUT, OUTPUT,
 
     public void establishConnection(Connector<?, OUTPUT> connector) {
         if (isTerminated()) return;
-        Output<OUTPUT> output = createOutput();
-        output.setSubscriber(connector.inputId());
-        connector.connectViaTransforms(outputRouter(), output);
-        connector.inputId().processor().execute(
-                actor -> actor.finishConnection(connector.inputId(), output.identifier()));
+        OutputPort<OUTPUT> outputPort = createOutputPort();
+        outputPort.setInputPort(connector.inputPortId());
+        connector.connectViaTransforms(outputRouter(), outputPort);
+        connector.inputPortId().processor().execute(
+                actor -> actor.finishConnection(connector.inputPortId(), outputPort.identifier()));
     }
 
-    protected void finishConnection(Identifier<INPUT, ?> inputId, Identifier<?, INPUT> outputId) {
-        Input<INPUT> input = inputs.get(inputId);
-        input.setOutput(outputId);
+    protected void finishConnection(Identifier<INPUT, ?> inputPortId, Identifier<?, INPUT> outputPortId) {
+        InputPort<INPUT> input = inputPorts.get(inputPortId);
+        input.setOutputPort(outputPortId);
         input.pull();
     }
 
-    protected Input<INPUT> createInput() {
-        Input<INPUT> input = new Input<>(this);
-        inputs.put(input.identifier(), input);
-        return input;
+    protected InputPort<INPUT> createInputPort() {
+        InputPort<INPUT> inputPort = new InputPort<>(this);
+        inputPorts.put(inputPort.identifier(), inputPort);
+        return inputPort;
     }
 
-    protected Output<OUTPUT> createOutput() {
-        Output<OUTPUT> output = new Output<>(this);
-        outputs.put(output.identifier(), output);
-        return output;
+    protected OutputPort<OUTPUT> createOutputPort() {
+        OutputPort<OUTPUT> outputPort = new OutputPort<>(this);
+        outputPorts.put(outputPort.identifier(), outputPort);
+        return outputPort;
     }
 
     public Driver<Monitor> monitor() {

@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.controller.NegationController.Processor.Request;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.Connector;
-import com.vaticle.typedb.core.reasoner.processor.Input;
+import com.vaticle.typedb.core.reasoner.processor.InputPort;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
@@ -75,7 +75,7 @@ public class NegationController extends AbstractController<
     public void routeConnectionRequest(Request req) {
         if (isTerminated()) return;
         disjunctionContoller.execute(actor -> actor.establishProcessorConnection(
-                new Connector<>(req.inputId(), req.bounds())
+                new Connector<>(req.inputPortId(), req.bounds())
         ));
     }
 
@@ -96,7 +96,7 @@ public class NegationController extends AbstractController<
         @Override
         public void setUp() {
             setInitialReactive(PoolingStream.fanOut(this));
-            Input<ConceptMap> input = createInput();
+            InputPort<ConceptMap> input = createInputPort();
             requestConnection(new Request(input.identifier(), negated.pattern(), bounds));
             negation = new NegationStream(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
@@ -167,9 +167,9 @@ public class NegationController extends AbstractController<
 
         protected static class Request extends Connector.AbstractRequest<Disjunction, ConceptMap, ConceptMap> {
 
-            protected Request(Reactive.Identifier<ConceptMap, ?> inputId, Disjunction controllerId,
+            protected Request(Reactive.Identifier<ConceptMap, ?> inputPortId, Disjunction controllerId,
                               ConceptMap processorId) {
-                super(inputId, controllerId, processorId);
+                super(inputPortId, controllerId, processorId);
             }
 
         }

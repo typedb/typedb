@@ -24,15 +24,15 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberDele
 /**
  * Governs an output from a processor
  */
-public class Output<PACKET> implements Reactive.Subscriber<PACKET> {
+public class OutputPort<PACKET> implements Reactive.Subscriber<PACKET> {
 
     private final Identifier<?, PACKET> identifier;
     private final AbstractProcessor<?, PACKET, ?, ?> processor;
     private final SubscriberDelegate<PACKET> subscriberActions;
-    private Identifier<PACKET, ?> receivingInput;
+    private Identifier<PACKET, ?> inputPortId;
     private Publisher<PACKET> publisher;
 
-    public Output(AbstractProcessor<?, PACKET, ?, ?> processor) {
+    public OutputPort(AbstractProcessor<?, PACKET, ?, ?> processor) {
         this.processor = processor;
         this.identifier = processor().registerReactive(this);
         this.subscriberActions = new SubscriberDelegate<>(this, processor().context());
@@ -51,12 +51,12 @@ public class Output<PACKET> implements Reactive.Subscriber<PACKET> {
     @Override
     public void receive(Publisher<PACKET> publisher, PACKET packet) {
         subscriberActions.traceReceive(publisher, packet);
-        receivingInput.processor().execute(actor -> actor.receive(receivingInput, packet, identifier()));
+        inputPortId.processor().execute(actor -> actor.receive(inputPortId, packet, identifier()));
     }
 
     public void pull() {
         assert publisher != null;
-        processor().context().tracer().ifPresent(tracer -> tracer.pull(receivingInput, identifier()));
+        processor().context().tracer().ifPresent(tracer -> tracer.pull(inputPortId, identifier()));
         publisher.pull(this);
     }
 
@@ -67,9 +67,9 @@ public class Output<PACKET> implements Reactive.Subscriber<PACKET> {
         subscriberActions.registerPath(publisher);
     }
 
-    public void setSubscriber(Identifier<PACKET, ?> inputId) {
-        assert receivingInput == null;
-        receivingInput = inputId;
+    public void setInputPort(Identifier<PACKET, ?> inputPortId) {
+        assert this.inputPortId == null;
+        this.inputPortId = inputPortId;
     }
 
     @Override

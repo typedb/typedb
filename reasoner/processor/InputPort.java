@@ -27,16 +27,16 @@ import java.util.function.Function;
 /**
  * Governs an input to a processor
  */
-public class Input<PACKET> implements Reactive.Publisher<PACKET> {
+public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
 
     private final Identifier<PACKET, ?> identifier;
     private final AbstractProcessor<PACKET, ?, ?, ?> processor;
     private final PublisherDelegate<PACKET> publisherActions;
     private boolean ready;
-    private Identifier<?, PACKET> providingOutput;  // TODO: Output PortID
+    private Identifier<?, PACKET> outputPortId;
     private Subscriber<PACKET> subscriber;
 
-    public Input(AbstractProcessor<PACKET, ?, ?, ?> processor) {
+    public InputPort(AbstractProcessor<PACKET, ?, ?, ?> processor) {
         this.processor = processor;
         this.identifier = processor.registerReactive(this);
         this.ready = false;
@@ -53,14 +53,6 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
         return identifier;
     }
 
-    public void setOutput(Identifier<?, PACKET> outputId) {
-        assert providingOutput == null;
-        providingOutput = outputId;
-        processor().monitor().execute(actor -> actor.registerPath(identifier(), outputId));
-        assert !ready;
-        ready = true;
-    }
-
     public void pull() {
         pull(subscriber);
     }
@@ -70,8 +62,13 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
         assert subscriber.equals(this.subscriber);
         processor().tracer().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
         if (ready)
-            providingOutput.processor().execute(actor -> actor.pull(providingOutput));  // TODO: Store the processor
+            outputPortId.processor().execute(actor -> actor.pull(outputPortId));  // TODO: Store the processor
         // rather than getting it from the outputPort
+    }
+
+    public void receive(Identifier<?, PACKET> outputPortId, PACKET packet) {
+        processor().tracer().ifPresent(tracer -> tracer.receive(outputPortId, identifier(), packet));
+        subscriber.receive(this, packet);
     }
 
     @Override
@@ -79,6 +76,14 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
         assert this.subscriber == null;
         this.subscriber = subscriber;
         subscriber.registerPublisher(this);
+    }
+
+    public void setOutputPort(Identifier<?, PACKET> outputPortId) {
+        assert this.outputPortId == null;
+        this.outputPortId = outputPortId;
+        processor().monitor().execute(actor -> actor.registerPath(identifier(), outputPortId));
+        assert !ready;
+        ready = true;
     }
 
     @Override
@@ -99,11 +104,6 @@ public class Input<PACKET> implements Reactive.Publisher<PACKET> {
     @Override
     public Stream<PACKET, PACKET> distinct() {
         return publisherActions.distinct(this);
-    }
-
-    public void receive(Identifier<?, PACKET> outputId, PACKET packet) {
-        processor().tracer().ifPresent(tracer -> tracer.receive(outputId, identifier(), packet));
-        subscriber.receive(this, packet);
     }
 
     @Override

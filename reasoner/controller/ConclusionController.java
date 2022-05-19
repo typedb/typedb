@@ -34,7 +34,7 @@ import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.Connector;
 import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
-import com.vaticle.typedb.core.reasoner.processor.Input;
+import com.vaticle.typedb.core.reasoner.processor.InputPort;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
@@ -86,10 +86,10 @@ public abstract class ConclusionController<
         if (isTerminated()) return;
         if (req.isCondition()) {
             conditionController.execute(actor -> actor.establishProcessorConnection(
-                    new Connector<>(req.asCondition().inputId(), req.asCondition().bounds())));
+                    new Connector<>(req.asCondition().inputPortId(), req.asCondition().bounds())));
         } else if (req.isMaterialiser()) {
             materialisationController.execute(actor -> actor.establishProcessorConnection(
-                    new Connector<>(req.asMaterialiser().inputId(), req.asMaterialiser().bounds())));
+                    new Connector<>(req.asMaterialiser().inputPortId(), req.asMaterialiser().bounds())));
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
@@ -135,9 +135,9 @@ public abstract class ConclusionController<
     protected static class Request<CONTROLLER_ID, BOUNDS>
             extends AbstractRequest<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>> {
 
-        protected Request(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
+        protected Request(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
                           CONTROLLER_ID controller_id, BOUNDS bounds) {
-            super(inputId, controller_id, bounds);
+            super(inputPortId, controller_id, bounds);
         }
 
         public boolean isCondition() {
@@ -158,9 +158,9 @@ public abstract class ConclusionController<
 
         protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap> {
 
-            public ConditionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
+            public ConditionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
                                     Rule.Condition controllerId, ConceptMap processorId) {
-                super(inputId, controllerId, processorId);
+                super(inputPortId, controllerId, processorId);
             }
 
             @Override
@@ -177,9 +177,9 @@ public abstract class ConclusionController<
 
         protected static class MaterialiserRequest extends Request<Void, Materialisable> {
 
-            public MaterialiserRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputId,
+            public MaterialiserRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
                                        Void controllerId, Materialisable processorId) {
-                super(inputId, controllerId, processorId);
+                super(inputPortId, controllerId, processorId);
             }
 
             @Override
@@ -226,7 +226,7 @@ public abstract class ConclusionController<
         @Override
         public void setUp() {
             setInitialReactive(PoolingStream.fanOut(this));
-            Input<Either<ConceptMap, Materialisation>> conditionInput = createInput();
+            InputPort<Either<ConceptMap, Materialisation>> conditionInput = createInputPort();
             ConceptMap filteredBounds = bounds.filter(rule.condition().conjunction().retrieves());
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), filteredBounds));
             Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> conclusionReactive = fanIn(this, createOperator());
@@ -308,7 +308,7 @@ public abstract class ConclusionController<
             ) {
                 if (packet.isFirst()) {
                     assert packet.first().concepts().keySet().containsAll(processor().rule().condition().conjunction().retrieves());
-                    Input<Either<ConceptMap, Materialisation>> materialisationInput = processor().createInput();
+                    InputPort<Either<ConceptMap, Materialisation>> materialisationInput = processor().createInputPort();
                     ConceptMap filteredConditionAns = packet.first().filter(processor().rule().conclusion().retrievableIds());  // TODO: no explainables carried forwards
                     processor().mayRequestMaterialiser(new MaterialiserRequest(
                             materialisationInput.identifier(), null,
