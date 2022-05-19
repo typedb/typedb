@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
+import com.vaticle.typedb.core.logic.Materialiser;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
@@ -49,20 +50,20 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.util.Collections.singletonList;
 
-public class Materialiser {
+public class ForwardChainingMaterialiser {
 
     private final Map<com.vaticle.typedb.core.logic.Rule, Rule> rules;
     private final CoreTransaction tx;
     private final Materialisations materialisations;
 
-    private Materialiser(CoreSession session) {
+    private ForwardChainingMaterialiser(CoreSession session) {
         this.rules = new HashMap<>();
         this.tx = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(false));
         this.materialisations = new Materialisations();
     }
 
-    public static Materialiser materialise(CoreSession session) {
-        Materialiser materialiser = new Materialiser(session);
+    public static ForwardChainingMaterialiser materialise(CoreSession session) {
+        ForwardChainingMaterialiser materialiser = new ForwardChainingMaterialiser(session);
         materialiser.materialise();
         return materialiser;
     }
@@ -125,9 +126,13 @@ public class Materialiser {
         private boolean materialise() {
             // Get all the places where the rule condition is satisfied and materialise for each
             requiresReiteration = false;
-            traverse(logicRule.when()).forEachRemaining(conditionAns -> logicRule.conclusion().materialiseAndBind(
-                    conditionAns, tx.traversal(), tx.concepts()
-            ).ifPresent(materialisation -> record(conditionAns, new ConceptMap(filterRetrievable(materialisation)))));
+            traverse(logicRule.when()).forEachRemaining(
+                    conditionAns -> Materialiser.materialiseAndBind(
+                            logicRule.conclusion(), conditionAns, tx.traversal(), tx.concepts()
+                    ).ifPresent(materialisation -> record(
+                            conditionAns, new ConceptMap(filterRetrievable(materialisation))
+                    ))
+            );
             return requiresReiteration;
         }
 

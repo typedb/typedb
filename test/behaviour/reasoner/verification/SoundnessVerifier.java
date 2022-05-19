@@ -41,19 +41,19 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 class SoundnessVerifier {
 
-    private final Materialiser materialiser;
+    private final ForwardChainingMaterialiser materialiser;
     private final TypeDB.Session session;
     private final Map<Concept, Concept> inferredConceptMapping;
     private final Set<Explanation> verifiedExplanations;
 
-    private SoundnessVerifier(Materialiser materialiser, TypeDB.Session session) {
+    private SoundnessVerifier(ForwardChainingMaterialiser materialiser, TypeDB.Session session) {
         this.materialiser = materialiser;
         this.session = session;
         this.inferredConceptMapping = new HashMap<>();
         this.verifiedExplanations = new HashSet<>();
     }
 
-    static SoundnessVerifier create(Materialiser materialiser, TypeDB.Session session) {
+    static SoundnessVerifier create(ForwardChainingMaterialiser materialiser, TypeDB.Session session) {
         return new SoundnessVerifier(materialiser, session);
     }
 

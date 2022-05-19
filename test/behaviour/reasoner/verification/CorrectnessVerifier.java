@@ -23,16 +23,16 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 public class CorrectnessVerifier {
 
-    private final Materialiser materialiser;
+    private final ForwardChainingMaterialiser materialiser;
     private final CoreSession session;
 
-    public CorrectnessVerifier(CoreSession session, Materialiser materialiser) {
+    public CorrectnessVerifier(CoreSession session, ForwardChainingMaterialiser materialiser) {
         this.session = session;
         this.materialiser = materialiser;
     }
 
     public static CorrectnessVerifier initialise(CoreSession session) {
-        return new CorrectnessVerifier(session, Materialiser.materialise(session));
+        return new CorrectnessVerifier(session, ForwardChainingMaterialiser.materialise(session));
     }
 
     public void verifyCorrectness(TypeQLMatch inferenceQuery) {

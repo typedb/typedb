@@ -45,7 +45,6 @@ import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typedb.core.traversal.RelationTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Pattern;
@@ -60,7 +59,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -74,8 +72,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RU
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.logic.Rule.Conclusion.*;
-import static com.vaticle.typedb.core.traversal.common.Identifier.Variable.anon;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COLON;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_CLOSE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_OPEN;
@@ -89,8 +85,6 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Schema.WHEN;
 
 public class Rule {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Rule.class);
-
     // note: as `Rule` is cached between transactions, we cannot hold any transaction-bound objects such as Managers
     private final RuleStructure structure;
     private final Conjunction when;
@@ -103,7 +97,7 @@ public class Rule {
         this.then = thenPattern(structure.then(), logicMgr);
         this.when = whenPattern(structure.when(), structure.then(), logicMgr);
         pruneThenResolvedTypes();
-        this.conclusion = create(this);
+        this.conclusion = Conclusion.create(this);
         this.condition = Condition.create(this);
     }
 
@@ -221,7 +215,6 @@ public class Rule {
         conclusion().index();
     }
 
-
     @Override
     public String toString() {
         return "" + RULE + SPACE + getLabel() + COLON + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
@@ -330,31 +323,10 @@ public class Rule {
 
         public abstract Materialisable materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr);
 
-        /**
-         * Perform a put operation on the `then` of the rule. This may insert a new fact, or return an existing inferred fact
-         *
-         * @param materialisable - the concepts that satisfy the `when` of the rule. All named `then` variables must be in this map
-         * @param traversalEng - used to perform a traversal to find preexisting conclusions
-         * @param conceptMgr   - used to insert the conclusion if it doesn't already exist
-         * @return - an inference if it either was, or could have been, inferred by this conclusion
-         */
-        public static Optional<Materialisation> materialise(Materialisable materialisable, TraversalEngine traversalEng,
-                                                            ConceptManager conceptMgr) {
-            if (materialisable.isRelation()) {
-                return Relation.materialise(materialisable.asRelation(), traversalEng, conceptMgr);
-            } else if (materialisable.isHasExplicit()) {
-                return Has.Explicit.materialise(materialisable.asHasExplicit());
-            } else if (materialisable.isHasVariable()) {
-                return Has.Variable.materialise(materialisable.asHasVariable());
-            } else {
-                throw TypeDBException.of(ILLEGAL_STATE);
-            }
-        }
-
         public Optional<Map<Identifier.Variable, Concept>> materialiseAndBind(ConceptMap whenConcepts,
                                                                               TraversalEngine traversalEng,
                                                                               ConceptManager conceptMgr) {
-            return materialise(materialisable(whenConcepts, conceptMgr), traversalEng, conceptMgr)
+            return Materialiser.materialise(materialisable(whenConcepts, conceptMgr), traversalEng, conceptMgr)
                     .map(materialisation -> materialisation.bindToConclusion(this, whenConcepts));
         }
 
@@ -504,7 +476,7 @@ public class Rule {
             }
 
             @Override
-            public Materialisable.Relation materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr) {
+            public Materialisable materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr) {
                 RelationType relationType = relationType(whenConcepts, conceptMgr);
                 Map<Pair<RoleType, Thing>, Integer> players = new HashMap<>();
                 relation().players().forEach(rp -> {
@@ -513,60 +485,7 @@ public class Rule {
                     Pair<RoleType, Thing> pair = new Pair<>(role, player);
                     players.merge(pair, 1, (k, v) -> v + 1);
                 });
-                return new Materialisable.Relation(relationType, players);
-            }
-
-            public static Optional<Materialisation> materialise(Materialisable.Relation materialisable,
-                                                                TraversalEngine traversalEng,
-                                                                ConceptManager conceptMgr) {
-                FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> existingRelations =
-                        matchRelation(materialisable, traversalEng, conceptMgr);
-                if (!existingRelations.hasNext()) {
-                    return Optional.of(new Materialisation.Relation(insert(materialisable)));
-                } else {
-                    while (existingRelations.hasNext()) {
-                        com.vaticle.typedb.core.concept.thing.Relation preexisting = existingRelations.next();
-                        if (!preexisting.isInferred()) return Optional.empty();
-                        else {
-                            if (insertable(preexisting, materialisable)) {
-                                return Optional.of(new Materialisation.Relation(preexisting));
-                            }
-                        }
-                    }
-                    return Optional.empty();
-                }
-            }
-
-            private static boolean insertable(
-                    com.vaticle.typedb.core.concept.thing.Relation inserted, Materialisable.Relation materialisable) {
-                if (!inserted.getType().getLabel().equals(materialisable.relationType().getLabel())) return false;
-                Map<Pair<String, Concept>, Integer> relationMap = new HashMap<>();
-                materialisable.players().forEach((rp, numOccurrences) -> {
-                    relationMap.put(new Pair<>(rp.first().getLabel().name(), rp.second()), numOccurrences);
-                });
-                Map<Pair<String, Concept>, Integer> insertedMap = new HashMap<>();
-                inserted.getPlayersByRoleType().forEach((role, players) -> {
-                    players.forEach(player -> {
-                        Pair<String, Concept> pair = new Pair<>(role.getLabel().name(), player);
-                        insertedMap.merge(pair, 1, (p, count) -> count + 1);
-                    });
-                });
-                return relationMap.equals(insertedMap);
-            }
-
-            private static FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> matchRelation(
-                    Materialisable.Relation materialisable, TraversalEngine traversalEng, ConceptManager conceptMgr) {
-                AtomicInteger i = new AtomicInteger();
-                Identifier.Variable.Retrievable relationId = anon(i.get());
-                RelationTraversal traversal = new RelationTraversal(relationId, set(materialisable.relationType().getLabel())); // TODO include inheritance
-                materialisable.players().forEach((rp, numOccurrences) -> {
-                    Identifier.Variable.Anonymous anonVar = anon(i.addAndGet(1));
-                    for (int j = 1; j <= numOccurrences; j++) {
-                        traversal.player(anonVar, rp.second().asThing().getIID(), set(rp.first().getLabel())); // TODO include inheritance
-                    }
-                });
-                return traversalEng.iterator(traversal).map(conceptMgr::conceptMap)
-                        .map(conceptMap -> conceptMap.get(relationId).asRelation());
+                return new Materialisable(relationType, players);
             }
 
             private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
@@ -588,16 +507,6 @@ public class Rule {
                     assert rp.roleType().get().reference().isLabel();
                     return scope.getRelates(rp.roleType().get().label().get().properLabel().name());
                 }
-            }
-
-            private static com.vaticle.typedb.core.concept.thing.Relation insert(Materialisable.Relation materialisable) {
-                com.vaticle.typedb.core.concept.thing.Relation relation = materialisable.relationType().create(true);
-                materialisable.players().forEach((rp, numOccurrences) -> {
-                    for (int i = 1; i <= numOccurrences; i++) {
-                        relation.addPlayer(rp.first(), rp.second(), true);
-                    }
-                });
-                return relation;
             }
 
             public Map<Identifier.Variable, Concept> thenConcepts(
@@ -660,6 +569,57 @@ public class Rule {
             @Override
             public Relation asRelation() {
                 return this;
+            }
+
+            public static class Materialisable extends Conclusion.Materialisable {
+
+                private final RelationType relationType;
+                private final Map<Pair<RoleType, Thing>, Integer> players;
+
+                public Materialisable(RelationType relationType, Map<Pair<RoleType, Thing>, Integer> players) {
+                    this.relationType = relationType;
+                    this.players = players;
+                }
+
+                public RelationType relationType() {
+                    return relationType;
+                }
+
+                public Map<Pair<RoleType, Thing>, Integer> players() {
+                    return players;
+                }
+
+                @Override
+                public boolean isRelation() {
+                    return true;
+                }
+
+                @Override
+                public Materialisable asRelation() {
+                    return this;
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    Materialisable relation = (Materialisable) o;
+                    return relationType.equals(relation.relationType) &&
+                            players.equals(relation.players);
+                }
+
+                @Override
+                public int hashCode() {
+                    return Objects.hash(relationType, players);
+                }
+
+                @Override
+                public String toString() {
+                    return "Relation{" +
+                            "relationType=" + relationType +
+                            ", players=" + players +
+                            '}';
+                }
             }
         }
 
@@ -738,7 +698,7 @@ public class Rule {
                 }
 
                 @Override
-                public Materialisable.Has.Explicit materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr) {
+                public Materialisable materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr) {
 
                     Identifier.Variable.Retrievable ownerId = owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
@@ -751,18 +711,7 @@ public class Rule {
                     AttributeType attrType = conceptMgr.getAttributeType(attributeTypeLabel.name());
                     assert attrType != null;
                     ValueConstraint<?> value = attribute().value().iterator().next();
-                    return new Materialisable.Has.Explicit(owner, attrType, value);
-                }
-
-                public static Optional<Materialisation> materialise(Materialisable.Has.Explicit materialisable) {
-                    Attribute attribute = getAttribute(materialisable.attrType(), materialisable.value())
-                            .orElseGet(() -> putAttribute(materialisable.attrType(), materialisable.value()));
-                    if (materialisable.owner().hasNonInferred(attribute)) return Optional.empty();
-                    else {
-                        materialisable.owner().setHas(attribute, true);
-                        return Optional.of(new Materialisation.Has.Explicit(materialisable.owner(),
-                                                                            materialisable.attrType(), attribute));
-                    }
+                    return new Materialisable(owner, attrType, value);
                 }
 
                 public Map<Identifier.Variable, Concept> thenConcepts(Thing owner, AttributeType attrType,
@@ -777,24 +726,6 @@ public class Rule {
                     thenConcepts.put(attribute().id(), attribute);
                     thenConcepts.put(owner().id(), declaredOwner);
                     return thenConcepts;
-                }
-
-                private static Optional<Attribute> getAttribute(AttributeType attrType, ValueConstraint<?> value) {
-                    if (attrType.isDateTime()) return Optional.ofNullable(attrType.asDateTime().get(value.asDateTime().value()));
-                    else if (attrType.isBoolean()) return Optional.ofNullable(attrType.asBoolean().get(value.asBoolean().value()));
-                    else if (attrType.isDouble()) return Optional.ofNullable(attrType.asDouble().get(value.asDouble().value()));
-                    else if (attrType.isLong()) return Optional.ofNullable(attrType.asLong().get(value.asLong().value()));
-                    else if (attrType.isString()) return Optional.ofNullable(attrType.asString().get(value.asString().value()));
-                    else throw TypeDBException.of(ILLEGAL_STATE);
-                }
-
-                private static Attribute putAttribute(AttributeType attrType, ValueConstraint<?> value) {
-                    if (attrType.isDateTime()) return attrType.asDateTime().put(value.asDateTime().value(), true);
-                    else if (attrType.isBoolean()) return attrType.asBoolean().put(value.asBoolean().value(), true);
-                    else if (attrType.isDouble()) return attrType.asDouble().put(value.asDouble().value(), true);
-                    else if (attrType.isLong()) return attrType.asLong().put(value.asLong().value(), true);
-                    else if (attrType.isString()) return attrType.asString().put(value.asString().value(), true);
-                    else throw TypeDBException.of(ILLEGAL_STATE);
                 }
 
                 @Override
@@ -860,6 +791,64 @@ public class Rule {
                     return value;
                 }
 
+                public static class Materialisable extends Conclusion.Materialisable {
+
+                    private final Thing owner;
+                    private final AttributeType attrType;
+                    private final ValueConstraint<?> value;
+
+                    public Materialisable(Thing owner, AttributeType attrType, ValueConstraint<?> value) {
+                        this.owner = owner;
+                        this.attrType = attrType;
+                        this.value = value;
+                    }
+
+                    @Override
+                    public boolean isHasExplicit() {
+                        return true;
+                    }
+
+                    @Override
+                    public Materialisable asHasExplicit() {
+                        return this;
+                    }
+
+                    public Thing owner() {
+                        return owner;
+                    }
+
+                    public AttributeType attrType() {
+                        return attrType;
+                    }
+
+                    public ValueConstraint<?> value() {
+                        return value;
+                    }
+
+                    @Override
+                    public boolean equals(Object o) {
+                        if (this == o) return true;
+                        if (o == null || getClass() != o.getClass()) return false;
+                        Materialisable explicit = (Materialisable) o;
+                        return owner.equals(explicit.owner) &&
+                                attrType.equals(explicit.attrType) &&
+                                value.equals(explicit.value);
+                    }
+
+                    @Override
+                    public int hashCode() {
+                        return Objects.hash(owner, attrType, value);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "Explicit{" +
+                                "owner=" + owner +
+                                ", attrType=" + attrType +
+                                ", value=" + value +
+                                '}';
+                    }
+                }
             }
 
             public static class Variable extends Has {
@@ -881,20 +870,12 @@ public class Rule {
                 }
 
                 @Override
-                public Materialisable materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr) {
+                public Conclusion.Materialisable materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr) {
                     assert whenConcepts.contains(owner().id()) && whenConcepts.get(owner().id()).isThing();
                     Thing owner = whenConcepts.get(owner().id()).asThing();
                     assert whenConcepts.contains(attribute().id()) && whenConcepts.get(attribute().id()).isAttribute();
                     Attribute attr = whenConcepts.get(attribute().id()).asAttribute();
-                    return new Materialisable.Has.Variable(owner, attr);
-                }
-
-                public static Optional<Materialisation> materialise(Materialisable.Has.Variable materialisable) {
-                    Thing owner = materialisable.owner();
-                    Attribute attribute = materialisable.attribute();
-                    if (owner.hasNonInferred(attribute)) return Optional.empty();
-                    else owner.setHas(attribute, true);
-                    return Optional.of(new Materialisation.Has.Variable(owner, attribute));
+                    return new Materialisable(owner, attr);
                 }
 
                 public Map<Identifier.Variable, Concept> thenConcepts(Thing owner, Attribute attribute, ConceptMap whenConcepts) {
@@ -934,154 +915,13 @@ public class Rule {
                 public Variable asVariableHas() {
                     return this;
                 }
-            }
 
-        }
-
-        public static class Materialisable {
-
-            public boolean isRelation() {
-                return false;
-            }
-
-            public Materialisable.Relation asRelation() {
-                throw TypeDBException.of(ILLEGAL_CAST);
-            }
-
-            public boolean isHasExplicit() {
-                return false;
-            }
-
-            public Has.Explicit asHasExplicit() {
-                throw TypeDBException.of(ILLEGAL_CAST);
-            }
-
-            public boolean isHasVariable() {
-                return false;
-            }
-
-            public Has.Variable asHasVariable() {
-                throw TypeDBException.of(ILLEGAL_CAST);
-            }
-
-            public static class Relation extends Materialisable {
-
-                private final RelationType relationType;
-                private final Map<Pair<RoleType, Thing>, Integer> players;
-
-                public Relation(RelationType relationType, Map<Pair<RoleType, Thing>, Integer> players) {
-                    this.relationType = relationType;
-                    this.players = players;
-                }
-
-                public RelationType relationType() {
-                    return relationType;
-                }
-
-                public Map<Pair<RoleType, Thing>, Integer> players() {
-                    return players;
-                }
-
-                @Override
-                public boolean isRelation() {
-                    return true;
-                }
-
-                @Override
-                public Materialisable.Relation asRelation() {
-                    return this;
-                }
-
-                @Override
-                public boolean equals(Object o) {
-                    if (this == o) return true;
-                    if (o == null || getClass() != o.getClass()) return false;
-                    Relation relation = (Relation) o;
-                    return relationType.equals(relation.relationType) &&
-                            players.equals(relation.players);
-                }
-
-                @Override
-                public int hashCode() {
-                    return Objects.hash(relationType, players);
-                }
-
-                @Override
-                public String toString() {
-                    return "Relation{" +
-                            "relationType=" + relationType +
-                            ", players=" + players +
-                            '}';
-                }
-            }
-
-            public static class Has extends Materialisable {
-
-                public static class Explicit extends Has {
-
-                    private final Thing owner;
-                    private final AttributeType attrType;
-                    private final ValueConstraint<?> value;
-
-                    public Explicit(Thing owner, AttributeType attrType, ValueConstraint<?> value) {
-                        this.owner = owner;
-                        this.attrType = attrType;
-                        this.value = value;
-                    }
-
-                    @Override
-                    public boolean isHasExplicit() {
-                        return true;
-                    }
-
-                    @Override
-                    public Has.Explicit asHasExplicit() {
-                        return this;
-                    }
-
-                    public Thing owner() {
-                        return owner;
-                    }
-
-                    public AttributeType attrType() {
-                        return attrType;
-                    }
-
-                    public ValueConstraint<?> value() {
-                        return value;
-                    }
-
-                    @Override
-                    public boolean equals(Object o) {
-                        if (this == o) return true;
-                        if (o == null || getClass() != o.getClass()) return false;
-                        Explicit explicit = (Explicit) o;
-                        return owner.equals(explicit.owner) &&
-                                attrType.equals(explicit.attrType) &&
-                                value.equals(explicit.value);
-                    }
-
-                    @Override
-                    public int hashCode() {
-                        return Objects.hash(owner, attrType, value);
-                    }
-
-                    @Override
-                    public String toString() {
-                        return "Explicit{" +
-                                "owner=" + owner +
-                                ", attrType=" + attrType +
-                                ", value=" + value +
-                                '}';
-                    }
-                }
-
-                public static class Variable extends Materialisable {
+                public static class Materialisable extends Conclusion.Materialisable {
 
                     private final Thing owner;
                     private final Attribute attribute;
 
-                    public Variable(Thing owner, Attribute attribute) {
+                    public Materialisable(Thing owner, Attribute attribute) {
                         this.owner = owner;
                         this.attribute = attribute;
                     }
@@ -1092,7 +932,7 @@ public class Rule {
                     }
 
                     @Override
-                    public Has.Variable asHasVariable() {
+                    public Materialisable asHasVariable() {
                         return this;
                     }
 
@@ -1108,7 +948,7 @@ public class Rule {
                     public boolean equals(Object o) {
                         if (this == o) return true;
                         if (o == null || getClass() != o.getClass()) return false;
-                        Variable variable = (Variable) o;
+                        Materialisable variable = (Materialisable) o;
                         return owner.equals(variable.owner) &&
                                 attribute.equals(variable.attribute);
                     }
@@ -1127,106 +967,36 @@ public class Rule {
                     }
                 }
             }
+
         }
 
-        public static abstract class Materialisation {
+        public static class Materialisable {
 
-            public abstract Map<Identifier.Variable, Concept> bindToConclusion(Conclusion conclusion, ConceptMap whenConcepts);
-
-            public static class Relation extends Materialisation {
-                private final com.vaticle.typedb.core.concept.thing.Relation relation;
-
-                Relation(com.vaticle.typedb.core.concept.thing.Relation relation) {
-                    this.relation = relation;
-                }
-
-                @Override
-                public Map<Identifier.Variable, Concept> bindToConclusion(Conclusion conclusion, ConceptMap whenConcepts) {
-                    assert conclusion.isRelation();
-                    return conclusion.asRelation().thenConcepts(relation, whenConcepts);
-                }
-
-                @Override
-                public boolean equals(Object o) {
-                    if (this == o) return true;
-                    if (o == null || getClass() != o.getClass()) return false;
-                    Relation relation1 = (Relation) o;
-                    return relation.equals(relation1.relation);
-                }
-
-                @Override
-                public int hashCode() {
-                    return Objects.hash(relation);
-                }
+            public boolean isRelation() {
+                return false;
             }
 
-            public static abstract  class Has extends Materialisation {
-
-                public static class Explicit extends Has {
-
-                    private final Thing owner;
-                    private final AttributeType attrType;
-                    private final Attribute attribute;
-
-                    public Explicit(Thing owner, AttributeType attrType, Attribute attribute) {
-                        this.owner = owner;
-                        this.attrType = attrType;
-                        this.attribute = attribute;
-                    }
-
-                    @Override
-                    public Map<Identifier.Variable, Concept> bindToConclusion(Conclusion conclusion, ConceptMap whenConcepts) {
-                        assert conclusion.isExplicitHas();
-                        return conclusion.asExplicitHas().thenConcepts(owner, attrType, attribute, whenConcepts);
-                    }
-
-                    @Override
-                    public boolean equals(Object o) {
-                        if (this == o) return true;
-                        if (o == null || getClass() != o.getClass()) return false;
-                        Explicit explicit = (Explicit) o;
-                        return owner.equals(explicit.owner) &&
-                                attrType.equals(explicit.attrType) &&
-                                attribute.equals(explicit.attribute);
-                    }
-
-                    @Override
-                    public int hashCode() {
-                        return Objects.hash(owner, attrType, attribute);
-                    }
-                }
-
-                public static class Variable extends Has {
-
-                    private final Thing owner;
-                    private final Attribute attribute;
-
-                    public Variable(Thing owner, Attribute attribute) {
-                        this.owner = owner;
-                        this.attribute = attribute;
-                    }
-
-                    @Override
-                    public Map<Identifier.Variable, Concept> bindToConclusion(Conclusion conclusion, ConceptMap whenConcepts) {
-                        assert conclusion.isVariableHas();
-                        return conclusion.asVariableHas().thenConcepts(owner, attribute, whenConcepts);
-                    }
-
-                    @Override
-                    public boolean equals(Object o) {
-                        if (this == o) return true;
-                        if (o == null || getClass() != o.getClass()) return false;
-                        Variable variable = (Variable) o;
-                        return owner.equals(variable.owner) &&
-                                attribute.equals(variable.attribute);
-                    }
-
-                    @Override
-                    public int hashCode() {
-                        return Objects.hash(owner, attribute);
-                    }
-                }
+            public Relation.Materialisable asRelation() {
+                throw TypeDBException.of(ILLEGAL_CAST);
             }
+
+            public boolean isHasExplicit() {
+                return false;
+            }
+
+            public Has.Explicit.Materialisable asHasExplicit() {
+                throw TypeDBException.of(ILLEGAL_CAST);
+            }
+
+            public boolean isHasVariable() {
+                return false;
+            }
+
+            public Has.Variable.Materialisable asHasVariable() {
+                throw TypeDBException.of(ILLEGAL_CAST);
+            }
+
         }
     }
+
 }

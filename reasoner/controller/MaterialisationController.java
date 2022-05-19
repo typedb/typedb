@@ -22,8 +22,9 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.logic.Materialiser;
+import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
-import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock;
 import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;
@@ -32,8 +33,6 @@ import com.vaticle.typedb.core.reasoner.reactive.common.Operator;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import java.util.function.Supplier;
-
-import static com.vaticle.typedb.core.logic.Rule.Conclusion.materialise;
 
 public class MaterialisationController extends AbstractController<
         Materialisable,
@@ -95,7 +94,7 @@ public class MaterialisationController extends AbstractController<
         public void setUp() {
             setOutputRouter(PoolingStream.fanOut(this));
             Source.create(this, new Operator.Supplier<>(
-                    () -> materialise(materialisable, traversalEng, conceptMgr)
+                    () -> Materialiser.materialise(materialisable, traversalEng, conceptMgr)
                             .map(Iterators::single)
                             .orElse(Iterators.empty()))
             ).map(Either::<ConceptMap, Materialisation>second).registerSubscriber(outputRouter());

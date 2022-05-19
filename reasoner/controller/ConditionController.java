@@ -20,8 +20,9 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.logic.Materialiser;
 import com.vaticle.typedb.core.logic.Rule;
-import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisation;
+import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.reasoner.reactive.PoolingStream;

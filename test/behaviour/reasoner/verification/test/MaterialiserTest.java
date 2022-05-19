@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreSession;
-import com.vaticle.typedb.core.test.behaviour.reasoner.verification.Materialiser;
+import com.vaticle.typedb.core.test.behaviour.reasoner.verification.ForwardChainingMaterialiser;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -75,7 +75,7 @@ public class MaterialiserTest {
     public void testDeduplicationOfInferredConcepts() {
         loadTransitivityExample(databaseMgr);
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
-            Materialiser materialiser = Materialiser.materialise(session);
+            ForwardChainingMaterialiser materialiser = ForwardChainingMaterialiser.materialise(session);
             TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
             List<ConceptMap> inferredAnswers = iterate(materialiser.query(inferredAnswersQuery).entrySet())
                     .flatMap(Map.Entry::getValue).toList();
