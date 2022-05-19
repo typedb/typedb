@@ -223,7 +223,7 @@ public abstract class ConclusionController<
 
         @Override
         public void setUp() {
-            setOutputRouter(PoolingStream.fanOut(this));
+            setInitialReactive(PoolingStream.fanOut(this));
             Input<Either<ConceptMap, Materialisation>> conditionInput = createInput();
             ConceptMap filteredBounds = bounds.filter(rule.condition().conjunction().retrieves());
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), filteredBounds));

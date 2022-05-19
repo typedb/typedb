@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.Materialiser;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -71,7 +70,7 @@ public class ConditionController extends ConjunctionController<
 
         @Override
         public void setUp() {
-            setOutputRouter(PoolingStream.fanOut(this));
+            setInitialReactive(PoolingStream.fanOut(this));
             TransformationStream.fanIn(this, new CompoundOperator(this, plan, bounds))
                     .map(Either::<ConceptMap, Materialisation>first)
                     .buffer().registerSubscriber(outputRouter());

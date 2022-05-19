@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.controller.AbstractController;
+import com.vaticle.typedb.core.reasoner.reactive.AbstractReactiveBlock.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Identifier;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.reactive.Reactive.Subscriber;
@@ -48,8 +49,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
-        REQ extends AbstractReactiveBlock.Connector.AbstractRequest<?, ?, INPUT>,
-        REACTIVE_BLOCK extends AbstractReactiveBlock<INPUT, OUTPUT, REQ, REACTIVE_BLOCK>> extends Actor<REACTIVE_BLOCK> {
+        REQ extends AbstractRequest<?, ?, INPUT>,
+        REACTIVE_BLOCK extends AbstractReactiveBlock<INPUT, OUTPUT, REQ, REACTIVE_BLOCK>> extends Actor<REACTIVE_BLOCK> {  // TODO: Processor
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractReactiveBlock.class);
 
@@ -58,7 +59,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
     private final Map<Identifier<?, ?>, Input<INPUT>> inputs;
     private final Map<Identifier<?, ?>, Output<OUTPUT>> outputs;
     private final Map<Pair<Identifier<?, ?>, Identifier<?, ?>>, Runnable> pullRetries;
-    private Reactive.Stream<OUTPUT,OUTPUT> outputRouter;
+    private Reactive.Stream<OUTPUT,OUTPUT> initialReactive;
     private boolean terminated;
     private long reactiveCounter;
 
@@ -76,12 +77,12 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
 
     public abstract void setUp();
 
-    protected void setOutputRouter(Reactive.Stream<OUTPUT, OUTPUT> outputRouter) {
-        this.outputRouter = outputRouter;
+    protected void setInitialReactive(Reactive.Stream<OUTPUT, OUTPUT> initialReactive) {
+        this.initialReactive = initialReactive;
     }
 
-    public Reactive.Stream<OUTPUT,OUTPUT> outputRouter() {
-        return outputRouter;
+    public Reactive.Stream<OUTPUT,OUTPUT> outputRouter() {  // TODO: initialReactive or hubReactive
+        return initialReactive;
     }
 
     public void rootPull() {

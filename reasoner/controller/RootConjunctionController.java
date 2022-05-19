@@ -101,7 +101,7 @@ public class RootConjunctionController
             ).buffer();
             if (!explain) op = op.map(conceptMap -> conceptMap.filter(filter));
             op = op.distinct();
-            setOutputRouter(op);
+            setInitialReactive(op);
             rootSink = new RootSink<>(this, reasonerConsumer);
             outputRouter().registerSubscriber(rootSink);
         }

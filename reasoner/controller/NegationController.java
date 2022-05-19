@@ -93,7 +93,7 @@ public class NegationController extends AbstractController<
 
         @Override
         public void setUp() {
-            setOutputRouter(PoolingStream.fanOut(this));
+            setInitialReactive(PoolingStream.fanOut(this));
             Input<ConceptMap> input = createInput();
             requestConnection(new Request(input.identifier(), negated.pattern(), bounds));
             negation = new NegationStream(this, bounds);
