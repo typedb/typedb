@@ -102,21 +102,21 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     abstract void initialiseRootController();
 
     @Override
-    public void rootReactiveBlockFinalised(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock) {
+    public synchronized void rootReactiveBlockFinalised(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock) {
         assert this.rootReactiveBlock == null;
         this.rootReactiveBlock = rootReactiveBlock;
         state = READY;
         if (requiredAnswers.get() > 0) pull();
     }
 
-    protected void pull() {
+    protected synchronized void pull() {
         assert state == READY;
         state = PULLING;
         rootReactiveBlock.execute(actor -> actor.rootPull());
     }
 
     @Override
-    public void finish() {
+    public synchronized void finish() {
         // note: root resolver calls this single-threaded, so is thread safe
         LOG.trace("All answers found.");
         if (state != FINISHED && state != EXCEPTION) {
@@ -131,7 +131,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     }
 
     @Override
-    public void exception(Throwable e) {
+    public synchronized void exception(Throwable e) {
         if (state != FINISHED && state != EXCEPTION) {
             exception = e;
             if (queue == null) {
@@ -156,7 +156,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         }
 
         @Override
-        public void receiveAnswer(ConceptMap answer) {
+        public synchronized void receiveAnswer(ConceptMap answer) {
             state = READY;
             // TODO: The explainables can always be given. The only blocked to removing the explain flag is that
             //  `match get` filters should be ignored for an explainable answer
@@ -181,7 +181,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
             }
 
             @Override
-            protected void initialiseRootController() {
+            protected synchronized void initialiseRootController() {
                 controllerRegistry().createRootConjunction(conjunction, filter, options.explain(), this);
             }
         }
@@ -200,7 +200,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
             }
 
             @Override
-            protected void initialiseRootController() {
+            protected synchronized void initialiseRootController() {
                 controllerRegistry().createRootDisjunction(disjunction, filter, options.explain(), this);
             }
         }
@@ -219,12 +219,12 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         }
 
         @Override
-        void initialiseRootController() {
+        synchronized void initialiseRootController() {
             controllerRegistry().createExplainableRoot(concludable, bounds, this);
         }
 
         @Override
-        public void receiveAnswer(Explanation explanation) {
+        public synchronized void receiveAnswer(Explanation explanation) {
             state = READY;
             if (!explanation.conditionAnswer().explainables().isEmpty()) {
                 explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
