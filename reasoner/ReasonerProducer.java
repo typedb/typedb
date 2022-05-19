@@ -32,14 +32,8 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.vaticle.typedb.core.reasoner.ReasonerProducer.State.EXCEPTION;
-import static com.vaticle.typedb.core.reasoner.ReasonerProducer.State.FINISHED;
-import static com.vaticle.typedb.core.reasoner.ReasonerProducer.State.INIT;
-import static com.vaticle.typedb.core.reasoner.ReasonerProducer.State.INITIALISING;
-import static com.vaticle.typedb.core.reasoner.ReasonerProducer.State.PULLING;
-import static com.vaticle.typedb.core.reasoner.ReasonerProducer.State.READY;
 
 @ThreadSafe
 public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, ReasonerConsumer<ANSWER> {
@@ -47,22 +41,15 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
     private final Registry controllerRegistry;
+    private final AtomicBoolean done;
     final AtomicInteger requiredAnswers;
     final Options.Query options;
     final ExplainablesManager explainablesManager;
     private Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock;
-    private Throwable exception;
+    private Throwable doneException;
     Queue<ANSWER> queue;
-    State state;
-
-    enum State {
-        INIT,
-        INITIALISING,
-        READY,
-        PULLING,
-        FINISHED,
-        EXCEPTION
-    }
+    boolean isPulling;
+    boolean isInitialised;
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
     protected ReasonerProducer(Options.Query options, Registry controllerRegistry,
@@ -71,11 +58,13 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         this.controllerRegistry = controllerRegistry;
         this.explainablesManager = explainablesManager;
         this.queue = null;
+        this.done = new AtomicBoolean(false);
         this.requiredAnswers = new AtomicInteger();
-        this.state = INIT;
+        this.isPulling = false;
+        this.isInitialised = false;
     }
 
-    Registry controllerRegistry() {
+    protected Registry controllerRegistry() {
         return controllerRegistry;
     }
 
@@ -83,35 +72,29 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     public synchronized void produce(Queue<ANSWER> queue, int requestedAnswers, Executor executor) {
         assert this.queue == null || this.queue == queue;
         assert requestedAnswers > 0;
-        if (state == EXCEPTION) queue.done(exception);
-        else if (state == FINISHED) queue.done();
-        else {
+        if (!done.get()) {
             this.queue = queue;
             requiredAnswers.addAndGet(requestedAnswers);
-            if (state == INIT) initialise();
-            else if (state == READY) pull();
+            if (!isInitialised) initialiseRoot();
+            if (rootReactiveBlock != null && !isPulling) pull();
+        } else {
+            if (doneException == null) queue.done();
+            else queue.done(doneException);
         }
     }
 
-    private void initialise() {
-        assert state == INIT;
-        state = INITIALISING;
-        initialiseRootController();
-    }
-
-    abstract void initialiseRootController();
+    protected abstract void initialiseRoot();
 
     @Override
     public void rootReactiveBlockFinalised(Actor.Driver<? extends AbstractReactiveBlock<?, ANSWER, ?, ?>> rootReactiveBlock) {
         assert this.rootReactiveBlock == null;
         this.rootReactiveBlock = rootReactiveBlock;
-        state = READY;
         if (requiredAnswers.get() > 0) pull();
     }
 
     protected void pull() {
-        assert state == READY;
-        state = PULLING;
+        assert rootReactiveBlock != null;
+        isPulling = true;
         rootReactiveBlock.execute(actor -> actor.rootPull());
     }
 
@@ -119,9 +102,9 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     public void finish() {
         // note: root resolver calls this single-threaded, so is thread safe
         LOG.trace("All answers found.");
-        if (state != FINISHED && state != EXCEPTION) {
+        if (!done.getAndSet(true)) {
             if (queue == null) {
-                assert state != PULLING;
+                assert !isPulling;
                 assert requiredAnswers.get() == 0;
             } else {
                 requiredAnswers.set(0);
@@ -132,10 +115,10 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
 
     @Override
     public void exception(Throwable e) {
-        if (state != FINISHED && state != EXCEPTION) {
-            exception = e;
+        if (!done.getAndSet(true)) {
+            doneException = e;
             if (queue == null) {
-                assert state != PULLING;
+                assert !isPulling;
                 assert requiredAnswers.get() == 0;
             } else {
                 requiredAnswers.set(0);
@@ -151,13 +134,13 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
 
     public static abstract class Match extends ReasonerProducer<ConceptMap> {
 
-        protected Match(Options.Query options, Registry controllerRegistry, ExplainablesManager explainablesManager) {
+        public Match(Options.Query options, Registry controllerRegistry, ExplainablesManager explainablesManager) {
             super(options, controllerRegistry, explainablesManager);
         }
 
         @Override
         public void receiveAnswer(ConceptMap answer) {
-            state = READY;
+            isPulling = false;
             // TODO: The explainables can always be given. The only blocked to removing the explain flag is that
             //  `match get` filters should be ignored for an explainable answer
             if (options.explain() && !answer.explainables().isEmpty()) {
@@ -181,8 +164,9 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
             }
 
             @Override
-            protected void initialiseRootController() {
+            protected void initialiseRoot() {
                 controllerRegistry().registerRootConjunction(conjunction, filter, options.explain(), this);
+                isInitialised = true;
             }
         }
 
@@ -200,8 +184,9 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
             }
 
             @Override
-            protected void initialiseRootController() {
+            protected void initialiseRoot() {
                 controllerRegistry().registerRootDisjunction(disjunction, filter, options.explain(), this);
+                isInitialised = true;
             }
         }
     }
@@ -219,13 +204,14 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         }
 
         @Override
-        void initialiseRootController() {
+        protected void initialiseRoot() {
             controllerRegistry().registerExplainableRoot(concludable, bounds, this);
+            isInitialised = true;
         }
 
         @Override
         public void receiveAnswer(Explanation explanation) {
-            state = READY;
+            isPulling = false;
             if (!explanation.conditionAnswer().explainables().isEmpty()) {
                 explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
             }
