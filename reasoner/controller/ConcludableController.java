@@ -181,7 +181,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             > extends AbstractReactiveBlock<INPUT, OUTPUT, REQ, REACTIVE_BLOCK> {
 
         private final ConceptMap bounds;
-        private final Set<Variable.Retrievable> unboundVars;
+        private final Set<Variable.Retrievable> unboundVars;  // TODO: Can just use a boolean to indicate if fully bound
         private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
         private final Set<REQ> requestedConnections;
         protected final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
