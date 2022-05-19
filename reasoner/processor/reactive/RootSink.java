@@ -31,13 +31,13 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
     private final ReasonerConsumer<PACKET> reasonerConsumer;
     private final PublisherRegistry.Single<PACKET> publisherRegistry;
     private final AbstractProcessor<?, PACKET, ?, ?> processor;
-    private final SubscriberDelegate<PACKET> subscriberActions;
+    private final SubscriberDelegate<PACKET> subscriberDelegate;
     private boolean isPulling;
 
     public RootSink(AbstractProcessor<?, PACKET, ?, ?> processor, ReasonerConsumer<PACKET> reasonerConsumer) {
         this.publisherRegistry = new PublisherRegistry.Single<>();
         this.processor = processor;
-        this.subscriberActions = new SubscriberDelegate<>(this, processor.context());
+        this.subscriberDelegate = new SubscriberDelegate<>(this, processor.context());
         this.identifier = processor().registerReactive(this);
         this.reasonerConsumer = reasonerConsumer;
         this.isPulling = false;
@@ -57,7 +57,7 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
 
     @Override
     public void receive(@Nullable Publisher<PACKET> publisher, PACKET packet) {
-        subscriberActions.traceReceive(publisher, packet);
+        subscriberDelegate.traceReceive(publisher, packet);
         publisherRegistry().recordReceive(publisher);
         isPulling = false;
         reasonerConsumer.receiveAnswer(packet);
@@ -67,7 +67,7 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
     @Override
     public void registerPublisher(Publisher<PACKET> publisher) {
         publisherRegistry().add(publisher);
-        subscriberActions.registerPath(publisher);
+        subscriberDelegate.registerPath(publisher);
         if (isPulling && publisherRegistry().setPulling()) publisher.pull(this);
     }
 

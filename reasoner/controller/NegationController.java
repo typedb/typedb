@@ -144,13 +144,13 @@ public class NegationController extends AbstractController<
                     super.pull(subscriber);
                 } else {
                     subscriberRegistry().recordPull(subscriber);
-                    publisherActions.tracePull(subscriber);
+                    publisherDelegate.tracePull(subscriber);
                 }
             }
 
             @Override
             public void receive(Publisher<ConceptMap> publisher, ConceptMap conceptMap) {
-                subscriberActions.traceReceive(publisher, conceptMap);
+                subscriberDelegate.traceReceive(publisher, conceptMap);
                 publisherRegistry().recordReceive(publisher);
                 if (!answerFound) processor().monitor().execute(actor -> actor.rootFinished(identifier()));
                 answerFound = true;

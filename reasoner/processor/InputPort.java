@@ -31,7 +31,7 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
 
     private final Identifier<PACKET, ?> identifier;
     private final AbstractProcessor<PACKET, ?, ?, ?> processor;
-    private final PublisherDelegate<PACKET> publisherActions;
+    private final PublisherDelegate<PACKET> publisherDelegate;
     private boolean isReady;
     private Identifier<?, PACKET> outputPortId;
     private Subscriber<PACKET> subscriber;
@@ -40,7 +40,7 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
         this.processor = processor;
         this.identifier = processor.registerReactive(this);
         this.isReady = false;
-        this.publisherActions = new PublisherDelegate<>(this, processor.context());
+        this.publisherDelegate = new PublisherDelegate<>(this, processor.context());
     }
 
     @Override
@@ -88,22 +88,22 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
 
     @Override
     public <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function) {
-        return publisherActions.map(this, function);
+        return publisherDelegate.map(this, function);
     }
 
     @Override
     public <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function) {
-        return publisherActions.flatMap(this, function);
+        return publisherDelegate.flatMap(this, function);
     }
 
     @Override
     public Stream<PACKET, PACKET> buffer() {
-        return publisherActions.buffer(this);
+        return publisherDelegate.buffer(this);
     }
 
     @Override
     public Stream<PACKET, PACKET> distinct() {
-        return publisherActions.distinct(this);
+        return publisherDelegate.distinct(this);
     }
 
     @Override

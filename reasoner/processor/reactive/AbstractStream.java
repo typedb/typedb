@@ -28,8 +28,8 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
 
     private final SubscriberRegistry<OUTPUT> subscriberRegistry;
     private final PublisherRegistry<INPUT> publisherRegistry;
-    protected final SubscriberDelegate<INPUT> subscriberActions;
-    protected final PublisherDelegate<OUTPUT> publisherActions;
+    protected final SubscriberDelegate<INPUT> subscriberDelegate;
+    protected final PublisherDelegate<OUTPUT> publisherDelegate;
 
     protected AbstractStream(AbstractProcessor<?, ?, ?, ?> processor,
                              SubscriberRegistry<OUTPUT> subscriberRegistry,
@@ -37,8 +37,8 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
         super(processor);
         this.subscriberRegistry = subscriberRegistry;
         this.publisherRegistry = publisherRegistry;
-        this.subscriberActions = new SubscriberDelegate<>(this, processor.context());
-        this.publisherActions = new PublisherDelegate<>(this, processor.context());
+        this.subscriberDelegate = new SubscriberDelegate<>(this, processor.context());
+        this.publisherDelegate = new PublisherDelegate<>(this, processor.context());
     }
 
     public SubscriberRegistry<OUTPUT> subscriberRegistry() { return subscriberRegistry; }
@@ -55,7 +55,7 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
     @Override
     public void registerPublisher(Publisher<INPUT> publisher) {
         publisherRegistry().add(publisher);
-        subscriberActions.registerPath(publisher);
+        subscriberDelegate.registerPath(publisher);
         if (subscriberRegistry().anyPulling() && publisherRegistry().setPulling(publisher)) propagatePull(publisher);
     }
 

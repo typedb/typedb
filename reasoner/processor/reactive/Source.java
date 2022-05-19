@@ -30,13 +30,13 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
 
     private final Operator.Source<PACKET> sourceOperator;
     private final SubscriberRegistry.Single<PACKET> subscriberRegistry;
-    private final PublisherDelegate<PACKET> publisherActions;
+    private final PublisherDelegate<PACKET> publisherDelegate;
 
     protected Source(AbstractProcessor<?, ?, ?, ?> processor, Operator.Source<PACKET> sourceOperator) {
         super(processor);
         this.sourceOperator = sourceOperator;
         this.subscriberRegistry = new SubscriberRegistry.Single<>();
-        this.publisherActions = new PublisherDelegate<>(this, processor.context());
+        this.publisherDelegate = new PublisherDelegate<>(this, processor.context());
         processor().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
@@ -51,13 +51,13 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
 
     @Override
     public void pull(Subscriber<PACKET> subscriber) {
-        publisherActions.tracePull(subscriber);
+        publisherDelegate.tracePull(subscriber);
         subscriberRegistry().recordPull(subscriber);
         if (!operator().isExhausted(subscriber)) {
             // TODO: Code duplicated in PoolingStream
             subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
-            publisherActions.monitorCreateAnswers(1);
-            publisherActions.subscriberReceive(subscriber, operator().next(subscriber));
+            publisherDelegate.monitorCreateAnswers(1);
+            publisherDelegate.subscriberReceive(subscriber, operator().next(subscriber));
         } else {
             processor().monitor().execute(actor -> actor.sourceFinished(identifier()));
         }
@@ -75,22 +75,22 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
 
     @Override
     public <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function) {
-        return publisherActions.map(this, function);
+        return publisherDelegate.map(this, function);
     }
 
     @Override
     public <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function) {
-        return publisherActions.flatMap(this, function);
+        return publisherDelegate.flatMap(this, function);
     }
 
     @Override
     public Stream<PACKET, PACKET> distinct() {
-        return publisherActions.distinct(this);
+        return publisherDelegate.distinct(this);
     }
 
     @Override
     public Stream<PACKET, PACKET> buffer() {
-        return publisherActions.buffer(this);
+        return publisherDelegate.buffer(this);
     }
 
 }

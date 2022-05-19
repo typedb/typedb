@@ -62,14 +62,14 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
-        publisherActions.tracePull(subscriber);
+        publisherDelegate.tracePull(subscriber);
         subscriberRegistry().recordPull(subscriber);
         publisherRegistry().nonPulling().forEach(this::propagatePull);
     }
 
     @Override
     public void receive(Publisher<INPUT> publisher, INPUT input) {
-        subscriberActions.traceReceive(publisher, input);
+        subscriberDelegate.traceReceive(publisher, input);
         publisherRegistry().recordReceive(publisher);
 
         Either<Publisher<INPUT>, Set<OUTPUT>> outcome = operator().accept(publisher, input);
@@ -80,17 +80,17 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
         } else {
             outputs = outcome.second();
         }
-        if (outputs.size() > 1) publisherActions.monitorCreateAnswers(outputs.size() - 1);
-        else if (outputs.isEmpty()) publisherActions.monitorConsumeAnswers(1);
+        if (outputs.size() > 1) publisherDelegate.monitorCreateAnswers(outputs.size() - 1);
+        else if (outputs.isEmpty()) publisherDelegate.monitorConsumeAnswers(1);
 
         if (outputs.isEmpty() && subscriberRegistry().anyPulling()) {
-            subscriberActions.rePullPublisher(publisher);
+            subscriberDelegate.rePullPublisher(publisher);
         } else {
             // pass on the output, regardless of pulling state
             iterate(subscriberRegistry().subscribers()).forEachRemaining(
                     subscriber -> {
                         subscriberRegistry().setNotPulling(subscriber);
-                        iterate(outputs).forEachRemaining(output -> publisherActions.subscriberReceive(subscriber, output));
+                        iterate(outputs).forEachRemaining(output -> publisherDelegate.subscriberReceive(subscriber, output));
                     });
         }
     }
@@ -101,22 +101,22 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     @Override
     public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
-        return publisherActions.map(this, function);
+        return publisherDelegate.map(this, function);
     }
 
     @Override
     public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(Function<OUTPUT, FunctionalIterator<MAPPED>> function) {
-        return publisherActions.flatMap(this, function);
+        return publisherDelegate.flatMap(this, function);
     }
 
     @Override
     public Stream<OUTPUT, OUTPUT> distinct() {
-        return publisherActions.distinct(this);
+        return publisherDelegate.distinct(this);
     }
 
     @Override
     public Stream<OUTPUT, OUTPUT> buffer() {
-        return publisherActions.buffer(this);
+        return publisherDelegate.buffer(this);
     }
 
     @Override

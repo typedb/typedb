@@ -28,14 +28,14 @@ public class OutputPort<PACKET> implements Reactive.Subscriber<PACKET> {
 
     private final Identifier<?, PACKET> identifier;
     private final AbstractProcessor<?, PACKET, ?, ?> processor;
-    private final SubscriberDelegate<PACKET> subscriberActions;
+    private final SubscriberDelegate<PACKET> subscriberDelegate;
     private Identifier<PACKET, ?> inputPortId;
     private Publisher<PACKET> publisher;
 
     public OutputPort(AbstractProcessor<?, PACKET, ?, ?> processor) {
         this.processor = processor;
         this.identifier = processor().registerReactive(this);
-        this.subscriberActions = new SubscriberDelegate<>(this, processor().context());
+        this.subscriberDelegate = new SubscriberDelegate<>(this, processor().context());
     }
 
     @Override
@@ -50,7 +50,7 @@ public class OutputPort<PACKET> implements Reactive.Subscriber<PACKET> {
 
     @Override
     public void receive(Publisher<PACKET> publisher, PACKET packet) {
-        subscriberActions.traceReceive(publisher, packet);
+        subscriberDelegate.traceReceive(publisher, packet);
         inputPortId.processor().execute(actor -> actor.receive(inputPortId, packet, identifier()));
     }
 
@@ -64,7 +64,7 @@ public class OutputPort<PACKET> implements Reactive.Subscriber<PACKET> {
     public void registerPublisher(Publisher<PACKET> publisher) {
         assert this.publisher == null;
         this.publisher = publisher;
-        subscriberActions.registerPath(publisher);
+        subscriberDelegate.registerPath(publisher);
     }
 
     public void setInputPort(Identifier<PACKET, ?> inputPortId) {
