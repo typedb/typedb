@@ -41,7 +41,7 @@ public class Monitor extends Actor<Monitor> {
     private static final Logger LOG = LoggerFactory.getLogger(Monitor.class);
     private boolean terminated;
     private final Map<Reactive.Identifier<?, ?>, ReactiveNode> reactiveNodes;
-    @Nullable private final Tracer tracer;
+    private final Tracer tracer;
 
     public Monitor(Driver<Monitor> driver, @Nullable Tracer tracer) {
         super(driver, Monitor.class::getSimpleName);

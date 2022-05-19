@@ -133,7 +133,6 @@ public abstract class AbstractController<
         private ActorExecutorGroup executorService;
         private final Registry registry;
         private final Driver<Monitor> monitor;
-        @Nullable
         private final Tracer tracer;
 
         Context(ActorExecutorGroup executorService, Registry registry, Driver<Monitor> monitor,

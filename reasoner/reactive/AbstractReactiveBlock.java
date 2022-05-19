@@ -277,7 +277,7 @@ public abstract class AbstractReactiveBlock<INPUT, OUTPUT,
     public static class Context {
 
         private final Driver<Monitor> monitor;
-        @Nullable private final Tracer tracer;
+        private final Tracer tracer;
 
         public Context(Driver<Monitor> monitor, @Nullable Tracer tracer) {
             this.monitor = monitor;
