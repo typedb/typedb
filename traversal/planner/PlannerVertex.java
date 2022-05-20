@@ -33,6 +33,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.traversal.planner.GraphPlanner.INIT_ZERO;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
+import static java.lang.Math.log;
+import static java.lang.Math.max;
 
 public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Properties>
         extends TraversalVertex<PlannerEdge.Directional<?, ?>, PROPERTIES> {
@@ -41,43 +43,62 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     private final String varPrefix = "vertex_var_" + id() + "_";
     private final String conPrefix = "vertex_con_" + id() + "_";
-    private boolean isInitialisedVariables;
-    private boolean isInitialisedConstraints;
-    private double costNext;
-    double costLastRecorded;
+    private boolean didInitialiseVariables;
+    private boolean didInitialiseConstraints;
+    private boolean didInitialiseValues;
+
+    double cost;
+    double recordedCost;
+
     OptimiserVariable.Boolean varIsStartingVertex;
-    OptimiserVariable.Boolean varIsEndingVertex;
-    OptimiserVariable.Boolean varHasIncomingEdges;
-    OptimiserVariable.Boolean varHasOutgoingEdges;
+    OptimiserVariable.Boolean[] varOrderAssignment;
+    OptimiserVariable.Integer varOrderNumber;
 
     PlannerVertex(Identifier identifier, @Nullable GraphPlanner planner) {
         super(identifier);
         this.planner = planner;
-        isInitialisedVariables = false;
-        isInitialisedConstraints = false;
-        costLastRecorded = 0.01; // non-zero value for safe division
+        didInitialiseVariables = false;
+        didInitialiseConstraints = false;
+        didInitialiseValues = false;
+        recordedCost = 0.01; // non-zero value for safe division
     }
 
-    abstract void updateObjective(GraphManager graph);
+    abstract void computeCost(GraphManager graphMgr);
+
+    public double getCost() {
+        return cost;
+    }
 
     public boolean isStartingVertex() {
-        return varIsStartingVertex.solutionValue();
+        return varIsStartingVertex.value();
     }
 
     public boolean isEndingVertex() {
-        return varIsEndingVertex.solutionValue();
+        return !hasOutgoingEdges();
     }
 
     public boolean hasIncomingEdges() {
-        return varHasIncomingEdges.solutionValue();
+        return !isStartingVertex();
     }
 
     public boolean hasOutgoingEdges() {
-        return varHasOutgoingEdges.solutionValue();
+        return iterate(outs()).anyMatch(PlannerEdge.Directional::isSelected);
     }
 
-    public boolean isInitialisedVariables() {
-        return isInitialisedVariables;
+    public int getOrder() {
+        return varOrderNumber.value();
+    }
+
+    public boolean didInitialiseVariables() {
+        return didInitialiseVariables;
+    }
+
+    public boolean didInitialiseConstraints() {
+        return didInitialiseConstraints;
+    }
+
+    public boolean didInitialiseValues() {
+        return didInitialiseValues;
     }
 
     void out(PlannerEdge<?, ?> edge) {
@@ -104,58 +125,44 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     void initialiseVariables() {
         assert planner != null;
         varIsStartingVertex = planner.optimiser().booleanVar(varPrefix + "is_starting_vertex");
-        varIsEndingVertex = planner.optimiser().booleanVar(varPrefix + "is_ending_vertex");
-        varHasIncomingEdges = planner.optimiser().booleanVar(varPrefix + "has_incoming_edges");
-        varHasOutgoingEdges = planner.optimiser().booleanVar(varPrefix + "has_outgoing_edges");
-        isInitialisedVariables = true;
+        varOrderNumber = planner.optimiser().intVar(0, planner.vertices().size() - 1, varPrefix + "order_number");
+        varOrderAssignment = new OptimiserVariable.Boolean[planner.vertices().size()];
+        for (int i = 0; i < planner.vertices().size(); i++) {
+            varOrderAssignment[i] = planner.optimiser().booleanVar(varPrefix + "order_assignment[" + i + "]");
+        }
+        didInitialiseVariables = true;
     }
 
     void initialiseConstraints() {
-        assert ins().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
-        assert outs().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
-        assert loops().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
-        initialiseConstraintsForIncomingEdges();
-        initialiseConstraintsForOutgoingEdges();
-        initialiseConstraintsForVertexFlow();
-        isInitialisedConstraints = true;
+        assert ins().stream().allMatch(PlannerEdge.Directional::didInitialiseVariables);
+        assert outs().stream().allMatch(PlannerEdge.Directional::didInitialiseVariables);
+        assert loops().stream().allMatch(PlannerEdge.Directional::didInitialiseVariables);
+
+        OptimiserConstraint conIsOrdered = planner.optimiser().constraint(1, 1, conPrefix + "ordered");
+        OptimiserConstraint conAssignOrderNumber = planner.optimiser().constraint(0, 0, conPrefix + "assign_order_number");
+        conAssignOrderNumber.setCoefficient(varOrderNumber, -1);
+        for (int i = 0; i < planner.vertices().size(); i++) {
+            conIsOrdered.setCoefficient(varOrderAssignment[i], 1);
+            conAssignOrderNumber.setCoefficient(varOrderAssignment[i], i);
+        }
+
+        int numIns = ins().size();
+        OptimiserConstraint conIsStartingVertex = planner.optimiser().constraint(1, numIns, conPrefix + "is_starting_vertex");
+        conIsStartingVertex.setCoefficient(varIsStartingVertex, numIns);
+        for (PlannerEdge.Directional<?, ?> edge: ins()) {
+            conIsStartingVertex.setCoefficient(edge.varIsSelected, 1);
+        }
+
+        didInitialiseConstraints = true;
     }
 
-    private void initialiseConstraintsForIncomingEdges() {
-        assert !ins().isEmpty();
-        OptimiserConstraint conHasIncomingEdges = planner.optimiser().constraint(0, ins().size() - 1, conPrefix + "has_incoming_edges");
-        conHasIncomingEdges.setCoefficient(varHasIncomingEdges, ins().size());
-        ins().forEach(edge -> conHasIncomingEdges.setCoefficient(edge.varIsSelected, -1));
-    }
-
-    private void initialiseConstraintsForOutgoingEdges() {
-        assert !outs().isEmpty();
-        OptimiserConstraint conHasOutgoingEdges = planner.optimiser().constraint(0, outs().size() - 1, conPrefix + "has_outgoing_edges");
-        conHasOutgoingEdges.setCoefficient(varHasOutgoingEdges, outs().size());
-        outs().forEach(edge -> conHasOutgoingEdges.setCoefficient(edge.varIsSelected, -1));
-    }
-
-    private void initialiseConstraintsForVertexFlow() {
-        OptimiserConstraint conStartOrIncoming = planner.optimiser().constraint(1, 1, conPrefix + "starting_or_incoming");
-        conStartOrIncoming.setCoefficient(varIsStartingVertex, 1);
-        conStartOrIncoming.setCoefficient(varHasIncomingEdges, 1);
-
-        OptimiserConstraint conEndingOrOutgoing = planner.optimiser().constraint(1, 1, conPrefix + "ending_or_outgoing");
-        conEndingOrOutgoing.setCoefficient(varIsEndingVertex, 1);
-        conEndingOrOutgoing.setCoefficient(varHasOutgoingEdges, 1);
-    }
-
-    protected void setObjectiveCoefficient(double cost) {
-        assert !Double.isNaN(cost);
-        if (cost < INIT_ZERO) cost = INIT_ZERO;
-        double exp = planner.edges().size() * planner.costExponentUnit;
-        double coeff = cost * Math.pow(planner.branchingFactor, exp);
-        planner.optimiser().setObjectiveCoefficient(varIsStartingVertex, coeff);
-        costNext = cost;
-        planner.updateCostNext(costLastRecorded, costNext);
+    protected void updateOptimiserCoefficients() {
+        assert !Double.isNaN(recordedCost);
+        planner.optimiser().setObjectiveCoefficient(varIsStartingVertex, log(1 + recordedCost));
     }
 
     void recordCost() {
-        costLastRecorded = costNext;
+        recordedCost = cost;
     }
 
     boolean validResults() {
@@ -163,34 +170,28 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
                 && (isEndingVertex() ^ hasOutgoingEdges());
     }
 
-    void resetInitialValue() {
+    void resetInitialValues() {
         varIsStartingVertex.clearInitial();
-        varIsEndingVertex.clearInitial();
-        varHasIncomingEdges.clearInitial();
-        varHasOutgoingEdges.clearInitial();
+        varOrderNumber.clearInitial();
+        for (OptimiserVariable.Boolean b: varOrderAssignment) b.clearInitial();
     }
 
-    void setStartingVertexInitial() {
-        varIsStartingVertex.setInitial(true);
-        varIsEndingVertex.setInitial(false);
-        varHasIncomingEdges.setInitial(false);
+    void setOrderInitial(int order) {
+        varOrderNumber.setInitial(order);
+        for (int i = 0; i < planner.vertices().size(); i++)
+            varOrderAssignment[i].setInitial(order == i);
     }
 
-    void setEndingVertexInitial() {
-        varIsEndingVertex.setInitial(true);
-        varIsStartingVertex.setInitial(false);
-        varHasOutgoingEdges.setInitial(false);
-        assert varHasIncomingEdges.getInitial() == 1;
+    void inferStartingVertexFromOrder() {
+        assert varOrderNumber.hasInitial();
+        double initialOrder = varOrderNumber.initial();
+        varIsStartingVertex.setInitial(outs().stream().allMatch(e -> e.to().varOrderNumber.initial() > initialOrder));
+        didInitialiseValues = true;
     }
 
-    void setHasOutgoingEdgesInitial() {
-        varHasOutgoingEdges.setInitial(true);
-        varIsEndingVertex.setInitial(false);
-    }
-
-    void setHasIncomingEdgesInitial() {
-        varHasIncomingEdges.setInitial(true);
-        varIsStartingVertex.setInitial(false);
+    void setOutgoingEdgesInitialValues() {
+        double initialOrder = varOrderNumber.initial();
+        outs().forEach(e -> e.setInitialSelected(e.to().varOrderNumber.initial() > initialOrder));
     }
 
     public PlannerVertex.Thing asThing() {
@@ -204,8 +205,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     @Override
     public String toString() {
         String string = super.toString();
-        if (isStartingVertex()) string += " (start)";
-        else if (isEndingVertex()) string += " (end)";
+        if (didInitialiseValues) {
+            if (isStartingVertex()) string += " (start)";
+            else if (isEndingVertex()) string += " (end)";
+        }
         return string;
     }
 
@@ -225,17 +228,18 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         }
 
         @Override
-        void updateObjective(GraphManager graph) {
+        void computeCost(GraphManager graphMgr) {
             if (props().hasIID()) {
-                setObjectiveCoefficient(1);
+                cost = 1;
             } else {
                 assert !props().types().isEmpty();
                 if (iterate(props().predicates()).anyMatch(p -> p.operator().equals(EQ))) {
-                    setObjectiveCoefficient(props().types().size());
+                    cost = props().types().size();
                 } else {
-                    setObjectiveCoefficient(graph.data().stats().thingVertexSum(props().types()));
+                    cost = graphMgr.data().stats().thingVertexSum(props().types());
                 }
             }
+            cost = max(cost, INIT_ZERO);
         }
 
         @Override
@@ -260,22 +264,23 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         }
 
         @Override
-        void updateObjective(GraphManager graph) {
+        void computeCost(GraphManager graphMgr) {
             if (!props().labels().isEmpty()) {
-                setObjectiveCoefficient(props().labels().size());
+                cost = props().labels().size();
             } else if (props().isAbstract()) {
-                setObjectiveCoefficient(graph.schema().stats().abstractTypeCount());
+                cost = graphMgr.schema().stats().abstractTypeCount();
             } else if (!props().valueTypes().isEmpty()) {
                 int count = 0;
                 for (Encoding.ValueType valueType : props().valueTypes()) {
-                    count += graph.schema().stats().attTypesWithValueType(valueType);
+                    count += graphMgr.schema().stats().attTypesWithValueType(valueType);
                 }
-                setObjectiveCoefficient(count);
+                cost = count;
             } else if (props().regex().isPresent()) {
-                setObjectiveCoefficient(1);
+                cost = 1;
             } else {
-                setObjectiveCoefficient(graph.schema().stats().typeCount());
+                cost = graphMgr.schema().stats().typeCount();
             }
+            cost = max(cost, INIT_ZERO);
         }
 
         @Override

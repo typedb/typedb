@@ -26,27 +26,60 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNE
 
 public abstract class OptimiserVariable<T> {
 
+    protected T initial;
+    protected T solution;
+    protected MPVariable mpVariable;
+
     final String name;
 
     OptimiserVariable(String name) {
         this.name = name;
     }
 
-    public abstract T solutionValue();
+    public T value() {
+        if (hasSolutionValue()) return solutionValue();
+        else return initial();
+    }
 
-    abstract MPVariable mpVariable();
+    public boolean hasSolutionValue() {
+        return solution != null;
+    }
+
+    public T solutionValue() {
+        assert hasSolutionValue();
+        return solution;
+    }
+
+    public void setInitial(T initial) {
+        this.initial = initial;
+    }
+
+    public void clearInitial() {
+        initial = null;
+    }
+
+    public boolean hasInitial() {
+        return initial != null;
+    }
+
+    public T initial() {
+        assert hasInitial();
+        return initial;
+    }
+
+    public abstract double hint();
+
+    MPVariable mpVariable() {
+        return mpVariable;
+    }
 
     abstract void recordValue();
 
-    public abstract void clearInitial();
-
-    abstract boolean hasInitial();
-
-    public abstract double getInitial();
-
     abstract void initialise(MPSolver solver);
 
-    abstract void release();
+    synchronized void release() {
+        this.mpVariable.delete();
+    }
 
     @Override
     public String toString() {
@@ -55,23 +88,8 @@ public abstract class OptimiserVariable<T> {
 
     public static class Boolean extends OptimiserVariable<java.lang.Boolean> {
 
-        private java.lang.Boolean initial;
-        private java.lang.Boolean solution;
-        private MPVariable mpVariable;
-
         public Boolean(String name) {
             super(name);
-        }
-
-        @Override
-        public java.lang.Boolean solutionValue() {
-            assert solution != null;
-            return solution;
-        }
-
-        @Override
-        MPVariable mpVariable() {
-            return mpVariable;
         }
 
         @Override
@@ -87,26 +105,7 @@ public abstract class OptimiserVariable<T> {
         }
 
         @Override
-        synchronized void release() {
-            this.mpVariable.delete();
-        }
-
-        public void setInitial(boolean initial) {
-            this.initial = initial;
-        }
-
-        @Override
-        boolean hasInitial() {
-            return initial != null;
-        }
-
-        @Override
-        public void clearInitial() {
-            initial = null;
-        }
-
-        @Override
-        public double getInitial() {
+        public double hint() {
             assert hasInitial();
             if (initial) return 1.0;
             else return 0.0;
@@ -117,25 +116,11 @@ public abstract class OptimiserVariable<T> {
 
         private final double lowerBound;
         private final double upperBound;
-        private java.lang.Integer initial;
-        private java.lang.Integer solution;
-        private MPVariable mpVariable;
 
         public Integer(double lowerBound, double upperBound, String name) {
             super(name);
             this.lowerBound = lowerBound;
             this.upperBound = upperBound;
-        }
-
-        @Override
-        public java.lang.Integer solutionValue() {
-            assert solution != null;
-            return solution;
-        }
-
-        @Override
-        MPVariable mpVariable() {
-            return mpVariable;
         }
 
         @Override
@@ -149,26 +134,7 @@ public abstract class OptimiserVariable<T> {
         }
 
         @Override
-        synchronized void release() {
-            this.mpVariable.delete();
-        }
-
-        @Override
-        boolean hasInitial() {
-            return initial != null;
-        }
-
-        public void setInitial(int initial) {
-            this.initial = initial;
-        }
-
-        @Override
-        public void clearInitial() {
-            initial = null;
-        }
-
-        @Override
-        public double getInitial() {
+        public double hint() {
             assert hasInitial();
             return initial;
         }

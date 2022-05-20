@@ -31,24 +31,34 @@ public class OptimiserConstraint {
     private final String name;
     private final Map<OptimiserVariable<?>, Double> coefficients;
     private MPConstraint mpConstraint;
+    boolean isInitialised;
 
     public OptimiserConstraint(double lowerBound, double upperBound, String name) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.coefficients = new HashMap<>();
         this.name = name;
+        this.isInitialised = false;
     }
 
     public void setCoefficient(OptimiserVariable<?> variable, double coeff) {
+        if (isInitialised)
+            if (coefficients.containsKey(variable)) {
+                isInitialised = coefficients.get(variable) == coeff;
+            } else {
+                isInitialised = false;
+            }
         coefficients.put(variable, coeff);
     }
 
     synchronized void initialise(MPSolver solver) {
-        this.mpConstraint = solver.makeConstraint(lowerBound, upperBound, name);
+        if (this.mpConstraint == null) this.mpConstraint = solver.makeConstraint(lowerBound, upperBound, name);
         coefficients.forEach((var, coeff) -> mpConstraint.setCoefficient(var.mpVariable(), coeff));
+        isInitialised = true;
     }
 
     synchronized void release() {
         this.mpConstraint.delete();
+        this.mpConstraint = null;
     }
 }

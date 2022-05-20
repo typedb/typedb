@@ -52,6 +52,8 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.traversal.planner.GraphPlanner.INIT_ZERO;
+import static java.lang.Math.log;
+import static java.lang.Math.max;
 
 public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_TO extends PlannerVertex<?>>
         extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
@@ -96,18 +98,22 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
     }
 
     void initialiseConstraints() {
-        String conPrefix = "edge_con_" + this.toString() + "_";
-        OptimiserConstraint conOneDirection = planner.optimiser().constraint(1, 1, conPrefix + "one_direction");
-        conOneDirection.setCoefficient(forward.varIsSelected, 1);
-        conOneDirection.setCoefficient(backward.varIsSelected, 1);
-
         forward.initialiseConstraints();
         backward.initialiseConstraints();
     }
 
-    void updateObjective(GraphManager graphMgr) {
-        forward.updateObjective(graphMgr);
-        backward.updateObjective(graphMgr);
+    double getCost() {
+        return forward.getCost() + backward.getCost();
+    }
+
+    void computeCost(GraphManager graphMgr) {
+        forward.computeCost(graphMgr);
+        backward.computeCost(graphMgr);
+    }
+
+    void updateOptimiserCoefficients() {
+        forward.updateOptimiserCoefficients();
+        backward.updateOptimiserCoefficients();
     }
 
     void recordCost() {
@@ -115,9 +121,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.recordCost();
     }
 
-    void resetInitialValue() {
+    void resetInitialValues() {
         forward.resetInitialValue();
         backward.resetInitialValue();
+    }
+
+    public void initialiseMinimal() {
+        forward.setInitialMinimal();
+        backward.setInitialMinimal();
     }
 
     @Override
@@ -129,17 +140,23 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             extends TraversalEdge<VERTEX_DIR_FROM, VERTEX_DIR_TO> {
 
         OptimiserVariable.Boolean varIsSelected;
-        OptimiserVariable.Boolean[] varOrderAssignment;
-        private OptimiserVariable.Integer varOrderNumber;
+        OptimiserVariable.Boolean varIsMinimal;
+        OptimiserConstraint conIsMinimal;
+
         private final String varPrefix;
         private final String conPrefix;
         private final GraphPlanner planner;
         private final Encoding.Direction.Edge direction;
-        private boolean hasInitialValue;
-        private boolean isInitialisedVariables;
-        private boolean isInitialisedConstraints;
-        private double costNext;
-        double costLastRecorded;
+
+        private boolean didInitialiseVariables;
+        private boolean didInitialiseConstraints;
+        private boolean hasInitialValues;
+
+        private final int tieBreaker;
+        private static int nextTieBreaker = 0;
+
+        double cost;
+        double recordedCost;
 
         private Directional<VERTEX_DIR_TO, VERTEX_DIR_FROM> opposite;
 
@@ -147,29 +164,35 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             super(from, to, symbol);
             this.planner = from.planner;
             this.direction = direction;
-            this.costLastRecorded = 0.01; // non-zero value for safe division
-            this.isInitialisedVariables = false;
-            this.isInitialisedConstraints = false;
+            this.recordedCost = INIT_ZERO;
+
+            this.didInitialiseVariables = false;
+            this.didInitialiseConstraints = false;
+            this.hasInitialValues = false;
+
             this.varPrefix = "edge_var_" + this.toString() + "_";
             this.conPrefix = "edge_con_" + this.toString() + "_";
+            this.tieBreaker = nextTieBreaker++;
         }
-
-        abstract void updateObjective(GraphManager graphMgr);
 
         public boolean isSelected() {
-            return varIsSelected.solutionValue();
-        }
-
-        public int orderNumber() {
-            return varOrderNumber.solutionValue();
+            return varIsSelected.value();
         }
 
         public Encoding.Direction.Edge direction() {
             return direction;
         }
 
-        public boolean isInitialisedVariables() {
-            return isInitialisedVariables;
+        public boolean didInitialiseVariables() {
+            return didInitialiseVariables;
+        }
+
+        public boolean didInitialiseConstraints() {
+            return didInitialiseConstraints;
+        }
+
+        public boolean hasInitialValues() {
+            return hasInitialValues;
         }
 
         void opposite(Directional<VERTEX_DIR_TO, VERTEX_DIR_FROM> opposite) {
@@ -178,45 +201,48 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         void initialiseVariables() {
             varIsSelected = planner.optimiser().booleanVar(varPrefix + "is_selected");
-            varOrderNumber = planner.optimiser().intVar(0, planner.edges().size(), varPrefix + "order_number");
-            varOrderAssignment = new OptimiserVariable.Boolean[planner.edges().size()];
-            for (int i = 0; i < planner.edges().size(); i++) {
-                varOrderAssignment[i] = planner.optimiser().booleanVar(varPrefix + "order_assignment[" + i + "]");
-            }
-            isInitialisedVariables = true;
+            varIsMinimal = planner.optimiser().booleanVar(varPrefix + "is_minimal");
+            didInitialiseVariables = true;
         }
 
         void initialiseConstraints() {
-            assert from.isInitialisedVariables();
-            assert to.isInitialisedVariables();
-            initialiseConstraintsForOrderNumber();
-            initialiseConstraintsForOrderSequence();
-            isInitialisedConstraints = true;
+            assert from.didInitialiseVariables();
+            assert to.didInitialiseVariables();
+
+            int numVertices = planner.vertices().size();
+
+            OptimiserConstraint conIsSelected = planner.optimiser().constraint(1, numVertices, conPrefix + "is_selected");
+            conIsSelected.setCoefficient(varIsSelected, numVertices);
+            conIsSelected.setCoefficient(from.varOrderNumber, 1);
+            conIsSelected.setCoefficient(to.varOrderNumber, -1);
+
+            int numAdjacent = to.ins().size();
+            conIsMinimal = planner.optimiser().constraint(0, numAdjacent, conPrefix + "is_minimal");
+            conIsMinimal.setCoefficient(varIsMinimal, numAdjacent + 1);
+            conIsMinimal.setCoefficient(varIsSelected, -1);
+            setMinimalEdgeConstraint();
+
+            didInitialiseConstraints = true;
         }
 
-        private void initialiseConstraintsForOrderNumber() {
-            OptimiserConstraint conOrderIfSelected = planner.optimiser().constraint(0, 0, conPrefix + "order_if_selected");
-            conOrderIfSelected.setCoefficient(varIsSelected, -1);
-
-            OptimiserConstraint conAssignOrderNumber = planner.optimiser().constraint(0, 0, conPrefix + "assign_order_number");
-            conAssignOrderNumber.setCoefficient(varOrderNumber, -1);
-
-            for (int i = 0; i < planner.edges().size(); i++) {
-                conOrderIfSelected.setCoefficient(varOrderAssignment[i], 1);
-                conAssignOrderNumber.setCoefficient(varOrderAssignment[i], i + 1);
+        private void setMinimalEdgeConstraint() {  // FIXME rename
+            for (PlannerEdge.Directional<?, ?> adjacent: to.ins()) {
+                if (!this.equals(adjacent))
+                    if (cheaperThan(adjacent))
+                        conIsMinimal.setCoefficient(adjacent.varIsSelected, 0);
+                    else
+                        conIsMinimal.setCoefficient(adjacent.varIsSelected, 1);
             }
         }
 
-        private void initialiseConstraintsForOrderSequence() {
-            Set<Directional<?, ?>> previousEdges = iterate(from.ins()).filter(edge -> !edge.equals(this.opposite)).toSet();
-            int i = 0;
-            for (Directional<?, ?> previousEdge : previousEdges) {
-                String name = conPrefix + "order_sequence_" + i++;
-                OptimiserConstraint conOrderSequence = planner.optimiser().constraint(0, planner.edges().size() + 1, name);
-                conOrderSequence.setCoefficient(this.varOrderNumber, 1);
-                conOrderSequence.setCoefficient(this.opposite.varIsSelected, planner.edges().size() + 1);
-                conOrderSequence.setCoefficient(previousEdge.varOrderNumber, -1);
-                conOrderSequence.setCoefficient(previousEdge.varIsSelected, -1);
+        private boolean cheaperThan(PlannerEdge.Directional<?, ?> other) {
+            assert !this.equals(other);
+            if (recordedCost < other.recordedCost) {
+                return true;
+            } else if (recordedCost == other.recordedCost) {
+                return tieBreaker < other.tieBreaker;
+            } else {
+                return false;
             }
         }
 
@@ -227,51 +253,43 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             return from.equals(to);
         }
 
-        protected void setObjectiveCoefficient(double cost) {
-            assert !Double.isNaN(cost);
-            if (cost < INIT_ZERO) cost = INIT_ZERO;
-            int expMultiplier = planner.edges().size() - 1;
-            for (int i = 0; i < planner.edges().size(); i++) {
-                double exp = 1 + (expMultiplier-- * planner.costExponentUnit);
-                double coeff = cost * Math.pow(planner.branchingFactor, exp);
-                planner.optimiser().setObjectiveCoefficient(varOrderAssignment[i], coeff);
-            }
-            costNext = cost;
-            planner.updateCostNext(costLastRecorded, costNext);
+        abstract void computeCost(GraphManager graphMgr);
+
+        public double getCost() {
+            return cost;
         }
 
         private void recordCost() {
-            costLastRecorded = costNext;
+            recordedCost = max(cost, INIT_ZERO);
+        }
+
+        protected void updateOptimiserCoefficients() {
+            assert !Double.isNaN(recordedCost);
+            assert recordedCost >= INIT_ZERO;
+            planner.optimiser().setObjectiveCoefficient(varIsMinimal, log(1 + recordedCost));
+            setMinimalEdgeConstraint();
         }
 
         private void resetInitialValue() {
             varIsSelected.clearInitial();
-            varOrderNumber.clearInitial();
-            iterate(varOrderAssignment).forEachRemaining(OptimiserVariable.Boolean::clearInitial);
-            hasInitialValue = false;
+            varIsMinimal.clearInitial();
+            hasInitialValues = false;
         }
 
-        void setInitialValue(int order) {
-            assert order > 0;
-            varOrderNumber.setInitial(order);
-            varIsSelected.setInitial(true);
-            for (int i = 0; i < varOrderAssignment.length; i++) {
-                if (i == order - 1) varOrderAssignment[i].setInitial(true);
-                else varOrderAssignment[i].setInitial(false);
-            }
-            hasInitialValue = true;
-            opposite.setInitialUnselected();
+        public void setInitialSelected(boolean selected) {
+            varIsSelected.setInitial(selected);
         }
 
-        public void setInitialUnselected() {
-            varIsSelected.setInitial(false);
-            varOrderNumber.setInitial(0); // irrelevant
-            iterate(varOrderAssignment).forEachRemaining(var -> var.setInitial(false));
-            hasInitialValue = true;
-        }
-
-        boolean hasInitialValue() {
-            return hasInitialValue;
+        public void setInitialMinimal() {  // FIXME rename
+            assert varIsSelected.hasInitial();
+            varIsMinimal.setInitial(
+                varIsSelected.initial() &&
+                to().ins().stream().
+                    filter(e -> !this.equals(e)).
+                    filter(e -> e.varIsSelected.initial()).
+                    noneMatch(e -> e.cheaperThan(this))
+            );
+            hasInitialValues = true;
         }
 
         public boolean isEqual() {
@@ -325,8 +343,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             }
 
             @Override
-            void updateObjective(GraphManager graphMgr) {
-                setObjectiveCoefficient(0);
+            void computeCost(GraphManager graphMgr) {
+                cost = INIT_ZERO;
             }
 
             @Override
@@ -383,8 +401,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             }
 
             @Override
-            void updateObjective(GraphManager graphMgr) {
-                long cost;
+            void computeCost(GraphManager graphMgr) {
                 if (isLoop() || to().props().hasIID()) {
                     cost = 1;
                 } else if (predicate.operator().equals(PredicateOperator.Equality.EQ)) {
@@ -393,7 +410,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     cost = graphMgr.data().stats().thingVertexSum(to.props().types());
                 }
                 assert !Double.isNaN(cost);
-                setObjectiveCoefficient(cost);
             }
         }
     }
@@ -507,12 +523,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 }
 
                 @Override
-                void updateObjective(GraphManager graphMgr) {
-                    long cost;
+                void computeCost(GraphManager graphMgr) {
                     if (!isTransitive) cost = 1;
                     else cost = graphMgr.schema().stats().subTypesDepth(to.props().labels());
                     assert !Double.isNaN(cost);
-                    setObjectiveCoefficient(cost);
                 }
             }
 
@@ -523,8 +537,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 }
 
                 @Override
-                void updateObjective(GraphManager graphMgr) {
-                    long cost;
+                void computeCost(GraphManager graphMgr) {
                     if (to().props().hasIID()) {
                         cost = 1;
                     } else {
@@ -534,7 +547,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         else cost = graphMgr.data().stats().thingVertexTransitiveMax(toTypes);
                     }
                     assert !Double.isNaN(cost);
-                    setObjectiveCoefficient(cost);
                 }
             }
         }
@@ -660,8 +672,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
-                        long cost;
+                    void computeCost(GraphManager graphMgr) {
                         if (isLoop() || !isTransitive) {
                             cost = 1;
                         } else if (!to.props().labels().isEmpty()) {
@@ -670,7 +681,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             cost = graphMgr.schema().stats().subTypesDepth(graphMgr.schema().rootThingType());
                         }
                         assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
 
@@ -681,8 +691,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
-                        double cost;
+                    void computeCost(GraphManager graphMgr) {
                         if (isLoop()) {
                             cost = 1;
                         } else if (!to.props().labels().isEmpty()) {
@@ -693,7 +702,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             cost = graphMgr.schema().stats().subTypesMean(graphMgr.schema().thingTypes().stream(), isTransitive);
                         }
                         assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
             }
@@ -745,8 +753,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
-                        double cost;
+                    void computeCost(GraphManager graphMgr) {
                         if (isLoop()) {
                             cost = 1;
                         } else if (!to.props().labels().isEmpty()) {
@@ -758,7 +765,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             cost = graphMgr.schema().stats().outOwnsMean(graphMgr.schema().entityTypes().stream(), isKey);
                         }
                         assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
 
@@ -769,9 +775,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
+                    void computeCost(GraphManager graphMgr) {
                         // TODO: We can refine the branching factor by not strictly considering entity types only
-                        double cost;
                         if (isLoop()) {
                             cost = 1;
                         } else if (!to.props().labels().isEmpty()) {
@@ -784,7 +789,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                                     graphMgr.schema().stats().subTypesMean(graphMgr.schema().entityTypes().stream(), true);
                         }
                         assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
             }
@@ -825,8 +829,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
-                        double cost;
+                    void computeCost(GraphManager graphMgr) {
                         if (!to.props().labels().isEmpty()) {
                             cost = to.props().labels().size();
                         } else if (!from.props().labels().isEmpty()) {
@@ -836,7 +839,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             cost = graphMgr.schema().stats().outPlaysMean(graphMgr.schema().entityTypes().stream());
                         }
                         assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
 
@@ -847,9 +849,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
+                    void computeCost(GraphManager graphMgr) {
                         // TODO: We can refine the branching factor by not strictly considering entity types only
-                        double cost;
                         if (!to.props().labels().isEmpty()) {
                             cost = graphMgr.schema().stats().subTypesSum(to.props().labels(), true);
                         } else if (!from.props().labels().isEmpty()) {
@@ -860,7 +861,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                                     graphMgr.schema().stats().subTypesMean(graphMgr.schema().entityTypes().stream(), true);
                         }
                         assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
             }
@@ -901,8 +901,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
-                        double cost;
+                    void computeCost(GraphManager graphMgr) {
                         if (!to.props().labels().isEmpty()) {
                             cost = to.props().labels().size();
                         } else if (!from.props().labels().isEmpty()) {
@@ -911,7 +910,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             cost = graphMgr.schema().stats().outRelates(graphMgr.schema().relationTypes().stream());
                         }
                         assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
 
@@ -922,8 +920,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
-                        double cost;
+                    void computeCost(GraphManager graphMgr) {
                         if (!to.props().labels().isEmpty()) {
                             cost = graphMgr.schema().stats().subTypesMean(to.props().labels(), true);
                         } else if (!from.props().labels().isEmpty()) {
@@ -936,7 +933,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             cost = graphMgr.schema().stats().subTypesMean(graphMgr.schema().relationTypes().stream(), true);
                         }
                         assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
             }
@@ -1053,26 +1049,24 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
+                    void computeCost(GraphManager graphMgr) {
                         if (isLoop() || to().props().hasIID()) {
-                            setObjectiveCoefficient(1);
-                            return;
-                        }
+                            cost = 1;
+                        } else {
+                            Set<TypeVertex> ownerTypes = iterate(from.props().types()).map(l -> graphMgr.schema().getType(l)).toSet();
+                            Set<TypeVertex> attTypes = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).toSet();
 
-                        Set<TypeVertex> ownerTypes = iterate(from.props().types()).map(l -> graphMgr.schema().getType(l)).toSet();
-                        Set<TypeVertex> attTypes = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).toSet();
-
-                        double cost = 0.0;
-                        for (TypeVertex owner : ownerTypes) {
-                            double div = graphMgr.data().stats().thingVertexCount(owner);
-                            if (div > 0) {
-                                cost += graphMgr.data().stats().hasEdgeSum(owner, attTypes) / div;
+                            cost = 0;
+                            for (TypeVertex owner : ownerTypes) {
+                                double div = graphMgr.data().stats().thingVertexCount(owner);
+                                if (div > 0) {
+                                    cost += graphMgr.data().stats().hasEdgeSum(owner, attTypes) / div;
+                                }
                             }
+                            assert !ownerTypes.isEmpty();
+                            cost /= ownerTypes.size();
+                            assert !Double.isNaN(cost);
                         }
-                        assert !ownerTypes.isEmpty();
-                        cost /= ownerTypes.size();
-                        assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
 
@@ -1083,26 +1077,24 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
+                    void computeCost(GraphManager graphMgr) {
                         if (isLoop() || to().props().hasIID()) {
-                            setObjectiveCoefficient(1);
-                            return;
-                        }
+                            cost = 1;
+                        } else {
+                            Set<TypeVertex> attTypes = iterate(from.props().types()).map(l -> graphMgr.schema().getType(l)).toSet();
+                            Set<TypeVertex> ownerTypes = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).toSet();
 
-                        Set<TypeVertex> attTypes = iterate(from.props().types()).map(l -> graphMgr.schema().getType(l)).toSet();
-                        Set<TypeVertex> ownerTypes = iterate(to.props().types()).map(l -> graphMgr.schema().getType(l)).toSet();
-
-                        double cost = 0.0;
-                        for (TypeVertex attr : attTypes) {
-                            double div = graphMgr.data().stats().thingVertexCount(attr);
-                            if (div > 0) {
-                                cost += graphMgr.data().stats().hasEdgeSum(ownerTypes, attr) / div;
+                            cost = 0;
+                            for (TypeVertex attr : attTypes) {
+                                double div = graphMgr.data().stats().thingVertexCount(attr);
+                                if (div > 0) {
+                                    cost += graphMgr.data().stats().hasEdgeSum(ownerTypes, attr) / div;
+                                }
                             }
+                            assert !attTypes.isEmpty();
+                            cost /= attTypes.size();
+                            assert !Double.isNaN(cost);
                         }
-                        assert !attTypes.isEmpty();
-                        cost /= attTypes.size();
-                        assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
             }
@@ -1143,13 +1135,12 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
+                    void computeCost(GraphManager graphMgr) {
                         assert !to.props().hasIID();
-                        double cost = 0.0;
+                        cost = INIT_ZERO;
                         double div = graphMgr.data().stats().thingVertexSum(from.props().types());
                         if (div > 0) cost = graphMgr.data().stats().thingVertexSum(to.props().types()) / div;
                         assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
 
@@ -1160,8 +1151,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
-                        setObjectiveCoefficient(1);
+                    void computeCost(GraphManager graphMgr) {
+                        cost = 1;
                     }
                 }
             }
@@ -1202,9 +1193,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
+                    void computeCost(GraphManager graphMgr) {
                         assert !to.props().hasIID();
-                        double cost = 0;
+                        cost = 0;
                         for (Label roleType : to.props().types()) {
                             assert roleType.scope().isPresent();
                             double div = graphMgr.data().stats().thingVertexTransitiveCount(Label.of(roleType.scope().get()));
@@ -1213,7 +1204,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         assert !to.props().types().isEmpty();
                         cost /= to.props().types().size();
                         assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
 
@@ -1224,8 +1214,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
-                        setObjectiveCoefficient(1);
+                    void computeCost(GraphManager graphMgr) {
+                        cost = 1;
                     }
                 }
             }
@@ -1274,13 +1264,13 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
+                    void computeCost(GraphManager graphMgr) {
                         if (isLoop() || to.props().hasIID()) {
-                            setObjectiveCoefficient(1);
-                            return;
+                            cost = 1;
                         }
 
-                        double cost = 0;
+                        cost = 0;
+
                         Set<TypeVertex> roleTypeVertices = iterate(this.roleTypes()).map(graphMgr.schema()::getType).toSet();
                         for (TypeVertex roleType : roleTypeVertices) {
                             assert roleType.isRoleType() && roleType.properLabel().scope().isPresent();
@@ -1290,7 +1280,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         assert !roleTypeVertices.isEmpty();
                         cost = cost / roleTypeVertices.size();
                         assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
 
@@ -1301,17 +1290,15 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     }
 
                     @Override
-                    void updateObjective(GraphManager graphMgr) {
+                    void computeCost(GraphManager graphMgr) {
                         if (isLoop() || to.props().hasIID()) {
-                            setObjectiveCoefficient(1);
-                            return;
+                            cost = 1;
                         }
 
-                        double cost = 0;
+                        cost = 0;
                         double div = graphMgr.data().stats().thingVertexSum(from.props().types());
                         if (div > 0) cost = graphMgr.data().stats().thingVertexSum(roleTypes) / div;
                         assert !Double.isNaN(cost);
-                        setObjectiveCoefficient(cost);
                     }
                 }
             }

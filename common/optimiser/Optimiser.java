@@ -46,6 +46,7 @@ public class Optimiser {
     private MPSolverParameters parameters;
     private Status status;
     private boolean hasSolver;
+    private double objectiveValueCache;
 
     public Optimiser() {
         variables = new ArrayList<>();
@@ -56,6 +57,10 @@ public class Optimiser {
     }
 
     public synchronized Status optimise(long timeLimitMillis) {
+        if (hasSolver && constraintsChanged()) {
+            constraints.forEach(constraint -> constraint.initialise(solver));
+            status = Status.FEASIBLE;
+        }
         if (isOptimal()) return status;
         else if (!hasSolver) initialiseSolver();
         solver.setTimeLimit(timeLimitMillis);
@@ -78,8 +83,12 @@ public class Optimiser {
         return status == Status.ERROR;
     }
 
+    private boolean constraintsChanged() {
+        return constraints.stream().anyMatch(c -> !c.isInitialised);
+    }
+
     private void initialiseSolver() {
-        solver = MPSolver.createSolver("SCIP");
+        solver = MPSolver.createSolver("SAT");
         solver.objective().setMinimization();
         parameters = new MPSolverParameters();
         parameters.setIntegerParam(PRESOLVE, PRESOLVE_ON.swigValue());
@@ -92,6 +101,7 @@ public class Optimiser {
     }
 
     private void releaseSolver() {
+        objectiveValueCache = solver.objective().value();
         constraints.forEach(OptimiserConstraint::release);
         variables.forEach(OptimiserVariable::release);
         parameters.delete();
@@ -103,13 +113,18 @@ public class Optimiser {
         objectiveCoefficients.forEach((var, coeff) -> solver.objective().setCoefficient(var.mpVariable(), coeff));
     }
 
+    public double objectiveValue() {
+        if (hasSolver) return solver.objective().value();
+        else return objectiveValueCache;
+    }
+
     private void applyInitialisation() {
         assert iterate(variables).allMatch(OptimiserVariable::hasInitial);
         MPVariable[] mpVariables = new MPVariable[variables.size()];
         double[] initialisations = new double[variables.size()];
         for (int i = 0; i < variables.size(); i++) {
             mpVariables[i] = variables.get(i).mpVariable();
-            initialisations[i] = variables.get(i).getInitial();
+            initialisations[i] = variables.get(i).hint();
         }
         solver.setHint(mpVariables, initialisations);
     }
