@@ -567,20 +567,36 @@ public class ResponseBuilder {
                 ));
             }
 
-            public static TransactionProto.Transaction.Res getRelatesForRoleLabelRes(
-                    UUID reqID, @Nullable com.vaticle.typedb.core.concept.type.RoleType roleType) {
-                ConceptProto.RelationType.GetRelatesForRoleLabel.Res.Builder getRelatesRes =
-                        ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder();
-                if (roleType != null) getRelatesRes.setRoleType(protoType(roleType));
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesForRoleLabelRes(getRelatesRes));
-            }
-
             public static TransactionProto.Transaction.ResPart getRelatesResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> roleTypes) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRelationTypeGetRelatesResPart(
                         ConceptProto.RelationType.GetRelates.ResPart.newBuilder().addAllRoleTypes(
                                 roleTypes.stream().map(Type::protoType).collect(toList()))
                 ));
+            }
+
+            public static TransactionProto.Transaction.ResPart getRelatesExplicitResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> roleTypes) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRelationTypeGetRelatesExplicitResPart(
+                        ConceptProto.RelationType.GetRelatesExplicit.ResPart.newBuilder().addAllRoleTypes(
+                                roleTypes.stream().map(Type::protoType).collect(toList()))
+                ));
+            }
+
+            public static TransactionProto.Transaction.Res getRelatesForRoleLabelRes(
+                    UUID reqID, @Nullable com.vaticle.typedb.core.concept.type.RoleType roleType) {
+                ConceptProto.RelationType.GetRelatesForRoleLabel.Res.Builder res =
+                        ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder();
+                if (roleType != null) res.setRoleType(protoType(roleType));
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesForRoleLabelRes(res));
+            }
+
+            public static TransactionProto.Transaction.Res getRelatesOverriddenRes(
+                    UUID reqID, @Nullable com.vaticle.typedb.core.concept.type.RoleType roleType) {
+                ConceptProto.RelationType.GetRelatesOverridden.Res.Builder res =
+                        ConceptProto.RelationType.GetRelatesOverridden.Res.newBuilder();
+                if (roleType != null) res.setRoleType(protoType(roleType));
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesOverriddenRes(res));
             }
 
             public static TransactionProto.Transaction.Res setRelatesRes(UUID reqID) {
