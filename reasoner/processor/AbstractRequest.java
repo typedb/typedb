@@ -31,7 +31,7 @@ public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
         CONTROLLER extends AbstractController<BOUNDS, ?, PACKET, ?, ?, ?>> {
 
     // TODO: Should hold on to the processor that sent the request
-    private final Reactive.Identifier<PACKET, ?> inputPortId;
+    private final Reactive.Identifier inputPortId;
     private final Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor;
     private final CONTROLLER_ID controllerId;
     private final List<Function<PACKET, PACKET>> transforms;
@@ -39,7 +39,7 @@ public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
     private BOUNDS bounds;
 
     protected AbstractRequest(
-            Reactive.Identifier<PACKET, ?> inputPortId,
+            Reactive.Identifier inputPortId,
             Actor.Driver<?extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor, CONTROLLER_ID controllerId,
             BOUNDS bounds
     ) {
@@ -55,7 +55,7 @@ public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
         return id;
     }
 
-    public Reactive.Identifier<PACKET, ?> inputPortId() {
+    public Reactive.Identifier inputPortId() {
         return inputPortId;
     }
 
@@ -88,11 +88,11 @@ public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
     }
 
     public class Identifier {
-        private final Reactive.Identifier<PACKET, ?> inputPortId;
+        private final Reactive.Identifier inputPortId;
         private final CONTROLLER_ID controllerId;
         private final BOUNDS bounds;
 
-        Identifier(Reactive.Identifier<PACKET, ?> inputPortId, CONTROLLER_ID controllerId, BOUNDS bounds) {
+        Identifier(Reactive.Identifier inputPortId, CONTROLLER_ID controllerId, BOUNDS bounds) {
             this.inputPortId = inputPortId;
             this.controllerId = controllerId;
             this.bounds = bounds;

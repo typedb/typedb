@@ -30,11 +30,11 @@ import java.util.function.Function;
  */
 public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
 
-    private final Identifier<PACKET, ?> identifier;
+    private final Identifier identifier;
     private final AbstractProcessor<PACKET, ?, ?, ?> processor;
     private final PublisherDelegate<PACKET> publisherDelegate;
     private boolean isReady;
-    private Identifier<?, PACKET> outputPortId;
+    private Identifier outputPortId;
     private Subscriber<PACKET> subscriber;
     private Actor.Driver<? extends AbstractProcessor<?, PACKET, ?, ?>> outputPortProcessor;
 
@@ -51,7 +51,7 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
     }
 
     @Override
-    public Identifier<PACKET, ?> identifier() {
+    public Identifier identifier() {
         return identifier;
     }
 
@@ -66,7 +66,7 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
         if (isReady) outputPortProcessor.execute(actor -> actor.pull(outputPortId));
     }
 
-    public void receive(Identifier<?, PACKET> outputPortId, PACKET packet) {
+    public void receive(Identifier outputPortId, PACKET packet) {
         processor().tracer().ifPresent(tracer -> tracer.receive(outputPortId, identifier(), packet));
         subscriber.receive(this, packet);
     }
@@ -78,7 +78,7 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
         subscriber.registerPublisher(this);
     }
 
-    public void setOutputPort(Identifier<?, PACKET> outputPortId) {
+    public void setOutputPort(Identifier outputPortId) {
         assert this.outputPortId == null;
         this.outputPortId = outputPortId;
         processor().monitor().execute(actor -> actor.registerPath(identifier(), outputPortId));
@@ -86,7 +86,7 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
         isReady = true;
     }
 
-    public void setOutputPort(Identifier<?, PACKET> outputPortId,
+    public void setOutputPort(Identifier outputPortId,
                               Actor.Driver<? extends AbstractProcessor<?, PACKET, ?, ?>> outputPortProcessor) {
         assert this.outputPortId == null;
         this.outputPortId = outputPortId;

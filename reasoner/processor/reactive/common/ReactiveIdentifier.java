@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 
 import java.util.Objects;
 
-public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier<P_IN, P_OUT> {
+public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier {
     private final Actor.Driver<? extends AbstractProcessor<P_IN, P_OUT, ?, ?>> processor;
     private final Reactive reactive;
     private final long scopedId;
@@ -53,12 +53,7 @@ public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier<P_IN
 
     @Override
     public String toString() {
-        return "@" + Integer.toHexString(processor().hashCode()) + ":" + reactive.toString() + ":" + scopedId;
-    }
-
-    @Override
-    public Actor.Driver<? extends AbstractProcessor<P_IN, P_OUT, ?, ?>> processor() {
-        return processor;
+        return "@" + Integer.toHexString(processor.hashCode()) + ":" + reactive.toString() + ":" + scopedId;
     }
 
 }

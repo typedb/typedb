@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.processor.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 
 import java.util.function.Function;
@@ -28,15 +27,11 @@ public interface Reactive {
 
     AbstractProcessor<?, ?, ?, ?> processor();
 
-    Identifier<?, ?> identifier();
+    Identifier identifier();
 
-    interface Identifier<P_IN, P_OUT> {
+    interface Identifier {
 
         String toString();
-
-        // TODO: Weird to have a processor inside an Identifier, if anything we would expect to see a processor ID
-        //  here, or use some kind of compound ID of Reactive + Processor where we need it
-        Actor.Driver<? extends AbstractProcessor<P_IN, P_OUT, ?, ?>> processor();
 
     }
 

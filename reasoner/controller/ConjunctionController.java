@@ -162,7 +162,7 @@ public abstract class ConjunctionController<
     public static class Request<
             CONTROLLER_ID, CONTROLLER extends AbstractController<ConceptMap, ?, ConceptMap, ?, ?, ?>
             > extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap, CONTROLLER> {
-        protected Request(Reactive.Identifier<ConceptMap, ?> inputPortId,
+        protected Request(Reactive.Identifier inputPortId,
                           Driver<? extends Processor<?, ?>> inputPortProcessor, CONTROLLER_ID controller_id,
                           ConceptMap conceptMap) {
             super(inputPortId, inputPortProcessor, controller_id, conceptMap);
@@ -281,7 +281,7 @@ public abstract class ConjunctionController<
         public static class RetrievableRequest extends Request<Retrievable, RetrievableController> {
 
             public RetrievableRequest(
-                    Reactive.Identifier<ConceptMap, ?> inputPortId,
+                    Reactive.Identifier inputPortId,
                     Driver<? extends Processor<?, ?>> inputPortProcessor, Retrievable controllerId,
                     ConceptMap processorId
             ) {
@@ -303,7 +303,7 @@ public abstract class ConjunctionController<
         static class ConcludableRequest extends Request<Concludable, ConcludableController.Match> {
 
             public ConcludableRequest(
-                    Reactive.Identifier<ConceptMap, ?> inputPortId,
+                    Reactive.Identifier inputPortId,
                     Driver<? extends Processor<?, ?>> inputPortProcessor, Concludable controllerId,
                     ConceptMap processorId
             ) {
@@ -323,7 +323,7 @@ public abstract class ConjunctionController<
         static class NegatedRequest extends Request<Negated, NegationController> {
 
             protected NegatedRequest(
-                    Reactive.Identifier<ConceptMap, ?> inputPortId,
+                    Reactive.Identifier inputPortId,
                     Driver<? extends Processor<?, ?>> inputPortProcessor, Negated controllerId, ConceptMap processorId
             ) {
                 super(inputPortId, inputPortProcessor, controllerId, processorId);

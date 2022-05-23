@@ -51,9 +51,9 @@ public abstract class AbstractProcessor<
 
     private final Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller;
     private final Context context;
-    private final Map<Identifier<?, ?>, InputPort<INPUT>> inputPorts;
-    private final Map<Identifier<?, ?>, OutputPort<OUTPUT>> outputPorts;
-    private final Map<Pair<Identifier<?, ?>, Identifier<?, ?>>, Runnable> pullRetries;
+    private final Map<Identifier, InputPort<INPUT>> inputPorts;
+    private final Map<Identifier, OutputPort<OUTPUT>> outputPorts;
+    private final Map<Pair<Identifier, Identifier>, Runnable> pullRetries;
     private Stream<OUTPUT,OUTPUT> hubReactive;
     private boolean terminated;
     private long reactiveCounter;
@@ -84,11 +84,11 @@ public abstract class AbstractProcessor<
         throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
-    public void pull(Identifier<?, ?> outputPortId) {
+    public void pull(Identifier outputPortId) {
         outputPorts.get(outputPortId).pull();
     }
 
-    public void receive(Identifier<?, ?> inputPortId, INPUT packet, Identifier<?, INPUT> publisherId) {
+    public void receive(Identifier inputPortId, INPUT packet, Identifier publisherId) {
         inputPorts.get(inputPortId).receive(publisherId, packet);
     }
 
@@ -97,9 +97,9 @@ public abstract class AbstractProcessor<
         driver().execute(actor -> actor.pullRetry(publisher.identifier(), subscriber.identifier()));
     }
 
-    protected void pullRetry(Identifier<?, ?> publisher, Identifier<?, ?> subscriber) {
+    protected void pullRetry(Identifier publisher, Identifier subscriber) {
         tracer().ifPresent(tracer -> tracer.pullRetry(subscriber, publisher));
-        pullRetries.get(new Pair<Identifier<?, ?>, Identifier<?, ?>>(publisher, subscriber)).run();
+        pullRetries.get(new Pair<Identifier, Identifier>(publisher, subscriber)).run();
     }
 
     protected void requestConnection(REQ req) {
@@ -118,8 +118,8 @@ public abstract class AbstractProcessor<
     }
 
     protected void finishConnection(
-            Identifier<INPUT, ?> inputPortId, Driver<? extends AbstractProcessor<?, INPUT, ?, ?>> outputPortProcessor,
-            Identifier<?, INPUT> outputPortId
+            Identifier inputPortId, Driver<? extends AbstractProcessor<?, INPUT, ?, ?>> outputPortProcessor,
+            Identifier outputPortId
     ) {
         InputPort<INPUT> input = inputPorts.get(inputPortId);
         input.setOutputPort(outputPortId, outputPortProcessor);
@@ -150,7 +150,7 @@ public abstract class AbstractProcessor<
         return context;
     }
 
-    public void onFinished(Identifier<?, ?> finishable) {
+    public void onFinished(Identifier finishable) {
         throw TypeDBException.of(ILLEGAL_STATE);
     }
 
@@ -184,7 +184,7 @@ public abstract class AbstractProcessor<
         return reactiveCounter;
     }
 
-    public Identifier<INPUT, OUTPUT> registerReactive(Reactive reactive) {
+    public Identifier registerReactive(Reactive reactive) {
         return new ReactiveIdentifier<>(driver(), reactive, incrementReactiveCounter());
     }
 

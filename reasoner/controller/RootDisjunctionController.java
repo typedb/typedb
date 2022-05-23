@@ -104,7 +104,7 @@ public class RootDisjunctionController
         }
 
         @Override
-        public void onFinished(Reactive.Identifier<?, ?> finishable) {
+        public void onFinished(Reactive.Identifier finishable) {
             assert finishable == rootSink.identifier();
             rootSink.finished();
         }

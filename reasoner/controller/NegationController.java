@@ -103,7 +103,7 @@ public class NegationController extends AbstractController<
         }
 
         @Override
-        public void onFinished(Reactive.Identifier<?, ?> finishable) {
+        public void onFinished(Reactive.Identifier finishable) {
             assert finishable == negation.identifier();
             negation.finished();
         }
@@ -168,7 +168,7 @@ public class NegationController extends AbstractController<
                 > {
 
             protected Request(
-                    Reactive.Identifier<ConceptMap, ?> inputPortId, Driver<Processor> inputPortProcessor,
+                    Reactive.Identifier inputPortId, Driver<Processor> inputPortProcessor,
                     Disjunction controllerId, ConceptMap processorId
             ) {
                 super(inputPortId, inputPortProcessor, controllerId, processorId);

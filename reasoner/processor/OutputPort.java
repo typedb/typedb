@@ -27,10 +27,10 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberDele
  */
 public class OutputPort<PACKET> implements Reactive.Subscriber<PACKET> {
 
-    private final Identifier<?, PACKET> identifier;
+    private final Identifier identifier;
     private final AbstractProcessor<?, PACKET, ?, ?> processor;
     private final SubscriberDelegate<PACKET> subscriberDelegate;
-    private Identifier<PACKET, ?> inputPortId;
+    private Identifier inputPortId;
     private Publisher<PACKET> publisher;
     private Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor;
 
@@ -41,7 +41,7 @@ public class OutputPort<PACKET> implements Reactive.Subscriber<PACKET> {
     }
 
     @Override
-    public Identifier<?, PACKET> identifier() {
+    public Identifier identifier() {
         return identifier;
     }
 
@@ -70,7 +70,7 @@ public class OutputPort<PACKET> implements Reactive.Subscriber<PACKET> {
     }
 
     public void setInputPort(
-            Identifier<PACKET, ?> inputPortId,
+            Identifier inputPortId,
             Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor
     ) {
         assert this.inputPortId == null;

@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 
 public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>, Reactive.Subscriber<PACKET> {
 
-    private final Identifier<?, ?> identifier;
+    private final Identifier identifier;
     private final ReasonerConsumer<PACKET> reasonerConsumer;
     private final PublisherRegistry.Single<PACKET> publisherRegistry;
     private final AbstractProcessor<?, PACKET, ?, ?> processor;
@@ -46,7 +46,7 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
     }
 
     @Override
-    public Identifier<?, ?> identifier() {
+    public Identifier identifier() {
         return identifier;
     }
 

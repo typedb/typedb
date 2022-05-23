@@ -58,15 +58,15 @@ public class Tracer {
         return traceWriter;
     }
 
-    public synchronized void pull(Identifier<?, ?> subscriberId, Identifier<?, ?> publisherId) {
+    public synchronized void pull(Identifier subscriberId, Identifier publisherId) {
         pull(subscriberId, publisherId, EdgeType.PULL, "pull");
     }
 
-    public synchronized void pullRetry(Identifier<?, ?> subscriberId, Identifier<?, ?> publisherId) {
+    public synchronized void pullRetry(Identifier subscriberId, Identifier publisherId) {
         pull(subscriberId, publisherId, EdgeType.RETRY, "retry");
     }
 
-    private void pull(Identifier<?, ?> subscriberId, Identifier<?, ?> publisherId, EdgeType edgeType, String edgeLabel) {
+    private void pull(Identifier subscriberId, Identifier publisherId, EdgeType edgeType, String edgeLabel) {
         String subscriberString;
         if (subscriberId == null) subscriberString = "root";
         else {
@@ -77,41 +77,41 @@ public class Tracer {
         traceWriter().addNodeGroup(publisherId.toString(), publisherId.toString());
     }
 
-    public <PACKET> void receive(Identifier<?, ?> publisherId, Identifier<?, ?> subscriberId, PACKET packet) {
+    public <PACKET> void receive(Identifier publisherId, Identifier subscriberId, PACKET packet) {
         traceWriter().addMessage(publisherId.toString(), subscriberId.toString(), EdgeType.RECEIVE, packet.toString());
         traceWriter().addNodeGroup(subscriberId.toString(), subscriberId.toString());
         traceWriter().addNodeGroup(publisherId.toString(), publisherId.toString());
     }
 
-    public void registerRoot(Identifier<?, ?> root, Actor.Driver<Monitor> monitor) {
+    public void registerRoot(Identifier root, Actor.Driver<Monitor> monitor) {
         traceWriter().addMessage(root.toString(), monitor.debugName().get(), EdgeType.ROOT, "reg_root");
     }
 
-    public void rootFinalised(Identifier<?, ?> root, Actor.Driver<Monitor> monitor) {
+    public void rootFinalised(Identifier root, Actor.Driver<Monitor> monitor) {
         traceWriter().addMessage(root.toString(), monitor.debugName().get(), EdgeType.ROOT_FINALISED, "root_finished");
     }
 
-    public void finishRootNode(Identifier<?, ?> root, Actor.Driver<Monitor> monitor) {
+    public void finishRootNode(Identifier root, Actor.Driver<Monitor> monitor) {
         traceWriter().addMessage(monitor.debugName().get(), root.toString(), EdgeType.ROOT_FINISH, "finished");
     }
 
-    public void registerPath(Identifier<?, ?> subscriber, Identifier<?, ?> publisher, Actor.Driver<Monitor> monitor) {
+    public void registerPath(Identifier subscriber, Identifier publisher, Actor.Driver<Monitor> monitor) {
         traceWriter().addMessage(subscriber.toString(), monitor.debugName().get(), EdgeType.REGISTER, "reg_" + publisher.toString());
     }
 
-    public void registerSource(Identifier<?, ?> source, Actor.Driver<Monitor> monitor) {
+    public void registerSource(Identifier source, Actor.Driver<Monitor> monitor) {
         traceWriter().addMessage(source.toString(), monitor.debugName().get(), EdgeType.SOURCE, "reg_source");
     }
 
-    public void sourceFinished(Identifier<?, ?> source, Actor.Driver<Monitor> monitor) {
+    public void sourceFinished(Identifier source, Actor.Driver<Monitor> monitor) {
         traceWriter().addMessage(source.toString(), monitor.debugName().get(), EdgeType.SOURCE_FINISH, "source_finished");
     }
 
-    public void createAnswer(Identifier<?, ?> publisher, Actor.Driver<Monitor> monitor) {
+    public void createAnswer(Identifier publisher, Actor.Driver<Monitor> monitor) {
         traceWriter().addMessage(publisher.toString(), monitor.debugName().get(), EdgeType.CREATE, "create");
     }
 
-    public void consumeAnswer(Identifier<?, ?> subscriber, Actor.Driver<Monitor> monitor) {
+    public void consumeAnswer(Identifier subscriber, Actor.Driver<Monitor> monitor) {
         traceWriter().addMessage(subscriber.toString(), monitor.debugName().get(), EdgeType.CONSUME, "consume");
     }
 

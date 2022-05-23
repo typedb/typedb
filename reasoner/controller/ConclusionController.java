@@ -130,7 +130,7 @@ public abstract class ConclusionController<
             CONTROLLER extends AbstractController<BOUNDS, ?, Either<ConceptMap, Materialisation>, ?, ?, ?>
             > extends AbstractRequest<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>, CONTROLLER> {
 
-        protected Request(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
+        protected Request(Reactive.Identifier inputPortId,
                           Driver<? extends Processor<?, ?>> inputPortProcessor, CONTROLLER_ID controller_id, BOUNDS bounds) {
             super(inputPortId, inputPortProcessor, controller_id, bounds);
         }
@@ -153,7 +153,7 @@ public abstract class ConclusionController<
 
         protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController> {
 
-            public ConditionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
+            public ConditionRequest(Reactive.Identifier inputPortId,
                                     Driver<? extends Processor<?, ?>> inputPortProcessor,
                                     Rule.Condition controllerId, ConceptMap processorId) {
                 super(inputPortId, inputPortProcessor, controllerId, processorId);
@@ -174,7 +174,7 @@ public abstract class ConclusionController<
         protected static class MaterialiserRequest extends Request<Void, Materialisable, MaterialisationController> {
 
             public MaterialiserRequest(
-                    Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
+                    Reactive.Identifier inputPortId,
                     Driver<? extends Processor<?, ?>> inputPortProcessor, Void controllerId, Materialisable processorId
             ) {
                 super(inputPortId, inputPortProcessor, controllerId, processorId);

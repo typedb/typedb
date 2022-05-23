@@ -120,7 +120,7 @@ public abstract class DisjunctionController<
         protected static class Request extends AbstractRequest<Conjunction, ConceptMap, ConceptMap, NestedConjunctionController> {
 
             protected Request(
-                    Reactive.Identifier<ConceptMap, ?> inputPortId, Driver<? extends Processor<?>> inputPortProcessor,
+                    Reactive.Identifier inputPortId, Driver<? extends Processor<?>> inputPortProcessor,
                     Conjunction controllerId, ConceptMap processorId
             ) {
                 super(inputPortId, inputPortProcessor, controllerId, processorId);

@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 public abstract class AbstractReactive implements Reactive {
 
     protected final AbstractProcessor<?, ?, ?, ?> processor;
-    protected final Reactive.Identifier<?, ?> identifier;
+    protected final Reactive.Identifier identifier;
 
     protected AbstractReactive(AbstractProcessor<?, ?, ?, ?> processor) {
         this.processor = processor;
@@ -31,7 +31,7 @@ public abstract class AbstractReactive implements Reactive {
     }
 
     @Override
-    public Reactive.Identifier<?, ?> identifier() {
+    public Reactive.Identifier identifier() {
         return identifier;
     }
 

@@ -219,7 +219,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         protected abstract Publisher<OUTPUT> transformInput(Publisher<INPUT> input, Unifier unifier,
                                                             Unifier.Requirements.Instance requirements);
 
-        protected abstract REQ createRequest(Reactive.Identifier<INPUT, ?> identifier, Conclusion conclusion,
+        protected abstract REQ createRequest(Reactive.Identifier identifier, Conclusion conclusion,
                                              ConceptMap bounds);
 
         protected abstract void mayAddTraversal();
@@ -284,14 +284,14 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
 
             @Override
-            protected Request createRequest(Reactive.Identifier<Map<Variable, Concept>, ?> inputPortId,
+            protected Request createRequest(Reactive.Identifier inputPortId,
                                             Conclusion conclusion, ConceptMap bounds) {
                 return new Request(inputPortId, driver(), conclusion, bounds);
             }
 
             protected static class Request extends AbstractRequest<Conclusion, ConceptMap, Map<Variable, Concept>, ConclusionController.Match> {
 
-                public Request(Reactive.Identifier<Map<Variable, Concept>, ?> inputPortId,
+                public Request(Reactive.Identifier inputPortId,
                                Driver<Match> inputPortProcessor, Conclusion controllerId, ConceptMap processorId) {
                     super(inputPortId, inputPortProcessor, controllerId, processorId);
                 }
@@ -346,20 +346,20 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
 
             @Override
-            public void onFinished(Reactive.Identifier<?, ?> finishable) {
+            public void onFinished(Reactive.Identifier finishable) {
                 assert finishable == rootSink.identifier();
                 rootSink.finished();
             }
 
             @Override
-            protected Explain.Request createRequest(Reactive.Identifier<PartialExplanation, ?> inputPortId,
+            protected Explain.Request createRequest(Reactive.Identifier inputPortId,
                                                     Conclusion conclusion, ConceptMap bounds) {
                 return new Request(inputPortId, driver(), conclusion, bounds);
             }
 
             protected static class Request extends AbstractRequest<Conclusion, ConceptMap, PartialExplanation, ConclusionController.Explain> {
 
-                protected Request(Reactive.Identifier<PartialExplanation, ?> inputPortId,
+                protected Request(Reactive.Identifier inputPortId,
                                   Driver<Explain> inputPortProcessor, Conclusion conclusion, ConceptMap conceptMap) {
                     super(inputPortId, inputPortProcessor, conclusion, conceptMap);
                 }
