@@ -286,14 +286,14 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             @Override
             protected Request createRequest(Reactive.Identifier<Map<Variable, Concept>, ?> inputPortId,
                                             Conclusion conclusion, ConceptMap bounds) {
-                return new Request(inputPortId, conclusion, bounds);
+                return new Request(inputPortId, driver(), conclusion, bounds);
             }
 
             protected static class Request extends AbstractRequest<Conclusion, ConceptMap, Map<Variable, Concept>, ConclusionController.Match> {
 
-                public Request(Reactive.Identifier<Map<Variable, Concept>, ?> inputPortId, Conclusion controllerId,
-                               ConceptMap processorId) {
-                    super(inputPortId, controllerId, processorId);
+                public Request(Reactive.Identifier<Map<Variable, Concept>, ?> inputPortId,
+                               Driver<Match> inputPortProcessor, Conclusion controllerId, ConceptMap processorId) {
+                    super(inputPortId, inputPortProcessor, controllerId, processorId);
                 }
 
             }
@@ -354,14 +354,14 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             @Override
             protected Explain.Request createRequest(Reactive.Identifier<PartialExplanation, ?> inputPortId,
                                                     Conclusion conclusion, ConceptMap bounds) {
-                return new Request(inputPortId, conclusion, bounds);
+                return new Request(inputPortId, driver(), conclusion, bounds);
             }
 
             protected static class Request extends AbstractRequest<Conclusion, ConceptMap, PartialExplanation, ConclusionController.Explain> {
 
-                protected Request(Reactive.Identifier<PartialExplanation, ?> inputPortId, Conclusion conclusion,
-                                  ConceptMap conceptMap) {
-                    super(inputPortId, conclusion, conceptMap);
+                protected Request(Reactive.Identifier<PartialExplanation, ?> inputPortId,
+                                  Driver<Explain> inputPortProcessor, Conclusion conclusion, ConceptMap conceptMap) {
+                    super(inputPortId, inputPortProcessor, conclusion, conceptMap);
                 }
             }
         }

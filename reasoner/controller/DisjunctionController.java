@@ -107,7 +107,8 @@ public abstract class DisjunctionController<
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
                 requestConnection(new Request(
-                        input.identifier(), conjunction, bounds.filter(retrievableConjunctionVars)));
+                        input.identifier(), driver(), conjunction, bounds.filter(retrievableConjunctionVars)
+                ));
             }
         }
 
@@ -118,9 +119,11 @@ public abstract class DisjunctionController<
 
         protected static class Request extends AbstractRequest<Conjunction, ConceptMap, ConceptMap, NestedConjunctionController> {
 
-            protected Request(Reactive.Identifier<ConceptMap, ?> inputPortId, Conjunction controllerId,
-                              ConceptMap processorId) {
-                super(inputPortId, controllerId, processorId);
+            protected Request(
+                    Reactive.Identifier<ConceptMap, ?> inputPortId, Driver<? extends Processor<?>> inputPortProcessor,
+                    Conjunction controllerId, ConceptMap processorId
+            ) {
+                super(inputPortId, inputPortProcessor, controllerId, processorId);
             }
 
         }

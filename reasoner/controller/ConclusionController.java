@@ -131,8 +131,8 @@ public abstract class ConclusionController<
             > extends AbstractRequest<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>, CONTROLLER> {
 
         protected Request(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
-                          CONTROLLER_ID controller_id, BOUNDS bounds) {
-            super(inputPortId, controller_id, bounds);
+                          Driver<? extends Processor<?, ?>> inputPortProcessor, CONTROLLER_ID controller_id, BOUNDS bounds) {
+            super(inputPortId, inputPortProcessor, controller_id, bounds);
         }
 
         public boolean isCondition() {
@@ -154,8 +154,9 @@ public abstract class ConclusionController<
         protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController> {
 
             public ConditionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
+                                    Driver<? extends Processor<?, ?>> inputPortProcessor,
                                     Rule.Condition controllerId, ConceptMap processorId) {
-                super(inputPortId, controllerId, processorId);
+                super(inputPortId, inputPortProcessor, controllerId, processorId);
             }
 
             @Override
@@ -172,9 +173,11 @@ public abstract class ConclusionController<
 
         protected static class MaterialiserRequest extends Request<Void, Materialisable, MaterialisationController> {
 
-            public MaterialiserRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
-                                       Void controllerId, Materialisable processorId) {
-                super(inputPortId, controllerId, processorId);
+            public MaterialiserRequest(
+                    Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
+                    Driver<? extends Processor<?, ?>> inputPortProcessor, Void controllerId, Materialisable processorId
+            ) {
+                super(inputPortId, inputPortProcessor, controllerId, processorId);
             }
 
             @Override
@@ -220,7 +223,7 @@ public abstract class ConclusionController<
             setHubReactive(PoolingStream.fanOut(this));
             InputPort<Either<ConceptMap, Materialisation>> conditionInput = createInputPort();
             ConceptMap filteredBounds = bounds.filter(rule.condition().conjunction().retrieves());
-            mayRequestCondition(new ConditionRequest(conditionInput.identifier(), rule.condition(), filteredBounds));
+            mayRequestCondition(new ConditionRequest(conditionInput.identifier(), driver(), rule.condition(), filteredBounds));
             Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> conclusionReactive = fanIn(this, createOperator());
             conditionInput.map(Processor::convertConclusionInput).registerSubscriber(conclusionReactive);
             conclusionReactive.registerSubscriber(outputRouter());
@@ -303,7 +306,7 @@ public abstract class ConclusionController<
                     InputPort<Either<ConceptMap, Materialisation>> materialisationInput = processor().createInputPort();
                     ConceptMap filteredConditionAns = packet.first().filter(processor().rule().conclusion().retrievableIds());  // TODO: no explainables carried forwards
                     processor().mayRequestMaterialiser(new MaterialiserRequest(
-                            materialisationInput.identifier(), null,
+                            materialisationInput.identifier(), processor().driver(), null,
                             processor().rule().conclusion().materialisable(filteredConditionAns, processor().conceptManager))
                     );
                     Publisher<Either<ConceptMap, Map<Variable, Concept>>> op = materialisationInput

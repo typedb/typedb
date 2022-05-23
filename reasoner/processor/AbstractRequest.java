@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.processor;
 
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.controller.AbstractController;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 
@@ -31,14 +32,19 @@ public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
 
     // TODO: Should hold on to the processor that sent the request
     private final Reactive.Identifier<PACKET, ?> inputPortId;
+    private final Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor;
     private final CONTROLLER_ID controllerId;
     private final List<Function<PACKET, PACKET>> transforms;
     private final Identifier id;
     private BOUNDS bounds;
 
-    protected AbstractRequest(Reactive.Identifier<PACKET, ?> inputPortId, CONTROLLER_ID controllerId,
-                              BOUNDS bounds) {
+    protected AbstractRequest(
+            Reactive.Identifier<PACKET, ?> inputPortId,
+            Actor.Driver<?extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor, CONTROLLER_ID controllerId,
+            BOUNDS bounds
+    ) {
         this.inputPortId = inputPortId;
+        this.inputPortProcessor = inputPortProcessor;
         this.controllerId = controllerId;
         this.transforms = new ArrayList<>();
         this.bounds = bounds;
@@ -51,6 +57,10 @@ public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
 
     public Reactive.Identifier<PACKET, ?> inputPortId() {
         return inputPortId;
+    }
+
+    public Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> requestingProcessor() {
+        return inputPortProcessor;
     }
 
     public CONTROLLER_ID controllerId() {

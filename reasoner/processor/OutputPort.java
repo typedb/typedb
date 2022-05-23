@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.processor;
 
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberDelegate;
 
@@ -31,6 +32,7 @@ public class OutputPort<PACKET> implements Reactive.Subscriber<PACKET> {
     private final SubscriberDelegate<PACKET> subscriberDelegate;
     private Identifier<PACKET, ?> inputPortId;
     private Publisher<PACKET> publisher;
+    private Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor;
 
     public OutputPort(AbstractProcessor<?, PACKET, ?, ?> processor) {
         this.processor = processor;
@@ -51,7 +53,7 @@ public class OutputPort<PACKET> implements Reactive.Subscriber<PACKET> {
     @Override
     public void receive(Publisher<PACKET> publisher, PACKET packet) {
         subscriberDelegate.traceReceive(publisher, packet);
-        inputPortId.processor().execute(actor -> actor.receive(inputPortId, packet, identifier()));
+        inputPortProcessor.execute(actor -> actor.receive(inputPortId, packet, identifier()));
     }
 
     public void pull() {
@@ -67,9 +69,13 @@ public class OutputPort<PACKET> implements Reactive.Subscriber<PACKET> {
         subscriberDelegate.registerPath(publisher);
     }
 
-    public void setInputPort(Identifier<PACKET, ?> inputPortId) {
+    public void setInputPort(
+            Identifier<PACKET, ?> inputPortId,
+            Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor
+    ) {
         assert this.inputPortId == null;
         this.inputPortId = inputPortId;
+        this.inputPortProcessor = inputPortProcessor;
     }
 
     @Override

@@ -51,7 +51,7 @@ public abstract class AbstractProcessor<
 
     private final Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller;
     private final Context context;
-    private final Map<Identifier<?, ?>, InputPort<INPUT>> inputPorts;  // TODO: inputPorts (sweeping rename)
+    private final Map<Identifier<?, ?>, InputPort<INPUT>> inputPorts;
     private final Map<Identifier<?, ?>, OutputPort<OUTPUT>> outputPorts;
     private final Map<Pair<Identifier<?, ?>, Identifier<?, ?>>, Runnable> pullRetries;
     private Stream<OUTPUT,OUTPUT> hubReactive;
@@ -110,15 +110,19 @@ public abstract class AbstractProcessor<
     public <RECEIVED_REQ extends AbstractRequest<?, ?, OUTPUT, ?>> void establishConnection(RECEIVED_REQ request) {
         if (isTerminated()) return;
         OutputPort<OUTPUT> outputPort = createOutputPort();
-        outputPort.setInputPort(request.inputPortId());
+        outputPort.setInputPort(request.inputPortId(), request.requestingProcessor());
         request.connectViaTransforms(outputRouter(), outputPort);
-        request.inputPortId().processor().execute(
-                actor -> actor.finishConnection(request.inputPortId(), outputPort.identifier()));
+        request.requestingProcessor().execute(
+                actor -> actor.finishConnection(request.inputPortId(), driver(), outputPort.identifier())
+        );
     }
 
-    protected void finishConnection(Identifier<INPUT, ?> inputPortId, Identifier<?, INPUT> outputPortId) {
+    protected void finishConnection(
+            Identifier<INPUT, ?> inputPortId, Driver<? extends AbstractProcessor<?, INPUT, ?, ?>> outputPortProcessor,
+            Identifier<?, INPUT> outputPortId
+    ) {
         InputPort<INPUT> input = inputPorts.get(inputPortId);
-        input.setOutputPort(outputPortId);
+        input.setOutputPort(outputPortId, outputPortProcessor);
         input.pull();
     }
 

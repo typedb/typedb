@@ -26,7 +26,7 @@ import java.util.function.Function;
 
 public interface Reactive {
 
-    AbstractProcessor<?, ?, ?, ?> processor();  // TODO: It's weird to be able to access your subscriber/publisher's processor, but this is needed for monitoring?
+    AbstractProcessor<?, ?, ?, ?> processor();
 
     Identifier<?, ?> identifier();
 

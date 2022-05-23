@@ -162,9 +162,10 @@ public abstract class ConjunctionController<
     public static class Request<
             CONTROLLER_ID, CONTROLLER extends AbstractController<ConceptMap, ?, ConceptMap, ?, ?, ?>
             > extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap, CONTROLLER> {
-        protected Request(Reactive.Identifier<ConceptMap, ?> inputPortId, CONTROLLER_ID controller_id,
+        protected Request(Reactive.Identifier<ConceptMap, ?> inputPortId,
+                          Driver<? extends Processor<?, ?>> inputPortProcessor, CONTROLLER_ID controller_id,
                           ConceptMap conceptMap) {
-            super(inputPortId, controller_id, conceptMap);
+            super(inputPortId, inputPortProcessor, controller_id, conceptMap);
         }
 
         public boolean isRetrievable() {
@@ -263,13 +264,13 @@ public abstract class ConjunctionController<
         protected InputPort<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
             InputPort<ConceptMap> input = createInputPort();
             if (planElement.isRetrievable()) {
-                requestConnection(new RetrievableRequest(input.identifier(), planElement.asRetrievable(),
+                requestConnection(new RetrievableRequest(input.identifier(), driver(), planElement.asRetrievable(),
                                                          carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isConcludable()) {
-                requestConnection(new ConcludableRequest(input.identifier(), planElement.asConcludable(),
+                requestConnection(new ConcludableRequest(input.identifier(), driver(), planElement.asConcludable(),
                                                          carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isNegated()) {
-                requestConnection(new NegatedRequest(input.identifier(), planElement.asNegated(),
+                requestConnection(new NegatedRequest(input.identifier(), driver(), planElement.asNegated(),
                                                      carriedBounds.filter(planElement.retrieves())));
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
@@ -279,9 +280,12 @@ public abstract class ConjunctionController<
 
         public static class RetrievableRequest extends Request<Retrievable, RetrievableController> {
 
-            public RetrievableRequest(Reactive.Identifier<ConceptMap, ?> inputPortId, Retrievable controllerId,
-                                      ConceptMap processorId) {
-                super(inputPortId, controllerId, processorId);
+            public RetrievableRequest(
+                    Reactive.Identifier<ConceptMap, ?> inputPortId,
+                    Driver<? extends Processor<?, ?>> inputPortProcessor, Retrievable controllerId,
+                    ConceptMap processorId
+            ) {
+                super(inputPortId, inputPortProcessor, controllerId, processorId);
             }
 
             @Override
@@ -298,9 +302,12 @@ public abstract class ConjunctionController<
 
         static class ConcludableRequest extends Request<Concludable, ConcludableController.Match> {
 
-            public ConcludableRequest(Reactive.Identifier<ConceptMap, ?> inputPortId, Concludable controllerId,
-                                      ConceptMap processorId) {
-                super(inputPortId, controllerId, processorId);
+            public ConcludableRequest(
+                    Reactive.Identifier<ConceptMap, ?> inputPortId,
+                    Driver<? extends Processor<?, ?>> inputPortProcessor, Concludable controllerId,
+                    ConceptMap processorId
+            ) {
+                super(inputPortId, inputPortProcessor, controllerId, processorId);
             }
 
             public boolean isConcludable() {
@@ -315,9 +322,11 @@ public abstract class ConjunctionController<
 
         static class NegatedRequest extends Request<Negated, NegationController> {
 
-            protected NegatedRequest(Reactive.Identifier<ConceptMap, ?> inputPortId, Negated controllerId,
-                                     ConceptMap processorId) {
-                super(inputPortId, controllerId, processorId);
+            protected NegatedRequest(
+                    Reactive.Identifier<ConceptMap, ?> inputPortId,
+                    Driver<? extends Processor<?, ?>> inputPortProcessor, Negated controllerId, ConceptMap processorId
+            ) {
+                super(inputPortId, inputPortProcessor, controllerId, processorId);
             }
 
             public boolean isNegated() {

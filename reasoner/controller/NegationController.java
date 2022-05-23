@@ -95,7 +95,7 @@ public class NegationController extends AbstractController<
         public void setUp() {
             setHubReactive(PoolingStream.fanOut(this));
             InputPort<ConceptMap> input = createInputPort();
-            requestConnection(new Request(input.identifier(), negated.pattern(), bounds));
+            requestConnection(new Request(input.identifier(), driver(), negated.pattern(), bounds));
             negation = new NegationStream(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
             input.registerSubscriber(negation);
@@ -167,9 +167,11 @@ public class NegationController extends AbstractController<
                 Disjunction, ConceptMap, ConceptMap, NestedDisjunctionController
                 > {
 
-            protected Request(Reactive.Identifier<ConceptMap, ?> inputPortId, Disjunction controllerId,
-                              ConceptMap processorId) {
-                super(inputPortId, controllerId, processorId);
+            protected Request(
+                    Reactive.Identifier<ConceptMap, ?> inputPortId, Driver<Processor> inputPortProcessor,
+                    Disjunction controllerId, ConceptMap processorId
+            ) {
+                super(inputPortId, inputPortProcessor, controllerId, processorId);
             }
 
         }

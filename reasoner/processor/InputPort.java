@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.processor;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherDelegate;
 
@@ -35,6 +36,7 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
     private boolean isReady;
     private Identifier<?, PACKET> outputPortId;
     private Subscriber<PACKET> subscriber;
+    private Actor.Driver<? extends AbstractProcessor<?, PACKET, ?, ?>> outputPortProcessor;
 
     public InputPort(AbstractProcessor<PACKET, ?, ?, ?> processor) {
         this.processor = processor;
@@ -61,9 +63,7 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
     public void pull(Subscriber<PACKET> subscriber) {
         assert subscriber.equals(this.subscriber);
         processor().tracer().ifPresent(tracer -> tracer.pull(subscriber.identifier(), identifier()));
-        if (isReady)
-            outputPortId.processor().execute(actor -> actor.pull(outputPortId));  // TODO: Store the processor
-        // rather than getting it from the outputPort
+        if (isReady) outputPortProcessor.execute(actor -> actor.pull(outputPortId));
     }
 
     public void receive(Identifier<?, PACKET> outputPortId, PACKET packet) {
@@ -81,6 +81,16 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
     public void setOutputPort(Identifier<?, PACKET> outputPortId) {
         assert this.outputPortId == null;
         this.outputPortId = outputPortId;
+        processor().monitor().execute(actor -> actor.registerPath(identifier(), outputPortId));
+        assert !isReady;
+        isReady = true;
+    }
+
+    public void setOutputPort(Identifier<?, PACKET> outputPortId,
+                              Actor.Driver<? extends AbstractProcessor<?, PACKET, ?, ?>> outputPortProcessor) {
+        assert this.outputPortId == null;
+        this.outputPortId = outputPortId;
+        this.outputPortProcessor = outputPortProcessor;
         processor().monitor().execute(actor -> actor.registerPath(identifier(), outputPortId));
         assert !isReady;
         isReady = true;
