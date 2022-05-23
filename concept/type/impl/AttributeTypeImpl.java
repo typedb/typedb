@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -64,6 +65,10 @@ import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.OBJECT;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ATTRIBUTE;
+import static com.vaticle.typeql.lang.common.util.Strings.escapeRegex;
+import static com.vaticle.typeql.lang.common.util.Strings.quoteString;
+import static java.lang.String.format;
+import static java.util.Comparator.comparing;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
@@ -246,13 +251,34 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public AttributeTypeImpl.String asString() {
         throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                className(AttributeType.String.class)));
+                                           className(AttributeType.String.class)));
     }
 
     @Override
     public AttributeTypeImpl.DateTime asDateTime() {
         throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                className(AttributeType.DateTime.class)));
+                                           className(AttributeType.DateTime.class)));
+    }
+
+    @Override
+    public void export(StringBuilder builder) {
+        if (getSupertype() != null) {
+            builder.append(format("%s sub %s", getLabel().name(), getSupertype().getLabel().name()))
+                    .append(StringBuilders.COMMA_NEWLINE_INDENT);
+        }
+        if (!isRoot()) builder.append(format("value %s", getValueType().syntax()));
+        if (isString()) {
+            java.util.regex.Pattern regex = asString().getRegex();
+            if (regex != null) builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                    .append(format("regex %s", quoteString(escapeRegex(regex.pattern()))));
+        }
+        writeAbstract(builder);
+        writeOwns(builder);
+        writePlays(builder);
+        builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
+        getSubtypesExplicit().stream()
+                .sorted(comparing(x -> x.getLabel().name()))
+                .forEach(x -> export(builder));
     }
 
     @Override

@@ -19,8 +19,9 @@
 package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -34,10 +35,11 @@ import java.util.List;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ENTITY;
+import static java.util.Comparator.comparing;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
@@ -116,6 +118,18 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public EntityTypeImpl asEntityType() {
         return this;
+    }
+
+    @Override
+    public void export(StringBuilder builder) {
+        if (getSupertype() != null) {
+            builder.append(String.format("%s sub %s", getLabel().name(), getSupertype().getLabel().name()));
+        }
+        writeAbstract(builder);
+        writeOwns(builder);
+        writePlays(builder);
+        builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
+        getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(x -> export(builder));
     }
 
     private static class Root extends EntityTypeImpl {

@@ -18,12 +18,13 @@
 
 package com.vaticle.typedb.core.concept.type;
 
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
+import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
@@ -132,6 +133,12 @@ public interface AttributeType extends ThingType {
 
         public boolean isKeyable() {
             return encoding.isKeyable();
+        }
+
+        @Nullable
+        public java.lang.String syntax() {
+            if (encoding.typeQLValueType() != null) return encoding.typeQLValueType().toString();
+            else return null;
         }
 
         public Set<ValueType> comparables() {

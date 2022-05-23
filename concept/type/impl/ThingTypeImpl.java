@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
@@ -42,6 +43,7 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
@@ -79,6 +81,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static java.util.Comparator.comparing;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
@@ -103,6 +106,54 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             default:
                 throw graphMgr.exception(TypeDBException.of(UNRECOGNISED_VALUE));
         }
+    }
+
+    @Override
+    public java.lang.String export() {
+        StringBuilder builder = new StringBuilder();
+        export(builder);
+        return builder.toString();
+    }
+
+    protected void writeAbstract(StringBuilder builder) {
+        if (isAbstract()) builder.append(StringBuilders.COMMA_NEWLINE_INDENT).append("abstract");
+    }
+
+    protected void writeOwns(StringBuilder builder) {
+        Set<String> keys = getOwnsExplicit(true).map(x -> x.getLabel().name()).toSet();
+        List<? extends AttributeType> attributeTypes = getOwnsExplicit().toList();
+        attributeTypes.stream().filter(x -> keys.contains(x.getLabel().name()))
+                .sorted(comparing(x -> x.getLabel().name()))
+                .forEach(attributeType -> {
+                    builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                            .append(String.format("owns %s", attributeType.getLabel().name()));
+                    AttributeType overridden = getOwnsOverridden(attributeType);
+                    if (overridden != null) {
+                        builder.append(String.format(" as %s", overridden.getLabel().name()));
+                    }
+                    builder.append(" @key");
+                });
+        attributeTypes.stream().filter(x -> !keys.contains(x.getLabel().name()))
+                .sorted(comparing(x -> x.getLabel().name()))
+                .forEach(attributeType -> {
+                    builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                            .append(String.format("owns %s", attributeType.getLabel().name()));
+                    AttributeType overridden = getOwnsOverridden(attributeType);
+                    if (overridden != null) {
+                        builder.append(String.format(" as %s", overridden.getLabel().name()));
+                    }
+                });
+    }
+
+    protected void writePlays(StringBuilder builder) {
+        getPlaysExplicit().stream().sorted(comparing(x -> x.getLabel().scopedName())).forEach(roleType -> {
+            builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                    .append(String.format("plays %s", roleType.getLabel().scopedName()));
+            RoleType overridden = getPlaysOverridden(roleType);
+            if (overridden != null) {
+                builder.append(String.format(" as %s", overridden.getLabel().scopedName()));
+            }
+        });
     }
 
     @Override
@@ -584,6 +635,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         @Override
         public void unsetPlays(RoleType roleType) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
+
+        @Override
+        public void export(StringBuilder builder) {
+            builder.append(Encoding.Vertex.Type.Root.THING.label());
         }
 
         /**

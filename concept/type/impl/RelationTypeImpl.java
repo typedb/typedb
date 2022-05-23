@@ -20,8 +20,9 @@ package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -44,12 +45,13 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RE
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_RELATES_ROLE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.RELATION;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ROLE;
+import static java.util.Comparator.comparing;
 
 public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
@@ -266,6 +268,31 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public RelationTypeImpl asRelationType() {
         return this;
+    }
+
+    public void export(StringBuilder builder) {
+        if (getSupertype() != null) {
+            builder.append(String.format("%s sub %s", getLabel().name(), getSupertype().getLabel().name()));
+        }
+        writeAbstract(builder);
+        writeOwns(builder);
+        writeRelates(builder);
+        writePlays(builder);
+        builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
+        getSubtypesExplicit().stream()
+                .sorted(comparing(x -> x.getLabel().name()))
+                .forEach(x -> export(builder));
+    }
+
+    private void writeRelates(StringBuilder builder) {
+        getRelatesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(roleType -> {
+            builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                    .append(String.format("relates %s", roleType.getLabel().name()));
+            RoleType overridden = getRelatesOverridden(roleType.getLabel().name());
+            if (overridden != null) {
+                builder.append(String.format(" as %s", overridden.getLabel().name()));
+            }
+        });
     }
 
     public static class Root extends RelationTypeImpl {
