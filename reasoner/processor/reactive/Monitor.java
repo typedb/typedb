@@ -125,8 +125,8 @@ public class Monitor extends Actor<Monitor> {
     private static class ReactiveNode {
 
         private final Set<ReactiveNode> publishers;
-        protected final Map<RootNode, Set<ReactiveNode>> downstreamRoots;
-        protected final Reactive.Identifier reactive;
+        private final Map<RootNode, Set<ReactiveNode>> downstreamRoots;
+        final Reactive.Identifier reactive;
         private long answersCreated;
         private long answersConsumed;
 
@@ -138,38 +138,38 @@ public class Monitor extends Actor<Monitor> {
             this.answersConsumed = 0;
         }
 
-        public long totalAnswersCreated(RootNode rootNode) {
+        long totalAnswersCreated(RootNode rootNode) {
             return answersCreated * downstreamRoots.get(rootNode).size();
         }
 
-        public long totalAnswersConsumed() {
+        private long totalAnswersConsumed() {
             return answersConsumed;
         }
 
-        public long totalFrontierJoins(RootNode rootNode) {
+        long totalFrontierJoins(RootNode rootNode) {
             return downstreamRoots.get(rootNode).size();
         }
 
-        public long totalFrontierForks() {
+        private long totalFrontierForks() {
             if (publishers.size() == 0) return 1;
             else return publishers.size();
         }
 
-        protected void createAnswer() {
+        private void createAnswer() {
             answersCreated += 1;
             downstreamRoots.forEach((root, subs) -> root.updateAnswerCount(subs.size()));
         }
 
-        protected void consumeAnswer() {
+        private void consumeAnswer() {
             answersConsumed += 1;
             iterate(activeUpstreamRoots()).forEachRemaining(root -> root.updateAnswerCount(-1));
         }
 
-        public Set<ReactiveNode> publishers() {
+        Set<ReactiveNode> publishers() {
             return publishers;
         }
 
-        public void fork(ReactiveNode publisherNode) {
+        private void fork(ReactiveNode publisherNode) {
             boolean isNew = publishers.add(publisherNode);
             assert isNew;
             if (publishers.size() > 1) {
@@ -177,7 +177,7 @@ public class Monitor extends Actor<Monitor> {
             }
         }
 
-        public void addRootsViaSubscriber(Set<RootNode> rootNodes, ReactiveNode subscriber) {
+        void addRootsViaSubscriber(Set<RootNode> rootNodes, ReactiveNode subscriber) {
             Set<RootNode> newRootsFromSubscriber = new HashSet<>();
             for (RootNode root : rootNodes) {
                 Set<ReactiveNode> subscribers = downstreamRoots.get(root);
@@ -192,39 +192,39 @@ public class Monitor extends Actor<Monitor> {
             propagateRootsUpstream(newRootsFromSubscriber);
         }
 
-        protected void propagateRootsUpstream(Set<RootNode> toPropagate) {
+        void propagateRootsUpstream(Set<RootNode> toPropagate) {
             if (!toPropagate.isEmpty()) {
                 publishers().forEach(publisher -> publisher.addRootsViaSubscriber(toPropagate, this));
             }
         }
 
-        protected void synchroniseRootExtraSubscriber(RootNode rootNode) {
+        private void synchroniseRootExtraSubscriber(RootNode rootNode) {
             rootNode.updateAnswerCount(answersCreated);
             rootNode.updateFrontiersCount(-1);
         }
 
-        protected void synchroniseRoot(RootNode rootNode) {
+        void synchroniseRoot(RootNode rootNode) {
             rootNode.updateAnswerCount(totalAnswersCreated(rootNode) - totalAnswersConsumed());
             rootNode.updateFrontiersCount(totalFrontierForks() - totalFrontierJoins(rootNode));
         }
 
-        public Set<RootNode> activeDownstreamRoots() {
+        Set<RootNode> activeDownstreamRoots() {
             return iterate(downstreamRoots.keySet()).filter(g -> !g.finished).toSet();
         }
 
-        protected Set<RootNode> activeUpstreamRoots() {
+        Set<RootNode> activeUpstreamRoots() {
             return activeDownstreamRoots();
         }
 
-        public boolean isRoot() {
+        boolean isRoot() {
             return false;
         }
 
-        public RootNode asRoot() {
+        RootNode asRoot() {
             throw TypeDBException.of(ILLEGAL_CAST);
         }
 
-        public SourceNode asSource() {
+        SourceNode asSource() {
             throw TypeDBException.of(ILLEGAL_CAST);
         }
 
@@ -232,18 +232,18 @@ public class Monitor extends Actor<Monitor> {
 
     private static class SourceNode extends ReactiveNode {
 
-        protected boolean finished;
+        boolean finished;
 
         SourceNode(Reactive.Identifier source) {
             super(source);
             this.finished = false;
         }
 
-        public boolean isFinished() {
+        boolean isFinished() {
             return finished;
         }
 
-        protected void setFinished() {
+        void setFinished() {
             finished = true;
             iterate(activeDownstreamRoots()).forEachRemaining(g -> g.sourceFinished(this));
         }
@@ -272,8 +272,8 @@ public class Monitor extends Actor<Monitor> {
         private long activeAnswers;
         private boolean finishing;
 
-        RootNode(Reactive.Identifier root, Driver<? extends AbstractProcessor<?, ?, ?, ?>> rootProcessor,
-                 Driver<Monitor> monitor) {
+        private RootNode(Reactive.Identifier root, Driver<? extends AbstractProcessor<?, ?, ?, ?>> rootProcessor,
+                         Driver<Monitor> monitor) {
             super(root);
             this.rootProcessor = rootProcessor;
             this.monitor = monitor;
@@ -306,7 +306,7 @@ public class Monitor extends Actor<Monitor> {
             rootProcessor.execute(actor -> actor.onFinished(reactive));
         }
 
-        void checkFinished() {
+        private void checkFinished() {
             assert !finishing;
             if (!finished && activeSources.isEmpty()){
                 assert activeFrontiers >= 0;
@@ -320,21 +320,21 @@ public class Monitor extends Actor<Monitor> {
             }
         }
 
-        public void updateAnswerCount(long delta) {
+        void updateAnswerCount(long delta) {
             activeAnswers += delta;
             if (delta < 0) checkFinished();
         }
 
-        public void updateFrontiersCount(long delta) {
+        void updateFrontiersCount(long delta) {
             activeFrontiers += delta;
             if (delta < 0) checkFinished();
         }
 
-        public void addSource(SourceNode sourceNode) {
+        void addSource(SourceNode sourceNode) {
             activeSources.add(sourceNode);
         }
 
-        public void sourceFinished(SourceNode sourceNode) {
+        void sourceFinished(SourceNode sourceNode) {
             boolean contained = activeSources.remove(sourceNode);
             assert contained;
             checkFinished();

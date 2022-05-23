@@ -58,7 +58,7 @@ public class Traversal {
         }).orElse(Producers.empty());
     }
 
-    public static GraphTraversal.Thing boundTraversal(GraphTraversal.Thing traversal, ConceptMap bounds) {
+    private static GraphTraversal.Thing boundTraversal(GraphTraversal.Thing traversal, ConceptMap bounds) {
         bounds.concepts().forEach((id, concept) -> {
             if (concept.isThing()) traversal.iid(id.asVariable(), concept.asThing().getIID());
             else {
@@ -69,7 +69,7 @@ public class Traversal {
         return traversal;
     }
 
-    public static Optional<ConceptMap> compatibleBounds(Conjunction conjunction, ConceptMap bounds) {
+    private static Optional<ConceptMap> compatibleBounds(Conjunction conjunction, ConceptMap bounds) {
         Map<Identifier.Variable.Retrievable, Concept> newBounds = new HashMap<>();
         for (Map.Entry<Identifier.Variable.Retrievable, ? extends Concept> entry : bounds.concepts().entrySet()) {
             Identifier.Variable.Retrievable id = entry.getKey();

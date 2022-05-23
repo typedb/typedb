@@ -72,10 +72,10 @@ public class RootDisjunctionController
         private final ReasonerConsumer<ConceptMap> reasonerConsumer;
         private RootSink<ConceptMap> rootSink;
 
-        protected Processor(Driver<Processor> driver, Driver<RootDisjunctionController> controller,
-                                Context context, Disjunction disjunction, ConceptMap bounds,
-                                Set<Identifier.Variable.Retrievable> filter, boolean explain,
-                                ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
+        private Processor(Driver<Processor> driver, Driver<RootDisjunctionController> controller,
+                          Context context, Disjunction disjunction, ConceptMap bounds,
+                          Set<Identifier.Variable.Retrievable> filter, boolean explain,
+                          ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, context, disjunction, bounds, debugName);
             this.filter = filter;
             this.explain = explain;

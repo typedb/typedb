@@ -59,12 +59,12 @@ public class ConditionController extends ConjunctionController<
         );
     }
 
-    protected static class Processor
+    protected static final class Processor
             extends ConjunctionController.Processor<Either<ConceptMap, Materialisation>, Processor> {
 
-        protected Processor(Driver<Processor> driver, Driver<ConditionController> controller,
-                                Context context, ConceptMap bounds, List<Resolvable<?>> plan,
-                                Supplier<String> debugName) {
+        private Processor(Driver<Processor> driver, Driver<ConditionController> controller,
+                          Context context, ConceptMap bounds, List<Resolvable<?>> plan,
+                          Supplier<String> debugName) {
             super(driver, controller, context, bounds, plan, debugName);
         }
 

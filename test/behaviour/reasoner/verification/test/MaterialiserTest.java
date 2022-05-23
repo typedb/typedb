@@ -83,7 +83,7 @@ public class MaterialiserTest {
         }
     }
 
-    static void loadTransitivityExample(TypeDB.DatabaseManager typedb) {
+    private static void loadTransitivityExample(TypeDB.DatabaseManager typedb) {
         try (TypeDB.Session session = typedb.session(MaterialiserTest.database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(define(list(

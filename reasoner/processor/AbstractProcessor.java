@@ -76,7 +76,7 @@ public abstract class AbstractProcessor<
         this.hubReactive = hubReactive;
     }
 
-    public Stream<OUTPUT,OUTPUT> outputRouter() {
+    protected Stream<OUTPUT,OUTPUT> outputRouter() {
         return hubReactive;
     }
 
@@ -84,11 +84,11 @@ public abstract class AbstractProcessor<
         throw TypeDBException.of(ILLEGAL_OPERATION);
     }
 
-    public void pull(Identifier outputPortId) {
+    void pull(Identifier outputPortId) {
         outputPorts.get(outputPortId).pull();
     }
 
-    public void receive(Identifier inputPortId, INPUT packet, Identifier publisherId) {
+    void receive(Identifier inputPortId, INPUT packet, Identifier publisherId) {
         inputPorts.get(inputPortId).receive(publisherId, packet);
     }
 
@@ -97,9 +97,9 @@ public abstract class AbstractProcessor<
         driver().execute(actor -> actor.pullRetry(publisher.identifier(), subscriber.identifier()));
     }
 
-    protected void pullRetry(Identifier publisher, Identifier subscriber) {
+    void pullRetry(Identifier publisher, Identifier subscriber) {
         tracer().ifPresent(tracer -> tracer.pullRetry(subscriber, publisher));
-        pullRetries.get(new Pair<Identifier, Identifier>(publisher, subscriber)).run();
+        pullRetries.get(new Pair<>(publisher, subscriber)).run();
     }
 
     protected void requestConnection(REQ req) {
@@ -117,7 +117,7 @@ public abstract class AbstractProcessor<
         );
     }
 
-    protected void finishConnection(
+    void finishConnection(
             Identifier inputPortId, Driver<? extends AbstractProcessor<?, INPUT, ?, ?>> outputPortProcessor,
             Identifier outputPortId
     ) {
@@ -132,7 +132,7 @@ public abstract class AbstractProcessor<
         return inputPort;
     }
 
-    protected OutputPort<OUTPUT> createOutputPort() {
+    private OutputPort<OUTPUT> createOutputPort() {
         OutputPort<OUTPUT> outputPort = new OutputPort<>(this);
         outputPorts.put(outputPort.identifier(), outputPort);
         return outputPort;
@@ -175,11 +175,11 @@ public abstract class AbstractProcessor<
         this.terminated = true;
     }
 
-    public boolean isTerminated() {
+    private boolean isTerminated() {
         return terminated;
     }
 
-    public long incrementReactiveCounter() {
+    private long incrementReactiveCounter() {
         reactiveCounter += 1;
         return reactiveCounter;
     }

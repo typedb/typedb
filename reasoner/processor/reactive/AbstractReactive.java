@@ -22,10 +22,10 @@ import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 
 public abstract class AbstractReactive implements Reactive {
 
-    protected final AbstractProcessor<?, ?, ?, ?> processor;
-    protected final Reactive.Identifier identifier;
+    private final AbstractProcessor<?, ?, ?, ?> processor;
+    private final Reactive.Identifier identifier;
 
-    protected AbstractReactive(AbstractProcessor<?, ?, ?, ?> processor) {
+    AbstractReactive(AbstractProcessor<?, ?, ?, ?> processor) {
         this.processor = processor;
         this.identifier = processor().registerReactive(this);
     }

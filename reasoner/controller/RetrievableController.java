@@ -74,10 +74,10 @@ public class RetrievableController extends AbstractController<
 
         private final Supplier<FunctionalIterator<ConceptMap>> traversalSupplier;
 
-        protected RetrievableProcessor(Driver<RetrievableProcessor> driver,
-                                           Driver<RetrievableController> controller, Context context,
-                                           Supplier<FunctionalIterator<ConceptMap>> traversalSupplier,
-                                           Supplier<String> debugName) {
+        private RetrievableProcessor(Driver<RetrievableProcessor> driver,
+                                     Driver<RetrievableController> controller, Context context,
+                                     Supplier<FunctionalIterator<ConceptMap>> traversalSupplier,
+                                     Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.traversalSupplier = traversalSupplier;
         }

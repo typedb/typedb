@@ -64,15 +64,15 @@ public abstract class ConjunctionController<
         ConceptMap, ConceptMap, OUTPUT, ConjunctionController.Request<?, ?>, PROCESSOR, CONTROLLER
         > {
 
-    protected final Conjunction conjunction;
     private final Set<Resolvable<?>> resolvables;
     private final Set<Negated> negateds;
     private final Map<Retrievable, FilteredRetrievable> retrievableControllers;
     private final Map<Concludable, MappedConcludable> concludableControllers;
     private final Map<Negated, FilteredNegation> negationControllers;
     private List<Resolvable<?>> plan;
+    final Conjunction conjunction;
 
-    public ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction, Context context) {
+    ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction, Context context) {
         super(driver, context, () -> ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")");
         this.conjunction = conjunction;
         this.resolvables = new HashSet<>();
@@ -83,7 +83,7 @@ public abstract class ConjunctionController<
     }
 
     @Override
-    public void setUpUpstreamControllers() {
+    protected void setUpUpstreamControllers() {
         assert resolvables.isEmpty();
         Set<Concludable> concludables = concludablesTriggeringRules();
         Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
@@ -108,7 +108,7 @@ public abstract class ConjunctionController<
 
     abstract Set<Concludable> concludablesTriggeringRules();
 
-    protected List<Resolvable<?>> plan() {
+    List<Resolvable<?>> plan() {
         if (plan == null) {
             plan = Planner.plan(resolvables, new HashMap<>(), set());
             plan.addAll(negateds);
@@ -116,7 +116,7 @@ public abstract class ConjunctionController<
         return plan;
     }
 
-    protected static ConceptMap merge(ConceptMap into, ConceptMap from) {
+    static ConceptMap merge(ConceptMap into, ConceptMap from) {
         Map<Variable.Retrievable, Concept> compounded = new HashMap<>(into.concepts());
         compounded.putAll(from.concepts());
         return new ConceptMap(compounded, into.explainables().merge(from.explainables()));
@@ -159,36 +159,36 @@ public abstract class ConjunctionController<
         else return withExplainable(new ConceptMap(answer.concepts()), concludable);
     }
 
-    public static class Request<
+    static class Request<
             CONTROLLER_ID, CONTROLLER extends AbstractController<ConceptMap, ?, ConceptMap, ?, ?, ?>
             > extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap, CONTROLLER> {
-        protected Request(Reactive.Identifier inputPortId,
-                          Driver<? extends Processor<?, ?>> inputPortProcessor, CONTROLLER_ID controller_id,
-                          ConceptMap conceptMap) {
+        Request(Reactive.Identifier inputPortId,
+                Driver<? extends Processor<?, ?>> inputPortProcessor, CONTROLLER_ID controller_id,
+                ConceptMap conceptMap) {
             super(inputPortId, inputPortProcessor, controller_id, conceptMap);
         }
 
-        public boolean isRetrievable() {
+        boolean isRetrievable() {
             return false;
         }
 
-        public RetrievableRequest asRetrievable() {
+        RetrievableRequest asRetrievable() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-        public boolean isConcludable() {
+        boolean isConcludable() {
             return false;
         }
 
-        public ConcludableRequest asConcludable() {
+        ConcludableRequest asConcludable() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-        public boolean isNegated() {
+        boolean isNegated() {
             return false;
         }
 
-        public NegatedRequest asNegated() {
+        NegatedRequest asNegated() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
@@ -197,13 +197,13 @@ public abstract class ConjunctionController<
     protected abstract static class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>>
             extends AbstractProcessor<ConceptMap, OUTPUT, Request<?, ?>, PROCESSOR> {
 
-        protected final ConceptMap bounds;
-        protected final List<Resolvable<?>> plan;
+        final ConceptMap bounds;
+        final List<Resolvable<?>> plan;
 
-        protected Processor(Driver<PROCESSOR> driver,
-                                Driver<? extends ConjunctionController<OUTPUT, ?, PROCESSOR>> controller,
-                                Context context, ConceptMap bounds, List<Resolvable<?>> plan,
-                                Supplier<String> debugName) {
+        Processor(Driver<PROCESSOR> driver,
+                  Driver<? extends ConjunctionController<OUTPUT, ?, PROCESSOR>> controller,
+                  Context context, ConceptMap bounds, List<Resolvable<?>> plan,
+                  Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.bounds = bounds;
             this.plan = plan;
@@ -261,7 +261,7 @@ public abstract class ConjunctionController<
 
         }
 
-        protected InputPort<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
+        InputPort<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
             InputPort<ConceptMap> input = createInputPort();
             if (planElement.isRetrievable()) {
                 requestConnection(new RetrievableRequest(input.identifier(), driver(), planElement.asRetrievable(),
@@ -280,7 +280,7 @@ public abstract class ConjunctionController<
 
         public static class RetrievableRequest extends Request<Retrievable, RetrievableController> {
 
-            public RetrievableRequest(
+            RetrievableRequest(
                     Reactive.Identifier inputPortId,
                     Driver<? extends Processor<?, ?>> inputPortProcessor, Retrievable controllerId,
                     ConceptMap processorId
@@ -302,7 +302,7 @@ public abstract class ConjunctionController<
 
         static class ConcludableRequest extends Request<Concludable, ConcludableController.Match> {
 
-            public ConcludableRequest(
+            ConcludableRequest(
                     Reactive.Identifier inputPortId,
                     Driver<? extends Processor<?, ?>> inputPortProcessor, Concludable controllerId,
                     ConceptMap processorId
@@ -322,7 +322,7 @@ public abstract class ConjunctionController<
 
         static class NegatedRequest extends Request<Negated, NegationController> {
 
-            protected NegatedRequest(
+            NegatedRequest(
                     Reactive.Identifier inputPortId,
                     Driver<? extends Processor<?, ?>> inputPortProcessor, Negated controllerId, ConceptMap processorId
             ) {

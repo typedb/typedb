@@ -48,9 +48,9 @@ public abstract class AbstractController<
     private final Context context;
 
     private boolean terminated;
-    protected final Map<PROCESSOR_ID, Actor.Driver<PROCESSOR>> processors;
+    private final Map<PROCESSOR_ID, Actor.Driver<PROCESSOR>> processors;
 
-    protected AbstractController(Driver<CONTROLLER> driver, Context context, Supplier<String> debugName) {
+    AbstractController(Driver<CONTROLLER> driver, Context context, Supplier<String> debugName) {
         super(driver, debugName);
         this.context = context;
         this.processors = new HashMap<>();
@@ -63,7 +63,7 @@ public abstract class AbstractController<
 
     protected abstract void setUpUpstreamControllers();
 
-    protected ControllerRegistry registry() {
+    ControllerRegistry registry() {
         return context.registry();
     }
 
@@ -71,7 +71,7 @@ public abstract class AbstractController<
         return context.monitor();
     }
 
-    protected AbstractProcessor.Context processorContext() {
+    AbstractProcessor.Context processorContext() {
         return context.processor();
     }
 
@@ -83,12 +83,12 @@ public abstract class AbstractController<
     /*
      * Called on the target controller
      */
-    public <RECEIVED_REQ extends AbstractRequest<?, PROCESSOR_ID, OUTPUT, ?>> void establishProcessorConnection(RECEIVED_REQ req) {
+    <RECEIVED_REQ extends AbstractRequest<?, PROCESSOR_ID, OUTPUT, ?>> void establishProcessorConnection(RECEIVED_REQ req) {
         if (isTerminated()) return;
         getOrCreateProcessor(req.bounds()).execute(actor -> actor.establishConnection(req));
     }
 
-    public Driver<PROCESSOR> getOrCreateProcessor(PROCESSOR_ID processorId) {
+    Driver<PROCESSOR> getOrCreateProcessor(PROCESSOR_ID processorId) {
         // TODO: We can do subsumption in the subtypes here
         return processors.computeIfAbsent(processorId, this::createProcessor);
     }
@@ -125,7 +125,7 @@ public abstract class AbstractController<
         processors.values().forEach(p -> p.execute(actor -> actor.terminate(cause)));
     }
 
-    public boolean isTerminated() {
+    boolean isTerminated() {
         return terminated;
     }
 
@@ -154,11 +154,11 @@ public abstract class AbstractController<
             this.executorService = executorService;
         }
 
-        public ControllerRegistry registry() {
+        private ControllerRegistry registry() {
             return registry;
         }
 
-        public Driver<Monitor> monitor() {
+        private Driver<Monitor> monitor() {
             return monitor;
         }
 

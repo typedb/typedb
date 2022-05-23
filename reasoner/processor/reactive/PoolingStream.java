@@ -29,14 +29,14 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class PoolingStream<PACKET> extends AbstractStream<PACKET, PACKET> {
+public final class PoolingStream<PACKET> extends AbstractStream<PACKET, PACKET> {
 
     private final Operator.Pool<PACKET, PACKET> pool;
 
-    protected PoolingStream(AbstractProcessor<?, ?, ?, ?> processor,
-                            Operator.Pool<PACKET, PACKET> pool,
-                            SubscriberRegistry<PACKET> subscriberRegistry,
-                            PublisherRegistry<PACKET> publisherRegistry) {
+    private PoolingStream(AbstractProcessor<?, ?, ?, ?> processor,
+                          Operator.Pool<PACKET, PACKET> pool,
+                          SubscriberRegistry<PACKET> subscriberRegistry,
+                          PublisherRegistry<PACKET> publisherRegistry) {
         super(processor, subscriberRegistry, publisherRegistry);
         this.pool = pool;
     }
@@ -67,19 +67,19 @@ public class PoolingStream<PACKET> extends AbstractStream<PACKET, PACKET> {
                                    new PublisherRegistry.Single<>());
     }
 
-    protected Operator.Pool<PACKET, PACKET> operator() {
+    private Operator.Pool<PACKET, PACKET> operator() {
         return pool;
     }
 
     @Override
     public void pull(Subscriber<PACKET> subscriber) {
-        publisherDelegate.tracePull(subscriber);
+        publisherDelegate().tracePull(subscriber);
         subscriberRegistry().recordPull(subscriber);
         // TODO: We don't care about the subscriber here
         if (operator().hasNext(subscriber)) {
             // TODO: Code duplicated in Source
             subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
-            publisherDelegate.subscriberReceive(subscriber, operator().next(subscriber));
+            publisherDelegate().subscriberReceive(subscriber, operator().next(subscriber));
         } else {
             publisherRegistry().nonPulling().forEach(this::propagatePull);
         }
@@ -87,41 +87,41 @@ public class PoolingStream<PACKET> extends AbstractStream<PACKET, PACKET> {
 
     @Override
     public void receive(Publisher<PACKET> publisher, PACKET packet) {
-        subscriberDelegate.traceReceive(publisher, packet);
+        subscriberDelegate().traceReceive(publisher, packet);
         publisherRegistry().recordReceive(publisher);
-        if (operator().accept(publisher, packet)) publisherDelegate.monitorCreateAnswers(1);
-        publisherDelegate.monitorConsumeAnswers(1);
+        if (operator().accept(publisher, packet)) publisherDelegate().monitorCreateAnswers(1);
+        publisherDelegate().monitorConsumeAnswers(1);
         AtomicBoolean retry = new AtomicBoolean();
         retry.set(false);
         iterate(subscriberRegistry().pulling()).forEachRemaining(subscriber -> {
             if (operator().hasNext(subscriber)) {
                 subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
-                publisherDelegate.subscriberReceive(subscriber, operator().next(subscriber));
+                publisherDelegate().subscriberReceive(subscriber, operator().next(subscriber));
             } else {
                 retry.set(true);
             }
         });
-        if (retry.get()) subscriberDelegate.rePullPublisher(publisher);
+        if (retry.get()) subscriberDelegate().rePullPublisher(publisher);
     }
 
     @Override
     public <MAPPED> Stream<PACKET, MAPPED> map(Function<PACKET, MAPPED> function) {
-        return publisherDelegate.map(this, function);
+        return publisherDelegate().map(this, function);
     }
 
     @Override
     public <MAPPED> Stream<PACKET, MAPPED> flatMap(Function<PACKET, FunctionalIterator<MAPPED>> function) {
-        return publisherDelegate.flatMap(this, function);
+        return publisherDelegate().flatMap(this, function);
     }
 
     @Override
     public Stream<PACKET, PACKET> distinct() {
-        return publisherDelegate.distinct(this);
+        return publisherDelegate().distinct(this);
     }
 
     @Override
     public Stream<PACKET, PACKET> buffer() {
-        return publisherDelegate.buffer(this);
+        return publisherDelegate().buffer(this);
     }
 
     @Override

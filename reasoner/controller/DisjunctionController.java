@@ -50,16 +50,16 @@ public abstract class DisjunctionController<
         > extends AbstractController<ConceptMap, ConceptMap, ConceptMap, Request, PROCESSOR, CONTROLLER> {
 
     private final List<Pair<Conjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
-    protected Disjunction disjunction;
+    Disjunction disjunction;
 
-    protected DisjunctionController(Driver<CONTROLLER> driver, Disjunction disjunction, Context context) {
+    DisjunctionController(Driver<CONTROLLER> driver, Disjunction disjunction, Context context) {
         super(driver, context, () -> DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction + ")");
         this.disjunction = disjunction;
         this.conjunctionControllers = new ArrayList<>();
     }
 
     @Override
-    public void setUpUpstreamControllers() {
+    protected void setUpUpstreamControllers() {
         disjunction.conjunctions().forEach(conjunction -> {
             Driver<NestedConjunctionController> controller = registry().createNestedConjunction(conjunction);
             conjunctionControllers.add(new Pair<>(conjunction, controller));
@@ -73,7 +73,7 @@ public abstract class DisjunctionController<
                 .execute(actor -> actor.establishProcessorConnection(req.withMap(c -> merge(c, req.bounds()))));
     }
 
-    protected Driver<NestedConjunctionController> getConjunctionController(Conjunction conjunction) {
+    private Driver<NestedConjunctionController> getConjunctionController(Conjunction conjunction) {
         // TODO: Only necessary because conjunction equality is not well defined
         Optional<Driver<NestedConjunctionController>> controller =
                 iterate(conjunctionControllers).filter(p -> p.first() == conjunction).map(Pair::second).first();
@@ -87,10 +87,10 @@ public abstract class DisjunctionController<
         private final Disjunction disjunction;
         private final ConceptMap bounds;
 
-        protected Processor(Driver<PROCESSOR> driver,
-                                Driver<? extends DisjunctionController<PROCESSOR, ?>> controller,
-                                Context context, Disjunction disjunction, ConceptMap bounds,
-                                Supplier<String> debugName) {
+        Processor(Driver<PROCESSOR> driver,
+                  Driver<? extends DisjunctionController<PROCESSOR, ?>> controller,
+                  Context context, Disjunction disjunction, ConceptMap bounds,
+                  Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.disjunction = disjunction;
             this.bounds = bounds;
@@ -112,14 +112,14 @@ public abstract class DisjunctionController<
             }
         }
 
-        protected Reactive.Stream<ConceptMap, ConceptMap> getOutputRouter(Reactive.Stream<ConceptMap, ConceptMap> fanIn) {
+        Reactive.Stream<ConceptMap, ConceptMap> getOutputRouter(Reactive.Stream<ConceptMap, ConceptMap> fanIn) {
             // This method is only here to be overridden by root disjunction to avoid duplicating setUp
             return fanIn;
         }
 
-        protected static class Request extends AbstractRequest<Conjunction, ConceptMap, ConceptMap, NestedConjunctionController> {
+        static class Request extends AbstractRequest<Conjunction, ConceptMap, ConceptMap, NestedConjunctionController> {
 
-            protected Request(
+            Request(
                     Reactive.Identifier inputPortId, Driver<? extends Processor<?>> inputPortProcessor,
                     Conjunction controllerId, ConceptMap processorId
             ) {

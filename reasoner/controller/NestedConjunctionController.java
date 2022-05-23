@@ -58,13 +58,13 @@ public class NestedConjunctionController extends ConjunctionController<
         );
     }
 
-    protected static class NestedConjunctionProcessor
+    protected static final class NestedConjunctionProcessor
             extends ConjunctionController.Processor<ConceptMap, NestedConjunctionProcessor> {
 
-        protected NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
-                                                 Driver<NestedConjunctionController> controller, Context context,
-                                                 ConceptMap bounds, List<Resolvable<?>> plan,
-                                                 Supplier<String> debugName) {
+        private NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
+                                           Driver<NestedConjunctionController> controller, Context context,
+                                           ConceptMap bounds, List<Resolvable<?>> plan,
+                                           Supplier<String> debugName) {
             super(driver, controller, context, bounds, plan, debugName);
         }
 

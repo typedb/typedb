@@ -34,8 +34,8 @@ public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
     private final Reactive.Identifier inputPortId;
     private final Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor;
     private final CONTROLLER_ID controllerId;
-    private final List<Function<PACKET, PACKET>> transforms;
     private final Identifier id;
+    private final List<Function<PACKET, PACKET>> transforms;
     private BOUNDS bounds;
 
     protected AbstractRequest(
@@ -55,11 +55,11 @@ public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
         return id;
     }
 
-    public Reactive.Identifier inputPortId() {
+    Reactive.Identifier inputPortId() {
         return inputPortId;
     }
 
-    public Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> requestingProcessor() {
+    Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> requestingProcessor() {
         return inputPortProcessor;
     }
 
@@ -71,7 +71,7 @@ public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
         return bounds;
     }
 
-    public void connectViaTransforms(Reactive.Stream<PACKET, PACKET> toConnect, OutputPort<PACKET> output) {
+    void connectViaTransforms(Reactive.Stream<PACKET, PACKET> toConnect, OutputPort<PACKET> output) {
         Reactive.Publisher<PACKET> op = toConnect;
         for (Function<PACKET, PACKET> t : transforms) op = op.map(t);
         op.registerSubscriber(output);
@@ -92,7 +92,7 @@ public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
         private final CONTROLLER_ID controllerId;
         private final BOUNDS bounds;
 
-        Identifier(Reactive.Identifier inputPortId, CONTROLLER_ID controllerId, BOUNDS bounds) {
+        private Identifier(Reactive.Identifier inputPortId, CONTROLLER_ID controllerId, BOUNDS bounds) {
             this.inputPortId = inputPortId;
             this.controllerId = controllerId;
             this.bounds = bounds;

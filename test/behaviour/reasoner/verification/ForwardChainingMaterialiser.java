@@ -104,11 +104,11 @@ public class ForwardChainingMaterialiser {
 
     Optional<Materialisation> conditionMaterialisations(com.vaticle.typedb.core.logic.Rule rule, ConceptMap conditionAnswer) {
         if (!rules.containsKey(rule)) return Optional.empty();
-        if (!rules.get(rule).conditionAnsMaterialisations.containsKey(conditionAnswer)) return Optional.empty();
+        if (!rules.get(rule).conditionAnsMaterialisations().containsKey(conditionAnswer)) return Optional.empty();
         return materialisations.forCondition(rules.get(rule), conditionAnswer);
     }
 
-    private class Rule {
+    private final class Rule {
         private final com.vaticle.typedb.core.logic.Rule logicRule;
         private final Map<ConceptMap, Materialisation> conditionAnsMaterialisations;
         private boolean requiresReiteration;
@@ -138,15 +138,15 @@ public class ForwardChainingMaterialiser {
 
         private void record(ConceptMap conditionAns, ConceptMap conclusionAns) {
             Materialisation materialisation = Materialisation.create(logicRule, conditionAns, conclusionAns);
-            if (!conditionAnsMaterialisations.containsKey(conditionAns)) {
+            if (!conditionAnsMaterialisations().containsKey(conditionAns)) {
                 requiresReiteration = true;
-                conditionAnsMaterialisations.put(conditionAns, materialisation);
+                conditionAnsMaterialisations().put(conditionAns, materialisation);
                 materialisation.boundConclusion().inferredThing().ifPresent(
                         thing -> materialisations.recordThing(thing, materialisation));
                 materialisation.boundConclusion().inferredHas().ifPresent(
                         has -> materialisations.recordHas(has, materialisation));
             } else {
-                assert conditionAnsMaterialisations.get(conditionAns).equals(materialisation);
+                assert conditionAnsMaterialisations().get(conditionAns).equals(materialisation);
             }
         }
 
@@ -157,18 +157,22 @@ public class ForwardChainingMaterialiser {
             });
             return newMap;
         }
+
+        private Map<ConceptMap, Materialisation> conditionAnsMaterialisations() {
+            return conditionAnsMaterialisations;
+        }
     }
 
-    private class Materialisations {
+    private final class Materialisations {
         private final Map<Thing, Set<Materialisation>> concept;
         private final Map<Pair<Thing, Attribute>, Set<Materialisation>> has;
 
-        Materialisations() {
+        private Materialisations() {
             has = new HashMap<>();
             concept = new HashMap<>();
         }
 
-        FunctionalIterator<Materialisation> forConcludable(BoundConcludable boundConcludable) {
+        private FunctionalIterator<Materialisation> forConcludable(BoundConcludable boundConcludable) {
             FunctionalIterator<Materialisation> materialisations = empty();
             Optional<Thing> inferredConcept = boundConcludable.inferredConcept();
             if (inferredConcept.isPresent()) {
@@ -192,24 +196,24 @@ public class ForwardChainingMaterialiser {
             return iterate(has.get(toFetch));
         }
 
-        Optional<Materialisation> forCondition(Rule ruleRecorder, ConceptMap conditionAnswer) {
-            if (!ruleRecorder.conditionAnsMaterialisations.containsKey(conditionAnswer)) return Optional.empty();
-            return Optional.of(ruleRecorder.conditionAnsMaterialisations.get(conditionAnswer));
+        private Optional<Materialisation> forCondition(Rule ruleRecorder, ConceptMap conditionAnswer) {
+            if (!ruleRecorder.conditionAnsMaterialisations().containsKey(conditionAnswer)) return Optional.empty();
+            return Optional.of(ruleRecorder.conditionAnsMaterialisations().get(conditionAnswer));
         }
 
-        public void recordThing(Thing owner, Materialisation materialisation) {
+        void recordThing(Thing owner, Materialisation materialisation) {
             concept.putIfAbsent(owner, new HashSet<>());
             concept.get(owner).add(materialisation);
         }
 
-        public void recordHas(Pair<Thing, Attribute> hasEdge, Materialisation materialisation) {
+        void recordHas(Pair<Thing, Attribute> hasEdge, Materialisation materialisation) {
             has.putIfAbsent(hasEdge, new HashSet<>());
             has.get(hasEdge).add(materialisation);
         }
 
     }
 
-    static class Materialisation {
+    static final class Materialisation {
 
         private final com.vaticle.typedb.core.logic.Rule rule;
         private final BoundCondition boundCondition;

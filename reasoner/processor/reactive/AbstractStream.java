@@ -28,12 +28,12 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
 
     private final SubscriberRegistry<OUTPUT> subscriberRegistry;
     private final PublisherRegistry<INPUT> publisherRegistry;
-    protected final SubscriberDelegate<INPUT> subscriberDelegate;
-    protected final PublisherDelegate<OUTPUT> publisherDelegate;
+    private final SubscriberDelegate<INPUT> subscriberDelegate;
+    private final PublisherDelegate<OUTPUT> publisherDelegate;
 
-    protected AbstractStream(AbstractProcessor<?, ?, ?, ?> processor,
-                             SubscriberRegistry<OUTPUT> subscriberRegistry,
-                             PublisherRegistry<INPUT> publisherRegistry) {
+    AbstractStream(AbstractProcessor<?, ?, ?, ?> processor,
+                   SubscriberRegistry<OUTPUT> subscriberRegistry,
+                   PublisherRegistry<INPUT> publisherRegistry) {
         super(processor);
         this.subscriberRegistry = subscriberRegistry;
         this.publisherRegistry = publisherRegistry;
@@ -41,13 +41,21 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
         this.publisherDelegate = new PublisherDelegate<>(this, processor.context());
     }
 
-    public SubscriberRegistry<OUTPUT> subscriberRegistry() { return subscriberRegistry; }
+    protected SubscriberDelegate<INPUT> subscriberDelegate() {
+        return subscriberDelegate;
+    }
 
-    public PublisherRegistry<INPUT> publisherRegistry() {
+    protected PublisherDelegate<OUTPUT> publisherDelegate() {
+        return publisherDelegate;
+    }
+
+    protected SubscriberRegistry<OUTPUT> subscriberRegistry() { return subscriberRegistry; }
+
+    protected PublisherRegistry<INPUT> publisherRegistry() {
         return publisherRegistry;
     }
 
-    public void propagatePull(Publisher<INPUT> publisher) {
+    void propagatePull(Publisher<INPUT> publisher) {
         publisherRegistry().setPulling(publisher);
         publisher.pull(this);
     }
@@ -55,7 +63,7 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
     @Override
     public void registerPublisher(Publisher<INPUT> publisher) {
         publisherRegistry().add(publisher);
-        subscriberDelegate.registerPath(publisher);
+        subscriberDelegate().registerPath(publisher);
         if (subscriberRegistry().anyPulling() && publisherRegistry().setPulling(publisher)) propagatePull(publisher);
     }
 
@@ -64,4 +72,5 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
         subscriberRegistry().addSubscriber(subscriber);
         subscriber.registerPublisher(this);  // TODO: Bad to have this mutual registering in one method call, it's unclear
     }
+
 }

@@ -32,7 +32,7 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
     private final SubscriberRegistry.Single<PACKET> subscriberRegistry;
     private final PublisherDelegate<PACKET> publisherDelegate;
 
-    protected Source(AbstractProcessor<?, ?, ?, ?> processor, Operator.Source<PACKET> sourceOperator) {
+    private Source(AbstractProcessor<?, ?, ?, ?> processor, Operator.Source<PACKET> sourceOperator) {
         super(processor);
         this.sourceOperator = sourceOperator;
         this.subscriberRegistry = new SubscriberRegistry.Single<>();
@@ -63,7 +63,7 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
         }
     }
 
-    public SubscriberRegistry<PACKET> subscriberRegistry() {
+    private SubscriberRegistry<PACKET> subscriberRegistry() {
         return subscriberRegistry;
     }
 

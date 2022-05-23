@@ -43,8 +43,8 @@ public class MaterialisationController extends AbstractController<
     private final ConceptManager conceptMgr;
     private final TraversalEngine traversalEng;
 
-    public MaterialisationController(Driver<MaterialisationController> driver, Context context,
-                                     TraversalEngine traversalEng, ConceptManager conceptMgr) {
+    MaterialisationController(Driver<MaterialisationController> driver, Context context,
+                              TraversalEngine traversalEng, ConceptManager conceptMgr) {
         super(driver, context, MaterialisationController.class::getSimpleName);
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
@@ -70,16 +70,16 @@ public class MaterialisationController extends AbstractController<
         // Nothing to do
     }
 
-    public static class Processor extends AbstractProcessor<Void, Either<ConceptMap, Materialisation>,
+    public static final class Processor extends AbstractProcessor<Void, Either<ConceptMap, Materialisation>,
                 AbstractRequest<?, ?, Void, ?>, Processor> {
 
         private final Materialisable materialisable;
         private final TraversalEngine traversalEng;
         private final ConceptManager conceptMgr;
 
-        protected Processor(Driver<Processor> driver, Driver<MaterialisationController> controller,
-                                Context context, Materialisable materialisable, TraversalEngine traversalEng,
-                                ConceptManager conceptMgr, Supplier<String> debugName) {
+        private Processor(Driver<Processor> driver, Driver<MaterialisationController> controller,
+                          Context context, Materialisable materialisable, TraversalEngine traversalEng,
+                          ConceptManager conceptMgr, Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.materialisable = materialisable;
             this.traversalEng = traversalEng;

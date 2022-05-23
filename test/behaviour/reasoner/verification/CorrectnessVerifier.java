@@ -26,7 +26,7 @@ public class CorrectnessVerifier {
     private final ForwardChainingMaterialiser materialiser;
     private final CoreSession session;
 
-    public CorrectnessVerifier(CoreSession session, ForwardChainingMaterialiser materialiser) {
+    private CorrectnessVerifier(CoreSession session, ForwardChainingMaterialiser materialiser) {
         this.session = session;
         this.materialiser = materialiser;
     }

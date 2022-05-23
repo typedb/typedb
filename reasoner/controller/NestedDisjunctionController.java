@@ -41,11 +41,11 @@ public class NestedDisjunctionController
         );
     }
 
-    protected static class Processor extends DisjunctionController.Processor<Processor> {
+    protected static final class Processor extends DisjunctionController.Processor<Processor> {
 
-        protected Processor(Driver<Processor> driver,
-                                Driver<NestedDisjunctionController> controller, Context context,
-                                Disjunction disjunction, ConceptMap bounds, Supplier<String> debugName) {
+        private Processor(Driver<Processor> driver,
+                          Driver<NestedDisjunctionController> controller, Context context,
+                          Disjunction disjunction, ConceptMap bounds, Supplier<String> debugName) {
             super(driver, controller, context, disjunction, bounds, debugName);
         }
     }

@@ -88,9 +88,9 @@ public class BoundPattern {
         }
     }
 
-    static class BoundConcludable {
+    static final class BoundConcludable {
         private final BoundConjunction conjunction;
-        final Concludable unboundConcludable;
+        private final Concludable unboundConcludable;
 
         private BoundConcludable(BoundConjunction conjunction, Concludable unboundConcludable) {
             this.conjunction = conjunction;

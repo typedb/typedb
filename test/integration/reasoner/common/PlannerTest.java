@@ -186,13 +186,13 @@ public class PlannerTest {
         assertEquals(set(concludable, concludable2), set(plan));
     }
 
-    public static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
+    private static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
         Disjunction disjunction = resolvedDisjunction(query, logicMgr);
         assert disjunction.conjunctions().size() == 1;
         return disjunction.conjunctions().get(0);
     }
 
-    public static Disjunction resolvedDisjunction(String query, LogicManager logicMgr) {
+    private static Disjunction resolvedDisjunction(String query, LogicManager logicMgr) {
         Disjunction disjunction = Disjunction.create(TypeQL.parsePattern(query).asConjunction().normalise());
         logicMgr.typeInference().applyCombination(disjunction);
         return disjunction;

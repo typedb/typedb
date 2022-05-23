@@ -65,8 +65,8 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
     }
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
-    protected ReasonerProducer(Options.Query options, ControllerRegistry controllerRegistry,
-                               ExplainablesManager explainablesManager) {
+    private ReasonerProducer(Options.Query options, ControllerRegistry controllerRegistry,
+                             ExplainablesManager explainablesManager) {
         this.options = options;
         this.controllerRegistry = controllerRegistry;
         this.explainablesManager = explainablesManager;
@@ -109,7 +109,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         if (requiredAnswers.get() > 0) pull();
     }
 
-    protected synchronized void pull() {
+    synchronized void pull() {
         assert state == READY;
         state = PULLING;
         rootProcessor.execute(actor -> actor.rootPull());
@@ -151,7 +151,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
 
     public static abstract class Match extends ReasonerProducer<ConceptMap> {
 
-        protected Match(Options.Query options, ControllerRegistry controllerRegistry, ExplainablesManager explainablesManager) {
+        Match(Options.Query options, ControllerRegistry controllerRegistry, ExplainablesManager explainablesManager) {
             super(options, controllerRegistry, explainablesManager);
         }
 
@@ -211,8 +211,9 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         private final Concludable concludable;
         private final ConceptMap bounds;
 
-        public Explain(Concludable concludable, ConceptMap bounds, Options.Query options, ControllerRegistry controllerRegistry,
-                       ExplainablesManager explainablesManager) {
+        Explain(Concludable concludable, ConceptMap bounds, Options.Query options,
+                ControllerRegistry controllerRegistry,
+                ExplainablesManager explainablesManager) {
             super(options, controllerRegistry, explainablesManager);
             this.concludable = concludable;
             this.bounds = bounds;

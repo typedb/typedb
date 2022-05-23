@@ -84,8 +84,8 @@ public class NegationController extends AbstractController<
         private final ConceptMap bounds;
         private NegationStream negation;
 
-        protected Processor(Driver<Processor> driver, Driver<NegationController> controller, Context context,
-                            Negated negated, ConceptMap bounds, Supplier<String> debugName) {
+        private Processor(Driver<Processor> driver, Driver<NegationController> controller, Context context,
+                          Negated negated, ConceptMap bounds, Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.negated = negated;
             this.bounds = bounds;
@@ -129,7 +129,7 @@ public class NegationController extends AbstractController<
             private final ConceptMap bounds;
             private boolean answerFound;
 
-            protected NegationStream(AbstractProcessor<?, ?, ?, ?> processor, ConceptMap bounds) {
+            NegationStream(AbstractProcessor<?, ?, ?, ?> processor, ConceptMap bounds) {
                 super(processor, new NegationOperator<>(), new SubscriberRegistry.Single<>(),
                       new PublisherRegistry.Single<>());
                 this.bounds = bounds;
@@ -142,13 +142,13 @@ public class NegationController extends AbstractController<
                     super.pull(subscriber);
                 } else {
                     subscriberRegistry().recordPull(subscriber);
-                    publisherDelegate.tracePull(subscriber);
+                    publisherDelegate().tracePull(subscriber);
                 }
             }
 
             @Override
             public void receive(Publisher<ConceptMap> publisher, ConceptMap conceptMap) {
-                subscriberDelegate.traceReceive(publisher, conceptMap);
+                subscriberDelegate().traceReceive(publisher, conceptMap);
                 publisherRegistry().recordReceive(publisher);
                 if (!answerFound) processor().monitor().execute(actor -> actor.rootFinished(identifier()));
                 answerFound = true;
@@ -163,11 +163,11 @@ public class NegationController extends AbstractController<
             }
         }
 
-        protected static class Request extends AbstractRequest<
+        static class Request extends AbstractRequest<
                 Disjunction, ConceptMap, ConceptMap, NestedDisjunctionController
                 > {
 
-            protected Request(
+            Request(
                     Reactive.Identifier inputPortId, Driver<Processor> inputPortProcessor,
                     Disjunction controllerId, ConceptMap processorId
             ) {

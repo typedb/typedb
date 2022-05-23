@@ -84,10 +84,10 @@ public class RootConjunctionController
         private final boolean explain;
         private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
-        protected Processor(Driver<Processor> driver, Driver<RootConjunctionController> controller,
-                                Context context, ConceptMap bounds, List<Resolvable<?>> plan,
-                                Set<Identifier.Variable.Retrievable> filter, boolean explain,
-                                ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
+        private Processor(Driver<Processor> driver, Driver<RootConjunctionController> controller,
+                          Context context, ConceptMap bounds, List<Resolvable<?>> plan,
+                          Set<Identifier.Variable.Retrievable> filter, boolean explain,
+                          ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, context, bounds, plan, debugName);
             this.filter = filter;
             this.explain = explain;

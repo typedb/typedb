@@ -33,7 +33,7 @@ public class Mapping {
     private final Map<Retrievable, Retrievable> mapping;
     private final Map<Retrievable, Retrievable> reverseMapping;
 
-    Mapping(Map<? extends Retrievable, ? extends Retrievable> mapping) {
+    private Mapping(Map<? extends Retrievable, ? extends Retrievable> mapping) {
         this.mapping = new HashMap<>(mapping);
         this.reverseMapping = mapping.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
     }
@@ -73,7 +73,7 @@ public class Mapping {
         return new ConceptMap(transformed, conceptMap.explainables()); // we ignore explainables because they can't be mapped here
     }
 
-    public Map<Retrievable, Retrievable> mapping() {
+    private Map<Retrievable, Retrievable> mapping() {
         return mapping;
     }
 

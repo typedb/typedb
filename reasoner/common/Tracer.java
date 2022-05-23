@@ -144,7 +144,7 @@ public class Tracer {
             return String.format("reasoner_trace_transaction_id_%s.dot", id);
         }
 
-        public void start() {
+        private void start() {
             path.set(logDir.resolve(filename()));
             try {
                 LOG.debug("Writing reasoner traces to {}", path.get().toAbsolutePath());
@@ -165,7 +165,7 @@ public class Tracer {
             }
         }
 
-        public void finish() {
+        private void finish() {
             if (path.get() == null) throw TypeDBException.of(REASONER_TRACING_FILE_COULD_NOT_BE_FOUND);
             endFile();
             try {
@@ -249,7 +249,7 @@ public class Tracer {
             this.colour = colour;
         }
 
-        public String colour() {
+        String colour() {
             return colour;
         }
     }

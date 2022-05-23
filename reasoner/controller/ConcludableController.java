@@ -59,11 +59,11 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         CONTROLLER extends ConcludableController<INPUT, OUTPUT, ?, PROCESSOR, CONTROLLER>
         > extends AbstractController<ConceptMap, INPUT, OUTPUT, REQ, PROCESSOR, CONTROLLER> {
 
-    protected final Map<Conclusion, Driver<? extends ConclusionController<INPUT, ?, ?>>> conclusionControllers;
-    protected final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
-    protected final Concludable concludable;
+    private final Map<Conclusion, Driver<? extends ConclusionController<INPUT, ?, ?>>> conclusionControllers;
+    final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
+    final Concludable concludable;
 
-    public ConcludableController(Driver<CONTROLLER> driver, Concludable concludable, Context context) {
+    private ConcludableController(Driver<CONTROLLER> driver, Concludable concludable, Context context) {
         super(driver, context, () -> ConcludableController.class.getSimpleName() + "(pattern: " + concludable + ")");
         this.concludable = concludable;
         this.conclusionControllers = new HashMap<>();
@@ -182,15 +182,15 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         private final Set<Variable.Retrievable> unboundVars;  // TODO: Can just use a boolean to indicate if fully bound
         private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
         private final Set<Identifier> requestedConnections;
-        protected final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
+        final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
 
-        protected Processor(Driver<PROCESSOR> driver,
-                                Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller,
-                                Context context, ConceptMap bounds,
-                                Set<Variable.Retrievable> unboundVars,
-                                Map<Conclusion, Set<Unifier>> conclusionUnifiers,
-                                Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
-                                Supplier<String> debugName) {
+        Processor(Driver<PROCESSOR> driver,
+                  Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller,
+                  Context context, ConceptMap bounds,
+                  Set<Variable.Retrievable> unboundVars,
+                  Map<Conclusion, Set<Unifier>> conclusionUnifiers,
+                  Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
+                  Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.bounds = bounds;
             this.unboundVars = unboundVars;
@@ -235,7 +235,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             private final Concludable concludable;
 
-            public Match(
+            Match(
                     Driver<Match> driver, Driver<ConcludableController.Match> controller, Concludable concludable,
                     Context context, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
@@ -271,7 +271,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                         .map(ans -> withExplainable(ans, concludable));
             }
 
-            protected static ConceptMap withExplainable(ConceptMap conceptMap, Concludable concludable) {
+            static ConceptMap withExplainable(ConceptMap conceptMap, Concludable concludable) {
                 if (concludable.isRelation() || concludable.isAttribute() || concludable.isIsa()) {
                     return conceptMap.withExplainableConcept(concludable.generating().get().id(), concludable.pattern());
                 } else if (concludable.isHas()) {
@@ -291,8 +291,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             protected static class Request extends AbstractRequest<Conclusion, ConceptMap, Map<Variable, Concept>, ConclusionController.Match> {
 
-                public Request(Reactive.Identifier inputPortId,
-                               Driver<Match> inputPortProcessor, Conclusion controllerId, ConceptMap processorId) {
+                Request(Reactive.Identifier inputPortId,
+                        Driver<Match> inputPortProcessor, Conclusion controllerId, ConceptMap processorId) {
                     super(inputPortId, inputPortProcessor, controllerId, processorId);
                 }
 
@@ -305,7 +305,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             private final ReasonerConsumer<Explanation> reasonerConsumer;
             private RootSink<Explanation> rootSink;
 
-            public Explain(
+            Explain(
                     Driver<Explain> driver, Driver<ConcludableController.Explain> controller, Context context,
                     ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
@@ -359,8 +359,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             protected static class Request extends AbstractRequest<Conclusion, ConceptMap, PartialExplanation, ConclusionController.Explain> {
 
-                protected Request(Reactive.Identifier inputPortId,
-                                  Driver<Explain> inputPortProcessor, Conclusion conclusion, ConceptMap conceptMap) {
+                Request(Reactive.Identifier inputPortId,
+                        Driver<Explain> inputPortProcessor, Conclusion conclusion, ConceptMap conceptMap) {
                     super(inputPortId, inputPortProcessor, conclusion, conceptMap);
                 }
             }

@@ -275,15 +275,16 @@ public class ControllerRegistry {
 
     public static abstract class ControllerView {
 
-        public static MappedConcludable concludable(Driver<ConcludableController.Match> controller, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
+        private static MappedConcludable concludable(Driver<ConcludableController.Match> controller,
+                                                     Map<Variable.Retrievable, Variable.Retrievable> mapping) {
             return new MappedConcludable(controller, mapping);
         }
 
-        public static FilteredNegation negation(Driver<NegationController> controller, Set<Variable.Retrievable> filter) {
+        private static FilteredNegation negation(Driver<NegationController> controller, Set<Variable.Retrievable> filter) {
             return new FilteredNegation(controller, filter);
         }
 
-        public static FilteredRetrievable retrievable(Driver<RetrievableController> controller, Set<Variable.Retrievable> filter) {
+        private static FilteredRetrievable retrievable(Driver<RetrievableController> controller, Set<Variable.Retrievable> filter) {
             return new FilteredRetrievable(controller, filter);
         }
 
@@ -293,7 +294,7 @@ public class ControllerRegistry {
             private final Driver<ConcludableController.Match> controller;
             private final Map<Variable.Retrievable, Variable.Retrievable> mapping;
 
-            public MappedConcludable(Driver<ConcludableController.Match> controller, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
+            MappedConcludable(Driver<ConcludableController.Match> controller, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
                 this.controller = controller;
                 this.mapping = mapping;
             }
@@ -312,7 +313,7 @@ public class ControllerRegistry {
             private final Driver<NegationController> controller;
             private final Set<Variable.Retrievable> filter;
 
-            public FilteredNegation(Driver<NegationController> controller, Set<Variable.Retrievable> filter) {
+            FilteredNegation(Driver<NegationController> controller, Set<Variable.Retrievable> filter) {
                 this.controller = controller;
                 this.filter = filter;
             }
@@ -331,7 +332,7 @@ public class ControllerRegistry {
             private final Driver<RetrievableController> controller;
             private final Set<Variable.Retrievable> filter;
 
-            public FilteredRetrievable(Driver<RetrievableController> controller, Set<Variable.Retrievable> filter) {
+            FilteredRetrievable(Driver<RetrievableController> controller, Set<Variable.Retrievable> filter) {
                 this.controller = controller;
                 this.filter = filter;
             }

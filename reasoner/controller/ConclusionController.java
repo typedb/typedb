@@ -60,12 +60,12 @@ public abstract class ConclusionController<
         PROCESSOR, CONTROLLER
         > {
 
-    protected final Rule.Conclusion conclusion;
-    protected final Driver<MaterialisationController> materialisationController;
-    protected Driver<ConditionController> conditionController;
+    final Rule.Conclusion conclusion;
+    private final Driver<MaterialisationController> materialisationController;
+    private Driver<ConditionController> conditionController;
 
-    public ConclusionController(Driver<CONTROLLER> driver, Rule.Conclusion conclusion,
-                                Driver<MaterialisationController> materialisationController, Context context) {
+    private ConclusionController(Driver<CONTROLLER> driver, Rule.Conclusion conclusion,
+                                 Driver<MaterialisationController> materialisationController, Context context) {
         super(driver, context, () -> ConclusionController.class.getSimpleName() + "(pattern: " + conclusion + ")");
         this.conclusion = conclusion;
         this.materialisationController = materialisationController;
@@ -109,8 +109,8 @@ public abstract class ConclusionController<
 
     public static class Explain extends ConclusionController<PartialExplanation, Processor.Explain, Explain> {
 
-        public Explain(Driver<Explain> driver, Rule.Conclusion conclusion,
-                       Driver<MaterialisationController> materialisationController, Context context) {
+        Explain(Driver<Explain> driver, Rule.Conclusion conclusion,
+                Driver<MaterialisationController> materialisationController, Context context) {
             super(driver, conclusion, materialisationController, context);
         }
 
@@ -130,32 +130,32 @@ public abstract class ConclusionController<
             CONTROLLER extends AbstractController<BOUNDS, ?, Either<ConceptMap, Materialisation>, ?, ?, ?>
             > extends AbstractRequest<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>, CONTROLLER> {
 
-        protected Request(Reactive.Identifier inputPortId,
-                          Driver<? extends Processor<?, ?>> inputPortProcessor, CONTROLLER_ID controller_id, BOUNDS bounds) {
+        Request(Reactive.Identifier inputPortId,
+                Driver<? extends Processor<?, ?>> inputPortProcessor, CONTROLLER_ID controller_id, BOUNDS bounds) {
             super(inputPortId, inputPortProcessor, controller_id, bounds);
         }
 
-        public boolean isCondition() {
+        boolean isCondition() {
             return false;
         }
 
-        public ConditionRequest asCondition() {
+        ConditionRequest asCondition() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-        public boolean isMaterialiser() {
+        boolean isMaterialiser() {
             return false;
         }
 
-        public MaterialiserRequest asMaterialiser() {
+        MaterialiserRequest asMaterialiser() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController> {
 
-            public ConditionRequest(Reactive.Identifier inputPortId,
-                                    Driver<? extends Processor<?, ?>> inputPortProcessor,
-                                    Rule.Condition controllerId, ConceptMap processorId) {
+            ConditionRequest(Reactive.Identifier inputPortId,
+                             Driver<? extends Processor<?, ?>> inputPortProcessor,
+                             Rule.Condition controllerId, ConceptMap processorId) {
                 super(inputPortId, inputPortProcessor, controllerId, processorId);
             }
 
@@ -173,7 +173,7 @@ public abstract class ConclusionController<
 
         protected static class MaterialiserRequest extends Request<Void, Materialisable, MaterialisationController> {
 
-            public MaterialiserRequest(
+            MaterialiserRequest(
                     Reactive.Identifier inputPortId,
                     Driver<? extends Processor<?, ?>> inputPortProcessor, Void controllerId, Materialisable processorId
             ) {
@@ -202,10 +202,10 @@ public abstract class ConclusionController<
         private final Set<Identifier> conditionRequests;
         private final Set<Identifier> materialisationRequests;
 
-        protected Processor(Driver<PROCESSOR> driver,
-                            Driver<? extends ConclusionController<OUTPUT, PROCESSOR, ?>> controller,
-                            Context context, Rule rule, ConceptMap bounds, ConceptManager conceptManager,
-                            Supplier<String> debugName) {
+        Processor(Driver<PROCESSOR> driver,
+                  Driver<? extends ConclusionController<OUTPUT, PROCESSOR, ?>> controller,
+                  Context context, Rule rule, ConceptMap bounds, ConceptManager conceptManager,
+                  Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.rule = rule;
             this.bounds = bounds;
@@ -214,15 +214,23 @@ public abstract class ConclusionController<
             this.materialisationRequests = new HashSet<>();
         }
 
-        protected Rule rule() {
+        Rule rule() {
             return rule;
+        }
+
+        ConceptMap bounds() {
+            return bounds;
+        }
+
+        ConceptManager conceptManager() {
+            return conceptManager;
         }
 
         @Override
         public void setUp() {
             setHubReactive(PoolingStream.fanOut(this));
             InputPort<Either<ConceptMap, Materialisation>> conditionInput = createInputPort();
-            ConceptMap filteredBounds = bounds.filter(rule.condition().conjunction().retrieves());
+            ConceptMap filteredBounds = bounds().filter(rule.condition().conjunction().retrieves());
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), driver(), rule.condition(), filteredBounds));
             Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> conclusionReactive = fanIn(this, createOperator());
             conditionInput.map(Processor::convertConclusionInput).registerSubscriber(conclusionReactive);
@@ -250,10 +258,10 @@ public abstract class ConclusionController<
             }
         }
 
-        public static class Match extends Processor<Map<Variable, Concept>, Match> {
+        protected static class Match extends Processor<Map<Variable, Concept>, Match> {
 
-            protected Match(Driver<Match> driver, Driver<ConclusionController.Match> controller, Context context,
-                            Rule rule, ConceptMap bounds, ConceptManager conceptManager, Supplier<String> debugName) {
+            Match(Driver<Match> driver, Driver<ConclusionController.Match> controller, Context context,
+                  Rule rule, ConceptMap bounds, ConceptManager conceptManager, Supplier<String> debugName) {
                 super(driver, controller, context, rule, bounds, conceptManager, debugName);
             }
 
@@ -263,12 +271,12 @@ public abstract class ConclusionController<
             }
         }
 
-        public static class Explain extends Processor<PartialExplanation, Explain> {
+        protected static class Explain extends Processor<PartialExplanation, Explain> {
 
-            protected Explain(Driver<Explain> driver,
-                              Driver<? extends ConclusionController<PartialExplanation, Explain, ?>> controller,
-                              Context context, Rule rule, ConceptMap bounds, ConceptManager conceptManager,
-                              Supplier<String> debugName) {
+            Explain(Driver<Explain> driver,
+                    Driver<? extends ConclusionController<PartialExplanation, Explain, ?>> controller,
+                    Context context, Rule rule, ConceptMap bounds, ConceptManager conceptManager,
+                    Supplier<String> debugName) {
                 super(driver, controller, context, rule, bounds, conceptManager, debugName);
             }
 
@@ -287,7 +295,7 @@ public abstract class ConclusionController<
                 this.processor = processor;
             }
 
-            protected Processor<?, ?> processor() {
+            Processor<?, ?> processor() {
                 return processor;
             }
 
@@ -307,11 +315,11 @@ public abstract class ConclusionController<
                     ConceptMap filteredConditionAns = packet.first().filter(processor().rule().conclusion().retrievableIds());  // TODO: no explainables carried forwards
                     processor().mayRequestMaterialiser(new MaterialiserRequest(
                             materialisationInput.identifier(), processor().driver(), null,
-                            processor().rule().conclusion().materialisable(filteredConditionAns, processor().conceptManager))
+                            processor().rule().conclusion().materialisable(filteredConditionAns, processor().conceptManager()))
                     );
                     Publisher<Either<ConceptMap, Map<Variable, Concept>>> op = materialisationInput
                             .map(m -> m.second().bindToConclusion(processor().rule().conclusion(), filteredConditionAns))
-                            .flatMap(m -> merge(m, processor().bounds))
+                            .flatMap(m -> merge(m, processor().bounds()))
                             .map(Either::second);
                     mayStoreConditionAnswer(op, packet.first());
                     return Either.first(op);
@@ -336,7 +344,7 @@ public abstract class ConclusionController<
 
             protected abstract OUTPUT packageAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher, Map<Variable, Concept> conclusionAnswer);
 
-            public static class Match extends ConclusionOperator<Map<Variable, Concept>> {
+            protected static final class Match extends ConclusionOperator<Map<Variable, Concept>> {
 
                 private Match(Processor<?, ?> processor) {
                     super(processor);
@@ -351,7 +359,7 @@ public abstract class ConclusionController<
                 }
             }
 
-            public static class Explain extends ConclusionOperator<PartialExplanation> {
+            protected static final class Explain extends ConclusionOperator<PartialExplanation> {
 
                 private final Map<Publisher<Either<ConceptMap, Map<Variable, Concept>>>, ConceptMap> conditionAnswers;
 

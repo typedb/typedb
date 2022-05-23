@@ -455,13 +455,13 @@ public class ControllerTest {
         }
     }
 
-    public static Disjunction resolvedDisjunction(String query, LogicManager logicMgr) {
+    private static Disjunction resolvedDisjunction(String query, LogicManager logicMgr) {
         Disjunction disjunction = Disjunction.create(TypeQL.parsePattern(query).asConjunction().normalise());
         logicMgr.typeInference().applyCombination(disjunction);
         return disjunction;
     }
 
-    public static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
+    private static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
         Disjunction disjunction = resolvedDisjunction(query, logicMgr);
         assert disjunction.conjunctions().size() == 1;
         return disjunction.conjunctions().get(0);
@@ -482,22 +482,22 @@ public class ControllerTest {
         return transaction;
     }
 
-    private static class AnswerProducer implements ReasonerConsumer<ConceptMap> {
+    private static final class AnswerProducer implements ReasonerConsumer<ConceptMap> {
 
-        public LinkedBlockingQueue<ConceptMap> responses;
-        public LinkedBlockingQueue<Throwable> exceptions;
-        public AtomicBoolean doneReceived;
+        private final LinkedBlockingQueue<ConceptMap> responses;
+        private final LinkedBlockingQueue<Throwable> exceptions;
+        private final AtomicBoolean doneReceived;
         private Actor.Driver<? extends AbstractProcessor<?, ?, ?, ?>> rootProcessor;
         private boolean pullOnSet;
 
-        AnswerProducer() {
+        private AnswerProducer() {
             responses = new LinkedBlockingQueue<>();
             exceptions = new LinkedBlockingQueue<>();
             doneReceived = new AtomicBoolean(false);
             pullOnSet = false;
         }
 
-        void getNextAnswer() {
+        private void getNextAnswer() {
             if (rootProcessor != null) pull();
             else pullOnSet = true;
         }
@@ -529,7 +529,7 @@ public class ControllerTest {
             exceptions.add(e);
         }
 
-        public LinkedBlockingQueue<Throwable> exceptions() {
+        private LinkedBlockingQueue<Throwable> exceptions() {
             return exceptions;
         }
     }

@@ -176,9 +176,9 @@ public interface Operator {  // TODO: We should consider removing this in favour
 
     class FanOut<PACKET> implements Pool<PACKET, PACKET> {
 
-        final java.util.Map<Reactive.Subscriber<PACKET>, Integer> bufferPositions;  // Points to the next item needed
-        final Set<PACKET> bufferSet;
-        final List<PACKET> bufferList;
+        private final java.util.Map<Reactive.Subscriber<PACKET>, Integer> bufferPositions;  // Points to the next item needed
+        private final Set<PACKET> bufferSet;
+        private final List<PACKET> bufferList;
 
         public FanOut() {
             this.bufferSet = new HashSet<>();

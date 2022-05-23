@@ -47,14 +47,15 @@ public class Planner {
         return new Plan(resolvables, visitCounts, boundVariables).plan;
     }
 
-    static class Plan {
+    private static final class Plan {
         private final List<Resolvable<?>> plan;
         private final Map<Resolvable<?>, Set<Retrievable>> dependencies;
         private final Set<Retrievable> boundVariables;
         private final Set<Resolvable<?>> unplanned;
         private final Map<Resolvable<?>, Integer> visitCounts;
 
-        Plan(Set<Resolvable<?>> resolvables, Map<Resolvable<?>, Integer> visitCounts, Set<Retrievable> boundVariables) {
+        private Plan(Set<Resolvable<?>> resolvables, Map<Resolvable<?>, Integer> visitCounts,
+                     Set<Retrievable> boundVariables) {
             assert resolvables.size() > 0;
             this.unplanned = new HashSet<>(resolvables);
             this.visitCounts = visitCounts;

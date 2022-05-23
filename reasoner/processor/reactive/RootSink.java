@@ -76,7 +76,7 @@ public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>,
         reasonerConsumer.finish();
     }
 
-    protected PublisherRegistry.Single<PACKET> publisherRegistry() {
+    private PublisherRegistry.Single<PACKET> publisherRegistry() {
         return publisherRegistry;
     }
 
