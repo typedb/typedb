@@ -116,6 +116,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return builder.toString();
     }
 
+    @Override
+    public void getSyntaxRecursive(StringBuilder builder) {
+        getSyntax(builder);
+        getSubtypesExplicit().stream()
+                .sorted(comparing(x -> x.getLabel().name()))
+                .forEach(x -> x.getSyntaxRecursive(builder));
+    }
+
     protected void writeSupertypeAndAbstract(StringBuilder builder) {
         if (getSupertype() != null) {
             builder.append(getLabel().name()).append(SPACE);

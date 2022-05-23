@@ -88,4 +88,6 @@ public interface ThingType extends Type {
     java.lang.String getSyntax();
 
     void getSyntax(StringBuilder builder);
+
+    void getSyntaxRecursive(StringBuilder builder);
 }

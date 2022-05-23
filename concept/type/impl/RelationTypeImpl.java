@@ -270,13 +270,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         return this;
     }
 
+    @Override
     public void getSyntax(StringBuilder builder) {
         writeSupertypeAndAbstract(builder);
         writeOwnsAttributes(builder);
         writeRelates(builder);
         writePlays(builder);
         builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
-        getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(x -> x.getSyntax(builder));
     }
 
     private void writeRelates(StringBuilder builder) {
