@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.controller.NegationController.Processor.Request;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.processor.Connector;
+import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
@@ -74,9 +74,7 @@ public class NegationController extends AbstractController<
     @Override
     public void routeConnectionRequest(Request req) {
         if (isTerminated()) return;
-        disjunctionContoller.execute(actor -> actor.establishProcessorConnection(
-                new Connector<>(req.inputPortId(), req.bounds())
-        ));
+        disjunctionContoller.execute(actor -> actor.establishProcessorConnection(req));
     }
 
     protected static class Processor
@@ -87,7 +85,7 @@ public class NegationController extends AbstractController<
         private NegationStream negation;
 
         protected Processor(Driver<Processor> driver, Driver<NegationController> controller, Context context,
-                                Negated negated, ConceptMap bounds, Supplier<String> debugName) {
+                            Negated negated, ConceptMap bounds, Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.negated = negated;
             this.bounds = bounds;
@@ -165,7 +163,9 @@ public class NegationController extends AbstractController<
             }
         }
 
-        protected static class Request extends Connector.AbstractRequest<Disjunction, ConceptMap, ConceptMap> {
+        protected static class Request extends AbstractRequest<
+                Disjunction, ConceptMap, ConceptMap, NestedDisjunctionController
+                > {
 
             protected Request(Reactive.Identifier<ConceptMap, ?> inputPortId, Disjunction controllerId,
                               ConceptMap processorId) {

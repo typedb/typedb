@@ -26,8 +26,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.controller.DisjunctionController.Processor.Request;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.processor.Connector;
-import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
@@ -71,10 +70,7 @@ public abstract class DisjunctionController<
     public void routeConnectionRequest(Request req) {
         if (isTerminated()) return;
         getConjunctionController(req.controllerId())
-                .execute(actor -> actor.establishProcessorConnection(
-                        new Connector<>(
-                                req.inputPortId(), req.bounds()).withMap(c -> merge(c, req.bounds()))
-                ));
+                .execute(actor -> actor.establishProcessorConnection(req.withMap(c -> merge(c, req.bounds()))));
     }
 
     protected Driver<NestedConjunctionController> getConjunctionController(Conjunction conjunction) {
@@ -120,7 +116,7 @@ public abstract class DisjunctionController<
             return fanIn;
         }
 
-        protected static class Request extends AbstractRequest<Conjunction, ConceptMap, ConceptMap> {
+        protected static class Request extends AbstractRequest<Conjunction, ConceptMap, ConceptMap, NestedConjunctionController> {
 
             protected Request(Reactive.Identifier<ConceptMap, ?> inputPortId, Conjunction controllerId,
                               ConceptMap processorId) {

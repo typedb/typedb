@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.common.Traversal;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Source;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
@@ -31,11 +31,7 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
 import java.util.function.Supplier;
 
 public class RetrievableController extends AbstractController<
-        ConceptMap,
-        Void,
-        ConceptMap,
-        AbstractRequest<?, ?, Void>,
-        RetrievableController.RetrievableProcessor,
+        ConceptMap, Void, ConceptMap, AbstractRequest<?, ?, Void, ?>, RetrievableController.RetrievableProcessor,
         RetrievableController
         > {
 
@@ -65,14 +61,14 @@ public class RetrievableController extends AbstractController<
     }
 
     @Override
-    public void routeConnectionRequest(AbstractRequest<?, ?, Void> connectionRequest) {
+    public void routeConnectionRequest(AbstractRequest<?, ?, Void, ?> connectionRequest) {
         // Nothing to do
     }
 
     protected static class RetrievableProcessor extends AbstractProcessor<
                 Void,
                 ConceptMap,
-                AbstractRequest<?, ?, Void>,
+                AbstractRequest<?, ?, Void, ?>,
                 RetrievableProcessor
                 > {
 

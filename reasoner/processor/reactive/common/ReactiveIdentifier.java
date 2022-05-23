@@ -53,7 +53,7 @@ public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier<P_IN
 
     @Override
     public String toString() {
-        return "@" + Integer.toHexString(processor().hashCode()) + ":" + reactive.toString() +":" + scopedId;
+        return "@" + Integer.toHexString(processor().hashCode()) + ":" + reactive.toString() + ":" + scopedId;
     }
 
     @Override

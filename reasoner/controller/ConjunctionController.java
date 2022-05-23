@@ -29,10 +29,14 @@ import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.common.Planner;
-import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView;
+import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.ConcludableRequest;
+import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.NegatedRequest;
+import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.RetrievableRequest;
+import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.FilteredNegation;
+import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.FilteredRetrievable;
+import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.MappedConcludable;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.processor.Connector;
-import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
@@ -53,24 +57,19 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.controller.ConcludableController.Processor.Match.withExplainable;
 
-public abstract class ConjunctionController<OUTPUT,
-        CONTROLLER extends ConjunctionController<OUTPUT, CONTROLLER, PROCESSOR>,
+public abstract class ConjunctionController<
+        OUTPUT, CONTROLLER extends ConjunctionController<OUTPUT, CONTROLLER, PROCESSOR>,
         PROCESSOR extends AbstractProcessor<ConceptMap, OUTPUT, ?, PROCESSOR>
         > extends AbstractController<
-        ConceptMap,
-        ConceptMap,
-        OUTPUT,
-        ConjunctionController.Request<?>,
-        PROCESSOR,
-        CONTROLLER
+        ConceptMap, ConceptMap, OUTPUT, ConjunctionController.Request<?, ?>, PROCESSOR, CONTROLLER
         > {
 
     protected final Conjunction conjunction;
     private final Set<Resolvable<?>> resolvables;
     private final Set<Negated> negateds;
-    private final Map<Retrievable, ControllerView.FilteredRetrievable> retrievableControllers;
-    private final Map<Concludable, ControllerView.MappedConcludable> concludableControllers;
-    private final Map<Negated, ControllerView.FilteredNegation> negationControllers;
+    private final Map<Retrievable, FilteredRetrievable> retrievableControllers;
+    private final Map<Concludable, MappedConcludable> concludableControllers;
+    private final Map<Negated, FilteredNegation> negationControllers;
     private List<Resolvable<?>> plan;
 
     public ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction, Context context) {
@@ -124,34 +123,30 @@ public abstract class ConjunctionController<OUTPUT,
     }
 
     @Override
-    public void routeConnectionRequest(Request<?> connectionRequest) {
+    public void routeConnectionRequest(Request<?, ?> connectionRequest) {
         if (isTerminated()) return;
         if (connectionRequest.isRetrievable()) {
-            Processor.RetrievableRequest req = connectionRequest.asRetrievable();
-            ControllerRegistry.ControllerView.FilteredRetrievable controllerView = retrievableControllers.get(req.controllerId());
-            ConceptMap newPID = req.bounds().filter(controllerView.filter());
-            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputPortId(), req.bounds())
+            RetrievableRequest req = connectionRequest.asRetrievable();
+            FilteredRetrievable controllerView = retrievableControllers.get(req.controllerId());
+            controllerView.controller().execute(actor -> actor.establishProcessorConnection(req
                     .withMap(c -> merge(c, req.bounds()))
-                    .withNewBounds(newPID);
-            controllerView.controller().execute(actor -> actor.establishProcessorConnection(connector));
+                    .withNewBounds(req.bounds().filter(controllerView.filter()))));
         } else if (connectionRequest.isConcludable()) {
-            Processor.ConcludableRequest req = connectionRequest.asConcludable();
-            ControllerView.MappedConcludable controllerView = concludableControllers.get(req.controllerId());
+            ConcludableRequest req = connectionRequest.asConcludable();
+            MappedConcludable controllerView = concludableControllers.get(req.controllerId());
             Mapping mapping = Mapping.of(controllerView.mapping());
             ConceptMap newPID = mapping.transform(req.bounds());
-            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputPortId(), req.bounds())
+            controllerView.controller().execute(actor -> actor.establishProcessorConnection(req
                     .withMap(mapping::unTransform)
                     .withMap(c -> remapExplainable(c, req.controllerId()))
-                    .withNewBounds(newPID);
-            controllerView.controller().execute(actor -> actor.establishProcessorConnection(connector));
+                    .withNewBounds(newPID)));
         } else if (connectionRequest.isNegated()) {
-            Processor.NegatedRequest req = connectionRequest.asNegated();
-            ControllerRegistry.ControllerView.FilteredNegation controllerView = negationControllers.get(req.controllerId());
+            NegatedRequest req = connectionRequest.asNegated();
+            FilteredNegation controllerView = negationControllers.get(req.controllerId());
             ConceptMap newPID = req.bounds().filter(controllerView.filter());
-            Connector<ConceptMap, ConceptMap> connector = new Connector<>(req.inputPortId(), req.bounds())
+            controllerView.controller().execute(actor -> actor.establishProcessorConnection(req
                     .withMap(c -> merge(c, req.bounds()))
-                    .withNewBounds(newPID);
-            controllerView.controller().execute(actor -> actor.establishProcessorConnection(connector));
+                    .withNewBounds(newPID)));
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
@@ -164,7 +159,9 @@ public abstract class ConjunctionController<OUTPUT,
         else return withExplainable(new ConceptMap(answer.concepts()), concludable);
     }
 
-    public static class Request<CONTROLLER_ID> extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap> {
+    public static class Request<
+            CONTROLLER_ID, CONTROLLER extends AbstractController<ConceptMap, ?, ConceptMap, ?, ?, ?>
+            > extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap, CONTROLLER> {
         protected Request(Reactive.Identifier<ConceptMap, ?> inputPortId, CONTROLLER_ID controller_id,
                           ConceptMap conceptMap) {
             super(inputPortId, controller_id, conceptMap);
@@ -174,7 +171,7 @@ public abstract class ConjunctionController<OUTPUT,
             return false;
         }
 
-        public Processor.RetrievableRequest asRetrievable() {
+        public RetrievableRequest asRetrievable() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
@@ -182,7 +179,7 @@ public abstract class ConjunctionController<OUTPUT,
             return false;
         }
 
-        public Processor.ConcludableRequest asConcludable() {
+        public ConcludableRequest asConcludable() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
@@ -190,14 +187,14 @@ public abstract class ConjunctionController<OUTPUT,
             return false;
         }
 
-        public Processor.NegatedRequest asNegated() {
+        public NegatedRequest asNegated() {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
     }
 
     protected abstract static class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>>
-            extends AbstractProcessor<ConceptMap, OUTPUT, Request<?>, PROCESSOR> {
+            extends AbstractProcessor<ConceptMap, OUTPUT, Request<?, ?>, PROCESSOR> {
 
         protected final ConceptMap bounds;
         protected final List<Resolvable<?>> plan;
@@ -280,7 +277,7 @@ public abstract class ConjunctionController<OUTPUT,
             return input;
         }
 
-        public static class RetrievableRequest extends Request<Retrievable> {
+        public static class RetrievableRequest extends Request<Retrievable, RetrievableController> {
 
             public RetrievableRequest(Reactive.Identifier<ConceptMap, ?> inputPortId, Retrievable controllerId,
                                       ConceptMap processorId) {
@@ -299,7 +296,7 @@ public abstract class ConjunctionController<OUTPUT,
 
         }
 
-        static class ConcludableRequest extends Request<Concludable> {
+        static class ConcludableRequest extends Request<Concludable, ConcludableController.Match> {
 
             public ConcludableRequest(Reactive.Identifier<ConceptMap, ?> inputPortId, Concludable controllerId,
                                       ConceptMap processorId) {
@@ -316,7 +313,7 @@ public abstract class ConjunctionController<OUTPUT,
 
         }
 
-        static class NegatedRequest extends Request<Negated> {
+        static class NegatedRequest extends Request<Negated, NegationController> {
 
             protected NegatedRequest(Reactive.Identifier<ConceptMap, ?> inputPortId, Negated controllerId,
                                      ConceptMap processorId) {

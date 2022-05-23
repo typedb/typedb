@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.controller.AbstractController;
-import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Identifier;
@@ -44,8 +43,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
-public abstract class AbstractProcessor<INPUT, OUTPUT,
-        REQ extends AbstractRequest<?, ?, INPUT>,
+public abstract class AbstractProcessor<
+        INPUT, OUTPUT, REQ extends AbstractRequest<?, ?, INPUT, ?>,
         PROCESSOR extends AbstractProcessor<INPUT, OUTPUT, REQ, PROCESSOR>> extends Actor<PROCESSOR> {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractProcessor.class);
@@ -108,13 +107,13 @@ public abstract class AbstractProcessor<INPUT, OUTPUT,
         controller.execute(actor -> actor.routeConnectionRequest(req));
     }
 
-    public void establishConnection(Connector<?, OUTPUT> connector) {
+    public <RECEIVED_REQ extends AbstractRequest<?, ?, OUTPUT, ?>> void establishConnection(RECEIVED_REQ request) {
         if (isTerminated()) return;
         OutputPort<OUTPUT> outputPort = createOutputPort();
-        outputPort.setInputPort(connector.inputPortId());
-        connector.connectViaTransforms(outputRouter(), outputPort);
-        connector.inputPortId().processor().execute(
-                actor -> actor.finishConnection(connector.inputPortId(), outputPort.identifier()));
+        outputPort.setInputPort(request.inputPortId());
+        request.connectViaTransforms(outputRouter(), outputPort);
+        request.inputPortId().processor().execute(
+                actor -> actor.finishConnection(request.inputPortId(), outputPort.identifier()));
     }
 
     protected void finishConnection(Identifier<INPUT, ?> inputPortId, Identifier<?, INPUT> outputPortId) {

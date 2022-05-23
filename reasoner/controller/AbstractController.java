@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.processor.Connector;
+import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 public abstract class AbstractController<
         PROCESSOR_ID, INPUT, OUTPUT,
-        REQ extends Connector.AbstractRequest<?, ?, INPUT>,
+        REQ extends AbstractRequest<?, ?, INPUT, ?>,
         PROCESSOR extends AbstractProcessor<INPUT, OUTPUT, ?, PROCESSOR>,
         CONTROLLER extends AbstractController<PROCESSOR_ID, INPUT, OUTPUT, ?, PROCESSOR, CONTROLLER>
         > extends Actor<CONTROLLER> {
@@ -75,11 +75,17 @@ public abstract class AbstractController<
         return context.processor();
     }
 
+    /*
+     * Called on the controller that owns the requesting processor
+     */
     public abstract void routeConnectionRequest(REQ connectionRequest);
 
-    public void establishProcessorConnection(Connector<PROCESSOR_ID, OUTPUT> connector) {
+    /*
+     * Called on the target controller
+     */
+    public <RECEIVED_REQ extends AbstractRequest<?, PROCESSOR_ID, OUTPUT, ?>> void establishProcessorConnection(RECEIVED_REQ req) {
         if (isTerminated()) return;
-        getOrCreateProcessor(connector.bounds()).execute(actor -> actor.establishConnection(connector));
+        getOrCreateProcessor(req.bounds()).execute(actor -> actor.establishConnection(req));
     }
 
     public Driver<PROCESSOR> getOrCreateProcessor(PROCESSOR_ID processorId) {

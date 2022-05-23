@@ -32,8 +32,8 @@ import com.vaticle.typedb.core.reasoner.answer.PartialExplanation;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.ConditionRequest;
 import com.vaticle.typedb.core.reasoner.controller.ConclusionController.Request.MaterialiserRequest;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.processor.Connector;
-import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.processor.AbstractRequest.Identifier;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
@@ -53,16 +53,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream.fanIn;
 
 public abstract class ConclusionController<
-        OUTPUT,
-        PROCESSOR extends AbstractProcessor<Either<ConceptMap, Materialisation>, OUTPUT, ?, PROCESSOR>,
+        OUTPUT, PROCESSOR extends AbstractProcessor<Either<ConceptMap, Materialisation>, OUTPUT, ?, PROCESSOR>,
         CONTROLLER extends ConclusionController<OUTPUT, PROCESSOR, CONTROLLER>
         > extends AbstractController<
-        ConceptMap,
-        Either<ConceptMap, Materialisation>,
-        OUTPUT,
-        ConclusionController.Request<?, ?>,
-        PROCESSOR,
-        CONTROLLER
+        ConceptMap, Either<ConceptMap, Materialisation>, OUTPUT, ConclusionController.Request<?, ?, ?>,
+        PROCESSOR, CONTROLLER
         > {
 
     protected final Rule.Conclusion conclusion;
@@ -82,14 +77,12 @@ public abstract class ConclusionController<
     }
 
     @Override
-    public void routeConnectionRequest(Request<?, ?> req) {
+    public void routeConnectionRequest(Request<?, ?, ?> req) {
         if (isTerminated()) return;
         if (req.isCondition()) {
-            conditionController.execute(actor -> actor.establishProcessorConnection(
-                    new Connector<>(req.asCondition().inputPortId(), req.asCondition().bounds())));
+            conditionController.execute(actor -> actor.establishProcessorConnection(req.asCondition()));
         } else if (req.isMaterialiser()) {
-            materialisationController.execute(actor -> actor.establishProcessorConnection(
-                    new Connector<>(req.asMaterialiser().inputPortId(), req.asMaterialiser().bounds())));
+            materialisationController.execute(actor -> actor.establishProcessorConnection(req.asMaterialiser()));
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
@@ -104,7 +97,7 @@ public abstract class ConclusionController<
 
         @Override
         protected Processor.Match createProcessorFromDriver(Driver<Processor.Match> processorDriver,
-                                                                    ConceptMap bounds) {
+                                                            ConceptMap bounds) {
             return new Processor.Match(
                     processorDriver, driver(), processorContext(), conclusion.rule(), bounds,
                     registry().conceptManager(),
@@ -123,7 +116,7 @@ public abstract class ConclusionController<
 
         @Override
         protected Processor.Explain createProcessorFromDriver(Driver<Processor.Explain> processorDriver,
-                                                                      ConceptMap bounds) {
+                                                              ConceptMap bounds) {
             return new Processor.Explain(
                     processorDriver, driver(), processorContext(), conclusion.rule(), bounds,
                     registry().conceptManager(),
@@ -132,8 +125,10 @@ public abstract class ConclusionController<
         }
     }
 
-    protected static class Request<CONTROLLER_ID, BOUNDS>
-            extends AbstractRequest<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>> {
+    protected static class Request<
+            CONTROLLER_ID, BOUNDS,
+            CONTROLLER extends AbstractController<BOUNDS, ?, Either<ConceptMap, Materialisation>, ?, ?, ?>
+            > extends AbstractRequest<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>, CONTROLLER> {
 
         protected Request(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
                           CONTROLLER_ID controller_id, BOUNDS bounds) {
@@ -156,7 +151,7 @@ public abstract class ConclusionController<
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-        protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap> {
+        protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController> {
 
             public ConditionRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
                                     Rule.Condition controllerId, ConceptMap processorId) {
@@ -175,7 +170,7 @@ public abstract class ConclusionController<
 
         }
 
-        protected static class MaterialiserRequest extends Request<Void, Materialisable> {
+        protected static class MaterialiserRequest extends Request<Void, Materialisable, MaterialisationController> {
 
             public MaterialiserRequest(Reactive.Identifier<Either<ConceptMap, Materialisation>, ?> inputPortId,
                                        Void controllerId, Materialisable processorId) {
@@ -196,21 +191,18 @@ public abstract class ConclusionController<
     }
 
     protected abstract static class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>>
-            extends AbstractProcessor<
-                        Either<ConceptMap, Materialisation>, OUTPUT,
-                        Request<?, ?>, PROCESSOR
-                        > {
+            extends AbstractProcessor<Either<ConceptMap, Materialisation>, OUTPUT, Request<?, ?, ?>, PROCESSOR> {
 
         private final Rule rule;
         private final ConceptMap bounds;
         private final ConceptManager conceptManager;
-        private final Set<ConditionRequest> conditionRequests;
-        private final Set<MaterialiserRequest> materialisationRequests;
+        private final Set<Identifier> conditionRequests;
+        private final Set<Identifier> materialisationRequests;
 
         protected Processor(Driver<PROCESSOR> driver,
-                                Driver<? extends ConclusionController<OUTPUT, PROCESSOR, ?>> controller,
-                                Context context, Rule rule, ConceptMap bounds, ConceptManager conceptManager,
-                                Supplier<String> debugName) {
+                            Driver<? extends ConclusionController<OUTPUT, PROCESSOR, ?>> controller,
+                            Context context, Rule rule, ConceptMap bounds, ConceptManager conceptManager,
+                            Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.rule = rule;
             this.bounds = bounds;
@@ -241,16 +233,16 @@ public abstract class ConclusionController<
         }
 
         private void mayRequestCondition(ConditionRequest conditionRequest) {
-            if (!conditionRequests.contains(conditionRequest)) {
-                conditionRequests.add(conditionRequest);
+            if (!conditionRequests.contains(conditionRequest.id())) {
+                conditionRequests.add(conditionRequest.id());
                 requestConnection(conditionRequest);
             }
         }
 
         private void mayRequestMaterialiser(MaterialiserRequest materialisationRequest) {
             // TODO: Does this method achieve anything?
-            if (!materialisationRequests.contains(materialisationRequest)) {
-                materialisationRequests.add(materialisationRequest);
+            if (!materialisationRequests.contains(materialisationRequest.id())) {
+                materialisationRequests.add(materialisationRequest.id());
                 requestConnection(materialisationRequest);
             }
         }

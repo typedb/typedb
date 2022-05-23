@@ -32,8 +32,8 @@ import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.answer.PartialExplanation;
 import com.vaticle.typedb.core.reasoner.common.Traversal;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.processor.Connector;
-import com.vaticle.typedb.core.reasoner.processor.Connector.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
+import com.vaticle.typedb.core.reasoner.processor.AbstractRequest.Identifier;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
@@ -54,7 +54,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ConcludableController<INPUT, OUTPUT,
-        REQ extends AbstractRequest<Conclusion, ConceptMap, INPUT>,
+        REQ extends AbstractRequest<Conclusion, ConceptMap, INPUT, ?>,
         PROCESSOR extends ConcludableController.Processor<INPUT, OUTPUT, ?, PROCESSOR>,
         CONTROLLER extends ConcludableController<INPUT, OUTPUT, ?, PROCESSOR, CONTROLLER>
         > extends AbstractController<ConceptMap, INPUT, OUTPUT, REQ, PROCESSOR, CONTROLLER> {
@@ -85,8 +85,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
     @Override
     public void routeConnectionRequest(REQ req) {
         if (isTerminated()) return;
-        conclusionControllers.get(req.controllerId())
-                .execute(actor -> actor.establishProcessorConnection(new Connector<>(req.inputPortId(), req.bounds())));
+        conclusionControllers.get(req.controllerId()).execute(actor -> actor.establishProcessorConnection(req));
     }
 
     public static class Match extends ConcludableController<Map<Variable, Concept>, ConceptMap, Processor.Match.Request,
@@ -175,16 +174,14 @@ public abstract class ConcludableController<INPUT, OUTPUT,
     }
 
     protected abstract static class Processor<
-            INPUT,
-            OUTPUT,
-            REQ extends Connector.AbstractRequest<?, ?, INPUT>,
+            INPUT, OUTPUT, REQ extends AbstractRequest<?, ?, INPUT, ?>,
             PROCESSOR extends AbstractProcessor<INPUT, OUTPUT, REQ, PROCESSOR>
             > extends AbstractProcessor<INPUT, OUTPUT, REQ, PROCESSOR> {
 
         private final ConceptMap bounds;
         private final Set<Variable.Retrievable> unboundVars;  // TODO: Can just use a boolean to indicate if fully bound
         private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
-        private final Set<REQ> requestedConnections;
+        private final Set<Identifier> requestedConnections;
         protected final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
 
         protected Processor(Driver<PROCESSOR> driver,
@@ -228,8 +225,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         protected abstract void mayAddTraversal();
 
         private void mayRequestConnection(REQ conclusionRequest) {
-            if (!requestedConnections.contains(conclusionRequest)) {
-                requestedConnections.add(conclusionRequest);
+            if (!requestedConnections.contains(conclusionRequest.id())) {
+                requestedConnections.add(conclusionRequest.id());
                 requestConnection(conclusionRequest);
             }
         }
@@ -292,7 +289,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 return new Request(inputPortId, conclusion, bounds);
             }
 
-            protected static class Request extends AbstractRequest<Conclusion, ConceptMap, Map<Variable, Concept>> {
+            protected static class Request extends AbstractRequest<Conclusion, ConceptMap, Map<Variable, Concept>, ConclusionController.Match> {
 
                 public Request(Reactive.Identifier<Map<Variable, Concept>, ?> inputPortId, Conclusion controllerId,
                                ConceptMap processorId) {
@@ -360,7 +357,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 return new Request(inputPortId, conclusion, bounds);
             }
 
-            protected static class Request extends AbstractRequest<Conclusion, ConceptMap, PartialExplanation> {
+            protected static class Request extends AbstractRequest<Conclusion, ConceptMap, PartialExplanation, ConclusionController.Explain> {
 
                 protected Request(Reactive.Identifier<PartialExplanation, ?> inputPortId, Conclusion conclusion,
                                   ConceptMap conceptMap) {
