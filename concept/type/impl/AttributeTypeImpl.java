@@ -30,14 +30,13 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
@@ -67,7 +66,6 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUT
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ATTRIBUTE;
 import static com.vaticle.typeql.lang.common.util.Strings.escapeRegex;
 import static com.vaticle.typeql.lang.common.util.Strings.quoteString;
-import static java.lang.String.format;
 import static java.util.Comparator.comparing;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
@@ -262,18 +260,19 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public void getSyntax(StringBuilder builder) {
-        if (getSupertype() != null) {
-            builder.append(format("%s sub %s", getLabel().name(), getSupertype().getLabel().name()))
-                    .append(StringBuilders.COMMA_NEWLINE_INDENT);
+        writeSupertypeAndAbstract(builder);
+        if (!isRoot()) {
+            builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                    .append(TypeQLToken.Constraint.VALUE_TYPE).append(TypeQLToken.Char.SPACE)
+                    .append(getValueType().syntax());
+            if (isString()) {
+                java.util.regex.Pattern regex = asString().getRegex();
+                if (regex != null) builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                        .append(TypeQLToken.Constraint.REGEX).append(TypeQLToken.Char.SPACE)
+                        .append(quoteString(escapeRegex(regex.pattern())));
+            }
         }
-        if (!isRoot()) builder.append(format("value %s", getValueType().syntax()));
-        if (isString()) {
-            java.util.regex.Pattern regex = asString().getRegex();
-            if (regex != null) builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
-                    .append(format("regex %s", quoteString(escapeRegex(regex.pattern()))));
-        }
-        writeAbstract(builder);
-        writeOwns(builder);
+        writeOwnsAttributes(builder);
         writePlays(builder);
         builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
         getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(x -> x.getSyntax(builder));

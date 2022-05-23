@@ -271,11 +271,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     public void getSyntax(StringBuilder builder) {
-        if (getSupertype() != null) {
-            builder.append(String.format("%s sub %s", getLabel().name(), getSupertype().getLabel().name()));
-        }
-        writeAbstract(builder);
-        writeOwns(builder);
+        writeSupertypeAndAbstract(builder);
+        writeOwnsAttributes(builder);
         writeRelates(builder);
         writePlays(builder);
         builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);

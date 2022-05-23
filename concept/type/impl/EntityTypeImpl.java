@@ -122,11 +122,8 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public void getSyntax(StringBuilder builder) {
-        if (getSupertype() != null) {
-            builder.append(String.format("%s sub %s", getLabel().name(), getSupertype().getLabel().name()));
-        }
-        writeAbstract(builder);
-        writeOwns(builder);
+        writeSupertypeAndAbstract(builder);
+        writeOwnsAttributes(builder);
         writePlays(builder);
         builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
         getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(x -> x.getSyntax(builder));

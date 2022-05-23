@@ -38,14 +38,13 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-
-import javax.annotation.Nullable;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-
+import javax.annotation.Nullable;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
@@ -81,6 +80,8 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA_SPACE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static java.util.Comparator.comparing;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
@@ -115,43 +116,49 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return builder.toString();
     }
 
-    protected void writeAbstract(StringBuilder builder) {
-        if (isAbstract()) builder.append(StringBuilders.COMMA_NEWLINE_INDENT).append("abstract");
+    protected void writeSupertypeAndAbstract(StringBuilder builder) {
+        if (getSupertype() != null) {
+            builder.append(getLabel().name()).append(SPACE);
+            builder.append(TypeQLToken.Constraint.SUB).append(SPACE);
+            builder.append(getSupertype().getLabel().name());
+        }
+        if (isAbstract()) builder.append(COMMA_SPACE).append(TypeQLToken.Constraint.ABSTRACT);
     }
 
-    protected void writeOwns(StringBuilder builder) {
+    protected void writeOwnsAttributes(StringBuilder builder) {
         Set<String> keys = getOwnsExplicit(true).map(x -> x.getLabel().name()).toSet();
         List<? extends AttributeType> attributeTypes = getOwnsExplicit().toList();
         attributeTypes.stream().filter(x -> keys.contains(x.getLabel().name()))
                 .sorted(comparing(x -> x.getLabel().name()))
                 .forEach(attributeType -> {
-                    builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
-                            .append(String.format("owns %s", attributeType.getLabel().name()));
-                    AttributeType overridden = getOwnsOverridden(attributeType);
-                    if (overridden != null) {
-                        builder.append(String.format(" as %s", overridden.getLabel().name()));
-                    }
-                    builder.append(" @key");
+                    writeOwnsAttribute(builder, attributeType);
+                    builder.append(SPACE).append(TypeQLToken.Constraint.IS_KEY);
                 });
         attributeTypes.stream().filter(x -> !keys.contains(x.getLabel().name()))
                 .sorted(comparing(x -> x.getLabel().name()))
-                .forEach(attributeType -> {
-                    builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
-                            .append(String.format("owns %s", attributeType.getLabel().name()));
-                    AttributeType overridden = getOwnsOverridden(attributeType);
-                    if (overridden != null) {
-                        builder.append(String.format(" as %s", overridden.getLabel().name()));
-                    }
-                });
+                .forEach(attributeType -> writeOwnsAttribute(builder, attributeType));
+    }
+
+    private void writeOwnsAttribute(StringBuilder builder, AttributeType attributeType) {
+        builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                .append(TypeQLToken.Constraint.OWNS).append(SPACE)
+                .append(attributeType.getLabel().name());
+        AttributeType ownsOverridden = getOwnsOverridden(attributeType);
+        if (ownsOverridden != null) {
+            builder.append(SPACE).append(TypeQLToken.Constraint.AS).append(SPACE)
+                    .append(ownsOverridden.getLabel().name());
+        }
     }
 
     protected void writePlays(StringBuilder builder) {
         getPlaysExplicit().stream().sorted(comparing(x -> x.getLabel().scopedName())).forEach(roleType -> {
             builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
-                    .append(String.format("plays %s", roleType.getLabel().scopedName()));
+                    .append(TypeQLToken.Constraint.PLAYS).append(SPACE)
+                    .append(roleType.getLabel().scopedName());
             RoleType overridden = getPlaysOverridden(roleType);
             if (overridden != null) {
-                builder.append(String.format(" as %s", overridden.getLabel().scopedName()));
+                builder.append(SPACE).append(TypeQLToken.Constraint.AS).append(SPACE)
+                        .append(overridden.getLabel().scopedName());
             }
         });
     }
