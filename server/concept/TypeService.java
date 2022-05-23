@@ -60,7 +60,6 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.Relatio
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.unsetRelatesRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayersResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getRelationTypesResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.syntaxRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsExplicitResPart;
@@ -69,6 +68,7 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingTy
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysOverriddenRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getSyntaxRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setAbstractRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setOwnsRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setPlaysRes;
@@ -178,8 +178,8 @@ public class TypeService {
             case THING_TYPE_GET_PLAYS_OVERRIDDEN_REQ:
                 getPlaysOverridden(type.asThingType(), typeReq.getThingTypeGetPlaysOverriddenReq(), reqID);
                 return;
-            case THING_TYPE_SYNTAX_REQ:
-                syntax(type.asThingType(), reqID);
+            case THING_TYPE_GET_SYNTAX_REQ:
+                getSyntax(type.asThingType(), reqID);
                 return;
             case ENTITY_TYPE_CREATE_REQ:
                 create(type.asEntityType(), reqID);
@@ -387,8 +387,8 @@ public class TypeService {
         transactionSvc.respond(unsetPlaysRes(reqID));
     }
 
-    private void syntax(ThingType thingType, UUID reqID) {
-        transactionSvc.respond(syntaxRes(reqID, thingType.syntax()));
+    private void getSyntax(ThingType thingType, UUID reqID) {
+        transactionSvc.respond(getSyntaxRes(reqID, thingType.getSyntax()));
     }
 
     private void getOwners(AttributeType attributeType, boolean onlyKey, UUID reqID) {

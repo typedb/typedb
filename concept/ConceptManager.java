@@ -201,11 +201,11 @@ public final class ConceptManager {
     public String typesSyntax() {
         StringBuilder stringBuilder = new StringBuilder();
         getRootAttributeType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
-                .forEach(at -> at.syntax(stringBuilder));
+                .forEach(at -> at.getSyntax(stringBuilder));
         getRootRelationType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
-                .forEach(rt -> rt.syntax(stringBuilder));
+                .forEach(rt -> rt.getSyntax(stringBuilder));
         getRootEntityType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
-                .forEach(et -> et.syntax(stringBuilder));
+                .forEach(et -> et.getSyntax(stringBuilder));
         return stringBuilder.toString();
     }
 

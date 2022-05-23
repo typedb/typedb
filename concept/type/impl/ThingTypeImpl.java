@@ -109,9 +109,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public java.lang.String syntax() {
+    public java.lang.String getSyntax() {
         StringBuilder builder = new StringBuilder();
-        syntax(builder);
+        getSyntax(builder);
         return builder.toString();
     }
 
@@ -638,7 +638,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public void syntax(StringBuilder builder) {
+        public void getSyntax(StringBuilder builder) {
             builder.append(Encoding.Vertex.Type.Root.THING.label());
         }
 

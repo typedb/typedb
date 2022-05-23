@@ -549,9 +549,9 @@ public class ResponseBuilder {
                 ));
             }
 
-            public static TransactionProto.Transaction.Res syntaxRes(UUID reqID, String schema) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSyntaxRes(
-                        ConceptProto.ThingType.Syntax.Res.newBuilder().setSchema(schema)
+            public static TransactionProto.Transaction.Res getSyntaxRes(UUID reqID, String syntax) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeGetSyntaxRes(
+                        ConceptProto.ThingType.GetSyntax.Res.newBuilder().setSyntax(syntax)
                 ));
             }
         }
