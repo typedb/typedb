@@ -279,9 +279,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         writeRelates(builder);
         writePlays(builder);
         builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
-        getSubtypesExplicit().stream()
-                .sorted(comparing(x -> x.getLabel().name()))
-                .forEach(x -> x.export(builder));
+        getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(x -> x.export(builder));
     }
 
     private void writeRelates(StringBuilder builder) {

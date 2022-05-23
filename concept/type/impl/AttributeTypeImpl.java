@@ -276,9 +276,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         writeOwns(builder);
         writePlays(builder);
         builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
-        getSubtypesExplicit().stream()
-                .sorted(comparing(x -> x.getLabel().name()))
-                .forEach(x -> x.export(builder));
+        getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(x -> x.export(builder));
     }
 
     @Override
