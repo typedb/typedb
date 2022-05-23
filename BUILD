@@ -197,6 +197,7 @@ release_validate_deps(
         "@vaticle_typeql_lang_java",
         "@vaticle_typedb_common",
         "@vaticle_typedb_protocol",
+        "@vaticle_typedb_console_artifact",
     ],
     tags = ["manual"]  # in order for bazel test //... to not fail
 )
