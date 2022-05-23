@@ -33,11 +33,10 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_ABSTRACT_ROLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_NO_ROLE;
@@ -51,6 +50,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.RELATION;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ROLE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static java.util.Comparator.comparing;
 
 public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
@@ -282,10 +282,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     private void writeRelates(StringBuilder builder) {
         getRelatesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(roleType -> {
             builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
-                    .append(String.format("relates %s", roleType.getLabel().name()));
+                    .append(TypeQLToken.Constraint.RELATES).append(SPACE)
+                    .append(roleType.getLabel().name());
             RoleType overridden = getRelatesOverridden(roleType.getLabel().name());
             if (overridden != null) {
-                builder.append(String.format(" as %s", overridden.getLabel().name()));
+                builder.append(SPACE).append(TypeQLToken.Constraint.AS).append(SPACE)
+                        .append(overridden.getLabel().name());
             }
         });
     }
