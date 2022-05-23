@@ -415,21 +415,21 @@ public class CoreDatabase implements TypeDB.Database {
     @Override
     public String schema() {
         try (TypeDB.Session session = databaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
-            return "define\n\n" + tx.concepts().exportTypes() + tx.logic().exportRules();
+            return "define\n\n" + tx.concepts().typesSyntax() + tx.logic().rulesSyntax();
         }
     }
 
     @Override
     public String typeSchema() {
         try (TypeDB.Session session = databaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
-            return "define\n\n" + tx.concepts().exportTypes();
+            return "define\n\n" + tx.concepts().typesSyntax();
         }
     }
 
     @Override
     public String ruleSchema() {
         try (TypeDB.Session session = databaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
-            return "define\n\n" + tx.logic().exportRules();
+            return "define\n\n" + tx.logic().rulesSyntax();
         }
     }
 

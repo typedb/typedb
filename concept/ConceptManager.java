@@ -198,14 +198,14 @@ public final class ConceptManager {
         }
     }
 
-    public String exportTypes() {
+    public String typesSyntax() {
         StringBuilder stringBuilder = new StringBuilder();
         getRootAttributeType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
-                .forEach(at -> at.export(stringBuilder));
+                .forEach(at -> at.syntax(stringBuilder));
         getRootRelationType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
-                .forEach(rt -> rt.export(stringBuilder));
+                .forEach(rt -> rt.syntax(stringBuilder));
         getRootEntityType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
-                .forEach(et -> et.export(stringBuilder));
+                .forEach(et -> et.syntax(stringBuilder));
         return stringBuilder.toString();
     }
 

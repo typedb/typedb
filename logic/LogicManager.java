@@ -174,7 +174,7 @@ public class LogicManager {
         return cycle;
     }
 
-    public String exportRules() {
+    public String rulesSyntax() {
         StringBuilder builder = new StringBuilder();
         rules().stream().sorted(comparing(Rule::getLabel)).forEach(x -> writeRule(builder, x));
         return builder.toString();

@@ -121,7 +121,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public void export(StringBuilder builder) {
+    public void syntax(StringBuilder builder) {
         if (getSupertype() != null) {
             builder.append(String.format("%s sub %s", getLabel().name(), getSupertype().getLabel().name()));
         }
@@ -129,7 +129,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         writeOwns(builder);
         writePlays(builder);
         builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
-        getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(x -> x.export(builder));
+        getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(x -> x.syntax(builder));
     }
 
     private static class Root extends EntityTypeImpl {

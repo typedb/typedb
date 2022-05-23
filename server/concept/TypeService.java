@@ -60,6 +60,7 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.Relatio
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.unsetRelatesRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayersResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getRelationTypesResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.syntaxRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsExplicitResPart;
@@ -176,6 +177,9 @@ public class TypeService {
                 return;
             case THING_TYPE_GET_PLAYS_OVERRIDDEN_REQ:
                 getPlaysOverridden(type.asThingType(), typeReq.getThingTypeGetPlaysOverriddenReq(), reqID);
+                return;
+            case THING_TYPE_SYNTAX_REQ:
+                syntax(type.asThingType(), reqID);
                 return;
             case ENTITY_TYPE_CREATE_REQ:
                 create(type.asEntityType(), reqID);
@@ -381,6 +385,10 @@ public class TypeService {
     private void unsetPlays(ThingType thingType, ConceptProto.Type protoRoleType, UUID reqID) {
         thingType.unsetPlays(notNull(getRoleType(protoRoleType)));
         transactionSvc.respond(unsetPlaysRes(reqID));
+    }
+
+    private void syntax(ThingType thingType, UUID reqID) {
+        transactionSvc.respond(syntaxRes(reqID, thingType.syntax()));
     }
 
     private void getOwners(AttributeType attributeType, boolean onlyKey, UUID reqID) {

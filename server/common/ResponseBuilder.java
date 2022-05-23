@@ -548,6 +548,12 @@ public class ResponseBuilder {
                         ConceptProto.ThingType.UnsetPlays.Res.getDefaultInstance()
                 ));
             }
+
+            public static TransactionProto.Transaction.Res syntaxRes(UUID reqID, String schema) {
+                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSyntaxRes(
+                        ConceptProto.ThingType.Syntax.Res.newBuilder().setSchema(schema)
+                ));
+            }
         }
 
         public static class EntityType {

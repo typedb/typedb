@@ -85,7 +85,7 @@ public interface ThingType extends Type {
 
     RoleType getPlaysOverridden(RoleType roleType);
 
-    java.lang.String export();
+    java.lang.String syntax();
 
-    void export(StringBuilder builder);
+    void syntax(StringBuilder builder);
 }

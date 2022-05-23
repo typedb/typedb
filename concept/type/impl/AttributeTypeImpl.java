@@ -261,7 +261,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public void export(StringBuilder builder) {
+    public void syntax(StringBuilder builder) {
         if (getSupertype() != null) {
             builder.append(format("%s sub %s", getLabel().name(), getSupertype().getLabel().name()))
                     .append(StringBuilders.COMMA_NEWLINE_INDENT);
@@ -276,7 +276,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         writeOwns(builder);
         writePlays(builder);
         builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
-        getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(x -> x.export(builder));
+        getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(x -> x.syntax(builder));
     }
 
     @Override
