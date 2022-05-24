@@ -57,6 +57,7 @@ native_java_libraries(
         "//:typedb",
         "//common:common",
         "//concurrent:concurrent",
+        "//traversal:traversal",
         "//concept:concept",
         "//logic:logic",
         "//query:query",

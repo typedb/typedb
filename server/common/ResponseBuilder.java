@@ -34,6 +34,7 @@ import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.protocol.AnswerProto;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;
@@ -58,6 +59,7 @@ import static com.vaticle.typedb.core.common.collection.ByteArray.encodeUUID;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.conceptMap;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.conclusion;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.numeric;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Concept.protoThing;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Logic.Rule.protoRule;
@@ -826,7 +828,7 @@ public class ResponseBuilder {
                 tos.forEach(var -> listBuilder.addVars(var.reference().name()));
                 builder.putVarMapping(from.name(), listBuilder.build());
             });
-            // builder.setConclusion(conceptMap(explanation.conclusionAnswer()));  // TODO: Update the protocol
+            builder.setConclusion(conclusion(explanation.conclusionAnswer()));
             builder.setCondition(conceptMap(explanation.conditionAnswer()));
             return builder.build();
         }
@@ -846,6 +848,17 @@ public class ResponseBuilder {
             });
             conceptMapProto.setExplainables(explainables(answer.explainables()));
             return conceptMapProto.build();
+        }
+
+        public static LogicProto.Explanation.Conclusion conclusion(
+                Map<Identifier.Variable, com.vaticle.typedb.core.concept.Concept> answer
+        ) {
+            LogicProto.Explanation.Conclusion.Builder conclusionProto = LogicProto.Explanation.Conclusion.newBuilder();
+            answer.forEach((id, concept) -> {
+                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.protoConcept(concept);
+                conclusionProto.putMap(id.reference().name(), conceptProto);
+            });
+            return conclusionProto.build();
         }
 
         private static AnswerProto.Explainables explainables(ConceptMap.Explainables explainables) {
