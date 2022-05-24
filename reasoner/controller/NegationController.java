@@ -122,8 +122,6 @@ public class NegationController extends AbstractController<
 
         private static class NegationStream
                 extends TransformationStream<ConceptMap, ConceptMap> implements Finishable<ConceptMap> {
-            // TODO: Negation should be modelled as both a source and a sink, possible name: Bridge. It is a Source
-            //  for the graph downstream and a Sink for the graph upstream
 
             private final ConceptMap bounds;
             private boolean answerFound;

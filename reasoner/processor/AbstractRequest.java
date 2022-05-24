@@ -30,7 +30,6 @@ import java.util.function.Function;
 public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
         CONTROLLER extends AbstractController<BOUNDS, ?, PACKET, ?, ?, ?>> {
 
-    // TODO: Should hold on to the processor that sent the request
     private final Reactive.Identifier inputPortId;
     private final Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor;
     private final CONTROLLER_ID controllerId;

@@ -251,7 +251,6 @@ public abstract class ConclusionController<
         }
 
         private void mayRequestMaterialiser(MaterialiserRequest materialisationRequest) {
-            // TODO: Does this method achieve anything?
             if (!materialisationRequests.contains(materialisationRequest.id())) {
                 materialisationRequests.add(materialisationRequest.id());
                 requestConnection(materialisationRequest);
@@ -312,7 +311,7 @@ public abstract class ConclusionController<
                 if (packet.isFirst()) {
                     assert packet.first().concepts().keySet().containsAll(processor().rule().condition().conjunction().retrieves());
                     InputPort<Either<ConceptMap, Materialisation>> materialisationInput = processor().createInputPort();
-                    ConceptMap filteredConditionAns = packet.first().filter(processor().rule().conclusion().retrievableIds());  // TODO: no explainables carried forwards
+                    ConceptMap filteredConditionAns = packet.first().filter(processor().rule().conclusion().retrievableIds());
                     processor().mayRequestMaterialiser(new MaterialiserRequest(
                             materialisationInput.identifier(), processor().driver(), null,
                             processor().rule().conclusion().materialisable(filteredConditionAns, processor().conceptManager()))

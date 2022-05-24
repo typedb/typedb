@@ -100,8 +100,6 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
         @Override
         protected Processor.Match createProcessorFromDriver(Driver<Processor.Match> matchDriver, ConceptMap bounds) {
-            // TODO: upstreamConclusions contains *all* conclusions even if they are irrelevant for this particular
-            //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
             return new Processor.Match(
                     matchDriver, driver(), concludable, processorContext(), bounds, unboundVars, conclusionUnifiers,
                     () -> Traversal.traversalIterator(registry(), concludable.pattern(), bounds),
@@ -202,11 +200,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         @Override
         public void setUp() {
             setHubReactive(PoolingStream.fanInFanOut(this));
-            // TODO: How do we do a find first optimisation (when unbound vars is empty) and also know that we're done?
-            //  This needs to be local to this processor because in general we couldn't call all upstream work done.
-
+            // TODO: Add a find first optimisation when all variables are bound
             mayAddTraversal();
-
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     InputPort<INPUT> inputPort = createInputPort();

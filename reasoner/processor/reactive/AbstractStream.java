@@ -70,7 +70,7 @@ public abstract class AbstractStream<INPUT, OUTPUT> extends AbstractReactive imp
     @Override
     public void registerSubscriber(Subscriber<OUTPUT> subscriber) {
         subscriberRegistry().addSubscriber(subscriber);
-        subscriber.registerPublisher(this);  // TODO: Bad to have this mutual registering in one method call, it's unclear
+        subscriber.registerPublisher(this);
     }
 
 }
