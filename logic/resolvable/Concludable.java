@@ -56,7 +56,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -74,8 +73,8 @@ import static java.util.stream.Collectors.toSet;
 
 public abstract class Concludable extends Resolvable<Conjunction> implements AlphaEquivalent<Concludable> {
 
+    private final Set<Retrievable> retrievableIds;
     private Map<Rule, Set<Unifier>> applicableRules;
-    Set<Retrievable> retrievableIds;
 
     private Concludable(Conjunction conjunction) {
         super(conjunction);
@@ -282,8 +281,8 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
     }
 
-    protected void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
-                                                Retrievable id, Retrievable unifiedId) {
+    void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
+                                      Retrievable id, Retrievable unifiedId) {
         for (ValueConstraint<?> value : equalsConstantConstraints(values)) {
             unifierBuilder.unifiedRequirements().predicates(unifiedId, valueEqualsFunction(value));
             unifierBuilder.requirements().predicates(id, valueEqualsFunction(value));
@@ -893,7 +892,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             valueOwnersToSkip.add(hasConstraint.attribute());
         }
 
-        public void fromConstraint(IsaConstraint isaConstraint) {
+        private void fromConstraint(IsaConstraint isaConstraint) {
             if (isaOwnersToSkip.contains(isaConstraint.owner())) return;
             Set<ValueConstraint<?>> valueConstraints = Iterators.iterate(isaConstraint.owner().value()).filter(v -> !v.isVariable()).toSet();
             concludables.add(Concludable.Isa.of(isaConstraint, valueConstraints, labelConstraints(isaConstraint)));

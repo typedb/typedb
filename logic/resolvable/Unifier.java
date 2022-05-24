@@ -192,7 +192,7 @@ public class Unifier {
         private final Requirements.Constraint requirements;
         private final Requirements.Constraint unifiedRequirements;
 
-        public Builder() {
+        private Builder() {
             this(new HashMap<>(), new Requirements.Constraint(), new Requirements.Constraint());
         }
 

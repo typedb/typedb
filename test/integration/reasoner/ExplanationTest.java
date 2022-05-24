@@ -489,8 +489,9 @@ public class ExplanationTest {
         }
     }
 
-    private List<Explanation> assertSingleExplainableExplanations(ConceptMap ans, int anonymousConcepts, int explainablesCount,
-                                                                  int explanationsCount, CoreTransaction txn) {
+    private List<Explanation> assertSingleExplainableExplanations(
+            ConceptMap ans, int anonymousConcepts, int explainablesCount, int explanationsCount, CoreTransaction txn
+    ) {
         checkExplainableVars(ans);
         List<ConceptMap.Explainable> explainables = ans.explainables().iterator().toList();
         assertEquals(anonymousConcepts, iterate(ans.concepts().keySet()).filter(Identifier::isAnonymous).count());

@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
@@ -36,6 +37,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConcludable;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConclusion;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundCondition;
+import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
@@ -127,13 +129,20 @@ public class ForwardChainingMaterialiser {
             // Get all the places where the rule condition is satisfied and materialise for each
             requiresReiteration = false;
             traverse(logicRule.when()).forEachRemaining(
-                    conditionAns -> Materialiser.materialiseAndBind(
+                    conditionAns -> materialiseAndBind(
                             logicRule.conclusion(), conditionAns, tx.traversal(), tx.concepts()
                     ).ifPresent(materialisation -> record(
                             conditionAns, new ConceptMap(filterRetrievable(materialisation))
                     ))
             );
             return requiresReiteration;
+        }
+
+        private Optional<Map<Identifier.Variable, Concept>> materialiseAndBind(
+                com.vaticle.typedb.core.logic.Rule.Conclusion conclusion, ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr
+        ) {
+            return Materialiser.materialise(conclusion.materialisable(whenConcepts, conceptMgr), traversalEng, conceptMgr)
+                    .map(materialisation -> materialisation.bindToConclusion(conclusion, whenConcepts));
         }
 
         private void record(ConceptMap conditionAns, ConceptMap conclusionAns) {

@@ -46,13 +46,6 @@ import static com.vaticle.typedb.core.traversal.common.Identifier.Variable.anon;
 
 public class Materialiser {
 
-    public static Optional<Map<Identifier.Variable, Concept>> materialiseAndBind(
-            Conclusion conclusion, ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr
-    ) {
-        return Materialiser.materialise(conclusion.materialisable(whenConcepts, conceptMgr), traversalEng, conceptMgr)
-                .map(materialisation -> materialisation.bindToConclusion(conclusion, whenConcepts));
-    }
-
     /**
      * Perform a put operation on the `then` of the rule. This may insert a new fact, or return an existing inferred fact
      *
@@ -74,7 +67,7 @@ public class Materialiser {
         }
     }
 
-    public static Optional<Materialisation> materialise(Conclusion.Has.Explicit.Materialisable materialisable) {
+    private static Optional<Materialisation> materialise(Conclusion.Has.Explicit.Materialisable materialisable) {
         Attribute attribute = getAttribute(materialisable.attrType(), materialisable.value())
                 .orElseGet(() -> putAttribute(materialisable.attrType(), materialisable.value()));
         if (materialisable.owner().hasNonInferred(attribute)) return Optional.empty();
@@ -104,7 +97,7 @@ public class Materialiser {
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    public static Optional<Materialisation> materialise(Conclusion.Has.Variable.Materialisable materialisable) {
+    private static Optional<Materialisation> materialise(Conclusion.Has.Variable.Materialisable materialisable) {
         Thing owner = materialisable.owner();
         Attribute attribute = materialisable.attribute();
         if (owner.hasNonInferred(attribute)) return Optional.empty();
@@ -112,7 +105,7 @@ public class Materialiser {
         return Optional.of(new Materialisation.Has.Variable(owner, attribute));
     }
 
-    public static Optional<Materialisation> materialise(
+    private static Optional<Materialisation> materialise(
             Conclusion.Relation.Materialisable materialisable, TraversalEngine traversalEng, ConceptManager conceptMgr
     ) {
         FunctionalIterator<Relation> existingRelations = matchRelation(materialisable, traversalEng, conceptMgr);
@@ -213,7 +206,7 @@ public class Materialiser {
                 private final AttributeType attrType;
                 private final Attribute attribute;
 
-                public Explicit(Thing owner, AttributeType attrType, Attribute attribute) {
+                private Explicit(Thing owner, AttributeType attrType, Attribute attribute) {
                     this.owner = owner;
                     this.attrType = attrType;
                     this.attribute = attribute;

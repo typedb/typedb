@@ -546,7 +546,7 @@ public class ControllerTest {
             fail();
             return;
         }
-        assertResponses(answerProducer.responses, filter, answerCount, explainableAnswers, answerProducer.doneReceived);
+        assertResponses(answerProducer.responses, answerCount, explainableAnswers, answerProducer.doneReceived);
     }
 
     private void createRootAndAssertResponses(CoreTransaction transaction, Conjunction conjunction, long answerCount,
@@ -563,24 +563,24 @@ public class ControllerTest {
             fail();
             return;
         }
-        assertResponses(answerProducer.responses, filter, answerCount, explainableAnswers, answerProducer.doneReceived);
+        assertResponses(answerProducer.responses, answerCount, explainableAnswers, answerProducer.doneReceived);
     }
 
-    private void assertResponses(LinkedBlockingQueue<ConceptMap> responses, Set<Identifier.Variable.Retrievable> filter,
-                                 long answerCount, long explainableAnswers, AtomicBoolean doneReceived) throws InterruptedException {
+    private void assertResponses(
+            LinkedBlockingQueue<ConceptMap> responses, long answerCount, long explainableAnswers,
+            AtomicBoolean doneReceived
+    ) throws InterruptedException {
         long startTime = System.currentTimeMillis();
         long n = answerCount + 1; //total number of traversal answers, plus one expected Exhausted (-1 answer)
         int answersFound = 0;
         int explainableAnswersFound = 0;
         for (int i = 0; i < n - 1; i++) {
             ConceptMap answer;
-            if (PREVENT_HANGING) answer = responses.poll(500, TimeUnit.MILLISECONDS);// polling prevents the test hanging
+            if (PREVENT_HANGING) answer = responses.poll(500, TimeUnit.MILLISECONDS);  // polling prevents the test hanging
             else answer = responses.take();
 
             if (answer != null) {
                 answersFound += 1;
-                System.out.println(answersFound + " answers found");
-                System.out.println(answer);
                 if (answer.explainables().iterator().count() > 0) {
                     explainableAnswersFound++;
                 }

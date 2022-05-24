@@ -44,7 +44,6 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_TERMINATED_WITH_CAUSE;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
