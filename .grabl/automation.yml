@@ -64,31 +64,7 @@ build:
     test-integration:
       image: vaticle-ubuntu-21.04
       command: |
-        bazel test //test/integration:test-basic --test_output=streamed
-        bazel test //test/integration:test-query --test_output=streamed
-        bazel test //test/integration:test-attribute-string --test_output=streamed
-        bazel test //test/integration/database/... --test_output=streamed
-        bazel test //test/integration/graph/... --test_output=streamed
-        bazel test //test/integration/logic/... --test_output=streamed
-        bazel test //test/integration/migrator/... --test_output=streamed
-        bazel test //test/integration/traversal/... --test_output=streamed
-#        bazel test //test/integration/reasoner/... --test_output=streamed  # Expanded below because explanation tests won't work yet
-    test-integration-test-reasoner:
-      image: vaticle-ubuntu-20.04
-      command: |
-        bazel test //test/integration/reasoner:test-reasoner --test_output=streamed
-    test-integration-test-controller:
-      image: vaticle-ubuntu-20.04
-      command: |
-        bazel test //test/integration/reasoner:test-controller --test_output=streamed
-    test-integration-test-explanation:
-      image: vaticle-ubuntu-20.04
-      command: |
-        bazel test //test/integration/reasoner:test-explanation --test_output=streamed
-    test-integration-test-planner:
-      image: vaticle-ubuntu-20.04
-      command: |
-        bazel test //test/integration/reasoner:test-planner --test_output=streamed
+        bazel test //test/integration/... --test_output=streamed
     test-behaviour-connection:
       image: vaticle-ubuntu-21.04
       command: |
@@ -114,54 +90,20 @@ build:
         bazel test //test/behaviour/typeql/language/define/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/undefine/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/rule_validation/... --test_output=streamed
-#    test-behaviour-reasoner:
-#      image: vaticle-ubuntu-21.04
-#      command: |
-#        bazel test //test/behaviour/reasoner/tests/attribute_attachment:test --test_output=streamed
-#        bazel test //test/behaviour/reasoner/tests/compound_queries:test --test_output=streamed
-#        bazel test //test/behaviour/reasoner/tests/relation_inference:test --test_output=streamed
-#        bazel test //test/behaviour/reasoner/tests/rule_interaction:test --test_output=streamed
-#        bazel test //test/behaviour/reasoner/tests/type_hierarchy:test --test_output=streamed
-#        bazel test //test/behaviour/reasoner/tests/value_predicate:test --test_output=streamed
-#        bazel test //test/behaviour/reasoner/tests/negation:test --test_output=streamed
-#        bazel test //test/behaviour/reasoner/tests/recursion:test --test_output=streamed
-#        bazel test //test/behaviour/reasoner/tests/schema_queries:test --test_output=streamed
-#        bazel test //test/behaviour/reasoner/tests/concept_inequality:test --test_output=streamed
-#        # Flakey tests:
-#        # bazel test //test/behaviour/reasoner/tests/variable_roles:test --test_output=streamed
-    test-behaviour-reasoner-attribute-attachment:
-      image: vaticle-ubuntu-20.04
-      command: bazel test //test/behaviour/reasoner/tests/attribute_attachment:test --test_output=streamed
-    test-behaviour-reasoner-compound-queries:
-      image: vaticle-ubuntu-20.04
-      command: bazel test //test/behaviour/reasoner/tests/compound_queries:test --test_output=streamed
-    test-behaviour-reasoner-concept-inequality:
-      image: vaticle-ubuntu-20.04
-      command: bazel test //test/behaviour/reasoner/tests/concept_inequality:test --test_output=streamed
-    test-behaviour-reasoner-negation:
-      image: vaticle-ubuntu-20.04
-      command: bazel test //test/behaviour/reasoner/tests/negation:test --test_output=streamed
-    test-behaviour-reasoner-relation-inference:
-      image: vaticle-ubuntu-20.04
-      command: bazel test //test/behaviour/reasoner/tests/relation_inference:test --test_output=streamed
-    test-behaviour-reasoner-rule-interaction:
-      image: vaticle-ubuntu-20.04
-      command: bazel test //test/behaviour/reasoner/tests/rule_interaction:test --test_output=streamed
-    test-behaviour-reasoner-schema-queries:
-      image: vaticle-ubuntu-20.04
-      command: bazel test //test/behaviour/reasoner/tests/schema_queries:test --test_output=streamed
-    test-behaviour-reasoner-type-hierarchy:
-      image: vaticle-ubuntu-20.04
-      command: bazel test //test/behaviour/reasoner/tests/type_hierarchy:test --test_output=streamed
-    test-behaviour-reasoner-value-predicate:
-      image: vaticle-ubuntu-20.04
-      command: bazel test //test/behaviour/reasoner/tests/value_predicate:test --test_output=streamed
-    test-behaviour-reasoner-recursion:
-      image: vaticle-ubuntu-20.04
-      command: bazel test //test/behaviour/reasoner/tests/recursion:test --test_output=streamed
-    test-behaviour-reasoner-variable-roles:
-      image: vaticle-ubuntu-20.04
-      command: bazel test //test/behaviour/reasoner/tests/variable_roles:test --test_output=streamed
+    test-behaviour-reasoner:
+      image: vaticle-ubuntu-21.04
+      command: |
+        bazel test //test/behaviour/reasoner/tests/attribute_attachment:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/compound_queries:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/concept_inequality:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/negation:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/recursion:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/relation_inference:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/rule_interaction:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/schema_queries:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/type_hierarchy:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/value_predicate:test --test_output=streamed
+        bazel test //test/behaviour/reasoner/tests/variable_roles:test --test_output=streamed
     test-assembly-linux-targz:
       image: vaticle-ubuntu-21.04
       filter:
@@ -182,7 +124,7 @@ build:
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
       image: vaticle-ubuntu-21.04
-#      dependencies: [test-assembly-linux-targz]
+      dependencies: [test-assembly-linux-targz]
       command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
