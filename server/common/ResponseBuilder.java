@@ -34,7 +34,6 @@ import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
-import com.vaticle.typedb.core.reasoner.answer.PartialExplanation;
 import com.vaticle.typedb.core.reasoner.answer.PartialExplanation.ConclusionAnswer;
 import com.vaticle.typedb.protocol.AnswerProto;
 import com.vaticle.typedb.protocol.ConceptProto;
@@ -851,8 +850,8 @@ public class ResponseBuilder {
             return conceptMapProto.build();
         }
 
-        public static LogicProto.Explanation.Conclusion conclusion(ConclusionAnswer answer) {
-            LogicProto.Explanation.Conclusion.Builder conclusionProto = LogicProto.Explanation.Conclusion.newBuilder();
+        public static LogicProto.Explanation.ConclusionAnswer conclusion(ConclusionAnswer answer) {
+            LogicProto.Explanation.ConclusionAnswer.Builder conclusionProto = LogicProto.Explanation.ConclusionAnswer.newBuilder();
             answer.concepts().forEach((id, concept) -> {
                 ConceptProto.Concept conceptProto = ResponseBuilder.Concept.protoConcept(concept);
                 conclusionProto.putMap(id.reference().name(), conceptProto);
