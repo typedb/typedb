@@ -52,7 +52,9 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.Attribu
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.setRegexRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.EntityType.createRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.createRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.getRelatesExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.getRelatesForRoleLabelRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.getRelatesOverriddenRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.getRelatesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.setRelatesRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.unsetRelatesRes;
@@ -63,7 +65,10 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingTy
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsOverriddenRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysExplicitResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysOverriddenRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getSyntaxRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setAbstractRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setOwnsRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setPlaysRes;
@@ -147,7 +152,7 @@ public class TypeService {
                 unsetOwns(type.asThingType(), typeReq.getThingTypeUnsetOwnsReq().getAttributeType(), reqID);
                 return;
             case THING_TYPE_UNSET_PLAYS_REQ:
-                unsetPlays(type.asThingType(), typeReq.getThingTypeUnsetPlaysReq().getRole(), reqID);
+                unsetPlays(type.asThingType(), typeReq.getThingTypeUnsetPlaysReq().getRoleType(), reqID);
                 return;
             case THING_TYPE_GET_INSTANCES_REQ:
                 getInstances(type.asThingType(), reqID);
@@ -167,24 +172,40 @@ public class TypeService {
             case THING_TYPE_GET_PLAYS_REQ:
                 getPlays(type.asThingType(), reqID);
                 return;
+            case THING_TYPE_GET_PLAYS_EXPLICIT_REQ:
+                getPlaysExplicit(type.asThingType(), reqID);
+                return;
+            case THING_TYPE_GET_PLAYS_OVERRIDDEN_REQ:
+                getPlaysOverridden(type.asThingType(), typeReq.getThingTypeGetPlaysOverriddenReq(), reqID);
+                return;
+            case THING_TYPE_GET_SYNTAX_REQ:
+                getSyntax(type.asThingType(), reqID);
+                return;
             case ENTITY_TYPE_CREATE_REQ:
                 create(type.asEntityType(), reqID);
                 return;
             case RELATION_TYPE_CREATE_REQ:
                 create(type.asRelationType(), reqID);
                 return;
+            case RELATION_TYPE_GET_RELATES_REQ:
+                getRelates(type.asRelationType(), reqID);
+                return;
+            case RELATION_TYPE_GET_RELATES_EXPLICIT_REQ:
+                getRelatesExplicit(type.asRelationType(), reqID);
+                return;
             case RELATION_TYPE_GET_RELATES_FOR_ROLE_LABEL_REQ:
                 String roleLabel = typeReq.getRelationTypeGetRelatesForRoleLabelReq().getLabel();
                 getRelatesForRoleLabel(type.asRelationType(), roleLabel, reqID);
+                return;
+            case RELATION_TYPE_GET_RELATES_OVERRIDDEN_REQ:
+                String roleLabel2 = typeReq.getRelationTypeGetRelatesOverriddenReq().getLabel();
+                getRelatesOverridden(type.asRelationType(), roleLabel2, reqID);
                 return;
             case RELATION_TYPE_SET_RELATES_REQ:
                 setRelates(type.asRelationType(), typeReq.getRelationTypeSetRelatesReq(), reqID);
                 return;
             case RELATION_TYPE_UNSET_RELATES_REQ:
                 unsetRelates(type.asRelationType(), typeReq.getRelationTypeUnsetRelatesReq(), reqID);
-                return;
-            case RELATION_TYPE_GET_RELATES_REQ:
-                getRelates(type.asRelationType(), reqID);
                 return;
             case ATTRIBUTE_TYPE_PUT_REQ:
                 put(type.asAttributeType(), typeReq.getAttributeTypePutReq().getValue(), reqID);
@@ -200,6 +221,7 @@ public class TypeService {
                 return;
             case ATTRIBUTE_TYPE_GET_OWNERS_REQ:
                 getOwners(type.asAttributeType(), typeReq.getAttributeTypeGetOwnersReq().getOnlyKey(), reqID);
+                return;
             case ATTRIBUTE_TYPE_GET_OWNERS_EXPLICIT_REQ:
                 getOwnersExplicit(type.asAttributeType(), typeReq.getAttributeTypeGetOwnersExplicitReq().getOnlyKey(), reqID);
                 return;
@@ -342,10 +364,19 @@ public class TypeService {
         transactionSvc.stream(thingType.getPlays(), reqID, roleTypes -> getPlaysResPart(reqID, roleTypes));
     }
 
+    private void getPlaysExplicit(ThingType thingType, UUID reqID) {
+        transactionSvc.stream(thingType.getPlaysExplicit(), reqID, roleTypes -> getPlaysExplicitResPart(reqID, roleTypes));
+    }
+
+    private void getPlaysOverridden(ThingType thingType, ConceptProto.ThingType.GetPlaysOverridden.Req getPlaysOverriddenReq, UUID reqID) {
+        RoleType roleType = getRoleType(getPlaysOverriddenReq.getRoleType());
+        transactionSvc.respond(getPlaysOverriddenRes(reqID, thingType.getPlaysOverridden(roleType)));
+    }
+
     private void setPlays(ThingType thingType, ConceptProto.ThingType.SetPlays.Req setPlaysRequest, UUID reqID) {
-        RoleType role = getRoleType(setPlaysRequest.getRole());
-        if (setPlaysRequest.hasOverriddenRole()) {
-            RoleType overriddenRole = getRoleType(setPlaysRequest.getOverriddenRole());
+        RoleType role = getRoleType(setPlaysRequest.getRoleType());
+        if (setPlaysRequest.hasOverriddenType()) {
+            RoleType overriddenRole = getRoleType(setPlaysRequest.getOverriddenType());
             thingType.setPlays(role, overriddenRole);
         } else thingType.setPlays(role);
         transactionSvc.respond(setPlaysRes(reqID));
@@ -354,6 +385,10 @@ public class TypeService {
     private void unsetPlays(ThingType thingType, ConceptProto.Type protoRoleType, UUID reqID) {
         thingType.unsetPlays(notNull(getRoleType(protoRoleType)));
         transactionSvc.respond(unsetPlaysRes(reqID));
+    }
+
+    private void getSyntax(ThingType thingType, UUID reqID) {
+        transactionSvc.respond(getSyntaxRes(reqID, thingType.getSyntax()));
     }
 
     private void getOwners(AttributeType attributeType, boolean onlyKey, UUID reqID) {
@@ -433,12 +468,20 @@ public class TypeService {
     }
 
     private void getRelates(RelationType relationType, UUID reqID) {
-        transactionSvc.stream(relationType.getRelates(), reqID,
-                roleTypes -> getRelatesResPart(reqID, roleTypes));
+        transactionSvc.stream(relationType.getRelates(), reqID, roleTypes -> getRelatesResPart(reqID, roleTypes));
+    }
+
+    private void getRelatesExplicit(RelationType relationType, UUID reqID) {
+        transactionSvc.stream(relationType.getRelatesExplicit(), reqID,
+                              roleTypes -> getRelatesExplicitResPart(reqID, roleTypes));
     }
 
     private void getRelatesForRoleLabel(RelationType relationType, String roleLabel, UUID reqID) {
         transactionSvc.respond(getRelatesForRoleLabelRes(reqID, relationType.getRelates(roleLabel)));
+    }
+
+    private void getRelatesOverridden(RelationType relationType, String roleLabel, UUID reqID) {
+        transactionSvc.respond(getRelatesOverriddenRes(reqID, relationType.getRelatesOverridden(roleLabel)));
     }
 
     private void setRelates(RelationType relationType, ConceptProto.RelationType.SetRelates.Req setRelatesReq,

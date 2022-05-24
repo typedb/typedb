@@ -75,14 +75,24 @@ public class RelationTypeSteps {
         assertEquals(isNull, isNull(tx().concepts().getRelationType(relationLabel).getRelates(roleLabel)));
     }
 
+    @Then("relation\\( ?{type_label} ?) get overridden role\\( ?{type_label} ?) is null: {bool}")
+    public void relation_type_get_overridden_role_type_is_null(String relationLabel, String roleLabel, boolean isNull) {
+        assertEquals(isNull, isNull(tx().concepts().getRelationType(relationLabel).getRelatesOverridden(roleLabel)));
+    }
+
     @When("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) set label: {type_label}")
     public void relation_type_get_role_type_set_label(String relationLabel, String roleLabel, String newLabel) {
         tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).setLabel(newLabel);
     }
 
-    @When("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get label: {type_label}")
+    @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get label: {type_label}")
     public void relation_type_get_role_type_get_label(String relationLabel, String roleLabel, String getLabel) {
         assertEquals(getLabel, tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getLabel().name());
+    }
+
+    @Then("relation\\( ?{type_label} ?) get overridden role\\( ?{type_label} ?) get label: {type_label}")
+    public void relation_type_get_overridden_role_type_get_label(String relationLabel, String roleLabel, String getLabel) {
+        assertEquals(getLabel, tx().concepts().getRelationType(relationLabel).getRelatesOverridden(roleLabel).getLabel().name());
     }
 
     @When("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) is abstract: {bool}")
@@ -104,6 +114,25 @@ public class RelationTypeSteps {
     @Then("relation\\( ?{type_label} ?) get related roles do not contain:")
     public void relation_type_get_related_roles_do_not_contain(String relationLabel, List<Parameters.ScopedLabel> roleLabels) {
         Set<Parameters.ScopedLabel> actuals = relation_type_get_related_roles_actuals(relationLabel);
+        for (Parameters.ScopedLabel roleLabel : roleLabels) {
+            assertFalse(actuals.contains(roleLabel));
+        }
+    }
+
+    private Set<Parameters.ScopedLabel> relation_type_get_related_explicit_roles_actuals(String relationLabel) {
+        return tx().concepts().getRelationType(relationLabel).getRelatesExplicit()
+                .map(role -> new Parameters.ScopedLabel(role.getLabel())).toSet();
+    }
+
+    @Then("relation\\( ?{type_label} ?) get related explicit roles contain:")
+    public void relation_type_get_related_explicit_roles_contain(String relationLabel, List<Parameters.ScopedLabel> roleLabels) {
+        Set<Parameters.ScopedLabel> actuals = relation_type_get_related_explicit_roles_actuals(relationLabel);
+        assertTrue(actuals.containsAll(roleLabels));
+    }
+
+    @Then("relation\\( ?{type_label} ?) get related explicit roles do not contain:")
+    public void relation_type_get_related_explicit_roles_do_not_contain(String relationLabel, List<Parameters.ScopedLabel> roleLabels) {
+        Set<Parameters.ScopedLabel> actuals = relation_type_get_related_explicit_roles_actuals(relationLabel);
         for (Parameters.ScopedLabel roleLabel : roleLabels) {
             assertFalse(actuals.contains(roleLabel));
         }

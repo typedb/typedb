@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -29,13 +30,13 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
@@ -46,6 +47,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.AT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
@@ -62,6 +64,9 @@ import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.OBJECT;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ATTRIBUTE;
+import static com.vaticle.typeql.lang.common.util.Strings.escapeRegex;
+import static com.vaticle.typeql.lang.common.util.Strings.quoteString;
+import static java.util.Comparator.comparing;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
@@ -176,7 +181,16 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public List<TypeDBException> validate() {
-        return super.validate();
+        List<TypeDBException> exceptions = super.validate();
+        exceptions.addAll(validateOwnersNotAbstract());
+        return exceptions;
+    }
+
+    private List<TypeDBException> validateOwnersNotAbstract() {
+        if (!isAbstract()) return Collections.emptyList();
+        else return getOwners().filter(o -> !o.isAbstract()).map(
+                owner -> TypeDBException.of(OWNS_ABSTRACT_ATTRIBUTE_TYPE, owner.getLabel(), getLabel())
+        ).toList();
     }
 
     @Override
@@ -235,13 +249,33 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public AttributeTypeImpl.String asString() {
         throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                className(AttributeType.String.class)));
+                                           className(AttributeType.String.class)));
     }
 
     @Override
     public AttributeTypeImpl.DateTime asDateTime() {
         throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                className(AttributeType.DateTime.class)));
+                                           className(AttributeType.DateTime.class)));
+    }
+
+    @Override
+    public void getSyntax(StringBuilder builder) {
+        writeSupertype(builder);
+        writeAbstract(builder);
+        if (!isRoot()) {
+            builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                    .append(TypeQLToken.Constraint.VALUE_TYPE).append(TypeQLToken.Char.SPACE)
+                    .append(getValueType().syntax());
+            if (isString()) {
+                java.util.regex.Pattern regex = asString().getRegex();
+                if (regex != null) builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+                        .append(TypeQLToken.Constraint.REGEX).append(TypeQLToken.Char.SPACE)
+                        .append(quoteString(escapeRegex(regex.pattern())));
+            }
+        }
+        writeOwnsAttributes(builder);
+        writePlays(builder);
+        builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
     }
 
     @Override

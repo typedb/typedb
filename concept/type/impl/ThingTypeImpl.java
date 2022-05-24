@@ -21,8 +21,9 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
@@ -37,15 +38,14 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-
-import javax.annotation.Nullable;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
-
+import javax.annotation.Nullable;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_ROOT_TYPE_CANNOT_BE_OWNED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_OWNS;
@@ -54,30 +54,36 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.IN
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_HAS_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDE_NOT_AVAILABLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATT_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATT_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_NO_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ROLE_TYPE_CANNOT_BE_PLAYED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.util.StringBuilders.COMMA_NEWLINE_INDENT;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA_SPACE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static java.util.Comparator.comparing;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
@@ -102,6 +108,71 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             default:
                 throw graphMgr.exception(TypeDBException.of(UNRECOGNISED_VALUE));
         }
+    }
+
+    @Override
+    public java.lang.String getSyntax() {
+        StringBuilder builder = new StringBuilder();
+        getSyntax(builder);
+        return builder.toString();
+    }
+
+    @Override
+    public void getSyntaxRecursive(StringBuilder builder) {
+        getSyntax(builder);
+        getSubtypesExplicit().stream()
+                .sorted(comparing(x -> x.getLabel().name()))
+                .forEach(x -> x.getSyntaxRecursive(builder));
+    }
+
+    protected void writeSupertype(StringBuilder builder) {
+        if (getSupertype() != null) {
+            builder.append(getLabel().name()).append(SPACE);
+            builder.append(TypeQLToken.Constraint.SUB).append(SPACE);
+            builder.append(getSupertype().getLabel().name());
+        }
+    }
+
+    protected void writeAbstract(StringBuilder builder) {
+        if (isAbstract()) builder.append(COMMA_NEWLINE_INDENT).append(TypeQLToken.Constraint.ABSTRACT);
+    }
+
+    protected void writeOwnsAttributes(StringBuilder builder) {
+        Set<String> keys = getOwnsExplicit(true).map(x -> x.getLabel().name()).toSet();
+        List<? extends AttributeType> attributeTypes = getOwnsExplicit().toList();
+        attributeTypes.stream().filter(x -> keys.contains(x.getLabel().name()))
+                .sorted(comparing(x -> x.getLabel().name()))
+                .forEach(attributeType -> {
+                    writeOwnsAttribute(builder, attributeType);
+                    builder.append(SPACE).append(TypeQLToken.Constraint.IS_KEY);
+                });
+        attributeTypes.stream().filter(x -> !keys.contains(x.getLabel().name()))
+                .sorted(comparing(x -> x.getLabel().name()))
+                .forEach(attributeType -> writeOwnsAttribute(builder, attributeType));
+    }
+
+    private void writeOwnsAttribute(StringBuilder builder, AttributeType attributeType) {
+        builder.append(COMMA_NEWLINE_INDENT)
+                .append(TypeQLToken.Constraint.OWNS).append(SPACE)
+                .append(attributeType.getLabel().name());
+        AttributeType ownsOverridden = getOwnsOverridden(attributeType);
+        if (ownsOverridden != null) {
+            builder.append(SPACE).append(TypeQLToken.Constraint.AS).append(SPACE)
+                    .append(ownsOverridden.getLabel().name());
+        }
+    }
+
+    protected void writePlays(StringBuilder builder) {
+        getPlaysExplicit().stream().sorted(comparing(x -> x.getLabel().scopedName())).forEach(roleType -> {
+            builder.append(COMMA_NEWLINE_INDENT)
+                    .append(TypeQLToken.Constraint.PLAYS).append(SPACE)
+                    .append(roleType.getLabel().scopedName());
+            RoleType overridden = getPlaysOverridden(roleType);
+            if (overridden != null) {
+                builder.append(SPACE).append(TypeQLToken.Constraint.AS).append(SPACE)
+                        .append(overridden.getLabel().scopedName());
+            }
+        });
     }
 
     @Override
@@ -213,7 +284,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (vertex.outs().edge(OWNS_KEY, attVertex) != null) return;
 
         if (attributeType.isRoot()) {
-            throw exception(TypeDBException.of(ATTRIBUTE_ROOT_TYPE_CANNOT_BE_OWNED));
+            throw exception(TypeDBException.of(ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED));
         } else if (!attributeType.isKeyable()) {
             throw exception(TypeDBException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
         } else if (link(getSupertype().getOwns(attributeType.getValueType(), true),
@@ -252,7 +323,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private void ownsAttribute(AttributeTypeImpl attributeType) {
         Forwardable<AttributeType, Order.Asc> owns = getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getOwns, ASC);
         if (attributeType.isRoot()) {
-            throw exception(TypeDBException.of(ATTRIBUTE_ROOT_TYPE_CANNOT_BE_OWNED));
+            throw exception(TypeDBException.of(ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED));
         } else if (owns.findFirst(attributeType).isPresent()) {
             throw exception(TypeDBException.of(OWNS_ATT_NOT_AVAILABLE, attributeType.getLabel()));
         }
@@ -361,7 +432,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void setPlays(RoleType roleType) {
         validateIsNotDeleted();
-        if (getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getPlays, ASC).findFirst(roleType).isPresent()) {
+        if (roleType.isRoot()) {
+            throw exception(TypeDBException.of(ROOT_ROLE_TYPE_CANNOT_BE_PLAYED));
+        } else if (getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getPlays, ASC).findFirst(roleType).isPresent()) {
             throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, roleType.getLabel()));
         }
         vertex.outs().put(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
@@ -440,11 +513,23 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public List<TypeDBException> validate() {
         List<TypeDBException> exceptions = super.validate();
-        if (!isAbstract()) {
-            exceptions.addAll(exceptions_ownsAbstractAttType());
-            exceptions.addAll(exceptions_playsAbstractRoleType());
-        }
+        exceptions.addAll(validateOwnedAttributeTypesNotAbstract());
+        exceptions.addAll(validatePlayedRoleTypesNotAbstract());
         return exceptions;
+    }
+
+    private List<TypeDBException> validateOwnedAttributeTypesNotAbstract() {
+        if (isAbstract()) return Collections.emptyList();
+        else return getOwns().filter(Type::isAbstract).map(
+                attType -> TypeDBException.of(OWNS_ABSTRACT_ATTRIBUTE_TYPE, getLabel(), attType.getLabel())
+        ).toList();
+    }
+
+    private List<TypeDBException> validatePlayedRoleTypesNotAbstract() {
+        if (isAbstract()) return Collections.emptyList();
+        else return getPlays().filter(Type::isAbstract).map(
+                roleType -> TypeDBException.of(PLAYS_ABSTRACT_ROLE_TYPE, getLabel(), roleType.getLabel())
+        ).toList();
     }
 
     @Override
@@ -455,18 +540,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public ThingTypeImpl asThingType() {
         return this;
-    }
-
-    private List<TypeDBException> exceptions_ownsAbstractAttType() {
-        return getOwns().filter(Type::isAbstract)
-                .map(attType -> TypeDBException.of(OWNS_ABSTRACT_ATT_TYPE, getLabel(), attType.getLabel()))
-                .toList();
-    }
-
-    private List<TypeDBException> exceptions_playsAbstractRoleType() {
-        return getPlays().filter(Type::isAbstract)
-                .map(roleType -> TypeDBException.of(PLAYS_ABSTRACT_ROLE_TYPE, getLabel(), roleType.getLabel()))
-                .toList();
     }
 
     public static class Root extends ThingTypeImpl {
@@ -581,6 +654,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         @Override
         public void unsetPlays(RoleType roleType) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
+
+        @Override
+        public void getSyntax(StringBuilder builder) {
+            builder.append(Encoding.Vertex.Type.Root.THING.label());
         }
 
         /**

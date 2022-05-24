@@ -19,8 +19,8 @@
 package com.vaticle.typedb.core.concept.type;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.concept.thing.Thing;
 
 public interface ThingType extends Type {
@@ -84,4 +84,10 @@ public interface ThingType extends Type {
     Forwardable<RoleType, Order.Asc> getPlaysExplicit();
 
     RoleType getPlaysOverridden(RoleType roleType);
+
+    java.lang.String getSyntax();
+
+    void getSyntax(StringBuilder builder);
+
+    void getSyntaxRecursive(StringBuilder builder);
 }
