@@ -374,7 +374,7 @@ public abstract class ConclusionController<
 
                 @Override
                 protected PartialExplanation packageAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> materialiserInput, Map<Variable, Concept> conclusionAnswer) {
-                    return new PartialExplanation(processor().rule(), conclusionAnswer, conditionAnswers.get(materialiserInput));
+                    return PartialExplanation.create(processor().rule(), conclusionAnswer, conditionAnswers.get(materialiserInput));
                 }
             }
 

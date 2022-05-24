@@ -28,23 +28,26 @@ import java.util.Objects;
 public class PartialExplanation {
 
     private final Rule rule;
-    private final Map<Identifier.Variable, Concept> conclusionAnswer;
+    private final ConclusionAnswer conclusionAnswer;
     private final ConceptMap conditionAnswer;
     private final int hash;
 
-    public PartialExplanation(Rule rule, Map<Identifier.Variable, Concept> conclusionAnswer, ConceptMap conditionAnswer) {
+    PartialExplanation(Rule rule, ConclusionAnswer conclusionAnswer, ConceptMap conditionAnswer) {
         this.rule = rule;
         this.conclusionAnswer = conclusionAnswer;
         this.conditionAnswer = conditionAnswer;
         this.hash = Objects.hash(rule, conclusionAnswer, conditionAnswer);
     }
 
+    public static PartialExplanation create(Rule rule, Map<Identifier.Variable, Concept> conclusionAnswer, ConceptMap conditionAnswer) {
+        return new PartialExplanation(rule, new ConclusionAnswer(conclusionAnswer), conditionAnswer);
+    }
+
     public Rule rule() {
         return rule;
     }
 
-
-    public Map<Identifier.Variable, Concept> conclusionAnswer() {
+    public ConclusionAnswer conclusionAnswer() {
         return conclusionAnswer;
     }
 
@@ -65,5 +68,18 @@ public class PartialExplanation {
     @Override
     public int hashCode() {
         return hash;
+    }
+
+    public static class ConclusionAnswer {
+
+        private final Map<Identifier.Variable, Concept> concepts;
+
+        private ConclusionAnswer(Map<Identifier.Variable, Concept> concepts) {
+            this.concepts = concepts;
+        }
+
+        public Map<Identifier.Variable, Concept> concepts() {
+            return concepts;
+        }
     }
 }

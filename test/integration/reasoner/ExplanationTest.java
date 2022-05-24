@@ -480,7 +480,7 @@ public class ExplanationTest {
 
                 assertEquals(txn.logic().getRule("marriage-is-friendship"), explanation.rule());
                 assertEquals(2, explanation.variableMapping().size());
-                assertEquals(5, explanation.conclusionAnswer().size());
+                assertEquals(5, explanation.conclusionAnswer().concepts().size());
 
                 ConceptMap marriageIsFriendshipAnswer = explanation.conditionAnswer();
                 assertEquals(1, marriageIsFriendshipAnswer.explainables().iterator().count());
@@ -508,8 +508,8 @@ public class ExplanationTest {
             ));
             ConceptMap projected = applyMapping(retrievableMapping, ans);
             projected.concepts().forEach((var, concept) -> {
-                assertTrue(explanation.conclusionAnswer().containsKey(var));
-                assertEquals(explanation.conclusionAnswer().get(var), concept);
+                assertTrue(explanation.conclusionAnswer().concepts().containsKey(var));
+                assertEquals(explanation.conclusionAnswer().concepts().get(var), concept);
             });
         });
         return explanations;

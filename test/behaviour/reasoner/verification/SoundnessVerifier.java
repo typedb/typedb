@@ -90,8 +90,8 @@ class SoundnessVerifier {
         ));
         ConceptMap projected = applyMapping(retrievableMapping, ans);
         projected.concepts().forEach((var, concept) -> {
-            assert explanation.conclusionAnswer().containsKey(var);
-            assert explanation.conclusionAnswer().get(var).equals(concept);
+            assert explanation.conclusionAnswer().concepts().containsKey(var);
+            assert explanation.conclusionAnswer().concepts().get(var).equals(concept);
         });
     }
 
@@ -125,12 +125,12 @@ class SoundnessVerifier {
         if (recordedThen.isPresent()) {
             // Update the inferred variables mapping between the two reasoners
             assert recordedThen.get().concepts().keySet().equals(
-                    iterate(explanation.conclusionAnswer().keySet())
+                    iterate(explanation.conclusionAnswer().concepts().keySet())
                             .filter(Identifier::isRetrievable)
                             .map(Identifier.Variable::asRetrievable).toSet()
             );  // TODO: use unfiltered set of variables
             recordedThen.get().concepts().forEach((var, recordedConcept) -> {
-                Concept inferredConcept = explanation.conclusionAnswer().get(var);
+                Concept inferredConcept = explanation.conclusionAnswer().concepts().get(var);
                 if (inferredConceptMapping.containsKey(inferredConcept)) {
                     // Check that the mapping stored is one-to-one
                     assert inferredConceptMapping.get(inferredConcept).equals(recordedConcept);
