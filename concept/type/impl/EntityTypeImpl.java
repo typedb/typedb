@@ -122,7 +122,8 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public void getSyntax(StringBuilder builder) {
-        writeSupertypeAndAbstract(builder);
+        writeSupertype(builder);
+        writeAbstract(builder);
         writeOwnsAttributes(builder);
         writePlays(builder);
         builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);

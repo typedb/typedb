@@ -272,7 +272,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public void getSyntax(StringBuilder builder) {
-        writeSupertypeAndAbstract(builder);
+        writeSupertype(builder);
+        writeAbstract(builder);
         writeOwnsAttributes(builder);
         writeRelates(builder);
         writePlays(builder);

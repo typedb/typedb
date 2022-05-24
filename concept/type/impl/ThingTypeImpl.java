@@ -76,6 +76,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.util.StringBuilders.COMMA_NEWLINE_INDENT;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
@@ -124,13 +125,16 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 .forEach(x -> x.getSyntaxRecursive(builder));
     }
 
-    protected void writeSupertypeAndAbstract(StringBuilder builder) {
+    protected void writeSupertype(StringBuilder builder) {
         if (getSupertype() != null) {
             builder.append(getLabel().name()).append(SPACE);
             builder.append(TypeQLToken.Constraint.SUB).append(SPACE);
             builder.append(getSupertype().getLabel().name());
         }
-        if (isAbstract()) builder.append(COMMA_SPACE).append(TypeQLToken.Constraint.ABSTRACT);
+    }
+
+    protected void writeAbstract(StringBuilder builder) {
+        if (isAbstract()) builder.append(COMMA_NEWLINE_INDENT).append(TypeQLToken.Constraint.ABSTRACT);
     }
 
     protected void writeOwnsAttributes(StringBuilder builder) {
@@ -148,7 +152,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private void writeOwnsAttribute(StringBuilder builder, AttributeType attributeType) {
-        builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+        builder.append(COMMA_NEWLINE_INDENT)
                 .append(TypeQLToken.Constraint.OWNS).append(SPACE)
                 .append(attributeType.getLabel().name());
         AttributeType ownsOverridden = getOwnsOverridden(attributeType);
@@ -160,7 +164,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     protected void writePlays(StringBuilder builder) {
         getPlaysExplicit().stream().sorted(comparing(x -> x.getLabel().scopedName())).forEach(roleType -> {
-            builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+            builder.append(COMMA_NEWLINE_INDENT)
                     .append(TypeQLToken.Constraint.PLAYS).append(SPACE)
                     .append(roleType.getLabel().scopedName());
             RoleType overridden = getPlaysOverridden(roleType);

@@ -260,7 +260,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public void getSyntax(StringBuilder builder) {
-        writeSupertypeAndAbstract(builder);
+        writeSupertype(builder);
+        writeAbstract(builder);
         if (!isRoot()) {
             builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
                     .append(TypeQLToken.Constraint.VALUE_TYPE).append(TypeQLToken.Char.SPACE)
