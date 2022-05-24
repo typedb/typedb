@@ -42,7 +42,7 @@ def vaticle_typedb_protocol():
     git_repository(
         name = "vaticle_typedb_protocol",
         remote = "https://github.com/jmsfltchr/typedb-protocol",
-        commit = "2129d4c6eb8a59e15a72a580545d7a0dcbcc0da1", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_protocol
+        commit = "685aff87c6eafc8543cd308bfee6f18e090cf363", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_protocol
     )
 
 def vaticle_typedb_behaviour():
