@@ -64,22 +64,19 @@ import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
 
 public class Reasoner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
-
     private final TraversalEngine traversalEng;
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
     private final ControllerRegistry controllerRegistry;
     private final ExplainablesManager explainablesManager;
-    private final Context.Query defaultContext;
 
     public Reasoner(ConceptManager conceptMgr, LogicManager logicMgr,
                     TraversalEngine traversalEng, Context.Transaction context) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
-        this.defaultContext = new Context.Query(context, new Options.Query());
-        this.defaultContext.producer(Either.first(EXHAUSTIVE));
+        Context.Query defaultContext = new Context.Query(context, new Options.Query());
+        defaultContext.producer(Either.first(EXHAUSTIVE));
         this.controllerRegistry = new ControllerRegistry(actor(), traversalEng, conceptMgr, logicMgr, defaultContext);
         this.explainablesManager = new ExplainablesManager();
     }

@@ -217,8 +217,8 @@ public abstract class ConjunctionController<
             private final ConceptMap initialPacket;
             private final AbstractProcessor<?, ?, ?, ?> processor;
 
-            public CompoundOperator(AbstractProcessor<?, ?, ?, ?> processor, List<Resolvable<?>> plan,
-                                    ConceptMap initialPacket) {
+            CompoundOperator(AbstractProcessor<?, ?, ?, ?> processor, List<Resolvable<?>> plan,
+                             ConceptMap initialPacket) {
                 this.processor = processor;
                 assert plan.size() > 0;
                 this.initialPacket = initialPacket;
@@ -280,7 +280,7 @@ public abstract class ConjunctionController<
 
         public static class RetrievableRequest extends Request<Retrievable, RetrievableController> {
 
-            RetrievableRequest(
+            private RetrievableRequest(
                     Reactive.Identifier inputPortId,
                     Driver<? extends Processor<?, ?>> inputPortProcessor, Retrievable controllerId,
                     ConceptMap processorId
@@ -302,7 +302,7 @@ public abstract class ConjunctionController<
 
         static class ConcludableRequest extends Request<Concludable, ConcludableController.Match> {
 
-            ConcludableRequest(
+            private ConcludableRequest(
                     Reactive.Identifier inputPortId,
                     Driver<? extends Processor<?, ?>> inputPortProcessor, Concludable controllerId,
                     ConceptMap processorId
@@ -322,7 +322,7 @@ public abstract class ConjunctionController<
 
         static class NegatedRequest extends Request<Negated, NegationController> {
 
-            NegatedRequest(
+            private NegatedRequest(
                     Reactive.Identifier inputPortId,
                     Driver<? extends Processor<?, ?>> inputPortProcessor, Negated controllerId, ConceptMap processorId
             ) {

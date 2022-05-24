@@ -80,7 +80,7 @@ public class Monitor extends Actor<Monitor> {
         getNode(root).asRoot().setFinished();
     }
 
-    public void registerSource(Reactive.Identifier source) {
+    void registerSource(Reactive.Identifier source) {
         tracer().ifPresent(tracer -> tracer.registerSource(source, driver()));
         if (terminated) return;
         // Note this MUST be called before any paths are registered to or from the source, or a duplicate node will be created.

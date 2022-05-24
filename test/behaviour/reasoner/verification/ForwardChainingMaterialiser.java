@@ -108,7 +108,7 @@ public class ForwardChainingMaterialiser {
         return materialisations.forCondition(rules.get(rule), conditionAnswer);
     }
 
-    private final class Rule {
+    private class Rule {
         private final com.vaticle.typedb.core.logic.Rule logicRule;
         private final Map<ConceptMap, Materialisation> conditionAnsMaterialisations;
         private boolean requiresReiteration;
@@ -163,7 +163,7 @@ public class ForwardChainingMaterialiser {
         }
     }
 
-    private final class Materialisations {
+    private class Materialisations {
         private final Map<Thing, Set<Materialisation>> concept;
         private final Map<Pair<Thing, Attribute>, Set<Materialisation>> has;
 
@@ -213,7 +213,7 @@ public class ForwardChainingMaterialiser {
 
     }
 
-    static final class Materialisation {
+    static class Materialisation {
 
         private final com.vaticle.typedb.core.logic.Rule rule;
         private final BoundCondition boundCondition;

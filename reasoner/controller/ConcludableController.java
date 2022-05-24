@@ -135,8 +135,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         private final ConceptMap bounds;
         private final ReasonerConsumer<Explanation> reasonerConsumer;
 
-        public Explain(Driver<Explain> driver, Concludable concludable, ConceptMap bounds, Context context,
-                       ReasonerConsumer<Explanation> reasonerConsumer) {
+        Explain(Driver<Explain> driver, Concludable concludable, ConceptMap bounds, Context context,
+                ReasonerConsumer<Explanation> reasonerConsumer) {
             super(driver, concludable, context);
             this.bounds = bounds;
             this.reasonerConsumer = reasonerConsumer;

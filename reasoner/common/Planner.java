@@ -47,7 +47,7 @@ public class Planner {
         return new Plan(resolvables, visitCounts, boundVariables).plan;
     }
 
-    private static final class Plan {
+    private static class Plan {
         private final List<Resolvable<?>> plan;
         private final Map<Resolvable<?>, Set<Retrievable>> dependencies;
         private final Set<Retrievable> boundVariables;

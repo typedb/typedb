@@ -38,7 +38,7 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
     private Subscriber<PACKET> subscriber;
     private Actor.Driver<? extends AbstractProcessor<?, PACKET, ?, ?>> outputPortProcessor;
 
-    public InputPort(AbstractProcessor<PACKET, ?, ?, ?> processor) {
+    InputPort(AbstractProcessor<PACKET, ?, ?, ?> processor) {
         this.processor = processor;
         this.identifier = processor.registerReactive(this);
         this.isReady = false;
@@ -78,16 +78,8 @@ public class InputPort<PACKET> implements Reactive.Publisher<PACKET> {
         subscriber.registerPublisher(this);
     }
 
-    public void setOutputPort(Identifier outputPortId) {
-        assert this.outputPortId == null;
-        this.outputPortId = outputPortId;
-        processor().monitor().execute(actor -> actor.registerPath(identifier(), outputPortId));
-        assert !isReady;
-        isReady = true;
-    }
-
-    public void setOutputPort(Identifier outputPortId,
-                              Actor.Driver<? extends AbstractProcessor<?, PACKET, ?, ?>> outputPortProcessor) {
+    void setOutputPort(Identifier outputPortId,
+                       Actor.Driver<? extends AbstractProcessor<?, PACKET, ?, ?>> outputPortProcessor) {
         assert this.outputPortId == null;
         this.outputPortId = outputPortId;
         this.outputPortProcessor = outputPortProcessor;

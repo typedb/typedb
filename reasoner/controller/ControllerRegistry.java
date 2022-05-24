@@ -164,21 +164,21 @@ public class ControllerRegistry {
         createRootController(reasonerConsumer, actorFn);
     }
 
-    public Driver<NestedConjunctionController> createNestedConjunction(Conjunction conjunction) {
+    Driver<NestedConjunctionController> createNestedConjunction(Conjunction conjunction) {
         Function<Driver<NestedConjunctionController>, NestedConjunctionController> actorFn =
                 driver -> new NestedConjunctionController(driver, conjunction, controllerContext);
         LOG.debug("Create Nested Conjunction for: '{}'", conjunction);
         return createController(actorFn);
     }
 
-    public Driver<NestedDisjunctionController> createNestedDisjunction(Disjunction disjunction) {
+    Driver<NestedDisjunctionController> createNestedDisjunction(Disjunction disjunction) {
         Function<Driver<NestedDisjunctionController>, NestedDisjunctionController> actorFn =
                 driver -> new NestedDisjunctionController(driver, disjunction, controllerContext);
         LOG.debug("Create Nested Disjunction for: '{}'", disjunction);
         return createController(actorFn);
     }
 
-    public ControllerView.MappedConcludable getOrCreateConcludable(Concludable concludable) {
+    ControllerView.MappedConcludable getOrCreateConcludable(Concludable concludable) {
         Optional<ControllerView.MappedConcludable> controllerViewOpt = getConcludable(concludable);
         ControllerView.MappedConcludable controllerView;
         if (controllerViewOpt.isPresent()) {
@@ -215,14 +215,14 @@ public class ControllerRegistry {
         return Optional.empty();
     }
 
-    public ControllerView.FilteredRetrievable createRetrievable(Retrievable retrievable) {
+    ControllerView.FilteredRetrievable createRetrievable(Retrievable retrievable) {
         Function<Driver<RetrievableController>, RetrievableController> actorFn =
                 driver -> new RetrievableController(driver, retrievable, controllerContext);
         LOG.debug("Create RetrievableController: '{}'", retrievable.pattern());
         return ControllerView.retrievable(createController(actorFn), retrievable.retrieves());
     }
 
-    public ControllerView.FilteredNegation createNegation(Negated negated, Conjunction conjunction) {
+    ControllerView.FilteredNegation createNegation(Negated negated, Conjunction conjunction) {
         Function<Driver<NegationController>, NegationController> actorFn =
                 driver -> new NegationController(driver, negated, controllerContext);
         LOG.debug("Create NegationController for : {}", negated);
@@ -236,7 +236,7 @@ public class ControllerRegistry {
                 .collect(Collectors.toSet());
     }
 
-    public Driver<ConclusionController.Match> getOrCreateMatchConclusion(Rule.Conclusion conclusion) {
+    Driver<ConclusionController.Match> getOrCreateMatchConclusion(Rule.Conclusion conclusion) {
         return conclusions.computeIfAbsent(conclusion.rule(), r -> {
             Function<Driver<ConclusionController.Match>, ConclusionController.Match> actorFn =
                     driver -> new ConclusionController.Match(driver, conclusion, materialisationController, controllerContext);
@@ -245,7 +245,7 @@ public class ControllerRegistry {
         });
     }
 
-    public Driver<ConclusionController.Explain> getOrCreateExplainConclusion(Rule.Conclusion conclusion) {
+    Driver<ConclusionController.Explain> getOrCreateExplainConclusion(Rule.Conclusion conclusion) {
         return explainConclusions.computeIfAbsent(
                 conclusion.rule(), r -> {
                     Function<Driver<ConclusionController.Explain>, ConclusionController.Explain> actorFn =
@@ -256,7 +256,7 @@ public class ControllerRegistry {
         );
     }
 
-    public Driver<ConditionController> getOrCreateCondition(Rule.Condition condition) {
+    Driver<ConditionController> getOrCreateCondition(Rule.Condition condition) {
         return conditions.computeIfAbsent(condition.rule(), r -> {
             Function<Driver<ConditionController>, ConditionController> actorFn =
                     driver -> new ConditionController(driver, condition, controllerContext);
@@ -294,7 +294,8 @@ public class ControllerRegistry {
             private final Driver<ConcludableController.Match> controller;
             private final Map<Variable.Retrievable, Variable.Retrievable> mapping;
 
-            MappedConcludable(Driver<ConcludableController.Match> controller, Map<Variable.Retrievable, Variable.Retrievable> mapping) {
+            private MappedConcludable(Driver<ConcludableController.Match> controller, Map<Variable.Retrievable,
+                    Variable.Retrievable> mapping) {
                 this.controller = controller;
                 this.mapping = mapping;
             }
@@ -313,7 +314,7 @@ public class ControllerRegistry {
             private final Driver<NegationController> controller;
             private final Set<Variable.Retrievable> filter;
 
-            FilteredNegation(Driver<NegationController> controller, Set<Variable.Retrievable> filter) {
+            private FilteredNegation(Driver<NegationController> controller, Set<Variable.Retrievable> filter) {
                 this.controller = controller;
                 this.filter = filter;
             }
@@ -332,7 +333,7 @@ public class ControllerRegistry {
             private final Driver<RetrievableController> controller;
             private final Set<Variable.Retrievable> filter;
 
-            FilteredRetrievable(Driver<RetrievableController> controller, Set<Variable.Retrievable> filter) {
+            private FilteredRetrievable(Driver<RetrievableController> controller, Set<Variable.Retrievable> filter) {
                 this.controller = controller;
                 this.filter = filter;
             }

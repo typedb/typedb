@@ -88,7 +88,7 @@ public class BoundPattern {
         }
     }
 
-    static final class BoundConcludable {
+    static class BoundConcludable {
         private final BoundConjunction conjunction;
         private final Concludable unboundConcludable;
 

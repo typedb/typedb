@@ -70,7 +70,7 @@ public class MaterialisationController extends AbstractController<
         // Nothing to do
     }
 
-    public static final class Processor extends AbstractProcessor<Void, Either<ConceptMap, Materialisation>,
+    public static class Processor extends AbstractProcessor<Void, Either<ConceptMap, Materialisation>,
                 AbstractRequest<?, ?, Void, ?>, Processor> {
 
         private final Materialisable materialisable;

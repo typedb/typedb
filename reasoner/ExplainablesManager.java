@@ -34,13 +34,13 @@ class ExplainablesManager {
     private final ConcurrentMap<Long, Concludable> concludables;
     private final ConcurrentMap<Long, ConceptMap> bounds;
 
-    public ExplainablesManager() {
+    ExplainablesManager() {
         this.nextId = new AtomicLong(NOT_IDENTIFIED + 1);
         this.concludables = new ConcurrentHashMap<>();
         this.bounds = new ConcurrentHashMap<>();
     }
 
-    public void setAndRecordExplainables(ConceptMap explainableMap) {
+    void setAndRecordExplainables(ConceptMap explainableMap) {
         explainableMap.explainables().iterator().forEachRemaining(explainable -> {
             long nextId = this.nextId.getAndIncrement();
             FunctionalIterator<Concludable> concludable = iterate(Concludable.create(explainable.conjunction()));
@@ -52,11 +52,11 @@ class ExplainablesManager {
         });
     }
 
-    public Concludable getConcludable(long explainableId) {
+    Concludable getConcludable(long explainableId) {
         return concludables.get(explainableId);
     }
 
-    public ConceptMap getBounds(long explainableId) {
+    ConceptMap getBounds(long explainableId) {
         return bounds.get(explainableId);
     }
 }

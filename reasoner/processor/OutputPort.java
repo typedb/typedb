@@ -34,7 +34,7 @@ public class OutputPort<PACKET> implements Reactive.Subscriber<PACKET> {
     private Publisher<PACKET> publisher;
     private Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor;
 
-    public OutputPort(AbstractProcessor<?, PACKET, ?, ?> processor) {
+    OutputPort(AbstractProcessor<?, PACKET, ?, ?> processor) {
         this.processor = processor;
         this.identifier = processor().registerReactive(this);
         this.subscriberDelegate = new SubscriberDelegate<>(this, processor().context());
@@ -69,7 +69,7 @@ public class OutputPort<PACKET> implements Reactive.Subscriber<PACKET> {
         subscriberDelegate.registerPath(publisher);
     }
 
-    public void setInputPort(
+    void setInputPort(
             Identifier inputPortId,
             Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor
     ) {

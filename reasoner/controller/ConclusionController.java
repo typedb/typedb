@@ -214,15 +214,15 @@ public abstract class ConclusionController<
             this.materialisationRequests = new HashSet<>();
         }
 
-        Rule rule() {
+        private Rule rule() {
             return rule;
         }
 
-        ConceptMap bounds() {
+        private ConceptMap bounds() {
             return bounds;
         }
 
-        ConceptManager conceptManager() {
+        private ConceptManager conceptManager() {
             return conceptManager;
         }
 
@@ -344,7 +344,7 @@ public abstract class ConclusionController<
 
             protected abstract OUTPUT packageAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher, Map<Variable, Concept> conclusionAnswer);
 
-            protected static final class Match extends ConclusionOperator<Map<Variable, Concept>> {
+            protected static class Match extends ConclusionOperator<Map<Variable, Concept>> {
 
                 private Match(Processor<?, ?> processor) {
                     super(processor);
@@ -359,7 +359,7 @@ public abstract class ConclusionController<
                 }
             }
 
-            protected static final class Explain extends ConclusionOperator<PartialExplanation> {
+            protected static class Explain extends ConclusionOperator<PartialExplanation> {
 
                 private final Map<Publisher<Either<ConceptMap, Map<Variable, Concept>>>, ConceptMap> conditionAnswers;
 

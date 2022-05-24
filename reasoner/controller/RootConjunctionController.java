@@ -41,9 +41,9 @@ public class RootConjunctionController
     private final boolean explain;
     private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
-    public RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
-                                     Set<Identifier.Variable.Retrievable> filter, boolean explain,
-                                     Context context, ReasonerConsumer<ConceptMap> reasonerConsumer) {
+    RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
+                              Set<Identifier.Variable.Retrievable> filter, boolean explain,
+                              Context context, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         super(driver, conjunction, context);
         this.filter = filter;
         this.explain = explain;

@@ -37,8 +37,8 @@ public class RetrievableController extends AbstractController<
 
     private final Retrievable retrievable;
 
-    public RetrievableController(Driver<RetrievableController> driver, Retrievable retrievable,
-                                 Context context) {
+    RetrievableController(Driver<RetrievableController> driver, Retrievable retrievable,
+                          Context context) {
         super(driver, context, () -> RetrievableController.class.getSimpleName() + "(pattern: " + retrievable + ")");
         this.retrievable = retrievable;
     }

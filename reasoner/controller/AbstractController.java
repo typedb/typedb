@@ -146,11 +146,11 @@ public abstract class AbstractController<
             this.processorContext = new AbstractProcessor.Context(monitor, tracer);
         }
 
-        public ActorExecutorGroup executorService() {
+        ActorExecutorGroup executorService() {
             return executorService;
         }
 
-        public void setExecutorService(ActorExecutorGroup executorService) {
+        void setExecutorService(ActorExecutorGroup executorService) {
             this.executorService = executorService;
         }
 
@@ -162,7 +162,7 @@ public abstract class AbstractController<
             return monitor;
         }
 
-        public Optional<Tracer> tracer() {
+        Optional<Tracer> tracer() {
             return Optional.ofNullable(tracer);
         }
 

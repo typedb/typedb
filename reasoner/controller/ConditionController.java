@@ -40,7 +40,7 @@ public class ConditionController extends ConjunctionController<
 
     private final Rule.Condition condition;
 
-    public ConditionController(Driver<ConditionController> driver, Rule.Condition condition, Context context) {
+    ConditionController(Driver<ConditionController> driver, Rule.Condition condition, Context context) {
         super(driver, condition.conjunction(), context);
         this.condition = condition;
     }
@@ -59,7 +59,7 @@ public class ConditionController extends ConjunctionController<
         );
     }
 
-    protected static final class Processor
+    protected static class Processor
             extends ConjunctionController.Processor<Either<ConceptMap, Materialisation>, Processor> {
 
         private Processor(Driver<Processor> driver, Driver<ConditionController> controller,

@@ -27,9 +27,7 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 
 public abstract class SubscriberRegistry<PACKET> {
 
-    abstract void setNotPulling();
-
-    public abstract boolean addSubscriber(Subscriber<PACKET> subscriber);
+    public abstract void addSubscriber(Subscriber<PACKET> subscriber);
 
     public abstract Set<Subscriber<PACKET>> pulling();
 
@@ -57,21 +55,15 @@ public abstract class SubscriberRegistry<PACKET> {
         }
 
         @Override
-        public void setNotPulling() {
-            isPulling = false;
-        }
-
-        @Override
         public void recordPull(Subscriber<PACKET> subscriber) {
             assert this.subscriber.equals(subscriber);
             isPulling = true;
         }
 
         @Override
-        public boolean addSubscriber(Subscriber<PACKET> subscriber) {
+        public void addSubscriber(Subscriber<PACKET> subscriber) {
             assert this.subscriber == null;
             this.subscriber = subscriber;
-            return false;
         }
 
         @Override
@@ -104,11 +96,6 @@ public abstract class SubscriberRegistry<PACKET> {
         }
 
         @Override
-        public void setNotPulling() {
-            pullingSubscribers.clear();
-        }
-
-        @Override
         public void setNotPulling(Subscriber<PACKET> subscriber) {
             pullingSubscribers.remove(subscriber);
         }
@@ -120,8 +107,8 @@ public abstract class SubscriberRegistry<PACKET> {
         }
 
         @Override
-        public boolean addSubscriber(Subscriber<PACKET> subscriber) {
-            return subscribers.add(subscriber);
+        public void addSubscriber(Subscriber<PACKET> subscriber) {
+            subscribers.add(subscriber);
         }
 
         @Override

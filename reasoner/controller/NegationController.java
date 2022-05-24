@@ -53,7 +53,7 @@ public class NegationController extends AbstractController<
     private final Negated negated;
     private Driver<NestedDisjunctionController> disjunctionContoller;
 
-    public NegationController(Driver<NegationController> driver, Negated negated, Context context) {
+    NegationController(Driver<NegationController> driver, Negated negated, Context context) {
         super(driver, context, () -> NegationController.class.getSimpleName() + "(pattern:" + negated + ")");
         this.negated = negated;
     }
@@ -77,8 +77,7 @@ public class NegationController extends AbstractController<
         disjunctionContoller.execute(actor -> actor.establishProcessorConnection(req));
     }
 
-    protected static class Processor
-            extends AbstractProcessor<ConceptMap, ConceptMap, Request, Processor> {
+    protected static class Processor extends AbstractProcessor<ConceptMap, ConceptMap, Request, Processor> {
 
         private final Negated negated;
         private final ConceptMap bounds;
@@ -129,7 +128,7 @@ public class NegationController extends AbstractController<
             private final ConceptMap bounds;
             private boolean answerFound;
 
-            NegationStream(AbstractProcessor<?, ?, ?, ?> processor, ConceptMap bounds) {
+            private NegationStream(AbstractProcessor<?, ?, ?, ?> processor, ConceptMap bounds) {
                 super(processor, new NegationOperator<>(), new SubscriberRegistry.Single<>(),
                       new PublisherRegistry.Single<>());
                 this.bounds = bounds;

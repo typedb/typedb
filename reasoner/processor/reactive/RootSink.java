@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberDele
 
 import javax.annotation.Nullable;
 
-public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET>, Reactive.Subscriber<PACKET> {
+public class RootSink<PACKET> implements Reactive.Subscriber.Finishable<PACKET> {
 
     private final Identifier identifier;
     private final ReasonerConsumer<PACKET> reasonerConsumer;

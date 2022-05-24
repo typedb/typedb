@@ -19,13 +19,11 @@ package com.vaticle.typedb.core.reasoner.answer;
 
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Mapping {
@@ -40,12 +38,6 @@ public class Mapping {
 
     public static Mapping of(Map<? extends Retrievable, ? extends Retrievable> variableMap) {
         return new Mapping(variableMap);
-    }
-
-    public static Mapping identity(Set<? extends Retrievable> variables) {
-        Map<Identifier.Variable.Retrievable, Identifier.Variable.Retrievable> mapping = new HashMap<>();
-        variables.forEach(var -> mapping.put(var, var));
-        return Mapping.of(mapping);
     }
 
     public ConceptMap transform(ConceptMap conceptMap) {
@@ -98,14 +90,4 @@ public class Mapping {
                 '}';
     }
 
-    public Mapping remap(Mapping remapping) {
-        Map<Retrievable, Retrievable> newMap = new HashMap<>();
-        assert mapping().size() == remapping.mapping().size();
-        mapping().forEach((key, value) -> {
-            Retrievable newVal = remapping.mapping().get(value);
-            assert newVal != null;
-            newMap.put(key, newVal);
-        });
-        return new Mapping(newMap);
-    }
 }

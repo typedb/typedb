@@ -35,9 +35,9 @@ public class RootDisjunctionController
     private final boolean explain;
     private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
-    public RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
-                                     Set<Identifier.Variable.Retrievable> filter, boolean explain,
-                                     Context context, ReasonerConsumer<ConceptMap> reasonerConsumer) {
+    RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
+                              Set<Identifier.Variable.Retrievable> filter, boolean explain,
+                              Context context, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         super(driver, disjunction, context);
         this.filter = filter;
         this.explain = explain;

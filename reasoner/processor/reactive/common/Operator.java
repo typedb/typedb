@@ -63,7 +63,7 @@ public interface Operator {  // TODO: We should consider removing this in favour
 
         private final Function<INPUT, OUTPUT> mappingFunc;
 
-        public Map(Function<INPUT, OUTPUT> mappingFunc) {
+        Map(Function<INPUT, OUTPUT> mappingFunc) {
             this.mappingFunc = mappingFunc;
         }
 
@@ -83,7 +83,7 @@ public interface Operator {  // TODO: We should consider removing this in favour
 
         private final Function<INPUT, FunctionalIterator<OUTPUT>> transform;
 
-        public FlatMap(Function<INPUT, FunctionalIterator<OUTPUT>> transform) {
+        FlatMap(Function<INPUT, FunctionalIterator<OUTPUT>> transform) {
             this.transform = transform;
         }
 
@@ -132,7 +132,7 @@ public interface Operator {  // TODO: We should consider removing this in favour
 
         private final Set<PACKET> deduplicationSet;
 
-        public Distinct() {
+        Distinct() {
             this.deduplicationSet = new HashSet<>();
         }
 

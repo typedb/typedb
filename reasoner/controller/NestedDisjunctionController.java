@@ -26,8 +26,8 @@ import java.util.function.Supplier;
 public class NestedDisjunctionController
         extends DisjunctionController<NestedDisjunctionController.Processor, NestedDisjunctionController>{
 
-    public NestedDisjunctionController(Driver<NestedDisjunctionController> driver, Disjunction disjunction,
-                                       Context context) {
+    NestedDisjunctionController(Driver<NestedDisjunctionController> driver, Disjunction disjunction,
+                                Context context) {
         super(driver, disjunction, context);
     }
 
@@ -41,7 +41,7 @@ public class NestedDisjunctionController
         );
     }
 
-    protected static final class Processor extends DisjunctionController.Processor<Processor> {
+    protected static class Processor extends DisjunctionController.Processor<Processor> {
 
         private Processor(Driver<Processor> driver,
                           Driver<NestedDisjunctionController> controller, Context context,

@@ -482,7 +482,7 @@ public class ControllerTest {
         return transaction;
     }
 
-    private static final class AnswerProducer implements ReasonerConsumer<ConceptMap> {
+    private static class AnswerProducer implements ReasonerConsumer<ConceptMap> {
 
         private final LinkedBlockingQueue<ConceptMap> responses;
         private final LinkedBlockingQueue<Throwable> exceptions;
