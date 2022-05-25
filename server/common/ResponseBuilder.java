@@ -827,10 +827,8 @@ public class ResponseBuilder {
                 tos.forEach(var -> listBuilder.addVars(var.reference().name()));
                 builder.putVarMapping(from.name(), listBuilder.build());
             });
-            explanation.conclusionAnswer().concepts().forEach((var, concept) -> {
-                builder.putConclusion(var.reference().name(), ResponseBuilder.Concept.protoConcept(concept));
-            });
             builder.setCondition(conceptMap(explanation.conditionAnswer()));
+            builder.setConclusion(conceptMap(explanation.conclusionAnswer()));
             return builder.build();
         }
     }
@@ -848,6 +846,15 @@ public class ResponseBuilder {
                 conceptMapProto.putMap(id.name(), conceptProto);
             });
             conceptMapProto.setExplainables(explainables(answer.explainables()));
+            return conceptMapProto.build();
+        }
+
+        public static AnswerProto.ConceptMap conceptMap(ConclusionAnswer answer) {
+            AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
+            answer.concepts().forEach((id, concept) -> {
+                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.protoConcept(concept);
+                conceptMapProto.putMap(id.reference().name(), conceptProto);
+            });
             return conceptMapProto.build();
         }
 
