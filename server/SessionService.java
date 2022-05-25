@@ -99,7 +99,7 @@ public class SessionService implements AutoCloseable {
         idleTimeoutTask.cancel(false);
     }
 
-    private void mayStartIdleTimeout() {
+    private synchronized void mayStartIdleTimeout() {
         if (isOpen() && transactionServices.isEmpty()) {
             idleTimeoutTask = scheduled().schedule(this::idleTimeout, options.sessionIdleTimeoutMillis(), MILLISECONDS);
         }
