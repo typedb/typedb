@@ -59,7 +59,6 @@ import static com.vaticle.typedb.core.common.collection.ByteArray.encodeUUID;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.conceptMap;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.conclusion;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.numeric;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Concept.protoThing;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Logic.Rule.protoRule;
@@ -828,7 +827,9 @@ public class ResponseBuilder {
                 tos.forEach(var -> listBuilder.addVars(var.reference().name()));
                 builder.putVarMapping(from.name(), listBuilder.build());
             });
-            builder.setConclusion(conclusion(explanation.conclusionAnswer()));
+            explanation.conclusionAnswer().concepts().forEach((var, concept) -> {
+                builder.putConclusion(var.reference().name(), ResponseBuilder.Concept.protoConcept(concept));
+            });
             builder.setCondition(conceptMap(explanation.conditionAnswer()));
             return builder.build();
         }
@@ -848,15 +849,6 @@ public class ResponseBuilder {
             });
             conceptMapProto.setExplainables(explainables(answer.explainables()));
             return conceptMapProto.build();
-        }
-
-        public static LogicProto.Explanation.ConclusionAnswer conclusion(ConclusionAnswer answer) {
-            LogicProto.Explanation.ConclusionAnswer.Builder conclusionProto = LogicProto.Explanation.ConclusionAnswer.newBuilder();
-            answer.concepts().forEach((id, concept) -> {
-                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.protoConcept(concept);
-                conclusionProto.putMap(id.reference().name(), conceptProto);
-            });
-            return conclusionProto.build();
         }
 
         private static AnswerProto.Explainables explainables(ConceptMap.Explainables explainables) {
