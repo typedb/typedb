@@ -29,6 +29,7 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
 
     Arguments.Session.Type sessionType;
     Arguments.Transaction.Type transactionType;
+    long transactionId;
     private final OPTIONS options;
 
     private Context(@Nullable PARENT parent, OPTIONS options) {
@@ -36,6 +37,7 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
         if (parent != null) {
             this.sessionType = parent.sessionType();
             this.transactionType = parent.transactionType();
+            this.transactionId = parent.transactionId();
         } else {
             this.sessionType = null;
             this.transactionType = null;
@@ -52,6 +54,10 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
 
     public Arguments.Transaction.Type transactionType() {
         return transactionType;
+    }
+
+    public long transactionId() {
+        return transactionId;
     }
 
     public static class Session extends Context<Context<?, ?>, Options.Session> {
@@ -75,6 +81,15 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
         public Transaction type(Arguments.Transaction.Type transactionType) {
             this.transactionType = transactionType;
             return this;
+        }
+
+        public Transaction id(long transactionId) {
+            this.transactionId = transactionId;
+            return this;
+        }
+
+        public long id() {
+            return transactionId;
         }
     }
 

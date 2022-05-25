@@ -41,17 +41,17 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 class CompletenessVerifier {
 
-    private final Materialiser materialiser;
+    private final ForwardChainingMaterialiser materialiser;
     private final CoreSession session;
     private final Set<BoundCondition> verifiedConditions;
 
-    private CompletenessVerifier(Materialiser materialiser, CoreSession session) {
+    private CompletenessVerifier(ForwardChainingMaterialiser materialiser, CoreSession session) {
         this.materialiser = materialiser;
         this.session = session;
         this.verifiedConditions = new HashSet<>();
     }
 
-    static CompletenessVerifier create(Materialiser materialiser, CoreSession session) {
+    static CompletenessVerifier create(ForwardChainingMaterialiser materialiser, CoreSession session) {
         return new CompletenessVerifier(materialiser, session);
     }
 

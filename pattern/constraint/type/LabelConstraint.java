@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.pattern.constraint.type;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
@@ -102,8 +103,9 @@ public class LabelConstraint extends TypeConstraint implements AlphaEquivalent<L
     }
 
     @Override
-    public AlphaEquivalence alphaEquals(LabelConstraint that) {
-        return AlphaEquivalence.valid().validIf(label().equals(that.label()));
+    public FunctionalIterator<AlphaEquivalence> alphaEquals(LabelConstraint that) {
+        return owner.alphaEquals(that.owner)
+                .flatMap(a -> a.alphaEqualIf(label().equals(that.label())));
     }
 
     @Override

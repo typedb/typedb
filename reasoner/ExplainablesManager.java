@@ -17,41 +17,46 @@
 
 package com.vaticle.typedb.core.reasoner;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.concept.answer.ConceptMap.Explainable.NOT_IDENTIFIED;
 
-public class ExplainablesManager {
+class ExplainablesManager {
 
-    private AtomicLong nextId;
-    private ConcurrentMap<Long, Conjunction> conjunctions;
-    private ConcurrentMap<Long, ConceptMap> bounds;
+    private final AtomicLong nextId;
+    private final ConcurrentMap<Long, Concludable> concludables;
+    private final ConcurrentMap<Long, ConceptMap> bounds;
 
-    public ExplainablesManager() {
+    ExplainablesManager() {
         this.nextId = new AtomicLong(NOT_IDENTIFIED + 1);
-        this.conjunctions = new ConcurrentHashMap<>();
+        this.concludables = new ConcurrentHashMap<>();
         this.bounds = new ConcurrentHashMap<>();
     }
 
-    public void setAndRecordExplainables(ConceptMap explainableMap) {
+    void setAndRecordExplainables(ConceptMap explainableMap) {
         explainableMap.explainables().iterator().forEachRemaining(explainable -> {
             long nextId = this.nextId.getAndIncrement();
-            explainable.setId(nextId);
-            conjunctions.put(nextId, explainable.conjunction());
+            FunctionalIterator<Concludable> concludable = iterate(Concludable.create(explainable.conjunction()));
+            assert concludable.hasNext();
+            concludables.put(nextId, concludable.next());
+            assert !concludable.hasNext();
             bounds.put(nextId, explainableMap);
+            explainable.setId(nextId);
         });
     }
 
-    public Conjunction getConjunction(long explainableId) {
-        return conjunctions.get(explainableId);
+    Concludable getConcludable(long explainableId) {
+        return concludables.get(explainableId);
     }
 
-    public ConceptMap getBounds(long explainableId) {
+    ConceptMap getBounds(long explainableId) {
         return bounds.get(explainableId);
     }
 }

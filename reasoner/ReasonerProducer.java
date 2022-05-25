@@ -20,183 +20,218 @@ package com.vaticle.typedb.core.reasoner;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
-import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.reasoner.resolution.ResolverRegistry;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Partial.Compound.Root;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerState.Top.Match.Finished;
-import com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateImpl.TopImpl.MatchImpl.InitialImpl;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ReiterationQuery;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Request;
-import com.vaticle.typedb.core.reasoner.resolution.framework.ResolutionTracer;
-import com.vaticle.typedb.core.reasoner.resolution.framework.Resolver;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.reasoner.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.vaticle.typedb.core.reasoner.ReasonerProducer.State.EXCEPTION;
+import static com.vaticle.typedb.core.reasoner.ReasonerProducer.State.FINISHED;
+import static com.vaticle.typedb.core.reasoner.ReasonerProducer.State.INIT;
+import static com.vaticle.typedb.core.reasoner.ReasonerProducer.State.INITIALISING;
+import static com.vaticle.typedb.core.reasoner.ReasonerProducer.State.PULLING;
+import static com.vaticle.typedb.core.reasoner.ReasonerProducer.State.READY;
+
 @ThreadSafe
-public class ReasonerProducer implements Producer<ConceptMap> {
+public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, ReasonerConsumer<ANSWER> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerProducer.class);
 
-    private final Actor.Driver<? extends Resolver<?>> rootResolver;
-    private final AtomicInteger required;
-    private final AtomicInteger processing;
-    private final Options.Query options;
-    private final ResolverRegistry resolverRegistry;
-    private final ExplainablesManager explainablesManager;
-    private final Request resolveRequest;
-    private final ReiterationQuery.Request reiterationRequest;
-    private final int computeSize;
-    private boolean done;
-    private int iteration;
-    private Queue<ConceptMap> queue;
-    private Set<Actor.Driver<? extends Resolver<?>>> reiterationQueryRespondents;
-    private boolean requiresReiteration;
-    private boolean sentReiterationRequests;
+    private final ControllerRegistry controllerRegistry;
+    final AtomicInteger requiredAnswers;
+    final Options.Query options;
+    final ExplainablesManager explainablesManager;
+    private Actor.Driver<? extends AbstractProcessor<?, ANSWER, ?, ?>> rootProcessor;
+    private Throwable exception;
+    Queue<ANSWER> queue;
+    State state;
+
+    enum State {
+        INIT,
+        INITIALISING,
+        READY,
+        PULLING,
+        FINISHED,
+        EXCEPTION
+    }
 
     // TODO: this class should not be a Producer, it implements a different async processing mechanism
-    public ReasonerProducer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
-                            ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
+    private ReasonerProducer(Options.Query options, ControllerRegistry controllerRegistry,
+                             ExplainablesManager explainablesManager) {
         this.options = options;
-        this.resolverRegistry = resolverRegistry;
+        this.controllerRegistry = controllerRegistry;
         this.explainablesManager = explainablesManager;
         this.queue = null;
-        this.iteration = 0;
-        this.done = false;
-        this.required = new AtomicInteger();
-        this.processing = new AtomicInteger();
-        this.rootResolver = this.resolverRegistry.root(conjunction, this::requestAnswered, this::requestFailed, this::exception);
-        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
-        assert computeSize > 0;
-        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        this.resolveRequest = Request.create(rootResolver, downstream);
-        this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
-        this.sentReiterationRequests = false;
-        this.requiresReiteration = false;
-        if (options.traceInference()) ResolutionTracer.initialise(options.reasonerDebuggerDir());
+        this.requiredAnswers = new AtomicInteger();
+        this.state = INIT;
     }
 
-    public ReasonerProducer(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter, Options.Query options,
-                            ResolverRegistry resolverRegistry, ExplainablesManager explainablesManager) {
-        this.options = options;
-        this.resolverRegistry = resolverRegistry;
-        this.explainablesManager = explainablesManager;
-        this.queue = null;
-        this.iteration = 0;
-        this.done = false;
-        this.required = new AtomicInteger();
-        this.processing = new AtomicInteger();
-        this.rootResolver = this.resolverRegistry.root(disjunction, this::requestAnswered, this::requestFailed, this::exception);
-        this.computeSize = options.parallel() ? Executors.PARALLELISATION_FACTOR * 2 : 1;
-        assert computeSize > 0;
-        Root<?, ?> downstream = InitialImpl.create(filter, new ConceptMap(), this.rootResolver, options.explain()).toDownstream();
-        this.resolveRequest = Request.create(rootResolver, downstream);
-        this.reiterationRequest = ReiterationQuery.Request.create(rootResolver, this::receiveReiterationResponse);
-        this.sentReiterationRequests = false;
-        this.requiresReiteration = false;
-        if (options.traceInference()) ResolutionTracer.initialise(options.reasonerDebuggerDir());
+    ControllerRegistry controllerRegistry() {
+        return controllerRegistry;
     }
 
     @Override
-    public synchronized void produce(Queue<ConceptMap> queue, int request, Executor executor) {
+    public synchronized void produce(Queue<ANSWER> queue, int requestedAnswers, Executor executor) {
         assert this.queue == null || this.queue == queue;
-        this.queue = queue;
-        this.required.addAndGet(request);
-        int canRequest = computeSize - processing.get();
-        int toRequest = Math.min(canRequest, request);
-        for (int i = 0; i < toRequest; i++) {
-            requestAnswer();
+        assert requestedAnswers > 0;
+        if (state == EXCEPTION) queue.done(exception);
+        else if (state == FINISHED) queue.done();
+        else {
+            this.queue = queue;
+            requiredAnswers.addAndGet(requestedAnswers);
+            if (state == INIT) initialise();
+            else if (state == READY) pull();
         }
-        processing.addAndGet(toRequest);
+    }
+
+    private void initialise() {
+        assert state == INIT;
+        state = INITIALISING;
+        initialiseRootController();
+    }
+
+    abstract void initialiseRootController();
+
+    @Override
+    public synchronized void setRootProcessor(Actor.Driver<? extends AbstractProcessor<?, ANSWER, ?, ?>> rootProcessor) {
+        assert this.rootProcessor == null;
+        this.rootProcessor = rootProcessor;
+        state = READY;
+        if (requiredAnswers.get() > 0) pull();
+    }
+
+    synchronized void pull() {
+        assert state == READY;
+        state = PULLING;
+        rootProcessor.execute(actor -> actor.rootPull());
     }
 
     @Override
-    public void recycle() {
-    }
-
-    // note: root resolver calls this single-threaded, so is thread safe
-    private void requestAnswered(Finished answer) {
-        if (options.traceInference()) ResolutionTracer.get().finish();
-        ConceptMap conceptMap = answer.conceptMap();
-        if (options.explain() && !conceptMap.explainables().isEmpty()) {
-            explainablesManager.setAndRecordExplainables(conceptMap);
-        }
-        queue.put(conceptMap);
-        if (required.decrementAndGet() > 0) requestAnswer();
-        else processing.decrementAndGet();
-    }
-
-    // note: root resolver calls this single-threaded, so is threads safe
-    private void requestFailed(int iteration) {
-        LOG.trace("Failed to find answer to request in iteration: " + iteration);
-        if (options.traceInference()) ResolutionTracer.get().finish();
-        if (resolverRegistry.concludableResolvers().size() == 0) {
-            finish();
-        } else if (!sentReiterationRequests && iteration == this.iteration) {
-            sendReiterationRequests();
-        }
-    }
-
-    private void finish() {
-        if (!done) {
-            done = true;
-            queue.done();
-            required.set(0);
-        }
-    }
-
-    private void sendReiterationRequests() {
-        assert reiterationQueryRespondents == null || reiterationQueryRespondents.isEmpty();
-        sentReiterationRequests = true;
-        reiterationQueryRespondents = new HashSet<>(resolverRegistry.concludableResolvers());
-        resolverRegistry.concludableResolvers()
-                .forEach(res -> res.execute(actor -> actor.receiveReiterationQuery(reiterationRequest)));
-    }
-
-    private synchronized void receiveReiterationResponse(ReiterationQuery.Response response) {
-        if (response.reiterate()) requiresReiteration = true;
-        assert reiterationQueryRespondents.contains(response.sender());
-        reiterationQueryRespondents.remove(response.sender());
-
-        if (reiterationQueryRespondents.isEmpty()) {
-            if (requiresReiteration) {
-                prepareNextIteration();
-                retryInNewIteration();
+    public synchronized void finish() {
+        // note: root resolver calls this single-threaded, so is thread safe
+        LOG.trace("All answers found.");
+        if (state != FINISHED && state != EXCEPTION) {
+            if (queue == null) {
+                assert state != PULLING;
+                assert requiredAnswers.get() == 0;
             } else {
-                finish();
+                requiredAnswers.set(0);
+                queue.done();
             }
         }
     }
 
-    private void exception(Throwable e) {
-        if (!done) {
-            done = true;
-            required.set(0);
-            queue.done(e);
+    @Override
+    public synchronized void exception(Throwable e) {
+        if (state != FINISHED && state != EXCEPTION) {
+            exception = e;
+            if (queue == null) {
+                assert state != PULLING;
+                assert requiredAnswers.get() == 0;
+            } else {
+                requiredAnswers.set(0);
+                queue.done(e.getCause());
+            }
         }
     }
 
-    private void prepareNextIteration() {
-        iteration++;
-        sentReiterationRequests = false;
-        requiresReiteration = false;
+    @Override
+    public void recycle() {
+
     }
 
-    private void retryInNewIteration() {
-        requestAnswer();
+    public static abstract class Match extends ReasonerProducer<ConceptMap> {
+
+        Match(Options.Query options, ControllerRegistry controllerRegistry, ExplainablesManager explainablesManager) {
+            super(options, controllerRegistry, explainablesManager);
+        }
+
+        @Override
+        public synchronized void receiveAnswer(ConceptMap answer) {
+            state = READY;
+            // TODO: The explainables can always be given. The only blocked to removing the explain flag is that
+            //  `match get` filters should be ignored for an explainable answer
+            if (options.explain() && !answer.explainables().isEmpty()) {
+                explainablesManager.setAndRecordExplainables(answer);
+            }
+            queue.put(answer);
+            if (requiredAnswers.decrementAndGet() > 0) pull();
+        }
+
+        public static class Conjunction extends Match {
+
+            private final com.vaticle.typedb.core.pattern.Conjunction conjunction;
+            private final Set<Identifier.Variable.Retrievable> filter;
+
+            public Conjunction(com.vaticle.typedb.core.pattern.Conjunction conjunction,
+                               Set<Identifier.Variable.Retrievable> filter, Options.Query options,
+                               ControllerRegistry controllerRegistry, ExplainablesManager explainablesManager) {
+                super(options, controllerRegistry, explainablesManager);
+                this.conjunction = conjunction;
+                this.filter = filter;
+            }
+
+            @Override
+            protected synchronized void initialiseRootController() {
+                controllerRegistry().createRootConjunction(conjunction, filter, options.explain(), this);
+            }
+        }
+
+        public static class Disjunction extends Match {
+
+            private final com.vaticle.typedb.core.pattern.Disjunction disjunction;
+            private final Set<Identifier.Variable.Retrievable> filter;
+
+            public Disjunction(com.vaticle.typedb.core.pattern.Disjunction disjunction,
+                               Set<Identifier.Variable.Retrievable> filter, Options.Query options,
+                               ControllerRegistry controllerRegistry, ExplainablesManager explainablesManager) {
+                super(options, controllerRegistry, explainablesManager);
+                this.disjunction = disjunction;
+                this.filter = filter;
+            }
+
+            @Override
+            protected synchronized void initialiseRootController() {
+                controllerRegistry().createRootDisjunction(disjunction, filter, options.explain(), this);
+            }
+        }
     }
 
-    private void requestAnswer() {
-        if (options.traceInference()) ResolutionTracer.get().start();
-        rootResolver.execute(actor -> actor.receiveRequest(resolveRequest, iteration));
+    public static class Explain extends ReasonerProducer<Explanation> {
+
+        private final Concludable concludable;
+        private final ConceptMap bounds;
+
+        Explain(Concludable concludable, ConceptMap bounds, Options.Query options,
+                ControllerRegistry controllerRegistry,
+                ExplainablesManager explainablesManager) {
+            super(options, controllerRegistry, explainablesManager);
+            this.concludable = concludable;
+            this.bounds = bounds;
+        }
+
+        @Override
+        synchronized void initialiseRootController() {
+            controllerRegistry().createExplainableRoot(concludable, bounds, this);
+        }
+
+        @Override
+        public synchronized void receiveAnswer(Explanation explanation) {
+            state = READY;
+            if (!explanation.conditionAnswer().explainables().isEmpty()) {
+                explainablesManager.setAndRecordExplainables(explanation.conditionAnswer());
+            }
+            queue.put(explanation);
+            if (requiredAnswers.decrementAndGet() > 0) pull();
+        }
     }
 }

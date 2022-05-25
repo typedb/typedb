@@ -39,6 +39,7 @@ import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
+import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
@@ -70,10 +71,10 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.single;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 import static java.util.stream.Collectors.toSet;
 
-public abstract class Concludable extends Resolvable<Conjunction> {
+public abstract class Concludable extends Resolvable<Conjunction> implements AlphaEquivalent<Concludable> {
 
+    private final Set<Retrievable> retrievableIds;
     private Map<Rule, Set<Unifier>> applicableRules;
-    Set<Retrievable> retrievableIds;
 
     private Concludable(Conjunction conjunction) {
         super(conjunction);
@@ -121,8 +122,6 @@ public abstract class Concludable extends Resolvable<Conjunction> {
     abstract FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
     public abstract boolean isInferredAnswer(ConceptMap conceptMap);
-
-    public abstract AlphaEquivalence alphaEquals(Concludable that);
 
     public boolean isRelation() { return false; }
 
@@ -265,8 +264,25 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         return predicateFn;
     }
 
-    protected void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
-                                                Retrievable id, Retrievable unifiedId) {
+    private static FunctionalIterator<AlphaEquivalence> alphaEqualValueConstraints(Set<ValueConstraint<?>> set1,
+                                                                                   Set<ValueConstraint<?>> set2) {
+        if (set1.size() != set2.size()) return Iterators.empty();
+        else {
+            Set<ValueConstraint<?>> remaining = new HashSet<>(set2);
+            for (ValueConstraint<?> s1 : set1) {
+                for (ValueConstraint<?> r : remaining) {
+                    if (s1.alphaEquals(r).first().isPresent()) {
+                        remaining.remove(r);
+                        break;
+                    } else return Iterators.empty();
+                }
+            }
+            return Iterators.single(AlphaEquivalence.empty());
+        }
+    }
+
+    void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
+                                      Retrievable id, Retrievable unifiedId) {
         for (ValueConstraint<?> value : equalsConstantConstraints(values)) {
             unifierBuilder.unifiedRequirements().predicates(unifiedId, valueEqualsFunction(value));
             unifierBuilder.requirements().predicates(id, valueEqualsFunction(value));
@@ -313,6 +329,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         public RelationConstraint relation() {
             return relation;
+        }
+
+        public Optional<IsaConstraint> isa() {
+            return Optional.ofNullable(isa);
         }
 
         @Override
@@ -446,9 +466,12 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(Concludable that) {
-            if (!that.isRelation()) return AlphaEquivalence.invalid();
-            return relation().owner().alphaEquals(that.asRelation().relation().owner());
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
+            return AlphaEquivalence.empty()
+                    .alphaEqualIf(that.isRelation())
+                    .flatMap(a -> AlphaEquivalence.alphaEquals(isa().orElse(null), that.asRelation().isa().orElse(null))
+                            .flatMap(a::extendIfCompatible))
+                    .flatMap(a -> relation().alphaEquals(that.asRelation().relation()).flatMap(a::extendIfCompatible));
         }
     }
 
@@ -504,6 +527,14 @@ public abstract class Concludable extends Resolvable<Conjunction> {
             return has;
         }
 
+        public Set<ValueConstraint<?>> values() {
+            return values;
+        }
+
+        public Optional<IsaConstraint> isa() {
+            return Optional.ofNullable(isa);
+        }
+
         @Override
         public Set<Constraint> concludableConstraints() {
             Set<Constraint> constraints = new HashSet<>();
@@ -528,13 +559,13 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         public FunctionalIterator<Unifier> unify(Rule.Conclusion.Has hasConclusion, ConceptManager conceptMgr) {
             Unifier.Builder unifierBuilder = Unifier.builder();
             ThingVariable owner = has().owner();
-            ThingVariable unifiedOwner = hasConclusion.has().owner();
+            ThingVariable unifiedOwner = hasConclusion.owner();
             if (unificationSatisfiable(owner, unifiedOwner)) {
                 unifierBuilder.addThing(owner, unifiedOwner.id());
             } else return Iterators.empty();
 
             ThingVariable attr = has().attribute();
-            ThingVariable conclusionAttr = hasConclusion.has().attribute();
+            ThingVariable conclusionAttr = hasConclusion.attribute();
             if (unificationSatisfiable(attr, conclusionAttr)) {
                 unifierBuilder.addThing(attr, conclusionAttr.id());
                 if (attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
@@ -583,9 +614,13 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(Concludable that) {
-            if (!that.isHas()) return AlphaEquivalence.invalid();
-            return has().owner().alphaEquals(that.asHas().has().owner());
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
+            return AlphaEquivalence.empty().alphaEqualIf(that.isHas())
+                    .flatMap(a -> has().alphaEquals(that.asHas().has()).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> AlphaEquivalence.alphaEquals(isa().orElse(null), that.asHas().isa().orElse(null))
+                            .flatMap(a::extendIfCompatible))
+                    .flatMap(a -> alphaEqualValueConstraints(values(), that.asHas().values())
+                            .flatMap(a::extendIfCompatible));
         }
 
     }
@@ -617,6 +652,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         public IsaConstraint isa() {
             return isa;
+        }
+
+        public Set<ValueConstraint<?>> values() {
+            return values;
         }
 
         @Override
@@ -697,9 +736,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(Concludable that) {
-            if (!that.isIsa()) return AlphaEquivalence.invalid();
-            return isa().owner().alphaEquals(that.asIsa().isa().owner());
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
+            return AlphaEquivalence.empty().alphaEqualIf(that.isIsa())
+                    .flatMap(a -> isa().alphaEquals(that.asIsa().isa()).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> alphaEqualValueConstraints(values(), that.asIsa().values()).flatMap(a::extendIfCompatible));
         }
     }
 
@@ -750,6 +790,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         public ThingVariable attribute() {
             return attribute;
+        }
+
+        public Set<ValueConstraint<?>> values() {
+            return values;
         }
 
         @Override
@@ -807,9 +851,10 @@ public abstract class Concludable extends Resolvable<Conjunction> {
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(Concludable that) {
-            if (!that.isAttribute()) return AlphaEquivalence.invalid();
-            return attribute.alphaEquals(that.asAttribute().attribute);
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
+            return AlphaEquivalence.empty().alphaEqualIf(that.isAttribute())
+                    .flatMap(a -> attribute().alphaEquals(that.asAttribute().attribute()).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> alphaEqualValueConstraints(values(), that.asAttribute().values()).flatMap(a::extendIfCompatible));
         }
     }
 
@@ -841,14 +886,16 @@ public abstract class Concludable extends Resolvable<Conjunction> {
 
         private void fromConstraint(HasConstraint hasConstraint) {
             Set<LabelConstraint> labelConstraints = set(labelConstraints(hasConstraint), hasConstraint.attribute().isa().map(Extractor::labelConstraints).orElse(set()));
-            concludables.add(Has.of(hasConstraint, hasConstraint.attribute().isa().orElse(null), hasConstraint.attribute().value(), labelConstraints));
+            Set<ValueConstraint<?>> valueConstraints = Iterators.iterate(hasConstraint.attribute().value()).filter(v -> !v.isVariable()).toSet();
+            concludables.add(Has.of(hasConstraint, hasConstraint.attribute().isa().orElse(null), valueConstraints, labelConstraints));
             isaOwnersToSkip.add(hasConstraint.attribute());
             valueOwnersToSkip.add(hasConstraint.attribute());
         }
 
-        public void fromConstraint(IsaConstraint isaConstraint) {
+        private void fromConstraint(IsaConstraint isaConstraint) {
             if (isaOwnersToSkip.contains(isaConstraint.owner())) return;
-            concludables.add(Concludable.Isa.of(isaConstraint, isaConstraint.owner().value(), labelConstraints(isaConstraint)));
+            Set<ValueConstraint<?>> valueConstraints = Iterators.iterate(isaConstraint.owner().value()).filter(v -> !v.isVariable()).toSet();
+            concludables.add(Concludable.Isa.of(isaConstraint, valueConstraints, labelConstraints(isaConstraint)));
             isaOwnersToSkip.add(isaConstraint.owner());
             valueOwnersToSkip.add(isaConstraint.owner());
         }

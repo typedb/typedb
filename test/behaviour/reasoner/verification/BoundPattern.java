@@ -90,7 +90,7 @@ public class BoundPattern {
 
     static class BoundConcludable {
         private final BoundConjunction conjunction;
-        final Concludable unboundConcludable;
+        private final Concludable unboundConcludable;
 
         private BoundConcludable(BoundConjunction conjunction, Concludable unboundConcludable) {
             this.conjunction = conjunction;
@@ -191,8 +191,8 @@ public class BoundPattern {
 
         public Optional<Pair<Thing, Attribute>> inferredHas() {
             if (unboundConclusion.isHas()) {
-                Thing owner = conjunction.bounds().get(unboundConclusion.asHas().has().owner().id()).asThing();
-                Attribute attribute =conjunction.bounds().get(unboundConclusion.asHas().has().attribute().id()).asAttribute();
+                Thing owner = conjunction.bounds().get(unboundConclusion.asHas().owner().id()).asThing();
+                Attribute attribute =conjunction.bounds().get(unboundConclusion.asHas().attribute().id()).asAttribute();
                 return Optional.of(new Pair<>(owner, attribute));
             } else {
                 return Optional.empty();

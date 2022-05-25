@@ -32,10 +32,12 @@ native_java_libraries(
     name = "reasoner",
     srcs = glob(
         ["*.java",
-        "resolution/*.java",
-        "resolution/framework/*.java",
-        "resolution/resolver/*.java",
-        "resolution/answer/*.java",
+        "processor/*.java",
+        "processor/reactive/*.java",
+        "processor/reactive/common/*.java",
+        "controller/*.java",
+        "answer/*.java",
+        "common/*.java",
         ], exclude = ["*Test.java", "**/*Test.java"],
     ),
     native_libraries_deps = [
@@ -64,29 +66,8 @@ native_java_libraries(
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-reasoner:{pom_version}"],
 )
 
-host_compatible_java_test(
-    name = "test-answer-state",
-    srcs = [
-        "resolution/answer/AnswerStateTest.java",
-    ],
-    test_class = "com.vaticle.typedb.core.reasoner.resolution.answer.AnswerStateTest",
-    native_libraries_deps = [
-        # Internal dependencies
-        "//common:common",
-        "//concept:concept",
-        "//pattern:pattern",
-        "//reasoner:reasoner",
-        "//traversal:traversal",
-    ],
-    deps = [
-
-        # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
-    ],
-)
-
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*"]),
+    include = glob(["*", "*/*", "*/*/*", "*/*/*/*"]),
     license_type = "agpl",
 )

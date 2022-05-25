@@ -161,6 +161,28 @@ host_compatible_java_test(
     ],
 )
 
+host_compatible_java_test(
+    name = "test-alpha-equivalence",
+    srcs = [
+        "resolvable/AlphaEquivalenceTest.java",
+    ],
+    test_class = "com.vaticle.typedb.core.logic.resolvable.AlphaEquivalenceTest",
+    native_libraries_deps = [
+        "//:typedb",
+        "//database:database",
+        "//logic:logic",
+        "//pattern:pattern",
+    ],
+    deps = [
+        "//test/integration/util",
+        "//common:common-mac",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql_lang_java//pattern",
+        "@vaticle_typeql_lang_java//:typeql-lang",
+    ],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob([

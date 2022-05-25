@@ -33,7 +33,8 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
-import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.answer.PartialExplanation.ConclusionAnswer;
 import com.vaticle.typedb.protocol.AnswerProto;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;
@@ -823,11 +824,11 @@ public class ResponseBuilder {
             builder.setRule(protoRule(explanation.rule()));
             explanation.variableMapping().forEach((from, tos) -> {
                 LogicProto.Explanation.VarList.Builder listBuilder = LogicProto.Explanation.VarList.newBuilder();
-                tos.forEach(var -> listBuilder.addVars(var.name()));
+                tos.forEach(var -> listBuilder.addVars(var.reference().name()));
                 builder.putVarMapping(from.name(), listBuilder.build());
             });
-            builder.setConclusion(conceptMap(explanation.conclusionAnswer()));
             builder.setCondition(conceptMap(explanation.conditionAnswer()));
+            builder.setConclusion(conceptMap(explanation.conclusionAnswer()));
             return builder.build();
         }
     }
@@ -848,6 +849,15 @@ public class ResponseBuilder {
             return conceptMapProto.build();
         }
 
+        public static AnswerProto.ConceptMap conceptMap(ConclusionAnswer answer) {
+            AnswerProto.ConceptMap.Builder conceptMapProto = AnswerProto.ConceptMap.newBuilder();
+            answer.concepts().forEach((id, concept) -> {
+                ConceptProto.Concept conceptProto = ResponseBuilder.Concept.protoConcept(concept);
+                conceptMapProto.putMap(id.reference().name(), conceptProto);
+            });
+            return conceptMapProto.build();
+        }
+
         private static AnswerProto.Explainables explainables(ConceptMap.Explainables explainables) {
             AnswerProto.Explainables.Builder builder = AnswerProto.Explainables.newBuilder();
             explainables.relations().forEach(
@@ -858,7 +868,7 @@ public class ResponseBuilder {
             );
             Map<String, Map<String, ConceptMap.Explainable>> ownedExtracted = new HashMap<>();
             explainables.ownerships().forEach((ownership, explainable) -> {
-                Map<String, ConceptMap.Explainable> owned = ownedExtracted.computeIfAbsent(ownership.first().name(), (val) -> new HashMap<String, ConceptMap.Explainable>());
+                Map<String, ConceptMap.Explainable> owned = ownedExtracted.computeIfAbsent(ownership.first().name(), (val) -> new HashMap<>());
                 owned.put(ownership.second().name(), explainable);
             });
             ownedExtracted.forEach((owner, owned) -> {

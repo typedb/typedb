@@ -21,13 +21,14 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 @ThreadSafe
 public abstract class Actor<ACTOR extends Actor<ACTOR>> {
 
     private static final String ERROR_ACTOR_DRIVER_IS_NULL = "driver() must not be null.";
     private final Driver<ACTOR> driver;
-    private final String name;
+    private final Supplier<String> debugName;
 
     public static <A extends Actor<A>> Driver<A> driver(Function<Driver<A>, A> actorFn, ActorExecutorGroup service) {
         return new Driver<>(actorFn, service);
@@ -35,18 +36,18 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
 
     protected abstract void exception(Throwable e);
 
-    protected Actor(Driver<ACTOR> driver, String name) {
+    protected Actor(Driver<ACTOR> driver, Supplier<String> debugName) {
         this.driver = driver;
-        this.name = name;
+        this.debugName = debugName;
     }
 
-    protected Driver<ACTOR> driver() {
+    public Driver<ACTOR> driver() {
         assert this.driver != null : ERROR_ACTOR_DRIVER_IS_NULL;
         return this.driver;
     }
 
-    public String name() {
-        return name;
+    public Supplier<String> debugName() {
+        return debugName;
     }
 
     public static class Driver<ACTOR extends Actor<ACTOR>> {
@@ -70,8 +71,8 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
             return actor;
         }
 
-        public String name() {
-            return actor.name();
+        public Supplier<String> debugName() {
+            return actor.debugName();
         }
 
         public void execute(Consumer<ACTOR> consumer) {

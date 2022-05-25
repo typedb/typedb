@@ -649,7 +649,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         void deleted(CoreTransaction.Data transaction) {
-            deletedTxnIDs.add(transaction.id);
+            deletedTxnIDs.add(transaction.id());
         }
 
         /**
@@ -667,7 +667,7 @@ public class CoreDatabase implements TypeDB.Database {
             Set<Long> deletableTxnIDs = new HashSet<>(deletedTxnIDs);
             boolean[] modified = new boolean[]{false};
             boolean[] miscountCorrected = new boolean[]{false};
-            Set<Long> openTxnIDs = isolationMgr.getNotCommitted().map(t -> t.id).toSet();
+            Set<Long> openTxnIDs = isolationMgr.getNotCommitted().map(CoreTransaction::id).toSet();
             txn.dataStorage.iterate(StatisticsKey.Miscountable.prefix()).forEachRemaining(kv -> {
                 StatisticsKey.Miscountable item = kv.key();
                 List<Long> txnIDsCausingMiscount = kv.value().decodeLongs();
@@ -733,7 +733,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         public void recordCorrectionMetadata(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
             recordMiscountableCauses(txn, overlappingTxn);
-            txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id));
+            txn.dataStorage.putUntracked(StatisticsKey.txnCommitted(txn.id()));
         }
 
         private void recordMiscountableCauses(CoreTransaction.Data txn, Set<CoreTransaction.Data> overlappingTxn) {
@@ -742,27 +742,27 @@ public class CoreDatabase implements TypeDB.Database {
             Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> hasEdgeOvercount = new HashMap<>();
             Map<Pair<ThingVertex, AttributeVertex<?>>, List<Long>> hasEdgeUndercount = new HashMap<>();
             for (CoreTransaction.Data overlapping : overlappingTxn) {
-                attrMiscountableCauses(attrOvercount, overlapping.id, txn.graphMgr.data().attributesCreated(),
+                attrMiscountableCauses(attrOvercount, overlapping.id(), txn.graphMgr.data().attributesCreated(),
                         overlapping.graphMgr.data().attributesCreated());
-                attrMiscountableCauses(attrUndercount, overlapping.id, txn.graphMgr.data().attributesDeleted(),
+                attrMiscountableCauses(attrUndercount, overlapping.id(), txn.graphMgr.data().attributesDeleted(),
                         overlapping.graphMgr.data().attributesDeleted());
-                hasEdgeMiscountableCauses(hasEdgeOvercount, overlapping.id, txn.graphMgr.data().hasEdgeCreated(),
+                hasEdgeMiscountableCauses(hasEdgeOvercount, overlapping.id(), txn.graphMgr.data().hasEdgeCreated(),
                         overlapping.graphMgr.data().hasEdgeCreated());
-                hasEdgeMiscountableCauses(hasEdgeUndercount, overlapping.id, txn.graphMgr.data().hasEdgeDeleted(),
+                hasEdgeMiscountableCauses(hasEdgeUndercount, overlapping.id(), txn.graphMgr.data().hasEdgeDeleted(),
                         overlapping.graphMgr.data().hasEdgeDeleted());
             }
 
             attrOvercount.forEach((attr, txns) -> txn.dataStorage.putUntracked(
-                    StatisticsKey.Miscountable.attrOvercount(txn.id, attr.iid()), encodeLongs(txns)
+                    StatisticsKey.Miscountable.attrOvercount(txn.id(), attr.iid()), encodeLongs(txns)
             ));
             attrUndercount.forEach((attr, txs) -> txn.dataStorage.putUntracked(
-                    StatisticsKey.Miscountable.attrUndercount(txn.id, attr.iid()), encodeLongs(txs)
+                    StatisticsKey.Miscountable.attrUndercount(txn.id(), attr.iid()), encodeLongs(txs)
             ));
             hasEdgeOvercount.forEach((has, txs) -> txn.dataStorage.putUntracked(
-                    StatisticsKey.Miscountable.hasEdgeOvercount(txn.id, has.first().iid(), has.second().iid()), encodeLongs(txs)
+                    StatisticsKey.Miscountable.hasEdgeOvercount(txn.id(), has.first().iid(), has.second().iid()), encodeLongs(txs)
             ));
             hasEdgeUndercount.forEach((has, txs) -> txn.dataStorage.putUntracked(
-                    StatisticsKey.Miscountable.hasEdgeUndercount(txn.id, has.first().iid(), has.second().iid()), encodeLongs(txs)
+                    StatisticsKey.Miscountable.hasEdgeUndercount(txn.id(), has.first().iid(), has.second().iid()), encodeLongs(txs)
             ));
         }
 

@@ -44,7 +44,6 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.RESOLUTION_TERMINATED;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -61,7 +60,7 @@ public class ReasonerTest {
     private CoreTransaction singleThreadElgTransaction(CoreSession session, Arguments.Transaction.Type transactionType) {
         CoreTransaction transaction = session.transaction(transactionType, new Options.Transaction().infer(true));
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
-        transaction.reasoner().resolverRegistry().setExecutorService(service);
+        transaction.reasoner().controllerRegistry().setExecutorService(service);
         return transaction;
     }
 
@@ -167,11 +166,12 @@ public class ReasonerTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                txn.reasoner().resolverRegistry().terminateResolvers(new RuntimeException());
+                RuntimeException exception = new RuntimeException();
+                txn.reasoner().controllerRegistry().terminate(exception);
                 try {
                     List<ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x isa is-still-good;").asMatch()).toList();
                 } catch (TypeDBException e) {
-                    assertEquals(e.code().get(), RESOLUTION_TERMINATED.code());
+                    assertEquals(e.getCause(), exception);
                     return;
                 }
                 fail();
@@ -260,6 +260,46 @@ public class ReasonerTest {
                 });
 
                 assertEquals(2, ans.size());
+            }
+        }
+    }
+
+    @Test
+    public void test_multiple_queries_single_transaction() {
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                ConceptManager conceptMgr = txn.concepts();
+                LogicManager logicMgr = txn.logic();
+
+                EntityType person = conceptMgr.putEntityType("person");
+                AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+                person.setOwns(name);
+                RelationType friendship = conceptMgr.putRelationType("friendship");
+                friendship.setRelates("friend");
+                RelationType marriage = conceptMgr.putRelationType("marriage");
+                marriage.setRelates("husband");
+                marriage.setRelates("wife");
+                person.setPlays(friendship.getRelates("friend"));
+                person.setPlays(marriage.getRelates("husband"));
+                person.setPlays(marriage.getRelates("wife"));
+                logicMgr.putRule(
+                        "marriage-is-friendship",
+                        TypeQL.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
+                        TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                txn.commit();
+            }
+        }
+        try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
+                txn.query().insert(TypeQL.parseQuery("insert $x isa person, has name 'Zack'; $y isa person, has name 'Yasmin'; (husband: $x, wife: $y) isa marriage;").asInsert());
+                txn.commit();
+            }
+            try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
+                String queryString = "match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;";
+                List<ConceptMap> q1Ans = txn.query().match(TypeQL.parseQuery(queryString).asMatch()).toList();
+                List<ConceptMap> q2Ans = txn.query().match(TypeQL.parseQuery(queryString).asMatch()).toList();
+                assertEquals(2, q1Ans.size());
+                assertEquals(2, q2Ans.size());
             }
         }
     }

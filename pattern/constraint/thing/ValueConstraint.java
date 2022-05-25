@@ -18,6 +18,7 @@
 package com.vaticle.typedb.core.pattern.constraint.thing;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
@@ -181,16 +182,17 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         return owner.toString() + SPACE + predicate.toString() + SPACE + value.toString();
     }
 
-    public AlphaEquivalence alphaEquals(ValueConstraint<?> that) {
-        return AlphaEquivalence.valid()
-                .validIf(isLong() == that.isLong())
-                .validIf(isDouble() == that.isDouble())
-                .validIf(isBoolean() == that.isBoolean())
-                .validIf(isString() == that.isString())
-                .validIf(isDateTime() == that.isDateTime())
-                .validIf(!isVariable() && !that.isVariable())
-                .validIf(this.predicate.equals(that.predicate))
-                .validIf(this.value.equals(that.value));
+    @Override
+    public FunctionalIterator<AlphaEquivalence> alphaEquals(ValueConstraint<?> that) {
+        return owner.alphaEquals(that.owner)
+                .flatMap(a -> a.alphaEqualIf(isLong() == that.isLong()))
+                .flatMap(a -> a.alphaEqualIf(isDouble() == that.isDouble()))
+                .flatMap(a -> a.alphaEqualIf(isBoolean() == that.isBoolean()))
+                .flatMap(a -> a.alphaEqualIf(isString() == that.isString()))
+                .flatMap(a -> a.alphaEqualIf(isDateTime() == that.isDateTime()))
+                .flatMap(a -> a.alphaEqualIf(!isVariable() && !that.isVariable()))
+                .flatMap(a -> a.alphaEqualIf(this.predicate.equals(that.predicate)))
+                .flatMap(a -> a.alphaEqualIf(this.value.equals(that.value)));
     }
 
     public static class Long extends ValueConstraint<java.lang.Long> {
@@ -386,15 +388,12 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public AlphaEquivalence alphaEquals(ValueConstraint<?> that) {
-            AlphaEquivalence alphaEquivalence = AlphaEquivalence.valid()
-                    .validIf(isVariable() && that.isVariable())
-                    .validIf(this.predicate.equals(that.predicate))
-                    .validIf(isVariable() && that.isVariable());
-            if (alphaEquivalence.isValid()) {
-                alphaEquivalence.validIfAlphaEqual(this.value, that.asVariable().value());
-            }
-            return alphaEquivalence;
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(ValueConstraint<?> that) {
+            return owner.alphaEquals(that.owner)
+                    .flatMap(a -> a.alphaEqualIf(isVariable() && that.isVariable()))
+                    .flatMap(a -> value.alphaEquals(that.asVariable().value).flatMap(a::extendIfCompatible))
+                    .flatMap(a -> a.alphaEqualIf(this.predicate.equals(that.predicate)))
+                    .flatMap(a -> this.value.alphaEquals(that.asVariable().value()).flatMap(a::extendIfCompatible));
         }
 
         @Override

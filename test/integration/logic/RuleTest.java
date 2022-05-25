@@ -48,6 +48,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
@@ -114,9 +115,9 @@ public class RuleTest {
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), people.get(0)),
                                                                pair(Identifier.Variable.name("y"), people.get(1))));
 
-                    List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
-                    assertEquals(1, materialisations.size());
-                    assertEquals(5, materialisations.get(0).size());
+                    Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
+                    assertTrue(materialisation.isPresent());
+                    assertEquals(5, materialisation.get().size());
 
                     RelationType friendship = conceptMgr.getRelationType("friendship");
                     List<? extends Relation> friendshipInstances = friendship.getInstances().toList();
@@ -170,13 +171,8 @@ public class RuleTest {
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), people.get(0)),
                                                                pair(Identifier.Variable.name("y"), people.get(1))));
 
-                    List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
-                    assertEquals(1, materialisations.size());
-                    assertEquals(5, materialisations.get(0).size());
-                    friendshipInstances = friendship.getInstances().toList();
-                    assertEquals(1, friendshipInstances.size());
-                    assertEquals(friendshipInstances.get(0), materialisations.get(0).get(Identifier.Variable.anon(0)));
-                    assertEquals(friendship, materialisations.get(0).get(Identifier.Variable.label("friendship")));
+                    Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
+                    assertFalse(materialisation.isPresent());
                 }
             }
         }
@@ -217,9 +213,9 @@ public class RuleTest {
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), milkInst),
                                                                pair(Identifier.Variable.name("a"), ageInDays10)));
-                    List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
-                    assertEquals(1, materialisations.size());
-                    assertEquals(2, materialisations.get(0).size());
+                    Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
+                    assertTrue(materialisation.isPresent());
+                    assertEquals(2, materialisation.get().size());
 
                     List<? extends Attribute> ageInDaysOwned = milkInst.getHas(ageInDays).toList();
                     assertEquals(1, ageInDaysOwned.size());
@@ -263,9 +259,9 @@ public class RuleTest {
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
                     ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), milkInst)));
-                    List<Map<Identifier.Variable, Concept>> materialisations = rule.conclusion().materialise(whenAnswer, txn.traversal(), conceptMgr).toList();
-                    assertEquals(1, materialisations.size());
-                    assertEquals(3, materialisations.get(0).size());
+                    Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
+                    assertTrue(materialisation.isPresent());
+                    assertEquals(3, materialisation.get().size());
 
                     AttributeType isStillGood = conceptMgr.getAttributeType("is-still-good");
                     List<? extends Attribute> isStillGoodOwned = milkInst.getHas(isStillGood).toList();

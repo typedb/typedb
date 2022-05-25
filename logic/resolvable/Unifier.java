@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICATION_MISSING_CONCEPT;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Unifier {
 
@@ -126,9 +127,15 @@ public class Unifier {
         List<Variable.Name> namedTypeNames = new ArrayList<>();
         List<FunctionalIterator<Type>> namedTypeSupers = new ArrayList<>();
         initialConcepts.forEach((id, concept) -> {
-            if (id.isName() && concept.isType() && !instanceRequirements.hasRestriction(id)) {
+            if (id.isName() && concept.isType()) {
                 namedTypeNames.add(id.asName());
-                namedTypeSupers.add(concept.asType().getSupertypes().map(t -> t));
+                if (!instanceRequirements.hasRestriction(id)) {
+                    namedTypeSupers.add(concept.asType().getSupertypes().map(t -> t));
+                } else {
+                    namedTypeSupers.add(concept.asType().getSupertypes()
+                                                .filter(t -> t.equals(instanceRequirements.restriction(id)))
+                                                .map(t -> t));
+                }
             } else fixedConcepts.put(id, concept);
         });
 
@@ -181,11 +188,11 @@ public class Unifier {
 
     public static class Builder {
 
-        private Map<Retrievable, Set<Variable>> unifier;
-        private Requirements.Constraint requirements;
-        private Requirements.Constraint unifiedRequirements;
+        private final Map<Retrievable, Set<Variable>> unifier;
+        private final Requirements.Constraint requirements;
+        private final Requirements.Constraint unifiedRequirements;
 
-        public Builder() {
+        private Builder() {
             this(new HashMap<>(), new Requirements.Constraint(), new Requirements.Constraint());
         }
 
@@ -295,7 +302,9 @@ public class Unifier {
             private boolean typesSatisfied(Variable id, Concept concept) {
                 if (types.containsKey(id)) {
                     assert concept.isType();
-                    return types.get(id).contains(concept.asType().getLabel());
+                    Set<Label> satisfyingTypes = new HashSet<>(types.get(id));
+                    satisfyingTypes.retainAll(iterate(concept.asType().getSupertypes()).map(Type::getLabel).toSet());
+                    return satisfyingTypes.size() > 0;
                 } else {
                     return true;
                 }
@@ -385,6 +394,11 @@ public class Unifier {
                     }
                 }
                 return true;
+            }
+
+            public Concept restriction(Retrievable var) {
+                assert hasRestriction(var);
+                return requireCompatible.get(var);
             }
 
             public boolean hasRestriction(Retrievable var) {

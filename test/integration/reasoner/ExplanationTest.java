@@ -32,9 +32,10 @@ import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.logic.LogicManager;
-import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -74,7 +75,7 @@ public class ExplanationTest {
     private CoreTransaction singleThreadElgTransaction(CoreSession session, Arguments.Transaction.Type transactionType, Options.Transaction options) {
         CoreTransaction transaction = session.transaction(transactionType, options.infer(true));
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
-        transaction.reasoner().resolverRegistry().setExecutorService(service);
+        transaction.reasoner().controllerRegistry().setExecutorService(service);
         return transaction;
     }
 
@@ -479,7 +480,7 @@ public class ExplanationTest {
 
                 assertEquals(txn.logic().getRule("marriage-is-friendship"), explanation.rule());
                 assertEquals(2, explanation.variableMapping().size());
-                assertEquals(3, explanation.conclusionAnswer().concepts().size());
+                assertEquals(5, explanation.conclusionAnswer().concepts().size());
 
                 ConceptMap marriageIsFriendshipAnswer = explanation.conditionAnswer();
                 assertEquals(1, marriageIsFriendshipAnswer.explainables().iterator().count());
@@ -488,8 +489,10 @@ public class ExplanationTest {
         }
     }
 
-    private List<Explanation> assertSingleExplainableExplanations(ConceptMap ans, int anonymousConcepts, int explainablesCount,
-                                                                  int explanationsCount, CoreTransaction txn) {
+    private List<Explanation> assertSingleExplainableExplanations(
+            ConceptMap ans, int anonymousConcepts, int explainablesCount, int explanationsCount, CoreTransaction txn
+    ) {
+        checkExplainableVars(ans);
         List<ConceptMap.Explainable> explainables = ans.explainables().iterator().toList();
         assertEquals(anonymousConcepts, iterate(ans.concepts().keySet()).filter(Identifier::isAnonymous).count());
         assertEquals(explainablesCount, explainables.size());
@@ -497,16 +500,26 @@ public class ExplanationTest {
         assertNotEquals(NOT_IDENTIFIED, explainable.id());
         List<Explanation> explanations = txn.query().explain(explainable.id()).toList();
         assertEquals(explanationsCount, explanations.size());
-
         explanations.forEach(explanation -> {
-            Map<Retrievable, Set<Retrievable>> mapping = explanation.variableMapping();
-            ConceptMap projected = applyMapping(mapping, ans);
+            Map<Retrievable, Set<Variable>> mapping = explanation.variableMapping();
+            Map<Retrievable, Set<Retrievable>> retrievableMapping = new HashMap<>();
+            mapping.forEach((k, v) -> retrievableMapping.put(
+                    k, iterate(v).filter(Identifier::isRetrievable).map(Variable::asRetrievable).toSet()
+            ));
+            ConceptMap projected = applyMapping(retrievableMapping, ans);
             projected.concepts().forEach((var, concept) -> {
-                assertTrue(explanation.conclusionAnswer().contains(var));
-                assertEquals(explanation.conclusionAnswer().get(var), concept);
+                assertTrue(explanation.conclusionAnswer().concepts().containsKey(var));
+                assertEquals(explanation.conclusionAnswer().concepts().get(var), concept);
             });
         });
         return explanations;
+    }
+
+    private static void checkExplainableVars(ConceptMap ans) {
+        ans.explainables().relations().keySet().forEach(v -> assertTrue(ans.contains(v)));
+        ans.explainables().attributes().keySet().forEach(v -> assertTrue(ans.contains(v)));
+        ans.explainables().ownerships().keySet().forEach(
+                pair -> assertTrue(ans.contains(pair.first()) && ans.contains(pair.second())));
     }
 
     private ConceptMap applyMapping(Map<Retrievable, Set<Retrievable>> mapping, ConceptMap completeMap) {

@@ -18,9 +18,9 @@
 
 package com.vaticle.typedb.core.logic;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
@@ -45,7 +45,6 @@ import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typedb.core.traversal.RelationTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Pattern;
@@ -57,12 +56,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
@@ -83,8 +84,6 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Schema.WHEN;
 
 
 public class Rule {
-
-    private static final Logger LOG = LoggerFactory.getLogger(Rule.class);
 
     // note: as `Rule` is cached between transactions, we cannot hold any transaction-bound objects such as Managers
     private final RuleStructure structure;
@@ -181,7 +180,7 @@ public class Rule {
     }
 
     /**
-     * Remove type hints in the `then` pattern that are not valid in the `when` pattern
+     * Remove inferred types in the `then` pattern that are not valid in the `when` pattern
      */
     private void pruneThenResolvedTypes() {
         then.variables().stream().filter(variable -> variable.id().isName())
@@ -215,7 +214,6 @@ public class Rule {
         conclusion().unindex();
         conclusion().index();
     }
-
 
     @Override
     public String toString() {
@@ -323,16 +321,14 @@ public class Rule {
             return rule().then();
         }
 
-        /**
-         * Perform a put operation on the `then` of the rule. This may insert a new fact, or return an iterator of existing ones
-         *
-         * @param whenConcepts - the concepts that satisfy the `when` of the rule. All named `then` variables must be in this map
-         * @param traversalEng - used to perform a traversal to find preexisting conclusions
-         * @param conceptMgr   - used to insert the conclusion if it doesn't already exist
-         * @return - all possible conclusions: there may be multiple preexisting satisfactory conclusions, we return all
-         */
-        public abstract FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                                          ConceptManager conceptMgr);
+        public abstract Materialisable materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr);
+
+        Optional<Map<Identifier.Variable, Concept>> materialiseAndBind(
+                ConceptMap whenConcepts, TraversalEngine traversalEng, ConceptManager conceptMgr
+        ) {
+            return Materialiser.materialise(materialisable(whenConcepts, conceptMgr), traversalEng, conceptMgr)
+                    .map(materialisation -> materialisation.bindToConclusion(this, whenConcepts));
+        }
 
         public Rule rule() {
             return rule;
@@ -480,42 +476,52 @@ public class Rule {
             }
 
             @Override
-            public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                                     ConceptManager conceptMgr) {
-                Identifier.Variable relationTypeIdentifier = isa().type().id();
+            public Materialisable materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr) {
                 RelationType relationType = relationType(whenConcepts, conceptMgr);
-                FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> existingRelations = matchRelation(
-                        relationType, whenConcepts, traversalEng, conceptMgr
-                );
-                if (existingRelations.hasNext()) {
-                    return existingRelations.map(rel -> {
-                        Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
-                        thenConcepts.put(relationTypeIdentifier, relationType);
-                        thenConcepts.put(isa().owner().id(), rel);
-                        relation().players().forEach(rp -> {
-                            thenConcepts.putIfAbsent(rp.roleType().get().id(), getRole(rp, relationType, whenConcepts));
-                            thenConcepts.putIfAbsent(rp.player().id(), whenConcepts.get(rp.player().id()));
-                        });
-                        return thenConcepts;
-                    });
+                Map<Pair<RoleType, Thing>, Integer> players = new HashMap<>();
+                relation().players().forEach(rp -> {
+                    RoleType role = roleType(rp, relationType, whenConcepts);
+                    Thing player = whenConcepts.get(rp.player().id()).asThing();
+                    Pair<RoleType, Thing> pair = new Pair<>(role, player);
+                    players.merge(pair, 1, (k, v) -> v + 1);
+                });
+                return new Materialisable(relationType, players);
+            }
+
+            private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
+                if (isa().type().reference().isName()) {
+                    Reference.Name typeReference = isa().type().reference().asName();
+                    assert whenConcepts.contains(typeReference) && whenConcepts.get(typeReference).isRelationType();
+                    return whenConcepts.get(typeReference).asRelationType();
                 } else {
-                    return insert(relationType, whenConcepts, conceptMgr);
+                    assert isa().type().reference().isLabel();
+                    return conceptMgr.getRelationType(isa().type().label().get().label());
                 }
             }
 
-            private FunctionalIterator<Map<Identifier.Variable, Concept>> insert(RelationType relationType, ConceptMap whenConcepts, ConceptManager conceptMgr) {
+            private static RoleType roleType(RelationConstraint.RolePlayer rp, RelationType scope,
+                                             ConceptMap whenConcepts) {
+                if (rp.roleType().get().reference().isName()) {
+                    return whenConcepts.get(rp.roleType().get().reference().asName()).asRoleType();
+                } else {
+                    assert rp.roleType().get().reference().isLabel();
+                    return scope.getRelates(rp.roleType().get().label().get().properLabel().name());
+                }
+            }
+
+            public Map<Identifier.Variable, Concept> thenConcepts(
+                    com.vaticle.typedb.core.concept.thing.Relation relation, ConceptMap whenConcepts) {
+                RelationType relationType = relation.getType();
                 Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                 thenConcepts.put(isa().type().id(), relationType);
-                com.vaticle.typedb.core.concept.thing.Relation relation = relationType.create(true);
                 thenConcepts.put(isa().owner().id(), relation);
                 relation().players().forEach(rp -> {
-                    RoleType role = getRole(rp, relationType, whenConcepts);
+                    RoleType role = roleType(rp, relationType, whenConcepts);
                     Thing player = whenConcepts.get(rp.player().id()).asThing();
-                    relation.addPlayer(role, player, true);
                     thenConcepts.putIfAbsent(rp.roleType().get().id(), role);
                     thenConcepts.putIfAbsent(rp.player().id(), player);
                 });
-                return Iterators.single(thenConcepts);
+                return thenConcepts;
             }
 
             @Override
@@ -565,54 +571,75 @@ public class Rule {
                 return this;
             }
 
-            private FunctionalIterator<com.vaticle.typedb.core.concept.thing.Relation> matchRelation(
-                    RelationType relationType, ConceptMap whenConcepts,
-                    TraversalEngine traversalEng, ConceptManager conceptMgr) {
-                Identifier.Variable.Retrievable relationId = relation().owner().id();
-                RelationTraversal traversal = new RelationTraversal(relationId, set(relationType.getLabel())); // TODO include inheritance
-                relation().players().forEach(rp -> {
-                    Identifier.Variable.Retrievable playerId = rp.player().id();
-                    assert rp.roleType().isPresent() && rp.roleType().get().label().isPresent()
-                            && whenConcepts.contains(playerId);
-                    traversal.player(playerId, whenConcepts.get(playerId).asThing().getIID(),
-                            set(getRole(rp, relationType, whenConcepts).getLabel())); // TODO include inheritance
-                });
-                return traversalEng.iterator(traversal).map(conceptMgr::conceptMap)
-                        .map(conceptMap -> conceptMap.get(relationId).asRelation());
-            }
+            public static class Materialisable extends Conclusion.Materialisable {
 
-            private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
-                if (isa().type().reference().isName()) {
-                    Reference.Name typeReference = isa().type().reference().asName();
-                    assert whenConcepts.contains(typeReference) && whenConcepts.get(typeReference).isRelationType();
-                    return whenConcepts.get(typeReference).asRelationType();
-                } else {
-                    assert isa().type().reference().isLabel();
-                    return conceptMgr.getRelationType(isa().type().label().get().label());
+                private final RelationType relationType;
+                private final Map<Pair<RoleType, Thing>, Integer> players;
+
+                public Materialisable(RelationType relationType, Map<Pair<RoleType, Thing>, Integer> players) {
+                    this.relationType = relationType;
+                    this.players = players;
                 }
-            }
 
-            private RoleType getRole(RelationConstraint.RolePlayer rp, RelationType scope, ConceptMap whenConcepts) {
-                if (rp.roleType().get().reference().isName()) {
-                    return whenConcepts.get(rp.roleType().get().reference().asName()).asRoleType();
-                } else {
-                    assert rp.roleType().get().reference().isLabel();
-                    return scope.getRelates(rp.roleType().get().label().get().properLabel().name());
+                public RelationType relationType() {
+                    return relationType;
+                }
+
+                public Map<Pair<RoleType, Thing>, Integer> players() {
+                    return players;
+                }
+
+                @Override
+                public boolean isRelation() {
+                    return true;
+                }
+
+                @Override
+                public Materialisable asRelation() {
+                    return this;
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    if (this == o) return true;
+                    if (o == null || getClass() != o.getClass()) return false;
+                    Materialisable relation = (Materialisable) o;
+                    return relationType.equals(relation.relationType) &&
+                            players.equals(relation.players);
+                }
+
+                @Override
+                public int hashCode() {
+                    return Objects.hash(relationType, players);
+                }
+
+                @Override
+                public String toString() {
+                    return "Relation{" +
+                            "relationType=" + relationType +
+                            ", players=" + players +
+                            '}';
                 }
             }
         }
 
         public static abstract class Has extends Conclusion {
 
-            private final HasConstraint has;
+            private final ThingVariable owner;
+            private final ThingVariable attribute;
 
             Has(HasConstraint has, Rule rule) {
                 super(rule, set(has.owner().id(), has.attribute().id()));
-                this.has = has;
+                this.owner = has.owner();
+                this.attribute = has.attribute();
             }
 
-            public HasConstraint has() {
-                return has;
+            public ThingVariable owner() {
+                return owner;
+            }
+
+            public ThingVariable attribute() {
+                return attribute;
             }
 
             @Override
@@ -662,7 +689,7 @@ public class Rule {
                     AttributeType attributeType = conceptMgr.getAttributeType(attributeTypeLabel.name());
                     assert attributeType != null;
                     AttributeType.ValueType attrTypeValueType = attributeType.getValueType();
-                    ValueConstraint<?> value = has().attribute().value().iterator().next();
+                    ValueConstraint<?> value = attribute().value().iterator().next();
                     if (!AttributeType.ValueType.of(value.value().getClass()).assignables().contains(attrTypeValueType)) {
                         throw TypeDBException.of(RULE_THEN_INVALID_VALUE_ASSIGNMENT, rule().getLabel(),
                                 value.value().getClass().getSimpleName(),
@@ -671,33 +698,44 @@ public class Rule {
                 }
 
                 @Override
-                public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                                         ConceptManager conceptMgr) {
-                    Identifier.Variable.Retrievable ownerId = has().owner().id();
+                public Materialisable materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr) {
+
+                    Identifier.Variable.Retrievable ownerId = owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
-                    Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
                     Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
-                    Attribute attribute = putAttribute(conceptMgr);
-                    owner.setHas(attribute, true);
-                    TypeVariable declaredType = has().attribute().isa().get().type();
+
+                    assert isa().type().label().isPresent()
+                            && attribute().value().size() == 1
+                            && attribute().value().iterator().next().isValueIdentity();
+                    Label attributeTypeLabel = isa().type().label().get().properLabel();
+                    AttributeType attrType = conceptMgr.getAttributeType(attributeTypeLabel.name());
+                    assert attrType != null;
+                    ValueConstraint<?> value = attribute().value().iterator().next();
+                    return new Materialisable(owner, attrType, value);
+                }
+
+                public Map<Identifier.Variable, Concept> thenConcepts(Thing owner, AttributeType attrType,
+                                                                      Attribute attribute, ConceptMap whenConcepts) {
+                    Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
+                    TypeVariable declaredType = isa().type();
                     Identifier.Variable declaredTypeId = declaredType.id();
-                    AttributeType attrType = conceptMgr.getAttributeType(declaredType.label().get().properLabel().name());
+                    Thing declaredOwner = whenConcepts.get(owner().id()).asThing();
+                    assert declaredOwner.equals(owner);
                     assert attrType.equals(attribute.getType());
                     thenConcepts.put(declaredTypeId, attrType);
-                    thenConcepts.put(has().attribute().id(), attribute);
-                    thenConcepts.put(has().owner().id(), owner);
-                    return Iterators.single(thenConcepts);
+                    thenConcepts.put(attribute().id(), attribute);
+                    thenConcepts.put(owner().id(), declaredOwner);
+                    return thenConcepts;
                 }
 
                 @Override
                 public Optional<ThingVariable> generating() {
-                    return Optional.of(has().attribute());
+                    return Optional.of(attribute());
                 }
 
                 @Override
                 void index() {
-                    com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.inferredTypes();
+                    Set<Label> possibleAttributeHas = attribute().inferredTypes();
                     possibleAttributeHas.forEach(label -> {
                         rule().structure.indexConcludesVertex(label);
                         rule().structure.indexConcludesEdgeTo(label);
@@ -706,8 +744,7 @@ public class Rule {
 
                 @Override
                 void unindex() {
-                    com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.inferredTypes();
+                    Set<Label> possibleAttributeHas = attribute().inferredTypes();
                     possibleAttributeHas.forEach(label -> {
                         rule().structure.unindexConcludesVertex(label);
                         rule().structure.unindexConcludesEdgeTo(label);
@@ -754,23 +791,64 @@ public class Rule {
                     return value;
                 }
 
-                private Attribute putAttribute(ConceptManager conceptMgr) {
-                    assert has().attribute().isa().isPresent()
-                            && has().attribute().isa().get().type().label().isPresent()
-                            && has().attribute().value().size() == 1
-                            && has().attribute().value().iterator().next().isValueIdentity();
-                    Label attributeTypeLabel = isa().type().label().get().properLabel();
-                    AttributeType attrType = conceptMgr.getAttributeType(attributeTypeLabel.name());
-                    assert attrType != null;
-                    ValueConstraint<?> value = has().attribute().value().iterator().next();
-                    if (attrType.isDateTime()) return attrType.asDateTime().put(value.asDateTime().value(), true);
-                    else if (attrType.isBoolean()) return attrType.asBoolean().put(value.asBoolean().value(), true);
-                    else if (attrType.isDouble()) return attrType.asDouble().put(value.asDouble().value(), true);
-                    else if (attrType.isLong()) return attrType.asLong().put(value.asLong().value(), true);
-                    else if (attrType.isString()) return attrType.asString().put(value.asString().value(), true);
-                    else throw TypeDBException.of(ILLEGAL_STATE);
-                }
+                public static class Materialisable extends Conclusion.Materialisable {
 
+                    private final Thing owner;
+                    private final AttributeType attrType;
+                    private final ValueConstraint<?> value;
+
+                    public Materialisable(Thing owner, AttributeType attrType, ValueConstraint<?> value) {
+                        this.owner = owner;
+                        this.attrType = attrType;
+                        this.value = value;
+                    }
+
+                    @Override
+                    public boolean isHasExplicit() {
+                        return true;
+                    }
+
+                    @Override
+                    public Materialisable asHasExplicit() {
+                        return this;
+                    }
+
+                    public Thing owner() {
+                        return owner;
+                    }
+
+                    public AttributeType attrType() {
+                        return attrType;
+                    }
+
+                    public ValueConstraint<?> value() {
+                        return value;
+                    }
+
+                    @Override
+                    public boolean equals(Object o) {
+                        if (this == o) return true;
+                        if (o == null || getClass() != o.getClass()) return false;
+                        Materialisable explicit = (Materialisable) o;
+                        return owner.equals(explicit.owner) &&
+                                attrType.equals(explicit.attrType) &&
+                                value.equals(explicit.value);
+                    }
+
+                    @Override
+                    public int hashCode() {
+                        return Objects.hash(owner, attrType, value);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "Explicit{" +
+                                "owner=" + owner +
+                                ", attrType=" + attrType +
+                                ", value=" + value +
+                                '}';
+                    }
+                }
             }
 
             public static class Variable extends Has {
@@ -792,19 +870,23 @@ public class Rule {
                 }
 
                 @Override
-                public FunctionalIterator<Map<Identifier.Variable, Concept>> materialise(ConceptMap whenConcepts, TraversalEngine traversalEng,
-                                                                                         ConceptManager conceptMgr) {
-                    Identifier.Variable.Retrievable ownerId = has().owner().id();
-                    assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
-                    Thing owner = whenConcepts.get(ownerId).asThing();
+                public Conclusion.Materialisable materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr) {
+                    assert whenConcepts.contains(owner().id()) && whenConcepts.get(owner().id()).isThing();
+                    Thing owner = whenConcepts.get(owner().id()).asThing();
+                    assert whenConcepts.contains(attribute().id()) && whenConcepts.get(attribute().id()).isAttribute();
+                    Attribute attr = whenConcepts.get(attribute().id()).asAttribute();
+                    return new Materialisable(owner, attr);
+                }
+
+                public Map<Identifier.Variable, Concept> thenConcepts(Thing owner, Attribute attribute, ConceptMap whenConcepts) {
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
-                    assert whenConcepts.contains(has().attribute().id())
-                            && whenConcepts.get(has().attribute().id()).isAttribute();
-                    Attribute attr = whenConcepts.get(has().attribute().id()).asAttribute();
-                    owner.setHas(attr, true);
-                    thenConcepts.put(has().attribute().id(), attr);
-                    thenConcepts.put(has().owner().id(), owner);
-                    return Iterators.single(thenConcepts);
+                    Thing declaredOwner = whenConcepts.get(owner().id()).asThing();
+                    assert declaredOwner.equals(owner);
+                    Attribute declaredAttribute = whenConcepts.get(attribute().id()).asAttribute();
+                    assert declaredAttribute.equals(attribute);
+                    thenConcepts.put(attribute().id(), declaredAttribute);
+                    thenConcepts.put(owner().id(), declaredOwner);
+                    return thenConcepts;
                 }
 
                 @Override
@@ -814,15 +896,13 @@ public class Rule {
 
                 @Override
                 void index() {
-                    com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.inferredTypes();
+                    Set<Label> possibleAttributeHas = attribute().inferredTypes();
                     possibleAttributeHas.forEach(rule().structure::indexConcludesEdgeTo);
                 }
 
                 @Override
                 void unindex() {
-                    com.vaticle.typedb.core.pattern.variable.Variable attribute = has().attribute();
-                    Set<Label> possibleAttributeHas = attribute.inferredTypes();
+                    Set<Label> possibleAttributeHas = attribute().inferredTypes();
                     possibleAttributeHas.forEach(rule().structure::unindexConcludesEdgeTo);
                 }
 
@@ -835,8 +915,88 @@ public class Rule {
                 public Variable asVariableHas() {
                     return this;
                 }
+
+                public static class Materialisable extends Conclusion.Materialisable {
+
+                    private final Thing owner;
+                    private final Attribute attribute;
+
+                    public Materialisable(Thing owner, Attribute attribute) {
+                        this.owner = owner;
+                        this.attribute = attribute;
+                    }
+
+                    @Override
+                    public boolean isHasVariable() {
+                        return true;
+                    }
+
+                    @Override
+                    public Materialisable asHasVariable() {
+                        return this;
+                    }
+
+                    public Thing owner() {
+                        return owner;
+                    }
+
+                    public Attribute attribute() {
+                        return attribute;
+                    }
+
+                    @Override
+                    public boolean equals(Object o) {
+                        if (this == o) return true;
+                        if (o == null || getClass() != o.getClass()) return false;
+                        Materialisable variable = (Materialisable) o;
+                        return owner.equals(variable.owner) &&
+                                attribute.equals(variable.attribute);
+                    }
+
+                    @Override
+                    public int hashCode() {
+                        return Objects.hash(owner, attribute);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "Variable{" +
+                                "owner=" + owner +
+                                ", attribute=" + attribute +
+                                '}';
+                    }
+                }
+            }
+
+        }
+
+        public static class Materialisable {
+
+            public boolean isRelation() {
+                return false;
+            }
+
+            public Relation.Materialisable asRelation() {
+                throw TypeDBException.of(ILLEGAL_CAST);
+            }
+
+            public boolean isHasExplicit() {
+                return false;
+            }
+
+            public Has.Explicit.Materialisable asHasExplicit() {
+                throw TypeDBException.of(ILLEGAL_CAST);
+            }
+
+            public boolean isHasVariable() {
+                return false;
+            }
+
+            public Has.Variable.Materialisable asHasVariable() {
+                throw TypeDBException.of(ILLEGAL_CAST);
             }
 
         }
     }
+
 }

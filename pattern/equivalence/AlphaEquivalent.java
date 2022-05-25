@@ -17,7 +17,9 @@
 
 package com.vaticle.typedb.core.pattern.equivalence;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+
 public interface AlphaEquivalent<T extends AlphaEquivalent<T>> {
 
-    AlphaEquivalence alphaEquals(T that);
+    FunctionalIterator<AlphaEquivalence> alphaEquals(T that);
 }

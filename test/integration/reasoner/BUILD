@@ -65,9 +65,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-resolution",
-    srcs = ["resolution/ResolutionTest.java", "resolution/Util.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.resolution.ResolutionTest",
+    name = "test-controller",
+    srcs = ["controller/ControllerTest.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.controller.ControllerTest",
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
@@ -90,35 +90,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-reiteration",
-    srcs = ["resolution/ReiterationTest.java", "resolution/Util.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.resolution.ReiterationTest",
-    native_libraries_deps = [
-        # Internal dependencies
-        "//:typedb",
-        "//database:database",
-        "//common:common",
-        "//concurrent:concurrent",
-        "//concept:concept",
-        "//logic:logic",
-        "//pattern:pattern",
-        "//reasoner:reasoner",
-        "//traversal:traversal",
-    ],
-    deps = [
-        "//test/integration/util",
-
-        # External dependencies from Vaticle
-        "@vaticle_typeql_lang_java//:typeql-lang",
-        "@vaticle_typedb_common//:common",
-    ],
-    size = "large"
-)
-
-host_compatible_java_test(
-    name = "test-resolution-planner",
-    srcs = ["resolution/PlannerTest.java", "resolution/Util.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.resolution.PlannerTest",
+    name = "test-planner",
+    srcs = ["common/PlannerTest.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.common.PlannerTest",
     native_libraries_deps = [
         # Internal dependencies
         "//database:database",
@@ -142,7 +116,8 @@ checkstyle_test(
     name = "checkstyle",
     include = glob([
         "*",
-        "resolution/*",
+        "controller/*",
+        "common/*",
     ]),
     license_type = "agpl",
 )

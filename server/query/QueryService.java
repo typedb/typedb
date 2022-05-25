@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
 import com.vaticle.typedb.core.concept.answer.NumericGroup;
 import com.vaticle.typedb.core.query.QueryManager;
-import com.vaticle.typedb.core.reasoner.resolution.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.server.TransactionService;
 import com.vaticle.typedb.protocol.QueryProto;
 import com.vaticle.typedb.protocol.TransactionProto;

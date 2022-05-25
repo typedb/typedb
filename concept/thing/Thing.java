@@ -125,6 +125,14 @@ public interface Thing extends Concept, Comparable<Thing> {
     boolean hasInferred(Attribute attribute);
 
     /**
+     * Check whether a non-inferred Has edge to a given attribute instance exists
+     *
+     * @param attribute
+     * @return
+     */
+    boolean hasNonInferred(Attribute attribute);
+
+    /**
      * Get all {@code RoleType} types this {@code Thing} is playing in a {@code Relation}.
      *
      * @return an iterator stream of {@code RoleType} types that this {@code Thing} plays.
