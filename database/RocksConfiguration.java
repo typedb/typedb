@@ -58,7 +58,7 @@ public class RocksConfiguration {
         return loggingEnabled;
     }
 
-    static class Schema {
+    public static class Schema {
 
         public org.rocksdb.DBOptions dbOptions() {
             return new DBOptions().setCreateIfMissing(true);
@@ -68,7 +68,7 @@ public class RocksConfiguration {
          * WARNING: we can break backward compatibility or corrupt user data by changing these options and using them
          * with existing databases
          */
-        org.rocksdb.ColumnFamilyOptions defaultCFOptions() {
+        public org.rocksdb.ColumnFamilyOptions defaultCFOptions() {
             return new org.rocksdb.ColumnFamilyOptions()
                     .setCompressionType(NO_COMPRESSION)
                     .setTableFormatConfig(defaultCFTableOptions());
