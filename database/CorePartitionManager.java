@@ -42,6 +42,8 @@ import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.VARIABL
 
 public abstract class CorePartitionManager {
 
+    protected static final int DEFAULT_HANDLE_INDEX = 0;
+
     private final List<ColumnFamilyDescriptor> descriptors;
     final List<ColumnFamilyHandle> handles;
 
@@ -76,7 +78,7 @@ public abstract class CorePartitionManager {
 
         protected Schema(List<ColumnFamilyDescriptor> descriptors, List<ColumnFamilyHandle> handles) {
             super(descriptors, handles);
-            defaultHandle = handles.get(0);
+            defaultHandle = handles.get(DEFAULT_HANDLE_INDEX);
         }
 
         static List<ColumnFamilyDescriptor> descriptors(RocksConfiguration.Schema configuration) {
@@ -97,7 +99,6 @@ public abstract class CorePartitionManager {
 
     public static class Data extends CorePartitionManager {
 
-        private static final int DEFAULT_HANDLE_INDEX = 0;
         private static final int VARIABLE_START_EDGE_HANDLE_INDEX = 1;
         private static final int FIXED_START_EDGE_HANDLE_INDEX = 2;
         private static final int OPTIMISATION_EDGE_HANDLE_INDEX = 3;
