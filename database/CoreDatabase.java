@@ -161,12 +161,6 @@ public class CoreDatabase implements TypeDB.Database {
         return database;
     }
 
-    static CoreDatabase loadAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
-        CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
-        database.load();
-        return database;
-    }
-
     protected void initialise() {
         openSchema();
         initialiseEncodingVersion();
@@ -180,6 +174,57 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
         statisticsCorrector.initialise();
+    }
+
+    protected void initialiseEncodingVersion() {
+        try {
+            rocksSchema.put(
+                    rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
+                    ENCODING_VERSION_KEY.bytes().getBytes(),
+                    ByteArray.encodeInt(ENCODING_VERSION).getBytes()
+            );
+        } catch (RocksDBException e) {
+            throw TypeDBException.of(e);
+        }
+    }
+
+    protected void openAndInitialiseData() {
+        try {
+            List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
+            List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
+            rocksData = OptimisticTransactionDB.open(
+                    rocksConfiguration.data().dbOptions(),
+                    directory().resolve(Encoding.ROCKS_DATA).toString(),
+                    dataDescriptors.subList(0, 1),
+                    dataHandles
+            );
+            assert dataHandles.size() == 1;
+            dataHandles.addAll(rocksData.createColumnFamilies(dataDescriptors.subList(1, dataDescriptors.size())));
+            rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
+        } catch (RocksDBException e) {
+            throw TypeDBException.of(e);
+        }
+        mayInitRocksDataLogger();
+    }
+
+    static CoreDatabase loadAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
+        CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
+        database.load();
+        return database;
+    }
+
+    protected void load() {
+        openSchema();
+        validateEncodingVersion();
+        openData();
+        isOpen.set(true);
+        try (CoreSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
+            try (CoreTransaction.Schema txn = session.initialisationTransaction()) {
+                schemaKeyGenerator.sync(txn.schemaStorage());
+                dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
+            }
+        }
+        statisticsCorrector.initialiseAndCleanUp();
     }
 
     protected void openSchema() {
@@ -203,42 +248,19 @@ public class CoreDatabase implements TypeDB.Database {
         return new CorePartitionManager.Schema(schemaDescriptors, schemaHandles);
     }
 
-    protected void openAndInitialiseData() {
+    protected void validateEncodingVersion() {
         try {
-            List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
-            List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
-            rocksData = OptimisticTransactionDB.open(
-                    rocksConfiguration.data().dbOptions(),
-                    directory().resolve(Encoding.ROCKS_DATA).toString(),
-                    dataDescriptors.subList(0, 1),
-                    dataHandles
+            byte[] encodingBytes = rocksSchema.get(
+                    rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
+                    ENCODING_VERSION_KEY.bytes().getBytes()
             );
-            assert dataHandles.size() == 1;
-            dataHandles.addAll(rocksData.createColumnFamilies(dataDescriptors.subList(1, dataDescriptors.size())));
-            rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
+            int encoding = encodingBytes == null || encodingBytes.length == 0 ? 0 : ByteArray.of(encodingBytes).decodeInt();
+            if (encoding != ENCODING_VERSION) {
+                throw TypeDBException.of(INCOMPATIBLE_ENCODING, name(), encoding, ENCODING_VERSION);
+            }
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
-        mayInitRocksDataLogger();
-    }
-
-    protected CorePartitionManager.Data createPartitionMgrData(List<ColumnFamilyDescriptor> dataDescriptors,
-                                                               List<ColumnFamilyHandle> dataHandles) {
-        return new CorePartitionManager.Data(dataDescriptors, dataHandles);
-    }
-
-    protected void load() {
-        openSchema();
-        validateEncodingVersion();
-        openData();
-        isOpen.set(true);
-        try (CoreSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
-            try (CoreTransaction.Schema txn = session.initialisationTransaction()) {
-                schemaKeyGenerator.sync(txn.schemaStorage());
-                dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
-            }
-        }
-        statisticsCorrector.initialiseAndCleanUp();
     }
 
     protected void openData() {
@@ -259,6 +281,11 @@ public class CoreDatabase implements TypeDB.Database {
         mayInitRocksDataLogger();
     }
 
+    protected CorePartitionManager.Data createPartitionMgrData(List<ColumnFamilyDescriptor> dataDescriptors,
+                                                               List<ColumnFamilyHandle> dataHandles) {
+        return new CorePartitionManager.Data(dataDescriptors, dataHandles);
+    }
+
     private void mayInitRocksDataLogger() {
         if (rocksConfiguration.isLoggingEnabled()) {
             scheduledPropertiesLogger = java.util.concurrent.Executors.newScheduledThreadPool(1);
@@ -268,33 +295,6 @@ public class CoreDatabase implements TypeDB.Database {
             );
         } else {
             scheduledPropertiesLogger = null;
-        }
-    }
-
-    protected void initialiseEncodingVersion() {
-        try {
-            rocksSchema.put(
-                    rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
-                    ENCODING_VERSION_KEY.bytes().getBytes(),
-                    ByteArray.encodeInt(ENCODING_VERSION).getBytes()
-            );
-        } catch (RocksDBException e) {
-            throw TypeDBException.of(e);
-        }
-    }
-
-    protected void validateEncodingVersion() {
-        try {
-            byte[] encodingBytes = rocksSchema.get(
-                    rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
-                    ENCODING_VERSION_KEY.bytes().getBytes()
-            );
-            int encoding = encodingBytes == null || encodingBytes.length == 0 ? 0 : ByteArray.of(encodingBytes).decodeInt();
-            if (encoding != ENCODING_VERSION) {
-                throw TypeDBException.of(INCOMPATIBLE_ENCODING, name(), encoding, ENCODING_VERSION);
-            }
-        } catch (RocksDBException e) {
-            throw TypeDBException.of(e);
         }
     }
 
