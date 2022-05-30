@@ -41,15 +41,16 @@ public class PoolingStream<PACKET> extends AbstractStream<PACKET, PACKET> {
         this.pool = pool;
     }
 
-    public static <PACKET> PoolingStream<PACKET> fanOut(
-            AbstractProcessor<?, ?, ?, ?> processor) {
-        return new PoolingStream<>(processor, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(),
-                                   new PublisherRegistry.Single<>());
+    public static <PACKET> PoolingStream<PACKET> fanOut(AbstractProcessor<?, ?, ?, ?> processor) {
+        return new PoolingStream<>(
+                processor, new Operator.FanOut<>(), new SubscriberRegistry.Multi<>(), new PublisherRegistry.Single<>()
+        );
     }
 
-    public static <PACKET> PoolingStream<PACKET> fanIn(
-            AbstractProcessor<?, ?, ?, ?> processor, Operator.Pool<PACKET, PACKET> pool) {
-        return new PoolingStream<>(processor, pool, new SubscriberRegistry.Single<>(), new PublisherRegistry.Multi<>());
+    public static <PACKET> PoolingStream<PACKET> fanInBuffer(AbstractProcessor<?, ?, ?, ?> processor) {
+        return new PoolingStream<>(
+                processor, new Operator.Buffer<>(), new SubscriberRegistry.Single<>(), new PublisherRegistry.Multi<>()
+        );
     }
 
     public static <PACKET> PoolingStream<PACKET> fanInFanOut(AbstractProcessor<?, ?, ?, ?> processor) {

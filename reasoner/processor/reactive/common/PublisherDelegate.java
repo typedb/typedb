@@ -59,7 +59,7 @@ public class PublisherDelegate<OUTPUT> {
     }
 
     public <MAPPED> Stream<OUTPUT, MAPPED> map(Publisher<OUTPUT> publisher, Function<OUTPUT, MAPPED> function) {
-        Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(publisher.processor(), new Operator.Map<>(function));
+        Stream<OUTPUT, MAPPED> newOp = TransformationStream.map(publisher.processor(), function);
         publisher.registerSubscriber(newOp);
         return newOp;
     }
@@ -67,17 +67,13 @@ public class PublisherDelegate<OUTPUT> {
     public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(
             Publisher<OUTPUT> publisher, Function<OUTPUT, FunctionalIterator<MAPPED>> function
     ) {
-        Stream<OUTPUT, MAPPED> newOp = TransformationStream.single(
-                publisher.processor(), new Operator.FlatMap<>(function)
-        );
+        Stream<OUTPUT, MAPPED> newOp = TransformationStream.flatMap(publisher.processor(), function);
         publisher.registerSubscriber(newOp);
         return newOp;
     }
 
     public Stream<OUTPUT, OUTPUT> distinct(Publisher<OUTPUT> publisher) {
-        Stream<OUTPUT, OUTPUT> newOp = TransformationStream.single(
-                publisher.processor(), new Operator.Distinct<>()
-        );
+        Stream<OUTPUT, OUTPUT> newOp = TransformationStream.distinct(publisher.processor());
         publisher.registerSubscriber(newOp);
         return newOp;
     }

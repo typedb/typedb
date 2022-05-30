@@ -89,10 +89,10 @@ public class MaterialisationController extends AbstractController<
         @Override
         public void setUp() {
             setHubReactive(PoolingStream.fanOut(this));
-            Source.create(this, new Operator.Supplier<>(
-                    () -> Materialiser.materialise(materialisable, traversalEng, conceptMgr)
-                            .map(Iterators::single)
-                            .orElse(Iterators.empty()))
+            Source.create(this,
+                          () -> Materialiser.materialise(materialisable, traversalEng, conceptMgr)
+                                  .map(Iterators::single)
+                                  .orElse(Iterators.empty())
             ).map(Either::<ConceptMap, Materialisation>second).registerSubscriber(outputRouter());
         }
     }

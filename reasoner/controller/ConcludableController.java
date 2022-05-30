@@ -243,7 +243,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             @Override
             protected void mayAddTraversal() {
-                Source.create(this, new Operator.Supplier<>(traversalSuppplier))
+                Source.create(this, traversalSuppplier)
                         .flatMap(this::filterInferred)
                         .registerSubscriber(outputRouter());
             }

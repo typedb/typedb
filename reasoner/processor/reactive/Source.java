@@ -40,9 +40,11 @@ public class Source<PACKET> extends AbstractReactive implements Reactive.Publish
         processor().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
-    public static <OUTPUT> Source<OUTPUT> create(AbstractProcessor<?, ?, ?, ?> processor,
-                                                 Operator.Source<OUTPUT> operator) {
-        return new Source<>(processor, operator);
+    public static <OUTPUT> Source<OUTPUT> create(
+            AbstractProcessor<?, ?, ?, ?> processor,
+            java.util.function.Supplier<FunctionalIterator<OUTPUT>> traversalSuppplier
+    ) {
+        return new Source<>(processor, new Operator.Supplier<>(traversalSuppplier));
     }
 
     private Operator.Source<PACKET> operator() {

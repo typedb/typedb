@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.processor.reactive;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator.Transformer;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
@@ -44,10 +45,29 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
         registerNewPublishers(transformer.initialNewPublishers());
     }
 
-    public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> single(
-            AbstractProcessor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
-        return new TransformationStream<>(processor, transformer, new SubscriberRegistry.Single<>(),
-                                          new PublisherRegistry.Single<>());
+    public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> flatMap(
+            AbstractProcessor<?, ?, ?, ?> processor, Function<INPUT, FunctionalIterator<OUTPUT>> mappingFunc
+    ) {
+        return new TransformationStream<>(
+                processor, new Operator.FlatMap<>(mappingFunc), new SubscriberRegistry.Single<>(),
+                new PublisherRegistry.Single<>()
+        );
+    }
+
+    public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> map(
+            AbstractProcessor<?, ?, ?, ?> processor, Function<INPUT, OUTPUT> mappingFunc
+    ) {
+        return new TransformationStream<>(
+                processor, new Operator.Map<>(mappingFunc), new SubscriberRegistry.Single<>(),
+                new PublisherRegistry.Single<>()
+        );
+    }
+
+    public static <PACKET> TransformationStream<PACKET, PACKET> distinct(AbstractProcessor<?, ?, ?, ?> processor) {
+        return new TransformationStream<>(
+                processor, new Operator.Distinct<>(), new SubscriberRegistry.Single<>(),
+                new PublisherRegistry.Single<>()
+        );
     }
 
     public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> fanIn(
