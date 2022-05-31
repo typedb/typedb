@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.processor.reactive.common;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
@@ -82,7 +82,7 @@ public class PublisherDelegate<OUTPUT> {
     }
 
     public Stream<OUTPUT, OUTPUT> buffer(Publisher<OUTPUT> publisher) {
-        Stream<OUTPUT, OUTPUT> newOp = new PoolingStream.BufferStream<>(publisher.processor());
+        Stream<OUTPUT, OUTPUT> newOp = new BufferStream<>(publisher.processor());
         publisher.registerSubscriber(newOp);
         return newOp;
     }
