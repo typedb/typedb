@@ -93,7 +93,7 @@ public class MaterialisationController extends AbstractController<
                          () -> Materialiser.materialise(materialisable, traversalEng, conceptMgr)
                                  .map(Iterators::single)
                                  .orElse(Iterators.empty())
-            ).map(Either::<ConceptMap, Materialisation>second).registerSubscriber(outputRouter());
+            ).map(Either::<ConceptMap, Materialisation>second).registerSubscriber(hubReactive());
         }
     }
 }

@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.processor;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.controller.AbstractController;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,7 +71,7 @@ public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
         return bounds;
     }
 
-    void connectViaTransforms(Reactive.Stream<PACKET, PACKET> toConnect, OutputPort<PACKET> output) {
+    void connectViaTransforms(Stream<PACKET, PACKET> toConnect, OutputPort<PACKET> output) {
         Reactive.Publisher<PACKET> op = toConnect;
         for (Function<PACKET, PACKET> t : transforms) op = op.map(t);
         op.registerSubscriber(output);

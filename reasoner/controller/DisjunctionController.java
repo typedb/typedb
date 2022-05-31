@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.processor.InputPort;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
@@ -99,7 +100,7 @@ public abstract class DisjunctionController<
         @Override
         public void setUp() {
             PoolingStream<ConceptMap> fanIn = new BufferStream<>(this);
-            setHubReactive(getOutputRouter(fanIn));
+            setHubReactive(getOrCreateHubReactive(fanIn));
             for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
                 InputPort<ConceptMap> input = createInputPort();
                 input.registerSubscriber(fanIn);
@@ -112,7 +113,7 @@ public abstract class DisjunctionController<
             }
         }
 
-        Reactive.Stream<ConceptMap, ConceptMap> getOutputRouter(Reactive.Stream<ConceptMap, ConceptMap> fanIn) {
+        Stream<ConceptMap, ConceptMap> getOrCreateHubReactive(Stream<ConceptMap, ConceptMap> fanIn) {
             // This method is only here to be overridden by root disjunction to avoid duplicating setUp
             return fanIn;
         }

@@ -76,7 +76,7 @@ public abstract class AbstractProcessor<
         this.hubReactive = hubReactive;
     }
 
-    protected Stream<OUTPUT,OUTPUT> outputRouter() {
+    protected Stream<OUTPUT,OUTPUT> hubReactive() {
         return hubReactive;
     }
 
@@ -111,7 +111,7 @@ public abstract class AbstractProcessor<
         if (isTerminated()) return;
         OutputPort<OUTPUT> outputPort = createOutputPort();
         outputPort.setInputPort(request.inputPortId(), request.requestingProcessor());
-        request.connectViaTransforms(outputRouter(), outputPort);
+        request.connectViaTransforms(hubReactive(), outputPort);
         request.requestingProcessor().execute(
                 actor -> actor.finishConnection(request.inputPortId(), driver(), outputPort.identifier())
         );

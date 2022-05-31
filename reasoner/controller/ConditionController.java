@@ -73,7 +73,7 @@ public class ConditionController extends ConjunctionController<
             setHubReactive(fanOut(this));
             new CompoundStream(this, plan, bounds)
                     .map(Either::<ConceptMap, Materialisation>first)
-                    .buffer().registerSubscriber(outputRouter());
+                    .buffer().registerSubscriber(hubReactive());
         }
     }
 }

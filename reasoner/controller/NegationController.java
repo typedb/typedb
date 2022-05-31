@@ -96,7 +96,7 @@ public class NegationController extends AbstractController<
             negation = new NegationStream(this, bounds);
             monitor().execute(actor -> actor.registerRoot(driver(), negation.identifier()));
             input.registerSubscriber(negation);
-            negation.registerSubscriber(outputRouter());
+            negation.registerSubscriber(hubReactive());
         }
 
         @Override
