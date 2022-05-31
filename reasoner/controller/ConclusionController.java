@@ -302,11 +302,6 @@ public abstract class ConclusionController<
             }
 
             @Override
-            public Set<Publisher<Either<ConceptMap, Map<Variable, Concept>>>> initialNewPublishers() {
-                return set();  // TODO: This could create the connection to the condition
-            }
-
-            @Override
             public Either<Publisher<Either<ConceptMap, Map<Variable, Concept>>>, Set<OUTPUT>> accept(
                     Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher,
                     Either<ConceptMap, Map<Variable, Concept>> packet

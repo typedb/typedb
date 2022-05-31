@@ -226,11 +226,7 @@ public abstract class ConjunctionController<
                 this.remainingPlan = new ArrayList<>(plan);
                 this.publisherPackets = new HashMap<>();
                 this.leadingPublisher = nextCompoundLeader(this.remainingPlan.remove(0), initialPacket);
-            }
-
-            @Override
-            public Set<Publisher<ConceptMap>> initialNewPublishers() {
-                return set(this.leadingPublisher);
+                this.leadingPublisher.registerSubscriber(this);
             }
 
             @Override
@@ -259,7 +255,7 @@ public abstract class ConjunctionController<
 
         }
 
-        InputPort<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
+        private InputPort<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
             InputPort<ConceptMap> input = createInputPort();
             if (planElement.isRetrievable()) {
                 requestConnection(new RetrievableRequest(input.identifier(), driver(), planElement.asRetrievable(),

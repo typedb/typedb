@@ -119,11 +119,6 @@ public class NegationController extends AbstractController<
             }
 
             @Override
-            public Set<Publisher<ConceptMap>> initialNewPublishers() {
-                return set();
-            }
-
-            @Override
             public Either<Publisher<ConceptMap>, Set<ConceptMap>> accept(
                     Publisher<ConceptMap> publisher, ConceptMap packet
             ) {

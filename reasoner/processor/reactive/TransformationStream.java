@@ -37,10 +37,7 @@ public abstract class TransformationStream<INPUT, OUTPUT> extends AbstractStream
                                    SubscriberRegistry<OUTPUT> subscriberRegistry,
                                    PublisherRegistry<INPUT> publisherRegistry) {
         super(processor, subscriberRegistry, publisherRegistry);
-        registerNewPublishers(initialNewPublishers());
     }
-
-    protected abstract Set<Publisher<INPUT>> initialNewPublishers();
 
     protected abstract Either<Publisher<INPUT>, Set<OUTPUT>> accept(Publisher<INPUT> publisher, INPUT packet);
 
@@ -79,10 +76,6 @@ public abstract class TransformationStream<INPUT, OUTPUT> extends AbstractStream
         }
     }
 
-    private void registerNewPublishers(Set<Publisher<INPUT>> newPublishers) {
-        newPublishers.forEach(newPublisher -> newPublisher.registerSubscriber(this));
-    }
-
     @Override
     public <MAPPED> Stream<OUTPUT, MAPPED> map(Function<OUTPUT, MAPPED> function) {
         return publisherDelegate().map(this, function);
@@ -118,11 +111,6 @@ public abstract class TransformationStream<INPUT, OUTPUT> extends AbstractStream
         }
 
         @Override
-        public Set<Publisher<INPUT>> initialNewPublishers() {
-            return set();
-        }
-
-        @Override
         public Either<Publisher<INPUT>, Set<OUTPUT>> accept(Publisher<INPUT> publisher, INPUT packet) {
             return Either.second(set(mappingFunc.apply(packet)));
         }
@@ -136,11 +124,6 @@ public abstract class TransformationStream<INPUT, OUTPUT> extends AbstractStream
         public FlatMapStream(AbstractProcessor<?, ?, ?, ?> processor, Function<INPUT, FunctionalIterator<OUTPUT>> mappingFunc) {
             super(processor, new SubscriberRegistry.Single<>(), new PublisherRegistry.Single<>());
             this.mappingFunc = mappingFunc;
-        }
-
-        @Override
-        public Set<Publisher<INPUT>> initialNewPublishers() {
-            return set();
         }
 
         @Override
@@ -159,11 +142,6 @@ public abstract class TransformationStream<INPUT, OUTPUT> extends AbstractStream
         public DistinctStream(AbstractProcessor<?, ?, ?, ?> processor) {
             super(processor, new SubscriberRegistry.Single<>(), new PublisherRegistry.Single<>());
             this.deduplicationSet = new HashSet<>();
-        }
-
-        @Override
-        public Set<Publisher<PACKET>> initialNewPublishers() {
-            return set();
         }
 
         @Override
