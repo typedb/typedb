@@ -39,9 +39,9 @@ import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
-import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.ArrayList;
@@ -209,7 +209,7 @@ public abstract class ConjunctionController<
             this.plan = plan;
         }
 
-        public class CompoundOperator implements Operator.Transformer<ConceptMap, ConceptMap> {
+        public class CompoundStream extends TransformationStream<ConceptMap, ConceptMap> {
 
             private final Publisher<ConceptMap> leadingPublisher;
             private final List<Resolvable<?>> remainingPlan;
@@ -217,8 +217,9 @@ public abstract class ConjunctionController<
             private final ConceptMap initialPacket;
             private final AbstractProcessor<?, ?, ?, ?> processor;
 
-            CompoundOperator(AbstractProcessor<?, ?, ?, ?> processor, List<Resolvable<?>> plan,
-                             ConceptMap initialPacket) {
+            CompoundStream(AbstractProcessor<?, ?, ?, ?> processor, List<Resolvable<?>> plan,
+                           ConceptMap initialPacket) {
+                super(processor, new SubscriberRegistry.Single<>(), new PublisherRegistry.Multi<>());
                 this.processor = processor;
                 assert plan.size() > 0;
                 this.initialPacket = initialPacket;
@@ -244,10 +245,7 @@ public abstract class ConjunctionController<
                         if (remainingPlan.size() == 1) {
                             follower = nextCompoundLeader(remainingPlan.get(0), mergedPacket);
                         } else {
-                            follower = TransformationStream.fanIn(
-                                    processor,
-                                    new CompoundOperator(processor, remainingPlan, mergedPacket)
-                            ).buffer();
+                            follower = new CompoundStream(processor, remainingPlan, mergedPacket).buffer();
                         }
                         publisherPackets.put(follower, mergedPacket);
                         return Either.first(follower);

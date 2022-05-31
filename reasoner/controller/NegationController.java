@@ -26,12 +26,9 @@ import com.vaticle.typedb.core.reasoner.controller.NegationController.Processor.
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
-import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Subscriber.Finishable;
 import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
-import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
 
@@ -40,6 +37,7 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanOut;
 
 public class NegationController extends AbstractController<
         ConceptMap,
@@ -92,7 +90,7 @@ public class NegationController extends AbstractController<
 
         @Override
         public void setUp() {
-            setHubReactive(PoolingStream.fanOut(this));
+            setHubReactive(fanOut(this));
             InputPort<ConceptMap> input = createInputPort();
             requestConnection(new Request(input.identifier(), driver(), negated.pattern(), bounds));
             negation = new NegationStream(this, bounds);
@@ -107,19 +105,6 @@ public class NegationController extends AbstractController<
             negation.finished();
         }
 
-        private static class NegationOperator<PACKET> implements Operator.Transformer<PACKET, PACKET> {
-
-            @Override
-            public Set<Publisher<PACKET>> initialNewPublishers() {
-                return set();
-            }
-
-            @Override
-            public Either<Publisher<PACKET>, Set<PACKET>> accept(Publisher<PACKET> publisher, PACKET packet) {
-                return Either.second(set(packet));
-            }
-        }
-
         private static class NegationStream
                 extends TransformationStream<ConceptMap, ConceptMap> implements Finishable<ConceptMap> {
 
@@ -127,10 +112,22 @@ public class NegationController extends AbstractController<
             private boolean answerFound;
 
             private NegationStream(AbstractProcessor<?, ?, ?, ?> processor, ConceptMap bounds) {
-                super(processor, new NegationOperator<>(), new SubscriberRegistry.Single<>(),
+                super(processor, new SubscriberRegistry.Single<>(),
                       new PublisherRegistry.Single<>());
                 this.bounds = bounds;
                 this.answerFound = false;
+            }
+
+            @Override
+            public Set<Publisher<ConceptMap>> initialNewPublishers() {
+                return set();
+            }
+
+            @Override
+            public Either<Publisher<ConceptMap>, Set<ConceptMap>> accept(
+                    Publisher<ConceptMap> publisher, ConceptMap packet
+            ) {
+                return Either.second(set(packet));
             }
 
             @Override

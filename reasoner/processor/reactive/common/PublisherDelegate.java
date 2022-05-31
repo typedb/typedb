@@ -24,9 +24,12 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
-import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream.DistinctStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream.FlatMapStream;
 
 import java.util.function.Function;
+
+import static com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream.*;
 
 public class PublisherDelegate<OUTPUT> {
 
@@ -59,7 +62,7 @@ public class PublisherDelegate<OUTPUT> {
     }
 
     public <MAPPED> Stream<OUTPUT, MAPPED> map(Publisher<OUTPUT> publisher, Function<OUTPUT, MAPPED> function) {
-        Stream<OUTPUT, MAPPED> newOp = TransformationStream.map(publisher.processor(), function);
+        Stream<OUTPUT, MAPPED> newOp = new MapStream<>(publisher.processor(), function);
         publisher.registerSubscriber(newOp);
         return newOp;
     }
@@ -67,19 +70,19 @@ public class PublisherDelegate<OUTPUT> {
     public <MAPPED> Stream<OUTPUT, MAPPED> flatMap(
             Publisher<OUTPUT> publisher, Function<OUTPUT, FunctionalIterator<MAPPED>> function
     ) {
-        Stream<OUTPUT, MAPPED> newOp = TransformationStream.flatMap(publisher.processor(), function);
+        Stream<OUTPUT, MAPPED> newOp = new FlatMapStream<>(publisher.processor(), function);
         publisher.registerSubscriber(newOp);
         return newOp;
     }
 
     public Stream<OUTPUT, OUTPUT> distinct(Publisher<OUTPUT> publisher) {
-        Stream<OUTPUT, OUTPUT> newOp = TransformationStream.distinct(publisher.processor());
+        Stream<OUTPUT, OUTPUT> newOp = new DistinctStream<>(publisher.processor());
         publisher.registerSubscriber(newOp);
         return newOp;
     }
 
     public Stream<OUTPUT, OUTPUT> buffer(Publisher<OUTPUT> publisher) {
-        Stream<OUTPUT, OUTPUT> newOp = PoolingStream.buffer(publisher.processor());
+        Stream<OUTPUT, OUTPUT> newOp = new PoolingStream.BufferStream<>(publisher.processor());
         publisher.registerSubscriber(newOp);
         return newOp;
     }

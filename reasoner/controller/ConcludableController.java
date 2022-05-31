@@ -35,12 +35,10 @@ import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest.Identifier;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
-import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Source;
-import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashMap;
@@ -52,6 +50,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanInFanOut;
 
 public abstract class ConcludableController<INPUT, OUTPUT,
         REQ extends AbstractRequest<Conclusion, ConceptMap, INPUT, ?>,
@@ -199,7 +198,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
         @Override
         public void setUp() {
-            setHubReactive(PoolingStream.fanInFanOut(this));
+            setHubReactive(fanInFanOut(this));
             // TODO: Add a find first optimisation when all variables are bound
             mayAddTraversal();
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
@@ -243,9 +242,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             @Override
             protected void mayAddTraversal() {
-                Source.create(this, traversalSuppplier)
-                        .flatMap(this::filterInferred)
-                        .registerSubscriber(outputRouter());
+                new Source<>(this, traversalSuppplier).flatMap(this::filterInferred).registerSubscriber(outputRouter());
             }
 
             private FunctionalIterator<ConceptMap> filterInferred(ConceptMap conceptMap) {

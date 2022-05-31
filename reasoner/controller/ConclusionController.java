@@ -35,11 +35,11 @@ import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest.Identifier;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
-import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
-import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
-import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
+import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
+import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashMap;
@@ -50,7 +50,7 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream.fanIn;
+import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanOut;
 
 public abstract class ConclusionController<
         OUTPUT, PROCESSOR extends AbstractProcessor<Either<ConceptMap, Materialisation>, OUTPUT, ?, PROCESSOR>,
@@ -228,16 +228,16 @@ public abstract class ConclusionController<
 
         @Override
         public void setUp() {
-            setHubReactive(PoolingStream.fanOut(this));
+            setHubReactive(fanOut(this));
             InputPort<Either<ConceptMap, Materialisation>> conditionInput = createInputPort();
             ConceptMap filteredBounds = bounds().filter(rule.condition().conjunction().retrieves());
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), driver(), rule.condition(), filteredBounds));
-            Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> conclusionReactive = fanIn(this, createOperator());
+            Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> conclusionReactive = createStream();
             conditionInput.map(Processor::convertConclusionInput).registerSubscriber(conclusionReactive);
             conclusionReactive.registerSubscriber(outputRouter());
         }
 
-        protected abstract ConclusionOperator<OUTPUT> createOperator();
+        protected abstract Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> createStream();
 
         private static Either<ConceptMap, Map<Variable, Concept>> convertConclusionInput(Either<ConceptMap, Materialisation> input) {
             return Either.first(input.first());
@@ -265,8 +265,8 @@ public abstract class ConclusionController<
             }
 
             @Override
-            protected ConclusionOperator<Map<Variable, Concept>> createOperator() {
-                return new ConclusionOperator.Match(this);
+            protected Stream<Either<ConceptMap, Map<Variable, Concept>>, Map<Variable, Concept>> createStream() {
+                return new ConclusionStream.Match(this);
             }
         }
 
@@ -280,21 +280,24 @@ public abstract class ConclusionController<
             }
 
             @Override
-            protected ConclusionOperator<PartialExplanation> createOperator() {
-                return new ConclusionOperator.Explain(this);
+            protected Stream<Either<ConceptMap, Map<Variable, Concept>>, PartialExplanation> createStream() {
+                return new ConclusionStream.Explain(this);
             }
 
         }
 
-        private static abstract class ConclusionOperator<OUTPUT> implements Operator.Transformer<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> {
+        private static abstract class ConclusionStream<OUTPUT> extends TransformationStream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> {
 
             private final Processor<?, ?> processor;
 
-            private ConclusionOperator(Processor<?, ?> processor) {
+            private ConclusionStream(Processor<?, ?> processor) {
+                super(processor, new SubscriberRegistry.Single<>(), new PublisherRegistry.Multi<>());
                 this.processor = processor;
             }
 
-            Processor<?, ?> processor() {
+            Processor<?, ?> conclusionProcessor() {
+                // TODO: should use processor() from superclass instead, but here we require specific methods available
+                //  on conclusion processor only.
                 return processor;
             }
 
@@ -309,16 +312,16 @@ public abstract class ConclusionController<
                     Either<ConceptMap, Map<Variable, Concept>> packet
             ) {
                 if (packet.isFirst()) {
-                    assert packet.first().concepts().keySet().containsAll(processor().rule().condition().conjunction().retrieves());
-                    InputPort<Either<ConceptMap, Materialisation>> materialisationInput = processor().createInputPort();
-                    ConceptMap filteredConditionAns = packet.first().filter(processor().rule().conclusion().retrievableIds());
-                    processor().mayRequestMaterialiser(new MaterialiserRequest(
-                            materialisationInput.identifier(), processor().driver(), null,
-                            processor().rule().conclusion().materialisable(filteredConditionAns, processor().conceptManager()))
+                    assert packet.first().concepts().keySet().containsAll(conclusionProcessor().rule().condition().conjunction().retrieves());
+                    InputPort<Either<ConceptMap, Materialisation>> materialisationInput = conclusionProcessor().createInputPort();
+                    ConceptMap filteredConditionAns = packet.first().filter(conclusionProcessor().rule().conclusion().retrievableIds());
+                    conclusionProcessor().mayRequestMaterialiser(new MaterialiserRequest(
+                            materialisationInput.identifier(), conclusionProcessor().driver(), null,
+                            conclusionProcessor().rule().conclusion().materialisable(filteredConditionAns, conclusionProcessor().conceptManager()))
                     );
                     Publisher<Either<ConceptMap, Map<Variable, Concept>>> op = materialisationInput
-                            .map(m -> m.second().bindToConclusion(processor().rule().conclusion(), filteredConditionAns))
-                            .flatMap(m -> merge(m, processor().bounds()))
+                            .map(m -> m.second().bindToConclusion(conclusionProcessor().rule().conclusion(), filteredConditionAns))
+                            .flatMap(m -> merge(m, conclusionProcessor().bounds()))
                             .map(Either::second);
                     mayStoreConditionAnswer(op, packet.first());
                     return Either.first(op);
@@ -343,7 +346,7 @@ public abstract class ConclusionController<
 
             protected abstract OUTPUT packageAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher, Map<Variable, Concept> conclusionAnswer);
 
-            protected static class Match extends ConclusionOperator<Map<Variable, Concept>> {
+            protected static class Match extends ConclusionStream<Map<Variable, Concept>> {
 
                 private Match(Processor<?, ?> processor) {
                     super(processor);
@@ -358,7 +361,7 @@ public abstract class ConclusionController<
                 }
             }
 
-            protected static class Explain extends ConclusionOperator<PartialExplanation> {
+            protected static class Explain extends ConclusionStream<PartialExplanation> {
 
                 private final Map<Publisher<Either<ConceptMap, Map<Variable, Concept>>>, ConceptMap> conditionAnswers;
 
@@ -368,13 +371,19 @@ public abstract class ConclusionController<
                 }
 
                 @Override
-                protected void mayStoreConditionAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> materialisationInput, ConceptMap conditionAnswer) {
+                protected void mayStoreConditionAnswer(
+                        Publisher<Either<ConceptMap, Map<Variable, Concept>>> materialisationInput,
+                        ConceptMap conditionAnswer
+                ) {
                     conditionAnswers.put(materialisationInput, conditionAnswer);
                 }
 
                 @Override
-                protected PartialExplanation packageAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> materialiserInput, Map<Variable, Concept> conclusionAnswer) {
-                    return PartialExplanation.create(processor().rule(), conclusionAnswer, conditionAnswers.get(materialiserInput));
+                protected PartialExplanation packageAnswer(
+                        Publisher<Either<ConceptMap, Map<Variable, Concept>>> materialiserInput,
+                        Map<Variable, Concept> conclusionAnswer
+                ) {
+                    return PartialExplanation.create(conclusionProcessor().rule(), conclusionAnswer, conditionAnswers.get(materialiserInput));
                 }
             }
 
