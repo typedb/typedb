@@ -26,10 +26,10 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream.DistinctStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream.FlatMapStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream.MapStream;
 
 import java.util.function.Function;
 
-import static com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream.*;
 
 public class PublisherDelegate<OUTPUT> {
 
