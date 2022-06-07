@@ -113,12 +113,12 @@ public abstract class ProcedureVertex<
         return orderedOuts;
     }
 
-    public Set<ProcedureVertex<?, ?>> transitiveOuts() {
+    public Set<ProcedureVertex<?, ?>> transitiveTos() {
         if (transitiveOuts == null) {
             HashSet<ProcedureVertex<?, ?>> transitive = new HashSet<>();
             outs().forEach(edge -> {
                 transitive.add(edge.to());
-                transitive.addAll(edge.to().transitiveOuts());
+                transitive.addAll(edge.to().transitiveTos());
             });
             transitiveOuts = transitive;
         }
