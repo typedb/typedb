@@ -1210,7 +1210,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         double cost = 0;
                         for (Label roleType : to.props().types()) {
                             assert roleType.scope().isPresent();
-                            double div = graphMgr.data().stats().thingVertexCount(Label.of(roleType.scope().get()));
+                            double div = graphMgr.data().stats().thingVertexTransitiveCount(Label.of(roleType.scope().get()));
                             if (div > 0) cost += graphMgr.data().stats().thingVertexCount(roleType) / div;
                         }
                         assert !to.props().types().isEmpty();
@@ -1287,7 +1287,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         Set<TypeVertex> roleTypeVertices = iterate(this.roleTypes()).map(graphMgr.schema()::getType).toSet();
                         for (TypeVertex roleType : roleTypeVertices) {
                             assert roleType.isRoleType() && roleType.properLabel().scope().isPresent();
-                            double div = graphMgr.data().stats().thingVertexCount(Label.of(roleType.properLabel().scope().get()));
+                            double div = graphMgr.data().stats().thingVertexTransitiveCount(Label.of(roleType.properLabel().scope().get()));
                             if (div > 0) cost += graphMgr.data().stats().thingVertexCount(roleType) / div;
                         }
                         assert !roleTypeVertices.isEmpty();
