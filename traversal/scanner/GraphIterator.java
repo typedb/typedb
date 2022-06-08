@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.traversal.scanner;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
@@ -65,7 +64,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private final GraphProcedure procedure;
     private final Traversal.Parameters params;
     private final Set<Identifier.Variable.Retrievable> filter;
-    private final ProcedureVertexIterator[] procedureVertexIterators;
+    private final VertexIterator[] vertexIterators;
     private final Scopes scopes;
     private final Vertex<?, ?> start;
     private final TreeSet<Integer> forward;
@@ -90,9 +89,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         this.scopes = new Scopes();
         this.forward = new TreeSet<>();
         this.backward = new TreeSet<>();
-        this.procedureVertexIterators = new ProcedureVertexIterator[procedure.vertexCount()];
-        for (int i = 0; i < procedureVertexIterators.length; i++) {
-            procedureVertexIterators[i] = new ProcedureVertexIterator(procedure.vertex(i));
+        this.vertexIterators = new VertexIterator[procedure.vertexCount()];
+        for (int i = 0; i < vertexIterators.length; i++) {
+            vertexIterators[i] = new VertexIterator(procedure.vertex(i));
         }
     }
 
@@ -105,10 +104,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private VertexMap toVertexMap() {
         Map<Identifier.Variable.Retrievable, Vertex<?, ?>> answer = new HashMap<>();
-        for (int pos = 0; pos < procedureVertexIterators.length; pos++) {
+        for (int pos = 0; pos < vertexIterators.length; pos++) {
             ProcedureVertex<?, ?> procedureVertex = procedure.vertex(pos);
             if (procedureVertex.id().isRetrievable() && filter.contains(procedureVertex.id().asVariable().asRetrievable())) {
-                answer.put(procedureVertex.id().asVariable().asRetrievable(), procedureVertexIterators[pos].vertex());
+                answer.put(procedureVertex.id().asVariable().asRetrievable(), vertexIterators[pos].vertex());
             }
         }
 
@@ -171,34 +170,35 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void forward(int pos) {
-        if (pos == procedureVertexIterators.length) return;
+        if (pos == vertexIterators.length) return;
         ProcedureVertex<?, ?> procedureVertex = procedure.vertex(pos);
         // TODO index by procedure vertex
-        ProcedureVertexIterator procedureVertexIterator = procedureVertexIterators[pos];
+        VertexIterator vertexIterator = vertexIterators[pos];
 
         boolean vertexVerified = false;
-        while (!vertexVerified && procedureVertexIterator.hasNextVertex()) {
-            procedureVertexIterator.takeNextVertex();
-            if (procedureVertexIterator.verifyLoops() && verifyScopes(procedureVertex) && verifyEdgeLookahead(procedureVertex)) {
+        while (!vertexVerified && vertexIterator.hasNextVertex()) {
+            vertexIterator.takeNextVertex();
+            if (vertexIterator.verifyLoops() && verifyScopes(procedureVertex) && verifyEdgeLookahead(procedureVertex)) {
                 vertexVerified = true;
             } else {
-                clearCurrentVertex(procedureVertexIterator);
+                clearCurrentVertex(vertexIterator);
             }
         }
         if (vertexVerified) {
-            forward.add(pos + 1);
+            procedureVertex.outs().forEach(edge -> forward.add(edge.to().order()));
+            iterate(procedureVertex.scopesVisited()).flatMap(scopeID -> iterate(procedure.vertex(scopeID).outs()))
+                    .filter(e -> e.to().order() > pos).forEachRemaining(e -> forward.add(e.to().order()));
         } else {
-            // TODO check these cases
-            procedureVertexIterator.edgeRestrictions().forEach(edge -> backward.add(edge.from().order()));
-            procedureVertexIterator.resetScan();
+            vertexIterator.edges().forEach(edge -> backward.add(edge.from().order()));
+            vertexIterator.reset();
             computeStep = ComputeStep.BACKWARD;
         }
     }
 
-    private void clearCurrentVertex(ProcedureVertexIterator procedureVertexIterator) {
-        procedureVertexIterator.clearCurrentVertex();
-        Iterators.link(iterate(procedureVertexIterator.procedureVertex), iterate(procedureVertexIterator.procedureVertex.transitiveTos()))
-                .forEachRemaining(v -> v.outs().forEach(out -> procedureVertexIterators[out.to().order()].removeRestriction(out)));
+    private void clearCurrentVertex(VertexIterator vertexIterator) {
+        vertexIterator.clearCurrentVertex();
+        Iterators.link(iterate(vertexIterator.procedureVertex), iterate(vertexIterator.procedureVertex.transitiveTos()))
+                .forEachRemaining(v -> v.outs().forEach(out -> vertexIterators[out.to().order()].removeEdge(out)));
     }
 
     private boolean verifyScopes(ProcedureVertex<?, ?> procedureVertex) {
@@ -215,15 +215,15 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private boolean verifyEdgeLookahead(ProcedureVertex<?, ?> procedureVertex) {
-        ProcedureVertexIterator procedureVertexIterator = procedureVertexIterators[procedureVertex.order()];
+        VertexIterator vertexIterator = vertexIterators[procedureVertex.order()];
         Set<ProcedureEdge<?, ?>> verified = new HashSet<>();
         for (ProcedureEdge<?, ?> edge : procedureVertex.orderedOuts()) {
-            ProcedureVertexIterator toVertexIterator = procedureVertexIterators[edge.to().order()];
-            toVertexIterator.addEdgeRestriction(edge, procedureVertexIterator.vertex());
+            VertexIterator toVertexIterator = vertexIterators[edge.to().order()];
+            toVertexIterator.addEdge(edge, vertexIterator.vertex());
             verified.add(edge);
             if (!toVertexIterator.hasNextVertex()) {
-                verified.forEach(e -> procedureVertexIterators[e.to().order()].removeRestriction(e));
-                toVertexIterator.edgeRestrictions().forEach(e -> backward.add(e.from().order()));
+                verified.forEach(e -> vertexIterators[e.to().order()].removeEdge(e));
+                toVertexIterator.edges().forEach(e -> backward.add(e.from().order()));
                 return false;
             }
         }
@@ -231,32 +231,32 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void backward(int pos) {
-        ProcedureVertexIterator procedureVertexIterator = procedureVertexIterators[pos];
-        clearCurrentVertex(procedureVertexIterator);
-        procedureVertexIterator.procedureVertex.transitiveTos().forEach(v -> forward.remove(v.order()));
+        VertexIterator vertexIterator = vertexIterators[pos];
+        clearCurrentVertex(vertexIterator);
+        vertexIterator.procedureVertex.transitiveTos().forEach(transitive -> forward.remove(transitive.order()));
         forward.add(pos);
         computeStep = ComputeStep.FORWARD;
     }
 
     @Override
     public void recycle() {
-        for (ProcedureVertexIterator vertexIterator : procedureVertexIterators) {
+        for (VertexIterator vertexIterator : vertexIterators) {
             vertexIterator.clear();
         }
     }
 
-    private class ProcedureVertexIterator {
+    private class VertexIterator {
 
         private final ProcedureVertex<?, ?> procedureVertex;
-        private final Set<ProcedureEdge<?, ?>> restrictions;
-        private final SortedMap<Set<ProcedureEdge<?, ?>>, Vertex<?, ?>> restrictionIntersectionCache;
+        private final Map<ProcedureEdge<?, ?>, Vertex<?, ?>> edgeInputs;
+        private final SortedMap<Map<ProcedureEdge<?, ?>, Vertex<?, ?>>, Vertex<?, ?>> edgeInputIntersectionCache;
         private Forwardable<Vertex<?, ?>, Order.Asc> iterator;
         private Vertex<?, ?> vertex;
 
-        private ProcedureVertexIterator(ProcedureVertex<?, ?> procedureVertex) {
+        private VertexIterator(ProcedureVertex<?, ?> procedureVertex) {
             this.procedureVertex = procedureVertex;
-            this.restrictions = new HashSet<>();
-            this.restrictionIntersectionCache = new TreeMap<>(Comparator.comparing(Set::size));
+            this.edgeInputs = new HashMap<>();
+            this.edgeInputIntersectionCache = new TreeMap<>(Comparator.comparing(Map::size));
         }
 
         private void takeNextVertex() {
@@ -272,8 +272,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             return vertex;
         }
 
-        private Set<ProcedureEdge<?, ?>> edgeRestrictions() {
-            return restrictions;
+        private Set<ProcedureEdge<?, ?>> edges() {
+            return edgeInputs.keySet();
         }
 
         private boolean verifyLoops() {
@@ -293,24 +293,20 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
         }
 
-        private FunctionalIterator<ProcedureVertexIterator> transitiveOutputScanners() {
-            return iterate(procedureVertex.transitiveTos()).map(vertex -> procedureVertexIterators[vertex.order()]);
-        }
-
-        private void addEdgeRestriction(ProcedureEdge<?, ?> edge, Vertex<?, ?> fromVertex) {
-            assert !restrictions.contains(edge);
+        private void addEdge(ProcedureEdge<?, ?> edge, Vertex<?, ?> fromVertex) {
+            assert !edgeInputs.containsKey(edge);
             if (iterator != null && iterator.hasNext()) {
-                restrictionIntersectionCache.put(new HashSet<>(restrictions), iterator.peek());
+                edgeInputIntersectionCache.put(new HashMap<>(edgeInputs), iterator.peek());
                 iterator = intersect(branch(fromVertex, edge), iterator);
             }
-            restrictions.add(edge);
+            edgeInputs.put(edge, fromVertex);
             vertex = null;
         }
 
-        private void removeRestriction(ProcedureEdge<?, ?> edge) {
-            restrictionIntersectionCache.remove(restrictions);
-            restrictions.remove(edge);
-            resetScan();
+        private void removeEdge(ProcedureEdge<?, ?> edge) {
+            edgeInputIntersectionCache.remove(edgeInputs);
+            edgeInputs.remove(edge);
+            reset();
         }
 
         public void clearCurrentVertex() {
@@ -318,12 +314,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private void clear() {
-            restrictions.clear();
-            restrictionIntersectionCache.clear();
-            resetScan();
+            edgeInputs.clear();
+            edgeInputIntersectionCache.clear();
+            reset();
         }
 
-        private void resetScan() {
+        private void reset() {
             if (iterator != null) {
                 iterator.recycle();
                 iterator = null;
@@ -332,11 +328,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> getIterator() {
-            assert procedureVertex.isStartingVertex() || !restrictions.isEmpty();
+            assert procedureVertex.isStartingVertex() || !edgeInputs.isEmpty();
             if (iterator == null) {
                 if (procedureVertex.isStartingVertex()) iterator = createIteratorFromStart();
                 else {
-                    iterator = createIteratorFromInputs();
+                    iterator = createIteratorFromEdges();
                     lastIntersection().ifPresent(value -> iterator.forward(value));
                 }
             }
@@ -352,16 +348,13 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private Optional<Vertex<?, ?>> lastIntersection() {
-            if (restrictionIntersectionCache.isEmpty()) return Optional.empty();
-            else return Optional.ofNullable(restrictionIntersectionCache.get(restrictionIntersectionCache.lastKey()));
+            if (edgeInputIntersectionCache.isEmpty()) return Optional.empty();
+            else return Optional.ofNullable(edgeInputIntersectionCache.get(edgeInputIntersectionCache.lastKey()));
         }
 
-        private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromInputs() {
+        private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromEdges() {
             List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
-            for (ProcedureEdge<?, ?> edge : restrictions) {
-                ProcedureVertexIterator procedureVertexIterator = procedureVertexIterators[edge.from().order()];
-                iters.add(branch(procedureVertexIterator.vertex(), edge));
-            }
+            edgeInputs.forEach((procedureEdge, vertex) -> iters.add(branch(vertex, procedureEdge)));
             if (iters.size() == 1) return iters.get(0);
             else return intersect(iterate(iters), ASC);
         }

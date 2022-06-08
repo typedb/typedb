@@ -54,12 +54,15 @@ public class GraphProcedure implements PermutationProcedure {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphProcedure.class);
 
-    private final ProcedureVertex<?, ?>[] vertices;
+    private final Map<Identifier, ProcedureVertex<?, ?>> vertices;
+    private final ProcedureVertex<?, ?>[] orderedVertices;
     private ProcedureVertex<?, ?> startVertex;
     private Set<ProcedureVertex<?, ?>> endVertices;
 
-    private GraphProcedure(ProcedureVertex<?, ?>[] vertices) {
+    private GraphProcedure(Map<Identifier, ProcedureVertex<?, ?>> vertices) {
         this.vertices = vertices;
+        this.orderedVertices = vertices.values().stream().sorted(Comparator.comparing(ProcedureVertex::order))
+                .toArray(ProcedureVertex[]::new);
     }
 
     public static GraphProcedure create(GraphPlanner planner) {
@@ -67,16 +70,16 @@ public class GraphProcedure implements PermutationProcedure {
         Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
         Set<PlannerEdge.Directional<?, ?>> registeredEdges = new HashSet<>();
         planner.vertices().forEach(vertex -> builder.registerVertex(vertex, registeredVertices, registeredEdges));
-        return builder.build();
+        return builder.orderAndbuild();
     }
 
-    public ProcedureVertex<?, ?>[] vertices() {
-        return vertices;
+    public ProcedureVertex<?, ?>[] orderedVertices() {
+        return orderedVertices;
     }
 
     public ProcedureVertex<?, ?> startVertex() {
         if (startVertex == null) {
-            startVertex = iterate(vertices()).filter(ProcedureVertex::isStartingVertex)
+            startVertex = iterate(orderedVertices()).filter(ProcedureVertex::isStartingVertex)
                     .first().orElseThrow(() -> TypeDBException.of(ILLEGAL_STATE));
         }
         return startVertex;
@@ -84,22 +87,27 @@ public class GraphProcedure implements PermutationProcedure {
 
     public Set<ProcedureVertex<?, ?>> endVertices() {
         if (endVertices == null) {
-            endVertices = iterate(vertices()).filter(v -> v.outs().isEmpty()).toSet();
+            endVertices = iterate(orderedVertices()).filter(v -> v.outs().isEmpty()).toSet();
         }
         return endVertices;
     }
 
     public ProcedureVertex<?, ?> vertex(int pos) {
-        assert 0 <= pos && pos < vertices.length;
-        return vertices[pos];
+        assert 0 <= pos && pos < orderedVertices.length;
+        return orderedVertices[pos];
+    }
+
+    public ProcedureVertex<?, ?> vertex(Identifier.Variable id) {
+        assert vertices.containsKey(id);
+        return vertices.get(id);
     }
 
     public int vertexCount() {
-        return vertices.length;
+        return orderedVertices.length;
     }
 
     private void assertWithinFilterBounds(Set<Identifier.Variable.Retrievable> filter) {
-        assert iterate(vertices).anyMatch(vertex ->
+        assert iterate(orderedVertices).anyMatch(vertex ->
                 vertex.id().isRetrievable() && filter.contains(vertex.id().asVariable().asRetrievable())
         );
     }
@@ -150,12 +158,12 @@ public class GraphProcedure implements PermutationProcedure {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GraphProcedure that = (GraphProcedure) o;
-        return Arrays.equals(vertices, that.vertices);
+        return Arrays.equals(orderedVertices, that.orderedVertices);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(vertices);
+        return Arrays.hashCode(orderedVertices);
     }
 
     @Override
@@ -163,7 +171,7 @@ public class GraphProcedure implements PermutationProcedure {
         StringBuilder str = new StringBuilder();
         str.append("Graph Procedure: {");
         for (int i = 0; i < vertexCount(); i++) {
-            ProcedureVertex<?, ?> vertex = vertices[i];
+            ProcedureVertex<?, ?> vertex = orderedVertices[i];
             str.append("\n\t").append(i).append(": ").append(vertex);
             for (ProcedureEdge<?, ?> edge : vertex.ins()) {
                 str.append("\n\t\t\t").append(edge);
@@ -181,23 +189,26 @@ public class GraphProcedure implements PermutationProcedure {
             this.vertices = new HashMap<>();
         }
 
+        // TODO: remove when the query planner orders vertices natively
+        public GraphProcedure orderAndbuild() {
+            orderVertices();
+            return build();
+        }
+
         public GraphProcedure build() {
-            return new GraphProcedure(orderedVertices());
+            return new GraphProcedure(vertices);
         }
 
         /**
          * TODO: this is a compatibility layer to translate edge-ordered procedures into vertex-ordered procedures
          * we need to remove it once the query planner natively orders vertices instead of edges
          */
-        private ProcedureVertex<?, ?>[] orderedVertices() {
-            ProcedureVertex<?, ?>[] orderedVertices = new ProcedureVertex[vertices.size()];
+        private void orderVertices() {
             List<ProcedureVertex<?, ?>> vertexList = iterate(vertices.values()).toList();
             vertexList.sort(Comparator.comparing(v -> v.lastInEdge() == null ? 0 : v.lastInEdge().order()));
             for (int i = 0; i < vertexList.size(); i++) {
-                orderedVertices[i] = vertexList.get(i);
-                orderedVertices[i].setOrder(i);
+                vertexList.get(i).setOrder(i);
             }
-            return orderedVertices;
         }
 
         private void registerVertex(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
