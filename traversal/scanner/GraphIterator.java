@@ -67,14 +67,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private final Map<ProcedureVertex<?, ?>, VertexIterator> vertexIterators;
     private final Scopes scopes;
     private final Vertex<?, ?> start;
-    private final TreeSet<ProcedureVertex<?, ?>> traverse;
+    private final TreeSet<ProcedureVertex<?, ?>> forwards;
     private final TreeSet<ProcedureVertex<?, ?>> blockers;
     private TraversalState traversalState;
-    private State state;
+    private IteratorState iteratorState;
 
-    private enum TraversalState {TRAVERSING, BLOCKED}
+    private enum TraversalState {FORWARD, BLOCKED}
 
-    private enum State {INIT, EMPTY, FETCHED, COMPLETED}
+    private enum IteratorState {INIT, EMPTY, FETCHED, COMPLETED}
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
                          Traversal.Parameters params, Set<Identifier.Variable.Retrievable> filter) {
@@ -85,20 +85,20 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         this.filter = filter;
         this.start = start;
 
-        this.state = State.INIT;
+        this.iteratorState = IteratorState.INIT;
         this.scopes = new Scopes();
-        this.traverse = new TreeSet<>(Comparator.comparing(ProcedureVertex::order));
+        this.forwards = new TreeSet<>(Comparator.comparing(ProcedureVertex::order));
         this.blockers = new TreeSet<>(Comparator.comparing(ProcedureVertex::order));
         this.vertexIterators = new HashMap<>();
-        for (int i = 0; i < procedure.vertexCount(); i++) {
-            vertexIterators.put(procedure.vertex(i), new VertexIterator(procedure.vertex(i)));
+        for (ProcedureVertex<?, ?> procedureVertex : procedure.vertices()) {
+            vertexIterators.put(procedureVertex, new VertexIterator(procedureVertex));
         }
     }
 
     @Override
     public VertexMap next() {
         if (!hasNext()) throw new NoSuchElementException();
-        state = State.EMPTY;
+        iteratorState = IteratorState.EMPTY;
         return toVertexMap();
     }
 
@@ -116,20 +116,20 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     @Override
     public boolean hasNext() {
         try {
-            if (state == State.COMPLETED) return false;
-            else if (state == State.FETCHED) return true;
-            else if (state == State.INIT) {
+            if (iteratorState == IteratorState.COMPLETED) return false;
+            else if (iteratorState == IteratorState.FETCHED) return true;
+            else if (iteratorState == IteratorState.INIT) {
                 initialiseStart();
-                if (computeAnswer()) state = State.FETCHED;
+                if (computeAnswer()) iteratorState = IteratorState.FETCHED;
                 else setCompleted();
-            } else if (state == State.EMPTY) {
+            } else if (iteratorState == IteratorState.EMPTY) {
                 initialiseEnds();
-                if (computeAnswer()) state = State.FETCHED;
+                if (computeAnswer()) iteratorState = IteratorState.FETCHED;
                 else setCompleted();
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
-            return state == State.FETCHED;
+            return iteratorState == IteratorState.FETCHED;
         } catch (Throwable e) {
             // note: catching runtime exception until we can gracefully interrupt running queries on tx close
             if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent() &&
@@ -144,28 +144,28 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void setCompleted() {
-        state = State.COMPLETED;
+        iteratorState = IteratorState.COMPLETED;
         recycle();
     }
 
     private void initialiseStart() {
-        traverse.add(procedure.startVertex());
-        traversalState = TraversalState.TRAVERSING;
+        forwards.add(procedure.startVertex());
+        traversalState = TraversalState.FORWARD;
     }
 
     private void initialiseEnds() {
-        assert traverse.isEmpty();
+        assert forwards.isEmpty();
         blockers.addAll(procedure.endVertices());
         traversalState = TraversalState.BLOCKED;
     }
 
     private boolean computeAnswer() {
-        while ((traversalState == TraversalState.TRAVERSING && !traverse.isEmpty()) ||
+        while ((traversalState == TraversalState.FORWARD && !forwards.isEmpty()) ||
                 (traversalState == TraversalState.BLOCKED && !blockers.isEmpty())) {
-            if (traversalState == TraversalState.TRAVERSING) traverse(traverse.pollFirst());
+            if (traversalState == TraversalState.FORWARD) traverse(forwards.pollFirst());
             else unblock(blockers.pollLast());
         }
-        return traversalState == TraversalState.TRAVERSING;
+        return traversalState == TraversalState.FORWARD;
     }
 
     private void traverse(ProcedureVertex<?, ?> procedureVertex) {
@@ -180,11 +180,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
         }
         if (vertexVerified) {
-            procedureVertex.outs().forEach(edge -> traverse.add(edge.to()));
+            procedureVertex.outs().forEach(edge -> forwards.add(edge.to()));
         } else {
             procedureVertex.ins().forEach(edge -> blockers.add(edge.from()));
             vertexIterator.reset();
-            traverse.add(procedureVertex);
+            forwards.add(procedureVertex);
             traversalState = TraversalState.BLOCKED;
         }
     }
@@ -227,9 +227,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private void unblock(ProcedureVertex<?, ?> procedureVertex) {
         VertexIterator vertexIterator = vertexIterators.get(procedureVertex);
         clearCurrentVertex(vertexIterator);
-        procedureVertex.transitiveTos().forEach(transitive -> traverse.remove(procedure.vertex(transitive.order())));
-        traverse.add(procedureVertex);
-        traversalState = TraversalState.TRAVERSING;
+        procedureVertex.transitiveTos().forEach(transitive -> forwards.remove(procedure.vertex(transitive.order())));
+        forwards.add(procedureVertex);
+        traversalState = TraversalState.FORWARD;
     }
 
     @Override
