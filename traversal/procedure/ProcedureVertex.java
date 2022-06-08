@@ -140,7 +140,7 @@ public abstract class ProcedureVertex<
 
     @Override
     public String toString() {
-        String str = super.toString();
+        String str = order() + ": " + super.toString();
         if (isStartingVertex()) str += " (start)";
         if (outs().isEmpty()) str += " (end)";
         return str;

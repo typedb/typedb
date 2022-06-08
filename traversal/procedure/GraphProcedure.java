@@ -54,15 +54,12 @@ public class GraphProcedure implements PermutationProcedure {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphProcedure.class);
 
-    private final Map<Identifier, ProcedureVertex<?, ?>> vertices;
-    private final ProcedureVertex<?, ?>[] orderedVertices;
+    private final ProcedureVertex<?, ?>[] vertices;
     private ProcedureVertex<?, ?> startVertex;
     private Set<ProcedureVertex<?, ?>> endVertices;
 
-    private GraphProcedure(Map<Identifier, ProcedureVertex<?, ?>> vertices) {
+    private GraphProcedure(ProcedureVertex<?, ?>[] vertices) {
         this.vertices = vertices;
-        this.orderedVertices = vertices.values().stream().sorted(Comparator.comparing(ProcedureVertex::order))
-                .toArray(ProcedureVertex[]::new);
     }
 
     public static GraphProcedure create(GraphPlanner planner) {
@@ -73,13 +70,13 @@ public class GraphProcedure implements PermutationProcedure {
         return builder.orderAndbuild();
     }
 
-    public ProcedureVertex<?, ?>[] orderedVertices() {
-        return orderedVertices;
+    public ProcedureVertex<?, ?>[] vertices() {
+        return vertices;
     }
 
     public ProcedureVertex<?, ?> startVertex() {
         if (startVertex == null) {
-            startVertex = iterate(orderedVertices()).filter(ProcedureVertex::isStartingVertex)
+            startVertex = iterate(vertices()).filter(ProcedureVertex::isStartingVertex)
                     .first().orElseThrow(() -> TypeDBException.of(ILLEGAL_STATE));
         }
         return startVertex;
@@ -87,27 +84,22 @@ public class GraphProcedure implements PermutationProcedure {
 
     public Set<ProcedureVertex<?, ?>> endVertices() {
         if (endVertices == null) {
-            endVertices = iterate(orderedVertices()).filter(v -> v.outs().isEmpty()).toSet();
+            endVertices = iterate(vertices()).filter(v -> v.outs().isEmpty()).toSet();
         }
         return endVertices;
     }
 
     public ProcedureVertex<?, ?> vertex(int pos) {
-        assert 0 <= pos && pos < orderedVertices.length;
-        return orderedVertices[pos];
-    }
-
-    public ProcedureVertex<?, ?> vertex(Identifier.Variable id) {
-        assert vertices.containsKey(id);
-        return vertices.get(id);
+        assert 0 <= pos && pos < vertices.length;
+        return vertices[pos];
     }
 
     public int vertexCount() {
-        return orderedVertices.length;
+        return vertices.length;
     }
 
     private void assertWithinFilterBounds(Set<Identifier.Variable.Retrievable> filter) {
-        assert iterate(orderedVertices).anyMatch(vertex ->
+        assert iterate(vertices).anyMatch(vertex ->
                 vertex.id().isRetrievable() && filter.contains(vertex.id().asVariable().asRetrievable())
         );
     }
@@ -158,12 +150,12 @@ public class GraphProcedure implements PermutationProcedure {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         GraphProcedure that = (GraphProcedure) o;
-        return Arrays.equals(orderedVertices, that.orderedVertices);
+        return Arrays.equals(vertices, that.vertices);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(orderedVertices);
+        return Arrays.hashCode(vertices);
     }
 
     @Override
@@ -171,8 +163,8 @@ public class GraphProcedure implements PermutationProcedure {
         StringBuilder str = new StringBuilder();
         str.append("Graph Procedure: {");
         for (int i = 0; i < vertexCount(); i++) {
-            ProcedureVertex<?, ?> vertex = orderedVertices[i];
-            str.append("\n\t").append(i).append(": ").append(vertex);
+            ProcedureVertex<?, ?> vertex = vertices[i];
+            str.append("\n\t").append(vertex);
             for (ProcedureEdge<?, ?> edge : vertex.ins()) {
                 str.append("\n\t\t\t").append(edge);
             }
@@ -191,24 +183,27 @@ public class GraphProcedure implements PermutationProcedure {
 
         // TODO: remove when the query planner orders vertices natively
         public GraphProcedure orderAndbuild() {
-            orderVertices();
-            return build();
+            return new GraphProcedure(orderedVertices());
         }
 
         public GraphProcedure build() {
-            return new GraphProcedure(vertices);
+            return new GraphProcedure(vertices.values().stream().sorted(Comparator.comparing(ProcedureVertex::order))
+                    .toArray(ProcedureVertex[]::new));
         }
 
         /**
          * TODO: this is a compatibility layer to translate edge-ordered procedures into vertex-ordered procedures
          * we need to remove it once the query planner natively orders vertices instead of edges
          */
-        private void orderVertices() {
+        private ProcedureVertex<?, ?>[] orderedVertices() {
+            ProcedureVertex<?, ?>[] orderedVertices = new ProcedureVertex[vertices.size()];
             List<ProcedureVertex<?, ?>> vertexList = iterate(vertices.values()).toList();
             vertexList.sort(Comparator.comparing(v -> v.lastInEdge() == null ? 0 : v.lastInEdge().order()));
             for (int i = 0; i < vertexList.size(); i++) {
-                vertexList.get(i).setOrder(i);
+                orderedVertices[i] = vertexList.get(i);
+                orderedVertices[i].setOrder(i);
             }
+            return orderedVertices;
         }
 
         private void registerVertex(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
