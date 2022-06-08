@@ -67,12 +67,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private final VertexIterator[] vertexIterators;
     private final Scopes scopes;
     private final Vertex<?, ?> start;
-    private final TreeSet<Integer> forward;
-    private final TreeSet<Integer> backward;
+    private final TreeSet<Integer> visit;
+    private final TreeSet<Integer> backtrack;
     private ComputeStep computeStep;
     private State state;
 
-    private enum ComputeStep {FORWARD, BACKWARD}
+    private enum ComputeStep {VISIT, BACKTRACK}
 
     private enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
@@ -87,8 +87,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         this.state = State.INIT;
         this.scopes = new Scopes();
-        this.forward = new TreeSet<>();
-        this.backward = new TreeSet<>();
+        this.visit = new TreeSet<>();
+        this.backtrack = new TreeSet<>();
         this.vertexIterators = new VertexIterator[procedure.vertexCount()];
         for (int i = 0; i < vertexIterators.length; i++) {
             vertexIterators[i] = new VertexIterator(procedure.vertex(i));
@@ -150,26 +150,26 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void initialiseStart() {
-        forward.add(0);
-        computeStep = ComputeStep.FORWARD;
+        visit.add(0);
+        computeStep = ComputeStep.VISIT;
     }
 
     private void initialiseEnds() {
-        assert forward.isEmpty();
-        procedure.endVertices().forEach(v -> backward.add(v.order()));
-        computeStep = ComputeStep.BACKWARD;
+        assert visit.isEmpty();
+        procedure.endVertices().forEach(v -> backtrack.add(v.order()));
+        computeStep = ComputeStep.BACKTRACK;
     }
 
     private boolean computeAnswer() {
-        while ((computeStep == ComputeStep.FORWARD && !forward.isEmpty()) ||
-                (computeStep == ComputeStep.BACKWARD && !backward.isEmpty())) {
-            if (computeStep == ComputeStep.FORWARD) forward(forward.pollFirst());
-            else backward(backward.pollLast());
+        while ((computeStep == ComputeStep.VISIT && !visit.isEmpty()) ||
+                (computeStep == ComputeStep.BACKTRACK && !backtrack.isEmpty())) {
+            if (computeStep == ComputeStep.VISIT) visit(visit.pollFirst());
+            else backward(backtrack.pollLast());
         }
-        return computeStep == ComputeStep.FORWARD;
+        return computeStep == ComputeStep.VISIT;
     }
 
-    private void forward(int pos) {
+    private void visit(int pos) {
         if (pos == vertexIterators.length) return;
         ProcedureVertex<?, ?> procedureVertex = procedure.vertex(pos);
         // TODO index by procedure vertex
@@ -185,13 +185,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
         }
         if (vertexVerified) {
-            procedureVertex.outs().forEach(edge -> forward.add(edge.to().order()));
-            iterate(procedureVertex.scopesVisited()).flatMap(scopeID -> iterate(procedure.vertex(scopeID).outs()))
-                    .filter(e -> e.to().order() > pos).forEachRemaining(e -> forward.add(e.to().order()));
+            procedureVertex.outs().forEach(edge -> visit.add(edge.to().order()));
         } else {
-            vertexIterator.edges().forEach(edge -> backward.add(edge.from().order()));
+            vertexIterator.edges().forEach(edge -> backtrack.add(edge.from().order()));
             vertexIterator.reset();
-            computeStep = ComputeStep.BACKWARD;
+            visit.add(pos);
+            computeStep = ComputeStep.BACKTRACK;
         }
     }
 
@@ -206,7 +205,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             Scopes.Scoped scoped = scopes.get(id);
             if (!scoped.isValidUpTo(procedureVertex.order())) {
                 scoped.scopedOrdersUpTo(procedureVertex.order()).forEach(order -> {
-                    if (order != procedureVertex.order()) backward.add(order);
+                    if (order != procedureVertex.order()) backtrack.add(order);
                 });
                 return false;
             }
@@ -223,7 +222,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             verified.add(edge);
             if (!toVertexIterator.hasNextVertex()) {
                 verified.forEach(e -> vertexIterators[e.to().order()].removeEdge(e));
-                toVertexIterator.edges().forEach(e -> backward.add(e.from().order()));
+                toVertexIterator.edges().forEach(e -> backtrack.add(e.from().order()));
                 return false;
             }
         }
@@ -233,9 +232,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private void backward(int pos) {
         VertexIterator vertexIterator = vertexIterators[pos];
         clearCurrentVertex(vertexIterator);
-        vertexIterator.procedureVertex.transitiveTos().forEach(transitive -> forward.remove(transitive.order()));
-        forward.add(pos);
-        computeStep = ComputeStep.FORWARD;
+        vertexIterator.procedureVertex.transitiveTos().forEach(transitive -> visit.remove(transitive.order()));
+        visit.add(pos);
+        computeStep = ComputeStep.VISIT;
     }
 
     @Override
