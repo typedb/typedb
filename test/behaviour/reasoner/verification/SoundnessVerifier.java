@@ -44,13 +44,13 @@ class SoundnessVerifier {
     private final ForwardChainingMaterialiser materialiser;
     private final TypeDB.Session session;
     private final Map<Concept, Concept> inferredConceptMapping;
-    private final Set<Explanation> verifiedExplanations;
+    private final Set<Explanation> collectedExplanations;
 
     private SoundnessVerifier(ForwardChainingMaterialiser materialiser, TypeDB.Session session) {
         this.materialiser = materialiser;
         this.session = session;
         this.inferredConceptMapping = new HashMap<>();
-        this.verifiedExplanations = new HashSet<>();
+        this.collectedExplanations = new HashSet<>();
     }
 
     static SoundnessVerifier create(ForwardChainingMaterialiser materialiser, TypeDB.Session session) {
@@ -60,20 +60,55 @@ class SoundnessVerifier {
     void verifyQuery(TypeQLMatch inferenceQuery) {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ,
                                                   new Options.Transaction().infer(true).explain(true))) {
-            tx.query().match(inferenceQuery).forEachRemaining(ans -> verifyAnswer(ans, tx));
+            collectedExplanations.clear();
+            tx.query().match(inferenceQuery).forEachRemaining(ans -> verifyAnswerAndCollectExplanations(ans, tx));
+
+            // We can only verify an explanation once all concepts in it's condition have been "mapped"
+            // Concepts are mapped when an explanation containing them in the conclusion is verified.
+            // If we ever need to speed this up -
+            //  Construct a graph and retry only those from which a newly verified explanations is reachable.
+            Set<Explanation> unverifiedExplanations = collectedExplanations;
+            Set<Explanation> nextUnverifiedExplanations = new HashSet();
+            int previousSize = unverifiedExplanations.size() + 1; // Just needs to be greater than size
+
+            while ( !unverifiedExplanations.isEmpty() && unverifiedExplanations.size() < previousSize ){
+                for(Explanation e: unverifiedExplanations){
+                    if (canExplanationBeVerified(e)){
+                        verifyExplanation(e);
+                    }else{
+                        nextUnverifiedExplanations.add(e);
+                    }
+                }
+                previousSize = unverifiedExplanations.size();
+                unverifiedExplanations = nextUnverifiedExplanations;
+                nextUnverifiedExplanations = new HashSet<>();
+            }
+
+            if(!unverifiedExplanations.isEmpty()){
+                throw new SoundnessException("SoundnessVerifier could not verify the soundness" +
+                        " of all generated explanations");
+            }
+            collectedExplanations.clear();
         }
     }
 
-    private void verifyAnswer(ConceptMap answer, Transaction tx) {
+    private boolean canExplanationBeVerified(Explanation explanation) {
+        boolean possible = true;
+        for(Concept c: explanation.conditionAnswer().concepts().values() ){
+            possible = possible && (!c.asThing().isInferred() || inferredConceptMapping.containsKey(c));
+        }
+        return possible;
+    }
+
+    private void verifyAnswerAndCollectExplanations(ConceptMap answer, Transaction tx) {
         verifyExplainableVars(answer);
         answer.explainables().iterator().forEachRemaining(explainable -> {
             tx.query().explain(explainable.id()).forEachRemaining(explanation -> {
                 // This check is valid given that there is no mechanism for recursion termination given by the UX of
                 // explanations, so we do it ourselves
-                if (verifiedExplanations.contains(explanation)) return;
-                else verifiedExplanations.add(explanation);
-                verifyAnswer(explanation.conditionAnswer(), tx);
-                verifyExplanation(explanation);
+                if (collectedExplanations.contains(explanation)) return;
+                else collectedExplanations.add(explanation);
+                verifyAnswerAndCollectExplanations(explanation.conditionAnswer(), tx);
                 verifyVariableMapping(answer, explainable, explanation);
             });
         });
@@ -151,7 +186,12 @@ class SoundnessVerifier {
     private ConceptMap mapInferredConcepts(ConceptMap conditionAnswer) {
         Map<Retrievable, Concept> substituted = new HashMap<>();
         conditionAnswer.concepts().forEach((var, concept) -> {
-            substituted.put(var, inferredConceptMapping.getOrDefault(concept, concept));
+            if (inferredConceptMapping.containsKey(concept)){
+                substituted.put(var, inferredConceptMapping.get(concept));
+            }else{
+                assert ! concept.asThing().isInferred();
+                substituted.put(var, concept);
+            }
         });
         return new ConceptMap(substituted);
     }
