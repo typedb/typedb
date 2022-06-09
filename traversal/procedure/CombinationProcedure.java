@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -163,29 +162,23 @@ public class CombinationProcedure {
     private ProcedureEdge<?, ?> createOut(ProcedureVertex.Type from, ProcedureVertex.Type to,
                                           StructureEdge<?, ?> structureEdge) {
         ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, -1, true);
-        registerEdge(edge);
+        edge.from().out(edge);
+        edge.to().in(edge);
         return edge;
     }
 
     private ProcedureEdge<?, ?> createIn(ProcedureVertex.Type from, ProcedureVertex.Type to,
                                          StructureEdge<?, ?> structureEdge) {
         ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, -1, false);
-        registerEdge(edge);
+        edge.from().out(edge);
+        edge.to().in(edge);
         return edge;
     }
 
     private ProcedureEdge<?, ?> createLoop(ProcedureVertex.Type from, StructureEdge<?, ?> structureEdge) {
         ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, from, structureEdge, -1, true);
-        registerEdge(edge);
+        edge.from().loop(edge);
         return edge;
-    }
-
-    private void registerEdge(ProcedureEdge<?, ?> edge) {
-        if (edge.from().equals(edge.to())) edge.from().loop(edge);
-        else {
-            edge.from().out(edge);
-            edge.to().in(edge);
-        }
     }
 
     @Override
@@ -197,10 +190,8 @@ public class CombinationProcedure {
             str.append("\n\t\t").append(v);
         }
         str.append("\n\tedges:");
-        forwardEdges.values().stream().flatMap(Set::stream).sorted(Comparator.comparing(ProcedureEdge::order))
-                .forEachOrdered(edge -> str.append("\n\t\t").append(edge));
-        loopEdges.values().stream().flatMap(Set::stream).sorted(Comparator.comparing(ProcedureEdge::order))
-                .forEachOrdered(edge -> str.append("\n\t\t").append(edge));
+        forwardEdges.values().stream().flatMap(Set::stream).forEachOrdered(edge -> str.append("\n\t\t").append(edge));
+        loopEdges.values().stream().flatMap(Set::stream).forEachOrdered(edge -> str.append("\n\t\t").append(edge));
         str.append("\n}");
         return str.toString();
     }

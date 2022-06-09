@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
@@ -176,7 +177,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             if (vertexIterator.verifyLoops() && verifyScopes(procedureVertex) && verifyEdgeLookahead(procedureVertex)) {
                 vertexVerified = true;
             } else {
-                clearCurrentVertex(vertexIterator);
+                clearVertex(vertexIterator);
             }
         }
         if (vertexVerified) {
@@ -189,10 +190,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
     }
 
-    private void clearCurrentVertex(VertexIterator vertexIterator) {
+    private void clearVertex(VertexIterator vertexIterator) {
         vertexIterator.clearCurrentVertex();
-        Iterators.link(iterate(vertexIterator.procedureVertex), iterate(vertexIterator.procedureVertex.transitiveTos()))
-                .forEachRemaining(v -> v.outs().forEach(out -> vertexIterators.get(out.to()).removeEdgeInput(out)));
+        iterate(vertexIterator.procedureVertex.transitiveOuts())
+                .map(ProcedureEdge::from)
+                .forEachRemaining(modifiedVertex -> modifiedVertex.outs().forEach(out -> vertexIterators.get(out.to()).removeEdgeInput(out)));
     }
 
     private boolean verifyScopes(ProcedureVertex<?, ?> procedureVertex) {
@@ -226,8 +228,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void unblock(ProcedureVertex<?, ?> procedureVertex) {
         VertexIterator vertexIterator = vertexIterators.get(procedureVertex);
-        clearCurrentVertex(vertexIterator);
-        procedureVertex.transitiveTos().forEach(transitive -> forwards.remove(procedure.vertex(transitive.order())));
+        clearVertex(vertexIterator);
+        iterate(procedureVertex.transitiveOuts()).map(ProcedureEdge::to)
+                .forEachRemaining(vertex -> forwards.remove(procedure.vertex(vertex.order())));
         forwards.add(procedureVertex);
         traversalState = TraversalState.FORWARD;
     }

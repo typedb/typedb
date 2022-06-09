@@ -66,7 +66,7 @@ public abstract class ProcedureVertex<
     private int order;
     private ProcedureEdge<?, ?> lastInEdge;
     private List<ProcedureEdge<?, ?>> orderedOuts;
-    private Set<ProcedureVertex<?, ?>> transitiveOuts;
+    private Set<ProcedureEdge<?, ?>> transitiveOuts;
     private Set<Identifier.Variable> scopesVisited;
 
     ProcedureVertex(Identifier identifier) {
@@ -113,12 +113,12 @@ public abstract class ProcedureVertex<
         return orderedOuts;
     }
 
-    public Set<ProcedureVertex<?, ?>> transitiveTos() {
+    public Set<ProcedureEdge<?, ?>> transitiveOuts() {
         if (transitiveOuts == null) {
-            HashSet<ProcedureVertex<?, ?>> transitive = new HashSet<>();
+            HashSet<ProcedureEdge<?, ?>> transitive = new HashSet<>();
             outs().forEach(edge -> {
-                transitive.add(edge.to());
-                transitive.addAll(edge.to().transitiveTos());
+                transitive.add(edge);
+                transitive.addAll(edge.to().transitiveOuts());
             });
             transitiveOuts = transitive;
         }
