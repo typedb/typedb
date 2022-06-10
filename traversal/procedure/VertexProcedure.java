@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -50,14 +49,13 @@ public class VertexProcedure implements PermutationProcedure {
 
     public static VertexProcedure create(StructureVertex<?> structureVertex) {
         ProcedureVertex<?, ?> procedureVertex = structureVertex.isType()
-                ? new ProcedureVertex.Type(structureVertex.id(), true)
-                : new ProcedureVertex.Thing(structureVertex.id(), true);
+                ? new ProcedureVertex.Type(structureVertex.id())
+                : new ProcedureVertex.Thing(structureVertex.id());
         if (procedureVertex.isType()) procedureVertex.asType().props(structureVertex.asType().props());
         else procedureVertex.asThing().props(structureVertex.asThing().props());
-        int order = 0;
-        for (StructureEdge<?, ?> structureEdge : structureVertex.outs()) {
-            ProcedureEdge<?, ?> edge = ProcedureEdge.of(procedureVertex, procedureVertex, structureEdge, order, true);
-            procedureVertex.out(edge);
+        for (StructureEdge<?, ?> structureEdge : structureVertex.loops()) {
+            ProcedureEdge<?, ?> edge = ProcedureEdge.of(procedureVertex, procedureVertex, structureEdge, -1, true);
+            procedureVertex.loop(edge);
         }
         return new VertexProcedure(procedureVertex);
     }
@@ -66,8 +64,7 @@ public class VertexProcedure implements PermutationProcedure {
     public String toString() {
         StringBuilder str = new StringBuilder();
         str.append("Vertex Procedure: {");
-        List<ProcedureEdge<?, ?>> procedureEdges = new ArrayList<>(vertex.outs());
-        procedureEdges.sort(Comparator.comparing(ProcedureEdge::order));
+        List<ProcedureEdge<?, ?>> procedureEdges = new ArrayList<>(vertex.loops());
 
         str.append("\n\tvertex:");
         str.append("\n\t\t").append(vertex);
@@ -94,7 +91,7 @@ public class VertexProcedure implements PermutationProcedure {
         LOG.trace(this.toString());
         assert vertex.id().isRetrievable() && filter.contains(vertex.id().asVariable().asRetrievable());
         FunctionalIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params);
-        for (ProcedureEdge<?, ?> e : vertex.outs()) {
+        for (ProcedureEdge<?, ?> e : vertex.loops()) {
             iterator = iterator.filter(v -> e.isClosure(graphMgr, v, v, params));
         }
 

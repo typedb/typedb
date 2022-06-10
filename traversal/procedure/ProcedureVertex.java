@@ -21,8 +21,8 @@ package com.vaticle.typedb.core.traversal.procedure;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
@@ -37,38 +37,38 @@ import com.vaticle.typedb.core.traversal.predicate.Predicate;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicReference;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
+import static java.util.stream.Collectors.toList;
 
 public abstract class ProcedureVertex<
         VERTEX extends Vertex<?, ?>,
         PROPERTIES extends TraversalVertex.Properties
         > extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
-    private final boolean isStartingVertex;
-    private final AtomicReference<Set<Integer>> dependedEdgeOrders;
-    private ProcedureEdge<?, ?> branchEdge;
+    private int order;
+    private ProcedureEdge<?, ?> lastInEdge;
+    private List<ProcedureEdge<?, ?>> orderedOuts;
+    private Set<ProcedureEdge<?, ?>> transitiveOuts;
 
-    ProcedureVertex(Identifier identifier, boolean isStartingVertex) {
+    ProcedureVertex(Identifier identifier) {
         super(identifier);
-        this.isStartingVertex = isStartingVertex;
-        this.dependedEdgeOrders = new AtomicReference<>(null);
     }
 
     public abstract Forwardable<? extends VERTEX, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters);
@@ -76,26 +76,20 @@ public abstract class ProcedureVertex<
     @Override
     public void in(ProcedureEdge<?, ?> edge) {
         super.in(edge);
-        if (branchEdge == null || edge.order() < branchEdge.order()) branchEdge = edge;
+        if (lastInEdge == null || edge.order() > lastInEdge.order()) lastInEdge = edge;
     }
 
+    /**
+     * TODO:
+     *  after query planning, we can multiple starting vertices and we'll have to distinguish the start
+     *  versus vertices without in edges
+     */
     public boolean isStartingVertex() {
-        return isStartingVertex;
+        return order() == 0;
     }
 
-    public Set<Integer> dependedEdgeOrders() {
-        dependedEdgeOrders.compareAndSet(null, computeDependedEdgeOrders());
-        return dependedEdgeOrders.get();
-    }
-
-    private Set<Integer> computeDependedEdgeOrders() {
-        if (ins().isEmpty()) return set();
-        else return set(branchEdge().from().dependedEdgeOrders(), branchEdge().order());
-    }
-
-    public ProcedureEdge<?, ?> branchEdge() {
-        if (ins().isEmpty() || isStartingVertex()) return null;
-        else return branchEdge;
+    ProcedureEdge<?, ?> lastInEdge() {
+        return lastInEdge;
     }
 
     public Thing asThing() {
@@ -106,18 +100,47 @@ public abstract class ProcedureVertex<
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(ProcedureVertex.Type.class));
     }
 
+    public int order() {
+        return order;
+    }
+
+    public List<ProcedureEdge<?, ?>> orderedOuts() {
+        if (orderedOuts == null) {
+            orderedOuts = outs().stream().sorted(Comparator.comparingInt(e -> e.to().order())).collect(toList());
+        }
+        return orderedOuts;
+    }
+
+    public Set<ProcedureEdge<?, ?>> transitiveOuts() {
+        if (transitiveOuts == null) {
+            HashSet<ProcedureEdge<?, ?>> transitive = new HashSet<>();
+            outs().forEach(edge -> {
+                transitive.add(edge);
+                transitive.addAll(edge.to().transitiveOuts());
+            });
+            transitiveOuts = transitive;
+        }
+        return transitiveOuts;
+    }
+
+    void setOrder(int order) {
+        this.order = order;
+    }
+
     @Override
     public String toString() {
-        String str = super.toString();
-        if (isStartingVertex) str += " (start)";
+        String str = order() + ": " + super.toString();
+        if (isStartingVertex()) str += " (start)";
         if (outs().isEmpty()) str += " (end)";
         return str;
     }
 
     public static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
 
-        Thing(Identifier identifier, boolean isStartingVertex) {
-            super(identifier, isStartingVertex);
+        private Set<ProcedureEdge<?, ?>> inRolePlayers;
+
+        Thing(Identifier identifier) {
+            super(identifier);
         }
 
         @Override
@@ -133,6 +156,13 @@ public abstract class ProcedureVertex<
         @Override
         public Thing asThing() {
             return this;
+        }
+
+        public Set<ProcedureEdge<?, ?>> inRolePlayers() {
+            if (inRolePlayers == null) {
+                inRolePlayers = iterate(ins()).filter(ProcedureEdge::isRolePlayer).toSet();
+            }
+            return inRolePlayers;
         }
 
         @Override
@@ -280,8 +310,8 @@ public abstract class ProcedureVertex<
 
     public static class Type extends ProcedureVertex<TypeVertex, Properties.Type> {
 
-        Type(Identifier identifier, boolean isStartingVertex) {
-            super(identifier, isStartingVertex);
+        Type(Identifier identifier) {
+            super(identifier);
         }
 
         @Override

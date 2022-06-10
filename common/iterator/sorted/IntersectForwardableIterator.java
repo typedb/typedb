@@ -44,7 +44,7 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     IntersectForwardableIterator(List<Forwardable<T, ORDER>> iterators, ORDER order) {
         super(order);
         this.iterators = iterators;
-        state = State.INIT;
+        state = iterators.isEmpty() ? State.COMPLETED : State.INIT;
     }
 
     @Override
@@ -88,7 +88,7 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
         for (int i = 0; i < iterators.size(); i++) {
             if (i == candidateSource) continue;
             Forwardable<T, ORDER> iterator = iterators.get(i);
-            if (iterator.hasNext() && !iterator.peek().equals(candidate)) iterator.forward(candidate);
+            if (iterator.hasNext() && !order.isValidNext(candidate, iterator.peek())) iterator.forward(candidate);
             if (!iterator.hasNext()) {
                 state = State.COMPLETED;
                 return;

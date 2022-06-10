@@ -66,9 +66,7 @@ public class CombinationFinder {
     }
 
     public Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
-        if (LOG.isTraceEnabled()) {
-            LOG.trace(procedures.toString());
-        }
+        if (LOG.isTraceEnabled()) LOG.trace(procedures.toString());
 
         for (CombinationProcedure procedure : procedures) {
             start(procedure);
@@ -95,11 +93,12 @@ public class CombinationFinder {
         boolean changed = false;
         while (!toVisit.isEmpty()) {
             from = toVisit.remove();
+            changed = includeLoopCombinations(procedure, from) || changed;
             for (ProcedureEdge<?, ?> procedureEdge : procedure.forwardEdges(from)) {
                 Set<TypeVertex> toCombination = toTypes(procedureEdge);
                 changed = addOrIntersect(procedureEdge.to().id(), toCombination) || changed;
                 if (combination.get(procedureEdge.to().id()).isEmpty()) return State.EMPTY;
-                if (!procedure.isTerminal(procedureEdge.to().asType()) && !from.equals(procedureEdge.to())) {
+                if (!procedure.isTerminal(procedureEdge.to().asType())) {
                     toVisit.add(procedureEdge.to().asType());
                 }
             }
@@ -113,11 +112,12 @@ public class CombinationFinder {
         boolean changed = false;
         while (!toVisit.isEmpty()) {
             from = toVisit.remove();
+            changed = includeLoopCombinations(procedure, from) || changed;
             for (ProcedureEdge<?, ?> procedureEdge : procedure.reverseEdges(from)) {
                 Set<TypeVertex> toTypes = toTypes(procedureEdge);
                 changed = addOrIntersect(procedureEdge.to().id(), toTypes) || changed;
                 if (combination.get(procedureEdge.to().id()).isEmpty()) return State.EMPTY;
-                if (!procedureEdge.to().isStartingVertex() && !from.equals(procedureEdge.to())) {
+                if (!procedure.startVertex().equals(procedureEdge.to())) {
                     toVisit.add(procedureEdge.to().asType());
                 }
             }
@@ -125,13 +125,23 @@ public class CombinationFinder {
         return changed ? State.CHANGED : State.UNCHANGED;
     }
 
-    private Set<TypeVertex> toTypes(ProcedureEdge<?, ?> edge) {
-        if (edge.from().id().equals(edge.to().id())) {
-            // TODO this can be optimised with forward()
-            return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type).filter(to -> to.equals(type))).toSet();
-        } else {
-            return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type)).toSet();
+    private boolean includeLoopCombinations(CombinationProcedure procedure, ProcedureVertex.Type from) {
+        boolean changed = false;
+        for (ProcedureEdge<?, ?> loopEdge : procedure.loopEdges(from)) {
+            Set<TypeVertex> loopCombination = loopTypes(loopEdge);
+            changed = addOrIntersect(loopEdge.from().id(), loopCombination) || changed;
         }
+        return changed;
+    }
+
+    private Set<TypeVertex> loopTypes(ProcedureEdge<?, ?> edge) {
+        assert edge.from().equals(edge.to());
+        return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type).filter(to -> to.equals(type))).toSet();
+    }
+
+    private Set<TypeVertex> toTypes(ProcedureEdge<?, ?> edge) {
+        assert !edge.from().equals(edge.to());
+        return iterate(combination.get(edge.from().id())).flatMap(type -> branchIter(edge, type)).toSet();
     }
 
     private boolean addOrIntersect(Identifier identifier, Set<? extends TypeVertex> types) {

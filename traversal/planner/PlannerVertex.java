@@ -19,12 +19,10 @@
 package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.optimiser.OptimiserConstraint;
 import com.vaticle.typedb.core.common.optimiser.OptimiserVariable;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 
@@ -82,10 +80,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         return isInitialisedVariables;
     }
 
-    public boolean isInitialisedConstraints() {
-        return isInitialisedConstraints;
-    }
-
     void out(PlannerEdge<?, ?> edge) {
         assert edge.forward().from().equals(this);
         assert edge.backward().to().equals(this);
@@ -100,19 +94,26 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         out(edge.backward());
     }
 
+    void loop(PlannerEdge<?, ?> edge) {
+        assert edge.forward().from().equals(edge.forward().to());
+        assert edge.backward().from().equals(edge.forward().to());
+        loop(edge.forward());
+        loop(edge.backward());
+    }
+
     void initialiseVariables() {
         assert planner != null;
         varIsStartingVertex = planner.optimiser().booleanVar(varPrefix + "is_starting_vertex");
         varIsEndingVertex = planner.optimiser().booleanVar(varPrefix + "is_ending_vertex");
         varHasIncomingEdges = planner.optimiser().booleanVar(varPrefix + "has_incoming_edges");
         varHasOutgoingEdges = planner.optimiser().booleanVar(varPrefix + "has_outgoing_edges");
-
         isInitialisedVariables = true;
     }
 
     void initialiseConstraints() {
         assert ins().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
         assert outs().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
+        assert loops().stream().allMatch(PlannerEdge.Directional::isInitialisedVariables);
         initialiseConstraintsForIncomingEdges();
         initialiseConstraintsForOutgoingEdges();
         initialiseConstraintsForVertexFlow();

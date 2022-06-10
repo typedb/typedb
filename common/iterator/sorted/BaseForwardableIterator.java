@@ -75,6 +75,7 @@ public class BaseForwardableIterator<T extends Comparable<? super T>, ORDER exte
     @Override
     public void forward(T target) {
         if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+        if (next != null && order.isValidNext(target, next)) return;
         this.iterator = order.orderer().iterate(source, target);
         this.next = null;
     }

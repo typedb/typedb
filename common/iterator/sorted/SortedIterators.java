@@ -32,7 +32,7 @@ import static com.vaticle.typedb.common.collection.Collections.list;
 
 public class SortedIterators {
 
-    public static <T extends Comparable<T>, ORDER extends SortedIterator.Order> SortedIterator<T, ORDER> iterateSorted(ORDER order, List<T> list) {
+    public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator<T, ORDER> iterateSorted(ORDER order, List<T> list) {
         return new BaseSortedIterator<>(list, order);
     }
 

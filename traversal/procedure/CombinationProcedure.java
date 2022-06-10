@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -37,6 +36,7 @@ public class CombinationProcedure {
     private final Map<Identifier, ProcedureVertex.Type> vertices;
     private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> forwardEdges;
     private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> reverseEdges;
+    private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> loopEdges;
     private ProcedureVertex.Type startVertex;
     private Set<ProcedureVertex.Type> terminals;
 
@@ -44,6 +44,7 @@ public class CombinationProcedure {
         this.vertices = new HashMap<>();
         this.forwardEdges = new HashMap<>();
         this.reverseEdges = new HashMap<>();
+        this.loopEdges = new HashMap<>();
     }
 
     public static CombinationProcedure create(Structure structure) {
@@ -81,6 +82,10 @@ public class CombinationProcedure {
         return reverseEdges.computeIfAbsent(vertex, (v) -> new HashSet<>());
     }
 
+    public Set<ProcedureEdge<?, ?>> loopEdges(ProcedureVertex.Type vertex) {
+        return loopEdges.computeIfAbsent(vertex, (v) -> new HashSet<>());
+    }
+
     private void registerBFS(StructureVertex.Type start) {
         Set<StructureEdge<?, ?>> visitedEdges = new HashSet<>();
         Queue<StructureVertex.Type> queue = new LinkedList<>();
@@ -93,6 +98,7 @@ public class CombinationProcedure {
             else procedureVertex = registerVertex(vertex);
             queue.addAll(registerOutEdges(procedureVertex, vertex.outs(), visitedEdges));
             queue.addAll(registerInEdges(procedureVertex, vertex.ins(), visitedEdges));
+            registerLoopEdges(procedureVertex, vertex.loops(), visitedEdges);
         }
     }
 
@@ -102,7 +108,7 @@ public class CombinationProcedure {
 
     private ProcedureVertex.Type registerVertex(StructureVertex.Type vertex, boolean isStart) {
         ProcedureVertex.Type procedureVertex = vertices.computeIfAbsent(vertex.id(), id -> {
-            ProcedureVertex.Type v = new ProcedureVertex.Type(id, isStart);
+            ProcedureVertex.Type v = new ProcedureVertex.Type(id);
             v.props(vertex.props());
             return v;
         });
@@ -110,14 +116,14 @@ public class CombinationProcedure {
         return procedureVertex;
     }
 
-    private Set<StructureVertex.Type> registerOutEdges(ProcedureVertex.Type from, Set<StructureEdge<?, ?>> outEdges,
+    private Set<StructureVertex.Type> registerOutEdges(ProcedureVertex.Type from, Set<StructureEdge<?, ?>> outs,
                                                        Set<StructureEdge<?, ?>> visitedEdges) {
         Set<StructureVertex.Type> nextVertices = new HashSet<>();
-        outEdges.forEach(structureEdge -> {
+        outs.forEach(structureEdge -> {
             if (!visitedEdges.contains(structureEdge)) {
                 visitedEdges.add(structureEdge);
                 ProcedureVertex.Type to = registerVertex(structureEdge.to().asType());
-                ProcedureEdge<?, ?> edge = createOut(from, to, structureEdge, visitedEdges.size());
+                ProcedureEdge<?, ?> edge = createOut(from, to, structureEdge);
                 forwardEdges.computeIfAbsent(from, (v) -> new HashSet<>()).add(edge);
                 reverseEdges.computeIfAbsent(to, (v) -> new HashSet<>()).add(edge.reverse());
                 nextVertices.add(structureEdge.to().asType());
@@ -126,15 +132,15 @@ public class CombinationProcedure {
         return nextVertices;
     }
 
-    private Set<StructureVertex.Type> registerInEdges(ProcedureVertex.Type to, Set<StructureEdge<?, ?>> inEdges,
+    private Set<StructureVertex.Type> registerInEdges(ProcedureVertex.Type to, Set<StructureEdge<?, ?>> ins,
                                                       Set<StructureEdge<?, ?>> visitedEdges) {
         Set<StructureVertex.Type> nextVertices = new HashSet<>();
-        inEdges.forEach(structureEdge -> {
+        ins.forEach(structureEdge -> {
             if (!visitedEdges.contains(structureEdge)) {
                 visitedEdges.add(structureEdge);
                 ProcedureVertex.Type from = registerVertex(structureEdge.from().asType());
-                ProcedureEdge<?, ?> edge = createIn(to, from, structureEdge, visitedEdges.size());
-                forwardEdges.computeIfAbsent(to, (v1) -> new HashSet<>()).add(edge);
+                ProcedureEdge<?, ?> edge = createIn(to, from, structureEdge);
+                forwardEdges.computeIfAbsent(to, (v) -> new HashSet<>()).add(edge);
                 reverseEdges.computeIfAbsent(from, (v) -> new HashSet<>()).add(edge.reverse());
                 nextVertices.add(structureEdge.from().asType());
             }
@@ -142,23 +148,37 @@ public class CombinationProcedure {
         return nextVertices;
     }
 
+    private void registerLoopEdges(ProcedureVertex.Type from, Set<StructureEdge<?, ?>> loops,
+                                   Set<StructureEdge<?, ?>> visitedEdges) {
+        loops.forEach(structureEdge -> {
+            if (!visitedEdges.contains(structureEdge)) {
+                visitedEdges.add(structureEdge);
+                ProcedureEdge<?, ?> edge = createLoop(from, structureEdge);
+                loopEdges.computeIfAbsent(from, (v) -> new HashSet<>()).add(edge);
+            }
+        });
+    }
+
     private ProcedureEdge<?, ?> createOut(ProcedureVertex.Type from, ProcedureVertex.Type to,
-                                          StructureEdge<?, ?> structureEdge, int order) {
-        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, order, true);
-        registerEdge(edge);
+                                          StructureEdge<?, ?> structureEdge) {
+        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, -1, true);
+        edge.from().out(edge);
+        edge.to().in(edge);
         return edge;
     }
 
     private ProcedureEdge<?, ?> createIn(ProcedureVertex.Type from, ProcedureVertex.Type to,
-                                         StructureEdge<?, ?> structureEdge, int order) {
-        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, order, false);
-        registerEdge(edge);
+                                         StructureEdge<?, ?> structureEdge) {
+        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, -1, false);
+        edge.from().out(edge);
+        edge.to().in(edge);
         return edge;
     }
 
-    private void registerEdge(ProcedureEdge<?, ?> edge) {
-        edge.from().out(edge);
-        edge.to().in(edge);
+    private ProcedureEdge<?, ?> createLoop(ProcedureVertex.Type from, StructureEdge<?, ?> structureEdge) {
+        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, from, structureEdge, -1, true);
+        edge.from().loop(edge);
+        return edge;
     }
 
     @Override
@@ -170,8 +190,8 @@ public class CombinationProcedure {
             str.append("\n\t\t").append(v);
         }
         str.append("\n\tedges:");
-        forwardEdges.values().stream().flatMap(Collection::stream).sorted(Comparator.comparing(ProcedureEdge::order))
-                .forEachOrdered(edge -> str.append("\n\t\t").append(edge));
+        forwardEdges.values().stream().flatMap(Set::stream).forEachOrdered(edge -> str.append("\n\t\t").append(edge));
+        loopEdges.values().stream().flatMap(Set::stream).forEachOrdered(edge -> str.append("\n\t\t").append(edge));
         str.append("\n}");
         return str.toString();
     }

@@ -33,13 +33,15 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
     private final Identifier identifier;
     private final Set<EDGE> outgoing;
     private final Set<EDGE> incoming;
+    private final Set<EDGE> looping;
     private final int hash;
     private PROPERTIES properties;
 
-    public TraversalVertex(Identifier identifier) {
+    protected TraversalVertex(Identifier identifier) {
         this.identifier = identifier;
         this.outgoing = new HashSet<>();
         this.incoming = new HashSet<>();
+        this.looping = new HashSet<>();
         this.properties = newProperties();
         this.hash = Objects.hash(identifier);
     }
@@ -66,14 +68,23 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
         return incoming;
     }
 
+    public Set<EDGE> loops() {
+        return looping;
+    }
+
     public void out(EDGE edge) {
-        assert edge.from().equals(this);
+        assert edge.from().equals(this) && !edge.from().equals(edge.to());
         outgoing.add(edge);
     }
 
     public void in(EDGE edge) {
-        assert edge.to().equals(this);
+        assert edge.to().equals(this) && !edge.from().equals(edge.to());
         incoming.add(edge);
+    }
+
+    public void loop(EDGE edge) {
+        assert edge.to().equals(this) && edge.from().equals(edge.to());
+        looping.add(edge);
     }
 
     public PROPERTIES props() {

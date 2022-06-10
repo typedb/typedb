@@ -45,7 +45,7 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
 
         abstract Orderer orderer();
 
-        <T extends Comparable<? super T>> boolean isValidNext(T last, T next) {
+        public <T extends Comparable<? super T>> boolean isValidNext(T last, T next) {
             return orderer().compare(last, next) <= 0;
         }
 

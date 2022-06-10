@@ -21,8 +21,8 @@ package com.vaticle.typedb.core.traversal.procedure;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
@@ -53,11 +53,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNSUPPORTED_OPERATION;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.BACKWARD;
 import static com.vaticle.typedb.core.graph.common.Encoding.Direction.Edge.FORWARD;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.ISA;
@@ -81,11 +81,13 @@ public abstract class ProcedureEdge<
 
     private final int order;
     private final Encoding.Direction.Edge direction;
+    private final int hash;
 
     private ProcedureEdge(VERTEX_FROM from, VERTEX_TO to, int order, Encoding.Direction.Edge direction, String symbol) {
         super(from, to, symbol);
         this.order = order;
         this.direction = direction;
+        this.hash = Objects.hash(from(), to(), order, direction);
     }
 
     public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
@@ -131,22 +133,6 @@ public abstract class ProcedureEdge<
         return direction;
     }
 
-    public boolean isClosureEdge() {
-        return to().isStartingVertex() || order() > to().branchEdge().order();
-    }
-
-    public boolean onlyStartsFromAttribute() {
-        return false;
-    }
-
-    public boolean onlyStartsFromRelation() {
-        return false;
-    }
-
-    public boolean onlyEndsAtRelation() {
-        return false;
-    }
-
     public boolean onlyStartsFromAttributeType() {
         return false;
     }
@@ -176,20 +162,20 @@ public abstract class ProcedureEdge<
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ProcedureEdge<?, ?> that = (ProcedureEdge<?, ?>) o;
-        return order == that.order && direction == that.direction;
+        return from().equals(that.from()) && to().equals(that.to()) && direction == that.direction;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(order, direction);
+        return hash;
     }
 
     @Override
     public String toString() {
         if (direction.isForward()) {
-            return String.format("%s: (%s *--[%s]--> %s)", order, from.id(), symbol, to.id());
+            return String.format("(%s *--[%s]--> %s)", from.id(), symbol, to.id());
         } else {
-            return String.format("%s: (%s <--[%s]--* %s)", order, from.id(), symbol, to.id());
+            return String.format("(%s <--[%s]--* %s)", from.id(), symbol, to.id());
         }
     }
 
@@ -234,15 +220,10 @@ public abstract class ProcedureEdge<
 
         private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
 
-        private Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
-                          Encoding.Direction.Edge direction, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
+        Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
+                  Encoding.Direction.Edge direction, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, order, direction, predicate.toString());
             this.predicate = predicate;
-        }
-
-        @Override
-        public boolean onlyStartsFromAttribute() {
-            return true;
         }
 
         @Override
@@ -338,11 +319,6 @@ public abstract class ProcedureEdge<
                 return super.toString() + String.format(" { isTransitive: %s }", isTransitive);
             }
 
-            @Override
-            public ProcedureEdge<?, ?> reverse() {
-                throw TypeDBException.of(UNSUPPORTED_OPERATION);
-            }
-
             static class Forward extends Isa<ProcedureVertex.Thing, ProcedureVertex.Type> {
 
                 Forward(ProcedureVertex.Thing thing, ProcedureVertex.Type type, int order, boolean isTransitive) {
@@ -363,6 +339,11 @@ public abstract class ProcedureEdge<
                                          Traversal.Parameters params) {
                     assert fromVertex.isThing() && toVertex.isType();
                     return isaTypes(fromVertex.asThing()).findFirst(toVertex.asType()).isPresent();
+                }
+
+                @Override
+                public ProcedureEdge<?, ?> reverse() {
+                    return new Backward(to(), from(), order(), isTransitive);
                 }
             }
 
@@ -392,6 +373,11 @@ public abstract class ProcedureEdge<
                                          Traversal.Parameters params) {
                     assert fromVertex.isType() && toVertex.isThing();
                     return isaTypes(toVertex.asThing()).findFirst(fromVertex.asType()).isPresent();
+                }
+
+                @Override
+                public ProcedureEdge<?, ?> reverse() {
+                    return new Forward(to(), from(), order(), isTransitive);
                 }
             }
         }
@@ -701,7 +687,6 @@ public abstract class ProcedureEdge<
                         super(from, to, order, FORWARD);
                     }
 
-
                     @Override
                     public boolean onlyStartsFromRelationType() {
                         return true;
@@ -809,11 +794,6 @@ public abstract class ProcedureEdge<
                 }
             }
 
-            @Override
-            public ProcedureEdge<?, ?> reverse() {
-                throw TypeDBException.of(UNSUPPORTED_OPERATION);
-            }
-
             public abstract Forwardable<? extends ThingVertex, Order.Asc> branch(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                                  Traversal.Parameters params);
 
@@ -897,17 +877,17 @@ public abstract class ProcedureEdge<
                                              Traversal.Parameters params) {
                         return fromVertex.asThing().outs().edge(HAS, toVertex.asThing()) != null;
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Backward(to, from, order());
+                    }
                 }
 
                 static class Backward extends Has {
 
                     Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
                         super(from, to, order, BACKWARD);
-                    }
-
-                    @Override
-                    public boolean onlyStartsFromAttribute() {
-                        return true;
                     }
 
                     @Override
@@ -934,6 +914,11 @@ public abstract class ProcedureEdge<
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                              Vertex<?, ?> toVertex, Traversal.Parameters params) {
                         return fromVertex.asThing().ins().edge(HAS, toVertex.asThing()) != null;
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Forward(to, from, order());
                     }
                 }
             }
@@ -962,6 +947,11 @@ public abstract class ProcedureEdge<
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
                         return fromVertex.asThing().outs().edge(PLAYING, toVertex.asThing()) != null;
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Backward(to, from, order());
                     }
                 }
 
@@ -998,6 +988,11 @@ public abstract class ProcedureEdge<
                                              Traversal.Parameters params) {
                         return fromVertex.asThing().ins().edge(PLAYING, toVertex.asThing()) != null;
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Forward(to, from, order());
+                    }
                 }
             }
 
@@ -1015,11 +1010,6 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRelation() {
-                        return true;
-                    }
-
-                    @Override
                     public Forwardable<? extends ThingVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params) {
                         assert fromVertex.isThing();
@@ -1030,6 +1020,11 @@ public abstract class ProcedureEdge<
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
                         return fromVertex.asThing().outs().edge(RELATING, toVertex.asThing()) != null;
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Backward(to, from, order());
                     }
                 }
 
@@ -1066,9 +1061,10 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyEndsAtRelation() {
-                        return true;
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Forward(to, from, order());
                     }
+
                 }
             }
 
@@ -1130,11 +1126,6 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRelation() {
-                        return true;
-                    }
-
-                    @Override
                     public Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> branchEdge(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                                                                  Traversal.Parameters params) {
                         assert fromVertex.isThing() && !roleTypes.isEmpty();
@@ -1186,15 +1177,20 @@ public abstract class ProcedureEdge<
                                                 .edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type())
                                                 .toAndOptimised(),
                                         ASC
-                                ).filter(kv -> kv.key().equals(player) && !scoped.contains(kv.value()));
+                                ).filter(kv -> kv.key().equals(player));
                         closures.forward(KeyValue.of(player, null));
                         Optional<KeyValue<ThingVertex, ThingVertex>> next = closures.first();
                         if (next.isPresent() && next.get().key().equals(player)) {
-                            scoped.push(next.get().value(), order());
+                            scoped.record(this, next.get().value());
                             return true;
                         } else {
                             return false;
                         }
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Backward(to, from, order(), roleTypes);
                     }
                 }
 
@@ -1250,11 +1246,11 @@ public abstract class ProcedureEdge<
                                         rt -> player.ins().edge(ROLEPLAYER, rt, rel.iid().prefix(), rel.iid().type())
                                                 .fromAndOptimised(),
                                         ASC
-                                ).filter(kv -> kv.key().equals(rel) && !scoped.contains(kv.value()));
+                                ).filter(kv -> kv.key().equals(rel));
                         closures.forward(KeyValue.of(rel, null));
                         Optional<KeyValue<ThingVertex, ThingVertex>> next = closures.first();
                         if (next.isPresent() && next.get().key().equals(rel)) {
-                            scoped.push(next.get().value(), order());
+                            scoped.record(this, next.get().value());
                             return true;
                         } else {
                             return false;
@@ -1262,8 +1258,8 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyEndsAtRelation() {
-                        return true;
+                    public ProcedureEdge<?, ?> reverse() {
+                        return new Forward(to, from, order(), roleTypes);
                     }
                 }
             }
