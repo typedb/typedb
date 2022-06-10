@@ -67,7 +67,7 @@ public abstract class ProcedureVertex<
     private ProcedureEdge<?, ?> lastInEdge;
     private List<ProcedureEdge<?, ?>> orderedOuts;
     private Set<ProcedureEdge<?, ?>> transitiveOuts;
-    private Set<Identifier.Variable> scopesVisited;
+    private Set<Identifier.Variable> scopesModified;
 
     ProcedureVertex(Identifier identifier) {
         super(identifier);
@@ -125,12 +125,12 @@ public abstract class ProcedureVertex<
         return transitiveOuts;
     }
 
-    public Set<Identifier.Variable> scopesVisited() {
-        if (scopesVisited == null) scopesVisited = computeScopesVisited();
-        return scopesVisited;
+    public Set<Identifier.Variable> scopesModified() {
+        if (scopesModified == null) scopesModified = computeScopesModified();
+        return scopesModified;
     }
 
-    Set<Identifier.Variable> computeScopesVisited() {
+    Set<Identifier.Variable> computeScopesModified() {
         return set();
     }
 
@@ -147,6 +147,8 @@ public abstract class ProcedureVertex<
     }
 
     public static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
+
+        private Set<ProcedureEdge<?, ?>> inRolePlayers;
 
         Thing(Identifier identifier) {
             super(identifier);
@@ -167,8 +169,15 @@ public abstract class ProcedureVertex<
             return this;
         }
 
+        public Set<ProcedureEdge<?, ?>> inRolePlayers() {
+            if (inRolePlayers == null) {
+                inRolePlayers = iterate(ins()).filter(ProcedureEdge::isRolePlayer).toSet();
+            }
+            return inRolePlayers;
+        }
+
         @Override
-        Set<Identifier.Variable> computeScopesVisited() {
+        Set<Identifier.Variable> computeScopesModified() {
             if (id().isScoped()) return set(id().asScoped().scope());
             else return iterate(ins()).filter(ProcedureEdge::isRolePlayer).map(e -> e.asRolePlayer().scope()).toSet();
         }
