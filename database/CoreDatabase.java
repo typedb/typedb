@@ -291,7 +291,7 @@ public class CoreDatabase implements TypeDB.Database {
             );
             int encoding = encodingBytes == null || encodingBytes.length == 0 ? 0 : ByteArray.of(encodingBytes).decodeInt();
             if (encoding != ENCODING_VERSION) {
-                throw TypeDBException.of(INCOMPATIBLE_ENCODING, name(), encoding, ENCODING_VERSION);
+                throw TypeDBException.of(INCOMPATIBLE_ENCODING,  name(), directory().toAbsolutePath(), encoding, ENCODING_VERSION);
             }
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);

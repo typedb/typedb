@@ -154,8 +154,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
 
     public static class Database extends ErrorMessage {
         public static final Database INCOMPATIBLE_ENCODING =
-                new Database(1, "Database '%s' has incompatible data version '%d' - this server supports " +
-                        "version '%d'. (Did you copy a database across incompatible server versions?)");
+                new Database(1, "Database '%s' (located at: %s) has incompatible data version '%d' - this server supports " +
+                        "version '%d'. Please reload or migrate your data.");
         public static final Database DATABASE_MANAGER_CLOSED =
                 new Database(2, "Attempted to use database manager when it has been closed.");
         public static final Database DATABASE_EXISTS =
