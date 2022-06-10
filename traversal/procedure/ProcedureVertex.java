@@ -66,7 +66,6 @@ public abstract class ProcedureVertex<
     private ProcedureEdge<?, ?> lastInEdge;
     private List<ProcedureEdge<?, ?>> orderedOuts;
     private Set<ProcedureEdge<?, ?>> transitiveOuts;
-    private Set<Identifier.Variable> scopesModified;
 
     ProcedureVertex(Identifier identifier) {
         super(identifier);
