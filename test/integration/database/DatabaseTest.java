@@ -54,7 +54,7 @@ public class DatabaseTest {
                 .storageIndexCacheSize(MB).storageDataCacheSize(MB);
         assertThrowsWithMessage(
                 () -> factory.databaseManager(options),
-                INCOMPATIBLE_ENCODING.message("test", 0, Encoding.ENCODING_VERSION)
+                INCOMPATIBLE_ENCODING.message("test", dataDir.resolve("test").toAbsolutePath(), 0, Encoding.ENCODING_VERSION)
         );
     }
 }
