@@ -45,7 +45,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -125,15 +124,6 @@ public abstract class ProcedureVertex<
         return transitiveOuts;
     }
 
-    public Set<Identifier.Variable> scopesModified() {
-        if (scopesModified == null) scopesModified = computeScopesModified();
-        return scopesModified;
-    }
-
-    Set<Identifier.Variable> computeScopesModified() {
-        return set();
-    }
-
     void setOrder(int order) {
         this.order = order;
     }
@@ -174,12 +164,6 @@ public abstract class ProcedureVertex<
                 inRolePlayers = iterate(ins()).filter(ProcedureEdge::isRolePlayer).toSet();
             }
             return inRolePlayers;
-        }
-
-        @Override
-        Set<Identifier.Variable> computeScopesModified() {
-            if (id().isScoped()) return set(id().asScoped().scope());
-            else return iterate(ins()).filter(ProcedureEdge::isRolePlayer).map(e -> e.asRolePlayer().scope()).toSet();
         }
 
         @Override

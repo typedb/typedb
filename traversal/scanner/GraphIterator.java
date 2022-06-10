@@ -440,14 +440,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 edgeSources = new HashMap<>();
             }
 
-            private boolean containsSource(ProcedureVertex<?, ?> vertex) {
-                return vertexSources.containsKey(vertex);
-            }
-
-            private boolean containsSource(ProcedureEdge<?, ?> edge) {
-                return edgeSources.containsKey(edge);
-            }
-
             public void record(ProcedureEdge<?, ?> source, ThingVertex role) {
                 assert source.isRolePlayer() && role.type().isRoleType();
                 edgeSources.put(source, role);

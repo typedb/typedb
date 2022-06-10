@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.traversal.predicate;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
-import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.Traversal;
 
 import java.time.LocalDateTime;

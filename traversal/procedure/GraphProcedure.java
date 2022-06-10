@@ -175,7 +175,7 @@ public class GraphProcedure implements PermutationProcedure {
 
     public static class Builder {
 
-        Map<Identifier, ProcedureVertex<?, ?>> vertices;
+        private final Map<Identifier, ProcedureVertex<?, ?>> vertices;
 
         public Builder() {
             this.vertices = new HashMap<>();

@@ -172,10 +172,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             return isInitialisedVariables;
         }
 
-        public boolean isInitialisedConstraints() {
-            return isInitialisedConstraints;
-        }
-
         void opposite(Directional<VERTEX_DIR_TO, VERTEX_DIR_FROM> opposite) {
             this.opposite = opposite;
         }
