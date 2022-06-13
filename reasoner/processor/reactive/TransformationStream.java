@@ -21,44 +21,25 @@ package com.vaticle.typedb.core.reasoner.processor.reactive;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator.Transformer;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {
-
-    private final Transformer<INPUT, OUTPUT> transformer;
+public abstract class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, OUTPUT> {
 
     protected TransformationStream(AbstractProcessor<?, ?, ?, ?> processor,
-                                   Transformer<INPUT, OUTPUT> transformer,
                                    SubscriberRegistry<OUTPUT> subscriberRegistry,
                                    PublisherRegistry<INPUT> publisherRegistry) {
         super(processor, subscriberRegistry, publisherRegistry);
-        this.transformer = transformer;
-        registerNewPublishers(transformer.initialNewPublishers());
     }
 
-    public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> single(
-            AbstractProcessor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
-        return new TransformationStream<>(processor, transformer, new SubscriberRegistry.Single<>(),
-                                          new PublisherRegistry.Single<>());
-    }
-
-    public static <INPUT, OUTPUT> TransformationStream<INPUT, OUTPUT> fanIn(
-            AbstractProcessor<?, ?, ?, ?> processor, Transformer<INPUT, OUTPUT> transformer) {
-        return new TransformationStream<>(processor, transformer, new SubscriberRegistry.Single<>(),
-                                          new PublisherRegistry.Multi<>());
-    }
-
-    private Transformer<INPUT, OUTPUT> operator() {
-        return transformer;
-    }
+    protected abstract Either<Publisher<INPUT>, Set<OUTPUT>> accept(Publisher<INPUT> publisher, INPUT packet);
 
     @Override
     public void pull(Subscriber<OUTPUT> subscriber) {
@@ -72,7 +53,7 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
         subscriberDelegate().traceReceive(publisher, input);
         publisherRegistry().recordReceive(publisher);
 
-        Either<Publisher<INPUT>, Set<OUTPUT>> outcome = operator().accept(publisher, input);
+        Either<Publisher<INPUT>, Set<OUTPUT>> outcome = accept(publisher, input);
         Set<OUTPUT> outputs;
         if (outcome.isFirst()) {
             outcome.first().registerSubscriber(this);
@@ -93,10 +74,6 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
                         iterate(outputs).forEachRemaining(output -> publisherDelegate().subscriberReceive(subscriber, output));
                     });
         }
-    }
-
-    private void registerNewPublishers(Set<Publisher<INPUT>> newPublishers) {
-        newPublishers.forEach(newPublisher -> newPublisher.registerSubscriber(this));
     }
 
     @Override
@@ -121,7 +98,56 @@ public class TransformationStream<INPUT, OUTPUT> extends AbstractStream<INPUT, O
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + ":" + operator().getClass().getSimpleName();
+        return getClass().getSimpleName();
     }
 
+    public static class MapStream<INPUT, OUTPUT> extends TransformationStream<INPUT, OUTPUT> {
+
+        private final Function<INPUT, OUTPUT> mappingFunc;
+
+        public MapStream(AbstractProcessor<?, ?, ?, ?> processor, Function<INPUT, OUTPUT> mappingFunc) {
+            super(processor, new SubscriberRegistry.Single<>(), new PublisherRegistry.Single<>());
+            this.mappingFunc = mappingFunc;
+        }
+
+        @Override
+        public Either<Publisher<INPUT>, Set<OUTPUT>> accept(Publisher<INPUT> publisher, INPUT packet) {
+            return Either.second(set(mappingFunc.apply(packet)));
+        }
+
+    }
+
+    public static class FlatMapStream<INPUT, OUTPUT> extends TransformationStream<INPUT, OUTPUT> {
+
+        private final Function<INPUT, FunctionalIterator<OUTPUT>> mappingFunc;
+
+        public FlatMapStream(AbstractProcessor<?, ?, ?, ?> processor, Function<INPUT, FunctionalIterator<OUTPUT>> mappingFunc) {
+            super(processor, new SubscriberRegistry.Single<>(), new PublisherRegistry.Single<>());
+            this.mappingFunc = mappingFunc;
+        }
+
+        @Override
+        public Either<Publisher<INPUT>, Set<OUTPUT>> accept(Publisher<INPUT> publisher, INPUT packet) {
+            // This can actually create more receive() calls to downstream than the number of pulls it receives. Protect
+            // against by manually adding .buffer() after calls to flatMap
+            return Either.second(mappingFunc.apply(packet).toSet());
+        }
+
+    }
+
+    public static class DistinctStream<PACKET> extends TransformationStream<PACKET, PACKET> {
+
+        private final Set<PACKET> deduplicationSet;
+
+        public DistinctStream(AbstractProcessor<?, ?, ?, ?> processor) {
+            super(processor, new SubscriberRegistry.Single<>(), new PublisherRegistry.Single<>());
+            this.deduplicationSet = new HashSet<>();
+        }
+
+        @Override
+        public Either<Publisher<PACKET>, Set<PACKET>> accept(Publisher<PACKET> publisher, PACKET packet) {
+            if (deduplicationSet.add(packet)) return Either.second(set(packet));
+            else return Either.second(set());
+        }
+    }
 }

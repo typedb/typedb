@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
 
 import java.util.List;
 import java.util.Set;
@@ -70,7 +69,7 @@ public class NestedConjunctionController extends ConjunctionController<
 
         @Override
         public void setUp() {
-            setHubReactive(TransformationStream.fanIn(this, new CompoundOperator(this, plan, bounds)).buffer());
+            setHubReactive(new CompoundStream(this, plan, bounds).buffer());
         }
     }
 

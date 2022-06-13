@@ -27,12 +27,12 @@ import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
-import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Source;
-import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import java.util.function.Supplier;
+
+import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanOut;
 
 public class MaterialisationController extends AbstractController<
         Materialisable, Void, Either<ConceptMap, Materialisation>, AbstractRequest<?, ?, Void, ?>,
@@ -88,11 +88,11 @@ public class MaterialisationController extends AbstractController<
 
         @Override
         public void setUp() {
-            setHubReactive(PoolingStream.fanOut(this));
-            Source.create(this, new Operator.Supplier<>(
-                    () -> Materialiser.materialise(materialisable, traversalEng, conceptMgr)
-                            .map(Iterators::single)
-                            .orElse(Iterators.empty()))
+            setHubReactive(fanOut(this));
+            new Source<>(this,
+                         () -> Materialiser.materialise(materialisable, traversalEng, conceptMgr)
+                                 .map(Iterators::single)
+                                 .orElse(Iterators.empty())
             ).map(Either::<ConceptMap, Materialisation>second).registerSubscriber(outputRouter());
         }
     }

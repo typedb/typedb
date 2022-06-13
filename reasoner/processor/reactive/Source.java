@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.processor.reactive;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
-import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherDelegate;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
 
@@ -28,36 +27,43 @@ import java.util.function.Function;
 
 public class Source<PACKET> extends AbstractReactive implements Reactive.Publisher<PACKET> {
 
-    private final Operator.Source<PACKET> sourceOperator;
     private final SubscriberRegistry.Single<PACKET> subscriberRegistry;
     private final PublisherDelegate<PACKET> publisherDelegate;
+    private final java.util.function.Supplier<FunctionalIterator<PACKET>> traversalSuppplier;
+    private FunctionalIterator<PACKET> iterator;
 
-    private Source(AbstractProcessor<?, ?, ?, ?> processor, Operator.Source<PACKET> sourceOperator) {
+    public Source(AbstractProcessor<?, ?, ?, ?> processor,
+                   java.util.function.Supplier<FunctionalIterator<PACKET>> traversalSuppplier) {
         super(processor);
-        this.sourceOperator = sourceOperator;
+        this.traversalSuppplier = traversalSuppplier;
         this.subscriberRegistry = new SubscriberRegistry.Single<>();
         this.publisherDelegate = new PublisherDelegate<>(this, processor.context());
         processor().monitor().execute(actor -> actor.registerSource(identifier()));
     }
 
-    public static <OUTPUT> Source<OUTPUT> create(AbstractProcessor<?, ?, ?, ?> processor,
-                                                 Operator.Source<OUTPUT> operator) {
-        return new Source<>(processor, operator);
+    public PACKET next() {
+        assert !isExhausted();
+        return iterator().next();
     }
 
-    private Operator.Source<PACKET> operator() {
-        return sourceOperator;
+    private boolean isExhausted() {
+        return !iterator().hasNext();
+    }
+
+    private FunctionalIterator<PACKET> iterator() {
+        if (iterator == null) iterator = traversalSuppplier.get();
+        return iterator;
     }
 
     @Override
     public void pull(Subscriber<PACKET> subscriber) {
         publisherDelegate.tracePull(subscriber);
         subscriberRegistry().recordPull(subscriber);
-        if (!operator().isExhausted(subscriber)) {
+        if (!isExhausted()) {
             // TODO: Code duplicated in PoolingStream
             subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
             publisherDelegate.monitorCreateAnswers(1);
-            publisherDelegate.subscriberReceive(subscriber, operator().next(subscriber));
+            publisherDelegate.subscriberReceive(subscriber, next());
         } else {
             processor().monitor().execute(actor -> actor.sourceFinished(identifier()));
         }

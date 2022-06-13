@@ -24,12 +24,12 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
-import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
-import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
 
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+
+import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanOut;
 
 public class ConditionController extends ConjunctionController<
         Either<ConceptMap, Materialisation>,
@@ -70,8 +70,8 @@ public class ConditionController extends ConjunctionController<
 
         @Override
         public void setUp() {
-            setHubReactive(PoolingStream.fanOut(this));
-            TransformationStream.fanIn(this, new CompoundOperator(this, plan, bounds))
+            setHubReactive(fanOut(this));
+            new CompoundStream(this, plan, bounds)
                     .map(Either::<ConceptMap, Materialisation>first)
                     .buffer().registerSubscriber(outputRouter());
         }

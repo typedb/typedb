@@ -24,11 +24,11 @@ import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.common.Traversal;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
-import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Source;
-import com.vaticle.typedb.core.reasoner.processor.reactive.common.Operator;
 
 import java.util.function.Supplier;
+
+import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanOut;
 
 public class RetrievableController extends AbstractController<
         ConceptMap, Void, ConceptMap, AbstractRequest<?, ?, Void, ?>, RetrievableController.RetrievableProcessor,
@@ -84,8 +84,8 @@ public class RetrievableController extends AbstractController<
 
         @Override
         public void setUp() {
-            setHubReactive(PoolingStream.fanOut(this));
-            Source.create(this, new Operator.Supplier<>(traversalSupplier)).registerSubscriber(outputRouter());
+            setHubReactive(fanOut(this));
+            new Source<>(this, traversalSupplier).registerSubscriber(outputRouter());
         }
     }
 }
