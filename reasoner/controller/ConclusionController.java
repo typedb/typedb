@@ -234,7 +234,7 @@ public abstract class ConclusionController<
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), driver(), rule.condition(), filteredBounds));
             Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> conclusionReactive = createStream();
             conditionInput.map(Processor::convertConclusionInput).registerSubscriber(conclusionReactive);
-            conclusionReactive.registerSubscriber(outputRouter());
+            conclusionReactive.registerSubscriber(hubReactive());
         }
 
         protected abstract Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> createStream();

@@ -100,7 +100,7 @@ public class RootConjunctionController
             op = op.distinct();
             setHubReactive(op);
             rootSink = new RootSink<>(this, reasonerConsumer);
-            outputRouter().registerSubscriber(rootSink);
+            hubReactive().registerSubscriber(rootSink);
         }
 
         @Override

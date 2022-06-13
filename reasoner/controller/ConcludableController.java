@@ -205,7 +205,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     InputPort<INPUT> inputPort = createInputPort();
                     mayRequestConnection(createRequest(inputPort.identifier(), conclusion, boundsAndRequirements.first()));
-                    transformInput(inputPort, unifier, boundsAndRequirements.second()).buffer().registerSubscriber(outputRouter());
+                    transformInput(inputPort, unifier, boundsAndRequirements.second()).buffer().registerSubscriber(hubReactive());
                 }));
             });
         }
@@ -242,7 +242,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             @Override
             protected void mayAddTraversal() {
-                new Source<>(this, traversalSuppplier).flatMap(this::filterInferred).registerSubscriber(outputRouter());
+                new Source<>(this, traversalSuppplier).flatMap(this::filterInferred).registerSubscriber(hubReactive());
             }
 
             private FunctionalIterator<ConceptMap> filterInferred(ConceptMap conceptMap) {
@@ -314,7 +314,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             public void setUp() {
                 super.setUp();
                 rootSink = new RootSink<>(this, reasonerConsumer);
-                outputRouter().registerSubscriber(rootSink);
+                hubReactive().registerSubscriber(rootSink);
             }
 
             @Override

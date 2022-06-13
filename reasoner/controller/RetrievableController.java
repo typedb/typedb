@@ -85,7 +85,7 @@ public class RetrievableController extends AbstractController<
         @Override
         public void setUp() {
             setHubReactive(fanOut(this));
-            new Source<>(this, traversalSupplier).registerSubscriber(outputRouter());
+            new Source<>(this, traversalSupplier).registerSubscriber(hubReactive());
         }
     }
 }

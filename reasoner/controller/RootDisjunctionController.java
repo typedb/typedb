@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
@@ -86,7 +87,7 @@ public class RootDisjunctionController
         public void setUp() {
             super.setUp();
             rootSink = new RootSink<>(this, reasonerConsumer);
-            outputRouter().registerSubscriber(rootSink);
+            hubReactive().registerSubscriber(rootSink);
         }
 
         @Override
@@ -95,9 +96,9 @@ public class RootDisjunctionController
         }
 
         @Override
-        protected Reactive.Stream<ConceptMap, ConceptMap> getOutputRouter(Reactive.Stream<ConceptMap, ConceptMap> fanIn) {
+        protected Stream<ConceptMap, ConceptMap> getOrCreateHubReactive(Stream<ConceptMap, ConceptMap> fanIn) {
             // Simply here to be overridden by root disjuntion to avoid duplicating setUp
-            Reactive.Stream<ConceptMap, ConceptMap> op = fanIn;
+            Stream<ConceptMap, ConceptMap> op = fanIn;
             if (!explain) op = op.map(conceptMap -> conceptMap.filter(filter));
             op = op.distinct();
             return op;
