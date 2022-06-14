@@ -59,32 +59,32 @@ class SoundnessVerifier {
 
     void verifyQuery(TypeQLMatch inferenceQuery) {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ,
-                                                  new Options.Transaction().infer(true).explain(true))) {
+                new Options.Transaction().infer(true).explain(true))) {
             collectedExplanations.clear();
+            // recursively collects explanations, partially verifies the answer.
             tx.query().match(inferenceQuery).forEachRemaining(ans -> verifyAnswerAndCollectExplanations(ans, tx));
 
             // We can only verify an explanation once all concepts in it's condition have been "mapped"
             // Concepts are mapped when an explanation containing them in the conclusion is verified.
-            // If we ever need to speed this up -
-            //  Construct a graph and retry only those from which a newly verified explanations is reachable.
+            // Too slow? Create a dependency graph, retry only those from which a newly verified explanation is reachable
             Set<Explanation> unverifiedExplanations = collectedExplanations;
-            Set<Explanation> nextUnverifiedExplanations = new HashSet();
-            int previousSize = unverifiedExplanations.size() + 1; // Just needs to be greater than size
-
-            while ( !unverifiedExplanations.isEmpty() && unverifiedExplanations.size() < previousSize ){
-                for(Explanation e: unverifiedExplanations){
-                    if (canExplanationBeVerified(e)){
-                        verifyExplanation(e);
-                    }else{
-                        nextUnverifiedExplanations.add(e);
+            Set<Explanation> dependentUnverifiedExplanations = new HashSet<>();
+            boolean madeProgress = true;
+            while (!unverifiedExplanations.isEmpty() && madeProgress) {
+                madeProgress = false;
+                for (Explanation e : unverifiedExplanations) {
+                    if (canExplanationBeVerified(e)) {
+                        verifyExplanationAndMapConcepts(e);
+                        madeProgress = true;
+                    } else {
+                        dependentUnverifiedExplanations.add(e);
                     }
                 }
-                previousSize = unverifiedExplanations.size();
-                unverifiedExplanations = nextUnverifiedExplanations;
-                nextUnverifiedExplanations = new HashSet<>();
+                unverifiedExplanations = dependentUnverifiedExplanations;
+                dependentUnverifiedExplanations = new HashSet<>();
             }
 
-            if(!unverifiedExplanations.isEmpty()){
+            if (!unverifiedExplanations.isEmpty()) {
                 throw new SoundnessException("SoundnessVerifier could not verify the soundness" +
                         " of all generated explanations");
             }
@@ -94,7 +94,7 @@ class SoundnessVerifier {
 
     private boolean canExplanationBeVerified(Explanation explanation) {
         boolean possible = true;
-        for(Concept c: explanation.conditionAnswer().concepts().values() ){
+        for (Concept c : explanation.conditionAnswer().concepts().values()) {
             possible = possible && (!c.asThing().isInferred() || inferredConceptMapping.containsKey(c));
         }
         return possible;
@@ -146,13 +146,19 @@ class SoundnessVerifier {
 
     // TODO: Duplicate code from ExplanationTest
     private static void verifyExplainableVars(ConceptMap ans) {
-        ans.explainables().relations().keySet().forEach(v -> {assert ans.contains(v);});
-        ans.explainables().attributes().keySet().forEach(v -> {assert ans.contains(v);});
+        ans.explainables().relations().keySet().forEach(v -> {
+            assert ans.contains(v);
+        });
+        ans.explainables().attributes().keySet().forEach(v -> {
+            assert ans.contains(v);
+        });
         ans.explainables().ownerships().keySet().forEach(
-                pair -> {assert ans.contains(pair.first()) && ans.contains(pair.second());});
+                pair -> {
+                    assert ans.contains(pair.first()) && ans.contains(pair.second());
+                });
     }
 
-    private void verifyExplanation(Explanation explanation) {
+    private void verifyExplanationAndMapConcepts(Explanation explanation) {
         ConceptMap recordedWhen = mapInferredConcepts(explanation.conditionAnswer());
         Optional<ConceptMap> recordedThen = materialiser
                 .conditionMaterialisations(explanation.rule(), recordedWhen)
@@ -175,21 +181,21 @@ class SoundnessVerifier {
             });
         } else {
             throw new SoundnessException(String.format("Soundness testing found an answer within an explanation that " +
-                                                               "should not be present for rule \"%s\"" +
-                                                               ".\nAnswer:\n%s\nIncorrectly derived from " +
-                                                               "condition:\n%s",
-                                                       explanation.rule().getLabel(), explanation.conclusionAnswer(),
-                                                       explanation.conditionAnswer()));
+                            "should not be present for rule \"%s\"" +
+                            ".\nAnswer:\n%s\nIncorrectly derived from " +
+                            "condition:\n%s",
+                    explanation.rule().getLabel(), explanation.conclusionAnswer(),
+                    explanation.conditionAnswer()));
         }
     }
 
     private ConceptMap mapInferredConcepts(ConceptMap conditionAnswer) {
         Map<Retrievable, Concept> substituted = new HashMap<>();
         conditionAnswer.concepts().forEach((var, concept) -> {
-            if (inferredConceptMapping.containsKey(concept)){
+            if (inferredConceptMapping.containsKey(concept)) {
                 substituted.put(var, inferredConceptMapping.get(concept));
-            }else{
-                assert ! concept.asThing().isInferred();
+            } else {
+                assert !concept.asThing().isInferred();
                 substituted.put(var, concept);
             }
         });
