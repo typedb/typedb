@@ -93,11 +93,9 @@ class SoundnessVerifier {
     }
 
     private boolean canExplanationBeVerified(Explanation explanation) {
-        boolean possible = true;
-        for (Concept c : explanation.conditionAnswer().concepts().values()) {
-            possible = possible && (!c.asThing().isInferred() || inferredConceptMapping.containsKey(c));
-        }
-        return possible;
+        return iterate(explanation.conditionAnswer().concepts().values())
+                .filter(c -> c.asThing().isInferred() && !inferredConceptMapping.containsKey(c))
+                .first().isEmpty();
     }
 
     private void verifyAnswerAndCollectExplanations(ConceptMap answer, Transaction tx) {
