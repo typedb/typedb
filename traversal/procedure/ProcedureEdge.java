@@ -81,13 +81,11 @@ public abstract class ProcedureEdge<
 
     private final int order;
     private final Encoding.Direction.Edge direction;
-    private final int hash;
 
     private ProcedureEdge(VERTEX_FROM from, VERTEX_TO to, int order, Encoding.Direction.Edge direction, String symbol) {
         super(from, to, symbol);
         this.order = order;
         this.direction = direction;
-        this.hash = Objects.hash(from(), to(), order, direction);
     }
 
     public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
@@ -155,19 +153,6 @@ public abstract class ProcedureEdge<
 
     public Native.Thing.RolePlayer asRolePlayer() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Native.Thing.RolePlayer.class));
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ProcedureEdge<?, ?> that = (ProcedureEdge<?, ?>) o;
-        return from().equals(that.from()) && to().equals(that.to()) && direction == that.direction;
-    }
-
-    @Override
-    public int hashCode() {
-        return hash;
     }
 
     @Override
