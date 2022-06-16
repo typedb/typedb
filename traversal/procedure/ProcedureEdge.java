@@ -362,7 +362,7 @@ public abstract class ProcedureEdge<
                     if (to.props().hasIID()) {
                         return to.iterateAndFilterFromIID(graphMgr, params).filter(vertex -> isaTypes.contains(vertex.type()));
                     } else {
-                        FunctionalIterator<TypeVertex> toTypes = iterate(isaTypes).filter(v -> to.props().types().contains(type.properLabel()));
+                        FunctionalIterator<TypeVertex> toTypes = iterate(isaTypes).filter(v -> to.props().types().contains(v.properLabel()));
                         if (!toTypes.hasNext()) return emptySorted();
                         else return to.iterateAndFilterFromTypes(graphMgr, params, toTypes);
                     }

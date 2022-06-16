@@ -77,6 +77,53 @@ public class TraversalTest {
     }
 
     @Test
+    public void backward_isa_edge_fetches_supertypes() {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery("define person sub entity;");
+            transaction.query().define(query);
+            transaction.commit();
+        }
+        session.close();
+
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person;").asInsert());
+            transaction.commit();
+        }
+        try (CoreTransaction transaction = session.transaction(READ)) {
+            /*
+            match $x isa $type;
+            */
+            /*
+            Edges:
+            0: $type [type] { labels: [entity, person, thing], abstract: false, value: [], regex: null } (start)
+            1: $x [thing] { hasIID: false, types: [person], predicates: [] } (end)
+                ($type <--[ISA]--* $x) { isTransitive: true }
+            */
+            GraphProcedure.Builder proc = new GraphProcedure.Builder();
+
+            ProcedureVertex.Type type = proc.namedType(0, "type");
+            type.props().labels(set(Label.of("person"), Label.of("entity"), Label.of("thing")));
+
+            ProcedureVertex.Thing x = proc.namedThing(1, "x");
+            x.props().types(set(Label.of("person")));
+
+            proc.backwardIsa(type, x, true);
+
+            Traversal.Parameters params = new Traversal.Parameters();
+
+            Set<Identifier.Variable.Retrievable> filter = set(
+                    x.id().asVariable().asRetrievable(),
+                    type.id().asVariable().asRetrievable()
+            );
+
+            GraphProcedure procedure = proc.build();
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+            assertEquals(3, vertices.count());
+        }
+    }
+
+    @Test
     public void mixed_variable_and_edge_role_players() {
         try (CoreTransaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery(
