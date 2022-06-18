@@ -130,26 +130,31 @@ public class LogicManager {
     }
 
     private void validateCyclesThroughNegations(ConceptManager conceptMgr, LogicManager logicMgr) {
+        // Problem: When a derivation of an inferred concept contains its own negation.
+        // Tracking this at runtime is impractical - statically detect & disallow.
+        // Detect: A cycle which passes through atleast one negation.
+        //      Equivalently - a cycle starting from a negated concept in a rule.
         Set<Rule> negationRulesTriggeringRules = logicMgr.rulesWithNegations()
                 .filter(rule -> !rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr).isEmpty())
                 .toSet();
 
         for (Rule negationRule : negationRulesTriggeringRules) {
             Map<Rule, RuleDependency> visitedDependentRules = new HashMap<>();
-            visitedDependentRules.put(negationRule, RuleDependency.of(negationRule, null));
-            List<RuleDependency> frontier = new LinkedList<>(ruleDependencies(negationRule, conceptMgr, logicMgr));
-            RuleDependency dependency;
+            LinkedList<RuleDependency> frontier = new LinkedList<>(negatedRuleDependencies(negationRule, conceptMgr, logicMgr));
             while (!frontier.isEmpty()) {
-                dependency = frontier.remove(0);
+                RuleDependency dependency = frontier.removeFirst();
+                visitedDependentRules.put(dependency.recursiveRule, dependency);
                 if (negationRule.equals(dependency.recursiveRule)) {
                     List<Rule> cycle = findCycle(dependency, visitedDependentRules);
                     String readableCycle = cycle.stream().map(Rule::getLabel).collect(Collectors.joining(" -> \n", "\n", "\n"));
                     throw TypeDBException.of(CONTRADICTORY_RULE_CYCLE, readableCycle);
                 } else {
-                    visitedDependentRules.put(dependency.recursiveRule, dependency);
                     Set<RuleDependency> recursive = ruleDependencies(dependency.recursiveRule, conceptMgr, logicMgr);
-                    recursive.removeAll(visitedDependentRules.values());
-                    frontier.addAll(recursive);
+                    iterate(recursive)
+                        .filter(rule -> !visitedDependentRules.containsKey(rule.recursiveRule))
+                        .forEachRemaining( ruleDependency -> {
+                            frontier.add(ruleDependency);
+                        });
                 }
             }
         }
@@ -158,6 +163,12 @@ public class LogicManager {
     private Set<RuleDependency> ruleDependencies(Rule rule, ConceptManager conceptMgr, LogicManager logicMgr) {
         return link(iterate(rule.condition().concludablesTriggeringRules(conceptMgr, logicMgr)),
                     iterate(rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr)))
+                .flatMap(concludable -> concludable.getApplicableRules(conceptMgr, logicMgr))
+                .map(recursiveRule -> RuleDependency.of(recursiveRule, rule)).toSet();
+    }
+
+    private Set<RuleDependency> negatedRuleDependencies(Rule rule, ConceptManager conceptMgr, LogicManager logicMgr) {
+        return iterate(rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr))
                 .flatMap(concludable -> concludable.getApplicableRules(conceptMgr, logicMgr))
                 .map(recursiveRule -> RuleDependency.of(recursiveRule, rule)).toSet();
     }
