@@ -151,10 +151,10 @@ public class LogicManager {
                 } else {
                     Set<RuleDependency> recursive = ruleDependencies(dependency.recursiveRule, conceptMgr, logicMgr);
                     iterate(recursive)
-                        .filter(rule -> !visitedDependentRules.containsKey(rule.recursiveRule))
-                        .forEachRemaining( ruleDependency -> {
-                            frontier.add(ruleDependency);
-                        });
+                            .filter(rule -> !visitedDependentRules.containsKey(rule.recursiveRule))
+                            .forEachRemaining(ruleDependency -> {
+                                frontier.add(ruleDependency);
+                            });
                 }
             }
         }
@@ -162,7 +162,7 @@ public class LogicManager {
 
     private Set<RuleDependency> ruleDependencies(Rule rule, ConceptManager conceptMgr, LogicManager logicMgr) {
         return link(iterate(rule.condition().concludablesTriggeringRules(conceptMgr, logicMgr)),
-                    iterate(rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr)))
+                iterate(rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr)))
                 .flatMap(concludable -> concludable.getApplicableRules(conceptMgr, logicMgr))
                 .map(recursiveRule -> RuleDependency.of(recursiveRule, rule)).toSet();
     }
