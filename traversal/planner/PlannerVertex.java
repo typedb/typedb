@@ -65,8 +65,8 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     abstract void computeCost(GraphManager graphMgr);
 
-    public double getCost() {
-        return cost;
+    public double cost() {
+        return max(cost, INIT_ZERO);
     }
 
     public boolean isStartingVertex() {
@@ -162,7 +162,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     void recordCost() {
-        recordedCost = cost;
+        recordedCost = cost();
     }
 
     boolean validResults() {
@@ -239,7 +239,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
                     cost = graphMgr.data().stats().thingVertexSum(props().types());
                 }
             }
-            cost = max(cost, INIT_ZERO);
         }
 
         @Override
@@ -280,7 +279,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
             } else {
                 cost = graphMgr.schema().stats().typeCount();
             }
-            cost = max(cost, INIT_ZERO);
         }
 
         @Override

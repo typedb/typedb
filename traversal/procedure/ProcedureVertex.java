@@ -151,7 +151,6 @@ public abstract class ProcedureVertex<
 
         @Override
         public Forwardable<? extends ThingVertex, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters) {
-//            assert isStartingVertex();
             if (props().hasIID()) return iterateAndFilterFromIID(graphMgr, parameters);
             else return iterateAndFilterFromTypes(graphMgr, parameters);
         }

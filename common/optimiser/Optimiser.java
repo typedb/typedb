@@ -59,14 +59,14 @@ public class Optimiser {
     public synchronized Status optimise(long timeLimitMillis) {
         if (hasSolver && constraintsChanged()) {
             constraints.forEach(constraint -> constraint.initialise(solver));
-            status = Status.FEASIBLE;
+            status = Status.NOT_SOLVED;
         }
         if (isOptimal()) return status;
         else if (!hasSolver) initialiseSolver();
         solver.setTimeLimit(timeLimitMillis);
         status = Status.of(solver.solve(parameters));
-        variables.forEach(OptimiserVariable::recordValue);
-        clearInitialisation();
+        if (status != Status.NOT_SOLVED && status != Status.ERROR)
+            variables.forEach(OptimiserVariable::recordValue);
         if (isOptimal()) releaseSolver();
         return status;
     }

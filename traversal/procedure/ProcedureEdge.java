@@ -80,7 +80,7 @@ public abstract class ProcedureEdge<
         > extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
 
     private final Encoding.Direction.Edge direction;
-    protected int hash;
+    private final int hash;
 
     private ProcedureEdge(VERTEX_FROM from, VERTEX_TO to, Encoding.Direction.Edge direction, String symbol) {
         super(from, to, symbol);
@@ -217,6 +217,15 @@ public abstract class ProcedureEdge<
                   Encoding.Direction.Edge direction, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, direction, predicate.toString());
             this.predicate = predicate;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (super.equals(o)) {
+                ProcedureEdge.Predicate that = (ProcedureEdge.Predicate) o;
+                return predicate.equals(that.predicate);
+            }
+            return false;
         }
 
         @Override

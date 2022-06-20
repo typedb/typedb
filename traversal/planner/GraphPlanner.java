@@ -231,7 +231,6 @@ public class GraphPlanner implements Planner {
         return optimiser;
     }
 
-    // FIXME rename (tryOptimise() is taken)
     void mayOptimise(GraphManager graphMgr, boolean singleUse) {
         if (procedure == null) {
             try {
@@ -272,10 +271,7 @@ public class GraphPlanner implements Planner {
         if (isError()) throwPlanningError();
         else assert isPlanned();
 
-        // TODO: occasionally optimiser produces worse results on repeat calls,
-        // we should be able to catch that and reuse the old procedure
         createProcedure();
-        LOG.debug(procedure.toString());
         end = Instant.now();
 
         isUpToDate = true;
@@ -314,14 +310,14 @@ public class GraphPlanner implements Planner {
             if (costChangeSignificant(e)) setOutOfDate();
         });
 
-        double vertexCost = vertices.values().stream().mapToDouble(PlannerVertex::getCost).sum();
-        double edgeCost = edges.stream().mapToDouble(PlannerEdge::getCost).sum();
+        double vertexCost = vertices.values().stream().mapToDouble(PlannerVertex::cost).sum();
+        double edgeCost = edges.stream().mapToDouble(PlannerEdge::cost).sum();
         totalCost = vertexCost + edgeCost;
         if (totalCostChangeSignificant()) setOutOfDate();
     }
 
     boolean costChangeSignificant(PlannerVertex<?> vertex) {
-        return costChangeSignificant(vertex.recordedCost, vertex.cost);
+        return costChangeSignificant(vertex.recordedCost, vertex.cost());
     }
 
     boolean costChangeSignificant(PlannerEdge<?, ?> edge) {
@@ -329,12 +325,13 @@ public class GraphPlanner implements Planner {
     }
 
     boolean costChangeSignificant(PlannerEdge.Directional<?, ?> edge) {
-        return costChangeSignificant(edge.recordedCost, edge.cost);
+        return costChangeSignificant(edge.recordedCost, edge.cost());
     }
 
     boolean costChangeSignificant(double costPrevious, double costNext) {
         assert recordedTotalCost > 0;
         assert costPrevious > 0;
+        assert costNext > 0;
 
         return (costNext / costPrevious >= OBJECTIVE_VARIABLE_COST_MAX_CHANGE ||
                 costNext / costPrevious <= 1.0 / OBJECTIVE_VARIABLE_COST_MAX_CHANGE) &&
@@ -392,9 +389,11 @@ public class GraphPlanner implements Planner {
     private void setInitialValues() {
         resetInitialValues();
 
-        PlannerVertex<?> start = vertices.values().stream().min(comparing(PlannerVertex::getCost)).get();
-        PriorityQueue<PlannerVertex<?>> open = new PriorityQueue<>(comparing(PlannerVertex::getCost));
+        PlannerVertex<?> start = vertices.values().stream().min(comparing(PlannerVertex::cost)).get();
         Set<PlannerVertex<?>> closedSet = new HashSet<>();
+        PriorityQueue<PlannerVertex<?>> open = new PriorityQueue<>(comparing(
+                v -> v.ins().stream().filter(e -> closedSet.contains(e.from())).mapToDouble(PlannerEdge.Directional::cost).min().orElse(v.cost())
+        ));
         open.add(start);
         int vertexOrder = 0;
         while (!open.isEmpty()) {
@@ -406,6 +405,7 @@ public class GraphPlanner implements Planner {
                     .forEach(open::add);
         }
 
+        assert closedSet.size() == vertices.size();
         assert vertexOrder == vertices.size();
 
         vertices.values().forEach(PlannerVertex::inferStartingVertexFromOrder);

@@ -102,8 +102,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.initialiseConstraints();
     }
 
-    double getCost() {
-        return forward.getCost() + backward.getCost();
+    double cost() {
+        return forward.cost() + backward.cost();
     }
 
     void computeCost(GraphManager graphMgr) {
@@ -122,8 +122,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
     }
 
     void resetInitialValues() {
-        forward.resetInitialValue();
-        backward.resetInitialValue();
+        forward.resetInitialValues();
+        backward.resetInitialValues();
     }
 
     public void initialiseMinimal() {
@@ -220,12 +220,12 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             conIsMinimal = planner.optimiser().constraint(0, numAdjacent, conPrefix + "is_minimal");
             conIsMinimal.setCoefficient(varIsMinimal, numAdjacent + 1);
             conIsMinimal.setCoefficient(varIsSelected, -1);
-            setMinimalEdgeConstraint();
+            initialiseMinimalEdgeConstraint();
 
             didInitialiseConstraints = true;
         }
 
-        private void setMinimalEdgeConstraint() {  // FIXME rename
+        private void initialiseMinimalEdgeConstraint() {
             for (PlannerEdge.Directional<?, ?> adjacent: to.ins()) {
                 if (!this.equals(adjacent))
                     if (cheaperThan(adjacent))
@@ -235,12 +235,12 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             }
         }
 
-        private boolean cheaperThan(PlannerEdge.Directional<?, ?> other) {
-            assert !this.equals(other);
-            if (recordedCost < other.recordedCost) {
+        private boolean cheaperThan(PlannerEdge.Directional<?, ?> that) {
+            assert !this.equals(that);
+            if (recordedCost < that.recordedCost) {
                 return true;
-            } else if (recordedCost == other.recordedCost) {
-                return tieBreaker < other.tieBreaker;
+            } else if (recordedCost == that.recordedCost) {
+                return tieBreaker < that.tieBreaker;
             } else {
                 return false;
             }
@@ -255,22 +255,21 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         abstract void computeCost(GraphManager graphMgr);
 
-        public double getCost() {
-            return cost;
+        public double cost() {
+            return max(cost, INIT_ZERO);
         }
 
         private void recordCost() {
-            recordedCost = max(cost, INIT_ZERO);
+            recordedCost = cost();
         }
 
         protected void updateOptimiserCoefficients() {
-            assert !Double.isNaN(recordedCost);
             assert recordedCost >= INIT_ZERO;
             planner.optimiser().setObjectiveCoefficient(varIsMinimal, log(1 + recordedCost));
-            setMinimalEdgeConstraint();
+            initialiseMinimalEdgeConstraint();
         }
 
-        private void resetInitialValue() {
+        private void resetInitialValues() {
             varIsSelected.clearInitial();
             varIsMinimal.clearInitial();
             hasInitialValues = false;
@@ -280,7 +279,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             varIsSelected.setInitial(selected);
         }
 
-        public void setInitialMinimal() {  // FIXME rename
+        public void setInitialMinimal() {
             assert varIsSelected.hasInitial();
             varIsMinimal.setInitial(
                 varIsSelected.initial() &&
@@ -344,7 +343,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             @Override
             void computeCost(GraphManager graphMgr) {
-                cost = INIT_ZERO;
+                cost = 0;
             }
 
             @Override
@@ -1065,8 +1064,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             }
                             assert !ownerTypes.isEmpty();
                             cost /= ownerTypes.size();
-                            assert !Double.isNaN(cost);
                         }
+                        assert !Double.isNaN(cost);
                     }
                 }
 
@@ -1093,8 +1092,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                             }
                             assert !attTypes.isEmpty();
                             cost /= attTypes.size();
-                            assert !Double.isNaN(cost);
                         }
+                        assert !Double.isNaN(cost);
                     }
                 }
             }
@@ -1137,7 +1136,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     @Override
                     void computeCost(GraphManager graphMgr) {
                         assert !to.props().hasIID();
-                        cost = INIT_ZERO;
+                        cost = 0;
                         double div = graphMgr.data().stats().thingVertexSum(from.props().types());
                         if (div > 0) cost = graphMgr.data().stats().thingVertexSum(to.props().types()) / div;
                         assert !Double.isNaN(cost);
