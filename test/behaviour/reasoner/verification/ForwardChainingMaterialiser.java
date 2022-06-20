@@ -43,6 +43,8 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -57,11 +59,13 @@ public class ForwardChainingMaterialiser {
     private final Map<com.vaticle.typedb.core.logic.Rule, Rule> rules;
     private final CoreTransaction tx;
     private final Materialisations materialisations;
+    private List<Set<Rule>> strata;
 
     private ForwardChainingMaterialiser(CoreSession session) {
         this.rules = new HashMap<>();
         this.tx = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(false));
         this.materialisations = new Materialisations();
+        this.strata = null;
     }
 
     public static ForwardChainingMaterialiser materialise(CoreSession session) {
@@ -72,11 +76,13 @@ public class ForwardChainingMaterialiser {
 
     private void materialise() {
         tx.logic().rules().forEachRemaining(rule -> this.rules.put(rule, new Rule(rule)));
-        boolean reiterateRules = true;
-        while (reiterateRules) {
-            reiterateRules = false;
-            for (Rule rule : this.rules.values()) {
-                reiterateRules = reiterateRules || rule.materialise();
+        for (Set<Rule> stratum : getStratifiedRules()) {
+            boolean reiterateRules = true;
+            while (reiterateRules) {
+                reiterateRules = false;
+                for (Rule rule : stratum) {
+                    reiterateRules = reiterateRules || rule.materialise();
+                }
             }
         }
     }
@@ -110,10 +116,58 @@ public class ForwardChainingMaterialiser {
         return materialisations.forCondition(rules.get(rule), conditionAnswer);
     }
 
+    private List<Set<Rule>> getStratifiedRules() {
+        if (strata == null) {
+            strata = new LinkedList<>();
+            Set<Rule> inLesserStrata = new HashSet<>(); // Tracks nodes added to a stratum.
+            for (Rule rule : rules.values()) {
+                if (!inLesserStrata.contains(rule)) {
+                    Set<Rule> inLesserOrEqualStrata = new HashSet<>();
+                    strataDFS(rule, inLesserStrata, inLesserOrEqualStrata);
+                    updateStrata(inLesserStrata, inLesserOrEqualStrata);
+                }
+            }
+        }
+        return strata;
+    }
+
+    private void strataDFS(Rule at, Set<Rule> inLesserStratum, Set<Rule> inLesserOrEqualStratum) {
+        // If a rule is reachable through a path with a negated edge, it is in a lesser stratum.
+        // If a rule is reachable only through paths with only positive edges, it is in a lesser or equal stratum.
+        if (inLesserStratum.contains(at) || inLesserOrEqualStratum.contains(at)) {
+            return;
+        } else {
+            inLesserOrEqualStratum.add(at);
+            for (Rule dependency : at.negatedDependencies()) {
+                if (!inLesserStratum.contains(dependency)) {
+                    Set<Rule> inLesserOrEqualStratumOfDependency = new HashSet<>();
+                    strataDFS(dependency, inLesserStratum, inLesserOrEqualStratumOfDependency);
+                    updateStrata(inLesserStratum, inLesserOrEqualStratumOfDependency);
+                }
+            }
+
+            for (Rule dependency : at.unnegatedDependencies()) {
+                if (!inLesserStratum.contains(dependency)) {
+                    strataDFS(dependency, inLesserStratum, inLesserOrEqualStratum);
+                }
+            }
+        }
+    }
+
+    private void updateStrata(Set<Rule> inLesserStratum, Set<Rule> inLesserOrEqualStratum) {
+        if (!inLesserOrEqualStratum.isEmpty()) {
+            Set<Rule> inThisStratum = iterate(inLesserOrEqualStratum).filter(rule -> !inLesserStratum.contains(rule)).toSet();
+            strata.add(inThisStratum);
+            inLesserStratum.addAll(inThisStratum);
+        }
+    }
+
     private class Rule {
         private final com.vaticle.typedb.core.logic.Rule logicRule;
         private final Map<ConceptMap, Materialisation> conditionAnsMaterialisations;
         private boolean requiresReiteration;
+        private Set<Rule> negatedDependencies;
+        private Set<Rule> unnegatedDependencies;
 
         private Rule(com.vaticle.typedb.core.logic.Rule logicRule) {
             this.logicRule = logicRule;
@@ -123,6 +177,28 @@ public class ForwardChainingMaterialiser {
             Set<Concludable> concludables = Concludable.create(this.logicRule.then());
             assert concludables.size() == 1;
             // Use a concludable for the conclusion for the convenience of its isInferredAnswer method
+            negatedDependencies = null;
+            unnegatedDependencies = null;
+        }
+
+        private Set<Rule> negatedDependencies() {
+            if (negatedDependencies == null) {
+                negatedDependencies = iterate(logicRule.condition().negatedConcludablesTriggeringRules(tx.concepts(), tx.logic()))
+                        .flatMap(concludable -> concludable.getApplicableRules(tx.concepts(), tx.logic()))
+                        .map(r -> rules.get(r))
+                        .toSet();
+            }
+            return negatedDependencies;
+        }
+
+        private Set<Rule> unnegatedDependencies() {
+            if (unnegatedDependencies == null) {
+                unnegatedDependencies = iterate(logicRule.condition().concludablesTriggeringRules(tx.concepts(), tx.logic()))
+                        .flatMap(concludable -> concludable.getApplicableRules(tx.concepts(), tx.logic()))
+                        .map(r -> rules.get(r))
+                        .toSet();
+            }
+            return unnegatedDependencies;
         }
 
         private boolean materialise() {
