@@ -53,7 +53,11 @@ public class SessionService implements AutoCloseable {
         this.accessLock = new StampedLock().asReadWriteLock();
         this.isOpen = new AtomicBoolean(true);
         this.transactionServices = new ConcurrentSet<>();
-        mayStartIdleTimeout();
+        startIdleTimeout();
+    }
+
+    private synchronized void startIdleTimeout() {
+        idleTimeoutTask = scheduled().schedule(this::idleTimeout, options.sessionIdleTimeoutMillis(), MILLISECONDS);
     }
 
     void register(TransactionService transactionSvc) {
@@ -95,28 +99,39 @@ public class SessionService implements AutoCloseable {
     }
 
     private void cancelIdleTimeout() {
-        assert idleTimeoutTask != null;
         idleTimeoutTask.cancel(false);
     }
 
     private synchronized void mayStartIdleTimeout() {
-        if (isOpen() && transactionServices.isEmpty()) {
-            idleTimeoutTask = scheduled().schedule(this::idleTimeout, options.sessionIdleTimeoutMillis(), MILLISECONDS);
+        if (isOpen() && transactionServices.isEmpty() && !idleTimeoutActive()) {
+            startIdleTimeout();
         }
     }
 
+    private boolean idleTimeoutActive() {
+        return !idleTimeoutTask.isDone();
+    }
+
     private void idleTimeout() {
-        if (transactionServices.isEmpty()) {
-            close();
-            LOG.warn("Session with ID " + session.uuid() + " timed out due to inactivity");
-        } else resetIdleTimeout();
+        try {
+            accessLock.writeLock().lock();
+            if (transactionServices.isEmpty()) {
+                if (isOpen.compareAndSet(true, false)) {
+                    session.close();
+                    typeDBSvc.closed(this);
+                    LOG.warn("Session with ID " + session.uuid() + " timed out due to inactivity");
+                }
+            }
+        } finally {
+            accessLock.writeLock().unlock();
+        }
     }
 
     @Override
     public void close() {
         try {
             accessLock.writeLock().lock();
-            if (idleTimeoutTask != null) idleTimeoutTask.cancel(false);
+            idleTimeoutTask.cancel(false);
             if (isOpen.compareAndSet(true, false)) {
                 transactionServices.forEach(TransactionService::close);
                 session.close();
