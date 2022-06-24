@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2021 Vaticle
+# Copyright (C) 2022 Vaticle
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -21,7 +21,7 @@ def vaticle_dependencies():
     git_repository(
         name = "vaticle_dependencies",
         remote = "https://github.com/vaticle/dependencies",
-        commit = "34c260ae7858b08dd6247d43c8c373847b113d68", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_dependencies
+        commit = "57617a9978129f5d6b50f69146caaa9e86c3c85e", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_dependencies
     )
 
 def vaticle_typeql_lang_java():
