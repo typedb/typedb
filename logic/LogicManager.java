@@ -130,10 +130,6 @@ public class LogicManager {
     }
 
     private void validateCyclesThroughNegations(ConceptManager conceptMgr, LogicManager logicMgr) {
-        // Problem: When a derivation of an inferred concept contains its own negation.
-        // Tracking this at runtime is impractical - statically detect & disallow.
-        // Detect: A cycle which passes through atleast one negation.
-        //      Equivalently - a cycle starting from a negated concept in a rule.
         Set<Rule> negationRulesTriggeringRules = logicMgr.rulesWithNegations()
                 .filter(rule -> !rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr).isEmpty())
                 .toSet();
@@ -152,9 +148,7 @@ public class LogicManager {
                     Set<RuleDependency> recursive = ruleDependencies(dependency.recursiveRule, conceptMgr, logicMgr);
                     iterate(recursive)
                             .filter(rule -> !visitedDependentRules.containsKey(rule.recursiveRule))
-                            .forEachRemaining(ruleDependency -> {
-                                frontier.add(ruleDependency);
-                            });
+                            .forEachRemaining(frontier::add);
                 }
             }
         }
