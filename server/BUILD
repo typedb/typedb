@@ -147,6 +147,13 @@ java_binary( # TODO: this target should not be needed if :server-deps-windows ca
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin-deps:{pom_version}"],
 )
 
+java_binary( # TODO: this target should not be needed if :server-deps-prod can depend directly on @maven//:org_rocksdb_rocksdbjni (lib)
+    name = "server-bin-deps-prod",
+    main_class = "com.vaticle.typedb.core.server.TypeDBServer",
+    runtime_deps = ["@maven//:org_rocksdb_rocksdbjni"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin-deps-prod:{pom_version}"],
+)
+
 java_deps(
     name = "server-deps-mac",
     target = ":server-bin-deps-mac",
@@ -182,7 +189,7 @@ java_deps(
 
 java_deps(
     name = "server-deps-prod",
-    target = "@maven//:org_rocksdb_rocksdbjni",
+    target = ":server-bin-deps-prod",
     java_deps_root = "server/lib/prod/",
     visibility = ["//:__pkg__"],
     maven_name = True,
