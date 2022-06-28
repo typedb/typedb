@@ -56,10 +56,6 @@ public class SessionService implements AutoCloseable {
         startIdleTimeout();
     }
 
-    private synchronized void startIdleTimeout() {
-        idleTimeoutTask = scheduled().schedule(this::idleTimeout, options.sessionIdleTimeoutMillis(), MILLISECONDS);
-    }
-
     void register(TransactionService transactionSvc) {
         try {
             accessLock.readLock().lock();
@@ -103,12 +99,16 @@ public class SessionService implements AutoCloseable {
     }
 
     private synchronized void mayStartIdleTimeout() {
-        if (isOpen() && transactionServices.isEmpty() && !idleTimeoutActive()) {
+        if (isOpen() && transactionServices.isEmpty() && !isIdleTimeoutActive()) {
             startIdleTimeout();
         }
     }
 
-    private boolean idleTimeoutActive() {
+    private synchronized void startIdleTimeout() {
+        idleTimeoutTask = scheduled().schedule(this::idleTimeout, options.sessionIdleTimeoutMillis(), MILLISECONDS);
+    }
+
+    private boolean isIdleTimeoutActive() {
         return !idleTimeoutTask.isDone();
     }
 
