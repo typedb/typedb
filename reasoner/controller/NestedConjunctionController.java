@@ -52,7 +52,7 @@ public class NestedConjunctionController extends ConjunctionController<
             ConceptMap bounds
     ) {
         return new NestedConjunctionProcessor(
-                processorDriver, driver(), processorContext(), bounds, plan(),
+                processorDriver, driver(), processorContext(), bounds, plan(bounds.concepts().keySet()),
                 () -> NestedConjunctionProcessor.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
         );
     }

@@ -108,9 +108,9 @@ public abstract class ConjunctionController<
 
     abstract Set<Concludable> concludablesTriggeringRules();
 
-    List<Resolvable<?>> plan() {
+    List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
         if (plan == null) {
-            plan = Planner.plan(resolvables, new HashMap<>(), set());
+            plan = Planner.plan(resolvables, new HashMap<>(), boundVariables);
             plan.addAll(negateds);
         }
         return plan;

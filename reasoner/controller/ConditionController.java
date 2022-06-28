@@ -54,7 +54,7 @@ public class ConditionController extends ConjunctionController<
     protected Processor createProcessorFromDriver(Driver<Processor> processorDriver,
                                                           ConceptMap bounds) {
         return new Processor(
-                processorDriver, driver(), processorContext(), bounds, plan(),
+                processorDriver, driver(), processorContext(), bounds, plan(bounds.concepts().keySet()),
                 () -> Processor.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
         );
     }

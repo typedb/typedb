@@ -58,7 +58,7 @@ public class RootConjunctionController
     @Override
     protected Processor createProcessorFromDriver(Driver<Processor> processorDriver, ConceptMap bounds) {
         return new Processor(
-                processorDriver, driver(), processorContext(), bounds, plan(), filter, explain, reasonerConsumer,
+                processorDriver, driver(), processorContext(), bounds, plan(bounds.concepts().keySet()), filter, explain, reasonerConsumer,
                 () -> Processor.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
         );
     }
