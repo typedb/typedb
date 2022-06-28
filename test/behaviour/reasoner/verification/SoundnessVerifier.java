@@ -44,13 +44,13 @@ class SoundnessVerifier {
     private final ForwardChainingMaterialiser materialiser;
     private final TypeDB.Session session;
     private final Map<Concept, Concept> inferredConceptMapping;
-    private final Set<Explanation> verifiedExplanations;
+    private final Set<Explanation> collectedExplanations;
 
     private SoundnessVerifier(ForwardChainingMaterialiser materialiser, TypeDB.Session session) {
         this.materialiser = materialiser;
         this.session = session;
         this.inferredConceptMapping = new HashMap<>();
-        this.verifiedExplanations = new HashSet<>();
+        this.collectedExplanations = new HashSet<>();
     }
 
     static SoundnessVerifier create(ForwardChainingMaterialiser materialiser, TypeDB.Session session) {
@@ -59,21 +59,54 @@ class SoundnessVerifier {
 
     void verifyQuery(TypeQLMatch inferenceQuery) {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ,
-                                                  new Options.Transaction().infer(true).explain(true))) {
-            tx.query().match(inferenceQuery).forEachRemaining(ans -> verifyAnswer(ans, tx));
+                new Options.Transaction().infer(true).explain(true))) {
+            collectedExplanations.clear();
+            // recursively collects explanations, partially verifies the answer.
+            tx.query().match(inferenceQuery).forEachRemaining(ans -> verifyAnswerAndCollectExplanations(ans, tx));
+
+            // We can only verify an explanation once all concepts in it's condition have been "mapped"
+            // Concepts are mapped when an explanation containing them in the conclusion is verified.
+            // Too slow? Create a dependency graph, retry only those from which a newly verified explanation is reachable
+            Set<Explanation> unverifiedExplanations = collectedExplanations;
+            Set<Explanation> dependentUnverifiedExplanations = new HashSet<>();
+            boolean madeProgress = true;
+            while (!unverifiedExplanations.isEmpty() && madeProgress) {
+                madeProgress = false;
+                for (Explanation e : unverifiedExplanations) {
+                    if (canExplanationBeVerified(e)) {
+                        verifyExplanationAndMapConcepts(e);
+                        madeProgress = true;
+                    } else {
+                        dependentUnverifiedExplanations.add(e);
+                    }
+                }
+                unverifiedExplanations = dependentUnverifiedExplanations;
+                dependentUnverifiedExplanations = new HashSet<>();
+            }
+
+            if (!unverifiedExplanations.isEmpty()) {
+                throw new SoundnessException("SoundnessVerifier could not verify the soundness" +
+                        " of all generated explanations");
+            }
+            collectedExplanations.clear();
         }
     }
 
-    private void verifyAnswer(ConceptMap answer, Transaction tx) {
+    private boolean canExplanationBeVerified(Explanation explanation) {
+        return iterate(explanation.conditionAnswer().concepts().values())
+                .filter(c -> c.asThing().isInferred() && !inferredConceptMapping.containsKey(c))
+                .first().isEmpty();
+    }
+
+    private void verifyAnswerAndCollectExplanations(ConceptMap answer, Transaction tx) {
         verifyExplainableVars(answer);
         answer.explainables().iterator().forEachRemaining(explainable -> {
             tx.query().explain(explainable.id()).forEachRemaining(explanation -> {
                 // This check is valid given that there is no mechanism for recursion termination given by the UX of
                 // explanations, so we do it ourselves
-                if (verifiedExplanations.contains(explanation)) return;
-                else verifiedExplanations.add(explanation);
-                verifyAnswer(explanation.conditionAnswer(), tx);
-                verifyExplanation(explanation);
+                if (collectedExplanations.contains(explanation)) return;
+                else collectedExplanations.add(explanation);
+                verifyAnswerAndCollectExplanations(explanation.conditionAnswer(), tx);
                 verifyVariableMapping(answer, explainable, explanation);
             });
         });
@@ -111,13 +144,19 @@ class SoundnessVerifier {
 
     // TODO: Duplicate code from ExplanationTest
     private static void verifyExplainableVars(ConceptMap ans) {
-        ans.explainables().relations().keySet().forEach(v -> {assert ans.contains(v);});
-        ans.explainables().attributes().keySet().forEach(v -> {assert ans.contains(v);});
+        ans.explainables().relations().keySet().forEach(v -> {
+            assert ans.contains(v);
+        });
+        ans.explainables().attributes().keySet().forEach(v -> {
+            assert ans.contains(v);
+        });
         ans.explainables().ownerships().keySet().forEach(
-                pair -> {assert ans.contains(pair.first()) && ans.contains(pair.second());});
+                pair -> {
+                    assert ans.contains(pair.first()) && ans.contains(pair.second());
+                });
     }
 
-    private void verifyExplanation(Explanation explanation) {
+    private void verifyExplanationAndMapConcepts(Explanation explanation) {
         ConceptMap recordedWhen = mapInferredConcepts(explanation.conditionAnswer());
         Optional<ConceptMap> recordedThen = materialiser
                 .conditionMaterialisations(explanation.rule(), recordedWhen)
@@ -140,18 +179,23 @@ class SoundnessVerifier {
             });
         } else {
             throw new SoundnessException(String.format("Soundness testing found an answer within an explanation that " +
-                                                               "should not be present for rule \"%s\"" +
-                                                               ".\nAnswer:\n%s\nIncorrectly derived from " +
-                                                               "condition:\n%s",
-                                                       explanation.rule().getLabel(), explanation.conclusionAnswer(),
-                                                       explanation.conditionAnswer()));
+                            "should not be present for rule \"%s\"" +
+                            ".\nAnswer:\n%s\nIncorrectly derived from " +
+                            "condition:\n%s",
+                    explanation.rule().getLabel(), explanation.conclusionAnswer(),
+                    explanation.conditionAnswer()));
         }
     }
 
     private ConceptMap mapInferredConcepts(ConceptMap conditionAnswer) {
         Map<Retrievable, Concept> substituted = new HashMap<>();
         conditionAnswer.concepts().forEach((var, concept) -> {
-            substituted.put(var, inferredConceptMapping.getOrDefault(concept, concept));
+            if (inferredConceptMapping.containsKey(concept)) {
+                substituted.put(var, inferredConceptMapping.get(concept));
+            } else {
+                assert !concept.asThing().isInferred();
+                substituted.put(var, concept);
+            }
         });
         return new ConceptMap(substituted);
     }
