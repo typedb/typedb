@@ -42,12 +42,13 @@ public class OptimiserConstraint {
     }
 
     public void setCoefficient(OptimiserVariable<?> variable, double coeff) {
-        if (isInitialised)
+        if (isInitialised) {
             if (coefficients.containsKey(variable)) {
                 isInitialised = coefficients.get(variable) == coeff;
             } else {
                 isInitialised = false;
             }
+        }
         coefficients.put(variable, coeff);
     }
 

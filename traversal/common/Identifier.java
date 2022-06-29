@@ -115,7 +115,7 @@ public abstract class Identifier {
             else if (o == null || getClass() != o.getClass()) return false;
 
             Scoped that = (Scoped) o;
-            return this.relation.equals(that.relation) && (Objects.equals(this.roleType, that.roleType))
+            return this.relation.equals(that.relation) && Objects.equals(this.roleType, that.roleType)
                     && this.player.equals(that.player) && this.repetition == that.repetition;
         }
 

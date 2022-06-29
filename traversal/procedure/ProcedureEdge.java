@@ -85,7 +85,7 @@ public abstract class ProcedureEdge<
     private ProcedureEdge(VERTEX_FROM from, VERTEX_TO to, Encoding.Direction.Edge direction, String symbol) {
         super(from, to, symbol);
         this.direction = direction;
-        this.hash = Objects.hash(from(), to(), direction, symbol);
+        this.hash = Objects.hash(from(), to(), direction);
     }
 
     public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
@@ -213,8 +213,8 @@ public abstract class ProcedureEdge<
 
         private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
 
-        Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
-                  Encoding.Direction.Edge direction, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
+        Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, Encoding.Direction.Edge direction,
+                  com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, direction, predicate.toString());
             this.predicate = predicate;
         }
@@ -1133,11 +1133,7 @@ public abstract class ProcedureEdge<
 
                 @Override
                 public boolean equals(Object o) {
-                    if (super.equals(o)) {
-                        ProcedureEdge.Native.Thing.RolePlayer that = (ProcedureEdge.Native.Thing.RolePlayer) o;
-                        return roleTypes.equals(that.roleTypes);
-                    }
-                    return false;
+                    return super.equals(o) && ((ProcedureEdge.Native.Thing.RolePlayer) o).roleTypes.equals(roleTypes);
                 }
 
                 @Override

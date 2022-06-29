@@ -149,9 +149,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         int numIns = ins().size();
         OptimiserConstraint conIsStartingVertex = planner.optimiser().constraint(1, numIns, conPrefix + "is_starting_vertex");
         conIsStartingVertex.setCoefficient(varIsStartingVertex, numIns);
-        for (PlannerEdge.Directional<?, ?> edge: ins()) {
-            conIsStartingVertex.setCoefficient(edge.varIsSelected, 1);
-        }
+        for (PlannerEdge.Directional<?, ?> edge : ins()) conIsStartingVertex.setCoefficient(edge.varIsSelected, 1);
 
         didInitialiseConstraints = true;
     }
@@ -173,13 +171,12 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     void resetInitialValues() {
         varIsStartingVertex.clearInitial();
         varOrderNumber.clearInitial();
-        for (OptimiserVariable.Boolean b: varOrderAssignment) b.clearInitial();
+        for (OptimiserVariable.Boolean b : varOrderAssignment) b.clearInitial();
     }
 
     void setOrderInitial(int order) {
         varOrderNumber.setInitial(order);
-        for (int i = 0; i < planner.vertices().size(); i++)
-            varOrderAssignment[i].setInitial(order == i);
+        for (int i = 0; i < planner.vertices().size(); i++) varOrderAssignment[i].setInitial(order == i);
     }
 
     void inferStartingVertexFromOrder() {

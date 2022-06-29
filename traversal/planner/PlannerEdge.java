@@ -226,7 +226,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         private void initialiseMinimalEdgeConstraint() {
-            for (PlannerEdge.Directional<?, ?> adjacent: to.ins()) {
+            for (PlannerEdge.Directional<?, ?> adjacent : to.ins()) {
                 if (!this.equals(adjacent))
                     if (cheaperThan(adjacent))
                         conIsMinimal.setCoefficient(adjacent.varIsSelected, 0);
@@ -282,11 +282,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         public void setInitialMinimal() {
             assert varIsSelected.hasInitial();
             varIsMinimal.setInitial(
-                varIsSelected.initial() &&
-                to().ins().stream().
-                    filter(e -> !this.equals(e)).
-                    filter(e -> e.varIsSelected.initial()).
-                    noneMatch(e -> e.cheaperThan(this))
+                    varIsSelected.initial() &&
+                            to().ins().stream().
+                                    filter(e -> !this.equals(e)).
+                                    filter(e -> e.varIsSelected.initial()).
+                                    noneMatch(e -> e.cheaperThan(this))
             );
             hasInitialValues = true;
         }

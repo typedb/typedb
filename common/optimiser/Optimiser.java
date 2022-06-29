@@ -46,7 +46,7 @@ public class Optimiser {
     private MPSolverParameters parameters;
     private Status status;
     private boolean hasSolver;
-    private double objectiveValueCache;
+    private double objectiveValue;
 
     public Optimiser() {
         variables = new ArrayList<>();
@@ -65,10 +65,14 @@ public class Optimiser {
         else if (!hasSolver) initialiseSolver();
         solver.setTimeLimit(timeLimitMillis);
         status = Status.of(solver.solve(parameters));
-        if (status != Status.NOT_SOLVED && status != Status.ERROR)
-            variables.forEach(OptimiserVariable::recordValue);
+        recordValues();
         if (isOptimal()) releaseSolver();
         return status;
+    }
+
+    private void recordValues() {
+        objectiveValue = solver.objective().value();
+        if (status != Status.NOT_SOLVED && status != Status.ERROR) variables.forEach(OptimiserVariable::recordValue);
     }
 
     public boolean isOptimal() {
@@ -101,7 +105,6 @@ public class Optimiser {
     }
 
     private void releaseSolver() {
-        objectiveValueCache = solver.objective().value();
         constraints.forEach(OptimiserConstraint::release);
         variables.forEach(OptimiserVariable::release);
         parameters.delete();
@@ -114,8 +117,7 @@ public class Optimiser {
     }
 
     public double objectiveValue() {
-        if (hasSolver) return solver.objective().value();
-        else return objectiveValueCache;
+        return objectiveValue;
     }
 
     private void applyInitialisation() {
