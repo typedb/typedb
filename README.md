@@ -235,6 +235,7 @@ TypeDB Clients under development by Vaticle:
 TypeDB Clients under development by the community:
 - C#: https://github.com/typedb-osi/typedb-client-csharp
 - Haskell: https://github.com/typedb-osi/typedb-client-haskell
+- Go: https://github.com/taliesins/typedb-client-go
 
 ### ACID Transactions
 
