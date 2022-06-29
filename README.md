@@ -227,9 +227,14 @@ try {
 #### Other languages
 
 TypeDB Clients developed by the community:
-- Julia (completed): https://github.com/Humans-of-Julia/TypeDBClient.jl
-- Haskell (under development): https://github.com/typedb-osi/typedb-client-haskell
-- Go (under development): https://github.com/taliesins/typedb-client-go
+- Julia: https://github.com/Humans-of-Julia/TypeDBClient.jl
+
+TypeDB Clients under development by Vaticle:
+- Rust: https://github.com/vaticle/typedb-client-rust
+
+TypeDB Clients under development by the community:
+- C#: https://github.com/typedb-osi/typedb-client-csharp
+- Haskell: https://github.com/typedb-osi/typedb-client-haskell
 
 ### ACID Transactions
 
