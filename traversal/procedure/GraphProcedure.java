@@ -66,7 +66,6 @@ public class GraphProcedure implements PermutationProcedure {
         Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
         Set<PlannerEdge.Directional<?, ?>> registeredEdges = new HashSet<>();
         planner.vertices().forEach(vertex -> builder.registerVertex(vertex, registeredVertices, registeredEdges));
-        builder.streamlineVertices();
         return builder.build();
     }
 
@@ -187,23 +186,6 @@ public class GraphProcedure implements PermutationProcedure {
         public GraphProcedure build() {
             return new GraphProcedure(vertices.values().stream().sorted(comparing(ProcedureVertex::order))
                     .toArray(ProcedureVertex[]::new));
-        }
-
-        private void streamlineVertices() {
-            Stack<ProcedureVertex<?, ?>> open = new Stack<>();
-            vertices.values().stream().filter(ProcedureVertex::isStartingVertex).forEach(open::add);
-            Set<ProcedureVertex<?, ?>> closed = new HashSet<>();
-
-            int vertexOrder = 0;
-            while (!open.empty()) {
-                ProcedureVertex<?, ?> vertex = open.pop();
-                vertex.setOrder(vertexOrder++);
-                closed.add(vertex);
-                vertex.outs().stream().map(ProcedureEdge::to).distinct().sorted(comparing(v -> -v.ins().size())).filter(
-                        v -> v.ins().stream().map(ProcedureEdge::from).allMatch(closed::contains)
-                ).forEach(open::add);
-            }
-            assert vertexOrder == vertices.size();
         }
 
         private void registerVertex(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
