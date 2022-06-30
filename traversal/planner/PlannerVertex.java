@@ -46,7 +46,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     private boolean isInitialised;
 
     double cost;
-    double recordedCost;
+    double costLastRecorded;
 
     OptimiserVariable.Boolean varIsStartingVertex;
     OptimiserVariable.Boolean[] varOrderAssignment;
@@ -56,7 +56,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         super(identifier);
         this.planner = planner;
         isInitialised = false;
-        recordedCost = INIT_ZERO;
+        costLastRecorded = INIT_ZERO;
     }
 
     abstract void computeCost(GraphManager graphMgr);
@@ -136,12 +136,12 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     protected void updateOptimiserCoefficients() {
-        assert recordedCost == cost();
+        assert costLastRecorded == cost();
         planner.optimiser().setObjectiveCoefficient(varIsStartingVertex, log(1 + cost()));
     }
 
     void recordCost() {
-        recordedCost = cost();
+        costLastRecorded = cost();
     }
 
     boolean validResults() {

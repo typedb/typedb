@@ -72,7 +72,7 @@ public class GraphPlanner implements Planner {
     private volatile long totalDuration;
     private volatile long snapshot;
 
-    private volatile double recordedTotalCost;
+    private volatile double totalCostLastRecorded;
     private double totalCost;
 
     private GraphPlanner() {
@@ -83,7 +83,7 @@ public class GraphPlanner implements Planner {
         firstOptimisingLock = new StampedLock().asReadWriteLock();
         isUpToDate = false;
         totalDuration = 0L;
-        recordedTotalCost = INIT_ZERO;
+        totalCostLastRecorded = INIT_ZERO;
         totalCost = INIT_ZERO;
         snapshot = -1L;
     }
@@ -292,7 +292,7 @@ public class GraphPlanner implements Planner {
             computeTotalCost(graphMgr);
 
             if (!isUpToDate) {
-                recordedTotalCost = totalCost;
+                totalCostLastRecorded = totalCost;
                 vertices.values().forEach(PlannerVertex::recordCost);
                 edges.forEach(PlannerEdge::recordCost);
             }
@@ -316,7 +316,7 @@ public class GraphPlanner implements Planner {
     }
 
     private boolean costChangeSignificant(PlannerVertex<?> vertex) {
-        return costChangeSignificant(vertex.recordedCost, vertex.cost());
+        return costChangeSignificant(vertex.costLastRecorded, vertex.cost());
     }
 
     private boolean costChangeSignificant(PlannerEdge<?, ?> edge) {
@@ -324,22 +324,22 @@ public class GraphPlanner implements Planner {
     }
 
     private boolean costChangeSignificant(PlannerEdge.Directional<?, ?> edge) {
-        return costChangeSignificant(edge.recordedCost, edge.cost());
+        return costChangeSignificant(edge.costLastRecorded, edge.cost());
     }
 
     private boolean costChangeSignificant(double costPrevious, double costNext) {
-        assert recordedTotalCost > 0;
+        assert totalCostLastRecorded > 0;
         assert costPrevious > 0;
         assert costNext > 0;
 
         return (costNext / costPrevious >= OBJECTIVE_VARIABLE_COST_MAX_CHANGE ||
                 costNext / costPrevious <= 1.0 / OBJECTIVE_VARIABLE_COST_MAX_CHANGE) &&
-                abs(costNext - costPrevious) / recordedTotalCost >= OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE;
+                abs(costNext - costPrevious) / totalCostLastRecorded >= OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE;
     }
 
     private boolean totalCostChangeSignificant() {
-        assert recordedTotalCost > 0;
-        return abs((totalCost / recordedTotalCost) - 1) >= OBJECTIVE_PLANNER_COST_MAX_CHANGE;
+        assert totalCostLastRecorded > 0;
+        return abs((totalCost / totalCostLastRecorded) - 1) >= OBJECTIVE_PLANNER_COST_MAX_CHANGE;
     }
 
     private void throwPlanningError() {

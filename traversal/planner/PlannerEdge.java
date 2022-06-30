@@ -144,13 +144,13 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         private static final AtomicLong nextTieBreaker = new AtomicLong(0);
 
         double cost;
-        double recordedCost;
+        double costLastRecorded;
 
         Directional(VERTEX_DIR_FROM from, VERTEX_DIR_TO to, Encoding.Direction.Edge direction, String symbol) {
             super(from, to, symbol);
             this.planner = from.planner;
             this.direction = direction;
-            this.recordedCost = INIT_ZERO;
+            this.costLastRecorded = INIT_ZERO;
 
             this.isInitialised = false;
 
@@ -202,7 +202,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         private boolean cheaperThan(PlannerEdge.Directional<?, ?> that) {
             assert !this.equals(that);
-            assert recordedCost == cost();
+            assert costLastRecorded == cost();
             if (cost() < that.cost()) {
                 return true;
             } else if (cost() == that.cost()) {
@@ -226,11 +226,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         private void recordCost() {
-            recordedCost = cost();
+            costLastRecorded = cost();
         }
 
         protected void updateOptimiserCoefficients() {
-            assert recordedCost == cost();
+            assert costLastRecorded == cost();
             planner.optimiser().setObjectiveCoefficient(varIsMinimal, log(1 + cost()));
             initialiseMinimalEdgeConstraint();
         }
