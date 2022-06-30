@@ -221,11 +221,7 @@ public abstract class ProcedureEdge<
 
         @Override
         public boolean equals(Object o) {
-            if (super.equals(o)) {
-                ProcedureEdge.Predicate that = (ProcedureEdge.Predicate) o;
-                return predicate.equals(that.predicate);
-            }
-            return false;
+            return super.equals(o) && ((Predicate) o).predicate.equals(predicate);
         }
 
         @Override
@@ -456,11 +452,7 @@ public abstract class ProcedureEdge<
 
                 @Override
                 public boolean equals(Object o) {
-                    if (super.equals(o)) {
-                        ProcedureEdge.Native.Type.Sub that = (ProcedureEdge.Native.Type.Sub) o;
-                        return isTransitive == that.isTransitive;
-                    }
-                    return false;
+                    return super.equals(o) && ((Sub) o).isTransitive == isTransitive;
                 }
 
                 @Override
@@ -535,11 +527,7 @@ public abstract class ProcedureEdge<
 
                 @Override
                 public boolean equals(Object o) {
-                    if (super.equals(o)) {
-                        ProcedureEdge.Native.Type.Owns that = (ProcedureEdge.Native.Type.Owns) o;
-                        return isKey == that.isKey;
-                    }
-                    return false;
+                    return super.equals(o) && ((Owns) o).isKey == isKey;
                 }
 
                 @Override
@@ -1133,7 +1121,7 @@ public abstract class ProcedureEdge<
 
                 @Override
                 public boolean equals(Object o) {
-                    return super.equals(o) && ((ProcedureEdge.Native.Thing.RolePlayer) o).roleTypes.equals(roleTypes);
+                    return super.equals(o) && ((RolePlayer) o).roleTypes.equals(roleTypes);
                 }
 
                 @Override
