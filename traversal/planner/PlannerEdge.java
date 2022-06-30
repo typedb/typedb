@@ -32,6 +32,7 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -147,8 +148,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         private boolean didInitialiseConstraints;
         private boolean hasInitialValues;
 
-        private final int tieBreaker;
-        private static int nextTieBreaker = 0;
+        private final long tieBreaker;
+        private static final AtomicLong nextTieBreaker = new AtomicLong(0);
 
         double cost;
         double recordedCost;
@@ -167,7 +168,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             this.varPrefix = "edge_var_" + this.toString() + "_";
             this.conPrefix = "edge_con_" + this.toString() + "_";
-            this.tieBreaker = nextTieBreaker++;
+            this.tieBreaker = nextTieBreaker.getAndIncrement();
         }
 
         public boolean isSelected() {
