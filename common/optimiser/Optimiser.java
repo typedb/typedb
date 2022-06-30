@@ -58,7 +58,7 @@ public class Optimiser {
 
     public synchronized Status optimise(long timeLimitMillis) {
         if (hasSolver && constraintsChanged()) {
-            constraints.forEach(constraint -> constraint.initialise(solver));
+            constraints.forEach(OptimiserConstraint::updateCoefficients);
             status = Status.NOT_SOLVED;
         }
         if (isOptimal()) return status;
@@ -88,7 +88,7 @@ public class Optimiser {
     }
 
     private boolean constraintsChanged() {
-        return iterate(constraints).anyMatch(c -> !c.isInitialised);
+        return iterate(constraints).anyMatch(c -> !c.isUpToDate);
     }
 
     private void initialiseSolver() {
@@ -98,7 +98,7 @@ public class Optimiser {
         parameters.setIntegerParam(PRESOLVE, PRESOLVE_ON.swigValue());
         parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
         variables.forEach(var -> var.initialise(solver));
-        constraints.forEach(constraint -> constraint.initialise(solver));
+        constraints.forEach(constraint -> { constraint.initialise(solver); constraint.updateCoefficients(); });
         applyObjective();
         applyInitialisation();
         hasSolver = true;

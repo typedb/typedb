@@ -31,35 +31,39 @@ public class OptimiserConstraint {
     private final String name;
     private final Map<OptimiserVariable<?>, Double> coefficients;
     private MPConstraint mpConstraint;
-    boolean isInitialised;
+    boolean isUpToDate;
 
     public OptimiserConstraint(double lowerBound, double upperBound, String name) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.coefficients = new HashMap<>();
         this.name = name;
-        this.isInitialised = false;
+        this.isUpToDate = false;
     }
 
     public void setCoefficient(OptimiserVariable<?> variable, double coeff) {
-        if (isInitialised) {
+        if (isUpToDate) {
             if (coefficients.containsKey(variable)) {
-                isInitialised = coefficients.get(variable) == coeff;
+                isUpToDate = coefficients.get(variable) == coeff;
             } else {
-                isInitialised = false;
+                isUpToDate = false;
             }
         }
         coefficients.put(variable, coeff);
     }
 
     synchronized void initialise(MPSolver solver) {
-        if (this.mpConstraint == null) this.mpConstraint = solver.makeConstraint(lowerBound, upperBound, name);
+        this.mpConstraint = solver.makeConstraint(lowerBound, upperBound, name);
+    }
+
+    synchronized void updateCoefficients() {
         coefficients.forEach((var, coeff) -> mpConstraint.setCoefficient(var.mpVariable(), coeff));
-        isInitialised = true;
+        isUpToDate = true;
     }
 
     synchronized void release() {
-        this.mpConstraint.delete();
-        this.mpConstraint = null;
+        mpConstraint.delete();
+        mpConstraint = null;
+        isUpToDate = false;
     }
 }
