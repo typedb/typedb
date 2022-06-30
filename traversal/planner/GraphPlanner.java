@@ -251,7 +251,7 @@ public class GraphPlanner implements Planner {
 
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
     private void optimise(GraphManager graphMgr, boolean singleUse) {
-        computeTraversalCosts(graphMgr);
+        updateTraversalCosts(graphMgr);
         if (isUpToDate() && isOptimal()) {
             if (LOG.isDebugEnabled()) LOG.debug("GraphPlanner still optimal and up-to-date");
             return;
@@ -286,7 +286,7 @@ public class GraphPlanner implements Planner {
         if (LOG.isTraceEnabled()) LOG.trace(optimiser.toString());
     }
 
-    private void computeTraversalCosts(GraphManager graphMgr) {
+    private void updateTraversalCosts(GraphManager graphMgr) {
         if (snapshot < graphMgr.data().stats().snapshot()) {
             // TODO: we should not include the graph's uncommitted writes, but only the persisted counts in the costs
             snapshot = graphMgr.data().stats().snapshot();

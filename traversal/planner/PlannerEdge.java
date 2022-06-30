@@ -101,10 +101,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.initialiseConstraints();
     }
 
-    double cost() {
-        return forward.cost() + backward.cost();
-    }
-
     void computeCost(GraphManager graphMgr) {
         forward.computeCost(graphMgr);
         backward.computeCost(graphMgr);
@@ -158,8 +154,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             this.isInitialised = false;
 
-            this.varPrefix = "edge_var_" + this.toString() + "_";
-            this.conPrefix = "edge_con_" + this.toString() + "_";
+            this.varPrefix = "edge_var_" + this + "_";
+            this.conPrefix = "edge_con_" + this + "_";
             this.tieBreaker = nextTieBreaker.getAndIncrement();
         }
 
