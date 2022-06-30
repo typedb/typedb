@@ -39,7 +39,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -399,8 +398,8 @@ public class GraphPlanner implements Planner {
         }
         assert vertexOrder == vertices.size();
 
-        vertices.values().forEach(PlannerVertex::inferStartingVertexFromOrder);
+        vertices.values().forEach(PlannerVertex::inferInitialStartingVertexFromOrder);
         vertices.values().forEach(PlannerVertex::setOutgoingEdgesInitialValues);
-        edges.forEach(PlannerEdge::initialiseMinimal);
+        edges.forEach(PlannerEdge::setInitialMinimal);
     }
 }

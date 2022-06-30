@@ -116,7 +116,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.recordCost();
     }
 
-    public void initialiseMinimal() {
+    public void setInitialMinimal() {
         forward.setInitialMinimal();
         backward.setInitialMinimal();
     }
@@ -188,7 +188,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             conIsMinimal = planner.optimiser().constraint(0, numAdjacent, conPrefix + "is_minimal");
             conIsMinimal.setCoefficient(varIsMinimal, numAdjacent + 1);
             conIsMinimal.setCoefficient(varIsSelected, -1);
-            initialiseMinimalEdgeConstraint();
         }
 
         private void initialiseMinimalEdgeConstraint() {
