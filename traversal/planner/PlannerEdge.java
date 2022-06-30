@@ -92,8 +92,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
     }
 
     void initialiseVariables() {
-        forward.opposite(backward);
-        backward.opposite(forward);
         forward.initialiseVariables();
         backward.initialiseVariables();
     }
@@ -152,8 +150,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         double cost;
         double recordedCost;
 
-        private Directional<VERTEX_DIR_TO, VERTEX_DIR_FROM> opposite;
-
         Directional(VERTEX_DIR_FROM from, VERTEX_DIR_TO to, Encoding.Direction.Edge direction, String symbol) {
             super(from, to, symbol);
             this.planner = from.planner;
@@ -177,11 +173,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         public boolean isInitialised() {
             return isInitialised;
-        }
-
-
-        void opposite(Directional<VERTEX_DIR_TO, VERTEX_DIR_FROM> opposite) {
-            this.opposite = opposite;
         }
 
         void initialiseVariables() {
