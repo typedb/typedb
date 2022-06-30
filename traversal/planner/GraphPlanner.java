@@ -387,8 +387,6 @@ public class GraphPlanner implements Planner {
     }
 
     private void setInitialValues() {
-        resetInitialValues();
-
         PlannerVertex<?> start = vertices.values().stream().min(comparing(PlannerVertex::cost)).get();
         Set<PlannerVertex<?>> closedSet = new HashSet<>();
         PriorityQueue<PlannerVertex<?>> open = new PriorityQueue<>(comparing(
@@ -411,10 +409,5 @@ public class GraphPlanner implements Planner {
         vertices.values().forEach(PlannerVertex::inferStartingVertexFromOrder);
         vertices.values().forEach(PlannerVertex::setOutgoingEdgesInitialValues);
         edges.forEach(PlannerEdge::initialiseMinimal);
-    }
-
-    private void resetInitialValues() {
-        vertices.values().forEach(PlannerVertex::resetInitialValues);
-        edges.forEach(PlannerEdge::resetInitialValues);
     }
 }

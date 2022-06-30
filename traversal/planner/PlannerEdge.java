@@ -121,11 +121,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.recordCost();
     }
 
-    void resetInitialValues() {
-        forward.resetInitialValues();
-        backward.resetInitialValues();
-    }
-
     public void initialiseMinimal() {
         forward.setInitialMinimal();
         backward.setInitialMinimal();
@@ -267,12 +262,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             assert recordedCost >= INIT_ZERO;
             planner.optimiser().setObjectiveCoefficient(varIsMinimal, log(1 + recordedCost));
             initialiseMinimalEdgeConstraint();
-        }
-
-        private void resetInitialValues() {
-            varIsSelected.clearInitial();
-            varIsMinimal.clearInitial();
-            hasInitialValues = false;
         }
 
         public void setInitialSelected(boolean selected) {

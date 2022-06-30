@@ -54,10 +54,6 @@ public abstract class OptimiserVariable<T> {
         this.initial = initial;
     }
 
-    public void clearInitial() {
-        initial = null;
-    }
-
     public boolean hasInitial() {
         return initial != null;
     }

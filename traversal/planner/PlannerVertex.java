@@ -168,12 +168,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
                 && (isEndingVertex() ^ hasOutgoingEdges());
     }
 
-    void resetInitialValues() {
-        varIsStartingVertex.clearInitial();
-        varOrderNumber.clearInitial();
-        for (OptimiserVariable.Boolean b : varOrderAssignment) b.clearInitial();
-    }
-
     void setOrderInitial(int order) {
         varOrderNumber.setInitial(order);
         for (int i = 0; i < planner.vertices().size(); i++) varOrderAssignment[i].setInitial(order == i);

@@ -131,10 +131,6 @@ public class Optimiser {
         solver.setHint(mpVariables, initialisations);
     }
 
-    private void clearInitialisation() {
-        solver.setHint(new MPVariable[0], new double[0]);
-    }
-
     public void setObjectiveCoefficient(OptimiserVariable<?> var, double coeff) {
         objectiveCoefficients.put(var, coeff);
         if (hasSolver) solver.objective().setCoefficient(var.mpVariable(), coeff);
