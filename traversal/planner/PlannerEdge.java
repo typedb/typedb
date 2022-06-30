@@ -216,9 +216,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         private boolean cheaperThan(PlannerEdge.Directional<?, ?> that) {
             assert !this.equals(that);
-            if (recordedCost < that.recordedCost) {
+            assert recordedCost == cost();
+            if (cost() < that.cost()) {
                 return true;
-            } else if (recordedCost == that.recordedCost) {
+            } else if (cost() == that.cost()) {
                 return tieBreaker < that.tieBreaker;
             } else {
                 return false;
@@ -243,8 +244,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         protected void updateOptimiserCoefficients() {
-            assert recordedCost >= INIT_ZERO;
-            planner.optimiser().setObjectiveCoefficient(varIsMinimal, log(1 + recordedCost));
+            assert recordedCost == cost();
+            planner.optimiser().setObjectiveCoefficient(varIsMinimal, log(1 + cost()));
             initialiseMinimalEdgeConstraint();
         }
 

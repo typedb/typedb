@@ -56,7 +56,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         super(identifier);
         this.planner = planner;
         isInitialised = false;
-        recordedCost = 0.01; // non-zero value for safe division
+        recordedCost = INIT_ZERO;
     }
 
     abstract void computeCost(GraphManager graphMgr);
@@ -136,8 +136,8 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     protected void updateOptimiserCoefficients() {
-        assert !Double.isNaN(recordedCost);
-        planner.optimiser().setObjectiveCoefficient(varIsStartingVertex, log(1 + recordedCost));
+        assert recordedCost == cost();
+        planner.optimiser().setObjectiveCoefficient(varIsStartingVertex, log(1 + cost()));
     }
 
     void recordCost() {
