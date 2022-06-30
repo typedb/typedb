@@ -387,23 +387,16 @@ public class GraphPlanner implements Planner {
     }
 
     private void setInitialValues() {
-        PlannerVertex<?> start = vertices.values().stream().min(comparing(PlannerVertex::cost)).get();
-        Set<PlannerVertex<?>> closedSet = new HashSet<>();
-        PriorityQueue<PlannerVertex<?>> open = new PriorityQueue<>(comparing(
-                v -> v.ins().stream().filter(e -> closedSet.contains(e.from())).mapToDouble(PlannerEdge.Directional::cost).min().orElse(v.cost())
-        ));
-        open.add(start);
+        Set<PlannerVertex<?>> unorderedVertices = new HashSet<>(vertices.values());
         int vertexOrder = 0;
-        while (!open.isEmpty()) {
-            PlannerVertex<?> v = open.poll();
-            assert !closedSet.contains(v);
-            closedSet.add(v);
-            v.setOrderInitial(vertexOrder++);
-            v.outs().stream().map(PlannerEdge.Directional::to).filter(x -> !closedSet.contains(x) && !open.contains(x))
-                    .forEach(open::add);
+        while (!unorderedVertices.isEmpty()) {
+            PlannerVertex<?> vertex = unorderedVertices.stream().min(comparing(
+                    v -> v.ins().stream().filter(e -> !unorderedVertices.contains(e.from()))
+                            .mapToDouble(PlannerEdge.Directional::cost).min().orElse(v.cost())
+            )).get();
+            unorderedVertices.remove(vertex);
+            vertex.setOrderInitial(vertexOrder++);
         }
-
-        assert closedSet.size() == vertices.size();
         assert vertexOrder == vertices.size();
 
         vertices.values().forEach(PlannerVertex::inferStartingVertexFromOrder);
