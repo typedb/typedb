@@ -144,9 +144,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         private final GraphPlanner planner;
         private final Encoding.Direction.Edge direction;
 
-        private boolean didInitialiseVariables;
-        private boolean didInitialiseConstraints;
-        private boolean hasInitialValues;
+        private boolean isInitialised;
 
         private final long tieBreaker;
         private static final AtomicLong nextTieBreaker = new AtomicLong(0);
@@ -162,9 +160,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             this.direction = direction;
             this.recordedCost = INIT_ZERO;
 
-            this.didInitialiseVariables = false;
-            this.didInitialiseConstraints = false;
-            this.hasInitialValues = false;
+            this.isInitialised = false;
 
             this.varPrefix = "edge_var_" + this.toString() + "_";
             this.conPrefix = "edge_con_" + this.toString() + "_";
@@ -179,17 +175,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             return direction;
         }
 
-        public boolean didInitialiseVariables() {
-            return didInitialiseVariables;
+        public boolean isInitialised() {
+            return isInitialised;
         }
 
-        public boolean didInitialiseConstraints() {
-            return didInitialiseConstraints;
-        }
-
-        public boolean hasInitialValues() {
-            return hasInitialValues;
-        }
 
         void opposite(Directional<VERTEX_DIR_TO, VERTEX_DIR_FROM> opposite) {
             this.opposite = opposite;
@@ -198,13 +187,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         void initialiseVariables() {
             varIsSelected = planner.optimiser().booleanVar(varPrefix + "is_selected");
             varIsMinimal = planner.optimiser().booleanVar(varPrefix + "is_minimal");
-            didInitialiseVariables = true;
         }
 
         void initialiseConstraints() {
-            assert from.didInitialiseVariables();
-            assert to.didInitialiseVariables();
-
             int numVertices = planner.vertices().size();
 
             OptimiserConstraint conIsSelected = planner.optimiser().constraint(1, numVertices, conPrefix + "is_selected");
@@ -217,8 +202,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             conIsMinimal.setCoefficient(varIsMinimal, numAdjacent + 1);
             conIsMinimal.setCoefficient(varIsSelected, -1);
             initialiseMinimalEdgeConstraint();
-
-            didInitialiseConstraints = true;
         }
 
         private void initialiseMinimalEdgeConstraint() {
@@ -278,7 +261,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                                     filter(e -> e.varIsSelected.initial()).
                                     noneMatch(e -> e.cheaperThan(this))
             );
-            hasInitialValues = true;
+            isInitialised = true;
         }
 
         public boolean isEqual() {

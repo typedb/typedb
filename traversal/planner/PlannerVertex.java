@@ -43,9 +43,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     private final String varPrefix = "vertex_var_" + id() + "_";
     private final String conPrefix = "vertex_con_" + id() + "_";
-    private boolean didInitialiseVariables;
-    private boolean didInitialiseConstraints;
-    private boolean didInitialiseValues;
+    private boolean isInitialised;
 
     double cost;
     double recordedCost;
@@ -57,9 +55,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     PlannerVertex(Identifier identifier, @Nullable GraphPlanner planner) {
         super(identifier);
         this.planner = planner;
-        didInitialiseVariables = false;
-        didInitialiseConstraints = false;
-        didInitialiseValues = false;
+        isInitialised = false;
         recordedCost = 0.01; // non-zero value for safe division
     }
 
@@ -89,16 +85,8 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         return varOrderNumber.value();
     }
 
-    public boolean didInitialiseVariables() {
-        return didInitialiseVariables;
-    }
-
-    public boolean didInitialiseConstraints() {
-        return didInitialiseConstraints;
-    }
-
-    public boolean didInitialiseValues() {
-        return didInitialiseValues;
+    public boolean isInitialised() {
+        return isInitialised;
     }
 
     void out(PlannerEdge<?, ?> edge) {
@@ -130,14 +118,9 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         for (int i = 0; i < planner.vertices().size(); i++) {
             varOrderAssignment[i] = planner.optimiser().booleanVar(varPrefix + "order_assignment[" + i + "]");
         }
-        didInitialiseVariables = true;
     }
 
     void initialiseConstraints() {
-        assert ins().stream().allMatch(PlannerEdge.Directional::didInitialiseVariables);
-        assert outs().stream().allMatch(PlannerEdge.Directional::didInitialiseVariables);
-        assert loops().stream().allMatch(PlannerEdge.Directional::didInitialiseVariables);
-
         OptimiserConstraint conIsOrdered = planner.optimiser().constraint(1, 1, conPrefix + "ordered");
         OptimiserConstraint conAssignOrderNumber = planner.optimiser().constraint(0, 0, conPrefix + "assign_order_number");
         conAssignOrderNumber.setCoefficient(varOrderNumber, -1);
@@ -150,8 +133,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         OptimiserConstraint conIsStartingVertex = planner.optimiser().constraint(1, numIns, conPrefix + "is_starting_vertex");
         conIsStartingVertex.setCoefficient(varIsStartingVertex, numIns);
         for (PlannerEdge.Directional<?, ?> edge : ins()) conIsStartingVertex.setCoefficient(edge.varIsSelected, 1);
-
-        didInitialiseConstraints = true;
     }
 
     protected void updateOptimiserCoefficients() {
@@ -177,7 +158,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         assert varOrderNumber.hasInitial();
         double initialOrder = varOrderNumber.initial();
         varIsStartingVertex.setInitial(outs().stream().allMatch(e -> e.to().varOrderNumber.initial() > initialOrder));
-        didInitialiseValues = true;
+        isInitialised = true;
     }
 
     void setOutgoingEdgesInitialValues() {
@@ -196,7 +177,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     @Override
     public String toString() {
         String string = super.toString();
-        if (didInitialiseValues) {
+        if (isInitialised) {
             if (isStartingVertex()) string += " (start)";
             else if (isEndingVertex()) string += " (end)";
         }
