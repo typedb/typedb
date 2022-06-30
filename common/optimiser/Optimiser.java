@@ -88,7 +88,7 @@ public class Optimiser {
     }
 
     private boolean constraintsChanged() {
-        return constraints.stream().anyMatch(c -> !c.isInitialised);
+        return iterate(constraints).anyMatch(c -> !c.isInitialised);
     }
 
     private void initialiseSolver() {

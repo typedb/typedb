@@ -157,7 +157,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     void inferStartingVertexFromOrder() {
         assert varOrderNumber.hasInitial();
         double initialOrder = varOrderNumber.initial();
-        varIsStartingVertex.setInitial(outs().stream().allMatch(e -> e.to().varOrderNumber.initial() > initialOrder));
+        varIsStartingVertex.setInitial(iterate(outs()).allMatch(e -> e.to().varOrderNumber.initial() > initialOrder));
         isInitialised = true;
     }
 

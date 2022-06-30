@@ -248,7 +248,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             assert varIsSelected.hasInitial();
             varIsMinimal.setInitial(
                     varIsSelected.initial() &&
-                            to().ins().stream().
+                            iterate(to().ins()).
                                     filter(e -> !this.equals(e)).
                                     filter(e -> e.varIsSelected.initial()).
                                     noneMatch(e -> e.cheaperThan(this))

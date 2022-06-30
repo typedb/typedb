@@ -310,8 +310,8 @@ public class GraphPlanner implements Planner {
             if (costChangeSignificant(e)) setOutOfDate();
         });
 
-        double vertexCost = vertices.values().stream().mapToDouble(PlannerVertex::cost).sum();
-        double edgeCost = edges.stream().mapToDouble(PlannerEdge::cost).sum();
+        double vertexCost = iterate(vertices.values()).map(PlannerVertex::cost).reduce(0.0, Double::sum);
+        double edgeCost = iterate(edges).map(e -> e.forward.cost() + e.backward.cost()).reduce(0.0, Double::sum);
         totalCost = vertexCost + edgeCost;
         if (totalCostChangeSignificant()) setOutOfDate();
     }
