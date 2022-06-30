@@ -73,8 +73,8 @@ public class GraphPlanner implements Planner {
     private volatile long totalDuration;
     private volatile long snapshot;
 
-    volatile double recordedTotalCost;
-    double totalCost;
+    private volatile double recordedTotalCost;
+    private double totalCost;
 
     private GraphPlanner() {
         optimiser = new Optimiser();
@@ -207,7 +207,7 @@ public class GraphPlanner implements Planner {
     }
 
     void setOutOfDate() {
-        this.isUpToDate = false;
+        isUpToDate = false;
     }
 
     private boolean isUpToDate() {
@@ -316,19 +316,19 @@ public class GraphPlanner implements Planner {
         if (totalCostChangeSignificant()) setOutOfDate();
     }
 
-    boolean costChangeSignificant(PlannerVertex<?> vertex) {
+    private boolean costChangeSignificant(PlannerVertex<?> vertex) {
         return costChangeSignificant(vertex.recordedCost, vertex.cost());
     }
 
-    boolean costChangeSignificant(PlannerEdge<?, ?> edge) {
+    private boolean costChangeSignificant(PlannerEdge<?, ?> edge) {
         return costChangeSignificant(edge.forward) || costChangeSignificant(edge.backward);
     }
 
-    boolean costChangeSignificant(PlannerEdge.Directional<?, ?> edge) {
+    private boolean costChangeSignificant(PlannerEdge.Directional<?, ?> edge) {
         return costChangeSignificant(edge.recordedCost, edge.cost());
     }
 
-    boolean costChangeSignificant(double costPrevious, double costNext) {
+    private boolean costChangeSignificant(double costPrevious, double costNext) {
         assert recordedTotalCost > 0;
         assert costPrevious > 0;
         assert costNext > 0;
@@ -338,7 +338,7 @@ public class GraphPlanner implements Planner {
                 abs(costNext - costPrevious) / recordedTotalCost >= OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE;
     }
 
-    boolean totalCostChangeSignificant() {
+    private boolean totalCostChangeSignificant() {
         assert recordedTotalCost > 0;
         return abs((totalCost / recordedTotalCost) - 1) >= OBJECTIVE_PLANNER_COST_MAX_CHANGE;
     }
