@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.test.assembly;
 
 import com.vaticle.typedb.common.test.console.TypeDBConsoleRunner;
-import com.vaticle.typedb.common.test.server.TypeDBCoreRunner;
+import com.vaticle.typedb.common.test.core.TypeDBCoreRunner;
 import org.junit.Test;
 
 import java.io.IOException;
