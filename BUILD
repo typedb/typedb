@@ -26,8 +26,8 @@ load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
-load("@io_bazel_rules_docker//container:bundle.bzl", "container_bundle")
-load("@io_bazel_rules_docker//container:image.bzl", "container_image")
+load("@io_bazel_rules_docker//container:bundle.bzl", docker_container_bundle = "container_bundle")
+load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
 
 exports_files(
@@ -201,19 +201,23 @@ release_validate_deps(
     tags = ["manual"]  # in order for bazel test //... to not fail
 )
 
-container_image(
+docker_container_image(
     name = "assemble-docker",
     base = "@vaticle_ubuntu_image//image",
     tars = [":assemble-linux-targz"],
     directory = "opt",
     workdir = "/opt/typedb-all-linux",
     ports = ["1729"],
+    env = {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+    },
     cmd = ["/opt/typedb-all-linux/typedb", "server"],
     volumes = ["/opt/typedb-all-linux/server/data/"],
     visibility = ["//test:__subpackages__"],
 )
 
-container_bundle(
+docker_container_bundle(
     name = "assemble-docker-bundle",
     images = {
         "{}/{}/{}:{{DOCKER_VERSION}}".format(
