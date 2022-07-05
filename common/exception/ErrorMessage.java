@@ -496,7 +496,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final TypeWrite OWNS_KEY_PRECONDITION_NO_INSTANCES =
                 new TypeWrite(27, "The instances of type '%s' do not have any attribute of type '%s' that could be converted to a key.");
         public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE =
-                new TypeWrite(28, "The role type '%s' has been inherited or overridden, and cannot be redeclared.");
+                new TypeWrite(28, "Type '%s' cannot declare plays role type '%s' as it has been inherited or overridden and cannot be redeclared.");
         public static final TypeWrite PLAYS_ABSTRACT_ROLE_TYPE =
                 new TypeWrite(29, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
         public static final TypeWrite RELATION_NO_ROLE =
