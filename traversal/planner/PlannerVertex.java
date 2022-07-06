@@ -110,7 +110,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         loop(edge.backward());
     }
 
-    void initialiseVariables() {
+    void createVariables() {
         assert planner != null;
         varIsStartingVertex = planner.optimiser().booleanVar(varPrefix + "is_starting_vertex");
         varOrderNumber = planner.optimiser().intVar(0, planner.vertices().size() - 1, varPrefix + "order_number");
@@ -120,7 +120,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         }
     }
 
-    void initialiseConstraints() {
+    void createConstraints() {
         OptimiserConstraint conIsOrdered = planner.optimiser().constraint(1, 1, conPrefix + "ordered");
         OptimiserConstraint conAssignOrderNumber = planner.optimiser().constraint(0, 0, conPrefix + "assign_order_number");
         conAssignOrderNumber.setCoefficient(varOrderNumber, -1);
@@ -154,16 +154,11 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         for (int i = 0; i < planner.vertices().size(); i++) varOrderAssignment[i].setInitial(order == i);
     }
 
-    void inferInitialStartingVertexFromOrder() {
+    void initialise() {
         assert varOrderNumber.hasInitial();
         double initialOrder = varOrderNumber.initial();
         varIsStartingVertex.setInitial(iterate(outs()).allMatch(e -> e.to().varOrderNumber.initial() > initialOrder));
         isInitialised = true;
-    }
-
-    void setOutgoingEdgesInitialValues() {
-        double initialOrder = varOrderNumber.initial();
-        outs().forEach(e -> e.setInitialSelected(e.to().varOrderNumber.initial() > initialOrder));
     }
 
     public PlannerVertex.Thing asThing() {

@@ -91,14 +91,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         return backward;
     }
 
-    void initialiseVariables() {
-        forward.initialiseVariables();
-        backward.initialiseVariables();
+    void createVariables() {
+        forward.createVariables();
+        backward.createVariables();
     }
 
-    void initialiseConstraints() {
-        forward.initialiseConstraints();
-        backward.initialiseConstraints();
+    void createConstraints() {
+        forward.createConstraints();
+        backward.createConstraints();
     }
 
     void computeCost(GraphManager graphMgr) {
@@ -116,9 +116,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.recordCost();
     }
 
-    public void setInitialMinimal() {
-        forward.setInitialMinimal();
-        backward.setInitialMinimal();
+    public void initialise() {
+        forward.initialise();
+        backward.initialise();
     }
 
     @Override
@@ -171,12 +171,12 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             return isInitialised;
         }
 
-        void initialiseVariables() {
+        void createVariables() {
             varIsSelected = planner.optimiser().booleanVar(varPrefix + "is_selected");
             varIsMinimal = planner.optimiser().booleanVar(varPrefix + "is_minimal");
         }
 
-        void initialiseConstraints() {
+        void createConstraints() {
             int numVertices = planner.vertices().size();
 
             OptimiserConstraint conIsSelected = planner.optimiser().constraint(1, numVertices, conPrefix + "is_selected");
@@ -235,8 +235,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             initialiseMinimalEdgeConstraint();
         }
 
-        public void setInitialSelected(boolean selected) {
-            varIsSelected.setInitial(selected);
+        public void initialise() {
+            setInitialSelected();
+            setInitialMinimal();
+            isInitialised = true;
+        }
+
+        public void setInitialSelected() {
+            varIsSelected.setInitial(from().varOrderNumber.initial() < to().varOrderNumber.initial());
         }
 
         public void setInitialMinimal() {
@@ -248,7 +254,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                                     filter(e -> e.varIsSelected.initial()).
                                     noneMatch(e -> e.cheaperThan(this))
             );
-            isInitialised = true;
         }
 
         public boolean isEqual() {

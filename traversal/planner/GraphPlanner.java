@@ -160,16 +160,16 @@ public class GraphPlanner implements Planner {
     }
 
     private void initialise() {
-        initialiseVariables();
-        initialiseConstraints();
+        createVariables();
+        createConstraints();
     }
 
-    private void initialiseVariables() {
-        vertices.values().forEach(PlannerVertex::initialiseVariables);
-        edges.forEach(PlannerEdge::initialiseVariables);
+    private void createVariables() {
+        vertices.values().forEach(PlannerVertex::createVariables);
+        edges.forEach(PlannerEdge::createVariables);
     }
 
-    private void initialiseConstraints() {
+    private void createConstraints() {
         String conPrefix = "planner_con_";
         for (int i = 0; i < vertices.size(); i++) {
             OptimiserConstraint conOneVertexAtOrderI = optimiser.constraint(1, 1, conPrefix + "one_vertex_at_order_" + i);
@@ -177,8 +177,8 @@ public class GraphPlanner implements Planner {
                 conOneVertexAtOrderI.setCoefficient(vertex.varOrderAssignment[i], 1);
             }
         }
-        vertices.values().forEach(PlannerVertex::initialiseConstraints);
-        edges.forEach(PlannerEdge::initialiseConstraints);
+        vertices.values().forEach(PlannerVertex::createConstraints);
+        edges.forEach(PlannerEdge::createConstraints);
     }
 
     @Override
@@ -398,8 +398,7 @@ public class GraphPlanner implements Planner {
         }
         assert vertexOrder == vertices.size();
 
-        vertices.values().forEach(PlannerVertex::inferInitialStartingVertexFromOrder);
-        vertices.values().forEach(PlannerVertex::setOutgoingEdgesInitialValues);
-        edges.forEach(PlannerEdge::setInitialMinimal);
+        vertices.values().forEach(PlannerVertex::initialise);
+        edges.forEach(PlannerEdge::initialise);
     }
 }
