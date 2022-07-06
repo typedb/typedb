@@ -61,7 +61,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     abstract void computeCost(GraphManager graphMgr);
 
-    public double cost() {
+    public double safeCost() {
         return max(cost, INIT_ZERO);
     }
 
@@ -136,12 +136,12 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     protected void updateOptimiserCoefficients() {
-        assert costLastRecorded == cost();
-        planner.optimiser().setObjectiveCoefficient(varIsStartingVertex, log(1 + cost()));
+        assert costLastRecorded == safeCost();
+        planner.optimiser().setObjectiveCoefficient(varIsStartingVertex, log(1 + safeCost()));
     }
 
     void recordCost() {
-        costLastRecorded = cost();
+        costLastRecorded = safeCost();
     }
 
     boolean validResults() {

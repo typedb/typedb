@@ -309,14 +309,14 @@ public class GraphPlanner implements Planner {
             if (costChangeSignificant(e)) setOutOfDate();
         });
 
-        double vertexCost = iterate(vertices.values()).map(PlannerVertex::cost).reduce(0.0, Double::sum);
-        double edgeCost = iterate(edges).map(e -> e.forward.cost() + e.backward.cost()).reduce(0.0, Double::sum);
+        double vertexCost = iterate(vertices.values()).map(PlannerVertex::safeCost).reduce(0.0, Double::sum);
+        double edgeCost = iterate(edges).map(e -> e.forward.safeCost() + e.backward.safeCost()).reduce(0.0, Double::sum);
         totalCost = vertexCost + edgeCost;
         if (totalCostChangeSignificant()) setOutOfDate();
     }
 
     private boolean costChangeSignificant(PlannerVertex<?> vertex) {
-        return costChangeSignificant(vertex.costLastRecorded, vertex.cost());
+        return costChangeSignificant(vertex.costLastRecorded, vertex.safeCost());
     }
 
     private boolean costChangeSignificant(PlannerEdge<?, ?> edge) {
@@ -324,7 +324,7 @@ public class GraphPlanner implements Planner {
     }
 
     private boolean costChangeSignificant(PlannerEdge.Directional<?, ?> edge) {
-        return costChangeSignificant(edge.costLastRecorded, edge.cost());
+        return costChangeSignificant(edge.costLastRecorded, edge.safeCost());
     }
 
     private boolean costChangeSignificant(double costPrevious, double costNext) {
@@ -391,7 +391,7 @@ public class GraphPlanner implements Planner {
         while (!unorderedVertices.isEmpty()) {
             PlannerVertex<?> vertex = unorderedVertices.stream().min(comparing(
                     v -> v.ins().stream().filter(e -> !unorderedVertices.contains(e.from()))
-                            .mapToDouble(PlannerEdge.Directional::cost).min().orElse(v.cost())
+                            .mapToDouble(PlannerEdge.Directional::safeCost).min().orElse(v.safeCost())
             )).get();
             unorderedVertices.remove(vertex);
             vertex.setOrderInitial(vertexOrder++);

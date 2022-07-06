@@ -202,10 +202,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         private boolean cheaperThan(PlannerEdge.Directional<?, ?> that) {
             assert !this.equals(that);
-            assert costLastRecorded == cost();
-            if (cost() < that.cost()) {
+            assert costLastRecorded == safeCost();
+            if (safeCost() < that.safeCost()) {
                 return true;
-            } else if (cost() == that.cost()) {
+            } else if (safeCost() == that.safeCost()) {
                 return tieBreaker < that.tieBreaker;
             } else {
                 return false;
@@ -221,17 +221,17 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         abstract void computeCost(GraphManager graphMgr);
 
-        public double cost() {
+        public double safeCost() {
             return max(cost, INIT_ZERO);
         }
 
         private void recordCost() {
-            costLastRecorded = cost();
+            costLastRecorded = safeCost();
         }
 
         protected void updateOptimiserCoefficients() {
-            assert costLastRecorded == cost();
-            planner.optimiser().setObjectiveCoefficient(varIsMinimal, log(1 + cost()));
+            assert costLastRecorded == safeCost();
+            planner.optimiser().setObjectiveCoefficient(varIsMinimal, log(1 + safeCost()));
             initialiseMinimalEdgeConstraint();
         }
 
