@@ -855,6 +855,7 @@ public class ResponseBuilder {
                 ConceptProto.Concept conceptProto = ResponseBuilder.Concept.protoConcept(concept);
                 conceptMapProto.putMap(id.reference().name(), conceptProto);
             });
+            conceptMapProto.setExplainables(AnswerProto.Explainables.getDefaultInstance());
             return conceptMapProto.build();
         }
 
