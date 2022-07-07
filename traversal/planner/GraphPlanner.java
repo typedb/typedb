@@ -95,7 +95,7 @@ public class GraphPlanner implements Planner {
         Set<StructureEdge<?, ?>> registeredEdges = new HashSet<>();
         structure.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
         assert planner.vertices().size() > 1 && !planner.edges().isEmpty();
-        planner.initialise();
+        planner.initialiseOptimiserModel();
         return planner;
     }
 
@@ -159,17 +159,17 @@ public class GraphPlanner implements Planner {
         ).asType();
     }
 
-    private void initialise() {
-        createVariables();
-        createConstraints();
+    private void initialiseOptimiserModel() {
+        createOptimiserVariables();
+        createOptimiserConstraints();
     }
 
-    private void createVariables() {
-        vertices.values().forEach(PlannerVertex::createVariables);
-        edges.forEach(PlannerEdge::createVariables);
+    private void createOptimiserVariables() {
+        vertices.values().forEach(PlannerVertex::createOptimiserVariables);
+        edges.forEach(PlannerEdge::createOptimiserVariables);
     }
 
-    private void createConstraints() {
+    private void createOptimiserConstraints() {
         String conPrefix = "planner_con_";
         for (int i = 0; i < vertices.size(); i++) {
             OptimiserConstraint conOneVertexAtOrderI = optimiser.constraint(1, 1, conPrefix + "one_vertex_at_order_" + i);
@@ -177,8 +177,8 @@ public class GraphPlanner implements Planner {
                 conOneVertexAtOrderI.setCoefficient(vertex.varOrderAssignment[i], 1);
             }
         }
-        vertices.values().forEach(PlannerVertex::createConstraints);
-        edges.forEach(PlannerEdge::createConstraints);
+        vertices.values().forEach(PlannerVertex::createOptimiserConstraints);
+        edges.forEach(PlannerEdge::createOptimiserConstraints);
     }
 
     @Override
@@ -257,7 +257,7 @@ public class GraphPlanner implements Planner {
         }
         updateOptimiserCoefficients();
 
-        if (!isPlanned()) setInitialValues();
+        if (!isPlanned()) initialiseOptimiserValues();
 
         // TODO: we should have a more clever logic to allocate extra time
         long allocatedDuration = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
@@ -385,7 +385,7 @@ public class GraphPlanner implements Planner {
         return str.toString();
     }
 
-    private void setInitialValues() {
+    private void initialiseOptimiserValues() {
         Set<PlannerVertex<?>> unorderedVertices = new HashSet<>(vertices.values());
         int vertexOrder = 0;
         while (!unorderedVertices.isEmpty()) {
@@ -398,7 +398,7 @@ public class GraphPlanner implements Planner {
         }
         assert vertexOrder == vertices.size();
 
-        vertices.values().forEach(PlannerVertex::initialise);
-        edges.forEach(PlannerEdge::initialise);
+        vertices.values().forEach(PlannerVertex::initialiseOptimiserValues);
+        edges.forEach(PlannerEdge::initialiseOptimiserValues);
     }
 }

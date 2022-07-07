@@ -91,14 +91,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         return backward;
     }
 
-    void createVariables() {
-        forward.createVariables();
-        backward.createVariables();
+    void createOptimiserVariables() {
+        forward.createOptimiserVariables();
+        backward.createOptimiserVariables();
     }
 
-    void createConstraints() {
-        forward.createConstraints();
-        backward.createConstraints();
+    void createOptimiserConstraints() {
+        forward.createOptimiserConstraints();
+        backward.createOptimiserConstraints();
     }
 
     void computeCost(GraphManager graphMgr) {
@@ -116,9 +116,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.recordCost();
     }
 
-    public void initialise() {
-        forward.initialise();
-        backward.initialise();
+    public void initialiseOptimiserValues() {
+        forward.initialiseOptimiserValues();
+        backward.initialiseOptimiserValues();
     }
 
     @Override
@@ -171,12 +171,12 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             return isInitialised;
         }
 
-        void createVariables() {
+        void createOptimiserVariables() {
             varIsSelected = planner.optimiser().booleanVar(varPrefix + "is_selected");
             varIsMinimal = planner.optimiser().booleanVar(varPrefix + "is_minimal");
         }
 
-        void createConstraints() {
+        void createOptimiserConstraints() {
             int numVertices = planner.vertices().size();
 
             OptimiserConstraint conIsSelected = planner.optimiser().constraint(1, numVertices, conPrefix + "is_selected");
@@ -235,7 +235,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             initialiseMinimalEdgeConstraint();
         }
 
-        public void initialise() {
+        public void initialiseOptimiserValues() {
             setInitialSelected();
             setInitialMinimal();
             isInitialised = true;
