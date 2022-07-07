@@ -52,6 +52,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -87,6 +90,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     private final ConcurrentMap<UUID, ResponseStream<?>> streams;
     private final AtomicBoolean isRPCAlive;
     private final AtomicBoolean isTransactionOpen;
+    private final ReadWriteLock requestLock;
 
     private volatile SessionService sessionSvc;
     private volatile TypeDB.Transaction transaction;
@@ -110,6 +114,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         this.streams = new ConcurrentHashMap<>();
         this.isRPCAlive = new AtomicBoolean(true);
         this.isTransactionOpen = new AtomicBoolean(false);
+        this.requestLock = new StampedLock().asReadWriteLock();
     }
 
     public Context.Transaction context() {
@@ -132,10 +137,12 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         close(error);
     }
 
-    private synchronized void execute(TransactionProto.Transaction.Req request) {
+    private void execute(TransactionProto.Transaction.Req request) {
         FactoryTracingThreadStatic.ThreadTrace trace = null;
+        Lock accessLock = null;
         try {
-            trace = mayStartTrace(request, TRACE_PREFIX + request.getReqCase().name().toLowerCase());
+            accessLock = acquireRequestLock(request);
+            trace = mayStartTrace(request);
             switch (request.getReqCase()) {
                 case REQ_NOT_SET:
                     throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
@@ -149,6 +156,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             close(error);
         } finally {
             mayCloseTrace(trace);
+            if (accessLock != null) accessLock.unlock();
         }
     }
 
@@ -265,11 +273,52 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         stream.streamResParts();
     }
 
+    private Lock acquireRequestLock(TransactionProto.Transaction.Req request) {
+        Lock accessLock = isWriteRequest(request) ? requestLock.writeLock() : requestLock.readLock();
+        accessLock.lock();
+        return accessLock;
+    }
+
+    private static boolean isWriteRequest(TransactionProto.Transaction.Req request) {
+        switch (request.getReqCase()) {
+            // For simplicity, treat Concept API calls as writes
+            case OPEN_REQ:
+            case COMMIT_REQ:
+            case ROLLBACK_REQ:
+            case CONCEPT_MANAGER_REQ:
+            case LOGIC_MANAGER_REQ:
+            case RULE_REQ:
+            case TYPE_REQ:
+            case THING_REQ:
+                return true;
+            case STREAM_REQ:
+                return false;
+            case QUERY_MANAGER_REQ:
+                switch (request.getQueryManagerReq().getReqCase()) {
+                    case DEFINE_REQ:
+                    case UNDEFINE_REQ:
+                    case INSERT_REQ:
+                    case DELETE_REQ:
+                    case UPDATE_REQ:
+                        return true;
+                    case MATCH_REQ:
+                    case MATCH_AGGREGATE_REQ:
+                    case MATCH_GROUP_REQ:
+                    case MATCH_GROUP_AGGREGATE_REQ:
+                    case EXPLAIN_REQ:
+                        return false;
+                }
+                break;
+        }
+        throw TypeDBException.of(ILLEGAL_ARGUMENT);
+    }
+
     @Nullable
-    private FactoryTracingThreadStatic.ThreadTrace mayStartTrace(TransactionProto.Transaction.Req request, String name) {
+    private FactoryTracingThreadStatic.ThreadTrace mayStartTrace(TransactionProto.Transaction.Req request) {
         FactoryTracingThreadStatic.ThreadTrace trace = null;
         Optional<TracingData> tracingData = RequestReader.getTracingData(request);
         if (tracingData.isPresent()) {
+            String name = TRACE_PREFIX + request.getReqCase().name().toLowerCase();
             trace = continueTraceOnThread(tracingData.get().rootID(), tracingData.get().parentID(), name);
         }
         return trace;
