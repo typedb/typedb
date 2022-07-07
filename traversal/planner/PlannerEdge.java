@@ -251,7 +251,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     varIsSelected.initial() &&
                             iterate(to().ins()).
                                     filter(e -> !this.equals(e)).
-                                    filter(e -> e.varIsSelected.initial()).
+                                    filter(e -> e.from().varOrderNumber.initial() < e.to().varOrderNumber.initial()).
                                     noneMatch(e -> e.cheaperThan(this))
             );
         }
