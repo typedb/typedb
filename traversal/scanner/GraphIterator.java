@@ -66,7 +66,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private final Set<Identifier.Variable.Retrievable> filter;
     private final Map<ProcedureVertex<?, ?>, VertexTraverser> vertexTraversers;
     private final Scopes scopes;
-    private final Vertex<?, ?> start;
+    private final Vertex<?, ?> initial;
     private final SortedSet<ProcedureVertex<?, ?>> toTraverse;
     private final SortedSet<ProcedureVertex<?, ?>> toRevisit;
     private Direction direction;
@@ -76,14 +76,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private enum IteratorState {INIT, EMPTY, FETCHED, COMPLETED}
 
-    public GraphIterator(GraphManager graphMgr, Vertex<?, ?> start, GraphProcedure procedure,
+    public GraphIterator(GraphManager graphMgr, Vertex<?, ?> initial, GraphProcedure procedure,
                          Traversal.Parameters params, Set<Identifier.Variable.Retrievable> filter) {
         assert procedure.vertexCount() > 1;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.params = params;
         this.filter = filter;
-        this.start = start;
+        this.initial = initial;
 
         this.iteratorState = IteratorState.INIT;
         this.scopes = new Scopes();
@@ -119,7 +119,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             if (iteratorState == IteratorState.COMPLETED) return false;
             else if (iteratorState == IteratorState.FETCHED) return true;
             else if (iteratorState == IteratorState.INIT) {
-                initialiseStart();
+                initialiseStarts();
                 if (computeAnswer()) iteratorState = IteratorState.FETCHED;
                 else setCompleted();
             } else if (iteratorState == IteratorState.EMPTY) {
@@ -148,8 +148,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         recycle();
     }
 
-    private void initialiseStart() {
-        toTraverse.add(procedure.startVertex());
+    private void initialiseStarts() {
+        toTraverse.addAll(procedure.startVertices());
         direction = Direction.TRAVERSE;
     }
 
@@ -345,7 +345,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private Forwardable<Vertex<?, ?>, Order.Asc> getIterator() {
             assert procedureVertex.isStartingVertex() || !edgeInputs.isEmpty();
             if (iterator == null) {
-                if (procedureVertex.isStartingVertex()) iterator = createIteratorFromStart();
+                if (procedureVertex.equals(procedure.initialVertex())) iterator = createIteratorFromInitial();
+                else if (procedureVertex.isStartingVertex()) iterator = createIteratorFromStart();
                 else {
                     iterator = createIteratorFromEdges();
                     lastIntersection().ifPresent(value -> iterator.forward(value));
@@ -354,12 +355,25 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             return iterator;
         }
 
-        private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromStart() {
-            if (procedure.startVertex().id().isScoped()) {
-                Scopes.Scoped scoped = scopes.getOrInitialise(procedure.startVertex().id().asScoped().scope());
-                scoped.record(procedure.startVertex(), start.asThing().asThing());
+        private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromInitial() {
+            if (procedureVertex.id().isScoped()) {
+                Scopes.Scoped scoped = scopes.getOrInitialise(procedureVertex.id().asScoped().scope());
+                scoped.record(procedureVertex, initial.asThing());
             }
-            return iterateSorted(ASC, start);
+            return iterateSorted(ASC, initial);
+        }
+
+        private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromStart() {
+            assert procedureVertex.isStartingVertex();
+            if (procedureVertex.id().isScoped()) {
+                Scopes.Scoped scoped = scopes.getOrInitialise(procedureVertex.id().asScoped().scope());
+                return ((Forwardable<Vertex<?, ?>, ?>) procedureVertex.iterator(graphMgr, params)).mapSorted(v -> {
+                    scoped.record(procedureVertex, v.asThing());
+                    return v;
+                }, v -> v, ASC);
+            } else {
+                return (Forwardable<Vertex<?, ?>, Order.Asc>) procedureVertex.iterator(graphMgr, params);
+            }
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromEdges() {

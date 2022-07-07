@@ -63,7 +63,6 @@ public abstract class ProcedureVertex<
         > extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
     private int order;
-    private ProcedureEdge<?, ?> lastInEdge;
     private List<ProcedureEdge<?, ?>> orderedOuts;
     private Set<ProcedureEdge<?, ?>> transitiveOuts;
 
@@ -73,23 +72,8 @@ public abstract class ProcedureVertex<
 
     public abstract Forwardable<? extends VERTEX, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters);
 
-    @Override
-    public void in(ProcedureEdge<?, ?> edge) {
-        super.in(edge);
-        if (lastInEdge == null || edge.order() > lastInEdge.order()) lastInEdge = edge;
-    }
-
-    /**
-     * TODO:
-     *  after query planning, we can multiple starting vertices and we'll have to distinguish the start
-     *  versus vertices without in edges
-     */
     public boolean isStartingVertex() {
-        return order() == 0;
-    }
-
-    ProcedureEdge<?, ?> lastInEdge() {
-        return lastInEdge;
+        return ins().size() == 0;
     }
 
     public Thing asThing() {
@@ -167,7 +151,6 @@ public abstract class ProcedureVertex<
 
         @Override
         public Forwardable<? extends ThingVertex, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters) {
-            assert isStartingVertex();
             if (props().hasIID()) return iterateAndFilterFromIID(graphMgr, parameters);
             else return iterateAndFilterFromTypes(graphMgr, parameters);
         }
@@ -321,7 +304,7 @@ public abstract class ProcedureVertex<
 
         @Override
         public Forwardable<? extends TypeVertex, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters) {
-            assert isStartingVertex() && id().isVariable();
+            assert id().isVariable();
             Forwardable<TypeVertex, Order.Asc> iterator = null;
 
             if (!props().labels().isEmpty()) iterator = iterateLabels(graphMgr);

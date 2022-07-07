@@ -54,7 +54,7 @@ public class VertexProcedure implements PermutationProcedure {
         if (procedureVertex.isType()) procedureVertex.asType().props(structureVertex.asType().props());
         else procedureVertex.asThing().props(structureVertex.asThing().props());
         for (StructureEdge<?, ?> structureEdge : structureVertex.loops()) {
-            ProcedureEdge<?, ?> edge = ProcedureEdge.of(procedureVertex, procedureVertex, structureEdge, -1, true);
+            ProcedureEdge<?, ?> edge = ProcedureEdge.of(procedureVertex, procedureVertex, structureEdge, true);
             procedureVertex.loop(edge);
         }
         return new VertexProcedure(procedureVertex);

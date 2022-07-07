@@ -79,25 +79,22 @@ public abstract class ProcedureEdge<
         VERTEX_FROM extends ProcedureVertex<?, ?>, VERTEX_TO extends ProcedureVertex<?, ?>
         > extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
 
-    private final int order;
     private final Encoding.Direction.Edge direction;
     private final int hash;
 
-    private ProcedureEdge(VERTEX_FROM from, VERTEX_TO to, int order, Encoding.Direction.Edge direction, String symbol) {
+    private ProcedureEdge(VERTEX_FROM from, VERTEX_TO to, Encoding.Direction.Edge direction, String symbol) {
         super(from, to, symbol);
-        this.order = order;
         this.direction = direction;
-        this.hash = Objects.hash(from(), to(), order, direction);
+        this.hash = Objects.hash(from(), to(), direction);
     }
 
     public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
                                          PlannerEdge.Directional<?, ?> plannerEdge) {
-        int order = plannerEdge.orderNumber();
         Encoding.Direction.Edge dir = plannerEdge.direction();
         if (plannerEdge.isEqual()) {
-            return new Equal(from, to, order, dir);
+            return new Equal(from, to, dir);
         } else if (plannerEdge.isPredicate()) {
-            return new Predicate(from.asThing(), to.asThing(), order, dir, plannerEdge.asPredicate().predicate());
+            return new Predicate(from.asThing(), to.asThing(), dir, plannerEdge.asPredicate().predicate());
         } else if (plannerEdge.isNative()) {
             return Native.of(from, to, plannerEdge.asNative());
         } else {
@@ -106,14 +103,14 @@ public abstract class ProcedureEdge<
     }
 
     public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
-                                         StructureEdge<?, ?> structureEdge, int order, boolean isForward) {
+                                         StructureEdge<?, ?> structureEdge, boolean isForward) {
         Encoding.Direction.Edge dir = isForward ? FORWARD : BACKWARD;
         if (structureEdge.isEqual()) {
-            return new Equal(from, to, order, dir);
+            return new Equal(from, to, dir);
         } else if (structureEdge.isPredicate()) {
-            return new Predicate(from.asThing(), to.asThing(), order, dir, structureEdge.asPredicate().predicate());
+            return new Predicate(from.asThing(), to.asThing(), dir, structureEdge.asPredicate().predicate());
         } else if (structureEdge.isNative()) {
-            return Native.of(from, to, structureEdge.asNative(), order, isForward);
+            return Native.of(from, to, structureEdge.asNative(), isForward);
         } else {
             throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
@@ -124,10 +121,6 @@ public abstract class ProcedureEdge<
 
     public abstract boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                       Traversal.Parameters params);
-
-    public int order() {
-        return order;
-    }
 
     public Encoding.Direction.Edge direction() {
         return direction;
@@ -162,7 +155,7 @@ public abstract class ProcedureEdge<
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ProcedureEdge<?, ?> that = (ProcedureEdge<?, ?>) o;
-        return from().equals(that.from()) && to().equals(that.to()) && direction == that.direction;
+        return from().equals(that.from()) && to().equals(that.to()) && direction == that.direction && symbol.equals(that.symbol);
     }
 
     @Override
@@ -184,8 +177,8 @@ public abstract class ProcedureEdge<
     public static class Equal extends ProcedureEdge<ProcedureVertex<?, ?>, ProcedureVertex<?, ?>> {
 
         Equal(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
-              int order, Encoding.Direction.Edge direction) {
-            super(from, to, order, direction, TypeQLToken.Predicate.Equality.EQ.toString());
+              Encoding.Direction.Edge direction) {
+            super(from, to, direction, TypeQLToken.Predicate.Equality.EQ.toString());
         }
 
         @Override
@@ -212,7 +205,7 @@ public abstract class ProcedureEdge<
         @Override
         public ProcedureEdge<?, ?> reverse() {
             Encoding.Direction.Edge reverseDirection = direction().isForward() ? BACKWARD : FORWARD;
-            return new Equal(to, from, order(), reverseDirection);
+            return new Equal(to, from, reverseDirection);
         }
     }
 
@@ -220,10 +213,15 @@ public abstract class ProcedureEdge<
 
         private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
 
-        Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
-                  Encoding.Direction.Edge direction, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
-            super(from, to, order, direction, predicate.toString());
+        Predicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, Encoding.Direction.Edge direction,
+                  com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
+            super(from, to, direction, predicate.toString());
             this.predicate = predicate;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return super.equals(o) && ((Predicate) o).predicate.equals(predicate);
         }
 
         @Override
@@ -257,18 +255,17 @@ public abstract class ProcedureEdge<
             > extends ProcedureEdge<VERTEX_NATIVE_FROM, VERTEX_NATIVE_TO> {
 
         private Native(VERTEX_NATIVE_FROM from, VERTEX_NATIVE_TO to,
-                       int order, Encoding.Direction.Edge direction, Encoding.Edge encoding) {
-            super(from, to, order, direction, encoding.name());
+                       Encoding.Direction.Edge direction, Encoding.Edge encoding) {
+            super(from, to, direction, encoding.name());
         }
 
         static Native<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
                                PlannerEdge.Native.Directional<?, ?> edge) {
             boolean isForward = edge.direction().isForward();
             if (edge.isIsa()) {
-                int orderNumber = edge.orderNumber();
                 boolean isTransitive = edge.asIsa().isTransitive();
-                if (isForward) return new Isa.Forward(from.asThing(), to.asType(), orderNumber, isTransitive);
-                else return new Isa.Backward(from.asType(), to.asThing(), orderNumber, isTransitive);
+                if (isForward) return new Isa.Forward(from.asThing(), to.asType(), isTransitive);
+                else return new Isa.Backward(from.asType(), to.asThing(), isTransitive);
             } else if (edge.isType()) {
                 return Native.Type.of(from.asType(), to.asType(), edge.asType());
             } else if (edge.isThing()) {
@@ -279,15 +276,15 @@ public abstract class ProcedureEdge<
         }
 
         public static ProcedureEdge<?, ?> of(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
-                                             StructureEdge.Native<?, ?> edge, int order, boolean isForward) {
+                                             StructureEdge.Native<?, ?> edge, boolean isForward) {
             if (edge.encoding().equals(ISA)) {
                 boolean isTransitive = edge.isTransitive();
-                if (isForward) return new Isa.Forward(from.asThing(), to.asType(), order, isTransitive);
-                else return new Isa.Backward(from.asType(), to.asThing(), order, isTransitive);
+                if (isForward) return new Isa.Forward(from.asThing(), to.asType(), isTransitive);
+                else return new Isa.Backward(from.asType(), to.asThing(), isTransitive);
             } else if (edge.encoding().isType()) {
-                return Native.Type.of(from.asType(), to.asType(), edge, order, isForward);
+                return Native.Type.of(from.asType(), to.asType(), edge, isForward);
             } else if (edge.encoding().isThing()) {
-                return Native.Thing.of(from.asThing(), to.asThing(), edge, order, isForward);
+                return Native.Thing.of(from.asThing(), to.asThing(), edge, isForward);
             } else {
                 throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
@@ -299,9 +296,9 @@ public abstract class ProcedureEdge<
 
             final boolean isTransitive;
 
-            private Isa(VERTEX_ISA_FROM from, VERTEX_ISA_TO to, int order,
+            private Isa(VERTEX_ISA_FROM from, VERTEX_ISA_TO to,
                         Encoding.Direction.Edge direction, boolean isTransitive) {
-                super(from, to, order, direction, ISA);
+                super(from, to, direction, ISA);
                 this.isTransitive = isTransitive;
             }
 
@@ -321,8 +318,8 @@ public abstract class ProcedureEdge<
 
             static class Forward extends Isa<ProcedureVertex.Thing, ProcedureVertex.Type> {
 
-                Forward(ProcedureVertex.Thing thing, ProcedureVertex.Type type, int order, boolean isTransitive) {
-                    super(thing, type, order, FORWARD, isTransitive);
+                Forward(ProcedureVertex.Thing thing, ProcedureVertex.Type type, boolean isTransitive) {
+                    super(thing, type, FORWARD, isTransitive);
                 }
 
                 @Override
@@ -343,14 +340,14 @@ public abstract class ProcedureEdge<
 
                 @Override
                 public ProcedureEdge<?, ?> reverse() {
-                    return new Backward(to(), from(), order(), isTransitive);
+                    return new Backward(to(), from(), isTransitive);
                 }
             }
 
             static class Backward extends Isa<ProcedureVertex.Type, ProcedureVertex.Thing> {
 
-                Backward(ProcedureVertex.Type type, ProcedureVertex.Thing thing, int order, boolean isTransitive) {
-                    super(type, thing, order, BACKWARD, isTransitive);
+                Backward(ProcedureVertex.Type type, ProcedureVertex.Thing thing, boolean isTransitive) {
+                    super(type, thing, BACKWARD, isTransitive);
                 }
 
                 @Override
@@ -377,59 +374,58 @@ public abstract class ProcedureEdge<
 
                 @Override
                 public ProcedureEdge<?, ?> reverse() {
-                    return new Forward(to(), from(), order(), isTransitive);
+                    return new Forward(to(), from(), isTransitive);
                 }
             }
         }
 
         public static abstract class Type extends Native<ProcedureVertex.Type, ProcedureVertex.Type> {
 
-            private Type(ProcedureVertex.Type from, ProcedureVertex.Type to, int order,
+            private Type(ProcedureVertex.Type from, ProcedureVertex.Type to,
                          Encoding.Direction.Edge direction, Encoding.Edge encoding) {
-                super(from, to, order, direction, encoding);
+                super(from, to, direction, encoding);
             }
 
             static Native.Type of(ProcedureVertex.Type from, ProcedureVertex.Type to,
                                   PlannerEdge.Native.Type.Directional edge) {
                 boolean isForward = edge.direction().isForward();
                 boolean isTransitive = edge.isTransitive();
-                int orderNumber = edge.orderNumber();
 
                 if (edge.isSub()) {
-                    if (isForward) return new Sub.Forward(from, to, orderNumber, isTransitive);
-                    else return new Sub.Backward(from, to, orderNumber, isTransitive);
+                    if (isForward) return new Sub.Forward(from, to, isTransitive);
+                    else return new Sub.Backward(from, to, isTransitive);
                 } else if (edge.isOwns()) {
-                    if (isForward) return new Owns.Forward(from, to, orderNumber, edge.asOwns().isKey());
-                    else return new Owns.Backward(from, to, orderNumber, edge.asOwns().isKey());
+                    if (isForward) return new Owns.Forward(from, to, edge.asOwns().isKey());
+                    else return new Owns.Backward(from, to, edge.asOwns().isKey());
                 } else if (edge.isPlays()) {
-                    if (isForward) return new Plays.Forward(from, to, orderNumber);
-                    else return new Plays.Backward(from, to, orderNumber);
+                    if (isForward) return new Plays.Forward(from, to);
+                    else return new Plays.Backward(from, to);
                 } else if (edge.isRelates()) {
-                    if (isForward) return new Relates.Forward(from, to, orderNumber);
-                    else return new Relates.Backward(from, to, orderNumber);
+                    if (isForward) return new Relates.Forward(from, to);
+                    else return new Relates.Backward(from, to);
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
             }
 
             static ProcedureEdge<?, ?> of(ProcedureVertex.Type from, ProcedureVertex.Type to,
-                                          StructureEdge.Native<?, ?> edge, int order, boolean isForward) {
+                                          StructureEdge.Native<?, ?> edge, boolean isForward) {
                 switch (edge.encoding().asType()) {
                     case SUB:
-                        if (isForward) return new Sub.Forward(from, to, order, edge.isTransitive());
-                        else return new Sub.Backward(from, to, order, edge.isTransitive());
+                        if (isForward) return new Sub.Forward(from, to, edge.isTransitive());
+                        else return new Sub.Backward(from, to, edge.isTransitive());
                     case OWNS:
-                        if (isForward) return new Owns.Forward(from, to, order, false);
-                        else return new Owns.Backward(from, to, order, false);
+                        if (isForward) return new Owns.Forward(from, to, false);
+                        else return new Owns.Backward(from, to, false);
                     case OWNS_KEY:
-                        if (isForward) return new Owns.Forward(from, to, order, true);
-                        else return new Owns.Backward(from, to, order, true);
+                        if (isForward) return new Owns.Forward(from, to, true);
+                        else return new Owns.Backward(from, to, true);
                     case PLAYS:
-                        if (isForward) return new Plays.Forward(from, to, order);
-                        else return new Plays.Backward(from, to, order);
+                        if (isForward) return new Plays.Forward(from, to);
+                        else return new Plays.Backward(from, to);
                     case RELATES:
-                        if (isForward) return new Relates.Forward(from, to, order);
-                        else return new Relates.Backward(from, to, order);
+                        if (isForward) return new Relates.Forward(from, to);
+                        else return new Relates.Backward(from, to);
                     default:
                         throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
@@ -439,9 +435,9 @@ public abstract class ProcedureEdge<
 
                 final boolean isTransitive;
 
-                private Sub(ProcedureVertex.Type from, ProcedureVertex.Type to, int order,
+                private Sub(ProcedureVertex.Type from, ProcedureVertex.Type to,
                             Encoding.Direction.Edge direction, boolean isTransitive) {
-                    super(from, to, order, direction, SUB);
+                    super(from, to, direction, SUB);
                     this.isTransitive = isTransitive;
                 }
 
@@ -455,14 +451,19 @@ public abstract class ProcedureEdge<
                 }
 
                 @Override
+                public boolean equals(Object o) {
+                    return super.equals(o) && ((Sub) o).isTransitive == isTransitive;
+                }
+
+                @Override
                 public String toString() {
                     return super.toString() + String.format(" { isTransitive: %s }", isTransitive);
                 }
 
                 static class Forward extends Sub {
 
-                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isTransitive) {
-                        super(from, to, order, FORWARD, isTransitive);
+                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, boolean isTransitive) {
+                        super(from, to, FORWARD, isTransitive);
                     }
 
                     @Override
@@ -480,14 +481,14 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Sub.Backward(to, from, order(), isTransitive);
+                        return new Sub.Backward(to, from, isTransitive);
                     }
                 }
 
                 static class Backward extends Sub {
 
-                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isTransitive) {
-                        super(from, to, order, BACKWARD, isTransitive);
+                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, boolean isTransitive) {
+                        super(from, to, BACKWARD, isTransitive);
                     }
 
                     @Override
@@ -509,7 +510,7 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Sub.Forward(to, from, order(), isTransitive);
+                        return new Sub.Forward(to, from, isTransitive);
                     }
                 }
             }
@@ -518,10 +519,15 @@ public abstract class ProcedureEdge<
 
                 final boolean isKey;
 
-                private Owns(ProcedureVertex.Type from, ProcedureVertex.Type to, int order,
+                private Owns(ProcedureVertex.Type from, ProcedureVertex.Type to,
                              Encoding.Direction.Edge direction, boolean isKey) {
-                    super(from, to, order, direction, OWNS);
+                    super(from, to, direction, OWNS);
                     this.isKey = isKey;
+                }
+
+                @Override
+                public boolean equals(Object o) {
+                    return super.equals(o) && ((Owns) o).isKey == isKey;
                 }
 
                 @Override
@@ -531,8 +537,8 @@ public abstract class ProcedureEdge<
 
                 static class Forward extends Owns {
 
-                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isKey) {
-                        super(from, to, order, FORWARD, isKey);
+                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, boolean isKey) {
+                        super(from, to, FORWARD, isKey);
                     }
 
                     @Override
@@ -562,14 +568,14 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Owns.Backward(to, from, order(), isKey);
+                        return new Owns.Backward(to, from, isKey);
                     }
                 }
 
                 static class Backward extends Owns {
 
-                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order, boolean isKey) {
-                        super(from, to, order, BACKWARD, isKey);
+                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, boolean isKey) {
+                        super(from, to, BACKWARD, isKey);
                     }
 
                     @Override
@@ -599,22 +605,22 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Owns.Forward(to, from, order(), isKey);
+                        return new Owns.Forward(to, from, isKey);
                     }
                 }
             }
 
             static abstract class Plays extends Type {
 
-                private Plays(ProcedureVertex.Type from, ProcedureVertex.Type to, int order,
+                private Plays(ProcedureVertex.Type from, ProcedureVertex.Type to,
                               Encoding.Direction.Edge direction) {
-                    super(from, to, order, direction, PLAYS);
+                    super(from, to, direction, PLAYS);
                 }
 
                 static class Forward extends Plays {
 
-                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order) {
-                        super(from, to, order, FORWARD);
+                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to) {
+                        super(from, to, FORWARD);
                     }
 
                     @Override
@@ -638,14 +644,14 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Plays.Backward(to, from, order());
+                        return new Plays.Backward(to, from);
                     }
                 }
 
                 static class Backward extends Plays {
 
-                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order) {
-                        super(from, to, order, BACKWARD);
+                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to) {
+                        super(from, to, BACKWARD);
                     }
 
                     @Override
@@ -669,22 +675,22 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Plays.Forward(to, from, order());
+                        return new Plays.Forward(to, from);
                     }
                 }
             }
 
             static abstract class Relates extends Type {
 
-                private Relates(ProcedureVertex.Type from, ProcedureVertex.Type to, int order,
+                private Relates(ProcedureVertex.Type from, ProcedureVertex.Type to,
                                 Encoding.Direction.Edge direction) {
-                    super(from, to, order, direction, RELATES);
+                    super(from, to, direction, RELATES);
                 }
 
                 static class Forward extends Relates {
 
-                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order) {
-                        super(from, to, order, FORWARD);
+                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to) {
+                        super(from, to, FORWARD);
                     }
 
                     @Override
@@ -707,14 +713,14 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Relates.Backward(to, from, order());
+                        return new Relates.Backward(to, from);
                     }
                 }
 
                 static class Backward extends Relates {
 
-                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, int order) {
-                        super(from, to, order, BACKWARD);
+                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to) {
+                        super(from, to, BACKWARD);
                     }
 
                     @Override
@@ -738,7 +744,7 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Relates.Forward(to, from, order());
+                        return new Relates.Forward(to, from);
                     }
                 }
             }
@@ -746,49 +752,48 @@ public abstract class ProcedureEdge<
 
         static abstract class Thing extends Native<ProcedureVertex.Thing, ProcedureVertex.Thing> {
 
-            private Thing(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
+            private Thing(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
                           Encoding.Direction.Edge direction, Encoding.Edge encoding) {
-                super(from, to, order, direction, encoding);
+                super(from, to, direction, encoding);
             }
 
             static Thing of(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
                             PlannerEdge.Native.Thing.Directional edge) {
                 boolean isForward = edge.direction().isForward();
-                int orderNumber = edge.orderNumber();
 
                 if (edge.isHas()) {
-                    if (isForward) return new Has.Forward(from, to, orderNumber);
-                    else return new Has.Backward(from, to, orderNumber);
+                    if (isForward) return new Has.Forward(from, to);
+                    else return new Has.Backward(from, to);
                 } else if (edge.isPlaying()) {
-                    if (isForward) return new Playing.Forward(from, to, orderNumber);
-                    else return new Playing.Backward(from, to, orderNumber);
+                    if (isForward) return new Playing.Forward(from, to);
+                    else return new Playing.Backward(from, to);
                 } else if (edge.isRelating()) {
-                    if (isForward) return new Relating.Forward(from, to, orderNumber);
-                    else return new Relating.Backward(from, to, orderNumber);
+                    if (isForward) return new Relating.Forward(from, to);
+                    else return new Relating.Backward(from, to);
                 } else if (edge.isRolePlayer()) {
                     PlannerEdge.Native.Thing.RolePlayer.Directional rp = edge.asRolePlayer();
-                    if (isForward) return new RolePlayer.Forward(from, to, orderNumber, rp.roleTypes());
-                    else return new RolePlayer.Backward(from, to, orderNumber, rp.roleTypes());
+                    if (isForward) return new RolePlayer.Forward(from, to, rp.roleTypes());
+                    else return new RolePlayer.Backward(from, to, rp.roleTypes());
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
             }
 
             static ProcedureEdge<ProcedureVertex.Thing, ProcedureVertex.Thing> of(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
-                                                                                  StructureEdge.Native<?, ?> edge, int order, boolean isForward) {
+                                                                                  StructureEdge.Native<?, ?> edge, boolean isForward) {
                 Encoding.Edge.Thing encoding = edge.encoding().asThing();
                 if (encoding == HAS) {
-                    if (isForward) return new Has.Forward(from, to, order);
-                    else return new Has.Backward(from, to, order);
+                    if (isForward) return new Has.Forward(from, to);
+                    else return new Has.Backward(from, to);
                 } else if (encoding == RELATING) {
-                    if (isForward) return new Relating.Forward(from, to, order);
-                    else return new Relating.Backward(from, to, order);
+                    if (isForward) return new Relating.Forward(from, to);
+                    else return new Relating.Backward(from, to);
                 } else if (encoding == PLAYING) {
-                    if (isForward) return new Playing.Forward(from, to, order);
-                    else return new Playing.Backward(from, to, order);
+                    if (isForward) return new Playing.Forward(from, to);
+                    else return new Playing.Backward(from, to);
                 } else if (encoding == ROLEPLAYER) {
-                    if (isForward) return new RolePlayer.Forward(from, to, order, edge.asRolePlayer().types());
-                    else return new RolePlayer.Backward(from, to, order, edge.asRolePlayer().types());
+                    if (isForward) return new RolePlayer.Forward(from, to, edge.asRolePlayer().types());
+                    else return new RolePlayer.Backward(from, to, edge.asRolePlayer().types());
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
@@ -823,15 +828,15 @@ public abstract class ProcedureEdge<
 
             static abstract class Has extends Thing {
 
-                private Has(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
+                private Has(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
                             Encoding.Direction.Edge direction) {
-                    super(from, to, order, direction, HAS);
+                    super(from, to, direction, HAS);
                 }
 
                 static class Forward extends Has {
 
-                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
-                        super(from, to, order, FORWARD);
+                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to) {
+                        super(from, to, FORWARD);
                     }
 
                     @Override
@@ -880,14 +885,14 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Backward(to, from, order());
+                        return new Backward(to, from);
                     }
                 }
 
                 static class Backward extends Has {
 
-                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
-                        super(from, to, order, BACKWARD);
+                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to) {
+                        super(from, to, BACKWARD);
                     }
 
                     @Override
@@ -918,22 +923,22 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Forward(to, from, order());
+                        return new Forward(to, from);
                     }
                 }
             }
 
             static abstract class Playing extends Thing {
 
-                private Playing(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
+                private Playing(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
                                 Encoding.Direction.Edge direction) {
-                    super(from, to, order, direction, PLAYING);
+                    super(from, to, direction, PLAYING);
                 }
 
                 static class Forward extends Playing {
 
-                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
-                        super(from, to, order, FORWARD);
+                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to) {
+                        super(from, to, FORWARD);
                     }
 
                     @Override
@@ -951,14 +956,14 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Backward(to, from, order());
+                        return new Backward(to, from);
                     }
                 }
 
                 static class Backward extends Playing {
 
-                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
-                        super(from, to, order, BACKWARD);
+                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to) {
+                        super(from, to, BACKWARD);
                     }
 
                     @Override
@@ -991,22 +996,22 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Forward(to, from, order());
+                        return new Forward(to, from);
                     }
                 }
             }
 
             static abstract class Relating extends Thing {
 
-                private Relating(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
+                private Relating(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
                                  Encoding.Direction.Edge direction) {
-                    super(from, to, order, direction, RELATING);
+                    super(from, to, direction, RELATING);
                 }
 
                 static class Forward extends Relating {
 
-                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
-                        super(from, to, order, FORWARD);
+                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to) {
+                        super(from, to, FORWARD);
                     }
 
                     @Override
@@ -1024,14 +1029,14 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Backward(to, from, order());
+                        return new Backward(to, from);
                     }
                 }
 
                 static class Backward extends Relating {
 
-                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order) {
-                        super(from, to, order, BACKWARD);
+                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to) {
+                        super(from, to, BACKWARD);
                     }
 
                     @Override
@@ -1062,7 +1067,7 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Forward(to, from, order());
+                        return new Forward(to, from);
                     }
 
                 }
@@ -1072,9 +1077,9 @@ public abstract class ProcedureEdge<
 
                 final Set<Label> roleTypes;
 
-                private RolePlayer(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order,
+                private RolePlayer(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
                                    Encoding.Direction.Edge direction, Set<Label> roleTypes) {
-                    super(from, to, order, direction, ROLEPLAYER);
+                    super(from, to, direction, ROLEPLAYER);
                     this.roleTypes = roleTypes;
                 }
 
@@ -1115,14 +1120,19 @@ public abstract class ProcedureEdge<
                 }
 
                 @Override
+                public boolean equals(Object o) {
+                    return super.equals(o) && ((RolePlayer) o).roleTypes.equals(roleTypes);
+                }
+
+                @Override
                 public String toString() {
                     return super.toString() + String.format(" { roleTypes: %s }", roleTypes);
                 }
 
                 static class Forward extends RolePlayer {
 
-                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order, Set<Label> roleTypes) {
-                        super(from, to, order, FORWARD, roleTypes);
+                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, Set<Label> roleTypes) {
+                        super(from, to, FORWARD, roleTypes);
                     }
 
                     @Override
@@ -1190,14 +1200,14 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Backward(to, from, order(), roleTypes);
+                        return new Backward(to, from, roleTypes);
                     }
                 }
 
                 static class Backward extends RolePlayer {
 
-                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int order, Set<Label> roleTypes) {
-                        super(from, to, order, BACKWARD, roleTypes);
+                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, Set<Label> roleTypes) {
+                        super(from, to, BACKWARD, roleTypes);
                     }
 
                     @Override
@@ -1259,7 +1269,7 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Forward(to, from, order(), roleTypes);
+                        return new Forward(to, from, roleTypes);
                     }
                 }
             }

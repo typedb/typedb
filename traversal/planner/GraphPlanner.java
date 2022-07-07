@@ -37,7 +37,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -57,7 +56,6 @@ public class GraphPlanner implements Planner {
 
     static final long DEFAULT_TIME_LIMIT_MILLIS = 100;
     static final long HIGHER_TIME_LIMIT_MILLIS = 200;
-    static final double OBJECTIVE_COEFFICIENT_MAX_EXPONENT_DEFAULT = 3.0;
     static final double OBJECTIVE_PLANNER_COST_MAX_CHANGE = 0.2;
     static final double OBJECTIVE_VARIABLE_COST_MAX_CHANGE = 2.0;
     static final double OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE = 0.02;
@@ -73,12 +71,9 @@ public class GraphPlanner implements Planner {
     private volatile boolean isUpToDate;
     private volatile long totalDuration;
     private volatile long snapshot;
-    private volatile boolean hasObjective;
 
-    volatile double totalCostLastRecorded;
-    double totalCostNext;
-    double branchingFactor;
-    double costExponentUnit;
+    private volatile double totalCostLastRecorded;
+    private double totalCost;
 
     private GraphPlanner() {
         optimiser = new Optimiser();
@@ -89,11 +84,8 @@ public class GraphPlanner implements Planner {
         isUpToDate = false;
         totalDuration = 0L;
         totalCostLastRecorded = INIT_ZERO;
-        totalCostNext = INIT_ZERO;
-        branchingFactor = INIT_ZERO;
-        costExponentUnit = INIT_ZERO;
+        totalCost = INIT_ZERO;
         snapshot = -1L;
-        hasObjective = false;
     }
 
     static GraphPlanner create(Structure structure) {
@@ -103,57 +95,8 @@ public class GraphPlanner implements Planner {
         Set<StructureEdge<?, ?>> registeredEdges = new HashSet<>();
         structure.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
         assert planner.vertices().size() > 1 && !planner.edges().isEmpty();
-        planner.initialise();
+        planner.initialiseOptimiserModel();
         return planner;
-    }
-
-    @Override
-    public GraphProcedure procedure() {
-        assert procedure != null;
-        return procedure;
-    }
-
-    @Override
-    public boolean isGraph() {
-        return true;
-    }
-
-    @Override
-    public GraphPlanner asGraph() {
-        return this;
-    }
-
-    public Collection<PlannerVertex<?>> vertices() {
-        return vertices.values();
-    }
-
-    public Set<PlannerEdge<?, ?>> edges() {
-        return edges;
-    }
-
-    void setOutOfDate() {
-        this.isUpToDate = false;
-    }
-
-    private boolean isUpToDate() {
-        return isUpToDate;
-    }
-
-    private boolean isPlanned() {
-        return optimiser.isFeasible() || optimiser.isOptimal();
-    }
-
-    @Override
-    public boolean isOptimal() {
-        return optimiser.isOptimal();
-    }
-
-    private boolean isError() {
-        return optimiser.isError();
-    }
-
-    Optimiser optimiser() {
-        return optimiser;
     }
 
     private void registerVertex(StructureVertex<?> structureVertex, Set<StructureVertex<?>> registeredVertices,
@@ -216,123 +159,89 @@ public class GraphPlanner implements Planner {
         ).asType();
     }
 
-    private void initialise() {
-        initialiseVariables();
-        initialiseConstraintsForVariables();
-        initialiseConstraintsForEdges();
+    private void initialiseOptimiserModel() {
+        createOptimiserVariables();
+        createOptimiserConstraints();
     }
 
-    private void initialiseVariables() {
-        vertices.values().forEach(PlannerVertex::initialiseVariables);
-        edges.forEach(PlannerEdge::initialiseVariables);
+    private void createOptimiserVariables() {
+        vertices.values().forEach(PlannerVertex::createOptimiserVariables);
+        edges.forEach(PlannerEdge::createOptimiserVariables);
     }
 
-    private void initialiseConstraintsForVariables() {
-        String conPrefix = "planner_vertex_con_";
-        vertices.values().forEach(PlannerVertex::initialiseConstraints);
-        OptimiserConstraint conOneStartingVertex = optimiser.constraint(1, 1, conPrefix + "one_starting_vertex");
-        for (PlannerVertex<?> vertex : vertices.values()) {
-            conOneStartingVertex.setCoefficient(vertex.varIsStartingVertex, 1);
-        }
-    }
-
-    private void initialiseConstraintsForEdges() {
-        String conPrefix = "planner_edge_con_";
-        edges.forEach(PlannerEdge::initialiseConstraints);
-        for (int i = 0; i < edges.size(); i++) {
-            OptimiserConstraint conOneEdgeAtOrderI = optimiser.constraint(1, 1, conPrefix + "one_edge_at_order_" + i);
-            for (PlannerEdge<?, ?> edge : edges) {
-                conOneEdgeAtOrderI.setCoefficient(edge.forward().varOrderAssignment[i], 1);
-                conOneEdgeAtOrderI.setCoefficient(edge.backward().varOrderAssignment[i], 1);
+    private void createOptimiserConstraints() {
+        String conPrefix = "planner_con_";
+        for (int i = 0; i < vertices.size(); i++) {
+            OptimiserConstraint conOneVertexAtOrderI = optimiser.constraint(1, 1, conPrefix + "one_vertex_at_order_" + i);
+            for (PlannerVertex<?> vertex : vertices.values()) {
+                conOneVertexAtOrderI.setCoefficient(vertex.varOrderAssignment[i], 1);
             }
         }
+        vertices.values().forEach(PlannerVertex::createOptimiserConstraints);
+        edges.forEach(PlannerEdge::createOptimiserConstraints);
     }
 
-    private void updateObjective(GraphManager graph) {
-        if (snapshot < graph.data().stats().snapshot()) {
-            totalCostNext = INIT_ZERO;
-            // TODO: we should not include the graph's uncommitted writes, but only the persisted counts in the costs
-            setBranchingFactor(graph);
-            setCostExponentUnit(graph);
-            computeTotalCostNext(graph);
-            snapshot = graph.data().stats().snapshot();
-            hasObjective = true;
-
-            assert !Double.isNaN(totalCostNext) && !Double.isNaN(totalCostLastRecorded) && totalCostLastRecorded > 0;
-            if (abs((totalCostNext / totalCostLastRecorded) - 1) >= OBJECTIVE_PLANNER_COST_MAX_CHANGE) setOutOfDate();
-            if (!isUpToDate) {
-                totalCostLastRecorded = totalCostNext;
-                vertices.values().forEach(PlannerVertex::recordCost);
-                edges.forEach(PlannerEdge::recordCost);
-            }
-        }
-        assert hasObjective : String.format("Failed to set objective function. Planner snapshot: %d; statistics snapshot: %d", snapshot, graph.data().stats().snapshot());
-        if (LOG.isTraceEnabled()) LOG.trace(optimiser.toString());
+    @Override
+    public GraphProcedure procedure() {
+        assert procedure != null;
+        return procedure;
     }
 
-    void updateCostNext(double costPrevious, double costNext) {
-        assert !Double.isNaN(totalCostNext);
-        assert !Double.isNaN(totalCostLastRecorded);
-        assert !Double.isNaN(costPrevious);
-        assert !Double.isNaN(costNext);
-        assert costPrevious > 0 && totalCostLastRecorded > 0;
-
-        totalCostNext += costNext;
-        assert !Double.isNaN(totalCostNext);
-
-        if (costNext / costPrevious >= OBJECTIVE_VARIABLE_COST_MAX_CHANGE &&
-                costNext / totalCostLastRecorded >= OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE) {
-            setOutOfDate();
-        }
+    @Override
+    public boolean isGraph() {
+        return true;
     }
 
-    private void setBranchingFactor(GraphManager graph) {
-        // TODO: We can refine the branching factor by not strictly considering entities being the only divisor
-        double entities = graph.data().stats().thingVertexTransitiveCount(graph.schema().rootEntityType());
-        double roles = graph.data().stats().thingVertexTransitiveCount(graph.schema().rootRoleType());
-        if (roles == 0) roles += 1;
-        if (entities > 0) branchingFactor = roles / entities;
-        assert !Double.isNaN(branchingFactor);
+    @Override
+    public GraphPlanner asGraph() {
+        return this;
     }
 
-    private void setCostExponentUnit(GraphManager graph) {
-        double expUnit, expMaxInc, expMax;
-        expUnit = (OBJECTIVE_COEFFICIENT_MAX_EXPONENT_DEFAULT - 1) / edges.size();
-        expUnit = Math.min(expUnit, 1.0);
-
-        expMaxInc = expUnit * edges.size();
-        expMax = 1 + expMaxInc;
-        long things = graph.data().stats().thingVertexTransitiveCount(graph.schema().rootThingType());
-        double maxCoefficient = Math.pow(things, expMax);
-        if (Double.isNaN(maxCoefficient) || Double.isInfinite(maxCoefficient) || maxCoefficient > Long.MAX_VALUE) {
-            expMax = Math.log(Long.MAX_VALUE) / Math.log(things);
-            expMaxInc = expMax - 1;
-        }
-        assert !Double.isNaN(expMaxInc) && expMaxInc > 0;
-        costExponentUnit = expMaxInc / edges.size();
+    public Collection<PlannerVertex<?>> vertices() {
+        return vertices.values();
     }
 
-    private void computeTotalCostNext(GraphManager graph) {
-        vertices.values().forEach(v -> v.updateObjective(graph));
-        edges.forEach(e -> e.updateObjective(graph));
+    public Set<PlannerEdge<?, ?>> edges() {
+        return edges;
     }
 
-    private void setInitialValues() {
-        new Initialiser().execute();
+    void setOutOfDate() {
+        isUpToDate = false;
     }
 
-    void mayOptimise(GraphManager graph, boolean singleUse) {
+    private boolean isUpToDate() {
+        return isUpToDate;
+    }
+
+    private boolean isPlanned() {
+        return optimiser.isFeasible() || optimiser.isOptimal();
+    }
+
+    @Override
+    public boolean isOptimal() {
+        return optimiser.isOptimal();
+    }
+
+    private boolean isError() {
+        return optimiser.isError();
+    }
+
+    Optimiser optimiser() {
+        return optimiser;
+    }
+
+    void mayOptimise(GraphManager graphMgr, boolean singleUse) {
         if (procedure == null) {
             try {
                 firstOptimisingLock.writeLock().lock();
-                if (procedure == null) optimise(graph, singleUse);
+                if (procedure == null) optimise(graphMgr, singleUse);
                 assert procedure != null;
             } finally {
                 firstOptimisingLock.writeLock().unlock();
             }
         } else if (isOptimising.compareAndSet(false, true)) {
             try {
-                optimise(graph, singleUse);
+                optimise(graphMgr, singleUse);
             } finally {
                 isOptimising.set(false);
             }
@@ -340,14 +249,15 @@ public class GraphPlanner implements Planner {
     }
 
     @SuppressWarnings("NonAtomicOperationOnVolatileField")
-    private void optimise(GraphManager graph, boolean singleUse) {
-        updateObjective(graph);
+    private void optimise(GraphManager graphMgr, boolean singleUse) {
+        updateTraversalCosts(graphMgr);
         if (isUpToDate() && isOptimal()) {
             if (LOG.isDebugEnabled()) LOG.debug("GraphPlanner still optimal and up-to-date");
             return;
         }
+        updateOptimiserCoefficients();
 
-        if (!isPlanned()) setInitialValues();
+        if (!isPlanned()) initialiseOptimiserValues();
 
         // TODO: we should have a more clever logic to allocate extra time
         long allocatedDuration = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
@@ -368,6 +278,70 @@ public class GraphPlanner implements Planner {
         printDebug(start, endSolver, end);
     }
 
+    private void updateOptimiserCoefficients() {
+        vertices.values().forEach(PlannerVertex::updateOptimiserCoefficients);
+        edges.forEach(PlannerEdge::updateOptimiserCoefficients);
+
+        if (LOG.isTraceEnabled()) LOG.trace(optimiser.toString());
+    }
+
+    private void updateTraversalCosts(GraphManager graphMgr) {
+        if (snapshot < graphMgr.data().stats().snapshot()) {
+            // TODO: we should not include the graph's uncommitted writes, but only the persisted counts in the costs
+            snapshot = graphMgr.data().stats().snapshot();
+            computeTotalCost(graphMgr);
+
+            if (!isUpToDate) {
+                totalCostLastRecorded = totalCost;
+                vertices.values().forEach(PlannerVertex::recordCost);
+                edges.forEach(PlannerEdge::recordCost);
+            }
+        }
+    }
+
+    private void computeTotalCost(GraphManager graphMgr) {
+        vertices.values().forEach(v -> {
+            v.computeCost(graphMgr);
+            if (costChangeSignificant(v)) setOutOfDate();
+        });
+        edges.forEach(e -> {
+            e.computeCost(graphMgr);
+            if (costChangeSignificant(e)) setOutOfDate();
+        });
+
+        double vertexCost = iterate(vertices.values()).map(PlannerVertex::safeCost).reduce(0.0, Double::sum);
+        double edgeCost = iterate(edges).map(e -> e.forward.safeCost() + e.backward.safeCost()).reduce(0.0, Double::sum);
+        totalCost = vertexCost + edgeCost;
+        if (totalCostChangeSignificant()) setOutOfDate();
+    }
+
+    private boolean costChangeSignificant(PlannerVertex<?> vertex) {
+        return costChangeSignificant(vertex.costLastRecorded, vertex.safeCost());
+    }
+
+    private boolean costChangeSignificant(PlannerEdge<?, ?> edge) {
+        return costChangeSignificant(edge.forward) || costChangeSignificant(edge.backward);
+    }
+
+    private boolean costChangeSignificant(PlannerEdge.Directional<?, ?> edge) {
+        return costChangeSignificant(edge.costLastRecorded, edge.safeCost());
+    }
+
+    private boolean costChangeSignificant(double costPrevious, double costNext) {
+        assert totalCostLastRecorded > 0;
+        assert costPrevious > 0;
+        assert costNext > 0;
+
+        return (costNext / costPrevious >= OBJECTIVE_VARIABLE_COST_MAX_CHANGE ||
+                costNext / costPrevious <= 1.0 / OBJECTIVE_VARIABLE_COST_MAX_CHANGE) &&
+                abs(costNext - costPrevious) / totalCostLastRecorded >= OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE;
+    }
+
+    private boolean totalCostChangeSignificant() {
+        assert totalCostLastRecorded > 0;
+        return abs((totalCost / totalCostLastRecorded) - 1) >= OBJECTIVE_PLANNER_COST_MAX_CHANGE;
+    }
+
     private void throwPlanningError() {
         LOG.error(toString());
         LOG.error("Optimisation status: {}", optimiser.status());
@@ -378,6 +352,7 @@ public class GraphPlanner implements Planner {
     private void printDebug(Instant start, Instant endSolver, Instant end) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Optimisation status         : {}", optimiser.status().name());
+            LOG.debug("Objective function value    : {}", optimiser.objectiveValue());
             LOG.debug("Solver duration             : {} (ms)", between(start, endSolver).toMillis());
             LOG.debug("Procedure creation duration : {} (ms)", between(endSolver, end).toMillis());
             LOG.debug("Total duration ------------ : {} (ms)", between(start, end).toMillis());
@@ -410,47 +385,20 @@ public class GraphPlanner implements Planner {
         return str.toString();
     }
 
-    private class Initialiser {
-
-        private final LinkedHashSet<PlannerVertex<?>> queue;
-        private int edgeCount;
-
-        private Initialiser() {
-            queue = new LinkedHashSet<>();
-            edgeCount = 0;
+    private void initialiseOptimiserValues() {
+        Set<PlannerVertex<?>> unorderedVertices = new HashSet<>(vertices.values());
+        int vertexOrder = 0;
+        while (!unorderedVertices.isEmpty()) {
+            PlannerVertex<?> vertex = unorderedVertices.stream().min(comparing(
+                    v -> v.ins().stream().filter(e -> !unorderedVertices.contains(e.from()))
+                            .mapToDouble(PlannerEdge.Directional::safeCost).min().orElse(v.safeCost())
+            )).get();
+            unorderedVertices.remove(vertex);
+            vertex.setOrderInitial(vertexOrder++);
         }
+        assert vertexOrder == vertices.size();
 
-        public void execute() {
-            resetInitialValues();
-            PlannerVertex<?> start = vertices.values().stream().min(comparing(v -> v.costLastRecorded)).get();
-            start.setStartingVertexInitial();
-            queue.add(start);
-            while (!queue.isEmpty()) {
-                PlannerVertex<?> vertex = queue.iterator().next();
-                List<PlannerEdge.Directional<?, ?>> outgoing = new ArrayList<>();
-                vertex.outs().stream().filter(e -> !e.hasInitialValue()).sorted(comparing(e -> e.costLastRecorded))
-                        .forEachOrdered(outgoing::add);
-                vertex.loops().forEach(e -> {
-                    if (e.direction().isForward()) e.setInitialValue(++edgeCount);
-                    else e.setInitialUnselected();
-                });
-                if (!outgoing.isEmpty()) {
-                    vertex.setHasOutgoingEdgesInitial();
-                    outgoing.forEach(e -> {
-                        e.setInitialValue(++edgeCount);
-                        e.to().setHasIncomingEdgesInitial();
-                        queue.add(e.to());
-                    });
-                } else {
-                    vertex.setEndingVertexInitial();
-                }
-                queue.remove(vertex);
-            }
-        }
-
-        private void resetInitialValues() {
-            vertices.values().forEach(PlannerVertex::resetInitialValue);
-            edges.forEach(PlannerEdge::resetInitialValue);
-        }
+        vertices.values().forEach(PlannerVertex::initialiseOptimiserValues);
+        edges.forEach(PlannerEdge::initialiseOptimiserValues);
     }
 }

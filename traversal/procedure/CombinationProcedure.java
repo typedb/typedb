@@ -161,7 +161,7 @@ public class CombinationProcedure {
 
     private ProcedureEdge<?, ?> createOut(ProcedureVertex.Type from, ProcedureVertex.Type to,
                                           StructureEdge<?, ?> structureEdge) {
-        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, -1, true);
+        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, true);
         edge.from().out(edge);
         edge.to().in(edge);
         return edge;
@@ -169,14 +169,14 @@ public class CombinationProcedure {
 
     private ProcedureEdge<?, ?> createIn(ProcedureVertex.Type from, ProcedureVertex.Type to,
                                          StructureEdge<?, ?> structureEdge) {
-        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, -1, false);
+        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, false);
         edge.from().out(edge);
         edge.to().in(edge);
         return edge;
     }
 
     private ProcedureEdge<?, ?> createLoop(ProcedureVertex.Type from, StructureEdge<?, ?> structureEdge) {
-        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, from, structureEdge, -1, true);
+        ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, from, structureEdge, true);
         edge.from().loop(edge);
         return edge;
     }
