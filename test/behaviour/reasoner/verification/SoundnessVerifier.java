@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMap.Explainable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
+import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConcludable;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConjunction;
@@ -116,13 +117,13 @@ class SoundnessVerifier {
                 verifyAnswerAndCollectExplanations(inferenceQuery, explanation.conditionAnswer(), tx);
                 verifyVariableMapping(answer, explainable, explanation);
             });
-            verifyNumberOfExplanations(tx, inferenceQuery, answer, explainable, explanations);
+            verifyNumberOfExplanations(tx, inferenceQuery, new Pair<>(explainable.conjunction(), answer.filter(explainable.conjunction().retrieves())), explanations);
         });
     }
 
-    private void verifyNumberOfExplanations(Transaction tx, TypeQLMatch inferenceQuery, ConceptMap answer, Explainable explainable, List<Explanation> explanations) {
+    private void verifyNumberOfExplanations(Transaction tx, TypeQLMatch inferenceQuery, Pair<Conjunction, ConceptMap> deferredBindableConjunction, List<Explanation> explanations) {
         Set<BoundConcludable> boundConcludable = BoundConjunction.create(
-                explainable.conjunction(), mapInferredConcepts(answer.filter(explainable.conjunction().retrieves()))
+                deferredBindableConjunction.first(), mapInferredConcepts(deferredBindableConjunction.second())
         ).boundConcludables();
         assert boundConcludable.size() == 1;
         boundConcludable.forEach(bc -> {
@@ -139,7 +140,7 @@ class SoundnessVerifier {
                 throw new SoundnessException(String.format(
                         "Soundness testing found an incorrect number of explanations for query \"%s\" for explainable" +
                                 " \"%s\".\nExplanations expected: %s\nExplanations found: %s",
-                        inferenceQuery, explainable.conjunction(), numExplanationsExpected, explanations.size()
+                        inferenceQuery, deferredBindableConjunction.first(), numExplanationsExpected, explanations.size()
                 ));
             }
         });
