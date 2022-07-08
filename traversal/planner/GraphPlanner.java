@@ -268,7 +268,6 @@ public class GraphPlanner implements Planner {
         optimiser.optimise(totalDuration);
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
-        else assert isPlanned();
 
         createProcedure();
         end = Instant.now();
