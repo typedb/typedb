@@ -52,12 +52,14 @@ class SoundnessVerifier {
     private final TypeDB.Session session;
     private final Map<Concept, Concept> inferredConceptMapping;
     private final Set<Explanation> collectedExplanations;
+    private final Map<Pair<Conjunction, ConceptMap>, Integer> deferredExplanationCount;
 
     private SoundnessVerifier(ForwardChainingMaterialiser materialiser, TypeDB.Session session) {
         this.materialiser = materialiser;
         this.session = session;
         this.inferredConceptMapping = new HashMap<>();
         this.collectedExplanations = new HashSet<>();
+        this.deferredExplanationCount = new HashMap<>();
     }
 
     static SoundnessVerifier create(ForwardChainingMaterialiser materialiser, TypeDB.Session session) {
@@ -69,7 +71,7 @@ class SoundnessVerifier {
                 new Options.Transaction().infer(true).explain(true))) {
             collectedExplanations.clear();
             // recursively collects explanations, partially verifies the answer.
-            tx.query().match(inferenceQuery).forEachRemaining(ans -> verifyAnswerAndCollectExplanations(inferenceQuery, ans, tx));
+            tx.query().match(inferenceQuery).forEachRemaining(ans -> verifyAnswerAndCollectExplanations(ans, tx));
 
             // We can only verify an explanation once all concepts in it's condition have been "mapped"
             // Concepts are mapped when an explanation containing them in the conclusion is verified.
@@ -96,6 +98,10 @@ class SoundnessVerifier {
                         " of all generated explanations");
             }
             collectedExplanations.clear();
+
+            for (Pair<Conjunction, ConceptMap> deferredBindableConjunction: deferredExplanationCount.keySet()) {
+                verifyNumberOfExplanations(tx, inferenceQuery, deferredBindableConjunction);
+            }
         }
     }
 
@@ -105,7 +111,7 @@ class SoundnessVerifier {
                 .first().isEmpty();
     }
 
-    private void verifyAnswerAndCollectExplanations(TypeQLMatch inferenceQuery, ConceptMap answer, Transaction tx) {
+    private void verifyAnswerAndCollectExplanations(ConceptMap answer, Transaction tx) {
         verifyExplainableVars(answer);
         answer.explainables().iterator().forEachRemaining(explainable -> {
             List<Explanation> explanations = tx.query().explain(explainable.id()).toList();
@@ -114,14 +120,18 @@ class SoundnessVerifier {
                 // explanations, so we do it ourselves
                 if (collectedExplanations.contains(explanation)) return;
                 else collectedExplanations.add(explanation);
-                verifyAnswerAndCollectExplanations(inferenceQuery, explanation.conditionAnswer(), tx);
+                verifyAnswerAndCollectExplanations(explanation.conditionAnswer(), tx);
                 verifyVariableMapping(answer, explainable, explanation);
             });
-            verifyNumberOfExplanations(tx, inferenceQuery, new Pair<>(explainable.conjunction(), answer.filter(explainable.conjunction().retrieves())), explanations);
+
+            Pair<Conjunction, ConceptMap> deferredBindableConjunction = new Pair<>(explainable.conjunction(), answer.filter(explainable.conjunction().retrieves()));
+            assert !deferredExplanationCount.containsKey(deferredBindableConjunction) ||
+                    deferredExplanationCount.get(deferredBindableConjunction).equals(explanations.size());
+            deferredExplanationCount.put(deferredBindableConjunction, explanations.size());
         });
     }
 
-    private void verifyNumberOfExplanations(Transaction tx, TypeQLMatch inferenceQuery, Pair<Conjunction, ConceptMap> deferredBindableConjunction, List<Explanation> explanations) {
+    private void verifyNumberOfExplanations(Transaction tx, TypeQLMatch inferenceQuery, Pair<Conjunction, ConceptMap> deferredBindableConjunction) {
         Set<BoundConcludable> boundConcludable = BoundConjunction.create(
                 deferredBindableConjunction.first(), mapInferredConcepts(deferredBindableConjunction.second())
         ).boundConcludables();
@@ -136,11 +146,11 @@ class SoundnessVerifier {
                     numExplanationsExpected.getAndAdd(unifier.unUnify(materialisation.boundConclusion().bounds(), boundsAndRequirements.get().second()).toSet().size());
                 });
             });
-            if (explanations.size() != numExplanationsExpected.get()) {
+            if (deferredExplanationCount.get(deferredBindableConjunction) != numExplanationsExpected.get()) {
                 throw new SoundnessException(String.format(
                         "Soundness testing found an incorrect number of explanations for query \"%s\" for explainable" +
                                 " \"%s\".\nExplanations expected: %s\nExplanations found: %s",
-                        inferenceQuery, deferredBindableConjunction.first(), numExplanationsExpected, explanations.size()
+                        inferenceQuery, deferredBindableConjunction.first(), numExplanationsExpected, deferredExplanationCount.get(deferredBindableConjunction)
                 ));
             }
         });
