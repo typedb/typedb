@@ -30,5 +30,5 @@ host_compatible_java_library(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
-    license_type = "agpl",
+    license_type = "agpl-header",
 )

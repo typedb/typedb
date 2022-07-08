@@ -31,10 +31,10 @@ host_compatible_java_library(
         "//test/behaviour/connection:steps",
 
         # External dependencies from Vaticle
-        "@vaticle_typeql_lang_java//:typeql-lang",
-        "@vaticle_typeql_lang_java//common:common",
-        "@vaticle_typeql_lang_java//pattern:pattern",
-        "@vaticle_typeql_lang_java//query:query",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/common:common",
+        "@vaticle_typeql//java/pattern:pattern",
+        "@vaticle_typeql//java/query:query",
 
         # External dependencies from Maven
         "@maven//:junit_junit",
@@ -54,5 +54,5 @@ host_compatible_java_library(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
-    license_type = "agpl",
+    license_type = "agpl-header",
 )

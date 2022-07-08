@@ -52,5 +52,5 @@ checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
     exclude = ["console-script"],
-    license_type = "agpl",
+    license_type = "agpl-header",
 )

@@ -194,7 +194,7 @@ release_validate_deps(
     name = "release-validate-deps",
     refs = "@vaticle_typedb_workspace_refs//:refs.json",
     tagged_deps = [
-        "@vaticle_typeql_lang_java",
+        "@vaticle_typeql",
         "@vaticle_typedb_common",
         "@vaticle_typedb_protocol",
     ],
@@ -237,8 +237,23 @@ docker_push(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", ".grabl/*", "bin/*", ".circleci/*"]),
-    exclude = glob(["docs/*", ".circleci/windows/*"]),
-    license_type = "agpl",
+    exclude = glob([
+        "*.md",
+        ".circleci/windows/*",
+        "docs/*",
+    ]) + [
+        ".bazelversion",
+        "LICENSE",
+        "VERSION",
+        "typedb.iml",  # TODO remove when checkstyle_test has .gitignore support
+    ],
+    license_type = "agpl-header",
+)
+
+checkstyle_test(
+    name = "checkstyle-license",
+    include = ["LICENSE"],
+    license_type = "agpl-fulltext",
 )
 
 # CI targets that are not declared in any BUILD file, but are called externally

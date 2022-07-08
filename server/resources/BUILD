@@ -28,5 +28,5 @@ checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
     exclude = ["typedb-ascii.txt"],
-    license_type = "agpl",
+    license_type = "agpl-header",
 )

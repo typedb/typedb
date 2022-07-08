@@ -70,10 +70,10 @@ native_java_libraries(
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_factory_tracing//client:client",
-        "@vaticle_typeql_lang_java//pattern:pattern",
-        "@vaticle_typeql_lang_java//:typeql-lang",
-        "@vaticle_typeql_lang_java//query",
-        "@vaticle_typeql_lang_java//common",
+        "@vaticle_typeql//java/pattern:pattern",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/query",
+        "@vaticle_typeql//java/common",
         "@vaticle_typedb_protocol//grpc/java:typedb-protocol",
 
         # External dependencies from Maven
@@ -308,6 +308,6 @@ deploy_apt(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),
-    license_type = "agpl",
+    license_type = "agpl-header",
 )
 

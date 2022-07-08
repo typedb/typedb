@@ -36,7 +36,7 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql//java:typeql-lang",
     ],
 )
 
@@ -60,7 +60,7 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql//java:typeql-lang",
     ],
 )
 
@@ -84,7 +84,7 @@ host_compatible_java_test(
         "//test/integration/util",
 
         # External dependencies from Vaticle
-        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typedb_common//:common",
     ],
 )
@@ -108,7 +108,7 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql//java:typeql-lang",
     ],
 )
 
@@ -119,5 +119,5 @@ checkstyle_test(
         "controller/*",
         "common/*",
     ]),
-    license_type = "agpl",
+    license_type = "agpl-header",
 )

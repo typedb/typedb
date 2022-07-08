@@ -36,9 +36,9 @@ host_compatible_java_test(
         "//test/integration/util:util",
 
         # External dependencies from Vaticle
-        "@vaticle_typeql_lang_java//query:query",
-        "@vaticle_typeql_lang_java//:typeql-lang",
-        "@vaticle_typeql_lang_java//common",
+        "@vaticle_typeql//java/query:query",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/common",
         "@vaticle_typedb_common//:common"
     ],
 )
@@ -48,5 +48,5 @@ checkstyle_test(
     include = glob([
         "*",
     ]),
-    license_type = "agpl",
+    license_type = "agpl-header",
 )
