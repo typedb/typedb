@@ -72,7 +72,7 @@ public class Optimiser {
 
     private void recordValues() {
         objectiveValue = solver.objective().value();
-        if (status != Status.NOT_SOLVED && status != Status.ERROR) variables.forEach(OptimiserVariable::recordValue);
+        if (status != Status.NOT_SOLVED && status != Status.ERROR) variables.forEach(OptimiserVariable::recordSolutionValue);
     }
 
     public boolean isOptimal() {
@@ -121,7 +121,7 @@ public class Optimiser {
     }
 
     private void applyInitialisation() {
-        assert iterate(variables).allMatch(OptimiserVariable::hasInitial);
+        assert iterate(variables).allMatch(OptimiserVariable::hasValue);
         MPVariable[] mpVariables = new MPVariable[variables.size()];
         double[] initialisations = new double[variables.size()];
         for (int i = 0; i < variables.size(); i++) {

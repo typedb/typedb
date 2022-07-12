@@ -242,16 +242,16 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         public void setInitialSelected() {
-            varIsSelected.setInitial(from().varOrderNumber.initial() < to().varOrderNumber.initial());
+            varIsSelected.setValue(from().getOrder() < to().getOrder());
         }
 
         public void setInitialMinimal() {
-            assert varIsSelected.hasInitial();
-            varIsMinimal.setInitial(
-                    varIsSelected.initial() &&
+            assert varIsSelected.hasValue();
+            varIsMinimal.setValue(
+                    varIsSelected.value() &&
                             iterate(to().ins()).
                                     filter(e -> !this.equals(e)).
-                                    filter(e -> e.from().varOrderNumber.initial() < e.to().varOrderNumber.initial()).
+                                    filter(e -> e.from().getOrder() < e.to().getOrder()).
                                     noneMatch(e -> e.cheaperThan(this))
             );
         }

@@ -26,8 +26,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNE
 
 public abstract class OptimiserVariable<T> {
 
-    protected T initial;
-    protected T solution;
+    protected T value;
     protected MPVariable mpVariable;
 
     final String name;
@@ -37,30 +36,15 @@ public abstract class OptimiserVariable<T> {
     }
 
     public T value() {
-        if (hasSolutionValue()) return solutionValue();
-        else return initial();
+        return value;
     }
 
-    public boolean hasSolutionValue() {
-        return solution != null;
+    public boolean hasValue() {
+        return value != null;
     }
 
-    public T solutionValue() {
-        assert hasSolutionValue();
-        return solution;
-    }
-
-    public void setInitial(T initial) {
-        this.initial = initial;
-    }
-
-    public boolean hasInitial() {
-        return initial != null;
-    }
-
-    public T initial() {
-        assert hasInitial();
-        return initial;
+    public void setValue(T value) {
+        this.value = value;
     }
 
     public abstract double hint();
@@ -69,7 +53,7 @@ public abstract class OptimiserVariable<T> {
         return mpVariable;
     }
 
-    abstract void recordValue();
+    abstract void recordSolutionValue();
 
     abstract void initialise(MPSolver solver);
 
@@ -89,9 +73,9 @@ public abstract class OptimiserVariable<T> {
         }
 
         @Override
-        void recordValue() {
-            if (mpVariable.solutionValue() == 0.0) solution = false;
-            else if (mpVariable.solutionValue() == 1.0) solution = true;
+        void recordSolutionValue() {
+            if (mpVariable.solutionValue() == 0.0) value = false;
+            else if (mpVariable.solutionValue() == 1.0) value = true;
             else throw TypeDBException.of(UNEXPECTED_OPTIMISER_VALUE);
         }
 
@@ -102,8 +86,8 @@ public abstract class OptimiserVariable<T> {
 
         @Override
         public double hint() {
-            assert hasInitial();
-            if (initial) return 1.0;
+            assert hasValue();
+            if (value) return 1.0;
             else return 0.0;
         }
     }
@@ -120,8 +104,8 @@ public abstract class OptimiserVariable<T> {
         }
 
         @Override
-        void recordValue() {
-            solution = (int) Math.round(mpVariable.solutionValue());
+        void recordSolutionValue() {
+            value = (int) Math.round(mpVariable.solutionValue());
         }
 
         @Override
@@ -131,8 +115,8 @@ public abstract class OptimiserVariable<T> {
 
         @Override
         public double hint() {
-            assert hasInitial();
-            return initial;
+            assert hasValue();
+            return value;
         }
     }
 }

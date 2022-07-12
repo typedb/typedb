@@ -150,14 +150,13 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     void setOrderInitial(int order) {
-        varOrderNumber.setInitial(order);
-        for (int i = 0; i < planner.vertices().size(); i++) varOrderAssignment[i].setInitial(order == i);
+        varOrderNumber.setValue(order);
+        for (int i = 0; i < planner.vertices().size(); i++) varOrderAssignment[i].setValue(order == i);
     }
 
     void initialiseOptimiserValues() {
-        assert varOrderNumber.hasInitial();
-        double initialOrder = varOrderNumber.initial();
-        varIsStartingVertex.setInitial(iterate(outs()).allMatch(e -> e.to().varOrderNumber.initial() > initialOrder));
+        assert varOrderNumber.hasValue();
+        varIsStartingVertex.setValue(iterate(outs()).allMatch(e -> e.to().getOrder() > getOrder()));
         isInitialised = true;
     }
 
