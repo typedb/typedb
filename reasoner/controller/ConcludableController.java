@@ -205,12 +205,19 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     InputPort<INPUT> inputPort = createInputPort();
                     mayRequestConnection(createRequest(inputPort.identifier(), conclusion, boundsAndRequirements.first()));
-                    transformInput(inputPort, unifier, boundsAndRequirements.second()).flatMap(this::filterNonInferred).buffer().registerSubscriber(hubReactive());
+                    transformInput(inputPort, unifier, boundsAndRequirements.second()).flatMap(this::rejectMismatchedInference).buffer().registerSubscriber(hubReactive());
                 }));
             });
         }
 
-        protected abstract FunctionalIterator<OUTPUT> filterNonInferred(OUTPUT output);
+        /*
+         * This method rectifies a design issue: it is possible for an `Isa` or `Attribute` concludable to unify with a
+         * `Conclusion.Has.Explicit` rule. In the case where the `has` edge is inferred but the owned attribute is not,
+         * the concludable's processor will receive answers where the concept it is concerned with is non-inferred. This
+         * leads to an extra invalid attribute explainable (and its explanation). Instead, we reject these
+         * non-inferred answers.
+         */
+        protected abstract FunctionalIterator<OUTPUT> rejectMismatchedInference(OUTPUT output);
 
         protected abstract Publisher<OUTPUT> transformInput(Publisher<INPUT> input, Unifier unifier,
                                                             Unifier.Requirements.Instance requirements);
@@ -258,7 +265,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
 
             @Override
-            protected FunctionalIterator<ConceptMap> filterNonInferred(ConceptMap conceptMap) {
+            protected FunctionalIterator<ConceptMap> rejectMismatchedInference(ConceptMap conceptMap) {
                 Concept conceptToCheck = null;
                 if (concludable.isAttribute()) {
                     conceptToCheck = conceptMap.get(concludable.asAttribute().attribute().id());
@@ -341,7 +348,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
 
             @Override
-            protected FunctionalIterator<Explanation> filterNonInferred(Explanation explanation) {
+            protected FunctionalIterator<Explanation> rejectMismatchedInference(Explanation explanation) {
                 Set<Variable> conclusionConceptsToCheck = null;
                 if (concludable.isAttribute()) {
                     conclusionConceptsToCheck = explanation.variableMapping().get(concludable.asAttribute().attribute().id());
