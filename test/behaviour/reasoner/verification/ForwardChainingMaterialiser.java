@@ -59,13 +59,13 @@ public class ForwardChainingMaterialiser {
     private final Map<com.vaticle.typedb.core.logic.Rule, Rule> rules;
     private final CoreTransaction tx;
     private final Materialisations materialisations;
-    private List<Set<Rule>> ruleStrata;
+    private List<Set<Rule>> rulePartitions;
 
     private ForwardChainingMaterialiser(CoreSession session) {
         this.rules = new HashMap<>();
         this.tx = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(false));
         this.materialisations = new Materialisations();
-        this.ruleStrata = null;
+        this.rulePartitions = null;
     }
 
     public static ForwardChainingMaterialiser materialise(CoreSession session) {
@@ -76,11 +76,11 @@ public class ForwardChainingMaterialiser {
 
     private void materialise() {
         tx.logic().rules().forEachRemaining(rule -> this.rules.put(rule, new Rule(rule)));
-        for (Set<Rule> stratum : computeNegationInducedRuleStratification()) {
+        for (Set<Rule> partition : computeOrderedRuleEvaluationPartitions()) {
             boolean reiterateRules = true;
             while (reiterateRules) {
                 reiterateRules = false;
-                for (Rule rule : stratum) {
+                for (Rule rule : partition) {
                     reiterateRules = reiterateRules || rule.materialise();
                 }
             }
@@ -116,49 +116,50 @@ public class ForwardChainingMaterialiser {
         return materialisations.forCondition(rules.get(rule), conditionAnswer);
     }
 
-    private List<Set<Rule>> computeNegationInducedRuleStratification() {
-        if (ruleStrata == null) {
-            ruleStrata = new LinkedList<>();
-            Set<Rule> inLesserStrata = new HashSet<>(); // Tracks nodes added to a stratum.
+    private List<Set<Rule>> computeOrderedRuleEvaluationPartitions() {
+        // Computes the stratification of rules required by stratified-negation.
+        if (rulePartitions == null) {
+            rulePartitions = new LinkedList<>();
+            Set<Rule> inLowerPartitions = new HashSet<>(); // Tracks nodes already added to some partition.
             for (Rule rule : rules.values()) {
-                if (!inLesserStrata.contains(rule)) {
-                    Set<Rule> inLesserOrEqualStrata = new HashSet<>();
-                    stratificationDFS(rule, inLesserStrata, inLesserOrEqualStrata);
-                    updateStrata(inLesserStrata, inLesserOrEqualStrata);
+                if (!inLowerPartitions.contains(rule)) {
+                    Set<Rule> inLowerOrSamePartition = new HashSet<>();
+                    partitioningDFS(rule, inLowerPartitions, inLowerOrSamePartition);
+                    updatePartitions(inLowerPartitions, inLowerOrSamePartition);
                 }
             }
         }
-        return ruleStrata;
+        return rulePartitions;
     }
 
-    private void stratificationDFS(Rule at, Set<Rule> inLesserStratum, Set<Rule> inLesserOrEqualStratum) {
-        // If a rule is reachable through a path with a negated edge, it is in a lesser stratum.
-        // If a rule is reachable only through paths with only positive edges, it is in a lesser or equal stratum.
-        if (inLesserStratum.contains(at) || inLesserOrEqualStratum.contains(at)) {
+    private void partitioningDFS(Rule at, Set<Rule> inLowerPartitions, Set<Rule> InLowerOrSamePartition) {
+        // If a rule is reachable through a path with a negated edge, it is in a strictly lower partition/stratum.
+        // If a rule is reachable only through paths with only positive edges, it is in a lower or equal partition/stratum.
+        if (inLowerPartitions.contains(at) || InLowerOrSamePartition.contains(at)) {
             return;
         } else {
-            inLesserOrEqualStratum.add(at);
+            InLowerOrSamePartition.add(at);
             for (Rule dependency : at.negatedDependencies()) {
-                if (!inLesserStratum.contains(dependency)) {
-                    Set<Rule> inLesserOrEqualStratumOfDependency = new HashSet<>();
-                    stratificationDFS(dependency, inLesserStratum, inLesserOrEqualStratumOfDependency);
-                    updateStrata(inLesserStratum, inLesserOrEqualStratumOfDependency);
+                if (!inLowerPartitions.contains(dependency)) {
+                    Set<Rule> inLowerOrSamePartitionAsDependency = new HashSet<>();
+                    partitioningDFS(dependency, inLowerPartitions, inLowerOrSamePartitionAsDependency);
+                    updatePartitions(inLowerPartitions, inLowerOrSamePartitionAsDependency);
                 }
             }
 
             for (Rule dependency : at.unnegatedDependencies()) {
-                if (!inLesserStratum.contains(dependency)) {
-                    stratificationDFS(dependency, inLesserStratum, inLesserOrEqualStratum);
+                if (!inLowerPartitions.contains(dependency)) {
+                    partitioningDFS(dependency, inLowerPartitions, InLowerOrSamePartition);
                 }
             }
         }
     }
 
-    private void updateStrata(Set<Rule> inLesserStratum, Set<Rule> inLesserOrEqualStratum) {
-        if (!inLesserOrEqualStratum.isEmpty()) {
-            Set<Rule> inThisStratum = iterate(inLesserOrEqualStratum).filter(rule -> !inLesserStratum.contains(rule)).toSet();
-            ruleStrata.add(inThisStratum);
-            inLesserStratum.addAll(inThisStratum);
+    private void updatePartitions(Set<Rule> inLowerPartition, Set<Rule> inLowerOrSamePartition) {
+        if (!inLowerOrSamePartition.isEmpty()) {
+            Set<Rule> inThisPartition = iterate(inLowerOrSamePartition).filter(rule -> !inLowerPartition.contains(rule)).toSet();
+            rulePartitions.add(inThisPartition);
+            inLowerPartition.addAll(inThisPartition);
         }
     }
 
