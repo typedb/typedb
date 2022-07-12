@@ -59,13 +59,13 @@ public class ForwardChainingMaterialiser {
     private final Map<com.vaticle.typedb.core.logic.Rule, Rule> rules;
     private final CoreTransaction tx;
     private final Materialisations materialisations;
-    private List<Set<Rule>> strata;
+    private List<Set<Rule>> ruleStrata;
 
     private ForwardChainingMaterialiser(CoreSession session) {
         this.rules = new HashMap<>();
         this.tx = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(false));
         this.materialisations = new Materialisations();
-        this.strata = null;
+        this.ruleStrata = null;
     }
 
     public static ForwardChainingMaterialiser materialise(CoreSession session) {
@@ -76,7 +76,7 @@ public class ForwardChainingMaterialiser {
 
     private void materialise() {
         tx.logic().rules().forEachRemaining(rule -> this.rules.put(rule, new Rule(rule)));
-        for (Set<Rule> stratum : getStratifiedRules()) {
+        for (Set<Rule> stratum : computeNegationInducedRuleStratification()) {
             boolean reiterateRules = true;
             while (reiterateRules) {
                 reiterateRules = false;
@@ -116,22 +116,22 @@ public class ForwardChainingMaterialiser {
         return materialisations.forCondition(rules.get(rule), conditionAnswer);
     }
 
-    private List<Set<Rule>> getStratifiedRules() {
-        if (strata == null) {
-            strata = new LinkedList<>();
+    private List<Set<Rule>> computeNegationInducedRuleStratification() {
+        if (ruleStrata == null) {
+            ruleStrata = new LinkedList<>();
             Set<Rule> inLesserStrata = new HashSet<>(); // Tracks nodes added to a stratum.
             for (Rule rule : rules.values()) {
                 if (!inLesserStrata.contains(rule)) {
                     Set<Rule> inLesserOrEqualStrata = new HashSet<>();
-                    strataDFS(rule, inLesserStrata, inLesserOrEqualStrata);
+                    stratificationDFS(rule, inLesserStrata, inLesserOrEqualStrata);
                     updateStrata(inLesserStrata, inLesserOrEqualStrata);
                 }
             }
         }
-        return strata;
+        return ruleStrata;
     }
 
-    private void strataDFS(Rule at, Set<Rule> inLesserStratum, Set<Rule> inLesserOrEqualStratum) {
+    private void stratificationDFS(Rule at, Set<Rule> inLesserStratum, Set<Rule> inLesserOrEqualStratum) {
         // If a rule is reachable through a path with a negated edge, it is in a lesser stratum.
         // If a rule is reachable only through paths with only positive edges, it is in a lesser or equal stratum.
         if (inLesserStratum.contains(at) || inLesserOrEqualStratum.contains(at)) {
@@ -141,14 +141,14 @@ public class ForwardChainingMaterialiser {
             for (Rule dependency : at.negatedDependencies()) {
                 if (!inLesserStratum.contains(dependency)) {
                     Set<Rule> inLesserOrEqualStratumOfDependency = new HashSet<>();
-                    strataDFS(dependency, inLesserStratum, inLesserOrEqualStratumOfDependency);
+                    stratificationDFS(dependency, inLesserStratum, inLesserOrEqualStratumOfDependency);
                     updateStrata(inLesserStratum, inLesserOrEqualStratumOfDependency);
                 }
             }
 
             for (Rule dependency : at.unnegatedDependencies()) {
                 if (!inLesserStratum.contains(dependency)) {
-                    strataDFS(dependency, inLesserStratum, inLesserOrEqualStratum);
+                    stratificationDFS(dependency, inLesserStratum, inLesserOrEqualStratum);
                 }
             }
         }
@@ -157,7 +157,7 @@ public class ForwardChainingMaterialiser {
     private void updateStrata(Set<Rule> inLesserStratum, Set<Rule> inLesserOrEqualStratum) {
         if (!inLesserOrEqualStratum.isEmpty()) {
             Set<Rule> inThisStratum = iterate(inLesserOrEqualStratum).filter(rule -> !inLesserStratum.contains(rule)).toSet();
-            strata.add(inThisStratum);
+            ruleStrata.add(inThisStratum);
             inLesserStratum.addAll(inThisStratum);
         }
     }
