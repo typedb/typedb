@@ -259,7 +259,19 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             @Override
             protected FunctionalIterator<ConceptMap> filterNonInferred(ConceptMap conceptMap) {
-                if (!concludable.isInferredAnswer(conceptMap)) return Iterators.empty();
+                Concept conceptToCheck = null;
+                if (concludable.isAttribute()) {
+                    conceptToCheck = conceptMap.get(concludable.asAttribute().attribute().id());
+                } else if (concludable.isIsa()) {
+                    conceptToCheck = conceptMap.get(concludable.asIsa().isa().owner().id());
+                }
+                if (conceptToCheck != null) {
+                    if (conceptToCheck.asThing().isInferred()) {
+                        return Iterators.single(conceptMap);
+                    } else {
+                        return Iterators.empty();
+                    }
+                }
                 return Iterators.single(conceptMap);
             }
 
@@ -330,7 +342,21 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             @Override
             protected FunctionalIterator<Explanation> filterNonInferred(Explanation explanation) {
-                if (!concludable.isInferredAnswer(explanation.conclusionAnswer().WHATCOMESHERE!)) return Iterators.empty();
+                Set<Variable> conclusionConceptsToCheck = null;
+                if (concludable.isAttribute()) {
+                    conclusionConceptsToCheck = explanation.variableMapping().get(concludable.asAttribute().attribute().id());
+                } else if (concludable.isIsa()) {
+                    conclusionConceptsToCheck = explanation.variableMapping().get(concludable.asIsa().isa().owner().id());
+                }
+                if (conclusionConceptsToCheck != null) {
+                    for (Variable toCheck : conclusionConceptsToCheck) {
+                        if (explanation.conclusionAnswer().concepts().get(toCheck).asThing().isInferred()) {
+                            return Iterators.single(explanation);
+                        } else {
+                            return Iterators.empty();
+                        }
+                    }
+                }
                 return Iterators.single(explanation);
             }
 
