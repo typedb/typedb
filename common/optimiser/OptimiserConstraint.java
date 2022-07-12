@@ -31,24 +31,15 @@ public class OptimiserConstraint {
     private final String name;
     private final Map<OptimiserVariable<?>, Double> coefficients;
     private MPConstraint mpConstraint;
-    boolean isUpToDate;
 
     public OptimiserConstraint(double lowerBound, double upperBound, String name) {
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.coefficients = new HashMap<>();
         this.name = name;
-        this.isUpToDate = false;
     }
 
     public void setCoefficient(OptimiserVariable<?> variable, double coeff) {
-        if (isUpToDate) {
-            if (coefficients.containsKey(variable)) {
-                isUpToDate = coefficients.get(variable) == coeff;
-            } else {
-                isUpToDate = false;
-            }
-        }
         coefficients.put(variable, coeff);
     }
 
@@ -58,12 +49,10 @@ public class OptimiserConstraint {
 
     synchronized void updateCoefficients() {
         coefficients.forEach((var, coeff) -> mpConstraint.setCoefficient(var.mpVariable(), coeff));
-        isUpToDate = true;
     }
 
     synchronized void release() {
         mpConstraint.delete();
         mpConstraint = null;
-        isUpToDate = false;
     }
 }

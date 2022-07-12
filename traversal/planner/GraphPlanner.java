@@ -69,6 +69,7 @@ public class GraphPlanner implements Planner {
 
     protected volatile GraphProcedure procedure;
     private volatile boolean isUpToDate;
+    private volatile boolean isVertexOrderInitialised;
     private volatile long totalDuration;
     private volatile long snapshot;
 
@@ -82,6 +83,7 @@ public class GraphPlanner implements Planner {
         isOptimising = new AtomicBoolean(false);
         firstOptimisingLock = new StampedLock().asReadWriteLock();
         isUpToDate = false;
+        isVertexOrderInitialised = false;
         totalDuration = 0L;
         totalCostLastRecorded = INIT_ZERO;
         totalCost = INIT_ZERO;
@@ -213,7 +215,7 @@ public class GraphPlanner implements Planner {
         return isUpToDate;
     }
 
-    private boolean isPlanned() {
+    private boolean isFeasible() {
         return optimiser.isFeasible() || optimiser.isOptimal();
     }
 
@@ -255,9 +257,7 @@ public class GraphPlanner implements Planner {
             if (LOG.isDebugEnabled()) LOG.debug("GraphPlanner still optimal and up-to-date");
             return;
         }
-        updateOptimiserCoefficients();
-
-        if (!isPlanned()) initialiseOptimiserValues();
+        if (!isUpToDate()) updateOptimiser();
 
         // TODO: we should have a more clever logic to allocate extra time
         long allocatedDuration = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
@@ -265,10 +265,10 @@ public class GraphPlanner implements Planner {
         totalDuration += allocatedDuration;
 
         start = Instant.now();
-        optimiser.optimise(totalDuration);
+        optimiser.optimise(1);
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
-        else assert isPlanned();
+        else assert isFeasible();
 
         createProcedure();
         end = Instant.now();
@@ -278,11 +278,27 @@ public class GraphPlanner implements Planner {
         printDebug(start, endSolver, end);
     }
 
-    private void updateOptimiserCoefficients() {
+    private void updateOptimiser() {
+        updateOptimiserCoefficents();
+        updateOptimiserConstraints();
+        if (!isVertexOrderInitialised) initialiseVertexOrderGreedy();
+        setOptimiserValues();
+        optimiser.reset();
+        if (LOG.isTraceEnabled()) LOG.trace(optimiser.toString());
+    }
+
+    private void setOptimiserValues() {
+        vertices.values().forEach(PlannerVertex::initialiseOptimiserValues);
+        edges.forEach(PlannerEdge::initialiseOptimiserValues);
+    }
+
+    private void updateOptimiserConstraints() {
+        edges.forEach(PlannerEdge::updateOptimiserConstraints);
+    }
+
+    private void updateOptimiserCoefficents() {
         vertices.values().forEach(PlannerVertex::updateOptimiserCoefficients);
         edges.forEach(PlannerEdge::updateOptimiserCoefficients);
-
-        if (LOG.isTraceEnabled()) LOG.trace(optimiser.toString());
     }
 
     private void updateTraversalCosts(GraphManager graphMgr) {
@@ -385,7 +401,7 @@ public class GraphPlanner implements Planner {
         return str.toString();
     }
 
-    private void initialiseOptimiserValues() {
+    private void initialiseVertexOrderGreedy() {
         Set<PlannerVertex<?>> unorderedVertices = new HashSet<>(vertices.values());
         int vertexOrder = 0;
         while (!unorderedVertices.isEmpty()) {
@@ -397,8 +413,6 @@ public class GraphPlanner implements Planner {
             vertex.setOrderInitial(vertexOrder++);
         }
         assert vertexOrder == vertices.size();
-
-        vertices.values().forEach(PlannerVertex::initialiseOptimiserValues);
-        edges.forEach(PlannerEdge::initialiseOptimiserValues);
+        isVertexOrderInitialised = true;
     }
 }

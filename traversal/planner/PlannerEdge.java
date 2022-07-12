@@ -101,6 +101,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.createOptimiserConstraints();
     }
 
+    void updateOptimiserConstraints() {
+        forward.updateOptimiserConstraints();
+        backward.updateOptimiserConstraints();
+    }
+
     void computeCost(GraphManager graphMgr) {
         forward.computeCost(graphMgr);
         backward.computeCost(graphMgr);
@@ -190,7 +195,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             conIsMinimal.setCoefficient(varIsSelected, -1);
         }
 
-        private void initialiseMinimalEdgeConstraint() {
+        private void updateMinimalEdgeConstraint() {
             for (PlannerEdge.Directional<?, ?> adjacent : to.ins()) {
                 if (!this.equals(adjacent)) {
                     if (cheaperThan(adjacent)) conIsMinimal.setCoefficient(adjacent.varIsSelected, 0);
@@ -231,7 +236,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         protected void updateOptimiserCoefficients() {
             assert costLastRecorded == safeCost();
             planner.optimiser().setObjectiveCoefficient(varIsMinimal, log(1 + safeCost()));
-            initialiseMinimalEdgeConstraint();
+        }
+
+        protected void updateOptimiserConstraints() {
+            updateMinimalEdgeConstraint();
         }
 
         public void initialiseOptimiserValues() {
