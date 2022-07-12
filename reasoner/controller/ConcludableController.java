@@ -158,7 +158,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
             assert bounds.equals(this.bounds);
             return new Processor.Explain(
-                    explainDriver, driver(), processorContext(), bounds, set(), conclusionUnifiers, reasonerConsumer,
+                    explainDriver, driver(), processorContext(), concludable, bounds, set(), conclusionUnifiers, reasonerConsumer,
                     () -> Traversal.traversalIterator(registry(), concludable.pattern(), bounds),
                     () -> Processor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
             );
@@ -205,10 +205,12 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     InputPort<INPUT> inputPort = createInputPort();
                     mayRequestConnection(createRequest(inputPort.identifier(), conclusion, boundsAndRequirements.first()));
-                    transformInput(inputPort, unifier, boundsAndRequirements.second()).buffer().registerSubscriber(hubReactive());
+                    transformInput(inputPort, unifier, boundsAndRequirements.second()).flatMap(this::filterNonInferred).buffer().registerSubscriber(hubReactive());
                 }));
             });
         }
+
+        protected abstract FunctionalIterator<OUTPUT> filterNonInferred(OUTPUT output);
 
         protected abstract Publisher<OUTPUT> transformInput(Publisher<INPUT> input, Unifier unifier,
                                                             Unifier.Requirements.Instance requirements);
@@ -256,6 +258,12 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
 
             @Override
+            protected FunctionalIterator<ConceptMap> filterNonInferred(ConceptMap conceptMap) {
+                if (!concludable.isInferredAnswer(conceptMap)) return Iterators.empty();
+                return Iterators.single(conceptMap);
+            }
+
+            @Override
             protected Publisher<ConceptMap> transformInput(Publisher<Map<Variable, Concept>> input,
                                                            Unifier unifier,
                                                            Unifier.Requirements.Instance requirements) {
@@ -295,10 +303,12 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         public static class Explain extends Processor<PartialExplanation, Explanation, Explain.Request, Explain> {
 
             private final ReasonerConsumer<Explanation> reasonerConsumer;
+            private final Concludable concludable;
             private RootSink<Explanation> rootSink;
 
             Explain(
                     Driver<Explain> driver, Driver<ConcludableController.Explain> controller, Context context,
+                    Concludable concludable,
                     ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                     ReasonerConsumer<Explanation> reasonerConsumer,
@@ -307,6 +317,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             ) {
                 super(driver, controller, context, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
                       debugName);
+                this.concludable = concludable;
                 this.reasonerConsumer = reasonerConsumer;
             }
 
@@ -315,6 +326,12 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 super.setUp();
                 rootSink = new RootSink<>(this, reasonerConsumer);
                 hubReactive().registerSubscriber(rootSink);
+            }
+
+            @Override
+            protected FunctionalIterator<Explanation> filterNonInferred(Explanation explanation) {
+                if (!concludable.isInferredAnswer(explanation.conclusionAnswer().WHATCOMESHERE!)) return Iterators.empty();
+                return Iterators.single(explanation);
             }
 
             @Override
