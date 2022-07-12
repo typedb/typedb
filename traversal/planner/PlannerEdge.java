@@ -192,11 +192,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         private void initialiseMinimalEdgeConstraint() {
             for (PlannerEdge.Directional<?, ?> adjacent : to.ins()) {
-                if (!this.equals(adjacent))
-                    if (cheaperThan(adjacent))
-                        conIsMinimal.setCoefficient(adjacent.varIsSelected, 0);
-                    else
-                        conIsMinimal.setCoefficient(adjacent.varIsSelected, 1);
+                if (!this.equals(adjacent)) {
+                    if (cheaperThan(adjacent)) conIsMinimal.setCoefficient(adjacent.varIsSelected, 0);
+                    else conIsMinimal.setCoefficient(adjacent.varIsSelected, 1);
+                }
             }
         }
 
