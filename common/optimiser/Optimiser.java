@@ -91,7 +91,7 @@ public class Optimiser {
     }
 
     private void initialiseSolver() {
-        solver = MPSolver.createSolver("SCIP");
+        solver = MPSolver.createSolver("SAT");
         solver.suppressOutput();
         solver.objective().setMinimization();
         parameters = new MPSolverParameters();
