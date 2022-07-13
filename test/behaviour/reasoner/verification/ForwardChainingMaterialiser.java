@@ -181,13 +181,15 @@ public class ForwardChainingMaterialiser {
 
         private FunctionalIterator<Materialisation> forConcludable(BoundConcludable boundConcludable) {
             FunctionalIterator<Materialisation> materialisations = empty();
-            Optional<Thing> inferredConcept = boundConcludable.inferredConcept();
-            if (inferredConcept.isPresent()) {
-                materialisations = materialisations.link(forThing(inferredConcept.get()));
-            }
+
             Optional<Pair<Thing, Attribute>> inferredHas = boundConcludable.inferredHas();
             if (inferredHas.isPresent()) {
                 materialisations = materialisations.link(forHas(inferredHas.get().first(), inferredHas.get().second()));
+            }else{
+                Optional<Thing> inferredConcept = boundConcludable.inferredConcept();
+                if (inferredConcept.isPresent()) {
+                    materialisations = materialisations.link(forThing(inferredConcept.get()));
+                }
             }
             return materialisations;
         }

@@ -99,7 +99,7 @@ class SoundnessVerifier {
             }
             collectedExplanations.clear();
 
-            for (Pair<Conjunction, ConceptMap> deferredBindableConjunction: deferredExplanationCount.keySet()) {
+            for (Pair<Conjunction, ConceptMap> deferredBindableConjunction : deferredExplanationCount.keySet()) {
                 verifyNumberOfExplanations(tx, inferenceQuery, deferredBindableConjunction);
             }
         }
@@ -139,6 +139,7 @@ class SoundnessVerifier {
         boundConcludable.forEach(bc -> {
             bc.concludable().getApplicableRules(tx.concepts(), tx.logic());
             AtomicInteger numExplanationsExpected = new AtomicInteger();
+
             materialiser.concludableMaterialisations(bc).forEachRemaining(materialisation -> {
                 bc.concludable().getUnifiers(materialisation.boundConclusion().conclusion().rule()).forEachRemaining(unifier -> {
                     Optional<Pair<ConceptMap, Unifier.Requirements.Instance>> boundsAndRequirements = unifier.unify(bc.pattern().bounds());
@@ -234,10 +235,15 @@ class SoundnessVerifier {
     private ConceptMap mapInferredConcepts(ConceptMap inferredAnswer) {
         Map<Retrievable, Concept> substituted = new HashMap<>();
         inferredAnswer.concepts().forEach((var, concept) -> {
-            if (inferredConceptMapping.containsKey(concept)) {
-                substituted.put(var, inferredConceptMapping.get(concept));
+            if (concept.isThing()) {
+                if (inferredConceptMapping.containsKey(concept)) {
+                    substituted.put(var, inferredConceptMapping.get(concept));
+                } else {
+                    assert !concept.asThing().isInferred();
+                    substituted.put(var, concept);
+                }
             } else {
-                assert !concept.asThing().isInferred();
+                assert concept.isType();
                 substituted.put(var, concept);
             }
         });
