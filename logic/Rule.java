@@ -257,7 +257,7 @@ public class Rule {
             return concludablesTriggeringRules;
         }
 
-        Set<Concludable> negatedConcludablesTriggeringRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Set<Concludable> negatedConcludablesTriggeringRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             synchronized (this) { // can be more contentious as only used for validation
                 if (negatedConcludablesTriggeringRules == null) {
                     negatedConcludablesTriggeringRules = concludables(rule.when().negations())

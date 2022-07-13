@@ -43,6 +43,8 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -57,11 +59,13 @@ public class ForwardChainingMaterialiser {
     private final Map<com.vaticle.typedb.core.logic.Rule, Rule> rules;
     private final CoreTransaction tx;
     private final Materialisations materialisations;
+    private List<Set<Rule>> rulePartitions;
 
     private ForwardChainingMaterialiser(CoreSession session) {
         this.rules = new HashMap<>();
         this.tx = session.transaction(Arguments.Transaction.Type.WRITE, new Options.Transaction().infer(false));
         this.materialisations = new Materialisations();
+        this.rulePartitions = null;
     }
 
     public static ForwardChainingMaterialiser materialise(CoreSession session) {
@@ -72,11 +76,13 @@ public class ForwardChainingMaterialiser {
 
     private void materialise() {
         tx.logic().rules().forEachRemaining(rule -> this.rules.put(rule, new Rule(rule)));
-        boolean reiterateRules = true;
-        while (reiterateRules) {
-            reiterateRules = false;
-            for (Rule rule : this.rules.values()) {
-                reiterateRules = reiterateRules || rule.materialise();
+        for (Set<Rule> partition : computeOrderedRuleEvaluationPartitions()) {
+            boolean reiterateRules = true;
+            while (reiterateRules) {
+                reiterateRules = false;
+                for (Rule rule : partition) {
+                    reiterateRules = reiterateRules || rule.materialise();
+                }
             }
         }
     }
@@ -110,10 +116,59 @@ public class ForwardChainingMaterialiser {
         return materialisations.forCondition(rules.get(rule), conditionAnswer);
     }
 
+    private List<Set<Rule>> computeOrderedRuleEvaluationPartitions() {
+        // Computes the stratification of rules required by stratified-negation.
+        if (rulePartitions == null) {
+            rulePartitions = new LinkedList<>();
+            Set<Rule> inLowerPartitions = new HashSet<>(); // Tracks nodes already added to some partition.
+            for (Rule rule : rules.values()) {
+                if (!inLowerPartitions.contains(rule)) {
+                    Set<Rule> inLowerOrSamePartition = new HashSet<>();
+                    partitioningDFS(rule, inLowerPartitions, inLowerOrSamePartition);
+                    updatePartitions(inLowerPartitions, inLowerOrSamePartition);
+                }
+            }
+        }
+        return rulePartitions;
+    }
+
+    private void partitioningDFS(Rule at, Set<Rule> inLowerPartitions, Set<Rule> InLowerOrSamePartition) {
+        // If a rule is reachable through a path with a negated edge, it is in a strictly lower partition/stratum.
+        // If a rule is reachable only through paths with only positive edges, it is in a lower or equal partition/stratum.
+        if (inLowerPartitions.contains(at) || InLowerOrSamePartition.contains(at)) {
+            return;
+        } else {
+            InLowerOrSamePartition.add(at);
+            for (Rule dependency : at.negatedDependencies()) {
+                if (!inLowerPartitions.contains(dependency)) {
+                    Set<Rule> inLowerOrSamePartitionAsDependency = new HashSet<>();
+                    partitioningDFS(dependency, inLowerPartitions, inLowerOrSamePartitionAsDependency);
+                    updatePartitions(inLowerPartitions, inLowerOrSamePartitionAsDependency);
+                }
+            }
+
+            for (Rule dependency : at.unnegatedDependencies()) {
+                if (!inLowerPartitions.contains(dependency)) {
+                    partitioningDFS(dependency, inLowerPartitions, InLowerOrSamePartition);
+                }
+            }
+        }
+    }
+
+    private void updatePartitions(Set<Rule> inLowerPartition, Set<Rule> inLowerOrSamePartition) {
+        if (!inLowerOrSamePartition.isEmpty()) {
+            Set<Rule> inThisPartition = iterate(inLowerOrSamePartition).filter(rule -> !inLowerPartition.contains(rule)).toSet();
+            rulePartitions.add(inThisPartition);
+            inLowerPartition.addAll(inThisPartition);
+        }
+    }
+
     private class Rule {
         private final com.vaticle.typedb.core.logic.Rule logicRule;
         private final Map<ConceptMap, Materialisation> conditionAnsMaterialisations;
         private boolean requiresReiteration;
+        private Set<Rule> negatedDependencies;
+        private Set<Rule> unnegatedDependencies;
 
         private Rule(com.vaticle.typedb.core.logic.Rule logicRule) {
             this.logicRule = logicRule;
@@ -123,6 +178,28 @@ public class ForwardChainingMaterialiser {
             Set<Concludable> concludables = Concludable.create(this.logicRule.then());
             assert concludables.size() == 1;
             // Use a concludable for the conclusion for the convenience of its isInferredAnswer method
+            negatedDependencies = null;
+            unnegatedDependencies = null;
+        }
+
+        private Set<Rule> negatedDependencies() {
+            if (negatedDependencies == null) {
+                negatedDependencies = iterate(logicRule.condition().negatedConcludablesTriggeringRules(tx.concepts(), tx.logic()))
+                        .flatMap(concludable -> concludable.getApplicableRules(tx.concepts(), tx.logic()))
+                        .map(r -> rules.get(r))
+                        .toSet();
+            }
+            return negatedDependencies;
+        }
+
+        private Set<Rule> unnegatedDependencies() {
+            if (unnegatedDependencies == null) {
+                unnegatedDependencies = iterate(logicRule.condition().concludablesTriggeringRules(tx.concepts(), tx.logic()))
+                        .flatMap(concludable -> concludable.getApplicableRules(tx.concepts(), tx.logic()))
+                        .map(r -> rules.get(r))
+                        .toSet();
+            }
+            return unnegatedDependencies;
         }
 
         private boolean materialise() {
