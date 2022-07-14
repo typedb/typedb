@@ -49,6 +49,7 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanInFanOut;
 
@@ -257,9 +258,9 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             private FunctionalIterator<ConceptMap> filterInferred(ConceptMap conceptMap) {
                 // TODO: Requires duplicate effort to filter out inferred concludable answers. Instead create a new
                 //  traversal mode that doesn't return inferred concepts
-                if (concludable.isInferredAnswer(conceptMap)) return Iterators.empty();
+                if (concludable.isInferredAnswer(conceptMap)) return empty();
                 for (Concept c : conceptMap.concepts().values()) {
-                    if (c.isThing() && c.asThing().isInferred()) return Iterators.empty();
+                    if (c.isThing() && c.asThing().isInferred()) return empty();
                 }
                 return Iterators.single(conceptMap);
             }
@@ -276,7 +277,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                     if (conceptToCheck.asThing().isInferred()) {
                         return Iterators.single(conceptMap);
                     } else {
-                        return Iterators.empty();
+                        return empty();
                     }
                 }
                 return Iterators.single(conceptMap);
@@ -360,7 +361,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                         if (explanation.conclusionAnswer().concepts().get(toCheck).asThing().isInferred()) {
                             return Iterators.single(explanation);
                         } else {
-                            return Iterators.empty();
+                            return empty();
                         }
                     }
                 }
@@ -376,7 +377,11 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             protected Publisher<Explanation> transformInput(Publisher<PartialExplanation> input,
                                                             Unifier unifier,
                                                             Unifier.Requirements.Instance requirements) {
-                return input.map(
+                return input.flatMap(p -> {
+                    FunctionalIterator<ConceptMap> exists = unifier.unUnify(p.conclusionAnswer().concepts(), requirements);
+                    if (exists.hasNext()) return iterate(p);
+                    else return empty();
+                }).map(
                         p -> new Explanation(p.rule(), unifier.mapping(), p.conclusionAnswer(), p.conditionAnswer())
                 );
             }
