@@ -47,7 +47,7 @@ build:
       command: |
         bazel build //...
         bazel run @vaticle_dependencies//tool/checkstyle:test-coverage
-        bazel test $(bazel query 'kind(kt_jvm_test, attr(generator_function, checkstyle_test, //...))') --test_output=errors
+        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
     build-dependency:
       image: vaticle-ubuntu-21.04
       command: |
