@@ -282,13 +282,13 @@ public class GraphPlanner implements Planner {
         updateOptimiserConstraints();
         if (!isVertexOrderInitialised) initialiseVertexOrderGreedy();
         setOptimiserValues();
-        optimiser.reset();
+        optimiser.restartFromSolution();
         if (LOG.isTraceEnabled()) LOG.trace(optimiser.toString());
     }
 
     private void setOptimiserValues() {
-        vertices.values().forEach(PlannerVertex::initialiseOptimiserValues);
-        edges.forEach(PlannerEdge::initialiseOptimiserValues);
+        vertices.values().forEach(PlannerVertex::setOptimiserValues);
+        edges.forEach(PlannerEdge::setOptimiserValues);
     }
 
     private void updateOptimiserConstraints() {
@@ -409,7 +409,7 @@ public class GraphPlanner implements Planner {
                             .mapToDouble(PlannerEdge.Directional::safeCost).min().orElse(v.safeCost())
             )).get();
             unorderedVertices.remove(vertex);
-            vertex.setOrderInitial(vertexOrder++);
+            vertex.setOrder(vertexOrder++);
         }
         assert vertexOrder == vertices.size();
         isVertexOrderInitialised = true;

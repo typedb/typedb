@@ -83,7 +83,7 @@ public class Optimiser {
         return status == Status.ERROR;
     }
 
-    public synchronized void reset() {
+    public synchronized void restartFromSolution() {
         if (hasSolver) {
             solver.reset();
             setSolverModel();

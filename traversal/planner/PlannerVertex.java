@@ -149,12 +149,12 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
                 && (isEndingVertex() ^ hasOutgoingEdges());
     }
 
-    void setOrderInitial(int order) {
+    void setOrder(int order) {
         varOrderNumber.setValue(order);
         for (int i = 0; i < planner.vertices().size(); i++) varOrderAssignment[i].setValue(order == i);
     }
 
-    void initialiseOptimiserValues() {
+    void setOptimiserValues() {
         assert varOrderNumber.hasValue();
         varIsStartingVertex.setValue(iterate(outs()).allMatch(e -> e.to().getOrder() > getOrder()));
         isInitialised = true;

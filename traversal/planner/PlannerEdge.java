@@ -121,9 +121,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.recordCost();
     }
 
-    public void initialiseOptimiserValues() {
-        forward.initialiseOptimiserValues();
-        backward.initialiseOptimiserValues();
+    public void setOptimiserValues() {
+        forward.setOptimiserValues();
+        backward.setOptimiserValues();
     }
 
     @Override
@@ -242,17 +242,17 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             updateMinimalEdgeConstraint();
         }
 
-        public void initialiseOptimiserValues() {
-            setInitialSelected();
-            setInitialMinimal();
+        public void setOptimiserValues() {
+            setSelected();
+            setMinimal();
             isInitialised = true;
         }
 
-        public void setInitialSelected() {
+        public void setSelected() {
             varIsSelected.setValue(from().getOrder() < to().getOrder());
         }
 
-        public void setInitialMinimal() {
+        public void setMinimal() {
             assert varIsSelected.hasValue();
             varIsMinimal.setValue(
                     varIsSelected.value() &&
