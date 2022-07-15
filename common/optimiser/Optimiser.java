@@ -57,12 +57,8 @@ public class Optimiser {
     }
 
     public synchronized Status optimise(long timeLimitMillis) {
-        if (hasSolver && constraintsChanged()) {
-            constraints.forEach(OptimiserConstraint::updateCoefficients);
-            status = Status.NOT_SOLVED;
-        }
+        assert hasSolver;
         if (isOptimal()) return status;
-        else if (!hasSolver) initialiseSolver();
         solver.setTimeLimit(timeLimitMillis);
         status = Status.of(solver.solve(parameters));
         recordValues();
@@ -72,7 +68,7 @@ public class Optimiser {
 
     private void recordValues() {
         objectiveValue = solver.objective().value();
-        if (status != Status.NOT_SOLVED && status != Status.ERROR) variables.forEach(OptimiserVariable::recordValue);
+        if (status != Status.NOT_SOLVED && status != Status.ERROR) variables.forEach(OptimiserVariable::recordSolutionValue);
     }
 
     public boolean isOptimal() {
@@ -87,8 +83,11 @@ public class Optimiser {
         return status == Status.ERROR;
     }
 
-    private boolean constraintsChanged() {
-        return iterate(constraints).anyMatch(c -> !c.isUpToDate);
+    public synchronized void restartFromSolution() {
+        if (hasSolver) {
+            solver.reset();
+            setSolverModel();
+        } else initialiseSolver();
     }
 
     private void initialiseSolver() {
@@ -98,10 +97,15 @@ public class Optimiser {
         parameters.setIntegerParam(PRESOLVE, PRESOLVE_ON.swigValue());
         parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
         variables.forEach(var -> var.initialise(solver));
-        constraints.forEach(constraint -> { constraint.initialise(solver); constraint.updateCoefficients(); });
-        applyObjective();
-        applyInitialisation();
+        constraints.forEach(constraint -> constraint.initialise(solver));
+        setSolverModel();
         hasSolver = true;
+    }
+
+    private void setSolverModel() {
+        constraints.forEach(OptimiserConstraint::updateCoefficients);
+        setObjective();
+        setVariableValues();
     }
 
     private void releaseSolver() {
@@ -112,7 +116,7 @@ public class Optimiser {
         hasSolver = false;
     }
 
-    private void applyObjective() {
+    private void setObjective() {
         objectiveCoefficients.forEach((var, coeff) -> solver.objective().setCoefficient(var.mpVariable(), coeff));
     }
 
@@ -120,8 +124,8 @@ public class Optimiser {
         return objectiveValue;
     }
 
-    private void applyInitialisation() {
-        assert iterate(variables).allMatch(OptimiserVariable::hasInitial);
+    private void setVariableValues() {
+        assert iterate(variables).allMatch(OptimiserVariable::hasValue);
         MPVariable[] mpVariables = new MPVariable[variables.size()];
         double[] initialisations = new double[variables.size()];
         for (int i = 0; i < variables.size(); i++) {

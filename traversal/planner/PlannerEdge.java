@@ -101,6 +101,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.createOptimiserConstraints();
     }
 
+    void updateOptimiserConstraints() {
+        forward.updateOptimiserConstraints();
+        backward.updateOptimiserConstraints();
+    }
+
     void computeCost(GraphManager graphMgr) {
         forward.computeCost(graphMgr);
         backward.computeCost(graphMgr);
@@ -116,9 +121,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         backward.recordCost();
     }
 
-    public void initialiseOptimiserValues() {
-        forward.initialiseOptimiserValues();
-        backward.initialiseOptimiserValues();
+    public void setOptimiserValues() {
+        forward.setOptimiserValues();
+        backward.setOptimiserValues();
     }
 
     @Override
@@ -190,13 +195,12 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             conIsMinimal.setCoefficient(varIsSelected, -1);
         }
 
-        private void initialiseMinimalEdgeConstraint() {
+        private void updateMinimalEdgeConstraint() {
             for (PlannerEdge.Directional<?, ?> adjacent : to.ins()) {
-                if (!this.equals(adjacent))
-                    if (cheaperThan(adjacent))
-                        conIsMinimal.setCoefficient(adjacent.varIsSelected, 0);
-                    else
-                        conIsMinimal.setCoefficient(adjacent.varIsSelected, 1);
+                if (!this.equals(adjacent)) {
+                    if (cheaperThan(adjacent)) conIsMinimal.setCoefficient(adjacent.varIsSelected, 0);
+                    else conIsMinimal.setCoefficient(adjacent.varIsSelected, 1);
+                }
             }
         }
 
@@ -232,26 +236,29 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         protected void updateOptimiserCoefficients() {
             assert costLastRecorded == safeCost();
             planner.optimiser().setObjectiveCoefficient(varIsMinimal, log(1 + safeCost()));
-            initialiseMinimalEdgeConstraint();
         }
 
-        public void initialiseOptimiserValues() {
-            setInitialSelected();
-            setInitialMinimal();
+        protected void updateOptimiserConstraints() {
+            updateMinimalEdgeConstraint();
+        }
+
+        public void setOptimiserValues() {
+            setSelected();
+            setMinimal();
             isInitialised = true;
         }
 
-        public void setInitialSelected() {
-            varIsSelected.setInitial(from().varOrderNumber.initial() < to().varOrderNumber.initial());
+        public void setSelected() {
+            varIsSelected.setValue(from().getOrder() < to().getOrder());
         }
 
-        public void setInitialMinimal() {
-            assert varIsSelected.hasInitial();
-            varIsMinimal.setInitial(
-                    varIsSelected.initial() &&
+        public void setMinimal() {
+            assert varIsSelected.hasValue();
+            varIsMinimal.setValue(
+                    varIsSelected.value() &&
                             iterate(to().ins()).
                                     filter(e -> !this.equals(e)).
-                                    filter(e -> e.from().varOrderNumber.initial() < e.to().varOrderNumber.initial()).
+                                    filter(e -> e.from().getOrder() < e.to().getOrder()).
                                     noneMatch(e -> e.cheaperThan(this))
             );
         }
