@@ -33,8 +33,8 @@ host_compatible_java_test(
     deps = [
         "//test/integration/util:util",
         # External dependencies from Vaticle
-        "@vaticle_typeql_lang_java//pattern:pattern",
-        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql//java/pattern:pattern",
+        "@vaticle_typeql//java:typeql-lang",
     ],
     size = "large",
 )
@@ -54,8 +54,8 @@ host_compatible_java_test(
         "//test/integration/util:util",
 
         # External dependencies from Vaticle
-        "@vaticle_typeql_lang_java//query:query",
-        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql//java/query:query",
+        "@vaticle_typeql//java:typeql-lang",
     ],
     data = [":schema.tql"],
 )
@@ -77,7 +77,7 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql//java:typeql-lang",
     ],
     size = "large",
 )
@@ -87,5 +87,5 @@ checkstyle_test(
     include = glob([
         "*",
     ]),
-    license_type = "agpl",
+    license_type = "agpl-header",
 )

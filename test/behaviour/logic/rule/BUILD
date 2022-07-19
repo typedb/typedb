@@ -23,7 +23,7 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_libr
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
-    license_type = "agpl",
+    license_type = "agpl-header",
 )
 
 host_compatible_java_library(

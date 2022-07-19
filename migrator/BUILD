@@ -60,8 +60,8 @@ native_java_libraries(
     deps = [
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_typeql_lang_java//pattern:pattern",
-        "@vaticle_typeql_lang_java//common:common",
+        "@vaticle_typeql//java/pattern:pattern",
+        "@vaticle_typeql//java/common:common",
 
         # External dependencies from Maven
         "@maven//:com_google_guava_guava",
@@ -88,6 +88,6 @@ native_java_libraries(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*"]),
-    license_type = "agpl",
+    license_type = "agpl-header",
 )
 

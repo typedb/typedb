@@ -35,8 +35,8 @@ host_compatible_java_test(
         "//server:version",
 
         # External dependencies from Vaticle
-        "@vaticle_typeql_lang_java//:typeql-lang",
-        "@vaticle_typeql_lang_java//query:query",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/query:query",
 
         # External dependencies from Maven
         "@maven//:com_google_protobuf_protobuf_java",
@@ -51,5 +51,5 @@ checkstyle_test(
         "*"
     ]),
     exclude = ["data.typedb"],
-    license_type = "agpl",
+    license_type = "agpl-header",
 )

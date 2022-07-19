@@ -36,12 +36,12 @@ host_compatible_java_test(
         "//test/integration/util:util",
 
         # External dependencies from Vaticle
-        "@vaticle_typeql_lang_java//:typeql-lang",
+        "@vaticle_typeql//java:typeql-lang",
     ]
 )
 
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
-    license_type = "agpl",
+    license_type = "agpl-header",
 )
