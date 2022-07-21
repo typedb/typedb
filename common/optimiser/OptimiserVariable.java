@@ -47,7 +47,7 @@ public abstract class OptimiserVariable<T> {
         this.value = value;
     }
 
-    public abstract double hint();
+    public abstract double valueAsDouble();
 
     MPVariable mpVariable() {
         return mpVariable;
@@ -56,6 +56,8 @@ public abstract class OptimiserVariable<T> {
     abstract void recordSolutionValue();
 
     abstract void initialise(MPSolver solver);
+
+    public abstract boolean isSatisfied();
 
     synchronized void release() {
         this.mpVariable.delete();
@@ -85,10 +87,15 @@ public abstract class OptimiserVariable<T> {
         }
 
         @Override
-        public double hint() {
+        public double valueAsDouble() {
             assert hasValue();
             if (value) return 1.0;
             else return 0.0;
+        }
+
+        @Override
+        public boolean isSatisfied() {
+            return hasValue();
         }
     }
 
@@ -114,9 +121,14 @@ public abstract class OptimiserVariable<T> {
         }
 
         @Override
-        public double hint() {
+        public double valueAsDouble() {
             assert hasValue();
             return value;
+        }
+
+        @Override
+        public boolean isSatisfied() {
+            return hasValue() && lowerBound <= valueAsDouble() && valueAsDouble() <= upperBound;
         }
     }
 }

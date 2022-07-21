@@ -37,6 +37,13 @@ import static com.google.ortools.linearsolver.MPSolverParameters.PresolveValues.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
+/**
+ * A wrapper around an OR-Tools solver, which supports an incremental solving mode on top of non-incremental solvers.
+ * This is implemented by using hints to pass the previous solution to the solver.
+ *
+ * We guarantee subsequent solutions are valid within the variables/constraints and at least as good whenever
+ * the objective function does not change.
+ */
 public class Optimiser {
 
     private final List<OptimiserVariable<?>> variables;
@@ -46,7 +53,7 @@ public class Optimiser {
     private MPSolverParameters parameters;
     private Status status;
     private boolean hasSolver;
-    private double objectiveValue;
+    private double objectiveValue = Double.MAX_VALUE;
 
     public Optimiser() {
         variables = new ArrayList<>();
@@ -57,18 +64,30 @@ public class Optimiser {
     }
 
     public synchronized Status optimise(long timeLimitMillis) {
-        assert hasSolver;
+        assert isSatisfied();
         if (isOptimal()) return status;
+        setValuesAsHints();
         solver.setTimeLimit(timeLimitMillis);
         status = Status.of(solver.solve(parameters));
         recordValues();
         if (isOptimal()) releaseSolver();
+        assert isSatisfied();
         return status;
     }
 
     private void recordValues() {
-        objectiveValue = solver.objective().value();
-        if (status != Status.NOT_SOLVED && status != Status.ERROR) variables.forEach(OptimiserVariable::recordSolutionValue);
+        if (status != Status.NOT_SOLVED && status != Status.ERROR) {
+            System.out.println("Old objective: " + objectiveValue + " - new objective: " + solver.objective().value());
+            if (solver.objective().value() < objectiveValue) {
+                objectiveValue = solver.objective().value();
+                variables.forEach(OptimiserVariable::recordSolutionValue);
+            }
+        }
+    }
+
+    private boolean isSatisfied() {
+        return iterate(variables).allMatch(OptimiserVariable::isSatisfied) &&
+                iterate(constraints).allMatch(OptimiserConstraint::isSatisfied);
     }
 
     public boolean isOptimal() {
@@ -105,7 +124,7 @@ public class Optimiser {
     private void setSolverModel() {
         constraints.forEach(OptimiserConstraint::updateCoefficients);
         setObjective();
-        setVariableValues();
+        objectiveValue = evaluateObjective();
     }
 
     private void releaseSolver() {
@@ -124,15 +143,23 @@ public class Optimiser {
         return objectiveValue;
     }
 
-    private void setVariableValues() {
+    private double evaluateObjective() {
+        double value = 0.0;
+        for (Map.Entry<OptimiserVariable<?>, Double> term : objectiveCoefficients.entrySet()) {
+            value += term.getKey().valueAsDouble() * term.getValue();
+        }
+        return value;
+    }
+
+    private void setValuesAsHints() {
         assert iterate(variables).allMatch(OptimiserVariable::hasValue);
         MPVariable[] mpVariables = new MPVariable[variables.size()];
-        double[] initialisations = new double[variables.size()];
+        double[] hints = new double[variables.size()];
         for (int i = 0; i < variables.size(); i++) {
             mpVariables[i] = variables.get(i).mpVariable();
-            initialisations[i] = variables.get(i).hint();
+            hints[i] = variables.get(i).valueAsDouble();
         }
-        solver.setHint(mpVariables, initialisations);
+        solver.setHint(mpVariables, hints);
     }
 
     public void setObjectiveCoefficient(OptimiserVariable<?> var, double coeff) {

@@ -250,7 +250,6 @@ public class GraphPlanner implements Planner {
         }
     }
 
-    @SuppressWarnings("NonAtomicOperationOnVolatileField")
     private void optimise(GraphManager graphMgr, boolean singleUse) {
         updateTraversalCosts(graphMgr);
         if (isUpToDate() && isOptimal()) {
@@ -262,10 +261,9 @@ public class GraphPlanner implements Planner {
         // TODO: we should have a more clever logic to allocate extra time
         long allocatedDuration = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
         Instant start, endSolver, end;
-        totalDuration += allocatedDuration;
 
         start = Instant.now();
-        optimiser.optimise(totalDuration);
+        optimiser.optimise(allocatedDuration);
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
 
@@ -273,7 +271,6 @@ public class GraphPlanner implements Planner {
         end = Instant.now();
 
         isUpToDate = true;
-        totalDuration -= allocatedDuration - between(start, endSolver).toMillis();
         printDebug(start, endSolver, end);
     }
 

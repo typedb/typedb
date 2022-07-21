@@ -55,4 +55,12 @@ public class OptimiserConstraint {
         mpConstraint.delete();
         mpConstraint = null;
     }
+
+    public boolean isSatisfied() {
+        double total = 0.0;
+        for (Map.Entry<OptimiserVariable<?>, Double> entry : coefficients.entrySet()) {
+            total += entry.getKey().valueAsDouble() * entry.getValue();
+        }
+        return lowerBound <= total && total <= upperBound;
+    }
 }
