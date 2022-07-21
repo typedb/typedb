@@ -84,8 +84,8 @@ public class ForwardChainingMaterialiser {
 
     private FunctionalIterator<ConceptMap> traverse(Conjunction conjunction) {
         return tx.reasoner().executeTraversal(new Disjunction(singletonList(conjunction)),
-                                              new Context.Query(tx.context(), new Options.Query()),
-                                              conjunction.retrieves());
+                new Context.Query(tx.context(), new Options.Query()),
+                conjunction.retrieves());
     }
 
     void close() {
@@ -185,7 +185,7 @@ public class ForwardChainingMaterialiser {
             Optional<Pair<Thing, Attribute>> inferredHas = boundConcludable.inferredHas();
             if (inferredHas.isPresent()) {
                 materialisations = materialisations.link(forHas(inferredHas.get().first(), inferredHas.get().second()));
-            }else{
+            } else {
                 Optional<Thing> inferredConcept = boundConcludable.inferredConcept();
                 if (inferredConcept.isPresent()) {
                     materialisations = materialisations.link(forThing(inferredConcept.get()));
@@ -238,7 +238,7 @@ public class ForwardChainingMaterialiser {
         static Materialisation create(com.vaticle.typedb.core.logic.Rule rule, ConceptMap conditionAnswer,
                                       Map<Variable, Concept> conclusionAnswer) {
             return new Materialisation(rule, BoundCondition.create(rule.condition(), conditionAnswer),
-                                       BoundConclusion.create(rule.conclusion(), conclusionAnswer));
+                    BoundConclusion.create(rule.conclusion(), conclusionAnswer));
         }
 
         BoundCondition boundCondition() {
