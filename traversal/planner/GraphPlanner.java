@@ -70,7 +70,6 @@ public class GraphPlanner implements Planner {
     protected volatile GraphProcedure procedure;
     private volatile boolean isUpToDate;
     private volatile boolean isVertexOrderInitialised;
-    private volatile long totalDuration;
     private volatile long snapshot;
 
     private volatile double totalCostLastRecorded;
@@ -84,7 +83,6 @@ public class GraphPlanner implements Planner {
         firstOptimisingLock = new StampedLock().asReadWriteLock();
         isUpToDate = false;
         isVertexOrderInitialised = false;
-        totalDuration = 0L;
         totalCostLastRecorded = INIT_ZERO;
         totalCost = INIT_ZERO;
         snapshot = -1L;
