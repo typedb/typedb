@@ -123,7 +123,7 @@ public class Optimiser {
         variables.forEach(var -> var.initialise(solver));
         constraints.forEach(constraint -> constraint.initialise(solver));
         setConstraintCoefficients();
-        applyObjective();
+        setObjective();
     }
 
     private void setConstraintCoefficients() {
@@ -150,7 +150,7 @@ public class Optimiser {
         solver.setHint(mpVariables, hints);
     }
 
-    private void applyObjective() {
+    private void setObjective() {
         objectiveCoefficients.forEach((var, coeff) -> solver.objective().setCoefficient(var.mpVariable(), coeff));
     }
 
