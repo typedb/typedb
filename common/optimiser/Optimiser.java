@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static com.google.ortools.linearsolver.MPSolverParameters.IncrementalityValues.INCREMENTALITY_ON;
@@ -39,10 +40,10 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 /**
  * A wrapper around an OR-Tools solver, which supports an incremental solving mode on top of non-incremental solvers.
- * This is implemented by using hints to pass the previous solution to the solver.
+ * This implementation expects that a value is always set on each OptimiserVariable that satisfies the entire model.
  *
- * We guarantee subsequent solutions are valid within the variables/constraints and at least as good whenever
- * the objective function does not change.
+ * Optimiser guarantees solutions are better than the last whenever the objective has not changed.
+ * Optimiser models can be modified dynamically by updating coefficients on the objective or on constraints.
  */
 public class Optimiser {
 
@@ -52,40 +53,43 @@ public class Optimiser {
     private MPSolver solver;
     private MPSolverParameters parameters;
     private Status status;
-    private boolean hasSolver;
-    private double objectiveValue = Double.MAX_VALUE;
+    private boolean constraintsChanged;
+    private Double objectiveValue;
 
     public Optimiser() {
         variables = new ArrayList<>();
         constraints = new HashSet<>();
         objectiveCoefficients = new HashMap<>();
         status = Status.NOT_SOLVED;
-        hasSolver = false;
+        objectiveValue = null;
+        constraintsChanged = false;
     }
 
     public synchronized Status optimise(long timeLimitMillis) {
-        assert isSatisfied();
+        assert modelSatisfied();
         if (isOptimal()) return status;
+        if (solver == null) createSolver();
+        else if (constraintsChanged) {
+            solver.reset();
+            applyConstraintCoefficients();
+        }
         setValuesAsHints();
         solver.setTimeLimit(timeLimitMillis);
         status = Status.of(solver.solve(parameters));
-        recordValues();
+        recordSolverValues();
         if (isOptimal()) releaseSolver();
-        assert isSatisfied();
+        assert modelSatisfied();
         return status;
     }
 
-    private void recordValues() {
-        if (status != Status.NOT_SOLVED && status != Status.ERROR) {
-            System.out.println("Old objective: " + objectiveValue + " - new objective: " + solver.objective().value());
-            if (solver.objective().value() < objectiveValue) {
-                objectiveValue = solver.objective().value();
-                variables.forEach(OptimiserVariable::recordSolutionValue);
-            }
+    private void recordSolverValues() {
+        if ((isFeasible() || isOptimal()) && (objectiveValue == null || solver.objective().value() < objectiveValue)) {
+            objectiveValue = solver.objective().value();
+            variables.forEach(OptimiserVariable::recordSolutionValue);
         }
     }
 
-    private boolean isSatisfied() {
+    private boolean modelSatisfied() {
         return iterate(variables).allMatch(OptimiserVariable::isSatisfied) &&
                 iterate(constraints).allMatch(OptimiserConstraint::isSatisfied);
     }
@@ -102,14 +106,11 @@ public class Optimiser {
         return status == Status.ERROR;
     }
 
-    public synchronized void restartFromSolution() {
-        if (hasSolver) {
-            solver.reset();
-            setSolverModel();
-        } else initialiseSolver();
+    public void setConstraintsChanged() {
+        constraintsChanged = true;
     }
 
-    private void initialiseSolver() {
+    private void createSolver() {
         solver = MPSolver.createSolver("SAT");
         solver.objective().setMinimization();
         parameters = new MPSolverParameters();
@@ -117,14 +118,13 @@ public class Optimiser {
         parameters.setIntegerParam(INCREMENTALITY, INCREMENTALITY_ON.swigValue());
         variables.forEach(var -> var.initialise(solver));
         constraints.forEach(constraint -> constraint.initialise(solver));
-        setSolverModel();
-        hasSolver = true;
+        applyConstraintCoefficients();
+        applyObjective();
     }
 
-    private void setSolverModel() {
-        constraints.forEach(OptimiserConstraint::updateCoefficients);
-        setObjective();
-        objectiveValue = evaluateObjective();
+    private void applyConstraintCoefficients() {
+        constraints.forEach(OptimiserConstraint::applyCoefficients);
+        constraintsChanged = false;
     }
 
     private void releaseSolver() {
@@ -132,14 +132,17 @@ public class Optimiser {
         variables.forEach(OptimiserVariable::release);
         parameters.delete();
         solver.delete();
-        hasSolver = false;
+        solver = null;
     }
 
-    private void setObjective() {
+    private void applyObjective() {
         objectiveCoefficients.forEach((var, coeff) -> solver.objective().setCoefficient(var.mpVariable(), coeff));
+        objectiveValue = evaluateObjective();
     }
 
     public double objectiveValue() {
+        assert !objectiveCoefficients.isEmpty();
+        if (objectiveValue == null) objectiveValue = evaluateObjective();
         return objectiveValue;
     }
 
@@ -163,14 +166,17 @@ public class Optimiser {
     }
 
     public void setObjectiveCoefficient(OptimiserVariable<?> var, double coeff) {
-        objectiveCoefficients.put(var, coeff);
-        if (hasSolver) solver.objective().setCoefficient(var.mpVariable(), coeff);
-        else if (isOptimal()) status = Status.FEASIBLE;
+        Double prevCoeff = objectiveCoefficients.put(var, coeff);
+        if (!Objects.equals(coeff, prevCoeff)) {
+            if (solver != null) solver.objective().setCoefficient(var.mpVariable(), coeff);
+            else if (isOptimal()) status = Status.FEASIBLE;
+            objectiveValue = null;
+        }
     }
 
     public OptimiserConstraint constraint(double lowerBound, double upperBound, String name) {
         assert status == Status.NOT_SOLVED;
-        OptimiserConstraint constraint = new OptimiserConstraint(lowerBound, upperBound, name);
+        OptimiserConstraint constraint = new OptimiserConstraint(this, lowerBound, upperBound, name);
         constraints.add(constraint);
         return constraint;
     }
@@ -216,7 +222,7 @@ public class Optimiser {
 
     @Override
     public String toString() {
-        return "Optimiser[" + "hasSolver=" + hasSolver + ", variables=" + variables.size() +
-                ", constraints=" + constraints.size() + "]" + (hasSolver ? solver.exportModelAsLpFormat() : "");
+        return "Optimiser[" + "hasSolver=" + (solver == null) + ", variables=" + variables.size() +
+                ", constraints=" + constraints.size() + "]" + (solver == null ? solver.exportModelAsLpFormat() : "");
     }
 }

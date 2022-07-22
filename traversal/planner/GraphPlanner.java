@@ -279,7 +279,6 @@ public class GraphPlanner implements Planner {
         updateOptimiserConstraints();
         if (!isVertexOrderInitialised) initialiseVertexOrderGreedy();
         setOptimiserValues();
-        optimiser.restartFromSolution();
         if (LOG.isTraceEnabled()) LOG.trace(optimiser.toString());
     }
 

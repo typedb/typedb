@@ -26,10 +26,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNE
 
 public abstract class OptimiserVariable<T> {
 
-    protected T value;
-    protected MPVariable mpVariable;
-
     final String name;
+    MPVariable mpVariable;
+    T value;
 
     OptimiserVariable(String name) {
         this.name = name;
