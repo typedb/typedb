@@ -62,7 +62,7 @@ public class Optimiser {
         objectiveCoefficients = new HashMap<>();
         status = Status.NOT_SOLVED;
         objectiveValue = null;
-        isConstraintsUpToDate = false;
+        isConstraintsUpToDate = true;
     }
 
     public synchronized Status optimise(long timeLimitMillis) {
@@ -80,7 +80,7 @@ public class Optimiser {
 
     private void maySetSolver() {
         if (solver == null) createSolver();
-        else if (isConstraintsUpToDate) {
+        else if (!isConstraintsUpToDate) {
             solver.reset();
             setConstraintCoefficients();
         }
@@ -111,7 +111,7 @@ public class Optimiser {
     }
 
     public void setConstraintsChanged() {
-        isConstraintsUpToDate = true;
+        isConstraintsUpToDate = false;
     }
 
     private void createSolver() {
@@ -128,7 +128,7 @@ public class Optimiser {
 
     private void setConstraintCoefficients() {
         constraints.forEach(OptimiserConstraint::setCoefficients);
-        isConstraintsUpToDate = false;
+        isConstraintsUpToDate = true;
     }
 
     private void releaseSolver() {
