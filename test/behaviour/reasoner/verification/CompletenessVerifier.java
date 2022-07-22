@@ -73,7 +73,7 @@ class CompletenessVerifier {
                     verifyConclusionReasoning(materialisation.boundConclusion());
                 });
                 verifyConcludableReasoning(boundConcludable);
-            }
+            }  // TODO: If not inferred should we do a traversal to check?
         });
     }
 
@@ -135,8 +135,8 @@ class CompletenessVerifier {
                                                        new Options.Transaction().infer(true))) {
             Disjunction disjunction = new Disjunction(Collections.singletonList(boundConjunction.conjunction()));
             tx.logic().typeInference().applyCombination(disjunction);
-            return tx.reasoner().executeReasoner(disjunction, filter,
-                    new Context.Query(tx.context(), new Options.Query())
+            return tx.reasoner().executeReasoner(
+                    disjunction, filter, new Context.Query(tx.context(), new Options.Query())
             ).toList().size();
         }
     }

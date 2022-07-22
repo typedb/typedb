@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.test.behaviour.reasoner.verification;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.TypeDB.Transaction;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -25,7 +26,11 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMap.Explainable;
+import com.vaticle.typedb.core.logic.resolvable.Unifier;
+import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
+import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConcludable;
+import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConjunction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.SoundnessException;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
@@ -33,9 +38,11 @@ import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
@@ -45,12 +52,14 @@ class SoundnessVerifier {
     private final TypeDB.Session session;
     private final Map<Concept, Concept> inferredConceptMapping;
     private final Set<Explanation> collectedExplanations;
+    private final Map<Pair<Conjunction, ConceptMap>, Integer> deferredExplanationCount;
 
     private SoundnessVerifier(ForwardChainingMaterialiser materialiser, TypeDB.Session session) {
         this.materialiser = materialiser;
         this.session = session;
         this.inferredConceptMapping = new HashMap<>();
         this.collectedExplanations = new HashSet<>();
+        this.deferredExplanationCount = new HashMap<>();
     }
 
     static SoundnessVerifier create(ForwardChainingMaterialiser materialiser, TypeDB.Session session) {
@@ -89,6 +98,10 @@ class SoundnessVerifier {
                         " of all generated explanations");
             }
             collectedExplanations.clear();
+
+            for (Pair<Conjunction, ConceptMap> deferredBindableConjunction : deferredExplanationCount.keySet()) {
+                verifyNumberOfExplanations(tx, inferenceQuery, deferredBindableConjunction);
+            }
         }
     }
 
@@ -101,7 +114,8 @@ class SoundnessVerifier {
     private void verifyAnswerAndCollectExplanations(ConceptMap answer, Transaction tx) {
         verifyExplainableVars(answer);
         answer.explainables().iterator().forEachRemaining(explainable -> {
-            tx.query().explain(explainable.id()).forEachRemaining(explanation -> {
+            List<Explanation> explanations = tx.query().explain(explainable.id()).toList();
+            iterate(explanations).forEachRemaining(explanation -> {
                 // This check is valid given that there is no mechanism for recursion termination given by the UX of
                 // explanations, so we do it ourselves
                 if (collectedExplanations.contains(explanation)) return;
@@ -109,6 +123,37 @@ class SoundnessVerifier {
                 verifyAnswerAndCollectExplanations(explanation.conditionAnswer(), tx);
                 verifyVariableMapping(answer, explainable, explanation);
             });
+
+            Pair<Conjunction, ConceptMap> deferredBindableConjunction = new Pair<>(explainable.conjunction(), answer.filter(explainable.conjunction().retrieves()));
+            assert !deferredExplanationCount.containsKey(deferredBindableConjunction) ||
+                    deferredExplanationCount.get(deferredBindableConjunction).equals(explanations.size());
+            deferredExplanationCount.put(deferredBindableConjunction, explanations.size());
+        });
+    }
+
+    private void verifyNumberOfExplanations(Transaction tx, TypeQLMatch inferenceQuery, Pair<Conjunction, ConceptMap> deferredBindableConjunction) {
+        Set<BoundConcludable> boundConcludable = BoundConjunction.create(
+                deferredBindableConjunction.first(), mapInferredConcepts(deferredBindableConjunction.second())
+        ).boundConcludables();
+        assert boundConcludable.size() == 1;
+        boundConcludable.forEach(bc -> {
+            bc.concludable().getApplicableRules(tx.concepts(), tx.logic());
+            AtomicInteger numExplanationsExpected = new AtomicInteger();
+
+            materialiser.concludableMaterialisations(bc).forEachRemaining(materialisation -> {
+                bc.concludable().getUnifiers(materialisation.boundConclusion().conclusion().rule()).forEachRemaining(unifier -> {
+                    Optional<Pair<ConceptMap, Unifier.Requirements.Instance>> boundsAndRequirements = unifier.unify(bc.pattern().bounds());
+                    assert boundsAndRequirements.isPresent();
+                    numExplanationsExpected.getAndAdd(unifier.unUnify(materialisation.boundConclusion().bounds(), boundsAndRequirements.get().second()).toSet().size());
+                });
+            });
+            if (deferredExplanationCount.get(deferredBindableConjunction) != numExplanationsExpected.get()) {
+                throw new SoundnessException(String.format(
+                        "Soundness testing found an incorrect number of explanations for query \"%s\" for explainable" +
+                                " \"%s\".\nExplanations expected: %s\nExplanations found: %s",
+                        inferenceQuery, deferredBindableConjunction.first(), numExplanationsExpected, deferredExplanationCount.get(deferredBindableConjunction)
+                ));
+            }
         });
     }
 
@@ -187,13 +232,18 @@ class SoundnessVerifier {
         }
     }
 
-    private ConceptMap mapInferredConcepts(ConceptMap conditionAnswer) {
+    private ConceptMap mapInferredConcepts(ConceptMap inferredAnswer) {
         Map<Retrievable, Concept> substituted = new HashMap<>();
-        conditionAnswer.concepts().forEach((var, concept) -> {
-            if (inferredConceptMapping.containsKey(concept)) {
-                substituted.put(var, inferredConceptMapping.get(concept));
+        inferredAnswer.concepts().forEach((var, concept) -> {
+            if (concept.isThing()) {
+                if (inferredConceptMapping.containsKey(concept)) {
+                    substituted.put(var, inferredConceptMapping.get(concept));
+                } else {
+                    assert !concept.asThing().isInferred();
+                    substituted.put(var, concept);
+                }
             } else {
-                assert !concept.asThing().isInferred();
+                assert concept.isType();
                 substituted.put(var, concept);
             }
         });

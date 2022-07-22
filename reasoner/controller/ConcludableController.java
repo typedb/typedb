@@ -49,6 +49,7 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanInFanOut;
 
@@ -158,7 +159,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
             assert bounds.equals(this.bounds);
             return new Processor.Explain(
-                    explainDriver, driver(), processorContext(), bounds, set(), conclusionUnifiers, reasonerConsumer,
+                    explainDriver, driver(), processorContext(), concludable, bounds, set(), conclusionUnifiers, reasonerConsumer,
                     () -> Traversal.traversalIterator(registry(), concludable.pattern(), bounds),
                     () -> Processor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
             );
@@ -205,10 +206,19 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     InputPort<INPUT> inputPort = createInputPort();
                     mayRequestConnection(createRequest(inputPort.identifier(), conclusion, boundsAndRequirements.first()));
-                    transformInput(inputPort, unifier, boundsAndRequirements.second()).buffer().registerSubscriber(hubReactive());
+                    transformInput(inputPort, unifier, boundsAndRequirements.second()).flatMap(this::rejectMismatchedInference).buffer().registerSubscriber(hubReactive());
                 }));
             });
         }
+
+        /*
+         * This method rectifies a design issue: it is possible for an `Isa` or `Attribute` concludable to unify with a
+         * `Conclusion.Has.Explicit` rule. In the case where the `has` edge is inferred but the owned attribute is not,
+         * the concludable's processor will receive answers where the concept it is concerned with is non-inferred. This
+         * leads to an extra invalid attribute explainable (and its explanation). Instead, we reject these
+         * non-inferred answers.
+         */
+        protected abstract FunctionalIterator<OUTPUT> rejectMismatchedInference(OUTPUT output);
 
         protected abstract Publisher<OUTPUT> transformInput(Publisher<INPUT> input, Unifier unifier,
                                                             Unifier.Requirements.Instance requirements);
@@ -248,9 +258,27 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             private FunctionalIterator<ConceptMap> filterInferred(ConceptMap conceptMap) {
                 // TODO: Requires duplicate effort to filter out inferred concludable answers. Instead create a new
                 //  traversal mode that doesn't return inferred concepts
-                if (concludable.isInferredAnswer(conceptMap)) return Iterators.empty();
+                if (concludable.isInferredAnswer(conceptMap)) return empty();
                 for (Concept c : conceptMap.concepts().values()) {
-                    if (c.isThing() && c.asThing().isInferred()) return Iterators.empty();
+                    if (c.isThing() && c.asThing().isInferred()) return empty();
+                }
+                return Iterators.single(conceptMap);
+            }
+
+            @Override
+            protected FunctionalIterator<ConceptMap> rejectMismatchedInference(ConceptMap conceptMap) {
+                Concept conceptToCheck = null;
+                if (concludable.isAttribute()) {
+                    conceptToCheck = conceptMap.get(concludable.asAttribute().attribute().id());
+                } else if (concludable.isIsa()) {
+                    conceptToCheck = conceptMap.get(concludable.asIsa().isa().owner().id());
+                }
+                if (conceptToCheck != null) {
+                    if (conceptToCheck.asThing().isInferred()) {
+                        return Iterators.single(conceptMap);
+                    } else {
+                        return empty();
+                    }
                 }
                 return Iterators.single(conceptMap);
             }
@@ -295,10 +323,12 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         public static class Explain extends Processor<PartialExplanation, Explanation, Explain.Request, Explain> {
 
             private final ReasonerConsumer<Explanation> reasonerConsumer;
+            private final Concludable concludable;
             private RootSink<Explanation> rootSink;
 
             Explain(
                     Driver<Explain> driver, Driver<ConcludableController.Explain> controller, Context context,
+                    Concludable concludable,
                     ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                     ReasonerConsumer<Explanation> reasonerConsumer,
@@ -307,6 +337,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             ) {
                 super(driver, controller, context, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
                       debugName);
+                this.concludable = concludable;
                 this.reasonerConsumer = reasonerConsumer;
             }
 
@@ -318,6 +349,26 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
 
             @Override
+            protected FunctionalIterator<Explanation> rejectMismatchedInference(Explanation explanation) {
+                Set<Variable> conclusionConceptsToCheck = null;
+                if (concludable.isAttribute()) {
+                    conclusionConceptsToCheck = explanation.variableMapping().get(concludable.asAttribute().attribute().id());
+                } else if (concludable.isIsa()) {
+                    conclusionConceptsToCheck = explanation.variableMapping().get(concludable.asIsa().isa().owner().id());
+                }
+                if (conclusionConceptsToCheck != null) {
+                    for (Variable toCheck : conclusionConceptsToCheck) {
+                        if (explanation.conclusionAnswer().concepts().get(toCheck).asThing().isInferred()) {
+                            return Iterators.single(explanation);
+                        } else {
+                            return empty();
+                        }
+                    }
+                }
+                return Iterators.single(explanation);
+            }
+
+            @Override
             public void rootPull() {
                 rootSink.pull();
             }
@@ -326,7 +377,11 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             protected Publisher<Explanation> transformInput(Publisher<PartialExplanation> input,
                                                             Unifier unifier,
                                                             Unifier.Requirements.Instance requirements) {
-                return input.map(
+                return input.flatMap(p -> {
+                    FunctionalIterator<ConceptMap> exists = unifier.unUnify(p.conclusionAnswer().concepts(), requirements);
+                    if (exists.hasNext()) return iterate(p);
+                    else return empty();
+                }).map(
                         p -> new Explanation(p.rule(), unifier.mapping(), p.conclusionAnswer(), p.conditionAnswer())
                 );
             }

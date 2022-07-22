@@ -37,6 +37,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConcludable;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConclusion;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundCondition;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -89,8 +90,8 @@ public class ForwardChainingMaterialiser {
 
     private FunctionalIterator<ConceptMap> traverse(Conjunction conjunction) {
         return tx.reasoner().executeTraversal(new Disjunction(singletonList(conjunction)),
-                                              new Context.Query(tx.context(), new Options.Query()),
-                                              conjunction.retrieves());
+                new Context.Query(tx.context(), new Options.Query()),
+                conjunction.retrieves());
     }
 
     void close() {
@@ -101,7 +102,7 @@ public class ForwardChainingMaterialiser {
         // TODO: How do we handle disjunctions inside negations and negations in general?
         Disjunction disjunction = Disjunction.create(inferenceQuery.conjunction().normalise());
         tx.logic().typeInference().applyCombination(disjunction);
-        HashMap<Conjunction, FunctionalIterator<ConceptMap>> conjunctionAnswers = new HashMap<>();
+        Map<Conjunction, FunctionalIterator<ConceptMap>> conjunctionAnswers = new HashMap<>();
         disjunction.conjunctions().forEach(conjunction -> conjunctionAnswers.put(conjunction, traverse(conjunction)));
         return conjunctionAnswers;
     }
@@ -205,13 +206,9 @@ public class ForwardChainingMaterialiser {
         private boolean materialise() {
             // Get all the places where the rule condition is satisfied and materialise for each
             requiresReiteration = false;
-            traverse(logicRule.when()).forEachRemaining(
-                    conditionAns -> materialiseAndBind(
-                            logicRule.conclusion(), conditionAns, tx.traversal(), tx.concepts()
-                    ).ifPresent(materialisation -> record(
-                            conditionAns, new ConceptMap(filterRetrievable(materialisation))
-                    ))
-            );
+            traverse(logicRule.when()).forEachRemaining(conditionAns -> materialiseAndBind(
+                    logicRule.conclusion(), conditionAns, tx.traversal(), tx.concepts()
+            ).ifPresent(materialisation -> record(conditionAns, materialisation)));
             return requiresReiteration;
         }
 
@@ -222,7 +219,7 @@ public class ForwardChainingMaterialiser {
                     .map(materialisation -> materialisation.bindToConclusion(conclusion, whenConcepts));
         }
 
-        private void record(ConceptMap conditionAns, ConceptMap conclusionAns) {
+        private void record(ConceptMap conditionAns, Map<Variable, Concept> conclusionAns) {
             Materialisation materialisation = Materialisation.create(logicRule, conditionAns, conclusionAns);
             if (!conditionAnsMaterialisations().containsKey(conditionAns)) {
                 requiresReiteration = true;
@@ -249,7 +246,8 @@ public class ForwardChainingMaterialiser {
         }
     }
 
-    private class Materialisations {
+    private static class Materialisations {
+
         private final Map<Thing, Set<Materialisation>> concept;
         private final Map<Pair<Thing, Attribute>, Set<Materialisation>> has;
 
@@ -260,13 +258,15 @@ public class ForwardChainingMaterialiser {
 
         private FunctionalIterator<Materialisation> forConcludable(BoundConcludable boundConcludable) {
             FunctionalIterator<Materialisation> materialisations = empty();
-            Optional<Thing> inferredConcept = boundConcludable.inferredConcept();
-            if (inferredConcept.isPresent()) {
-                materialisations = materialisations.link(forThing(inferredConcept.get()));
-            }
+
             Optional<Pair<Thing, Attribute>> inferredHas = boundConcludable.inferredHas();
             if (inferredHas.isPresent()) {
                 materialisations = materialisations.link(forHas(inferredHas.get().first(), inferredHas.get().second()));
+            } else {
+                Optional<Thing> inferredConcept = boundConcludable.inferredConcept();
+                if (inferredConcept.isPresent()) {
+                    materialisations = materialisations.link(forThing(inferredConcept.get()));
+                }
             }
             return materialisations;
         }
@@ -306,16 +306,16 @@ public class ForwardChainingMaterialiser {
         private final BoundConclusion boundConclusion;
 
         private Materialisation(com.vaticle.typedb.core.logic.Rule rule, BoundCondition boundCondition,
-                        BoundConclusion boundConclusion) {
+                                BoundConclusion boundConclusion) {
             this.rule = rule;
             this.boundCondition = boundCondition;
             this.boundConclusion = boundConclusion;
         }
 
         static Materialisation create(com.vaticle.typedb.core.logic.Rule rule, ConceptMap conditionAnswer,
-                                      ConceptMap conclusionAnswer) {
+                                      Map<Variable, Concept> conclusionAnswer) {
             return new Materialisation(rule, BoundCondition.create(rule.condition(), conditionAnswer),
-                                       BoundConclusion.create(rule.conclusion(), conclusionAnswer));
+                    BoundConclusion.create(rule.conclusion(), conclusionAnswer));
         }
 
         BoundCondition boundCondition() {
