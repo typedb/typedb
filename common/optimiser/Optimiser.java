@@ -87,7 +87,7 @@ public class Optimiser {
     }
 
     private void recordSolverValues() {
-        if ((isFeasible() || isOptimal()) && (objectiveValue == null || solver.objective().value() < objectiveValue)) {
+        if ((isFeasible() || isOptimal()) && solver.objective().value() < objectiveValue()) {
             objectiveValue = solver.objective().value();
             variables.forEach(OptimiserVariable::recordSolutionValue);
         }
