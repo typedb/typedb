@@ -52,7 +52,7 @@ public class OptimiserConstraint {
         this.mpConstraint = solver.makeConstraint(lowerBound, upperBound, name);
     }
 
-    synchronized void applyCoefficients() {
+    synchronized void setCoefficients() {
         coefficients.forEach((var, coeff) -> mpConstraint.setCoefficient(var.mpVariable(), coeff));
     }
 
