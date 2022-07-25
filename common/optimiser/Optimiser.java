@@ -225,7 +225,7 @@ public class Optimiser {
 
     @Override
     public String toString() {
-        return "Optimiser[" + "hasSolver=" + (solver == null) + ", variables=" + variables.size() +
+        return "Optimiser[" + "hasSolver=" + (solver != null) + ", variables=" + variables.size() +
                 ", constraints=" + constraints.size() + "]" + (solver != null ? solver.exportModelAsLpFormat() : "");
     }
 }
