@@ -48,6 +48,7 @@ public class Tracer {
     public Tracer(long id, Path logDir) {
         this.id = id;
         this.logDir = logDir;
+        traceWriter();
     }
 
     private TraceWriter traceWriter() {
@@ -149,7 +150,7 @@ public class Tracer {
             try {
                 LOG.debug("Writing reasoner traces to {}", path.get().toAbsolutePath());
                 File file = path.get().toFile();
-                if (!file.getParentFile().mkdirs()) {
+                if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
                     throw TypeDBException.of(REASONER_TRACING_DIRECTORY_COULD_NOT_BE_FOUND);
                 }
                 writer = new PrintWriter(file, "UTF-8");
