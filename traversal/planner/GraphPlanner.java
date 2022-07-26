@@ -70,10 +70,10 @@ public class GraphPlanner implements Planner {
     private final AtomicBoolean isOptimising;
 
     protected volatile GraphProcedure procedure;
+    private volatile CompletableFuture<Void> backgroundOptimisation;
     private volatile boolean isUpToDate;
     private volatile boolean isVertexOrderInitialised;
     private volatile long snapshot;
-    private volatile CompletableFuture<Void> backgroundOptimisation;
 
     private volatile double totalCostLastRecorded;
     private double totalCost;
