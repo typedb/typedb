@@ -248,8 +248,12 @@ public class GraphPlanner implements Planner {
             isOptimising.set(true);
             updateTraversalCosts(graphMgr);
             updateOptimiser();
-            backgroundOptimisation = CompletableFuture.completedFuture(null);
-            createProcedure();
+            backgroundOptimisation = CompletableFuture.runAsync(this::createProcedure, async2());
+            try {
+                backgroundOptimisation.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw TypeDBException.of(e);
+            }
             backgroundOptimisation = CompletableFuture.runAsync(() -> optimise(timeLimitMillis), async2());
         }
     }
