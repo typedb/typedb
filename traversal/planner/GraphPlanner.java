@@ -234,26 +234,22 @@ public class GraphPlanner implements Planner {
 
     void mayOptimise(GraphManager graphMgr, boolean singleUse) {
         long timeLimitMillis = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
-        if (procedure == null) beginFirstOptimise(graphMgr, timeLimitMillis);
+        if (backgroundOptimisation == null) beginFirstOptimise(graphMgr, timeLimitMillis);
         else if (isOptimising.compareAndSet(false, true)) beginReOptimise(graphMgr, timeLimitMillis);
 
         try {
             backgroundOptimisation.get(timeLimitMillis, MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException ignored) {
+            LOG.trace("Query plan did not finish updating in " + timeLimitMillis + " ms.");
         }
     }
 
     private synchronized void beginFirstOptimise(GraphManager graphMgr, long timeLimitMillis) {
-        if (procedure == null) {
+        if (backgroundOptimisation == null) {
             isOptimising.set(true);
             updateTraversalCosts(graphMgr);
             updateOptimiser();
-            backgroundOptimisation = CompletableFuture.runAsync(this::createProcedure, async2());
-            try {
-                backgroundOptimisation.get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw TypeDBException.of(e);
-            }
+            createProcedure();
             backgroundOptimisation = CompletableFuture.runAsync(() -> optimise(timeLimitMillis), async2());
         }
     }
