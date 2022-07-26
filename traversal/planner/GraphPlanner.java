@@ -70,7 +70,6 @@ public class GraphPlanner implements Planner {
     protected volatile GraphProcedure procedure;
     private volatile boolean isUpToDate;
     private volatile boolean isVertexOrderInitialised;
-    private volatile long totalDuration;
     private volatile long snapshot;
 
     private volatile double totalCostLastRecorded;
@@ -84,7 +83,6 @@ public class GraphPlanner implements Planner {
         firstOptimisingLock = new StampedLock().asReadWriteLock();
         isUpToDate = false;
         isVertexOrderInitialised = false;
-        totalDuration = 0L;
         totalCostLastRecorded = INIT_ZERO;
         totalCost = INIT_ZERO;
         snapshot = -1L;
@@ -250,7 +248,6 @@ public class GraphPlanner implements Planner {
         }
     }
 
-    @SuppressWarnings("NonAtomicOperationOnVolatileField")
     private void optimise(GraphManager graphMgr, boolean singleUse) {
         updateTraversalCosts(graphMgr);
         if (isUpToDate() && isOptimal()) {
@@ -262,10 +259,9 @@ public class GraphPlanner implements Planner {
         // TODO: we should have a more clever logic to allocate extra time
         long allocatedDuration = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
         Instant start, endSolver, end;
-        totalDuration += allocatedDuration;
 
         start = Instant.now();
-        optimiser.optimise(totalDuration);
+        optimiser.optimise(allocatedDuration);
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
 
@@ -273,7 +269,6 @@ public class GraphPlanner implements Planner {
         end = Instant.now();
 
         isUpToDate = true;
-        totalDuration -= allocatedDuration - between(start, endSolver).toMillis();
         printDebug(start, endSolver, end);
     }
 
@@ -282,7 +277,6 @@ public class GraphPlanner implements Planner {
         updateOptimiserConstraints();
         if (!isVertexOrderInitialised) initialiseVertexOrderGreedy();
         setOptimiserValues();
-        optimiser.restartFromSolution();
         if (LOG.isTraceEnabled()) LOG.trace(optimiser.toString());
     }
 
