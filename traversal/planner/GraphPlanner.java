@@ -234,8 +234,8 @@ public class GraphPlanner implements Planner {
 
     void mayOptimise(GraphManager graphMgr, boolean singleUse) {
         long timeLimitMillis = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
-        if (backgroundOptimisation == null) beginFirstOptimise(graphMgr, timeLimitMillis);
-        else if (isOptimising.compareAndSet(false, true)) beginReOptimise(graphMgr, timeLimitMillis);
+        if (backgroundOptimisation == null) startFirstOptimise(graphMgr, timeLimitMillis);
+        else if (isOptimising.compareAndSet(false, true)) startReOptimise(graphMgr, timeLimitMillis);
 
         try {
             backgroundOptimisation.get(timeLimitMillis, MILLISECONDS);
@@ -244,7 +244,7 @@ public class GraphPlanner implements Planner {
         }
     }
 
-    private synchronized void beginFirstOptimise(GraphManager graphMgr, long timeLimitMillis) {
+    private synchronized void startFirstOptimise(GraphManager graphMgr, long timeLimitMillis) {
         if (backgroundOptimisation == null) {
             isOptimising.set(true);
             updateTraversalCosts(graphMgr);
@@ -254,7 +254,7 @@ public class GraphPlanner implements Planner {
         }
     }
 
-    private void beginReOptimise(GraphManager graphMgr, long timeLimitMillis) {
+    private void startReOptimise(GraphManager graphMgr, long timeLimitMillis) {
         updateTraversalCosts(graphMgr);
         if (isUpToDate() && isOptimal()) {
             if (LOG.isDebugEnabled()) LOG.debug("GraphPlanner still optimal and up-to-date");
