@@ -57,8 +57,8 @@ public class GraphPlanner implements Planner {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphPlanner.class);
 
-    static final long DEFAULT_TIME_LIMIT_MILLIS = 110; // extra 10 ms to prepare optimisation step and read results
-    static final long HIGHER_TIME_LIMIT_MILLIS = 210;
+    static final long DEFAULT_TIME_LIMIT_MILLIS = 100;
+    static final long HIGHER_TIME_LIMIT_MILLIS = 200;
     static final double OBJECTIVE_PLANNER_COST_MAX_CHANGE = 0.2;
     static final double OBJECTIVE_VARIABLE_COST_MAX_CHANGE = 2.0;
     static final double OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE = 0.02;
@@ -238,7 +238,7 @@ public class GraphPlanner implements Planner {
         else if (isOptimising.compareAndSet(false, true)) startReOptimise(graphMgr, timeLimitMillis);
 
         try {
-            backgroundOptimisation.get(timeLimitMillis, MILLISECONDS);
+            backgroundOptimisation.get(timeLimitMillis + 10, MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException ignored) {
             LOG.trace("Query plan did not finish updating in " + timeLimitMillis + " ms.");
         }
