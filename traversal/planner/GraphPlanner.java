@@ -40,15 +40,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.StampedLock;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.async2;
 import static java.lang.Math.abs;
 import static java.time.Duration.between;
 import static java.util.Comparator.comparing;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class GraphPlanner implements Planner {
 
@@ -65,9 +68,9 @@ public class GraphPlanner implements Planner {
     private final Map<Identifier, PlannerVertex<?>> vertices;
     private final Set<PlannerEdge<?, ?>> edges;
     private final AtomicBoolean isOptimising;
-    private final ReadWriteLock firstOptimisingLock;
 
     protected volatile GraphProcedure procedure;
+    private volatile CompletableFuture<Void> backgroundOptimisation;
     private volatile boolean isUpToDate;
     private volatile boolean isVertexOrderInitialised;
     private volatile long snapshot;
@@ -80,7 +83,6 @@ public class GraphPlanner implements Planner {
         vertices = new HashMap<>();
         edges = new HashSet<>();
         isOptimising = new AtomicBoolean(false);
-        firstOptimisingLock = new StampedLock().asReadWriteLock();
         isUpToDate = false;
         isVertexOrderInitialised = false;
         totalCostLastRecorded = INIT_ZERO;
@@ -231,37 +233,43 @@ public class GraphPlanner implements Planner {
     }
 
     void mayOptimise(GraphManager graphMgr, boolean singleUse) {
-        if (procedure == null) {
-            try {
-                firstOptimisingLock.writeLock().lock();
-                if (procedure == null) optimise(graphMgr, singleUse);
-                assert procedure != null;
-            } finally {
-                firstOptimisingLock.writeLock().unlock();
-            }
-        } else if (isOptimising.compareAndSet(false, true)) {
-            try {
-                optimise(graphMgr, singleUse);
-            } finally {
-                isOptimising.set(false);
-            }
+        long timeLimitMillis = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
+        if (backgroundOptimisation == null) startFirstOptimise(graphMgr, timeLimitMillis);
+        else if (isOptimising.compareAndSet(false, true)) startReOptimise(graphMgr, timeLimitMillis);
+
+        try {
+            backgroundOptimisation.get(timeLimitMillis + 10, MILLISECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException ignored) {
+            LOG.trace("Query plan did not finish updating in " + timeLimitMillis + " ms.");
         }
     }
 
-    private void optimise(GraphManager graphMgr, boolean singleUse) {
+    private synchronized void startFirstOptimise(GraphManager graphMgr, long timeLimitMillis) {
+        if (backgroundOptimisation == null) {
+            isOptimising.set(true);
+            updateTraversalCosts(graphMgr);
+            updateOptimiser();
+            createProcedure();
+            backgroundOptimisation = CompletableFuture.runAsync(() -> optimise(timeLimitMillis), async2());
+        }
+    }
+
+    private void startReOptimise(GraphManager graphMgr, long timeLimitMillis) {
         updateTraversalCosts(graphMgr);
         if (isUpToDate() && isOptimal()) {
             if (LOG.isDebugEnabled()) LOG.debug("GraphPlanner still optimal and up-to-date");
+            isOptimising.set(false);
             return;
         }
         if (!isUpToDate()) updateOptimiser();
 
-        // TODO: we should have a more clever logic to allocate extra time
-        long allocatedDuration = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
-        Instant start, endSolver, end;
+        backgroundOptimisation = backgroundOptimisation.thenRunAsync(() -> optimise(timeLimitMillis), async2());
+    }
 
+    private void optimise(long timeLimitMillis) {
+        Instant start, endSolver, end;
         start = Instant.now();
-        optimiser.optimise(allocatedDuration);
+        optimiser.optimise(timeLimitMillis);
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
 
@@ -270,6 +278,7 @@ public class GraphPlanner implements Planner {
 
         isUpToDate = true;
         printDebug(start, endSolver, end);
+        isOptimising.set(false);
     }
 
     private void updateOptimiser() {
