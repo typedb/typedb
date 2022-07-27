@@ -169,16 +169,16 @@ public class Conjunction implements Pattern, Cloneable {
         return negations;
     }
 
+    public GraphTraversal.Thing traversal() {
+        return traversal(new HashSet<>());
+    }
+
     public GraphTraversal.Thing traversal(Set<? extends Retrievable> filter) {
         GraphTraversal.Thing traversal = new GraphTraversal.Thing();
         variableSet.forEach(variable -> variable.addTo(traversal));
         assert iterate(filter).allMatch(variableMap::containsKey);
         traversal.filter(filter);
         return traversal;
-    }
-
-    public GraphTraversal.Thing traversal() {
-        return traversal(new HashSet<>());
     }
 
     public void setCoherent(boolean isCoherent) {

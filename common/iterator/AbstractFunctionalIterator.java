@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
@@ -68,7 +68,7 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     public <U extends Comparable<? super U>, ORDER extends Order> Forwardable<U, ORDER> mergeMap(
             Function<T, Forwardable<U, ORDER>> mappingFn, ORDER order
     ) {
-        return new MergeMappedIterator.Forwardable<>(this, mappingFn, order);
+        return new MergeMappedSortedIterator.Forwardable<>(this, mappingFn, order);
     }
 
     @Override

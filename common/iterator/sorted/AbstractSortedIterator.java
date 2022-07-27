@@ -66,12 +66,12 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
 
     @Override
     public final SortedIterator<T, ORDER> merge(SortedIterator<T, ORDER> iterator) {
-        return new MergeMappedIterator<>(iterate(this, iterator), e -> e, order);
+        return new MergeMappedSortedIterator<>(iterate(this, iterator), e -> e, order);
     }
 
     @Override
     public <U extends Comparable<? super U>, ORD extends Order> Forwardable<U, ORD> mergeMap(Function<T, Forwardable<U, ORD>> mappingFn, ORD order) {
-        return new MergeMappedIterator.Forwardable<>(this, mappingFn, order);
+        return new MergeMappedSortedIterator.Forwardable<>(this, mappingFn, order);
     }
 
     @Override

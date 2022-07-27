@@ -60,7 +60,7 @@ public abstract class GraphTraversal extends Traversal {
 
     final Set<Identifier.Variable.Retrievable> filter;
 
-    public GraphTraversal() {
+    GraphTraversal() {
         super();
         filter = new HashSet<>();
     }
