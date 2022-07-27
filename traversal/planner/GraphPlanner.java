@@ -57,8 +57,8 @@ public class GraphPlanner implements Planner {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphPlanner.class);
 
-    static final long DEFAULT_TIME_LIMIT_MILLIS = 100;
-    static final long HIGHER_TIME_LIMIT_MILLIS = 200;
+    static final long DEFAULT_TIME_LIMIT_MILLIS = 105; // extra 5 ms to create procedure and update costs
+    static final long HIGHER_TIME_LIMIT_MILLIS = 205;
     static final double OBJECTIVE_PLANNER_COST_MAX_CHANGE = 0.2;
     static final double OBJECTIVE_VARIABLE_COST_MAX_CHANGE = 2.0;
     static final double OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE = 0.02;
