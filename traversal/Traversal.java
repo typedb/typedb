@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.traversal;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
@@ -39,6 +40,7 @@ import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
@@ -63,7 +65,11 @@ public abstract class Traversal {
         return parameters;
     }
 
-    abstract FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr);
+    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
+        return permutationIterator(graphMgr, ASC);
+    }
+
+    abstract FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, SortedIterator.Order order);
 
     @Override
     public boolean equals(Object o) {

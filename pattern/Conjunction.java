@@ -118,6 +118,8 @@ public class Conjunction implements Pattern, Cloneable {
         }
     }
 
+
+
     public void bound(Map<Retrievable, Either<Label, ByteArray>> bounds) {
         variableSet.forEach(var -> {
             if (var.id().isRetrievable() && bounds.containsKey(var.id().asRetrievable())) {
@@ -174,10 +176,16 @@ public class Conjunction implements Pattern, Cloneable {
     }
 
     public GraphTraversal.Thing traversal(Set<? extends Retrievable> filter) {
+        return traversal(filter, list());
+    }
+
+    public GraphTraversal.Thing traversal(Set<? extends Retrievable> filter, List<? extends Retrievable> sorting) {
         GraphTraversal.Thing traversal = new GraphTraversal.Thing();
         variableSet.forEach(variable -> variable.addTo(traversal));
         assert iterate(filter).allMatch(variableMap::containsKey);
         traversal.filter(filter);
+        assert iterate(sorting).allMatch(variableMap::containsKey);
+        traversal.sort(sorting);
         return traversal;
     }
 

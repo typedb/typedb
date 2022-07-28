@@ -20,6 +20,8 @@ package com.vaticle.typedb.core.traversal;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
+import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
@@ -37,7 +39,11 @@ import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -58,21 +64,25 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.SubString.LIK
 
 public abstract class GraphTraversal extends Traversal {
 
+    final List<Identifier.Variable.Retrievable> sorting;
     final Set<Identifier.Variable.Retrievable> filter;
 
     GraphTraversal() {
         super();
         filter = new HashSet<>();
+        sorting = new ArrayList<>();
     }
 
     abstract Set<Identifier.Variable.Retrievable> filter();
 
     public abstract void filter(Set<? extends Identifier.Variable.Retrievable> filter);
 
+    public abstract void sort(List<? extends Identifier.Variable.Retrievable> sorting);
+
     FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Planner planner, boolean singleUse,
-                                                      Set<Identifier.Variable.Retrievable> filter) {
+                                                      SortedIterator.Order order) {
         planner.tryOptimise(graphMgr, singleUse);
-        return planner.procedure().iterator(graphMgr, parameters, filter);
+        return planner.procedure().iterator(graphMgr, parameters, filter());
     }
 
     public void labels(Identifier.Variable type, Set<Label> labels) {
@@ -129,8 +139,8 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         @Override
-        FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
-            return permutationIterator(graphMgr, Planner.create(structure), true, filter());
+        FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, SortedIterator.Order order) {
+            return permutationIterator(graphMgr, Planner.create(structure), true, order);
         }
 
         public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
@@ -145,8 +155,13 @@ public abstract class GraphTraversal extends Traversal {
 
         @Override
         public void filter(Set<? extends Identifier.Variable.Retrievable> filter) {
-            assert iterate(filter).noneMatch(Identifier::isLabel);
             this.filter.addAll(filter);
+        }
+
+        @Override
+        public void sort(List<? extends Identifier.Variable.Retrievable> sorting) {
+            this.sorting.clear();
+            this.sorting.addAll(sorting);
         }
     }
 
@@ -168,9 +183,9 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         @Override
-        FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
+        FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, SortedIterator.Order order) {
             assert planner != null && cache != null;
-            FunctionalIterator<VertexMap> iter = permutationIterator(graphMgr, planner, false, filter());
+            FunctionalIterator<VertexMap> iter = permutationIterator(graphMgr, planner, false, order);
             cache.mayUpdatePlanner(structure, planner);
             return iter;
         }
@@ -199,8 +214,15 @@ public abstract class GraphTraversal extends Traversal {
 
         @Override
         public void filter(Set<? extends Identifier.Variable.Retrievable> filter) {
-            assert modifiable && iterate(filter).noneMatch(Identifier::isLabel);
+            assert modifiable;
             this.filter.addAll(filter);
+        }
+
+        @Override
+        public void sort(List<? extends Identifier.Variable.Retrievable> sorting) {
+            assert modifiable;
+            this.sorting.clear();
+            this.sorting.addAll(sorting);
         }
 
         public void equalThings(Identifier.Variable thing1, Identifier.Variable thing2) {

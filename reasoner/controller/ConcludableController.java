@@ -295,7 +295,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 if (concludable.isRelation() || concludable.isAttribute() || concludable.isIsa()) {
                     return conceptMap.withExplainableConcept(concludable.generating().get().id(), concludable.pattern());
                 } else if (concludable.isHas()) {
-                    return conceptMap.withExplainableAttrOwnership(
+                    return conceptMap.withExplainableOwnership(
                             concludable.asHas().owner().id(), concludable.asHas().attribute().id(), concludable.pattern()
                     );
                 } else {

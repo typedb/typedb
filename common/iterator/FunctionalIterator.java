@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -41,6 +40,8 @@ public interface FunctionalIterator<T> extends Iterator<T> {
     FunctionalIterator<T> distinct(Set<T> duplicates);
 
     <U> FunctionalIterator<U> map(Function<T, U> mappingFn);
+
+    <U extends Comparable<? super U>, ORDER extends Order> SortedIterator<U, ORDER> mapSorted(Function<T, U> mappingFn, ORDER order);
 
     <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> mappingFn);
 

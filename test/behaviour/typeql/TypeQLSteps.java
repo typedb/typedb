@@ -69,7 +69,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TypeQLSteps {
 
-    private static List<ConceptMap> answers;
+    private static List<? extends ConceptMap> answers;
     private static Numeric numericAnswer;
     private static List<ConceptMapGroup> answerGroups;
     private static List<NumericGroup> numericAnswerGroups;

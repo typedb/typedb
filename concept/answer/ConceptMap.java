@@ -18,21 +18,17 @@
 
 package com.vaticle.typedb.core.concept.answer;
 
-import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.thing.Attribute;
-import com.vaticle.typedb.core.concept.thing.Thing;
-import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,15 +36,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
-import static java.util.Collections.sort;
 import static java.util.Collections.unmodifiableMap;
 
 public class ConceptMap implements Answer {
@@ -69,10 +61,6 @@ public class ConceptMap implements Answer {
         this.concepts = concepts;
         this.explainables = explainables;
         this.hash = Objects.hash(this.concepts, this.explainables);
-    }
-
-    public FunctionalIterator<Pair<Retrievable, Concept>> iterator() {
-        return iterate(concepts.entrySet()).map(e -> pair(e.getKey(), e.getValue()));
     }
 
     public boolean contains(String variable) {
@@ -108,61 +96,35 @@ public class ConceptMap implements Answer {
         return concepts;
     }
 
-    public ConceptMap filter(Set<? extends Retrievable> vars) {
-        Map<Retrievable, ? extends Concept> filtered = concepts.entrySet().stream()
-                .filter(e -> vars.contains(e.getKey()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        return new ConceptMap(filtered);
+    public Explainables explainables() {
+        return explainables;
     }
 
     public void forEach(BiConsumer<Retrievable, Concept> consumer) {
         concepts.forEach(consumer);
     }
 
-    public <T, U> Map<Retrievable, Either<T, U>> toMap(Function<Type, T> typeFn, Function<Thing, U> thingFn) {
-        return toMap(concept -> {
-            if (concept.isType()) return Either.first(typeFn.apply(concept.asType()));
-            else if (concept.isThing()) return Either.second(thingFn.apply(concept.asThing()));
-            else throw TypeDBException.of(ILLEGAL_STATE);
-        });
+    public ConceptMap filter(Set<? extends Retrievable> vars) {
+        return new ConceptMap(filteredMap(concepts, vars)); // TODO this should include explainables?
     }
 
-    public <T> Map<Retrievable, T> toMap(Function<Concept, T> conceptFn) {
-        Map<Retrievable, T> map = new HashMap<>();
-        iterate(concepts.entrySet()).forEachRemaining(e -> map.put(e.getKey(), conceptFn.apply(e.getValue())));
-        return map;
-    }
-
-    public Explainables explainables() {
-        return explainables;
+    static Map<Retrievable, ? extends Concept> filteredMap(Map<Retrievable, ? extends Concept> concepts, Set<? extends Retrievable> vars) {
+        return concepts.entrySet().stream()
+                .filter(e -> vars.contains(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public ConceptMap withExplainableConcept(Retrievable id, Conjunction conjunction) {
         assert concepts.get(id).isRelation() || concepts.get(id).isAttribute();
         if (concepts.get(id).isRelation()) {
-            HashMap<Retrievable, Explainable> clone = new HashMap<>(explainables.explainableRelations);
-            clone.put(id, Explainable.unidentified(conjunction));
-            return new ConceptMap(
-                    concepts,
-                    new Explainables(unmodifiableMap(clone), explainables.explainableRelations, explainables.explainableOwnerships)
-            );
+            return new ConceptMap(concepts, explainables.cloneWithRelation(id, conjunction));
         } else {
-            HashMap<Retrievable, Explainable> clone = new HashMap<>(explainables.explainableAttributes);
-            clone.put(id, Explainable.unidentified(conjunction));
-            return new ConceptMap(
-                    concepts,
-                    new Explainables(explainables.explainableRelations, unmodifiableMap(clone), explainables.explainableOwnerships)
-            );
+            return new ConceptMap(concepts, explainables.cloneWithAttribute(id, conjunction));
         }
     }
 
-    public ConceptMap withExplainableAttrOwnership(Retrievable owner, Retrievable attribute, Conjunction conjunction) {
-        Map<Pair<Retrievable, Retrievable>, Explainable> explainableAttributeOwnershipsClone = new HashMap<>(explainables.explainableOwnerships);
-        explainableAttributeOwnershipsClone.put(new Pair<>(owner, attribute), Explainable.unidentified(conjunction));
-        return new ConceptMap(
-                concepts,
-                new Explainables(explainables.explainableRelations, explainables.explainableAttributes, unmodifiableMap(explainableAttributeOwnershipsClone))
-        );
+    public ConceptMap withExplainableOwnership(Retrievable ownerID, Retrievable attrID, Conjunction conjunction) {
+        return new ConceptMap(concepts, explainables.cloneWithOwnership(ownerID, attrID, conjunction));
     }
 
     @Override
@@ -197,23 +159,44 @@ public class ConceptMap implements Answer {
         }
 
         @Override
+        public ConceptMap.Ordered filter(Set<? extends Retrievable> vars) {
+            return new Ordered(filteredMap(concepts(), vars), conceptsComparator); // TODO this should include explainables?
+        }
+
+        @Override
+        public ConceptMap.Ordered withExplainableConcept(Retrievable id, Conjunction conjunction) {
+            assert get(id).isRelation() || get(id).isAttribute();
+            if (get(id).isRelation()) {
+                return new Ordered(concepts(), explainables().cloneWithRelation(id, conjunction), conceptsComparator);
+            } else {
+                return new Ordered(concepts(), explainables().cloneWithAttribute(id, conjunction), conceptsComparator);
+            }
+        }
+
+        @Override
+        public ConceptMap withExplainableOwnership(Retrievable ownerID, Retrievable attrID, Conjunction conjunction) {
+            return new Ordered(concepts(), explainables().cloneWithOwnership(ownerID, attrID, conjunction), conceptsComparator);
+        }
+
+        @Override
         public int compareTo(Ordered other) {
             assert conceptsComparator.equals(other.conceptsComparator);
             return conceptsComparator.compare(this, other);
         }
 
-        // TODO what about reverse order
         public static class Comparator implements java.util.Comparator<ConceptMap> {
 
-            private final List<Retrievable> sortVars;
+            private final List<? extends Retrievable> sortVars;
+            private final boolean isAscending;
             private final java.util.Comparator<ConceptMap> comparator;
 
-            public Comparator(List<Retrievable> sortVars, java.util.Comparator<ConceptMap> comparator) {
+            public Comparator(List<? extends Retrievable> sortVars, boolean isAscending, java.util.Comparator<ConceptMap> comparator) {
                 this.sortVars = sortVars;
+                this.isAscending = isAscending;
                 this.comparator = comparator;
             }
 
-            public static Comparator create(List<Retrievable> sortVars) {
+            public static Comparator create(List<? extends Retrievable> sortVars, boolean isAscending) {
                 assert !sortVars.isEmpty();
                 Optional<java.util.Comparator<ConceptMap>> comparator = sortVars.stream()
                         .map(var -> java.util.Comparator.comparing((ConceptMap conceptMap) -> conceptMap.get(var), (concept1, concept2) -> {
@@ -240,10 +223,10 @@ public class ConceptMap implements Answer {
                             } else if (concept1.isType() && concept2.isType()) {
                                 return concept1.asType().compareTo(concept2.asType());
                             } else {
-                                throw TypeDBException.of("Concepts '" + concept1 + " and '" + concept2 + "' are not orderable.");
+                                throw TypeDBException.of(ILLEGAL_STATE); // TODO
                             }
                         })).reduce(java.util.Comparator::thenComparing);
-                return new Comparator(sortVars, comparator.get());
+                return new Comparator(sortVars, isAscending, isAscending ? comparator.get() : comparator.get().reversed());
             }
 
             @Override
@@ -256,12 +239,12 @@ public class ConceptMap implements Answer {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Comparator that = (Comparator) o;
-                return sortVars.equals(that.sortVars);
+                return sortVars.equals(that.sortVars) && isAscending == that.isAscending;
             }
 
             @Override
             public int hashCode() {
-                return sortVars.hashCode();
+                return Objects.hash(sortVars, isAscending);
             }
         }
     }
@@ -282,6 +265,24 @@ public class ConceptMap implements Answer {
             this.explainableRelations = explainableRelations;
             this.explainableAttributes = explainableAttributes;
             this.explainableOwnerships = explainableOwnerships;
+        }
+
+        Explainables cloneWithRelation(Retrievable id, Conjunction conjunction) {
+            HashMap<Retrievable, Explainable> clone = new HashMap<>(explainableRelations);
+            clone.put(id, Explainable.unidentified(conjunction));
+            return new Explainables(unmodifiableMap(clone), explainableAttributes, explainableOwnerships);
+        }
+
+        Explainables cloneWithAttribute(Retrievable id, Conjunction conjunction) {
+            HashMap<Retrievable, Explainable> clone = new HashMap<>(explainableAttributes);
+            clone.put(id, Explainable.unidentified(conjunction));
+            return new Explainables(explainableRelations, unmodifiableMap(clone), explainableOwnerships);
+        }
+
+        Explainables cloneWithOwnership(Retrievable ownerID, Retrievable attrID, Conjunction conjunction) {
+            Map<Pair<Retrievable, Retrievable>, Explainable> explainableAttributeOwnershipsClone = new HashMap<>(explainableOwnerships);
+            explainableAttributeOwnershipsClone.put(new Pair<>(ownerID, attrID), Explainable.unidentified(conjunction));
+            return new Explainables(explainableRelations, explainableAttributes, unmodifiableMap(explainableAttributeOwnershipsClone));
         }
 
         public FunctionalIterator<Explainable> iterator() {

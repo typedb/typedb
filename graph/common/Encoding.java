@@ -369,12 +369,12 @@ public class Encoding {
      * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
      */
     public enum ValueType {
-        OBJECT(0, Object.class, false, false, null),
-        BOOLEAN(10, Boolean.class, true, false, TypeQLArg.ValueType.BOOLEAN),
-        LONG(20, Long.class, true, true, TypeQLArg.ValueType.LONG),
-        DOUBLE(30, Double.class, true, false, TypeQLArg.ValueType.DOUBLE),
-        STRING(40, String.class, true, true, TypeQLArg.ValueType.STRING),
-        DATETIME(50, LocalDateTime.class, true, true, TypeQLArg.ValueType.DATETIME);
+        OBJECT(0, Object.class, false, false, false, null),
+        BOOLEAN(10, Boolean.class, true, false, true, TypeQLArg.ValueType.BOOLEAN),
+        LONG(20, Long.class, true, true, true, TypeQLArg.ValueType.LONG),
+        DOUBLE(30, Double.class, true, false, true, TypeQLArg.ValueType.DOUBLE),
+        STRING(40, String.class, true, true, false, TypeQLArg.ValueType.STRING),
+        DATETIME(50, LocalDateTime.class, true, true, true, TypeQLArg.ValueType.DATETIME);
         public static final ZoneId TIME_ZONE_ID = ZoneOffset.UTC;
         public static final Charset STRING_ENCODING = UTF_8;
         public static final int STRING_SIZE_ENCODING = SHORT_SIZE;
@@ -412,17 +412,19 @@ public class Encoding {
         private final Class<?> valueClass;
         private final boolean isKeyable;
         private final boolean isWritable;
+        private final boolean isNativelySorted;
 
         private final TypeQLArg.ValueType typeQLValueType;
         private final ByteArray bytes;
 
-        ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable,
+        ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable, boolean isNativelySorted,
                   @Nullable TypeQLArg.ValueType typeQLValueType) {
             this.key = unsignedByte(key);
             this.bytes = ByteArray.of(new byte[]{this.key});
             this.valueClass = valueClass;
             this.isWritable = isWritable;
             this.isKeyable = isKeyable;
+            this.isNativelySorted = isNativelySorted;
             this.typeQLValueType = typeQLValueType;
         }
 
@@ -466,6 +468,10 @@ public class Encoding {
 
         public boolean isKeyable() {
             return isKeyable;
+        }
+
+        public boolean isNativelySorted() {
+            return isNativelySorted;
         }
 
         public Set<ValueType> assignables() {

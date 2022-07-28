@@ -64,7 +64,7 @@ public class ReasonerSteps {
     public static String DATABASE = "typedb-reasoner-test";
     private static CorrectnessVerifier correctnessVerifier;
     private static TypeQLMatch typeQLQuery;
-    private static List<ConceptMap> answers;
+    private static List<? extends ConceptMap> answers;
 
     @Before
     public synchronized void before() throws IOException {
@@ -155,7 +155,7 @@ public class ReasonerSteps {
         try {
             assertNotNull("A typeql query must have been previously loaded in order to test answer equivalence.", typeQLQuery);
             assertNotNull("There are no previous answers to test against; was the reference query ever executed?", answers);
-            Set<ConceptMap> newAnswers = reasoningTx().query().match(TypeQL.parseQuery(equivalentQuery).asMatch()).toSet();
+            Set<? extends ConceptMap> newAnswers = reasoningTx().query().match(TypeQL.parseQuery(equivalentQuery).asMatch()).toSet();
             assertEquals(set(answers), newAnswers);
         } catch (TypeQLException e) {
             // NOTE: We manually close transaction here, because we want to align with all non-java clients,
@@ -173,11 +173,11 @@ public class ReasonerSteps {
 
     @Then("verify answers are consistent across {int} executions")
     public static void verify_answers_are_consistent_across_n_executions(int executionCount) {
-        Set<ConceptMap> oldAnswers = reasoningTx().query().match(typeQLQuery).toSet();
+        Set<? extends ConceptMap> oldAnswers = reasoningTx().query().match(typeQLQuery).toSet();
         for (int i = 0; i < executionCount - 1; i++) {
             try (TypeDB.Transaction transaction = dataSession().transaction(Arguments.Transaction.Type.READ,
                                                                             new Options.Transaction().infer(true))) {
-                Set<ConceptMap> answers = transaction.query().match(typeQLQuery).toSet();
+                Set<? extends ConceptMap> answers = transaction.query().match(typeQLQuery).toSet();
                 assertEquals(oldAnswers, answers);
             }
         }

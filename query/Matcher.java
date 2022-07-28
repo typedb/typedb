@@ -109,12 +109,12 @@ public class Matcher {
         return new Group.Aggregator(group, query);
     }
 
-    public FunctionalIterator<ConceptMap> execute() {
+    public FunctionalIterator<? extends ConceptMap> execute() {
         assert context != null;
         return execute(context);
     }
 
-    FunctionalIterator<ConceptMap> execute(Context.Query context) {
+    FunctionalIterator<? extends ConceptMap> execute(Context.Query context) {
         return reasoner.execute(disjunction, query.modifiers(), context);
     }
 
@@ -132,13 +132,13 @@ public class Matcher {
         }
 
         public Numeric execute() {
-            FunctionalIterator<ConceptMap> answers = matcher.execute(context);
+            FunctionalIterator<? extends ConceptMap> answers = matcher.execute(context);
             TypeQLToken.Aggregate.Method method = query.method();
             UnboundVariable var = query.var();
             return aggregate(answers, method, var);
         }
 
-        static Numeric aggregate(FunctionalIterator<ConceptMap> answers,
+        static Numeric aggregate(FunctionalIterator<? extends ConceptMap> answers,
                                  TypeQLToken.Aggregate.Method method, UnboundVariable var) {
             return answers.stream().collect(aggregator(method, var));
         }

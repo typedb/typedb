@@ -104,7 +104,7 @@ public class StringAttributeTest {
                         // TODO escaping this doesn't work in TypeQL parser? It needs to remove the backslashes from parsed queries
                         // String escaped = generated.replace("\\", "\\\\").replace("\"", "\\\"");
                         if (!(generated.contains("\\") || generated.contains("\""))) {
-                            Optional<ConceptMap> ans = txn.query().match(TypeQL.parseQuery(
+                            Optional<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery(
                                     "match $a \"" + generated + "\" isa string-value;").asMatch()).first();
                             assertTrue(ans.isPresent());
                             assertEquals(generated, ans.get().get("a").asAttribute().asString().getValue());

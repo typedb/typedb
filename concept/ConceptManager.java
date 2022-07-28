@@ -70,13 +70,21 @@ public final class ConceptManager {
     }
 
     public ConceptMap conceptMap(VertexMap vertexMap) {
+        return new ConceptMap(toConcepts(vertexMap));
+    }
+
+    public ConceptMap.Ordered conceptMapOrdered(VertexMap vertexMap, ConceptMap.Ordered.Comparator comparator) {
+        return new ConceptMap.Ordered(toConcepts(vertexMap), comparator);
+    }
+
+    private Map<Retrievable, Concept> toConcepts(VertexMap vertexMap) {
         Map<Retrievable, Concept> map = new HashMap<>();
         vertexMap.forEach((id, vertex) -> {
             if (vertex.isThing()) map.put(id, ThingImpl.of(vertex.asThing()));
             else if (vertex.isType()) map.put(id, TypeImpl.of(graphMgr, vertex.asType()));
             else throw exception(TypeDBException.of(ILLEGAL_STATE));
         });
-        return new ConceptMap(map);
+        return map;
     }
 
     public GraphManager graph() {

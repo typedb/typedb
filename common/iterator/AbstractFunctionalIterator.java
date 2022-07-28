@@ -19,7 +19,9 @@
 package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.sorted.MappedSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedSortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
@@ -57,6 +59,11 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     @Override
     public <U> FunctionalIterator<U> map(Function<T, U> mappingFn) {
         return new MappedIterator<>(this, mappingFn);
+    }
+
+    @Override
+    public <U extends Comparable<? super U>, ORDER extends Order> SortedIterator<U, ORDER> mapSorted(Function<T, U> mappingFn, ORDER order) {
+        return new MappedSortedIterator<>(this, mappingFn, order);
     }
 
     @Override

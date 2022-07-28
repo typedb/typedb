@@ -116,8 +116,6 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
     @Override
     SortedIterator<T, ORDER> limit(long limit);
 
-    <U extends Comparable<? super U>, ORD extends Order> SortedIterator<U, ORD> mapSorted(Function<T, U> mappingFn, ORD order);
-
     NavigableSet<T> toNavigableSet();
 
     @Override

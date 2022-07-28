@@ -139,7 +139,7 @@ public class Inserter {
     }
 
     private FunctionalIterator<ConceptMap> executeParallel() {
-        List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+        List<? extends List<? extends ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         List<ConceptMap> inserts;
         if (lists.size() == 1) inserts = iterate(lists.get(0)).map(
@@ -152,7 +152,7 @@ public class Inserter {
     }
 
     private FunctionalIterator<ConceptMap> executeSerial() {
-        List<ConceptMap> matches = matcher.execute(context).toList();
+        List<? extends ConceptMap> matches = matcher.execute(context).toList();
         return iterate(iterate(matches).map(matched -> new Operation(conceptMgr, matched, variables).execute()).toList());
     }
 

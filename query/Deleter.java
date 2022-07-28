@@ -108,7 +108,7 @@ public class Deleter {
 
     public void execute() {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            List<ConceptMap> matches = matcher.execute(context).toList();
+            List<? extends ConceptMap> matches = matcher.execute(context).toList();
             matches.forEach(matched -> new Operation(matched, variables).execute());
         }
     }
