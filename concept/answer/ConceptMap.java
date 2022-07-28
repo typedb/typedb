@@ -23,6 +23,7 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.pattern.Conjunction;
@@ -31,18 +32,23 @@ import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static java.util.Collections.sort;
 import static java.util.Collections.unmodifiableMap;
 
 public class ConceptMap implements Answer {
@@ -175,6 +181,89 @@ public class ConceptMap implements Answer {
     @Override
     public int hashCode() {
         return hash;
+    }
+
+    public static class Ordered extends ConceptMap implements Comparable<Ordered> {
+
+        private final Comparator conceptsComparator;
+
+        public Ordered(Map<Retrievable, ? extends Concept> concepts, Comparator conceptsComparator) {
+            this(concepts, new Explainables(), conceptsComparator);
+        }
+
+        public Ordered(Map<Retrievable, ? extends Concept> concepts, Explainables explainables, Comparator conceptsComparator) {
+            super(concepts, explainables);
+            this.conceptsComparator = conceptsComparator;
+        }
+
+        @Override
+        public int compareTo(Ordered other) {
+            assert conceptsComparator.equals(other.conceptsComparator);
+            return conceptsComparator.compare(this, other);
+        }
+
+        // TODO what about reverse order
+        public static class Comparator implements java.util.Comparator<ConceptMap> {
+
+            private final List<Retrievable> sortVars;
+            private final java.util.Comparator<ConceptMap> comparator;
+
+            public Comparator(List<Retrievable> sortVars, java.util.Comparator<ConceptMap> comparator) {
+                this.sortVars = sortVars;
+                this.comparator = comparator;
+            }
+
+            public static Comparator create(List<Retrievable> sortVars) {
+                assert !sortVars.isEmpty();
+                Optional<java.util.Comparator<ConceptMap>> comparator = sortVars.stream()
+                        .map(var -> java.util.Comparator.comparing((ConceptMap conceptMap) -> conceptMap.get(var), (concept1, concept2) -> {
+                            if (concept1.isAttribute() && concept2.isAttribute()) {
+                                Attribute att1 = concept1.asAttribute();
+                                Attribute att2 = concept2.asAttribute();
+                                if (att1.isString()) {
+                                    return att1.asString().getValue().compareToIgnoreCase(att2.asString().getValue());
+                                } else if (att1.isBoolean()) {
+                                    return att1.asBoolean().getValue().compareTo(att2.asBoolean().getValue());
+                                } else if (att1.isLong() && att2.isLong()) {
+                                    return att1.asLong().getValue().compareTo(att2.asLong().getValue());
+                                } else if (att1.isDouble() || att2.isDouble()) {
+                                    Double double1 = att1.isLong() ? att1.asLong().getValue() : att1.asDouble().getValue();
+                                    Double double2 = att2.isLong() ? att2.asLong().getValue() : att2.asDouble().getValue();
+                                    return double1.compareTo(double2);
+                                } else if (att1.isDateTime()) {
+                                    return (att1.asDateTime().getValue()).compareTo(att2.asDateTime().getValue());
+                                } else {
+                                    throw TypeDBException.of(ILLEGAL_STATE);
+                                }
+                            } else if (concept1.isThing() && concept2.isThing()) {
+                                return concept1.asThing().compareTo(concept2.asThing());
+                            } else if (concept1.isType() && concept2.isType()) {
+                                return concept1.asType().compareTo(concept2.asType());
+                            } else {
+                                throw TypeDBException.of("Concepts '" + concept1 + " and '" + concept2 + "' are not orderable.");
+                            }
+                        })).reduce(java.util.Comparator::thenComparing);
+                return new Comparator(sortVars, comparator.get());
+            }
+
+            @Override
+            public int compare(ConceptMap o1, ConceptMap o2) {
+                return comparator.compare(o1, o2);
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                Comparator that = (Comparator) o;
+                return sortVars.equals(that.sortVars);
+            }
+
+            @Override
+            public int hashCode() {
+                return sortVars.hashCode();
+            }
+        }
     }
 
     public static class Explainables {

@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.TreeSet;
@@ -34,7 +33,7 @@ import static com.vaticle.typedb.common.collection.Collections.list;
 public class SortedIterators {
 
     public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator<T, ORDER> iterateSorted(ORDER order, List<T> list) {
-        return new BaseSortedIterator<>(list, order);
+        return new ListSortedIterator<>(list, order);
     }
 
     public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator<T, ORDER> distinct(
@@ -82,16 +81,16 @@ public class SortedIterators {
         }
 
         public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> iterateSorted(Collection<T> elements, ORDER order) {
-            return new BaseForwardableIterator<>(new TreeSet<>(elements), order);
+            return new NavigableForwardableIterator<>(new TreeSet<>(elements), order);
         }
 
         @SafeVarargs
         public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> iterateSorted(ORDER order, T... elements) {
-            return new BaseForwardableIterator<>(new TreeSet<>(list(elements)), order);
+            return new NavigableForwardableIterator<>(new TreeSet<>(list(elements)), order);
         }
 
         public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> iterateSorted(NavigableSet<T> set, ORDER order) {
-            return new BaseForwardableIterator<>(set, order);
+            return new NavigableForwardableIterator<>(set, order);
         }
 
         public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> distinct(SortedIterator.Forwardable<T, ORDER> iterator) {

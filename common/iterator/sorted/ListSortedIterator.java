@@ -24,13 +24,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-public class BaseSortedIterator<T extends Comparable<? super T>, ORDER extends Order>
+public class ListSortedIterator<T extends Comparable<? super T>, ORDER extends Order>
         extends AbstractSortedIterator<T, ORDER> {
 
     private final Iterator<T> iterator;
     private T next;
 
-    public BaseSortedIterator(List<T> source, ORDER order) {
+    public ListSortedIterator(List<T> source, ORDER order) {
         super(order);
         assert isSorted(order, source);
         this.iterator = source.iterator();
