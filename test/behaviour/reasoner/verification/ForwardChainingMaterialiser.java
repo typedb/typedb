@@ -148,15 +148,15 @@ public class ForwardChainingMaterialiser {
         rule.unnegatedDependencies().forEach(dependency -> expandPartition(dependency, positivelyReachable));
     }
 
-    private void expandPartition(Rule rule, Set<Rule> reachable) {
-        if (!inPartition(rule) && !reachable.contains(rule)) {
-            reachable.add(rule);
-            partitionDependencies(rule, reachable);
+    private void expandPartition(Rule rule, Set<Rule> positivelyReachable) {
+        if (!inPartition(rule) && !positivelyReachable.contains(rule)) {
+            positivelyReachable.add(rule);
+            partitionDependencies(rule, positivelyReachable);
         }
     }
 
-    private void extractPartition(Set<Rule> reachable) {
-        Set<Rule> partition = iterate(reachable).filter(rule -> !inPartition(rule)).toSet();
+    private void extractPartition(Set<Rule> positivelyReachable) {
+        Set<Rule> partition = iterate(positivelyReachable).filter(rule -> !inPartition(rule)).toSet();
         rulePartitions.add(partition);
     }
 
