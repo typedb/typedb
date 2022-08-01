@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Vaticle
+ * Copyright (C) 2021 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -46,7 +46,7 @@ public class CombinationFinder {
     private static final Logger LOG = LoggerFactory.getLogger(CombinationFinder.class);
 
     private final GraphManager graphMgr;
-    private final Set<CombinationProcedure> procedures;
+    private final CombinationProcedure procedure;
     private final Traversal.Parameters params;
     private final Set<Retrievable> filter;
     private final Set<Retrievable> concreteVarIds;
@@ -54,11 +54,11 @@ public class CombinationFinder {
 
     private enum State {CHANGED, UNCHANGED, EMPTY}
 
-    public CombinationFinder(GraphManager graphMgr, Set<CombinationProcedure> procedures, Set<Retrievable> filter,
+    public CombinationFinder(GraphManager graphMgr, CombinationProcedure procedure, Set<Retrievable> filter,
                              Set<Retrievable> concreteVarIds) {
         assert filter.containsAll(concreteVarIds);
         this.graphMgr = graphMgr;
-        this.procedures = procedures;
+        this.procedure = procedure;
         this.filter = filter;
         this.concreteVarIds = concreteVarIds;
         this.params = new Traversal.Parameters();
@@ -66,29 +66,26 @@ public class CombinationFinder {
     }
 
     public Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
-        if (LOG.isTraceEnabled()) LOG.trace(procedures.toString());
+        if (LOG.isTraceEnabled()) LOG.trace(procedure.toString());
 
-        for (CombinationProcedure procedure : procedures) {
-            start(procedure);
-            State state = State.CHANGED;
-            while (state == State.CHANGED) {
-                state = forward(procedure);
-                if (state == State.EMPTY) return Optional.empty();
-                state = backward(procedure);
-                if (state == State.EMPTY) return Optional.empty();
-            }
+        start(procedure);
+        State state = State.CHANGED;
+        while (state == State.CHANGED) {
+            state = forward(procedure);
+            if (state == State.EMPTY) return Optional.empty();
+            state = backward(procedure);
+            if (state == State.EMPTY) return Optional.empty();
         }
         return Optional.of(filtered(combination));
     }
 
     private void start(CombinationProcedure procedure) {
-        ProcedureVertex.Type from = procedure.startVertex();
-        addOrIntersect(from.id(), vertexIter(from).toSet());
+        procedure.startVertices().forEach(start -> addOrIntersect(start.id(), vertexIter(start).toSet()));
     }
 
     private State forward(CombinationProcedure procedure) {
         Queue<ProcedureVertex.Type> toVisit = new LinkedList<>();
-        toVisit.add(procedure.startVertex());
+        toVisit.addAll(procedure.startVertices());
         ProcedureVertex.Type from;
         boolean changed = false;
         while (!toVisit.isEmpty()) {
@@ -117,7 +114,7 @@ public class CombinationFinder {
                 Set<TypeVertex> toTypes = toTypes(procedureEdge);
                 changed = addOrIntersect(procedureEdge.to().id(), toTypes) || changed;
                 if (combination.get(procedureEdge.to().id()).isEmpty()) return State.EMPTY;
-                if (!procedure.startVertex().equals(procedureEdge.to())) {
+                if (!procedure.startVertices().contains(procedureEdge.to().asType())) {
                     toVisit.add(procedureEdge.to().asType());
                 }
             }

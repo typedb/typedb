@@ -54,6 +54,10 @@ import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.intersect;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 
+/**
+ * We have to include the optimisation to only find an answer if a connected predecessor or successor is retrieved
+ *  and we only have to find 1 answer if all successors are not filtered in
+ */
 public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphIterator.class);
