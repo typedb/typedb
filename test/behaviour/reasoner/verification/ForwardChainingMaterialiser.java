@@ -118,50 +118,46 @@ public class ForwardChainingMaterialiser {
     }
 
     private List<Set<Rule>> computeOrderedRuleEvaluationPartitions() {
-        // Computes the stratification of rules required by stratified-negation.
+        // Compute the stratification of rules required by stratified-negation.
         if (rulePartitions == null) {
             rulePartitions = new LinkedList<>();
-            Set<Rule> inLowerPartitions = new HashSet<>(); // Tracks nodes already added to some partition.
             for (Rule rule : rules.values()) {
-                if (!inLowerPartitions.contains(rule)) {
-                    Set<Rule> inLowerOrSamePartition = new HashSet<>();
-                    partitioningDFS(rule, inLowerPartitions, inLowerOrSamePartition);
-                    updatePartitions(inLowerPartitions, inLowerOrSamePartition);
-                }
+                if (!inPartition(rule)) computePartitionsFrom(rule);
             }
         }
         return rulePartitions;
     }
 
-    private void partitioningDFS(Rule at, Set<Rule> inLowerPartitions, Set<Rule> InLowerOrSamePartition) {
-        // If a rule is reachable through a path with a negated edge, it is in a strictly lower partition/stratum.
-        // If a rule is reachable only through paths with only positive edges, it is in a lower or equal partition/stratum.
-        if (inLowerPartitions.contains(at) || InLowerOrSamePartition.contains(at)) {
-            return;
-        } else {
-            InLowerOrSamePartition.add(at);
-            for (Rule dependency : at.negatedDependencies()) {
-                if (!inLowerPartitions.contains(dependency)) {
-                    Set<Rule> inLowerOrSamePartitionAsDependency = new HashSet<>();
-                    partitioningDFS(dependency, inLowerPartitions, inLowerOrSamePartitionAsDependency);
-                    updatePartitions(inLowerPartitions, inLowerOrSamePartitionAsDependency);
-                }
-            }
+    private boolean inPartition(Rule rule) {
+        return iterate(rulePartitions).anyMatch(partition -> partition.contains(rule));
+    }
 
-            for (Rule dependency : at.unnegatedDependencies()) {
-                if (!inLowerPartitions.contains(dependency)) {
-                    partitioningDFS(dependency, inLowerPartitions, InLowerOrSamePartition);
-                }
-            }
+    private void computePartitionsFrom(Rule rule) {
+        Set<Rule> positivelyReachable = new HashSet<>();
+        positivelyReachable.add(rule);
+        partitionDependencies(rule, positivelyReachable);
+        extractPartition(positivelyReachable);
+    }
+
+    private void partitionDependencies(Rule rule, Set<Rule> positivelyReachable) {
+        // Negated dependencies of a rule are strictly in a lower partition.
+        // Positive dependencies of a rule are in the current partition or a lower one.
+        rule.negatedDependencies().forEach(negatedDependency -> {
+            if (!inPartition(negatedDependency)) computePartitionsFrom(negatedDependency);
+        });
+        rule.unnegatedDependencies().forEach(dependency -> expandPartition(dependency, positivelyReachable));
+    }
+
+    private void expandPartition(Rule rule, Set<Rule> positivelyReachable) {
+        if (!inPartition(rule) && !positivelyReachable.contains(rule)) {
+            positivelyReachable.add(rule);
+            partitionDependencies(rule, positivelyReachable);
         }
     }
 
-    private void updatePartitions(Set<Rule> inLowerPartition, Set<Rule> inLowerOrSamePartition) {
-        if (!inLowerOrSamePartition.isEmpty()) {
-            Set<Rule> inThisPartition = iterate(inLowerOrSamePartition).filter(rule -> !inLowerPartition.contains(rule)).toSet();
-            rulePartitions.add(inThisPartition);
-            inLowerPartition.addAll(inThisPartition);
-        }
+    private void extractPartition(Set<Rule> positivelyReachable) {
+        Set<Rule> partition = iterate(positivelyReachable).filter(rule -> !inPartition(rule)).toSet();
+        rulePartitions.add(partition);
     }
 
     private class Rule {
