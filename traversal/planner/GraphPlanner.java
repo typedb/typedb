@@ -96,7 +96,7 @@ public class GraphPlanner implements Planner {
         Set<StructureVertex<?>> registeredVertices = new HashSet<>();
         Set<StructureEdge<?, ?>> registeredEdges = new HashSet<>();
         structure.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
-        assert planner.vertices().size() > 1 && !planner.edges().isEmpty();
+        assert planner.vertices().size() > 1;
         planner.initialiseOptimiserModel();
         return planner;
     }

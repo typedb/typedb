@@ -145,8 +145,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     boolean validResults() {
-        return !(isStartingVertex() && isEndingVertex()) && (isStartingVertex() ^ hasIncomingEdges())
-                && (isEndingVertex() ^ hasOutgoingEdges());
+        return (isStartingVertex() ^ hasIncomingEdges()) && (isEndingVertex() ^ hasOutgoingEdges());
     }
 
     void setOrder(int order) {
