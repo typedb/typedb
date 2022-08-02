@@ -56,7 +56,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     public RelationConstraint(ThingVariable owner, LinkedHashSet<RolePlayer> rolePlayers) {
         super(owner, rolePlayerVariables(rolePlayers));
-        assert rolePlayers != null && !rolePlayers.isEmpty();
+        assert !rolePlayers.isEmpty();
         this.rolePlayers = new LinkedHashSet<>(rolePlayers);
         this.hash = Objects.hash(RelationConstraint.class, this.owner, this.rolePlayers);
         for (RelationConstraint.RolePlayer rp : rolePlayers) {
@@ -67,21 +67,22 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     static RelationConstraint of(ThingVariable owner, com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.Relation constraint,
                                  VariableRegistry register) {
-        return new RelationConstraint(
-                owner, iterate(constraint.players()).map(rp -> RolePlayer.of(rp, register)).toLinkedSet()
-        );
+        LinkedHashSet<RolePlayer> rolePlayers = new LinkedHashSet<>();
+        iterate(constraint.players()).map(rp -> RolePlayer.of(rp, register)).toSet(rolePlayers);
+        return new RelationConstraint(owner, rolePlayers);
     }
 
     static RelationConstraint of(ThingVariable owner, RelationConstraint clone, VariableCloner cloner) {
-        return new RelationConstraint(
-                owner, iterate(clone.players()).map(rp -> RolePlayer.of(rp, cloner)).toLinkedSet()
-        );
+        LinkedHashSet<RolePlayer> rolePlayers = new LinkedHashSet<>();
+        iterate(clone.players()).map(rp -> RolePlayer.of(rp, cloner)).toSet(rolePlayers);
+        return new RelationConstraint(owner, rolePlayers);
     }
 
     @Override
     public RelationConstraint clone(Conjunction.ConstraintCloner cloner) {
-        return cloner.cloneVariable(owner()).relation(Iterators.iterate(rolePlayers).map(
-                rolePlayer -> rolePlayer.clone(cloner)).toLinkedSet());
+        LinkedHashSet<RolePlayer> rolePlayers = new LinkedHashSet<>();
+        iterate(rolePlayers).map(rolePlayer -> rolePlayer.clone(cloner)).toSet(rolePlayers);
+        return cloner.cloneVariable(owner()).relation(rolePlayers);
     }
 
     public LinkedHashSet<RolePlayer> players() {

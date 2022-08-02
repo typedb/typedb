@@ -32,7 +32,6 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Objects;
@@ -231,14 +230,6 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     public void toSet(Set<T> set) {
         this.forEachRemaining(set::add);
         recycle();
-    }
-
-    @Override
-    public LinkedHashSet<T> toLinkedSet() {
-        LinkedHashSet<T> linkedSet = new LinkedHashSet<>();
-        forEachRemaining(linkedSet::add);
-        recycle();
-        return linkedSet;
     }
 
     @Override
