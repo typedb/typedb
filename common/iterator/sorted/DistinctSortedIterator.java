@@ -21,37 +21,87 @@ package com.vaticle.typedb.core.common.iterator.sorted;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
+import java.util.HashSet;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
+/**
+ * Distinct iterator implemented first by comparator, then by equality.
+ *
+ * Assumes elements which are equal by comparison MAY be non-equal, but that
+ * all elements which are not-equal by comparator are NEVER equal.
+ *
+ * This leads to an efficient distinct iterator, which uses the comparator to cut the size of the deduplication set.
+ * When the comparator and equality are perfectly aligned, the space complexity is O(1).
+ */
 public class DistinctSortedIterator<T extends Comparable<? super T>, ORDER extends Order, ITER extends SortedIterator<T, ORDER>>
         extends AbstractSortedIterator<T, ORDER> {
 
     final ITER iterator;
+    final Set<T> equalByComparator;
     T last;
+    State state;
+
+    private enum State {INIT, EMPTY, FETCHED, COMPLETED}
 
     public DistinctSortedIterator(ITER iterator) {
         super(iterator.order());
         this.iterator = iterator;
+        this.equalByComparator = new HashSet<>();
         last = null;
+        state = State.INIT;
     }
 
     @Override
     public boolean hasNext() {
-        while (iterator.hasNext()) {
-            if (iterator.peek().equals(last)) iterator.next();
-            else return true;
+        switch (state) {
+            case INIT:
+                return fetchFirst();
+            case EMPTY:
+                return fetchNext();
+            case FETCHED:
+                return true;
+            case COMPLETED:
+                return false;
+            default:
+                throw TypeDBException.of(ILLEGAL_STATE);
         }
-        return false;
+    }
+
+    private boolean fetchFirst() {
+        if (iterator.hasNext()) {
+            equalByComparator.add(iterator.peek());
+            state = State.FETCHED;
+        } else state = State.COMPLETED;
+        return state == State.FETCHED;
+    }
+
+    private boolean fetchNext() {
+        while (iterator.hasNext()) {
+            T next = iterator.peek();
+            int comparison = next.compareTo(last);
+            if (comparison == 0 && equalByComparator.contains(next)) {
+                iterator.next();
+                continue;
+            }
+            if (comparison != 0) equalByComparator.clear();
+            equalByComparator.add(next);
+            state = State.FETCHED;
+            break;
+        }
+        return state == State.FETCHED;
     }
 
     @Override
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
         last = iterator.next();
+        state = State.EMPTY;
         return last;
     }
 
