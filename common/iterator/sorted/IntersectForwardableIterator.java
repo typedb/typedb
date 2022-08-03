@@ -31,6 +31,13 @@ import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
+/**
+ * Intersection iterator, defined as intersection based on the comparator only, not the equality function.
+ * If the equality and comparator functions are one-to-one, the intersection is effectively an equality-based intersection.
+ *
+ * The intersection of iterators with multiple values that are comparably == 0 is defined as the distinct
+ * union of all of these elements.
+ */
 public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER extends SortedIterator.Order>
         extends AbstractSortedIterator<T, ORDER>
         implements SortedIterator.Forwardable<T, ORDER> {
