@@ -21,9 +21,13 @@ package com.vaticle.typedb.core.common.iterator.sorted;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -37,6 +41,8 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
 
     private T candidate;
     private int candidateSource;
+    private final List<Integer> intersectionIterators;
+    private final Set<T> equalByComparator;
     private State state;
 
     private enum State {INIT, EMPTY, FETCHED, COMPLETED}
@@ -44,6 +50,8 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     IntersectForwardableIterator(List<Forwardable<T, ORDER>> iterators, ORDER order) {
         super(order);
         this.iterators = iterators;
+        this.intersectionIterators = new LinkedList<>();
+        this.equalByComparator = new HashSet<>();
         state = iterators.isEmpty() ? State.COMPLETED : State.INIT;
     }
 
@@ -51,10 +59,9 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     public boolean hasNext() {
         switch (state) {
             case INIT:
-                return fetch();
+                return fetchNextIntersection();
             case EMPTY:
-                iterators.forEach(Iterator::next); // TODO we should bump each iterator next() one at a time and check if the intersection based on comparator is still valid. We should also deduplicate immediately
-                return fetch();
+                return fetchWithinIntersection() || fetchNextIntersection();
             case FETCHED:
                 return true;
             case COMPLETED:
@@ -64,7 +71,28 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
         }
     }
 
-    private boolean fetch() {
+    private boolean fetchWithinIntersection() {
+        while (!intersectionIterators.isEmpty()) {
+            int index = intersectionIterators.get(0);
+            Forwardable<T, ORDER> iterator = iterators.get(index);
+            assert iterator.hasNext();
+            T next = iterator.peek();
+            if (candidate.compareTo(next) == 0) {
+                iterator.next();
+                if (!equalByComparator.contains(next)) {
+                    candidate = next;
+                    state = State.FETCHED;
+                    return true;
+                }
+                if (!iterator.hasNext()) intersectionIterators.remove(0);
+            } else {
+                intersectionIterators.remove(0);
+            }
+        }
+        return false;
+    }
+
+    private boolean fetchNextIntersection() {
         Forwardable<T, ORDER> iterator = iterators.get(0);
         if (!iterator.hasNext()) state = State.COMPLETED;
         else {
@@ -97,7 +125,7 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
                 candidate = iterator.peek();
                 candidateSource = i;
                 newCandidate = true;
-            } // TODO what happens if they are comparably equal but not actually equal here?
+            }
         }
         if (!newCandidate) state = State.FETCHED;
     }
@@ -112,6 +140,7 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
+        equalByComparator.add(candidate);
         return candidate;
     }
 
