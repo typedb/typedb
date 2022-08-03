@@ -82,6 +82,7 @@ public class DistinctSortedIterator<T extends Comparable<? super T>, ORDER exten
     }
 
     private boolean fetchNext() {
+        assert last != null;
         while (iterator.hasNext()) {
             T next = iterator.peek();
             int comparison = next.compareTo(last);
@@ -126,9 +127,9 @@ public class DistinctSortedIterator<T extends Comparable<? super T>, ORDER exten
 
         @Override
         public void forward(T target) {
-            if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            if (state != State.INIT && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
             iterator.forward(target);
-            state = State.EMPTY;
+            if (state == State.FETCHED) state = State.EMPTY;
         }
 
         @Override
