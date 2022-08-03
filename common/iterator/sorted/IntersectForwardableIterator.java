@@ -45,9 +45,9 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     private final List<Forwardable<T, ORDER>> iterators;
 
     private T candidate;
-    private int candidateSource;
-    private final List<Forwardable<T, ORDER>> atIntersection;
-    private final Set<T> valuesAtIntersection;
+    private Forwardable<T, ORDER> candidateSource;
+    private final Set<T> intersectionValues;
+    private final List<Forwardable<T, ORDER>> intersectionIterators;
     private State state;
 
     private enum State {INIT, EMPTY, FETCHED, COMPLETED}
@@ -55,8 +55,8 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     IntersectForwardableIterator(List<Forwardable<T, ORDER>> iterators, ORDER order) {
         super(order);
         this.iterators = iterators;
-        this.atIntersection = new LinkedList<>();
-        this.valuesAtIntersection = new HashSet<>();
+        this.intersectionValues = new HashSet<>();
+        this.intersectionIterators = new LinkedList<>();
         state = iterators.isEmpty() ? State.COMPLETED : State.INIT;
     }
 
@@ -64,9 +64,9 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     public boolean hasNext() {
         switch (state) {
             case INIT:
-                return fetchNextIntersection();
+                return computeIntersection();
             case EMPTY:
-                return fetchWithinIntersection() || fetchNextIntersection();
+                return computeWithinIntersection() || computeIntersection();
             case FETCHED:
                 return true;
             case COMPLETED:
@@ -76,39 +76,41 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
         }
     }
 
-    private boolean fetchWithinIntersection() {
-        while (!atIntersection.isEmpty()) {
-            Forwardable<T, ORDER> iterator = atIntersection.get(0);
+    private boolean computeWithinIntersection() {
+        assert state == State.EMPTY;
+        while (!intersectionIterators.isEmpty()) {
+            Forwardable<T, ORDER> iterator = intersectionIterators.get(0);
             assert iterator.hasNext();
             T next = iterator.peek();
-            if (candidate.compareTo(next) == 0) {
+            if (isIntersection(candidate, next)) {
                 iterator.next();
-                if (!valuesAtIntersection.contains(next)) {
+                if (!intersectionValues.contains(next)) {
                     candidate = next;
                     state = State.FETCHED;
                     return true;
                 }
-                if (!iterator.hasNext()) atIntersection.remove(0);
+                if (!iterator.hasNext()) intersectionIterators.remove(0);
             } else {
-                atIntersection.remove(0);
+                intersectionIterators.remove(0);
             }
         }
-        valuesAtIntersection.clear();
+        intersectionValues.clear();
         return false;
     }
 
-    private boolean fetchNextIntersection() {
+    private boolean computeIntersection() {
+        assert state == State.INIT || state == State.EMPTY;
         Forwardable<T, ORDER> iterator = iterators.get(0);
         if (!iterator.hasNext()) state = State.COMPLETED;
         else {
-            candidateSource = 0;
+            candidateSource = iterator;
             candidate = iterator.peek();
             while (state != State.COMPLETED && state != State.FETCHED) {
                 verifyOrProposeCandidate();
             }
         }
         if (state == State.FETCHED) {
-            atIntersection.addAll(iterators);
+            intersectionIterators.addAll(iterators);
             return true;
         } else return false;
     }
@@ -121,21 +123,24 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
      */
     private void verifyOrProposeCandidate() {
         boolean newCandidate = false;
-        for (int i = 0; i < iterators.size(); i++) {
-            if (i == candidateSource) continue;
-            Forwardable<T, ORDER> iterator = iterators.get(i);
+        for (Forwardable<T, ORDER> iterator : iterators) {
+            if (iterator == candidateSource) continue;
             if (iterator.hasNext() && !order.isValidNext(candidate, iterator.peek())) iterator.forward(candidate);
             if (!iterator.hasNext()) {
                 state = State.COMPLETED;
                 return;
-            } else if (iterator.peek().compareTo(candidate) != 0) {
+            } else if (!isIntersection(candidate, iterator.peek())) {
                 assert order.isValidNext(candidate, iterator.peek());
                 candidate = iterator.peek();
-                candidateSource = i;
+                candidateSource = iterator;
                 newCandidate = true;
             }
         }
         if (!newCandidate) state = State.FETCHED;
+    }
+
+    private boolean isIntersection(T first, T second) {
+        return first.compareTo(second) == 0;
     }
 
     @Override
@@ -148,15 +153,15 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
-        valuesAtIntersection.add(candidate);
+        intersectionValues.add(candidate);
         return candidate;
     }
 
     @Override
     public void forward(T target) {
         iterators.forEach(iterator -> iterator.forward(target));
-        atIntersection.clear();
-        valuesAtIntersection.clear();
+        intersectionIterators.clear();
+        intersectionValues.clear();
         state = State.INIT;
     }
 
