@@ -80,9 +80,9 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     @Override
     public RelationConstraint clone(Conjunction.ConstraintCloner cloner) {
-        LinkedHashSet<RolePlayer> rolePlayers = new LinkedHashSet<>();
-        iterate(rolePlayers).map(rolePlayer -> rolePlayer.clone(cloner)).toSet(rolePlayers);
-        return cloner.cloneVariable(owner()).relation(rolePlayers);
+        LinkedHashSet<RolePlayer> clonedRPs = new LinkedHashSet<>();
+        iterate(this.rolePlayers).map(rolePlayer -> rolePlayer.clone(cloner)).toSet(clonedRPs);
+        return cloner.cloneVariable(owner()).relation(clonedRPs);
     }
 
     public LinkedHashSet<RolePlayer> players() {
