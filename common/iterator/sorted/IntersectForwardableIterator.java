@@ -21,9 +21,7 @@ package com.vaticle.typedb.core.common.iterator.sorted;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -41,8 +39,8 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
 
     private T candidate;
     private int candidateSource;
-    private final List<Integer> intersectionIterators;
-    private final Set<T> equalByComparator;
+    private final List<Forwardable<T, ORDER>> atIntersection;
+    private final Set<T> valuesWithinIntersection;
     private State state;
 
     private enum State {INIT, EMPTY, FETCHED, COMPLETED}
@@ -50,8 +48,8 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     IntersectForwardableIterator(List<Forwardable<T, ORDER>> iterators, ORDER order) {
         super(order);
         this.iterators = iterators;
-        this.intersectionIterators = new LinkedList<>();
-        this.equalByComparator = new HashSet<>();
+        this.atIntersection = new LinkedList<>();
+        this.valuesWithinIntersection = new HashSet<>();
         state = iterators.isEmpty() ? State.COMPLETED : State.INIT;
     }
 
@@ -72,23 +70,23 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     }
 
     private boolean fetchWithinIntersection() {
-        while (!intersectionIterators.isEmpty()) {
-            int index = intersectionIterators.get(0);
-            Forwardable<T, ORDER> iterator = iterators.get(index);
+        while (!atIntersection.isEmpty()) {
+            Forwardable<T, ORDER> iterator = atIntersection.get(0);
             assert iterator.hasNext();
             T next = iterator.peek();
             if (candidate.compareTo(next) == 0) {
                 iterator.next();
-                if (!equalByComparator.contains(next)) {
+                if (!valuesWithinIntersection.contains(next)) {
                     candidate = next;
                     state = State.FETCHED;
                     return true;
                 }
-                if (!iterator.hasNext()) intersectionIterators.remove(0);
+                if (!iterator.hasNext()) atIntersection.remove(0);
             } else {
-                intersectionIterators.remove(0);
+                atIntersection.remove(0);
             }
         }
+        valuesWithinIntersection.clear();
         return false;
     }
 
@@ -102,7 +100,10 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
                 verifyOrProposeCandidate();
             }
         }
-        return state == State.FETCHED;
+        if (state == State.FETCHED) {
+            atIntersection.addAll(iterators);
+            return true;
+        } else return false;
     }
 
     /**
@@ -140,7 +141,7 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
-        equalByComparator.add(candidate);
+        valuesWithinIntersection.add(candidate);
         return candidate;
     }
 
