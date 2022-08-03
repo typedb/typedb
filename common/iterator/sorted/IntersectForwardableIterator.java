@@ -53,7 +53,7 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
             case INIT:
                 return fetch();
             case EMPTY:
-                iterators.forEach(Iterator::next);
+                iterators.forEach(Iterator::next); // TODO we should bump each iterator next() one at a time and check if the intersection based on comparator is still valid. We should also deduplicate immediately
                 return fetch();
             case FETCHED:
                 return true;
@@ -92,12 +92,12 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
             if (!iterator.hasNext()) {
                 state = State.COMPLETED;
                 return;
-            } else if (!iterator.peek().equals(candidate)) {
+            } else if (iterator.peek().compareTo(candidate) != 0) {
                 assert order.isValidNext(candidate, iterator.peek());
                 candidate = iterator.peek();
                 candidateSource = i;
                 newCandidate = true;
-            }
+            } // TODO what happens if they are comparably equal but not actually equal here?
         }
         if (!newCandidate) state = State.FETCHED;
     }
