@@ -40,7 +40,7 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     private T candidate;
     private int candidateSource;
     private final List<Forwardable<T, ORDER>> atIntersection;
-    private final Set<T> valuesWithinIntersection;
+    private final Set<T> valuesAtIntersection;
     private State state;
 
     private enum State {INIT, EMPTY, FETCHED, COMPLETED}
@@ -49,7 +49,7 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
         super(order);
         this.iterators = iterators;
         this.atIntersection = new LinkedList<>();
-        this.valuesWithinIntersection = new HashSet<>();
+        this.valuesAtIntersection = new HashSet<>();
         state = iterators.isEmpty() ? State.COMPLETED : State.INIT;
     }
 
@@ -76,7 +76,7 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
             T next = iterator.peek();
             if (candidate.compareTo(next) == 0) {
                 iterator.next();
-                if (!valuesWithinIntersection.contains(next)) {
+                if (!valuesAtIntersection.contains(next)) {
                     candidate = next;
                     state = State.FETCHED;
                     return true;
@@ -86,7 +86,7 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
                 atIntersection.remove(0);
             }
         }
-        valuesWithinIntersection.clear();
+        valuesAtIntersection.clear();
         return false;
     }
 
@@ -141,7 +141,7 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     public T next() {
         if (!hasNext()) throw new NoSuchElementException();
         state = State.EMPTY;
-        valuesWithinIntersection.add(candidate);
+        valuesAtIntersection.add(candidate);
         return candidate;
     }
 
@@ -149,7 +149,7 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
     public void forward(T target) {
         iterators.forEach(iterator -> iterator.forward(target));
         atIntersection.clear();
-        valuesWithinIntersection.clear();
+        valuesAtIntersection.clear();
         state = State.INIT;
     }
 
