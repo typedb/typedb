@@ -69,7 +69,7 @@ public abstract class ConjunctionController<
     private final Map<Retrievable, FilteredRetrievable> retrievableControllers;
     private final Map<Concludable, MappedConcludable> concludableControllers;
     private final Map<Negated, FilteredNegation> negationControllers;
-    private List<Resolvable<?>> plan;
+    private final Map<Set<Variable.Retrievable>, List<Resolvable<?>>> plans;
     final Conjunction conjunction;
 
     ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction, Context context) {
@@ -80,6 +80,7 @@ public abstract class ConjunctionController<
         this.retrievableControllers = new HashMap<>();
         this.concludableControllers = new HashMap<>();
         this.negationControllers = new HashMap<>();
+        this.plans = new HashMap<>();
     }
 
     @Override
@@ -109,11 +110,10 @@ public abstract class ConjunctionController<
     abstract Set<Concludable> concludablesTriggeringRules();
 
     List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
-        if (plan == null) {
-            plan = Planner.plan(resolvables, new HashMap<>(), boundVariables);
-            plan.addAll(negateds);
+        if (plans.containsKey(boundVariables)) {
+            plans.putIfAbsent(boundVariables, Planner.plan(resolvables, new HashMap<>(), boundVariables));
         }
-        return plan;
+        return plans.get(boundVariables);
     }
 
     static ConceptMap merge(ConceptMap into, ConceptMap from) {
