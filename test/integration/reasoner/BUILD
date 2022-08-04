@@ -117,7 +117,7 @@ checkstyle_test(
     include = glob([
         "*",
         "controller/*",
-        "common/*",
+        "planner/*",
     ]),
     license_type = "agpl-header",
 )
