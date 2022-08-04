@@ -1238,10 +1238,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     void computeCost(GraphManager graphMgr) {
                         if (isLoop() || to.props().hasIID()) {
                             cost = 1;
+                            return;
                         }
 
                         cost = 0;
-
                         Set<TypeVertex> roleTypeVertices = iterate(this.roleTypes()).map(graphMgr.schema()::getType).toSet();
                         for (TypeVertex roleType : roleTypeVertices) {
                             assert roleType.isRoleType() && roleType.properLabel().scope().isPresent();
@@ -1264,6 +1264,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     void computeCost(GraphManager graphMgr) {
                         if (isLoop() || to.props().hasIID()) {
                             cost = 1;
+                            return;
                         }
 
                         cost = 0;
