@@ -149,7 +149,7 @@ build:
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-apt -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
     test-deployment-apt:
-      image: vaticle-ubuntu-21.04
+      image: vaticle-ubuntu-20.04 # use LTS for apt tests
       filter:
         owner: vaticle
         branch: master
