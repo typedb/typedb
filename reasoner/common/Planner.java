@@ -44,6 +44,7 @@ public class Planner {
     public static List<Resolvable<?>> plan(Set<Resolvable<?>> resolvables,
                                            Map<Resolvable<?>, Integer> visitCounts,
                                            Set<Retrievable> boundVariables) {
+//        assert false; // TODO: Delete class?
         return new Plan(resolvables, visitCounts, boundVariables).plan;
     }
 

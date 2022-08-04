@@ -68,4 +68,8 @@ public class TraversalEngine {
                                                                    Set<Retrievable> concreteTypesOnly) {
         return traversal.combination(graphMgr, concreteTypesOnly);
     }
+
+    public long estimateAnswers(GraphTraversal.Thing traversal) {
+        return 1; // TODO: Implement
+    }
 }

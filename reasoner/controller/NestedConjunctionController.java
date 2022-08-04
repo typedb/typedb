@@ -71,5 +71,4 @@ public class NestedConjunctionController extends ConjunctionController<
             setHubReactive(new CompoundStream(this, plan, bounds).buffer());
         }
     }
-
 }

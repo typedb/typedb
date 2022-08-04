@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
@@ -29,13 +30,13 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
-import com.vaticle.typedb.core.reasoner.common.Planner;
 import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.ConcludableRequest;
 import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.NegatedRequest;
 import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.RetrievableRequest;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.FilteredNegation;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.FilteredRetrievable;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.MappedConcludable;
+import com.vaticle.typedb.core.reasoner.planner.PlanSearch;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
@@ -45,12 +46,7 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegis
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -69,7 +65,6 @@ public abstract class ConjunctionController<
     private final Map<Retrievable, FilteredRetrievable> retrievableControllers;
     private final Map<Concludable, MappedConcludable> concludableControllers;
     private final Map<Negated, FilteredNegation> negationControllers;
-    private final Map<Set<Variable.Retrievable>, List<Resolvable<?>>> plans;
     final ResolvableConjunction conjunction;
 
     ConjunctionController(Driver<CONTROLLER> driver, ResolvableConjunction conjunction, Context context) {
@@ -79,16 +74,20 @@ public abstract class ConjunctionController<
         this.retrievableControllers = new HashMap<>();
         this.concludableControllers = new HashMap<>();
         this.negationControllers = new HashMap<>();
-        this.plans = new HashMap<>();
     }
 
     @Override
     protected void setUpUpstreamControllers() {
         assert resolvables.isEmpty();
-        Set<Concludable> concludables = concludablesTriggeringRules().toSet();
-        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction.pattern(), concludables);
+//        Set<Concludable> concludables = concludablesTriggeringRules().toSet();
+//        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction.pattern(), concludables);
+        Pair<Set<Concludable>, Set<Retrievable>> compiled = registry().planSearch().compile(conjunction);
+        Set<Concludable> concludables = compiled.first();
+        Set<Retrievable> retrievables = compiled.second();
+
         resolvables.addAll(concludables);
         resolvables.addAll(retrievables);
+
         iterate(concludables).forEachRemaining(c -> {
             concludableControllers.put(c, registry().getOrCreateConcludable(c));
         });
@@ -107,12 +106,10 @@ public abstract class ConjunctionController<
     abstract FunctionalIterator<Concludable> concludablesTriggeringRules();
 
     List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
-        if (!plans.containsKey(boundVariables)) {
-            List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), boundVariables);
-            plan.addAll(conjunction.negations());
-            plans.put(boundVariables, plan);
-        }
-        return plans.get(boundVariables);
+        PlanSearch.Plan planObj = registry().planSearch().getPlan(conjunction, boundVariables);
+        List<Resolvable<?>> newPlan = planObj.resolvableOrder();
+        assert resolvables.size() + conjunction.negations().size() == newPlan.size() && newPlan.stream().allMatch(r -> resolvables.contains(r) || conjunction.negations().contains(r));
+        return newPlan;
     }
 
     static ConceptMap merge(ConceptMap into, ConceptMap from) {
@@ -258,13 +255,13 @@ public abstract class ConjunctionController<
             InputPort<ConceptMap> input = createInputPort();
             if (planElement.isRetrievable()) {
                 requestConnection(new RetrievableRequest(input.identifier(), driver(), planElement.asRetrievable(),
-                                                         carriedBounds.filter(planElement.retrieves())));
+                        carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isConcludable()) {
                 requestConnection(new ConcludableRequest(input.identifier(), driver(), planElement.asConcludable(),
-                                                         carriedBounds.filter(planElement.retrieves())));
+                        carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isNegated()) {
                 requestConnection(new NegatedRequest(input.identifier(), driver(), planElement.asNegated(),
-                                                     carriedBounds.filter(planElement.retrieves())));
+                        carriedBounds.filter(planElement.retrieves())));
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
