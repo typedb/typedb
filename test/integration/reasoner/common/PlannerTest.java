@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.reasoner.planner.GreedyAnswerSizeSearch;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -41,7 +42,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -63,6 +64,28 @@ public class PlannerTest {
     private static ConceptManager conceptMgr;
     private static LogicManager logicMgr;
 
+    private static class PlanSearchTestWrapper extends GreedyAnswerSizeSearch.OldPlannerEmulator {
+
+        private final Set<Resolvable<?>> mockResolvables;
+        public Conjunction mockConjunction;
+
+        public PlanSearchTestWrapper(CoreTransaction tx, Set<Resolvable<?>> mockResolvables) {
+            super(tx.traversal(), tx.concepts(), tx.logic());
+            this.mockResolvables = mockResolvables;
+            this.mockConjunction = new Conjunction(set(), new ArrayList<>());
+        }
+
+        @Override
+        public Set<Resolvable<?>> getOrExtractResolvables(Conjunction conjunction) {
+            return mockResolvables;
+        }
+
+        private static List<Resolvable<?>> planResolvables(Set<Resolvable<?>> resolvables, Set inputBounds) {
+            PlanSearchTestWrapper planSearch = new PlanSearchTestWrapper(transaction, resolvables);
+            return planSearch.planConjunction(planSearch.mockConjunction, inputBounds).resolvableOrder();
+        }
+    }
+
     @Before
     public void setUp() throws IOException {
         Util.resetDirectory(dataDir);
@@ -70,8 +93,8 @@ public class PlannerTest {
         databaseMgr.create(database);
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
         transaction.query().define(TypeQL.parseQuery("define person sub entity, plays friendship:friend, owns name; " +
-                                                                  "friendship sub relation, relates friend;" +
-                                                                  "name sub attribute, value string;"));
+                "friendship sub relation, relates friend;" +
+                "name sub attribute, value string;"));
         transaction.commit();
         session.close();
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
@@ -97,7 +120,7 @@ public class PlannerTest {
         Retrievable retrievable = new Retrievable(resolvedConjunction("{ $c($b); }", logicMgr));
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = PlanSearchTestWrapper.planResolvables(resolvables, set());
         assertEquals(list(concludable, retrievable), plan);
     }
 
@@ -108,7 +131,8 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
 
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = PlanSearchTestWrapper.planResolvables(resolvables, set());
+        ;
         assertEquals(list(retrievable, concludable), plan);
     }
 
@@ -119,15 +143,16 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
 
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = PlanSearchTestWrapper.planResolvables(resolvables, set());
+        ;
         assertEquals(list(concludable, concludable2), plan);
     }
 
     @Test
     public void test_planner_multiple_dependencies() {
         transaction.query().define(TypeQL.parseQuery("define employment sub relation, relates employee, relates employer;" +
-                                                                  "person plays employment:employee;" +
-                                                                  "company sub entity, plays employment:employer, owns name;"));
+                "person plays employment:employee;" +
+                "company sub entity, plays employment:employer, owns name;"));
         transaction.commit();
         session.close();
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
@@ -145,7 +170,7 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $e($c, $p2) isa employment; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable, concludable2);
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = PlanSearchTestWrapper.planResolvables(resolvables, set());
 
         assertEquals(list(retrievable, concludable, retrievable2, concludable2), plan);
     }
@@ -156,7 +181,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b has $a; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = PlanSearchTestWrapper.planResolvables(resolvables, set());
+        ;
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -168,7 +194,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b($a); }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = PlanSearchTestWrapper.planResolvables(resolvables, set());
+        ;
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -180,7 +207,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $c($d); }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = PlanSearchTestWrapper.planResolvables(resolvables, set());
+        ;
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
