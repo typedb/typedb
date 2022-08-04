@@ -91,7 +91,7 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-planner",
-    srcs = ["common/PlannerTest.java"],
+    srcs = ["planner/PlannerTest.java"],
     test_class = "com.vaticle.typedb.core.reasoner.common.PlannerTest",
     native_libraries_deps = [
         # Internal dependencies
