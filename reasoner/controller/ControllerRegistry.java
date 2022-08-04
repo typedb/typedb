@@ -39,7 +39,7 @@ import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.planner.GreedyAnswerSizeSearch;
-import com.vaticle.typedb.core.reasoner.planner.PlanSearch;
+import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -64,7 +64,7 @@ public class ControllerRegistry {
 
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
-    private final PlanSearch planSearch;
+    private final ReasonerPlanner reasonerPlanner;
     private final Map<Concludable, Driver<ConcludableController.Match>> concludableControllers;
     private final Map<Driver<ConcludableController.Match>, Set<Concludable>> controllerConcludables;
     private final Map<Rule, Driver<ConditionController>> conditions;
@@ -81,7 +81,7 @@ public class ControllerRegistry {
                               LogicManager logicMgr, com.vaticle.typedb.core.common.parameters.Context.Query context) {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
-        this.planSearch = new GreedyAnswerSizeSearch(traversalEngine, conceptMgr, logicMgr);
+        this.reasonerPlanner = new GreedyAnswerSizeSearch(traversalEngine, conceptMgr, logicMgr);
         this.logicMgr = logicMgr;
         this.concludableControllers = new ConcurrentHashMap<>();
         this.controllerConcludables = new ConcurrentHashMap<>();
@@ -113,6 +113,10 @@ public class ControllerRegistry {
 
     public LogicManager logicManager() {
         return logicMgr;
+    }
+
+    public ReasonerPlanner planner() {
+        return this.reasonerPlanner;
     }
 
     public void terminate(Throwable e) {
@@ -276,10 +280,6 @@ public class ControllerRegistry {
 
     public void close() {
         controllerContext.tracer().ifPresent(Tracer::finishTrace);
-    }
-
-    public PlanSearch planSearch() {
-        return this.planSearch;
     }
 
     public static abstract class ControllerView {

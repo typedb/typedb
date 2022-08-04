@@ -13,14 +13,14 @@ import java.util.*;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public abstract class PlanSearch {
+public abstract class ReasonerPlanner {
     protected final Map<Plannable, Plan> planCache;
     protected final ConceptManager conceptMgr;
     protected final TraversalEngine traversalEng;
     protected final LogicManager logicMgr;
     private final HashMap<ResolvableConjunction, Pair<Set<Concludable>, Set<Retrievable>>> compiled;
 
-    public PlanSearch(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
+    public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
         planCache = new HashMap<>();
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;

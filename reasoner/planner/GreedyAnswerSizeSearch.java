@@ -16,7 +16,7 @@ import java.util.*;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class GreedyAnswerSizeSearch extends PlanSearch {
+public class GreedyAnswerSizeSearch extends ReasonerPlanner {
 
     public GreedyAnswerSizeSearch(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
         super(traversalEng, conceptMgr, logicMgr);

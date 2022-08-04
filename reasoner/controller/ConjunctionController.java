@@ -36,7 +36,7 @@ import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Process
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.FilteredNegation;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.FilteredRetrievable;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.MappedConcludable;
-import com.vaticle.typedb.core.reasoner.planner.PlanSearch;
+import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
@@ -46,7 +46,12 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegis
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -81,7 +86,7 @@ public abstract class ConjunctionController<
         assert resolvables.isEmpty();
 //        Set<Concludable> concludables = concludablesTriggeringRules().toSet();
 //        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction.pattern(), concludables);
-        Pair<Set<Concludable>, Set<Retrievable>> compiled = registry().planSearch().compile(conjunction);
+        Pair<Set<Concludable>, Set<Retrievable>> compiled = registry().planner().compile(conjunction);
         Set<Concludable> concludables = compiled.first();
         Set<Retrievable> retrievables = compiled.second();
 
@@ -106,7 +111,7 @@ public abstract class ConjunctionController<
     abstract FunctionalIterator<Concludable> concludablesTriggeringRules();
 
     List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
-        PlanSearch.Plan planObj = registry().planSearch().getPlan(conjunction, boundVariables);
+        ReasonerPlanner.Plan planObj = registry().planner().getPlan(conjunction, boundVariables);
         List<Resolvable<?>> newPlan = planObj.resolvableOrder();
         assert resolvables.size() + conjunction.negations().size() == newPlan.size() && newPlan.stream().allMatch(r -> resolvables.contains(r) || conjunction.negations().contains(r));
         return newPlan;

@@ -1,12 +1,7 @@
 package com.vaticle.typedb.core.reasoner.planner;
 
-import com.vaticle.typedb.common.collection.Pair;
-import com.vaticle.typedb.core.logic.Rule;
-import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
-import com.vaticle.typedb.core.logic.resolvable.Retrievable;
-import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Objects;
@@ -21,7 +16,7 @@ public abstract class Plannable<IDTYPE, PLANELEMENT> {
         this.bounds = bounds;
     }
 
-    public abstract PlanSearch.Plan<PLANELEMENT> callPlannerFunction(PlanSearch planSearch);
+    public abstract ReasonerPlanner.Plan<PLANELEMENT> callPlannerFunction(ReasonerPlanner reasonerPlanner);
 
     public static PlannableConjunction ofConjunction(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
         return new PlannableConjunction(conjunction, bounds);
@@ -49,8 +44,8 @@ public abstract class Plannable<IDTYPE, PLANELEMENT> {
         }
 
         @Override
-        public PlanSearch.Plan<Resolvable<?>> callPlannerFunction(PlanSearch planSearch) {
-            return planSearch.planConjunction(getConjunction(), bounds);
+        public ReasonerPlanner.Plan<Resolvable<?>> callPlannerFunction(ReasonerPlanner reasonerPlanner) {
+            return reasonerPlanner.planConjunction(getConjunction(), bounds);
         }
 
         public ResolvableConjunction getConjunction() {
