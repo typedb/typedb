@@ -159,11 +159,8 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
 
     @Override
     public void forward(T target) {
-        if (state == State.COMPLETED) return;
-        iterators.forEach(iterator -> iterator.forward(target));
-        if ((state == State.EMPTY || state == State.FETCHED) && isIntersection(target, candidate)) {
-            state = State.EMPTY;
-        } else {
+        if (state == State.INIT || !isIntersection(candidate, target)) {
+            iterators.forEach(iterator -> iterator.forward(target));
             intersectionIterators.clear();
             intersectionValues.clear();
             state = State.INIT;
