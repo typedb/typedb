@@ -84,8 +84,6 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     void toSet(Set<T> set);
 
-    LinkedHashSet<T> toLinkedSet();
-
     long count();
 
     <ACC> ACC reduce(ACC initial, BiFunction<T, ACC, ACC> accumulate);
