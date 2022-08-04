@@ -92,7 +92,7 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-planner",
     srcs = ["planner/PlannerTest.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.common.PlannerTest",
+    test_class = "com.vaticle.typedb.core.reasoner.planner.PlannerTest",
     native_libraries_deps = [
         # Internal dependencies
         "//database:database",
