@@ -213,7 +213,7 @@ public class GraphProcedure implements PermutationProcedure {
                 }
             });
             plannerVertex.loops().forEach(plannerEdge -> {
-                if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
+                if (!registeredEdges.contains(plannerEdge) && plannerEdge.direction().isForward()) {
                     registeredEdges.add(plannerEdge);
                     registerEdge(plannerEdge);
                 }
