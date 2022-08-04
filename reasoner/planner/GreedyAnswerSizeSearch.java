@@ -47,11 +47,15 @@ public class GreedyAnswerSizeSearch extends PlanSearch {
         while (!remaining.isEmpty()) {
             Optional<Resolvable<?>> nextResolvableOpt = remaining.stream()
                     .filter(r -> dependenciesSatisfied(r, bounds, dependencies))
-//                    .min(Comparator.comparing(r -> estimateCost(r))).get(); // TODO: Use this, but until then
-                    .max(Comparator.comparing(r -> r.retrieves().stream().filter(bounds::contains).count()));
+                    .min(Comparator.comparing(r -> estimateCost(r, bounds)));
+
+            if (!nextResolvableOpt.isPresent()) {
+                nextResolvableOpt = remaining.stream()
+                        .min(Comparator.comparing(r -> estimateCost(r, bounds)));
+            }
             assert nextResolvableOpt.isPresent();
             Resolvable<?> nextResolvable = nextResolvableOpt.get();
-            cost += estimateCost(nextResolvable); // TODO: Eliminate double work
+            cost += estimateCost(nextResolvable, bounds); // TODO: Eliminate double work
             orderedResolvables.add(nextResolvable);
             remaining.remove(nextResolvable);
             bounds.addAll(nextResolvable.retrieves());
@@ -60,15 +64,18 @@ public class GreedyAnswerSizeSearch extends PlanSearch {
         return new Plan(orderedResolvables, cost);
     }
 
-    private long estimateCost(Resolvable<?> resolvable) {
+    protected long estimateCost(Resolvable<?> resolvable, Set<Identifier.Variable.Retrievable> bounds) {
         long cost = 0;
         if (resolvable.isRetrievable()) {
             cost += estimateAnswerCount(resolvable.asRetrievable().pattern(), resolvable.asRetrievable().retrieves());
         }
         if (resolvable.isConcludable()) {
             cost += iterate(logicMgr.applicableRules(resolvable.asConcludable()).keySet())
-                    .map(rule -> estimateAnswerCount(rule.condition().pattern(), Iterators.iterate(rule.then().retrieves()).filter(v -> rule.when().retrieves().contains(v)).toSet()))
+                    .map(rule -> estimateAnswerCount(rule.condition().pattern(), iterate(rule.then().retrieves()).filter(v -> rule.when().retrieves().contains(v)).toSet()))
                     .reduce(0L, Long::sum);
+        }
+        if (resolvable.isNegated()) {
+            cost += 1; // TODO ? But the answerEstimate will be 1 because the filter is empty.
         }
         return cost;
     }
@@ -77,4 +84,24 @@ public class GreedyAnswerSizeSearch extends PlanSearch {
         return traversalEng.estimateAnswers(conjunction.traversal(filter));
     }
 
+    public static class OldPlannerEmulator extends GreedyAnswerSizeSearch{
+
+        public OldPlannerEmulator(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
+            super(traversalEng, conceptMgr, logicMgr);
+        }
+
+        @Override
+        protected long estimateCost(Resolvable<?> r, Set<Identifier.Variable.Retrievable> bounds) {
+            long cost = 0;
+            cost += r.retrieves().stream().anyMatch(v -> bounds.contains(v)) ? 0 : 10; // Connected:disconnected
+            if (r.isRetrievable()) {
+                cost += 1;
+            } else if (r.isConcludable()) {
+                cost += 2;
+            } else if (r.isNegated()) { // always at the end
+                cost += 1000;
+            }
+            return cost;
+        }
+    }
 }

@@ -18,7 +18,6 @@ public abstract class PlanSearch {
     protected final ConceptManager conceptMgr;
     protected final TraversalEngine traversalEng;
     protected final LogicManager logicMgr;
-    protected final Map<ConjunctionReference, Set<Resolvable<?>>> resolvableMap;
     private final HashMap<ResolvableConjunction, Pair<Set<Concludable>, Set<Retrievable>>> compiled;
 
     public PlanSearch(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
@@ -26,8 +25,6 @@ public abstract class PlanSearch {
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
-        this.resolvableMap = new HashMap<>();
-
         this.compiled = new HashMap<>();
     }
 
@@ -99,7 +96,6 @@ public abstract class PlanSearch {
         return deps;
     }
 
-
     public static class Plan<PLANELEMENT> {
         List<PLANELEMENT> elementOrder;
         long cost;
@@ -111,31 +107,6 @@ public abstract class PlanSearch {
 
         public List<PLANELEMENT> resolvableOrder() {
             return elementOrder;
-        }
-    }
-
-    /*
-     * Box to override Conjunction equality, and
-     */
-    public static class ConjunctionReference {
-        private final Conjunction conjunction;
-
-        private ConjunctionReference(Conjunction conjunction) {
-            this.conjunction = conjunction;
-        }
-
-        @Override
-        public int hashCode() {
-            return conjunction.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            if (this == other)
-                return true;
-            else
-                return other.getClass() == this.getClass() &&
-                    ((ConjunctionReference) other).conjunction == this.conjunction;
         }
     }
 }
