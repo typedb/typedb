@@ -110,8 +110,10 @@ public abstract class ConjunctionController<
     abstract Set<Concludable> concludablesTriggeringRules();
 
     List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
-        if (plans.containsKey(boundVariables)) {
-            plans.putIfAbsent(boundVariables, Planner.plan(resolvables, new HashMap<>(), boundVariables));
+        if (!plans.containsKey(boundVariables)) {
+            List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), boundVariables);
+            plan.addAll(negateds);
+            plans.put(boundVariables, plan);
         }
         return plans.get(boundVariables);
     }
