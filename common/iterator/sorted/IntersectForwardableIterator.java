@@ -84,12 +84,12 @@ public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER
             T next = iterator.peek();
             if (isIntersection(candidate, next)) {
                 iterator.next();
+                if (!iterator.hasNext()) intersectionIterators.remove(0);
                 if (!intersectionValues.contains(next)) {
                     candidate = next;
                     state = State.FETCHED;
                     return true;
                 }
-                if (!iterator.hasNext()) intersectionIterators.remove(0);
             } else {
                 intersectionIterators.remove(0);
             }

@@ -750,7 +750,7 @@ public abstract class ProcedureEdge<
             }
         }
 
-        static abstract class Thing extends Native<ProcedureVertex.Thing, ProcedureVertex.Thing> {
+        public static abstract class Thing extends Native<ProcedureVertex.Thing, ProcedureVertex.Thing> {
 
             private Thing(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
                           Encoding.Direction.Edge direction, Encoding.Edge encoding) {

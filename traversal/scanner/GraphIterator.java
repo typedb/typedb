@@ -48,10 +48,12 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.single;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.intersect;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
@@ -312,20 +314,15 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             assert !edgeInputs.containsKey(edge);
             if (iterator != null && iterator.hasNext()) {
                 edgeInputIntersectionCache.put(new HashMap<>(edgeInputs), iterator.peek());
-                iterator = intersect(branch(fromVertex, edge), iterator);
             }
             edgeInputs.put(edge, fromVertex);
-            vertex = null;
+            reset();
         }
 
         private void removeEdgeInput(ProcedureEdge<?, ?> edge) {
             edgeInputIntersectionCache.remove(edgeInputs);
             edgeInputs.remove(edge);
             reset();
-        }
-
-        public void clearCurrentVertex() {
-            vertex = null;
         }
 
         private void clear() {
@@ -339,6 +336,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 iterator.recycle();
                 iterator = null;
             }
+            clearCurrentVertex();
+        }
+
+        private void clearCurrentVertex() {
             vertex = null;
         }
 
@@ -349,8 +350,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 else if (procedureVertex.isStartingVertex()) iterator = createIteratorFromStart();
                 else {
                     iterator = createIteratorFromEdges();
-                    lastIntersection().ifPresent(value -> iterator.forward(value));
+                    cachedIntersection().ifPresent(value -> iterator.forward(value));
                 }
+                // TODO: we may only need to find one valid answer if all dependents are not included in the filter and also find an answer
             }
             return iterator;
         }
@@ -378,17 +380,36 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromEdges() {
             List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
-            edgeInputs.forEach((procedureEdge, vertex) -> iters.add(branch(vertex, procedureEdge)));
-            if (iters.size() == 1) return iters.get(0);
-            else return intersect(iterate(iters), ASC);
+            List<Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc>> rpIters = new ArrayList<>();
+            edgeInputs.forEach((edge, vertex) -> {
+                if (edge.isRolePlayer()) rpIters.add(branchRolePlayer(vertex, edge.asRolePlayer()));
+                else iters.add(branch(vertex, edge));
+            });
+
+            if (iters.isEmpty()) {
+                return fromRPIterators(rpIters);
+            } else if (rpIters.isEmpty()) {
+                if (iters.size() == 1) return iters.get(0);
+                else return intersect(iterate(iters), ASC);
+            } else {
+                Forwardable<Vertex<?, ?>, Order.Asc> rpIntersection = fromRPIterators(rpIters);
+                return intersect(iterate(iters).link(single(rpIntersection)), ASC);
+            }
         }
 
-        private Optional<Vertex<?, ?>> lastIntersection() {
+        private Forwardable<Vertex<?, ?>, Order.Asc> fromRPIterators(List<Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc>> iterators) {
+            // TODO: intersect, filter out duplicate roles & record reason of failure & map down to relation
+            return intersect(iterate(iterators), ASC)
+                    .mapSorted(KeyValue::key, thing -> KeyValue.of(thing.asThing(), null), ASC);
+        }
+
+        private Optional<Vertex<?, ?>> cachedIntersection() {
             if (edgeInputIntersectionCache.isEmpty()) return Optional.empty();
             else return Optional.ofNullable(edgeInputIntersectionCache.get(edgeInputIntersectionCache.lastKey()));
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> branch(Vertex<?, ?> fromVertex, ProcedureEdge<?, ?> edge) {
+            assert !edge.isRolePlayer();
             Forwardable<? extends Vertex<?, ?>, Order.Asc> toIter;
             if (edge.to().id().isScoped()) {
                 Identifier.Variable scope = edge.to().id().asScoped().scope();
@@ -401,28 +422,27 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                         role -> role,
                         ASC
                 );
-            } else if (edge.isRolePlayer()) {
-                Identifier.Variable scope = edge.asRolePlayer().scope();
-                Scopes.Scoped scoped = scopes.getOrInitialise(scope);
-                toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params).mapSorted(
-                        thingAndRole -> {
-                            scoped.record(edge, thingAndRole.value());
-                            return thingAndRole.key();
-                        },
-                        key -> KeyValue.of(key, null),
-                        ASC
-                );
             } else {
                 toIter = edge.branch(graphMgr, fromVertex, params);
-            }
-            if (!edge.to().id().isName() && edge.to().outs().isEmpty() && edge.to().ins().size() == 1) {
-                // TODO: This optimisation can apply to more situations, such as to
-                //       an entire tree, where none of the leaves are referenced by name
-                toIter = toIter.limit(1);
             }
 
             // TODO: this cast is a tradeoff between losing a lot of type safety in the ProcedureEdge branch() return type vs having a cast
             return (Forwardable<Vertex<?, ?>, Order.Asc>) toIter;
+        }
+
+        private Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> branchRolePlayer(Vertex<?, ?> fromVertex,
+                                                                                            ProcedureEdge.Native.Thing.RolePlayer edge) {
+            Identifier.Variable scope = edge.asRolePlayer().scope();
+            Scopes.Scoped scoped = scopes.getOrInitialise(scope);
+            return edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params)
+                    .mapSorted(
+                            thingAndRole -> {
+                                scoped.record(edge, thingAndRole.value());
+                                return thingAndRole;
+                            },
+                            Function.identity(),
+                            ASC
+                    );
         }
 
     }
