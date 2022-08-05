@@ -379,27 +379,26 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromEdges() {
-            List<Forwardable<Vertex<?, ?>, Order.Asc>> iters = new ArrayList<>();
-            List<Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc>> rpIters = new ArrayList<>();
-            edgeInputs.forEach((edge, vertex) -> {
-                if (edge.isRolePlayer()) rpIters.add(branchRolePlayer(vertex, edge.asRolePlayer()));
-                else iters.add(branch(vertex, edge));
+            List<ProcedureEdge.Native.Thing.RolePlayer> rpEdges = new ArrayList<>();
+            List<ProcedureEdge<?, ?>> otherEdges = new ArrayList<>();
+            edgeInputs.keySet().forEach((edge) -> {
+                if (edge.isRolePlayer()) rpEdges.add(edge.asRolePlayer());
+                else otherEdges.add(edge);
             });
-
-            if (iters.isEmpty()) {
-                return fromRPIterators(rpIters);
-            } else if (rpIters.isEmpty()) {
-                if (iters.size() == 1) return iters.get(0);
-                else return intersect(iterate(iters), ASC);
+            if (otherEdges.isEmpty()) {
+                return fromRPEdges(rpEdges);
+            } else if (rpEdges.isEmpty()) {
+                if (otherEdges.size() == 1) return branch(edgeInputs.get(otherEdges.get(0)), otherEdges.get(0));
+                return intersect(iterate(otherEdges).map(e -> branch(edgeInputs.get(e), e)), ASC);
             } else {
-                Forwardable<Vertex<?, ?>, Order.Asc> rpIntersection = fromRPIterators(rpIters);
-                return intersect(iterate(iters).link(single(rpIntersection)), ASC);
+                Forwardable<Vertex<?, ?>, Order.Asc> rpIntersection = fromRPEdges(rpEdges);
+                return intersect(iterate(otherEdges).map(e -> branch(edgeInputs.get(e), e)).link(single(rpIntersection)), ASC);
             }
         }
 
-        private Forwardable<Vertex<?, ?>, Order.Asc> fromRPIterators(List<Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc>> iterators) {
+        private Forwardable<Vertex<?, ?>, Order.Asc> fromRPEdges(List<ProcedureEdge.Native.Thing.RolePlayer> edges) {
             // TODO: intersect, filter out duplicate roles & record reason of failure & map down to relation
-            return intersect(iterate(iterators), ASC)
+            return intersect(iterate(edges).map(e -> branchRolePlayer(edgeInputs.get(e), e)), ASC)
                     .mapSorted(KeyValue::key, thing -> KeyValue.of(thing.asThing(), null), ASC);
         }
 
