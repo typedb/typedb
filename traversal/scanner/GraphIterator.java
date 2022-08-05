@@ -188,7 +188,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 verified = true;
             } else {
                 vertexTraverser.clearCurrentVertex();
-                removeFromSuccessors(procedureVertex);
             }
         }
         toRevisit.addAll(verifyFailureCauses);
@@ -385,21 +384,36 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 if (edge.isRolePlayer()) rpEdges.add(edge.asRolePlayer());
                 else otherEdges.add(edge);
             });
-            if (otherEdges.isEmpty()) {
-                return fromRPEdges(rpEdges);
-            } else if (rpEdges.isEmpty()) {
+            return intersectEdges(rpEdges, otherEdges);
+        }
+
+        private Forwardable<Vertex<?, ?>, Order.Asc> intersectEdges(List<ProcedureEdge.Native.Thing.RolePlayer> rpEdges, List<ProcedureEdge<?, ?>> otherEdges) {
+            if (otherEdges.isEmpty()) return intersectRPEdges(rpEdges);
+            else if (rpEdges.isEmpty()) {
                 if (otherEdges.size() == 1) return branch(edgeInputs.get(otherEdges.get(0)), otherEdges.get(0));
                 return intersect(iterate(otherEdges).map(e -> branch(edgeInputs.get(e), e)), ASC);
             } else {
-                Forwardable<Vertex<?, ?>, Order.Asc> rpIntersection = fromRPEdges(rpEdges);
+                Forwardable<Vertex<?, ?>, Order.Asc> rpIntersection = intersectRPEdges(rpEdges);
                 return intersect(iterate(otherEdges).map(e -> branch(edgeInputs.get(e), e)).link(single(rpIntersection)), ASC);
             }
         }
 
-        private Forwardable<Vertex<?, ?>, Order.Asc> fromRPEdges(List<ProcedureEdge.Native.Thing.RolePlayer> edges) {
-            // TODO: intersect, filter out duplicate roles & record reason of failure & map down to relation
-            return intersect(iterate(edges).map(e -> branchRolePlayer(edgeInputs.get(e), e)), ASC)
-                    .mapSorted(KeyValue::key, thing -> KeyValue.of(thing.asThing(), null), ASC);
+        private Forwardable<Vertex<?, ?>, Order.Asc> intersectRPEdges(List<ProcedureEdge.Native.Thing.RolePlayer> edges) {
+            Scopes.Scoped scope = scopes.getOrInitialise(procedureVertex.id().asVariable().asRetrievable());
+            return intersect(iterate(edges).map(e ->
+                    branch(edgeInputs.get(e), e).filter(thingAndRole -> isRoleAvailable(thingAndRole.value(), e, scope, edges))
+            ), ASC).mapSorted(KeyValue::key, thing -> KeyValue.of(thing.asThing(), null), ASC);
+        }
+
+        private boolean isRoleAvailable(ThingVertex role, ProcedureEdge.Native.Thing.RolePlayer sourceEdge,
+                                        Scopes.Scoped scope, List<ProcedureEdge.Native.Thing.RolePlayer> edges) {
+            for (ProcedureEdge.Native.Thing.RolePlayer e : edges) {
+                if (!e.equals(sourceEdge)) {
+                    Optional<ThingVertex> otherRole = scope.getRole(e);
+                    if (otherRole.isPresent() && otherRole.get().equals(role)) return false;
+                }
+            }
+            return true;
         }
 
         private Optional<Vertex<?, ?>> cachedIntersection() {
@@ -429,8 +443,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             return (Forwardable<Vertex<?, ?>, Order.Asc>) toIter;
         }
 
-        private Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> branchRolePlayer(Vertex<?, ?> fromVertex,
-                                                                                            ProcedureEdge.Native.Thing.RolePlayer edge) {
+        private Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> branch(Vertex<?, ?> fromVertex,
+                                                                                  ProcedureEdge.Native.Thing.RolePlayer edge) {
             Identifier.Variable scope = edge.asRolePlayer().scope();
             Scopes.Scoped scoped = scopes.getOrInitialise(scope);
             return edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params)
@@ -481,6 +495,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             public void record(ProcedureVertex<?, ?> source, ThingVertex role) {
                 assert source.id().isScoped() && role.type().isRoleType();
                 vertexSources.put(source, role);
+            }
+
+            private Optional<ThingVertex> getRole(ProcedureEdge<?, ?> edge) {
+                return Optional.ofNullable(edgeSources.get(edge));
+            }
+
+            public void removeSourceRole(ProcedureEdge<?, ?> edge) {
+                edgeSources.remove(edge);
             }
 
             private boolean isValidUpTo(int order) {
