@@ -772,8 +772,8 @@ public abstract class ProcedureEdge<
                     else return new Relating.Backward(from, to);
                 } else if (edge.isRolePlayer()) {
                     PlannerEdge.Native.Thing.RolePlayer.Directional rp = edge.asRolePlayer();
-                    if (isForward) return new RolePlayer.Forward(from, to, rp.roleTypes());
-                    else return new RolePlayer.Backward(from, to, rp.roleTypes());
+                    if (isForward) return new RolePlayer.Forward(from, to, rp.repetition(), rp.roleTypes());
+                    else return new RolePlayer.Backward(from, to, rp.repetition(), rp.roleTypes());
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
@@ -792,8 +792,9 @@ public abstract class ProcedureEdge<
                     if (isForward) return new Playing.Forward(from, to);
                     else return new Playing.Backward(from, to);
                 } else if (encoding == ROLEPLAYER) {
-                    if (isForward) return new RolePlayer.Forward(from, to, edge.asRolePlayer().types());
-                    else return new RolePlayer.Backward(from, to, edge.asRolePlayer().types());
+                    StructureEdge.Native.RolePlayer rp = edge.asRolePlayer();
+                    if (isForward) return new RolePlayer.Forward(from, to, rp.repetition(), rp.types());
+                    else return new RolePlayer.Backward(from, to, rp.repetition(), rp.types());
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
@@ -1075,11 +1076,13 @@ public abstract class ProcedureEdge<
 
             public static abstract class RolePlayer extends Thing {
 
+                final int repetition;
                 final Set<Label> roleTypes;
 
                 private RolePlayer(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
-                                   Encoding.Direction.Edge direction, Set<Label> roleTypes) {
+                                   Encoding.Direction.Edge direction, int repetition, Set<Label> roleTypes) {
                     super(from, to, direction, ROLEPLAYER);
+                    this.repetition = repetition;
                     this.roleTypes = roleTypes;
                 }
 
@@ -1114,6 +1117,10 @@ public abstract class ProcedureEdge<
                     return this;
                 }
 
+                public Set<Label> roleTypes() {
+                    return roleTypes;
+                }
+
                 public Identifier.Variable scope() {
                     if (direction().isForward()) return from.id().asVariable();
                     else return to.id().asVariable();
@@ -1121,18 +1128,19 @@ public abstract class ProcedureEdge<
 
                 @Override
                 public boolean equals(Object o) {
-                    return super.equals(o) && ((RolePlayer) o).roleTypes.equals(roleTypes);
+                    return super.equals(o) && ((RolePlayer) o).repetition == repetition &&
+                            ((RolePlayer) o).roleTypes.equals(roleTypes);
                 }
 
                 @Override
                 public String toString() {
-                    return super.toString() + String.format(" { roleTypes: %s }", roleTypes);
+                    return super.toString() + String.format(" { repetition: %d, roleTypes: %s }", repetition, roleTypes);
                 }
 
                 static class Forward extends RolePlayer {
 
-                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, Set<Label> roleTypes) {
-                        super(from, to, FORWARD, roleTypes);
+                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int repetition, Set<Label> roleTypes) {
+                        super(from, to, FORWARD, repetition, roleTypes);
                     }
 
                     @Override
@@ -1200,14 +1208,14 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Backward(to, from, roleTypes);
+                        return new Backward(to, from, repetition, roleTypes);
                     }
                 }
 
                 static class Backward extends RolePlayer {
 
-                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, Set<Label> roleTypes) {
-                        super(from, to, BACKWARD, roleTypes);
+                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int repetition, Set<Label> roleTypes) {
+                        super(from, to, BACKWARD, repetition, roleTypes);
                     }
 
                     @Override
@@ -1269,7 +1277,7 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Forward(to, from, roleTypes);
+                        return new Forward(to, from, repetition, roleTypes);
                     }
                 }
             }

@@ -928,7 +928,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 } else if (encoding == RELATING) {
                     return new Relating(from, to);
                 } else if (encoding == ROLEPLAYER) {
-                    return new RolePlayer(from, to, structureEdge.asRolePlayer().types());
+                    return new RolePlayer(from, to, structureEdge.asRolePlayer().repetition(), structureEdge.asRolePlayer().types());
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
@@ -1194,11 +1194,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             public static class RolePlayer extends Thing {
 
                 private final Set<Label> roleTypes;
+                private final int repetition;
 
-                RolePlayer(PlannerVertex.Thing from, PlannerVertex.Thing to, Set<Label> roleTypes) {
+                RolePlayer(PlannerVertex.Thing from, PlannerVertex.Thing to, int repetition, Set<Label> roleTypes) {
                     super(from, to, ROLEPLAYER);
+                    this.repetition = repetition;
                     assert !roleTypes.isEmpty();
                     this.roleTypes = roleTypes;
+                    initialiseDirectionalEdges();
                 }
 
                 @Override
@@ -1225,6 +1228,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                     public Set<Label> roleTypes() {
                         return roleTypes;
+                    }
+
+                    public int repetition() {
+                        return repetition;
                     }
                 }
 

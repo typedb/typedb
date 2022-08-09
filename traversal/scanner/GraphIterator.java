@@ -378,16 +378,18 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromEdges() {
-            List<ProcedureEdge.Native.Thing.RolePlayer> rpEdges = new ArrayList<>();
+            Map<Vertex<?, ?>, List<ProcedureEdge.Native.Thing.RolePlayer>> parallelRPEdges = new HashMap<>();
             List<ProcedureEdge<?, ?>> otherEdges = new ArrayList<>();
-            edgeInputs.keySet().forEach((edge) -> {
-                if (edge.isRolePlayer()) rpEdges.add(edge.asRolePlayer());
-                else otherEdges.add(edge);
+            edgeInputs.forEach((edge, vertex) -> {
+                if (edge.isRolePlayer()) {
+                    parallelRPEdges.computeIfAbsent(vertex, v -> new ArrayList<>()).add(edge.asRolePlayer());
+                } else otherEdges.add(edge);
             });
-            return intersectEdges(rpEdges, otherEdges);
+            return intersectEdges(parallelRPEdges, otherEdges);
         }
 
-        private Forwardable<Vertex<?, ?>, Order.Asc> intersectEdges(List<ProcedureEdge.Native.Thing.RolePlayer> rpEdges, List<ProcedureEdge<?, ?>> otherEdges) {
+        private Forwardable<Vertex<?, ?>, Order.Asc> intersectEdges(Map<Vertex<?, ?>, List<ProcedureEdge.Native.Thing.RolePlayer>> rpEdges,
+                                                                    List<ProcedureEdge<?, ?>> otherEdges) {
             if (otherEdges.isEmpty()) return intersectRPEdges(rpEdges);
             else if (rpEdges.isEmpty()) {
                 if (otherEdges.size() == 1) return branch(edgeInputs.get(otherEdges.get(0)), otherEdges.get(0));
@@ -398,16 +400,34 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
         }
 
-        private Forwardable<Vertex<?, ?>, Order.Asc> intersectRPEdges(List<ProcedureEdge.Native.Thing.RolePlayer> edges) {
+        /**
+         * RolePlayer edges from the same vertex are either:
+         * identical -- (upper: $x, upper: $x)
+         * strict subsets/supersets of each other -- (role: $x, upper: $x) -- this is why we sort most restrictive iterators first
+         * completely disjoint -- (upper: $x, lower: $x)
+         * It is impossible for two RolePlayer edges to return partially overlapping iterators.
+         */
+        private Forwardable<Vertex<?, ?>, Order.Asc> intersectRPEdges(Map<Vertex<?, ?>, List<ProcedureEdge.Native.Thing.RolePlayer>> rpEdges) {
+            List<Forwardable<Vertex<?, ?>, Order.Asc>> iterators = new ArrayList<>();
+            // TODO this is not the right scope - the scopes are held on the edges! Should we group by scope first, then vertex?
             Scopes.Scoped scope = scopes.getOrInitialise(procedureVertex.id().asVariable().asRetrievable());
-            return intersect(iterate(edges).map(e ->
-                    branch(edgeInputs.get(e), e).filter(thingAndRole -> isRoleAvailable(thingAndRole.value(), e, scope, edges))
-            ), ASC).mapSorted(KeyValue::key, thing -> KeyValue.of(thing.asThing(), null), ASC);
+            rpEdges.forEach((v, edges) -> {
+                if (edges.size() > 1) {
+                    edges.stream().sorted(Comparator.comparing(e -> e.roleTypes().size())).forEach(e ->
+                            iterators.add(branch(v, e)
+                                    .filter(thingAndRole -> isRoleAvailable(thingAndRole.value(), e, scope, edges))
+                                    .mapSorted(KeyValue::key, thing -> KeyValue.of(thing.asThing(), null), ASC))
+                    );
+                } else {
+                    iterators.add(branch(v, edges.get(0)).mapSorted(KeyValue::key, thing -> KeyValue.of(thing.asThing(), null), ASC));
+                }
+            });
+            return iterators.size() == 1 ? iterators.get(0) : intersect(iterate(iterators), ASC);
         }
 
         private boolean isRoleAvailable(ThingVertex role, ProcedureEdge.Native.Thing.RolePlayer sourceEdge,
-                                        Scopes.Scoped scope, List<ProcedureEdge.Native.Thing.RolePlayer> edges) {
-            for (ProcedureEdge.Native.Thing.RolePlayer e : edges) {
+                                        Scopes.Scoped scope, List<ProcedureEdge.Native.Thing.RolePlayer> parallelEdges) {
+            for (ProcedureEdge.Native.Thing.RolePlayer e : parallelEdges) {
                 if (!e.equals(sourceEdge)) {
                     Optional<ThingVertex> otherRole = scope.getRole(e);
                     if (otherRole.isPresent() && otherRole.get().equals(role)) return false;
@@ -499,10 +519,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
             private Optional<ThingVertex> getRole(ProcedureEdge<?, ?> edge) {
                 return Optional.ofNullable(edgeSources.get(edge));
-            }
-
-            public void removeSourceRole(ProcedureEdge<?, ?> edge) {
-                edgeSources.remove(edge);
             }
 
             private boolean isValidUpTo(int order) {

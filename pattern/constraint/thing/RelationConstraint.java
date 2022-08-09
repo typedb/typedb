@@ -94,20 +94,14 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         for (RolePlayer rolePlayer : rolePlayers) {
             assert !rolePlayer.inferredRoleTypes.isEmpty();
             ThingVariable player = rolePlayer.player();
-            int rep = rolePlayer.repetition();
             if (rolePlayer.roleType().isPresent() && rolePlayer.roleType().get().id().isName()) {
-                Identifier.Scoped role = Identifier.Scoped.of(owner.id(), rolePlayer.roleType().get().id(), player.id(), rep);
+                Identifier.Scoped role = Identifier.Scoped.of(owner.id(), rolePlayer.roleType().get().id(), player.id(), rolePlayer.repetition());
                 traversal.relating(owner.id(), role);
                 traversal.playing(player.id(), role);
                 traversal.isa(role, rolePlayer.roleType().get().id());
                 traversal.types(role, rolePlayer.inferredRoleTypes());
-            } else if (rep > 1) {
-                Identifier.Scoped role = Identifier.Scoped.of(owner.id(), null, player.id(), rep);
-                traversal.relating(owner.id(), role);
-                traversal.playing(player.id(), role);
-                traversal.types(role, rolePlayer.inferredRoleTypes());
             } else {
-                traversal.rolePlayer(owner.id(), player.id(), rolePlayer.inferredRoleTypes(), rep);
+                traversal.rolePlayer(owner.id(), player.id(), rolePlayer.inferredRoleTypes(), rolePlayer.repetition());
             }
         }
     }

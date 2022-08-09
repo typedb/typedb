@@ -186,7 +186,7 @@ public class TraversalTest {
             proc.forwardRelating(_0, role_inst);
             proc.backwardPlaying(role_inst, x);
             proc.forwardIsa(role_inst, role, true);
-            proc.forwardRolePlayer(_0, e, set(Label.of("employer", "employment")));
+            proc.forwardRolePlayer(_0, e, 0, set(Label.of("employer", "employment")));
 
             Traversal.Parameters params = new Traversal.Parameters();
 
@@ -247,13 +247,13 @@ public class TraversalTest {
             ProcedureVertex.Thing r = proc.namedThing(6, "r");
             r.props().types(set(Label.of("post")));
 
-            proc.forwardRolePlayer(_0, s, set(Label.of("reply", "reply-of")));
-            proc.forwardRolePlayer(_0, p, set(Label.of("original", "reply-of")));
+            proc.forwardRolePlayer(_0, s, 0, set(Label.of("reply", "reply-of")));
+            proc.forwardRolePlayer(_0, p, 0, set(Label.of("original", "reply-of")));
             proc.forwardHas(s, d1);
-            proc.backwardRolePlayer(p, _1, set(Label.of("original", "reply-of")));
+            proc.backwardRolePlayer(p, _1, 0, set(Label.of("original", "reply-of")));
             proc.forwardPredicate(d1, d2, Predicate.Variable.of(TypeQLToken.Predicate.Equality.LT));
             proc.backwardHas(d2, r);
-            proc.forwardRolePlayer(_1, r, set(Label.of("reply", "reply-of")));
+            proc.forwardRolePlayer(_1, r, 0, set(Label.of("reply", "reply-of")));
 
             Traversal.Parameters params = new Traversal.Parameters();
 
@@ -314,10 +314,10 @@ public class TraversalTest {
             ProcedureVertex.Thing d2 = proc.namedThing(6, "d2");
             d2.props().types(set(Label.of("creation-date")));
 
-            proc.forwardRolePlayer(_0, p, set(Label.of("original", "reply-of")));
-            proc.backwardRolePlayer(p, _1, set(Label.of("original", "reply-of")));
-            proc.forwardRolePlayer(_1, r, set(Label.of("reply", "reply-of")));
-            proc.forwardRolePlayer(_0, s, set(Label.of("reply", "reply-of")));
+            proc.forwardRolePlayer(_0, p, 0, set(Label.of("original", "reply-of")));
+            proc.backwardRolePlayer(p, _1, 0, set(Label.of("original", "reply-of")));
+            proc.forwardRolePlayer(_1, r, 0, set(Label.of("reply", "reply-of")));
+            proc.forwardRolePlayer(_0, s, 0, set(Label.of("reply", "reply-of")));
             proc.forwardHas(s, d1);
             proc.forwardHas(r, d2);
             proc.forwardPredicate(d1, d2, Predicate.Variable.of(TypeQLToken.Predicate.Equality.LT));
@@ -475,13 +475,13 @@ public class TraversalTest {
 
 
             proc.backwardHas(_3, f1);
-            proc.forwardRolePlayer(f1, x, set(Label.of("friend", "friendship")));
-            proc.forwardRolePlayer(f1, y, set(Label.of("friend", "friendship")));
+            proc.forwardRolePlayer(f1, x, 0, set(Label.of("friend", "friendship")));
+            proc.forwardRolePlayer(f1, y, 0, set(Label.of("friend", "friendship")));
             proc.forwardHas(x, _0);
             proc.forwardPlaying(x, role);
             proc.forwardHas(y, _1);
             proc.backwardRelating(role, refl);
-            proc.backwardRolePlayer(x, refl, set(Label.of("friend", "friendship")));
+            proc.backwardRolePlayer(x, refl, 0, set(Label.of("friend", "friendship")));
 
 
             Traversal.Parameters params = new Traversal.Parameters();
@@ -633,11 +633,11 @@ public class TraversalTest {
             proc.backwardHas(n, x);
             proc.backwardHas(n, y);
             proc.forwardHas(x, _0);
-            proc.backwardRolePlayer(x, refl, set(Label.of("friend", "friendship")));
-            proc.backwardRolePlayer(x, refl, set(Label.of("friend", "friendship")));
-            proc.backwardRolePlayer(x, f1, set(Label.of("friend", "friendship")));
+            proc.backwardRolePlayer(x, refl, 0, set(Label.of("friend", "friendship")));
+            proc.backwardRolePlayer(x, refl, 1, set(Label.of("friend", "friendship")));
+            proc.backwardRolePlayer(x, f1, 0, set(Label.of("friend", "friendship")));
             proc.forwardHas(y, _1);
-            proc.backwardRolePlayer(y, f1, set(Label.of("friend", "friendship")));
+            proc.backwardRolePlayer(y, f1, 1, set(Label.of("friend", "friendship")));
             proc.forwardHas(refl, r1);
             proc.forwardHas(f1, r2);
 
