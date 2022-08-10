@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
+import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
@@ -210,7 +211,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
     }
 
-    protected boolean evaluateSubstringPredicate(TypeQLToken.Predicate.SubString asSubString, java.lang.String value, Object value1) {
+    protected boolean evaluateSubstringPredicate(TypeQLToken.Predicate.SubString asSubString, java.lang.String value, java.lang.String value1) {
         return true; // TODO?
     }
 
@@ -242,8 +243,13 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public boolean isSatisfiedByValueOf(ValueConstraint<?> conclusionValueConstraint) {
-            return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isLong() &&
-                    evaluateEqualityPredicate(predicate.asEquality(), conclusionValueConstraint.asLong().value().compareTo(this.value())));
+            return conclusionValueConstraint.isVariable() ||
+                (conclusionValueConstraint.isLong() &&
+                    evaluateEqualityPredicate(predicate.asEquality(),
+                            conclusionValueConstraint.asLong().value().compareTo(this.asLong().value()))) ||
+                (conclusionValueConstraint.isDouble() &&
+                        evaluateEqualityPredicate(predicate.asEquality(),
+                                Predicate.compareDoubles(conclusionValueConstraint.asDouble().value(), this.asDouble().value())));
         }
 
         @Override
@@ -290,8 +296,13 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public boolean isSatisfiedByValueOf(ValueConstraint<?> conclusionValueConstraint) {
-            return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isDouble() &&
-                    evaluateEqualityPredicate(predicate.asEquality(), conclusionValueConstraint.asDouble().value().compareTo(this.value())));
+            return conclusionValueConstraint.isVariable() ||
+                    (conclusionValueConstraint.isDouble() &&
+                            evaluateEqualityPredicate(predicate.asEquality(),
+                                    Predicate.compareDoubles(conclusionValueConstraint.asDouble().value(), this.asDouble().value()))) ||
+                    (conclusionValueConstraint.isLong() &&
+                            evaluateEqualityPredicate(predicate.asEquality(),
+                                    Predicate.compareDoubles(conclusionValueConstraint.asDouble().value(), this.asDouble().value())));
         }
     }
 
@@ -329,7 +340,8 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public boolean isSatisfiedByValueOf(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isBoolean() &&
-                    evaluateEqualityPredicate(predicate.asEquality(), conclusionValueConstraint.asBoolean().value().compareTo(this.value())));
+                    evaluateEqualityPredicate(predicate.asEquality(),
+                            conclusionValueConstraint.asBoolean().value().compareTo(this.asBoolean().value())));
         }
     }
 
@@ -369,9 +381,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             if (conclusionValueConstraint.isVariable() ) return true;
             if (!conclusionValueConstraint.isString())   return false;
             if (predicate.isEquality()) {
-                return evaluateEqualityPredicate(predicate.asEquality(), conclusionValueConstraint.asString().value().compareTo(this.value()));
+                return evaluateEqualityPredicate(predicate.asEquality(),
+                        conclusionValueConstraint.asString().value().compareTo(this.value()));
             } else {
-                return evaluateSubstringPredicate(predicate.asSubString(), this.value(), conclusionValueConstraint.asString().value());
+                return evaluateSubstringPredicate(predicate.asSubString(),
+                        this.value(), conclusionValueConstraint.asString().value());
             }
         }
     }
@@ -410,7 +424,8 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public boolean isSatisfiedByValueOf(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isDateTime() &&
-                    evaluateEqualityPredicate(predicate.asEquality(), conclusionValueConstraint.asDateTime().value().compareTo(this.value())));
+                    evaluateEqualityPredicate(predicate.asEquality(),
+                            conclusionValueConstraint.asDateTime().value().compareTo(this.asDateTime().value())));
         }
     }
 
