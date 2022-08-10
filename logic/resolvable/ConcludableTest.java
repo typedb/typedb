@@ -17,6 +17,7 @@
 
 package com.vaticle.typedb.core.logic.resolvable;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
@@ -309,5 +310,168 @@ public class ConcludableTest {
             assertEquals(1, hasConcludable.has().attribute().value().size());
             assertTrue(hasConcludable.has().attribute().isa().isPresent());
         });
+    }
+
+    @Test
+    public void test_valued_attribute_unification_satisfiable(){
+        Pair<String,String>[] concludableConclusionPairs = new Pair[]{
+                // Boolean
+                new Pair("{ $x true; }", "{$y true;}"),
+                new Pair("{ $x false; }", "{$y false;}"),
+                new Pair("{ $x = true; }", "{$y true;}"),
+                new Pair("{ $x = false; }", "{$y false;}"),
+                new Pair("{ $x != true; }", "{$y false;}"),
+                new Pair("{ $x != false; }", "{$y true;}"),
+
+                // Numeric assign, equality, gte, lte
+                new Pair("{ $x 1; }", "{$y 1;}"),
+                new Pair("{ $x 1; }", "{$y 1.0;}"),
+                new Pair("{ $x 1.0; }", "{$y 1;}"),
+                new Pair("{ $x 1.0; }", "{$y 1.0;}"),
+
+                new Pair("{ $x = 1; }", "{$y 1;}"),
+                new Pair("{ $x = 1; }", "{$y 1.0;}"),
+                new Pair("{ $x = 1.0; }", "{$y 1;}"),
+                new Pair("{ $x = 1.0; }", "{$y 1.0;}"),
+
+                new Pair("{ $x >= 1; }", "{$y 1;}"),
+                new Pair("{ $x >= 1; }", "{$y 1.0;}"),
+                new Pair("{ $x >= 1.0; }", "{$y 1;}"),
+                new Pair("{ $x >= 1.0; }", "{$y 1.0;}"),
+
+                new Pair("{ $x <= 1; }", "{$y 1;}"),
+                new Pair("{ $x <= 1; }", "{$y 1.0;}"),
+                new Pair("{ $x <= 1.0; }", "{$y 1;}"),
+                new Pair("{ $x <= 1.0; }", "{$y 1.0;}"),
+
+                // Numeric inequality, gt, lt
+                new Pair("{ $x != 1; }", "{$y 2;}"),
+                new Pair("{ $x != 1; }", "{$y 2.0;}"),
+                new Pair("{ $x != 1.0; }", "{$y 2;}"),
+                new Pair("{ $x != 1.0; }", "{$y 2.0;}"),
+
+                new Pair("{ $x > 1; }", "{$y 2;}"),
+                new Pair("{ $x > 1; }", "{$y 2.0;}"),
+                new Pair("{ $x > 1.0; }", "{$y 2;}"),
+                new Pair("{ $x > 1.0; }", "{$y 2.0;}"),
+
+                new Pair("{ $x < 1; }", "{$y -2;}"),
+                new Pair("{ $x < 1; }", "{$y -2.0;}"),
+                new Pair("{ $x < 1.0; }", "{$y -2;}"),
+                new Pair("{ $x < 1.0; }", "{$y -2.0;}"),
+
+                // String comparisons
+                new Pair("{ $x \"one\"; }", "{$y \"one\";}"),
+                new Pair("{ $x = \"one\"; }", "{$y \"one\";}"),
+                new Pair("{ $x >= \"one\"; }", "{$y \"one\";}"),
+                new Pair("{ $x <= \"one\"; }", "{$y \"one\";}"),
+                new Pair("{ $x != \"one\"; }", "{$y \"two\";}"),
+                new Pair("{ $x > \"one\"; }", "{$y \"two\";}"),
+                new Pair("{ $x < \"two\"; }", "{$y \"one\";}"),
+
+                // String comparisons, case-insensitivity
+                new Pair("{ $x \"OnE\"; }", "{$y \"oNe\";}"),
+                new Pair("{ $x > \"one\"; }", "{$y \"TWO\";}"),
+                new Pair("{ $x > \"ONE\"; }", "{$y \"two\";}"),
+        };
+
+        for (Pair<String, String> pair : concludableConclusionPairs){
+            Concludable concludable = Concludable.create(parseConjunction(pair.first())).stream().findFirst().get();
+            Concludable conclusion = Concludable.create(parseConjunction(pair.second())).stream().findFirst().get();
+
+            assertTrue(concludable.isAttribute());
+            assertTrue(conclusion.isAttribute());
+            assertTrue(concludable.unificationSatisfiable(concludable.asAttribute().attribute(), conclusion.asAttribute().attribute()));
+        }
+    }
+
+    @Test
+    public void test_valued_attribute_unification_unsatisfiable(){
+        Pair<String,String>[] concludableConclusionPairs = new Pair[]{
+                // Boolean
+                new Pair("{ $x true; }", "{$y false;}"),
+                new Pair("{ $x false; }", "{$y true;}"),
+                new Pair("{ $x = true; }", "{$y false;}"),
+                new Pair("{ $x = false; }", "{$y true;}"),
+                new Pair("{ $x != true; }", "{$y true;}"),
+                new Pair("{ $x != false; }", "{$y false;}"),
+
+                // Numeric assign, equality, gte, lte
+                new Pair("{ $x 1; }", "{$y 2;}"),
+                new Pair("{ $x 1; }", "{$y 2.0;}"),
+                new Pair("{ $x 1.0; }", "{$y 2;}"),
+                new Pair("{ $x 1.0; }", "{$y 2.0;}"),
+
+                new Pair("{ $x = 1; }", "{$y 2;}"),
+                new Pair("{ $x = 1; }", "{$y 2.0;}"),
+                new Pair("{ $x = 1.0; }", "{$y 2;}"),
+                new Pair("{ $x = 1.0; }", "{$y 2.0;}"),
+
+
+                new Pair("{ $x = 1; }", "{$y -1;}"),
+                new Pair("{ $x = 1; }", "{$y -1.0;}"),
+                new Pair("{ $x = 1.0; }", "{$y -1;}"),
+                new Pair("{ $x = 1.0; }", "{$y -1.0;}"),
+
+                new Pair("{ $x >= 1; }", "{$y -1;}"),
+                new Pair("{ $x >= 1; }", "{$y -1.0;}"),
+                new Pair("{ $x >= 1.0; }", "{$y -1;}"),
+                new Pair("{ $x >= 1.0; }", "{$y -1.0;}"),
+
+                new Pair("{ $x <= 1; }", "{$y 2;}"),
+                new Pair("{ $x <= 1; }", "{$y 2.0;}"),
+                new Pair("{ $x <= 1.0; }", "{$y 2;}"),
+                new Pair("{ $x <= 1.0; }", "{$y 2.0;}"),
+
+                // Numeric inequality, gt, lt
+                new Pair("{ $x != 1; }", "{$y 1;}"),
+                new Pair("{ $x != 1; }", "{$y 1.0;}"),
+                new Pair("{ $x != 1.0; }", "{$y 1;}"),
+                new Pair("{ $x != 1.0; }", "{$y 1.0;}"),
+
+                new Pair("{ $x > 1; }", "{$y -1;}"),
+                new Pair("{ $x > 1; }", "{$y -1.0;}"),
+                new Pair("{ $x > 1.0; }", "{$y -1;}"),
+                new Pair("{ $x > 1.0; }", "{$y -1.0;}"),
+
+                new Pair("{ $x > 1; }", "{$y 1;}"),
+                new Pair("{ $x > 1; }", "{$y 1.0;}"),
+                new Pair("{ $x > 1.0; }", "{$y 1;}"),
+                new Pair("{ $x > 1.0; }", "{$y 1.0;}"),
+
+                new Pair("{ $x < 1; }", "{$y 1;}"),
+                new Pair("{ $x < 1; }", "{$y 1.0;}"),
+                new Pair("{ $x < 1.0; }", "{$y 1;}"),
+                new Pair("{ $x < 1.0; }", "{$y 1.0;}"),
+
+                new Pair("{ $x < 1; }", "{$y 2;}"),
+                new Pair("{ $x < 1; }", "{$y 2.0;}"),
+                new Pair("{ $x < 1.0; }", "{$y 2;}"),
+                new Pair("{ $x < 1.0; }", "{$y 2.0;}"),
+
+                // String comparisons
+                new Pair("{ $x \"one\"; }", "{$y \"two\";}"),
+                new Pair("{ $x = \"one\"; }", "{$y \"two\";}"),
+                new Pair("{ $x >= \"two\"; }", "{$y \"one\";}"),
+                new Pair("{ $x <= \"one\"; }", "{$y \"two\";}"),
+                new Pair("{ $x != \"one\"; }", "{$y \"one\";}"),
+                new Pair("{ $x > \"one\"; }", "{$y \"one\";}"),
+                new Pair("{ $x > \"two\"; }", "{$y \"one\";}"),
+                new Pair("{ $x < \"two\"; }", "{$y \"two\";}"),
+                new Pair("{ $x < \"one\"; }", "{$y \"two\";}"),
+
+                // String comparisons, case-insensitivity
+                new Pair("{ $x > \"two\"; }", "{$y \"ONE\";}"),
+                new Pair("{ $x > \"TWO\"; }", "{$y \"one\";}"),
+        };
+
+        for (Pair<String, String> pair : concludableConclusionPairs){
+            Concludable concludable = Concludable.create(parseConjunction(pair.first())).stream().findFirst().get();
+            Concludable conclusion = Concludable.create(parseConjunction(pair.second())).stream().findFirst().get();
+
+            assertTrue(concludable.isAttribute());
+            assertTrue(conclusion.isAttribute());
+            assertFalse(concludable.unificationSatisfiable(concludable.asAttribute().attribute(), conclusion.asAttribute().attribute()));
+        }
     }
 }
