@@ -189,7 +189,13 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
             // TODO: detect value contradictions between constant predicates
-            satisfiable &= true;
+            assert conclusionThingVar.value().size() == 1;
+            ValueConstraint<?> conclusionValueConstraint = conclusionThingVar.value().stream().findFirst().get();
+
+            assert conclusionValueConstraint.predicate().isEquality() &&
+                    conclusionValueConstraint.predicate().asEquality().equals(EQ);
+
+            satisfiable &=  concludableThingVar.value().stream().allMatch( v -> v.isSatisfiedByValueOf(conclusionValueConstraint) );
         }
         return satisfiable;
     }
