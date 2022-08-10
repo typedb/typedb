@@ -313,6 +313,112 @@ public class ConcludableTest {
     }
 
     @Test
+    public void test_var_attribute_unification_satisfiable(){
+        Pair<String,String>[] concludableConclusionPairs = new Pair[]{
+                // Both var
+                new Pair("{ $x has attr $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr = $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr != $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr <= $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr >= $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr < $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr > $v; }", "{$y has attr $w;}"),
+
+                // Boolean
+                new Pair("{ $x has attr $v; }", "{$y has attr true;}"),
+                new Pair("{ $x has attr true; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr $v; }", "{$y has attr false;}"),
+                new Pair("{ $x has attr false; }", "{$y has attr $v;}"),
+
+                new Pair("{ $x has attr = $v; }", "{$y has attr true;}"),
+                new Pair("{ $x has attr = true; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr = $v; }", "{$y has attr false;}"),
+                new Pair("{ $x has attr = false; }", "{$y has attr $v;}"),
+
+                new Pair("{ $x has attr != $v; }", "{$y has attr true;}"),
+                new Pair("{ $x has attr != true; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr != $v; }", "{$y has attr false;}"),
+                new Pair("{ $x has attr != false; }", "{$y has attr $v;}"),
+
+                // Numeric assign, equality, gte, lte
+                new Pair("{ $x has attr 1; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr 1.0; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr $v; }", "{$y has attr 1.0;}"),
+
+                new Pair("{ $x has attr = 1; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr = $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr = 1.0; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr = $v; }", "{$y has attr 1.0;}"),
+
+                new Pair("{ $x has attr >= 1; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr >= $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr >= 1.0; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr >= $v; }", "{$y has attr 1.0;}"),
+
+                new Pair("{ $x has attr <= 1; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr <= $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr <= 1.0; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr <= $v; }", "{$y has attr 1.0;}"),
+
+                // Numeric inequality, gt, lt
+                new Pair("{ $x has attr != 1; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr != $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr != 1.0; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr != $v; }", "{$y has attr 1.0;}"),
+
+                new Pair("{ $x has attr > 1; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr > $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr > 1.0; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr > $v; }", "{$y has attr 1.0;}"),
+
+                new Pair("{ $x has attr < 1; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr < $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr < 1.0; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr < $v; }", "{$y has attr 1.0;}"),
+
+                // String comparisons
+                new Pair("{ $x has attr \"one\"; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr = $v; }", "{$y has attr \"one\";}"),
+                new Pair("{ $x has attr >= \"one\"; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr >= $v; }", "{$y has attr \"one\";}"),
+                new Pair("{ $x has attr <= \"one\"; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr <= $v; }", "{$y has attr \"one\";}"),
+                new Pair("{ $x has attr != $v; }", "{$y has attr \"one\";}"),
+                new Pair("{ $x has attr != \"one\"; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr > \"one\"; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr > $v; }", "{$y has attr \"one\";}"),
+                new Pair("{ $x has attr < \"one\"; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr < $v; }", "{$y has attr \"one\";}"),
+
+                // DateTime
+                new Pair("{ $x has attr 2022-01-01; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr = 2022-01-01; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr = $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr != 2022-01-01; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr != $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr >= 2022-01-01; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr >= $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr <= 2022-01-01; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr <= $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr > 2022-01-01; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr > $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr < 2022-01-01; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr < $v; }", "{$y has attr 2022-01-01;}"),
+        };
+
+        for (Pair<String, String> pair : concludableConclusionPairs){
+            Concludable concludable = Concludable.create(parseConjunction(pair.first())).stream().findFirst().get();
+            Concludable conclusion = Concludable.create(parseConjunction(pair.second())).stream().findFirst().get();
+
+            assertTrue(concludable.isHas());
+            assertTrue(conclusion.isHas());
+            assertTrue(concludable.unificationSatisfiable(concludable.asHas().attribute(), conclusion.asHas().attribute()));
+        }
+    }
+
+    @Test
     public void test_valued_attribute_unification_satisfiable(){
         Pair<String,String>[] concludableConclusionPairs = new Pair[]{
                 // Boolean
@@ -373,6 +479,19 @@ public class ConcludableTest {
                 new Pair("{ $x \"OnE\"; }", "{$y \"oNe\";}"),
                 new Pair("{ $x > \"one\"; }", "{$y \"TWO\";}"),
                 new Pair("{ $x > \"ONE\"; }", "{$y \"two\";}"),
+
+                // DateTime
+                new Pair("{ $x 2022-01-01; }", "{$y 2022-01-01;}"),
+                new Pair("{ $x = 2022-01-01; }", "{$y  2022-01-01;}"),
+                new Pair("{ $x != 2022-01-01; }", "{$y  2022-02-02;}"),
+
+                new Pair("{ $x >= 2022-01-01; }", "{$y 2022-01-01;}"),
+                new Pair("{ $x >= 2022-01-01; }", "{$y 2022-02-02;}"),
+                new Pair("{ $x <= 2022-01-01; }", "{$y 2022-01-01;}"),
+                new Pair("{ $x <= 2022-02-02; }", "{$y 2022-01-01;}"),
+
+                new Pair("{ $x > 2022-01-01; }", "{$y 2022-02-02;}"),
+                new Pair("{ $x < 2022-02-02; }", "{$y 2022-01-01;}"),
         };
 
         for (Pair<String, String> pair : concludableConclusionPairs){
@@ -406,7 +525,6 @@ public class ConcludableTest {
                 new Pair("{ $x = 1; }", "{$y 2.0;}"),
                 new Pair("{ $x = 1.0; }", "{$y 2;}"),
                 new Pair("{ $x = 1.0; }", "{$y 2.0;}"),
-
 
                 new Pair("{ $x = 1; }", "{$y -1;}"),
                 new Pair("{ $x = 1; }", "{$y -1.0;}"),
@@ -463,6 +581,19 @@ public class ConcludableTest {
                 // String comparisons, case-insensitivity
                 new Pair("{ $x > \"two\"; }", "{$y \"ONE\";}"),
                 new Pair("{ $x > \"TWO\"; }", "{$y \"one\";}"),
+
+                // DateTime
+                new Pair("{ $x 2022-01-01; }", "{$y  2022-02-02;}"),
+                new Pair("{ $x = 2022-01-01; }", "{$y  2022-02-02;}"),
+                new Pair("{ $x != 2022-01-01; }", "{$y  2022-01-01;}"),
+
+                new Pair("{ $x >= 2022-02-02; }", "{$y 2022-01-01;}"),
+                new Pair("{ $x <= 2022-01-01; }", "{$y 2022-02-02;}"),
+
+                new Pair("{ $x > 2022-01-01; }", "{$y 2022-01-01;}"),
+                new Pair("{ $x > 2022-02-02; }", "{$y 2022-01-01;}"),
+                new Pair("{ $x < 2022-01-01; }", "{$y 2022-01-01;}"),
+                new Pair("{ $x < 2022-01-01; }", "{$y 2022-02-02;}"),
         };
 
         for (Pair<String, String> pair : concludableConclusionPairs){
