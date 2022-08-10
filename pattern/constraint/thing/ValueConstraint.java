@@ -31,6 +31,7 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -382,10 +383,10 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             if (!conclusionValueConstraint.isString())   return false;
             if (predicate.isEquality()) {
                 return evaluateEqualityPredicate(predicate.asEquality(),
-                        conclusionValueConstraint.asString().value().compareTo(this.value()));
+                        conclusionValueConstraint.asString().value().toLowerCase().compareTo(this.value().toLowerCase()));
             } else {
                 return evaluateSubstringPredicate(predicate.asSubString(),
-                        this.value(), conclusionValueConstraint.asString().value());
+                        this.value().toLowerCase(), conclusionValueConstraint.asString().value().toLowerCase());
             }
         }
     }
