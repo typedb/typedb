@@ -1201,7 +1201,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     this.repetition = repetition;
                     assert !roleTypes.isEmpty();
                     this.roleTypes = roleTypes;
-                    initialiseDirectionalEdges();
                 }
 
                 @Override

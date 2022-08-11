@@ -378,17 +378,18 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromEdges() {
-            Map<Vertex<?, ?>, List<ProcedureEdge.Native.Thing.RolePlayer>> parallelRPEdges = new HashMap<>();
+            Map<Scopes.Scoped, List<ProcedureEdge.Native.Thing.RolePlayer>> rpEdgesByScope = new HashMap<>();
             List<ProcedureEdge<?, ?>> otherEdges = new ArrayList<>();
             edgeInputs.forEach((edge, vertex) -> {
                 if (edge.isRolePlayer()) {
-                    parallelRPEdges.computeIfAbsent(vertex, v -> new ArrayList<>()).add(edge.asRolePlayer());
+                    Scopes.Scoped scoped = scopes.getOrInitialise(edge.asRolePlayer().scope());
+                    rpEdgesByScope.computeIfAbsent(scoped, s -> new ArrayList<>()).add(edge.asRolePlayer());
                 } else otherEdges.add(edge);
             });
-            return intersectEdges(parallelRPEdges, otherEdges);
+            return intersectEdges(rpEdgesByScope, otherEdges);
         }
 
-        private Forwardable<Vertex<?, ?>, Order.Asc> intersectEdges(Map<Vertex<?, ?>, List<ProcedureEdge.Native.Thing.RolePlayer>> rpEdges,
+        private Forwardable<Vertex<?, ?>, Order.Asc> intersectEdges(Map<Scopes.Scoped, List<ProcedureEdge.Native.Thing.RolePlayer>> rpEdges,
                                                                     List<ProcedureEdge<?, ?>> otherEdges) {
             if (otherEdges.isEmpty()) return intersectRPEdges(rpEdges);
             else if (rpEdges.isEmpty()) {
@@ -402,26 +403,26 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         /**
          * RolePlayer edges from the same vertex are either:
-         * identical -- (upper: $x, upper: $x)
-         * strict subsets/supersets of each other -- (role: $x, upper: $x) -- this is why we sort most restrictive iterators first
+         * identical -- (upper: $x, upper: $y); $x is $y;
+         * strict subsets/supersets of each other -- (role: $x, upper: $y); $x is $y; -- solved by sorting most restrictive iterators first
          * completely disjoint -- (upper: $x, lower: $x)
          * It is impossible for two RolePlayer edges to return partially overlapping iterators.
          */
-        private Forwardable<Vertex<?, ?>, Order.Asc> intersectRPEdges(Map<Vertex<?, ?>, List<ProcedureEdge.Native.Thing.RolePlayer>> rpEdges) {
+        private Forwardable<Vertex<?, ?>, Order.Asc> intersectRPEdges(Map<Scopes.Scoped, List<ProcedureEdge.Native.Thing.RolePlayer>> rpEdges) {
             List<Forwardable<Vertex<?, ?>, Order.Asc>> iterators = new ArrayList<>();
-            // TODO this is not the right scope - the scopes are held on the edges! Should we group by scope first, then vertex?
-            Scopes.Scoped scope = scopes.getOrInitialise(procedureVertex.id().asVariable().asRetrievable());
-            rpEdges.forEach((v, edges) -> {
+            rpEdges.forEach((scope, edges) -> {
                 if (edges.size() > 1) {
                     edges.stream().sorted(Comparator.comparing(e -> e.roleTypes().size())).forEach(e ->
-                            iterators.add(branch(v, e)
+                            iterators.add(branch(edgeInputs.get(e), e)
                                     .filter(thingAndRole -> isRoleAvailable(thingAndRole.value(), e, scope, edges))
                                     .mapSorted(KeyValue::key, thing -> KeyValue.of(thing.asThing(), null), ASC))
                     );
                 } else {
-                    iterators.add(branch(v, edges.get(0)).mapSorted(KeyValue::key, thing -> KeyValue.of(thing.asThing(), null), ASC));
+                    iterators.add(branch(edgeInputs.get(edges.get(0)), edges.get(0))
+                            .mapSorted(KeyValue::key, thing -> KeyValue.of(thing.asThing(), null), ASC));
                 }
             });
+            // WARN: we rely on the intersection operating in order of the iterators provided...
             return iterators.size() == 1 ? iterators.get(0) : intersect(iterate(iterators), ASC);
         }
 
