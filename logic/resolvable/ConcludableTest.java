@@ -314,7 +314,6 @@ public class ConcludableTest {
 
     @Test
     public void test_var_attribute_unification_satisfiable(){
-        // TODO: "{ $x has attr $v; }" does not actually have ValueConstraints on the attribute.
         Pair<String,String>[] concludableConclusionPairs = new Pair[]{
             // Both var
             new Pair("{ $x has attr $v; }", "{$y has attr $w;}"),
