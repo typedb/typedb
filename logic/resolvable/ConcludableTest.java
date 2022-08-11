@@ -605,4 +605,44 @@ public class ConcludableTest {
             assertFalse(concludable.unificationSatisfiable(concludable.asAttribute().attribute(), conclusion.asAttribute().attribute()));
         }
     }
+
+    @Test
+    public void test_valued_attribute_unification_satisfiable_substring(){
+        Pair<String,String>[] concludableConclusionPairs = new Pair[]{
+                // One variable
+                new Pair("{ $x has attr like \"\"; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr contains \"jan\"; }", "{$y has attr $v;}"),
+
+                // Both constant
+                new Pair("{ $x has attr like \"[0-9]{2}-[a-z]{3}-[0-9]{4}\"; }", "{$y has attr \"01-jan-2022\";}"),
+                new Pair("{ $x has attr contains \"jan\"; }", "{$y has attr \"01-jan-2022\";}"),
+        };
+
+        for (Pair<String, String> pair : concludableConclusionPairs){
+            Concludable concludable = Concludable.create(parseConjunction(pair.first())).stream().findFirst().get();
+            Concludable conclusion = Concludable.create(parseConjunction(pair.second())).stream().findFirst().get();
+
+            assertTrue(concludable.isHas());
+            assertTrue(conclusion.isHas());
+            assertTrue(concludable.unificationSatisfiable(concludable.asHas().attribute(), conclusion.asHas().attribute()));
+        }
+    }
+
+    @Test
+    public void test_valued_attribute_unification_unsatisfiable_substring(){
+        Pair<String,String>[] concludableConclusionPairs = new Pair[]{
+                // Both constant
+                new Pair("{ $x has attr like \"[0-9]{2}-[a-z]{3}-[0-9]{4}\"; }", "{$y has attr \"01-01-2022\";}"),
+                new Pair("{ $x has attr contains \"jan\"; }", "{$y has attr \"01-feb-2022\";}"),
+        };
+
+        for (Pair<String, String> pair : concludableConclusionPairs){
+            Concludable concludable = Concludable.create(parseConjunction(pair.first())).stream().findFirst().get();
+            Concludable conclusion = Concludable.create(parseConjunction(pair.second())).stream().findFirst().get();
+
+            assertTrue(concludable.isHas());
+            assertTrue(conclusion.isHas());
+            assertFalse(concludable.unificationSatisfiable(concludable.asHas().attribute(), conclusion.asHas().attribute()));
+        }
+    }
 }

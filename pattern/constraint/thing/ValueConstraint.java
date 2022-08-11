@@ -30,10 +30,9 @@ import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -212,8 +211,14 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
     }
 
-    protected boolean evaluateSubstringPredicate(TypeQLToken.Predicate.SubString asSubString, java.lang.String value, java.lang.String value1) {
-        return true; // TODO?
+    protected boolean evaluateSubstringPredicate(TypeQLToken.Predicate.SubString predicate,
+                                                 java.lang.String constraintValue,
+                                                 java.lang.String conclusionValue) {
+        switch (predicate){
+            case CONTAINS: return conclusionValue.contains(constraintValue);
+            case LIKE: return Pattern.compile(constraintValue).matcher(conclusionValue).matches();
+            default: throw TypeDBException.of(ILLEGAL_STATE);
+        }
     }
 
     public static class Long extends ValueConstraint<java.lang.Long> {
