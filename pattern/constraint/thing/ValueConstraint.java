@@ -197,7 +197,15 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
                 .flatMap(a -> a.alphaEqualIf(this.value.equals(that.value)));
     }
 
-    public abstract boolean isSatisfiedByValueOf(ValueConstraint<?> conclusionValueConstraint);
+    public boolean maybeCompatible(ValueConstraint<?> valueConstraint) {
+        if (valueConstraint.predicate == EQ) {
+            return isCompatibleWithEQ(valueConstraint);
+        } else { // TODO: implement inequality compatibility when useful
+            return true;
+        }
+    }
+
+    protected abstract boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint);
 
     protected boolean evaluateEqualityPredicate(TypeQLToken.Predicate.Equality predicate, int comparatorOutput) {
         switch (predicate){
@@ -248,7 +256,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isSatisfiedByValueOf(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() ||
                 (conclusionValueConstraint.isLong() &&
                     evaluateEqualityPredicate(predicate.asEquality(),
@@ -301,7 +309,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isSatisfiedByValueOf(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() ||
                     (conclusionValueConstraint.isDouble() &&
                             evaluateEqualityPredicate(predicate.asEquality(),
@@ -344,7 +352,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isSatisfiedByValueOf(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isBoolean() &&
                     evaluateEqualityPredicate(predicate.asEquality(),
                             conclusionValueConstraint.asBoolean().value().compareTo(this.asBoolean().value())));
@@ -383,7 +391,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isSatisfiedByValueOf(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint) {
             if (conclusionValueConstraint.isVariable() ) return true;
             if (!conclusionValueConstraint.isString())   return false;
             if (predicate.isEquality()) {
@@ -428,7 +436,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isSatisfiedByValueOf(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isDateTime() &&
                     evaluateEqualityPredicate(predicate.asEquality(),
                             conclusionValueConstraint.asDateTime().value().compareTo(this.asDateTime().value())));
@@ -477,7 +485,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isSatisfiedByValueOf(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint) {
             return true;
         }
     }
