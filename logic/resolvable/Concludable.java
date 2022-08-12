@@ -227,9 +227,9 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
                 assert a.getType().isDouble() || a.getType().isLong();
                 if (a.getType().isLong())
-                    return value.asLong().value().compareTo(a.asLong().getValue()) == 0;
+                    return Predicate.compareLongs(a.asLong().getValue(), value.asLong().value()) == 0;
                 else if (a.getType().isDouble())
-                    return Predicate.compareDoubles(a.asDouble().getValue(), value.asLong().value()) == 0;
+                    return Predicate.compareDoubleToLong(a.asDouble().getValue(), value.asLong().value()) == 0;
                 else throw TypeDBException.of(ILLEGAL_STATE);
             };
         } else if (value.isDouble()) {
@@ -239,7 +239,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
                 assert a.getType().isDouble() || a.getType().isLong();
                 if (a.getType().isLong())
-                    return Predicate.compareDoubles(a.asLong().getValue(), value.asDouble().value()) == 0;
+                    return Predicate.compareLongToDouble(a.asLong().getValue(), value.asDouble().value()) == 0;
                 else if (a.getType().isDouble())
                     return Predicate.compareDoubles(a.asDouble().getValue(), value.asDouble().value()) == 0;
                 else throw TypeDBException.of(ILLEGAL_STATE);
@@ -249,21 +249,21 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                 if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
                         .comparableTo(Encoding.ValueType.BOOLEAN)) return false;
                 assert a.getType().isBoolean();
-                return a.asBoolean().getValue().compareTo(value.asBoolean().value()) == 0;
+                return Predicate.compareBooleans(a.asBoolean().getValue(), value.asBoolean().value()) == 0;
             };
         } else if (value.isString()) {
             predicateFn = (a) -> {
                 if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
                         .comparableTo(Encoding.ValueType.STRING)) return false;
                 assert a.getType().isString();
-                return a.asString().getValue().compareTo(value.asString().value()) == 0;
+                return Predicate.compareStrings(a.asString().getValue(), value.asString().value()) == 0;
             };
         } else if (value.isDateTime()) {
             predicateFn = (a) -> {
                 if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
                         .comparableTo(Encoding.ValueType.DATETIME)) return false;
                 assert a.getType().isDateTime();
-                return a.asDateTime().getValue().compareTo(value.asDateTime().value()) == 0;
+                return Predicate.compareDateTimes(a.asDateTime().getValue(), value.asDateTime().value()) == 0;
             };
         } else throw TypeDBException.of(ILLEGAL_STATE);
         return predicateFn;
