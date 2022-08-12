@@ -74,7 +74,7 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
     }
 
 
-    public static boolean containsIgnoreCase(String superString, String subString) {
+    public static boolean stringContains(String superString, String subString) {
         int len2 = subString.length();
         if (len2 == 0) return true; // Empty string is contained
 

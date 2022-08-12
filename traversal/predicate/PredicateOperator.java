@@ -218,7 +218,7 @@ public abstract class PredicateOperator {
 
             @Override
             public boolean apply(String vertexValue, String predicateValue) {
-                return Predicate.containsIgnoreCase(vertexValue, predicateValue);
+                return Predicate.stringContains(vertexValue, predicateValue);
             }
         };
 
