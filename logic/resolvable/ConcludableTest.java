@@ -475,11 +475,6 @@ public class ConcludableTest {
             new Pair("{ $x > \"one\"; }", "{$y \"two\";}"),
             new Pair("{ $x < \"two\"; }", "{$y \"one\";}"),
 
-            // String comparisons, case-insensitivity
-            new Pair("{ $x \"OnE\"; }", "{$y \"oNe\";}"),
-            new Pair("{ $x > \"one\"; }", "{$y \"TWO\";}"),
-            new Pair("{ $x > \"ONE\"; }", "{$y \"two\";}"),
-
             // DateTime
             new Pair("{ $x 2022-01-01; }", "{$y 2022-01-01;}"),
             new Pair("{ $x = 2022-01-01; }", "{$y  2022-01-01;}"),
@@ -577,10 +572,6 @@ public class ConcludableTest {
             new Pair("{ $x > \"two\"; }", "{$y \"one\";}"),
             new Pair("{ $x < \"two\"; }", "{$y \"two\";}"),
             new Pair("{ $x < \"one\"; }", "{$y \"two\";}"),
-
-            // String comparisons, case-insensitivity
-            new Pair("{ $x > \"two\"; }", "{$y \"ONE\";}"),
-            new Pair("{ $x > \"TWO\"; }", "{$y \"one\";}"),
 
             // DateTime
             new Pair("{ $x 2022-01-01; }", "{$y  2022-02-02;}"),

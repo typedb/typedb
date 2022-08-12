@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
@@ -207,28 +208,6 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     protected abstract boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint);
 
-    protected boolean evaluateEqualityPredicate(TypeQLToken.Predicate.Equality predicate, int comparatorOutput) {
-        switch (predicate){
-            case EQ:  return comparatorOutput == 0;
-            case NEQ: return comparatorOutput != 0;
-            case GT: return comparatorOutput > 0;
-            case GTE: return comparatorOutput >= 0;
-            case LT: return comparatorOutput < 0;
-            case LTE: return comparatorOutput <= 0;
-            default: throw TypeDBException.of(ILLEGAL_STATE);
-        }
-    }
-
-    protected boolean evaluateSubstringPredicate(TypeQLToken.Predicate.SubString predicate,
-                                                 java.lang.String constraintValue,
-                                                 java.lang.String conclusionValue) {
-        switch (predicate){
-            case CONTAINS: return conclusionValue.contains(constraintValue);
-            case LIKE: return Pattern.compile(constraintValue).matcher(conclusionValue).matches();
-            default: throw TypeDBException.of(ILLEGAL_STATE);
-        }
-    }
-
     public static class Long extends ValueConstraint<java.lang.Long> {
 
         public Long(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, long value) {
@@ -258,12 +237,10 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() ||
-                (conclusionValueConstraint.isLong() &&
-                    evaluateEqualityPredicate(predicate.asEquality(),
-                            conclusionValueConstraint.asLong().value().compareTo(this.asLong().value()))) ||
-                (conclusionValueConstraint.isDouble() &&
-                        evaluateEqualityPredicate(predicate.asEquality(),
-                                Predicate.compareDoubles(conclusionValueConstraint.asDouble().value(), this.asDouble().value())));
+                    (conclusionValueConstraint.isLong() &&
+                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongs(conclusionValueConstraint.asLong().value(), value))) ||
+                    (conclusionValueConstraint.isDouble() &&
+                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareDoubleToLong(conclusionValueConstraint.asDouble().value(), value)));
         }
 
         @Override
@@ -311,12 +288,10 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() ||
-                    (conclusionValueConstraint.isDouble() &&
-                            evaluateEqualityPredicate(predicate.asEquality(),
-                                    Predicate.compareDoubles(conclusionValueConstraint.asDouble().value(), this.asDouble().value()))) ||
                     (conclusionValueConstraint.isLong() &&
-                            evaluateEqualityPredicate(predicate.asEquality(),
-                                    Predicate.compareDoubles(conclusionValueConstraint.asDouble().value(), this.asDouble().value())));
+                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongToDouble(conclusionValueConstraint.asLong().value(), value))) ||
+                    (conclusionValueConstraint.isDouble() &&
+                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareDoubles(conclusionValueConstraint.asDouble().value(), value)));
         }
     }
 
@@ -354,8 +329,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isBoolean() &&
-                    evaluateEqualityPredicate(predicate.asEquality(),
-                            conclusionValueConstraint.asBoolean().value().compareTo(this.asBoolean().value())));
+                    PredicateOperator.Equality.of(predicate()).apply(Predicate.compareBooleans(conclusionValueConstraint.asBoolean().value(), value)));
         }
     }
 
@@ -392,15 +366,18 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint) {
-            if (conclusionValueConstraint.isVariable() ) return true;
-            if (!conclusionValueConstraint.isString())   return false;
+            if (conclusionValueConstraint.isVariable()) return true;
+            if (!conclusionValueConstraint.isString()) return false;
             if (predicate.isEquality()) {
-                return evaluateEqualityPredicate(predicate.asEquality(),
-                        conclusionValueConstraint.asString().value().toLowerCase().compareTo(this.value().toLowerCase()));
-            } else {
-                return evaluateSubstringPredicate(predicate.asSubString(),
-                        this.value().toLowerCase(), conclusionValueConstraint.asString().value().toLowerCase());
-            }
+                return PredicateOperator.Equality.of(predicate.asEquality()).apply(Predicate.compareStrings(conclusionValueConstraint.asString().value(), value));
+            } else if (predicate.isSubString()) {
+                PredicateOperator.SubString operator = PredicateOperator.SubString.of(predicate.asSubString());
+                if (operator == PredicateOperator.SubString.CONTAINS) {
+                    return PredicateOperator.SubString.CONTAINS.apply(conclusionValueConstraint.asString().value(), value);
+                } else if (operator == PredicateOperator.SubString.LIKE) {
+                    return PredicateOperator.SubString.LIKE.apply(conclusionValueConstraint.asString().value(), Pattern.compile(value));
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            } else throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
@@ -438,8 +415,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public boolean isCompatibleWithEQ(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isDateTime() &&
-                    evaluateEqualityPredicate(predicate.asEquality(),
-                            conclusionValueConstraint.asDateTime().value().compareTo(this.asDateTime().value())));
+                    PredicateOperator.Equality.of(predicate.asEquality()).apply(Predicate.compareDateTimes(conclusionValueConstraint.asDateTime().value(), value)));
         }
     }
 
