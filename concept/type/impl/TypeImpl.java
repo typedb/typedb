@@ -34,6 +34,7 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.common.exception.TypeQLException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -99,6 +100,11 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
 
     @Override
     public void setLabel(String label) {
+        try {
+            TypeQL.parseLabel(label);
+        } catch (TypeQLException e) {
+            throw TypeDBException.of(e);
+        }
         validateIsNotDeleted();
         vertex.label(label);
     }
