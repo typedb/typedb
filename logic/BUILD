@@ -62,6 +62,7 @@ host_compatible_java_test(
         "resolvable/ConcludableTest.java",
     ],
     native_libraries_deps = [
+        "//common:common",
         "//logic:logic",
         "//pattern:pattern",
     ],
