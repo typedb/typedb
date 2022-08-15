@@ -122,6 +122,7 @@ public abstract class ProcedureVertex<
     public static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
 
         private Set<ProcedureEdge<?, ?>> inRolePlayers;
+        private Boolean isScope;
 
         Thing(Identifier identifier) {
             super(identifier);
@@ -147,6 +148,14 @@ public abstract class ProcedureVertex<
                 inRolePlayers = iterate(ins()).filter(ProcedureEdge::isRolePlayer).toSet();
             }
             return inRolePlayers;
+        }
+
+        public boolean isScope() {
+            if (isScope == null) {
+                isScope = iterate(outs()).anyMatch(e -> e.direction().isForward() && (e.isRolePlayer() || e.isRelating())) ||
+                        iterate(ins()).anyMatch(e -> e.direction().isBackward() && (e.isRolePlayer() || e.isRelating()));
+            }
+            return isScope;
         }
 
         @Override

@@ -142,6 +142,10 @@ public abstract class ProcedureEdge<
         return false;
     }
 
+    public boolean isRelating() {
+        return false;
+    }
+
     public boolean isRolePlayer() {
         return false;
     }
@@ -1009,6 +1013,11 @@ public abstract class ProcedureEdge<
                     super(from, to, direction, RELATING);
                 }
 
+                @Override
+                public boolean isRelating() {
+                    return true;
+                }
+
                 static class Forward extends Relating {
 
                     Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to) {
@@ -1091,7 +1100,7 @@ public abstract class ProcedureEdge<
 
                 public abstract boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                   Vertex<?, ?> toVertex, Traversal.Parameters params,
-                                                  GraphIterator.Scopes.Scoped withinScope);
+                                                  GraphIterator.Scope withinScope);
 
                 @Override
                 public Forwardable<? extends ThingVertex, Order.Asc> branch(GraphManager graphMgr,
@@ -1183,7 +1192,7 @@ public abstract class ProcedureEdge<
                     }
 
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
-                                             Traversal.Parameters params, GraphIterator.Scopes.Scoped scoped) {
+                                             Traversal.Parameters params, GraphIterator.Scope scoped) {
                         ThingVertex rel = fromVertex.asThing();
                         ThingVertex player = toVertex.asThing();
                         Set<TypeVertex> relationRoleTypes = graphMgr.schema().relatedRoleTypes(rel.type());
@@ -1253,7 +1262,7 @@ public abstract class ProcedureEdge<
                     }
 
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
-                                             Traversal.Parameters params, GraphIterator.Scopes.Scoped scoped) {
+                                             Traversal.Parameters params, GraphIterator.Scope scoped) {
                         ThingVertex player = fromVertex.asThing();
                         ThingVertex rel = toVertex.asThing();
                         Set<TypeVertex> relationRoleTypes = graphMgr.schema().relatedRoleTypes(rel.type());
