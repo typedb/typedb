@@ -92,7 +92,7 @@ public abstract class PredicateOperator {
 
         public abstract boolean apply(int comparisonResult);
 
-        abstract public Equality reflection();
+        abstract Equality reflection();
 
         @Override
         boolean isEquality() {
@@ -111,7 +111,7 @@ public abstract class PredicateOperator {
             }
 
             @Override
-            public Equality reflection() {
+            Equality reflection() {
                 return this;
             }
         };
@@ -123,7 +123,7 @@ public abstract class PredicateOperator {
             }
 
             @Override
-            public Equality reflection() {
+            Equality reflection() {
                 return this;
             }
         };
@@ -135,7 +135,7 @@ public abstract class PredicateOperator {
             }
 
             @Override
-            public Equality reflection() {
+            Equality reflection() {
                 return LT;
             }
         };
@@ -147,7 +147,7 @@ public abstract class PredicateOperator {
             }
 
             @Override
-            public Equality reflection() {
+            Equality reflection() {
                 return LTE;
             }
         };
@@ -159,7 +159,7 @@ public abstract class PredicateOperator {
             }
 
             @Override
-            public Equality reflection() {
+            Equality reflection() {
                 return GT;
             }
         };
@@ -171,7 +171,7 @@ public abstract class PredicateOperator {
             }
 
             @Override
-            public Equality reflection() {
+            Equality reflection() {
                 return GTE;
             }
         };
