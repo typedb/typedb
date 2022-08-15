@@ -197,6 +197,7 @@ public abstract class PredicateOperator {
         }
 
         abstract public boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue);
+
         abstract public boolean apply(String vertexValue, PRED_VALUE predicateValue);
 
         @Override
