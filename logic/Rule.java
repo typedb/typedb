@@ -49,7 +49,12 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -57,10 +62,21 @@ import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.*;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_CONCLUSION_ILLEGAL_INSERT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typeql.lang.common.TypeQLToken.Char.*;
-import static com.vaticle.typeql.lang.common.TypeQLToken.Schema.*;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COLON;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_CLOSE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_OPEN;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.NEW_LINE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SEMICOLON;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Schema.RULE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Schema.THEN;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Schema.WHEN;
 
 
 public class Rule {

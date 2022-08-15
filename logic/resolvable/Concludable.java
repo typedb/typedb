@@ -27,7 +27,6 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
