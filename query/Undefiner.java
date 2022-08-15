@@ -120,6 +120,7 @@ public class Undefiner {
             else if (undefined.contains(variable)) return; // do nothing
 
             ThingType type = getThingType(labelConstraint);
+            if (type == null) throw TypeDBException.of(TYPE_NOT_FOUND, labelConstraint.scopedLabel());
 
             if (!variable.plays().isEmpty()) undefinePlays(type, variable.plays());
             if (!variable.owns().isEmpty()) undefineOwns(type, variable.owns());
@@ -141,9 +142,7 @@ public class Undefiner {
 
     private ThingType getThingType(LabelConstraint label) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "gettype")) {
-            ThingType thingType;
-            if ((thingType = conceptMgr.getThingType(label.label())) != null) return thingType;
-            else return null;
+            return conceptMgr.getThingType(label.label());
         }
     }
 
@@ -163,7 +162,7 @@ public class Undefiner {
             }
             ThingType supertype = getThingType(subConstraint.type().label().get());
             if (supertype == null) {
-                throw TypeDBException.of(TYPE_NOT_FOUND, subConstraint.type().label().get());
+                throw TypeDBException.of(TYPE_NOT_FOUND, subConstraint.type().label().get().scopedLabel());
             } else if (thingType.getSupertypes().noneMatch(t -> t.equals(supertype))) {
                 throw TypeDBException.of(INVALID_UNDEFINE_SUB, thingType.getLabel(), supertype.getLabel());
             }
