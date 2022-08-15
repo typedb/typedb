@@ -72,12 +72,21 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
     @Override
     public void setUpUpstreamControllers() {
-        concludable.getApplicableRules(registry().conceptManager(), registry().logicManager())
-                .forEachRemaining(rule -> {
-                    Driver<? extends ConclusionController<INPUT, ?, ?>> controller = registerConclusionController(rule);
-                    conclusionControllers.put(rule.conclusion(), controller);
-                    conclusionUnifiers.put(rule.conclusion(), concludable.getUnifiers(rule).toSet());
-                });
+        iterate(registry().logicManager().applicableRules(concludable)).forEachRemaining( rule -> {
+                Set<Unifier> unifiers = registry().logicManager().unifiers(concludable, rule).toSet();
+                Driver<? extends ConclusionController<INPUT, ?, ?>> controller = registerConclusionController(rule);
+                conclusionControllers.put(rule.conclusion(), controller);
+                conclusionUnifiers.put(rule.conclusion(), unifiers);
+        });
+
+//        Map<Rule, Set<Unifier>> applicableRules = registry().logicManager().getRulesAndUnifiers(concludable);
+//        iterate(applicableRules.entrySet()).forEachRemaining(ruleAndUnifiers -> {
+//                    Rule rule = ruleAndUnifiers.getKey();
+//                    Set<Unifier> unifiers = ruleAndUnifiers.getValue();
+//                    Driver<? extends ConclusionController<INPUT, ?, ?>> controller = registerConclusionController(rule);
+//                    conclusionControllers.put(rule.conclusion(), controller);
+//                    conclusionUnifiers.put(rule.conclusion(), unifiers);
+//                });
     }
 
     protected abstract Driver<? extends ConclusionController<INPUT, ?, ?>> registerConclusionController(Rule rule);

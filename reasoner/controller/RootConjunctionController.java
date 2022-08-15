@@ -66,7 +66,7 @@ public class RootConjunctionController
     @Override
     Set<Concludable> concludablesTriggeringRules() {
         return Iterators.iterate(Concludable.create(conjunction))
-                .filter(c -> c.getApplicableRules(registry().conceptManager(), registry().logicManager()).hasNext())
+                .filter(c -> registry().logicManager().applicableRules(c).hasNext())
                 .toSet();
     }
 

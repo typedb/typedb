@@ -20,6 +20,8 @@ package com.vaticle.typedb.core.logic;
 
 import com.vaticle.typedb.core.common.cache.CommonCache;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
@@ -31,15 +33,18 @@ public class LogicCache {
 
     private final CommonCache<GraphTraversal.Type, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> typeInferenceCache;
     private final CommonCache<String, Rule> ruleCache;
+    private final CommonCache<Concludable, Map<Rule, Set<Unifier>>> applicableRules;
 
     public LogicCache() {
         this.ruleCache = new CommonCache<>();
         this.typeInferenceCache = new CommonCache<>();
+        this.applicableRules = new CommonCache<>();
     }
 
     public LogicCache(int size, int timeOutMinutes) {
         this.ruleCache = new CommonCache<>(size, timeOutMinutes);
         this.typeInferenceCache = new CommonCache<>(size, timeOutMinutes);
+        this.applicableRules = new CommonCache<>(size, timeOutMinutes);
     }
 
     public CommonCache<GraphTraversal.Type, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> inference() {
@@ -48,5 +53,9 @@ public class LogicCache {
 
     CommonCache<String, Rule> rule() {
         return ruleCache;
+    }
+
+    CommonCache<Concludable, Map<Rule, Set<Unifier>>> applicableRules(){
+        return applicableRules;
     }
 }

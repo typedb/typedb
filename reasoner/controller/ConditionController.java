@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanOut;
 
 public class ConditionController extends ConjunctionController<
@@ -41,13 +42,15 @@ public class ConditionController extends ConjunctionController<
     private final Rule.Condition condition;
 
     ConditionController(Driver<ConditionController> driver, Rule.Condition condition, Context context) {
-        super(driver, condition.conjunction(), context);
+        super(driver, condition.pattern(), context);
         this.condition = condition;
     }
 
     @Override
     Set<Concludable> concludablesTriggeringRules() {
-        return condition.concludablesTriggeringRules(registry().conceptManager(), registry().logicManager());
+        return iterate(condition.conjunction().concludables())
+                .filter(c -> registry().logicManager().applicableRules(c).hasNext())
+                .toSet();
     }
 
     @Override
@@ -55,7 +58,7 @@ public class ConditionController extends ConjunctionController<
                                                           ConceptMap bounds) {
         return new Processor(
                 processorDriver, driver(), processorContext(), bounds, plan(bounds.concepts().keySet()),
-                () -> Processor.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
+                () -> Processor.class.getSimpleName() + "(pattern: " + condition.pattern() + ", bounds: " + bounds + ")"
         );
     }
 
