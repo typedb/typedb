@@ -315,7 +315,7 @@ public class ConcludableTest {
 
     @Test
     public void test_comparison_constraint_on_variables_always_unify(){
-        Pair<String,String>[] concludableConclusionPairs = new Pair[]{
+        Pair<String,String>[] valueConstraintPairs = new Pair[]{
             // Both var
             new Pair("{ $x has attr $v; }", "{$y has attr $w;}"),
             new Pair("{ $x has attr = $v; }", "{$y has attr $w;}"),
@@ -409,7 +409,7 @@ public class ConcludableTest {
             new Pair("{ $x has attr < $v; }", "{$y has attr 2022-01-01;}"),
         };
 
-        for (Pair<String, String> pair : concludableConclusionPairs) {
+        for (Pair<String, String> pair : valueConstraintPairs) {
             Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
             Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
@@ -421,7 +421,7 @@ public class ConcludableTest {
 
     @Test
     public void test_satisfiable_comparison_constraints_unify() {
-        Pair<String, String>[] concludableConclusionPairs = new Pair[]{
+        Pair<String, String>[] valueConstraintPairs = new Pair[]{
             // Boolean
             new Pair("{ $x true; }", "{$y true;}"),
             new Pair("{ $x false; }", "{$y false;}"),
@@ -495,7 +495,7 @@ public class ConcludableTest {
             new Pair("{ $x < 2022-02-02; }", "{$y 2022-01-01;}"),
         };
 
-        for (Pair<String, String> pair : concludableConclusionPairs){
+        for (Pair<String, String> pair : valueConstraintPairs){
             Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
             Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
@@ -507,7 +507,7 @@ public class ConcludableTest {
 
     @Test
     public void test_unsatisfiable_comparison_constraints_dont_unify(){
-        Pair<String,String>[] concludableConclusionPairs = new Pair[]{
+        Pair<String,String>[] valueConstraintPairs = new Pair[]{
             // Boolean
             new Pair("{ $x true; }", "{$y false;}"),
             new Pair("{ $x false; }", "{$y true;}"),
@@ -599,7 +599,7 @@ public class ConcludableTest {
             new Pair("{ $x < 2022-01-01; }", "{$y 2022-02-02;}"),
         };
 
-        for (Pair<String, String> pair : concludableConclusionPairs){
+        for (Pair<String, String> pair : valueConstraintPairs){
             Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
             Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
@@ -611,7 +611,7 @@ public class ConcludableTest {
 
     @Test
     public void test_satisfiable_substring_constraints_unify(){
-        Pair<String,String>[] concludableConclusionPairs = new Pair[]{
+        Pair<String,String>[] valueConstraintPairs = new Pair[]{
                 // One variable
                 new Pair("{ $x has attr like \"\"; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr contains \"jan\"; }", "{$y has attr $v;}"),
@@ -621,7 +621,7 @@ public class ConcludableTest {
                 new Pair("{ $x has attr contains \"jan\"; }", "{$y has attr \"01-jan-2022\";}"),
         };
 
-        for (Pair<String, String> pair : concludableConclusionPairs){
+        for (Pair<String, String> pair : valueConstraintPairs){
             Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
             Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
@@ -633,13 +633,13 @@ public class ConcludableTest {
 
     @Test
     public void test_unsatisfiable_substring_constraint_dont_unify(){
-        Pair<String,String>[] concludableConclusionPairs = new Pair[]{
+        Pair<String,String>[] valueConstraintPairs = new Pair[]{
                 // Both constant
                 new Pair("{ $x has attr like \"[0-9]{2}-[a-z]{3}-[0-9]{4}\"; }", "{$y has attr \"01-01-2022\";}"),
                 new Pair("{ $x has attr contains \"jan\"; }", "{$y has attr \"01-feb-2022\";}"),
         };
 
-        for (Pair<String, String> pair : concludableConclusionPairs){
+        for (Pair<String, String> pair : valueConstraintPairs){
             Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
             Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
