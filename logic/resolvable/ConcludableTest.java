@@ -314,7 +314,7 @@ public class ConcludableTest {
     }
 
     @Test
-    public void test_var_attribute_unification_satisfiable(){
+    public void test_comparison_constraint_on_variables_always_unify(){
         Pair<String,String>[] concludableConclusionPairs = new Pair[]{
             // Both var
             new Pair("{ $x has attr $v; }", "{$y has attr $w;}"),
@@ -420,7 +420,7 @@ public class ConcludableTest {
     }
 
     @Test
-    public void test_valued_attribute_unification_satisfiable() {
+    public void test_satisfiable_comparison_constraints_unify() {
         Pair<String, String>[] concludableConclusionPairs = new Pair[]{
             // Boolean
             new Pair("{ $x true; }", "{$y true;}"),
@@ -506,7 +506,7 @@ public class ConcludableTest {
     }
 
     @Test
-    public void test_valued_attribute_unification_unsatisfiable(){
+    public void test_unsatisfiable_comparison_constraints_dont_unify(){
         Pair<String,String>[] concludableConclusionPairs = new Pair[]{
             // Boolean
             new Pair("{ $x true; }", "{$y false;}"),
@@ -610,7 +610,7 @@ public class ConcludableTest {
     }
 
     @Test
-    public void test_valued_attribute_unification_satisfiable_substring(){
+    public void test_satisfiable_substring_constraints_unify(){
         Pair<String,String>[] concludableConclusionPairs = new Pair[]{
                 // One variable
                 new Pair("{ $x has attr like \"\"; }", "{$y has attr $v;}"),
@@ -632,7 +632,7 @@ public class ConcludableTest {
     }
 
     @Test
-    public void test_valued_attribute_unification_unsatisfiable_substring(){
+    public void test_unsatisfiable_substring_constraint_dont_unify(){
         Pair<String,String>[] concludableConclusionPairs = new Pair[]{
                 // Both constant
                 new Pair("{ $x has attr like \"[0-9]{2}-[a-z]{3}-[0-9]{4}\"; }", "{$y has attr \"01-01-2022\";}"),
