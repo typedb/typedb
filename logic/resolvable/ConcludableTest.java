@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -409,8 +410,8 @@ public class ConcludableTest {
         };
 
         for (Pair<String, String> pair : concludableConclusionPairs) {
-            Concludable concludable = Concludable.create(parseConjunction(pair.first())).stream().findFirst().get();
-            Concludable conclusion = Concludable.create(parseConjunction(pair.second())).stream().findFirst().get();
+            Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
+            Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
             assertTrue(concludable.isHas());
             assertTrue(conclusion.isHas());
@@ -495,8 +496,8 @@ public class ConcludableTest {
         };
 
         for (Pair<String, String> pair : concludableConclusionPairs){
-            Concludable concludable = Concludable.create(parseConjunction(pair.first())).stream().findFirst().get();
-            Concludable conclusion = Concludable.create(parseConjunction(pair.second())).stream().findFirst().get();
+            Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
+            Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
             assertTrue(concludable.isAttribute());
             assertTrue(conclusion.isAttribute());
@@ -599,8 +600,8 @@ public class ConcludableTest {
         };
 
         for (Pair<String, String> pair : concludableConclusionPairs){
-            Concludable concludable = Concludable.create(parseConjunction(pair.first())).stream().findFirst().get();
-            Concludable conclusion = Concludable.create(parseConjunction(pair.second())).stream().findFirst().get();
+            Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
+            Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
             assertTrue(concludable.isAttribute());
             assertTrue(conclusion.isAttribute());
@@ -621,8 +622,8 @@ public class ConcludableTest {
         };
 
         for (Pair<String, String> pair : concludableConclusionPairs){
-            Concludable concludable = Concludable.create(parseConjunction(pair.first())).stream().findFirst().get();
-            Concludable conclusion = Concludable.create(parseConjunction(pair.second())).stream().findFirst().get();
+            Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
+            Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
             assertTrue(concludable.isHas());
             assertTrue(conclusion.isHas());
@@ -639,8 +640,8 @@ public class ConcludableTest {
         };
 
         for (Pair<String, String> pair : concludableConclusionPairs){
-            Concludable concludable = Concludable.create(parseConjunction(pair.first())).stream().findFirst().get();
-            Concludable conclusion = Concludable.create(parseConjunction(pair.second())).stream().findFirst().get();
+            Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
+            Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
             assertTrue(concludable.isHas());
             assertTrue(conclusion.isHas());
