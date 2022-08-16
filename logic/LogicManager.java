@@ -114,7 +114,6 @@ public class LogicManager {
         return logicCache.applicableRules().get(concludable, c -> c.applicableRules(conceptMgr, this));
     }
 
-
     /**
      * On commit we must clear the rule cache and revalidate rules - this will force re-running type resolution
      * when we re-load the Rule objects
