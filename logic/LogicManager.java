@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.logic.tool.TypeInference;
-import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
@@ -107,15 +106,11 @@ public class LogicManager {
         return rules().filter(rule -> !rule.when().negations().isEmpty());
     }
 
-    public FunctionalIterator<Rule> applicableRules(Concludable concludable) {
-        return iterate(getRulesAndUnifiers(concludable).keySet());
-    }
-
     public FunctionalIterator<Unifier> unifiers(Concludable concludable, Rule rule) {
-        return iterate(getRulesAndUnifiers(concludable).getOrDefault(rule, new HashSet<>()));
+        return iterate(applicableRules(concludable).getOrDefault(rule, new HashSet<>()));
     }
 
-    private Map<Rule, Set<Unifier>> getRulesAndUnifiers(Concludable concludable) {
+    public Map<Rule, Set<Unifier>> applicableRules(Concludable concludable) {
         return logicCache.applicableRules().get(concludable, c -> c.applicableRules(conceptMgr, this));
     }
 
@@ -173,7 +168,7 @@ public class LogicManager {
 
     private FunctionalIterator<RuleDependency> ruleDependencies(Rule rule) {
         return link(iterate(negatedRuleDependencies(rule)),
-                    iterate(rule.condition().conjunction().concludables()).flatMap(c -> iterate(applicableRules(c)))
+                    iterate(rule.condition().conjunction().concludables()).flatMap(c -> iterate(applicableRules(c).keySet()))
                         .map(recursiveRule -> RuleDependency.of(recursiveRule, rule))
         );
     }
@@ -182,7 +177,7 @@ public class LogicManager {
         return iterate(rule.condition().conjunction().negations())
                 .flatMap(neg -> iterate(neg.disjunction().conjunctions()))
                 .flatMap(conj -> iterate(conj.concludables()))
-                .flatMap(concludable -> iterate(applicableRules(concludable)))
+                .flatMap(concludable -> iterate(applicableRules(concludable).keySet()))
                 .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
     }
 
