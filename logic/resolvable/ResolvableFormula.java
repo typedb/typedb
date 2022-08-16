@@ -51,28 +51,6 @@ public abstract class ResolvableFormula {
         }
     }
 
-    public static class ResolvableNegation {
-        private final Negation negationPattern;
-        private final ResolvableDisjunction disjunction;
-
-        public ResolvableNegation(Negation negationPattern, ResolvableDisjunction resolvableDisjunction) {
-            this.negationPattern = negationPattern;
-            this.disjunction = resolvableDisjunction;
-        }
-
-        public static ResolvableNegation of(Negation negation) {
-            return new ResolvableNegation(negation, ResolvableDisjunction.of(negation.disjunction()));
-        }
-
-        public ResolvableDisjunction disjunction() {
-            return disjunction;
-        }
-
-        public Negation pattern() {
-            return negationPattern;
-        }
-    }
-
     public static class ResolvableConjunction {
         private final Conjunction conjunctionPattern;
         private final Set<ResolvableNegation> negations;
@@ -103,6 +81,28 @@ public abstract class ResolvableFormula {
 
         public Set<Concludable> concludables() {
             return concludables;
+        }
+    }
+
+    public static class ResolvableNegation {
+        private final Negation negationPattern;
+        private final ResolvableDisjunction disjunction;
+
+        public ResolvableNegation(Negation negationPattern, ResolvableDisjunction resolvableDisjunction) {
+            this.negationPattern = negationPattern;
+            this.disjunction = resolvableDisjunction;
+        }
+
+        public static ResolvableNegation of(Negation negation) {
+            return new ResolvableNegation(negation, ResolvableDisjunction.of(negation.disjunction()));
+        }
+
+        public ResolvableDisjunction disjunction() {
+            return disjunction;
+        }
+
+        public Negation pattern() {
+            return negationPattern;
         }
     }
 }
