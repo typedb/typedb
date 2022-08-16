@@ -314,8 +314,8 @@ public class ConcludableTest {
     }
 
     @Test
-    public void test_comparison_constraint_on_variables_always_unify() {
-        Pair<String, String>[] valueConstraintPairs = new Pair[]{
+    public void test_constraints_involving_a_variable_are_always_satisfied() {
+        Pair<String, String>[] constraintValuePairs = new Pair[]{
                 // Both var
                 new Pair("{ $x has attr $v; }", "{$y has attr $w;}"),
                 new Pair("{ $x has attr = $v; }", "{$y has attr $w;}"),
@@ -327,101 +327,144 @@ public class ConcludableTest {
 
                 // Boolean
                 new Pair("{ $x has attr $v; }", "{$y has attr true;}"),
-                new Pair("{ $x has attr true; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr $v; }", "{$y has attr false;}"),
-                new Pair("{ $x has attr false; }", "{$y has attr $v;}"),
 
                 new Pair("{ $x has attr = $v; }", "{$y has attr true;}"),
-                new Pair("{ $x has attr = true; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr = $v; }", "{$y has attr false;}"),
-                new Pair("{ $x has attr = false; }", "{$y has attr $v;}"),
 
                 new Pair("{ $x has attr != $v; }", "{$y has attr true;}"),
-                new Pair("{ $x has attr != true; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr != $v; }", "{$y has attr false;}"),
+
+                // Numeric assign, equality, gte, lte
+                new Pair("{ $x has attr $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr $v; }", "{$y has attr 1.0;}"),
+
+                new Pair("{ $x has attr = $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr = $v; }", "{$y has attr 1.0;}"),
+
+                new Pair("{ $x has attr >= $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr >= $v; }", "{$y has attr 1.0;}"),
+
+                new Pair("{ $x has attr <= $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr <= $v; }", "{$y has attr 1.0;}"),
+
+                // Numeric inequality, gt, lt
+                new Pair("{ $x has attr != $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr != $v; }", "{$y has attr 1.0;}"),
+
+                new Pair("{ $x has attr > $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr > $v; }", "{$y has attr 1.0;}"),
+
+                new Pair("{ $x has attr < $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr < $v; }", "{$y has attr 1.0;}"),
+
+                // String comparisons
+                new Pair("{ $x has attr = $v; }", "{$y has attr \"one\";}"),
+                new Pair("{ $x has attr >= $v; }", "{$y has attr \"one\";}"),
+                new Pair("{ $x has attr <= $v; }", "{$y has attr \"one\";}"),
+                new Pair("{ $x has attr != $v; }", "{$y has attr \"one\";}"),
+                new Pair("{ $x has attr > $v; }", "{$y has attr \"one\";}"),
+                new Pair("{ $x has attr < $v; }", "{$y has attr \"one\";}"),
+
+                // DateTime
+                new Pair("{ $x has attr $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr = $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr != $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr >= $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr <= $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr > $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr < $v; }", "{$y has attr 2022-01-01;}"),
+        };
+
+        for (Pair<String, String> pair : constraintValuePairs) {
+            Concludable constraint = iterate(Concludable.create(parseConjunction(pair.first()))).next();
+            Concludable value = iterate(Concludable.create(parseConjunction(pair.second()))).next();
+
+            assertTrue(constraint.isHas());
+            assertTrue(value.isHas());
+            assertTrue(constraint.unificationSatisfiable(constraint.asHas().attribute(), value.asHas().attribute()));
+        }
+    }
+    @Test
+    public void test_variables_always_satisfy_value_constraint() {
+        Pair<String, String>[] constraintValuePairs = new Pair[]{
+                // Both var
+                new Pair("{ $x has attr $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr = $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr != $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr <= $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr >= $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr < $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr > $v; }", "{$y has attr $w;}"),
+
+                // Boolean
+                new Pair("{ $x has attr true; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr false; }", "{$y has attr $v;}"),
+
+                new Pair("{ $x has attr = true; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr = false; }", "{$y has attr $v;}"),
+
+                new Pair("{ $x has attr != true; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr != false; }", "{$y has attr $v;}"),
 
                 // Numeric assign, equality, gte, lte
                 new Pair("{ $x has attr 1; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr $v; }", "{$y has attr 1;}"),
                 new Pair("{ $x has attr 1.0; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr $v; }", "{$y has attr 1.0;}"),
 
                 new Pair("{ $x has attr = 1; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr = $v; }", "{$y has attr 1;}"),
                 new Pair("{ $x has attr = 1.0; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr = $v; }", "{$y has attr 1.0;}"),
 
                 new Pair("{ $x has attr >= 1; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr >= $v; }", "{$y has attr 1;}"),
                 new Pair("{ $x has attr >= 1.0; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr >= $v; }", "{$y has attr 1.0;}"),
 
                 new Pair("{ $x has attr <= 1; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr <= $v; }", "{$y has attr 1;}"),
                 new Pair("{ $x has attr <= 1.0; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr <= $v; }", "{$y has attr 1.0;}"),
 
                 // Numeric inequality, gt, lt
                 new Pair("{ $x has attr != 1; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr != $v; }", "{$y has attr 1;}"),
                 new Pair("{ $x has attr != 1.0; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr != $v; }", "{$y has attr 1.0;}"),
 
                 new Pair("{ $x has attr > 1; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr > $v; }", "{$y has attr 1;}"),
                 new Pair("{ $x has attr > 1.0; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr > $v; }", "{$y has attr 1.0;}"),
 
                 new Pair("{ $x has attr < 1; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr < $v; }", "{$y has attr 1;}"),
                 new Pair("{ $x has attr < 1.0; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr < $v; }", "{$y has attr 1.0;}"),
 
                 // String comparisons
                 new Pair("{ $x has attr \"one\"; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr = $v; }", "{$y has attr \"one\";}"),
                 new Pair("{ $x has attr >= \"one\"; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr >= $v; }", "{$y has attr \"one\";}"),
                 new Pair("{ $x has attr <= \"one\"; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr <= $v; }", "{$y has attr \"one\";}"),
-                new Pair("{ $x has attr != $v; }", "{$y has attr \"one\";}"),
                 new Pair("{ $x has attr != \"one\"; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr > \"one\"; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr > $v; }", "{$y has attr \"one\";}"),
                 new Pair("{ $x has attr < \"one\"; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr < $v; }", "{$y has attr \"one\";}"),
 
                 // DateTime
                 new Pair("{ $x has attr 2022-01-01; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr $v; }", "{$y has attr 2022-01-01;}"),
                 new Pair("{ $x has attr = 2022-01-01; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr = $v; }", "{$y has attr 2022-01-01;}"),
                 new Pair("{ $x has attr != 2022-01-01; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr != $v; }", "{$y has attr 2022-01-01;}"),
                 new Pair("{ $x has attr >= 2022-01-01; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr >= $v; }", "{$y has attr 2022-01-01;}"),
                 new Pair("{ $x has attr <= 2022-01-01; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr <= $v; }", "{$y has attr 2022-01-01;}"),
                 new Pair("{ $x has attr > 2022-01-01; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr > $v; }", "{$y has attr 2022-01-01;}"),
                 new Pair("{ $x has attr < 2022-01-01; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr < $v; }", "{$y has attr 2022-01-01;}"),
+
+                // Substring
+                new Pair("{ $x has attr like \"\"; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr contains \"jan\"; }", "{$y has attr $v;}"),
         };
 
-        for (Pair<String, String> pair : valueConstraintPairs) {
-            Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
-            Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
+        for (Pair<String, String> pair : constraintValuePairs) {
+            Concludable constraint = iterate(Concludable.create(parseConjunction(pair.first()))).next();
+            Concludable value = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
-            assertTrue(concludable.isHas());
-            assertTrue(conclusion.isHas());
-            assertTrue(concludable.unificationSatisfiable(concludable.asHas().attribute(), conclusion.asHas().attribute()));
+            assertTrue(constraint.isHas());
+            assertTrue(value.isHas());
+            assertTrue(constraint.unificationSatisfiable(constraint.asHas().attribute(), value.asHas().attribute()));
         }
     }
 
     @Test
-    public void test_satisfiable_comparison_constraints_unify() {
-        Pair<String, String>[] valueConstraintPairs = new Pair[]{
+    public void test_constants_which_satisfy_value_constraint() {
+        Pair<String, String>[] constraintValuePairs = new Pair[]{
                 // Boolean
                 new Pair("{ $x true; }", "{$y true;}"),
                 new Pair("{ $x false; }", "{$y false;}"),
@@ -495,19 +538,19 @@ public class ConcludableTest {
                 new Pair("{ $x < 2022-02-02; }", "{$y 2022-01-01;}"),
         };
 
-        for (Pair<String, String> pair : valueConstraintPairs) {
-            Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
-            Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
+        for (Pair<String, String> pair : constraintValuePairs) {
+            Concludable constraint = iterate(Concludable.create(parseConjunction(pair.first()))).next();
+            Concludable value = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
-            assertTrue(concludable.isAttribute());
-            assertTrue(conclusion.isAttribute());
-            assertTrue(concludable.unificationSatisfiable(concludable.asAttribute().attribute(), conclusion.asAttribute().attribute()));
+            assertTrue(constraint.isAttribute());
+            assertTrue(value.isAttribute());
+            assertTrue(constraint.unificationSatisfiable(constraint.asAttribute().attribute(), value.asAttribute().attribute()));
         }
     }
 
     @Test
-    public void test_unsatisfiable_comparison_constraints_dont_unify() {
-        Pair<String, String>[] valueConstraintPairs = new Pair[]{
+    public void test_constants_which_dont_satisfy_value_constraint() {
+        Pair<String, String>[] constraintValuePairs = new Pair[]{
                 // Boolean
                 new Pair("{ $x true; }", "{$y false;}"),
                 new Pair("{ $x false; }", "{$y true;}"),
@@ -599,40 +642,35 @@ public class ConcludableTest {
                 new Pair("{ $x < 2022-01-01; }", "{$y 2022-02-02;}"),
         };
 
-        for (Pair<String, String> pair : valueConstraintPairs) {
-            Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
-            Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
+        for (Pair<String, String> pair : constraintValuePairs) {
+            Concludable constraint = iterate(Concludable.create(parseConjunction(pair.second()))).next();
+            Concludable value = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
-            assertTrue(concludable.isAttribute());
-            assertTrue(conclusion.isAttribute());
-            assertFalse(concludable.unificationSatisfiable(concludable.asAttribute().attribute(), conclusion.asAttribute().attribute()));
+            assertTrue(constraint.isAttribute());
+            assertTrue(value.isAttribute());
+            assertFalse(constraint.unificationSatisfiable(constraint.asAttribute().attribute(), value.asAttribute().attribute()));
         }
     }
 
     @Test
-    public void test_satisfiable_substring_constraints_unify() {
+    public void test_constants_which_satisfy_substring_constraint() {
         Pair<String, String>[] valueConstraintPairs = new Pair[]{
-                // One variable
-                new Pair("{ $x has attr like \"\"; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr contains \"jan\"; }", "{$y has attr $v;}"),
-
-                // Both constant
                 new Pair("{ $x has attr like \"[0-9]{2}-[a-z]{3}-[0-9]{4}\"; }", "{$y has attr \"01-jan-2022\";}"),
                 new Pair("{ $x has attr contains \"jan\"; }", "{$y has attr \"01-jan-2022\";}"),
         };
 
         for (Pair<String, String> pair : valueConstraintPairs) {
-            Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
-            Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
+            Concludable constraint = iterate(Concludable.create(parseConjunction(pair.first()))).next();
+            Concludable value = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
-            assertTrue(concludable.isHas());
-            assertTrue(conclusion.isHas());
-            assertTrue(concludable.unificationSatisfiable(concludable.asHas().attribute(), conclusion.asHas().attribute()));
+            assertTrue(constraint.isHas());
+            assertTrue(value.isHas());
+            assertTrue(constraint.unificationSatisfiable(constraint.asHas().attribute(), value.asHas().attribute()));
         }
     }
 
     @Test
-    public void test_unsatisfiable_substring_constraint_dont_unify() {
+    public void test_constants_which_dont_satisfy_substring_constraint() {
         Pair<String, String>[] valueConstraintPairs = new Pair[]{
                 // Both constant
                 new Pair("{ $x has attr like \"[0-9]{2}-[a-z]{3}-[0-9]{4}\"; }", "{$y has attr \"01-01-2022\";}"),
@@ -640,12 +678,12 @@ public class ConcludableTest {
         };
 
         for (Pair<String, String> pair : valueConstraintPairs) {
-            Concludable concludable = iterate(Concludable.create(parseConjunction(pair.first()))).next();
-            Concludable conclusion = iterate(Concludable.create(parseConjunction(pair.second()))).next();
+            Concludable constraint = iterate(Concludable.create(parseConjunction(pair.first()))).next();
+            Concludable value = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
-            assertTrue(concludable.isHas());
-            assertTrue(conclusion.isHas());
-            assertFalse(concludable.unificationSatisfiable(concludable.asHas().attribute(), conclusion.asHas().attribute()));
+            assertTrue(constraint.isHas());
+            assertTrue(value.isHas());
+            assertFalse(constraint.unificationSatisfiable(constraint.asHas().attribute(), value.asHas().attribute()));
         }
     }
 }
