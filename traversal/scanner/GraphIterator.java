@@ -185,6 +185,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             vertexTraverser.takeNextVertex();
             if (vertexTraverser.verifyLoops() && edgeLookahead(vertexTraverser)) {
                 vertexFound = true;
+            } else {
+                procedureVertex.outs().forEach(e -> vertexTraversers.get(e.to()).removeEdgeInput(e));
             }
         }
         if (vertexFound) procedureVertex.outs().forEach(edge -> toTraverse.add(edge.to()));

@@ -91,8 +91,8 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
 
     @Override
     public void addTo(GraphTraversal.Thing traversal) {
+        Set<RolePlayer> deoptimised = overlappingRolePlayers();
         for (RolePlayer rolePlayer : rolePlayers) {
-            assert !rolePlayer.inferredRoleTypes.isEmpty();
             ThingVariable player = rolePlayer.player();
             if (rolePlayer.roleType().isPresent() && rolePlayer.roleType().get().id().isName()) {
                 Identifier.Scoped role = Identifier.Scoped.of(owner.id(), rolePlayer.roleType().get().id(), player.id(), rolePlayer.repetition());
@@ -100,10 +100,27 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
                 traversal.playing(player.id(), role);
                 traversal.isa(role, rolePlayer.roleType().get().id());
                 traversal.types(role, rolePlayer.inferredRoleTypes());
+            } else if (deoptimised.contains(rolePlayer)) {
+                Identifier.Scoped role = Identifier.Scoped.of(owner.id(), null, player.id(), rolePlayer.repetition());
+                traversal.relating(owner.id(), role);
+                traversal.playing(player.id(), role);
+                traversal.types(role, rolePlayer.inferredRoleTypes());
             } else {
                 traversal.rolePlayer(owner.id(), player.id(), rolePlayer.inferredRoleTypes(), rolePlayer.repetition());
             }
         }
+    }
+
+    private Set<RolePlayer> overlappingRolePlayers() {
+        return iterate(rolePlayers).filter(rp1 ->
+                iterate(rolePlayers).anyMatch(rp2 -> !rp1.equals(rp2) && !equalOrDisjoint(rp1.inferredRoleTypes, rp2.inferredRoleTypes))
+        ).toSet();
+    }
+
+    private boolean equalOrDisjoint(Set<Label> labels1, Set<Label> labels2) {
+        Set<Label> intersection = new HashSet<>(labels1);
+        intersection.retainAll(labels2);
+        return (labels1.size() == labels2.size() && intersection.size() == labels1.size()) || intersection.isEmpty();
     }
 
     @Override
@@ -153,7 +170,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
             while (thisRolePlayers.hasNext() && thatRolePlayers.hasNext()) {
                 permutationMap = thisRolePlayers.next().alphaEquals(thatRolePlayers.next())
                         .flatMap(permutationMap::extendIfCompatible).firstOrNull();
-                if (permutationMap == null ) return Iterators.empty();
+                if (permutationMap == null) return Iterators.empty();
             }
             return Iterators.single(permutationMap);
         }).distinct();
