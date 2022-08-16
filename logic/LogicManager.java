@@ -116,29 +116,9 @@ public class LogicManager {
     }
 
     private Map<Rule, Set<Unifier>> getRulesAndUnifiers(Concludable concludable) {
-        return logicCache.applicableRules().get(concludable, this::computeApplicableRulesAndUnifiers);
+        return logicCache.applicableRules().get(concludable, c -> c.applicableRules(conceptMgr, this));
     }
 
-    private Map<Rule, Set<Unifier>> computeApplicableRulesAndUnifiers(Concludable concludable) {
-        assert concludable.generating().isPresent();
-        Variable generatedThing = concludable.generating().get();
-        Set<Label> generatedTypes = generatedThing.inferredTypes();
-        assert !generatedTypes.isEmpty();
-
-        Set<Rule> applicableRules = concludable.isHas() ?
-                iterate(generatedTypes).flatMap(type -> rulesConcludingHas(type)).toSet() :
-                iterate(generatedTypes).flatMap(type -> rulesConcluding(type)).toSet();
-
-
-        Map<Rule, Set<Unifier>> ruleUnifiers = new HashMap<>();
-        iterate(applicableRules).forEachRemaining(rule -> concludable.unify(rule.conclusion(), conceptMgr)
-                        .forEachRemaining(unifier -> {
-                            ruleUnifiers.putIfAbsent(rule, new HashSet<>());
-                            ruleUnifiers.get(rule).add(unifier);
-                        }));
-
-        return ruleUnifiers;
-    }
 
     /**
      * On commit we must clear the rule cache and revalidate rules - this will force re-running type resolution

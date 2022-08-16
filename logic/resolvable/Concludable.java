@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
@@ -95,6 +96,8 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
     }
 
     public abstract Set<Constraint> concludableConstraints();
+
+    public abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
 
     public abstract FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
@@ -415,6 +418,24 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
+        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+            assert generating().isPresent();
+            Variable generatedRelation = generating().get();
+            Set<Label> relationTypes = generatedRelation.inferredTypes();
+            assert !relationTypes.isEmpty();
+
+            Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
+            relationTypes.forEach(type -> logicMgr.rulesConcluding(type)
+                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                            .forEachRemaining(unifier -> {
+                                applicableRules.putIfAbsent(rule, new HashSet<>());
+                                applicableRules.get(rule).add(unifier);
+                            })));
+
+            return applicableRules;
+        }
+
+        @Override
         public boolean isRelation() {
             return true;
         }
@@ -555,6 +576,24 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
+        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+            assert generating().isPresent();
+            Variable generatedAttribute = generating().get();
+            Set<Label> attributeTypes = generatedAttribute.inferredTypes();
+            assert !generatedAttribute.inferredTypes().isEmpty();
+
+            Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
+            attributeTypes.forEach(type -> logicMgr.rulesConcludingHas(type)
+                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                            .forEachRemaining(unifier -> {
+                                applicableRules.putIfAbsent(rule, new HashSet<>());
+                                applicableRules.get(rule).add(unifier);
+                            })));
+
+            return applicableRules;
+        }
+
+        @Override
         public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
             return AlphaEquivalence.empty().alphaEqualIf(that.isHas())
                     .flatMap(a -> has().alphaEquals(that.asHas().has()).flatMap(a::extendIfCompatible))
@@ -659,6 +698,24 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
+        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+            assert generating().isPresent();
+            Variable generated = generating().get();
+            Set<Label> types = generated.inferredTypes();
+            assert !types.isEmpty();
+
+            Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
+            types.forEach(type -> logicMgr.rulesConcluding(type)
+                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                            .forEachRemaining(unifier -> {
+                                applicableRules.putIfAbsent(rule, new HashSet<>());
+                                applicableRules.get(rule).add(unifier);
+                            })));
+
+            return applicableRules;
+        }
+
+        @Override
         public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
             return AlphaEquivalence.empty().alphaEqualIf(that.isIsa())
                     .flatMap(a -> isa().alphaEquals(that.asIsa().isa()).flatMap(a::extendIfCompatible))
@@ -753,6 +810,24 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         @Override
         public Optional<ThingVariable> generating() {
             return Optional.of(attribute);
+        }
+
+        @Override
+        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+            assert generating().isPresent();
+            Variable generatedAttr = generating().get();
+            Set<Label> attributeTypes = generatedAttr.inferredTypes();
+            assert !attributeTypes.isEmpty();
+
+            Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
+            attributeTypes.forEach(type -> logicMgr.rulesConcluding(type)
+                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                            .forEachRemaining(unifier -> {
+                                applicableRules.putIfAbsent(rule, new HashSet<>());
+                                applicableRules.get(rule).add(unifier);
+                            })));
+
+            return applicableRules;
         }
 
         @Override
