@@ -156,7 +156,6 @@ public class LogicManager {
                     String readableCycle = cycle.stream().map(Rule::getLabel).collect(Collectors.joining(" -> \n", "\n", "\n"));
                     throw TypeDBException.of(CONTRADICTORY_RULE_CYCLE, readableCycle);
                 } else {
-
                     ruleDependencies(dependency.recursiveRule)
                             .filter(rule -> !visitedDependentRules.containsKey(rule.recursiveRule))
                             .forEachRemaining(frontier::add);
