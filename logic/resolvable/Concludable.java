@@ -147,7 +147,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Attribute.class));
     }
 
-    <T, V> Map<T, Set<V>> cloneMapping(Map<T, Set<V>> mapping) {
+    static <T, V> Map<T, Set<V>> cloneMapping(Map<T, Set<V>> mapping) {
         Map<T, Set<V>> clone = new HashMap<>();
         mapping.forEach((key, set) -> clone.put(key, new HashSet<>(set)));
         return clone;
@@ -160,7 +160,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
     Improvements:
     * we could take information such as negated constraints into account.
      */
-    boolean unificationSatisfiable(TypeVariable concludableTypeVar, TypeVariable conclusionTypeVar, ConceptManager conceptMgr) {
+    static boolean unificationSatisfiable(TypeVariable concludableTypeVar, TypeVariable conclusionTypeVar, ConceptManager conceptMgr) {
 
         if (!concludableTypeVar.inferredTypes().isEmpty() && !conclusionTypeVar.inferredTypes().isEmpty()) {
             return !Collections.disjoint(subtypeLabels(concludableTypeVar.inferredTypes(), conceptMgr).toSet(),
@@ -181,7 +181,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
     * take into account negated constraints
     * take into account if an attribute owned is a key but the unification target requires a different value
      */
-    boolean unificationSatisfiable(ThingVariable concludableThingVar, ThingVariable conclusionThingVar) {
+    static boolean unificationSatisfiable(ThingVariable concludableThingVar, ThingVariable conclusionThingVar) {
         boolean satisfiable = true;
         if (!concludableThingVar.inferredTypes().isEmpty() && !conclusionThingVar.inferredTypes().isEmpty()) {
             satisfiable = !Collections.disjoint(concludableThingVar.inferredTypes(), conclusionThingVar.inferredTypes());
@@ -199,11 +199,11 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         return satisfiable;
     }
 
-    FunctionalIterator<Label> subtypeLabels(Set<Label> labels, ConceptManager conceptMgr) {
+    static FunctionalIterator<Label> subtypeLabels(Set<Label> labels, ConceptManager conceptMgr) {
         return iterate(labels).flatMap(l -> subtypeLabels(l, conceptMgr));
     }
 
-    FunctionalIterator<Label> subtypeLabels(Label label, ConceptManager conceptMgr) {
+    static FunctionalIterator<Label> subtypeLabels(Label label, ConceptManager conceptMgr) {
         // TODO: this is cachable, and is a hot code path - analyse and see impact of cache
         if (label.scope().isPresent()) {
             assert conceptMgr.getRelationType(label.scope().get()) != null;
@@ -286,7 +286,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
     }
 
-    void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
+    static void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
                                       Retrievable id, Retrievable unifiedId) {
         for (ValueConstraint<?> value : equalsConstantConstraints(values)) {
             unifierBuilder.unifiedRequirements().predicates(unifiedId, valueEqualsFunction(value));
