@@ -111,7 +111,7 @@ public class LogicManager {
         return iterate(getRulesAndUnifiers(concludable).keySet());
     }
 
-    public FunctionalIterator<Unifier> unifiers(Concludable concludable, Rule rule){
+    public FunctionalIterator<Unifier> unifiers(Concludable concludable, Rule rule) {
         return iterate(getRulesAndUnifiers(concludable).getOrDefault(rule, new HashSet<>()));
     }
 
@@ -175,7 +175,7 @@ public class LogicManager {
         return link(iterate(negatedRuleDependencies(rule)),
                     iterate(rule.condition().conjunction().concludables()).flatMap(c -> iterate(applicableRules(c)))
                         .map(recursiveRule -> RuleDependency.of(recursiveRule, rule))
-                );
+        );
     }
 
     private FunctionalIterator<RuleDependency> negatedRuleDependencies(Rule rule) {

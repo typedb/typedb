@@ -235,7 +235,9 @@ public class Rule {
             return rule;
         }
 
-        public ResolvableConjunction conjunction() { return conjunction; }
+        public ResolvableConjunction conjunction() {
+            return conjunction;
+        }
 
         public Conjunction pattern() {
             return rule().when();
@@ -282,7 +284,9 @@ public class Rule {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-        public ResolvableConjunction conjunction() { return conjunction; }
+        public ResolvableConjunction conjunction() {
+            return conjunction;
+        }
 
         public Conjunction pattern() {
             return rule().then();
