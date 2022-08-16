@@ -194,7 +194,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             assert conclusionValueConstraint.predicate().isEquality() &&
                     conclusionValueConstraint.predicate().asEquality().equals(EQ);
 
-            satisfiable &= iterate(concludableThingVar.value()).allMatch( v -> v.maybeCompatible(conclusionValueConstraint) );
+            satisfiable &= iterate(concludableThingVar.value()).allMatch( v -> !v.inconsistentWith(conclusionValueConstraint) );
         }
         return satisfiable;
     }

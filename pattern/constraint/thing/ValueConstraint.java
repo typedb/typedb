@@ -198,15 +198,15 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
                 .flatMap(a -> a.alphaEqualIf(this.value.equals(that.value)));
     }
 
-    public boolean maybeCompatible(ValueConstraint<?> valueConstraint) {
+    public boolean inconsistentWith(ValueConstraint<?> valueConstraint) {
         if (valueConstraint.predicate == EQ) {
-            return isCompatibleWithEqualityConstraint(valueConstraint);
+            return !isConsistentWithEqualityConstraint(valueConstraint);
         } else { // TODO: implement inequality compatibility when useful
             return true;
         }
     }
 
-    protected abstract boolean isCompatibleWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint);
+    protected abstract boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint);
 
     public static class Long extends ValueConstraint<java.lang.Long> {
 
@@ -235,7 +235,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isCompatibleWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() ||
                     (conclusionValueConstraint.isLong() &&
                             PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongs(conclusionValueConstraint.asLong().value(), value))) ||
@@ -286,7 +286,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isCompatibleWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() ||
                     (conclusionValueConstraint.isLong() &&
                             PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongToDouble(conclusionValueConstraint.asLong().value(), value))) ||
@@ -327,7 +327,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isCompatibleWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isBoolean() &&
                     PredicateOperator.Equality.of(predicate()).apply(Predicate.compareBooleans(conclusionValueConstraint.asBoolean().value(), value)));
         }
@@ -365,7 +365,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isCompatibleWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
             if (conclusionValueConstraint.isVariable()) return true;
             if (!conclusionValueConstraint.isString()) return false;
             if (predicate.isEquality()) {
@@ -413,7 +413,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isCompatibleWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isDateTime() &&
                     PredicateOperator.Equality.of(predicate.asEquality()).apply(Predicate.compareDateTimes(conclusionValueConstraint.asDateTime().value(), value)));
         }
@@ -461,7 +461,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isCompatibleWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
             return true;
         }
     }
