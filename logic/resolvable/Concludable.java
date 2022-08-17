@@ -174,14 +174,6 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
     }
 
-    static void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
-                                      Retrievable id, Retrievable unifiedId) {
-        for (ValueConstraint<?> value : equalsConstantConstraints(values)) {
-            unifierBuilder.unifiedRequirements().predicates(unifiedId, Unifier.Builder.valuePredicate(value));
-            unifierBuilder.requirements().predicates(id, Unifier.Builder.valuePredicate((value)));
-        }
-    }
-
     /**
      * Relation handles these concludable patterns, where `$role` and `$relation` could be labelled, and there could
      * be any number of rolePlayers:
@@ -457,7 +449,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                             Unifier.Builder.subtypeLabels(attr.isa().get().type().label().get().properLabel(), conceptMgr).toSet()
                                     .containsAll(unifierBuilder.requirements().isaExplicit().get(attr.id()));
                 }
-                addConstantValueRequirements(unifierBuilder, values, attr.id(), conclusionAttr.id());
+                unifierBuilder.addConstantValueRequirements(values, attr.id(), conclusionAttr.id());
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -579,7 +571,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                 } else {
                     unifierBuilder.addVariableType(type, unifiedType.id());
                 }
-                addConstantValueRequirements(unifierBuilder, values, owner.id(), unifiedOwner.id());
+                unifierBuilder.addConstantValueRequirements(values, owner.id(), unifiedOwner.id());
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -696,7 +688,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             if (Unifier.Builder.unificationSatisfiable(attribute, value.value().owner())) {
                 unifierBuilder.addThing(attribute, value.value().owner().id());
             } else return Iterators.empty();
-            addConstantValueRequirements(unifierBuilder, values, attribute.id(), value.value().owner().id());
+            unifierBuilder.addConstantValueRequirements(values, attribute.id(), value.value().owner().id());
             return single(unifierBuilder.build());
         }
 
