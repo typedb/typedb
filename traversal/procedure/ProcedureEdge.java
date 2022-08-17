@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static com.vaticle.typedb.common.collection.Collections.intersection;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -1144,6 +1145,16 @@ public abstract class ProcedureEdge<
                 @Override
                 public String toString() {
                     return super.toString() + String.format(" { repetition: %d, roleTypes: %s }", repetition, roleTypes);
+                }
+
+                public boolean overlaps(RolePlayer other, Traversal.Parameters params) {
+                    assert direction().equals(other.direction());
+                    if (to().props().hasIID() && other.to().props().hasIID()) {
+                        return params.getIID(to().id().asVariable()).equals(params.getIID(other.to().id().asVariable()));
+                    } else {
+                        Set<Label> intersection = intersection(to().props().types(), other.to().props().types());
+                        return !intersection.isEmpty();
+                    }
                 }
 
                 static class Forward extends RolePlayer {

@@ -41,7 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.common.collection.Collections.intersection;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COLON;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA;
@@ -118,8 +118,7 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
     }
 
     private boolean equalOrDisjoint(Set<Label> labels1, Set<Label> labels2) {
-        Set<Label> intersection = new HashSet<>(labels1);
-        intersection.retainAll(labels2);
+        Set<Label> intersection = intersection(labels1, labels2);
         return (labels1.size() == labels2.size() && intersection.size() == labels1.size()) || intersection.isEmpty();
     }
 

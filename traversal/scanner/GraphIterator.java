@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
@@ -44,11 +45,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
@@ -85,17 +83,42 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         this.params = params;
         this.filter = filter;
         this.initial = initial;
-        this.iteratorState = IteratorState.INIT;
         this.toTraverse = new TreeSet<>(Comparator.comparing(ProcedureVertex::order));
         this.toRevisit = new TreeSet<>(Comparator.comparing(ProcedureVertex::order));
         this.scopes = new HashMap<>();
         this.vertexTraversers = new HashMap<>();
-        for (ProcedureVertex<?, ?> procedureVertex : procedure.vertices()) {
-            vertexTraversers.put(procedureVertex, new VertexTraverser(procedureVertex));
+        setup();
+        this.iteratorState = IteratorState.INIT;
+    }
+
+    private void setup() {
+        for (int pos = 0; pos < procedure.vertexCount(); pos++) {
+            ProcedureVertex<?, ?> procedureVertex = procedure.vertex(pos);
+            VertexTraverser traverser = new VertexTraverser(procedureVertex);
+            vertexTraversers.put(procedureVertex, traverser);
             if (procedureVertex.isThing() && procedureVertex.asThing().isScope()) {
                 scopes.put(procedureVertex.id().asVariable(), new Scope());
             }
         }
+        iterate(procedure.vertices()).filter(v -> v.isThing() && v.asThing().isScope())
+                .forEachRemaining(v -> setupImplicitDependencies(v.outs()));
+    }
+
+    private void setupImplicitDependencies(Set<ProcedureEdge<?, ?>> edges) {
+        assert iterate(edges).map(TraversalEdge::from).toSet().size() <= 1;
+        Set<ProcedureEdge<?, ?>> forwardRPs = iterate(edges).filter(e -> e.isRolePlayer() && e.direction().isForward()).toSet();
+        iterate(forwardRPs).forEachRemaining(rp1 ->
+                iterate(forwardRPs).forEachRemaining(rp2 -> {
+                    if (rp1.to().order() < rp2.to().order() && rp1.asRolePlayer().overlaps(rp2.asRolePlayer(), params)) {
+                        setupImplicitDependency(rp1.to(), rp2.to());
+                    }
+                })
+        );
+    }
+
+    private void setupImplicitDependency(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+        vertexTraversers.get(from).implicitDependents.add(to);
+        vertexTraversers.get(to).implicitDependees.add(from);
     }
 
     @Override
@@ -179,93 +202,31 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void traverseVertex(ProcedureVertex<?, ?> procedureVertex) {
         VertexTraverser vertexTraverser = vertexTraversers.get(procedureVertex);
-
-        boolean vertexFound = false;
-        while (!vertexFound && vertexTraverser.hasNextVertex()) {
-            vertexTraverser.takeNextVertex();
-            if (vertexTraverser.verifyLoops() && edgeLookahead(vertexTraverser)) {
-                vertexFound = true;
-            } else {
-                procedureVertex.outs().forEach(e -> vertexTraversers.get(e.to()).removeEdgeInput(e));
-            }
-        }
-        if (vertexFound) procedureVertex.outs().forEach(edge -> toTraverse.add(edge.to()));
-        else failed(procedureVertex);
-//
-//
-//        boolean verified = false;
-//        Set<ProcedureVertex<?, ?>> verifyFailureCauses = new HashSet<>();
-//        while (!verified && vertexTraverser.hasNextVertex()) {
-//            vertexTraverser.takeNextVertex();
-//            if (vertexTraverser.verifyLoops()
-//                    && verifyTraversedScopes(procedureVertex, verifyFailureCauses)
-//                    && verifyEdgeLookahead(procedureVertex, verifyFailureCauses)) {
-//                verified = true;
-//            } else {
-//                vertexTraverser.clearCurrentVertex();
-//            }
-//        }
-//        toRevisit.addAll(verifyFailureCauses);
-//        if (verified) procedureVertex.outs().forEach(edge -> toTraverse.add(edge.to()));
-//        else failed(procedureVertex);
-    }
-
-    private boolean edgeLookahead(VertexTraverser vertexTraverser) {
-        for (ProcedureEdge<?, ?> edge : vertexTraverser.procedureVertex.orderedOuts()) {
-            VertexTraverser toVertexTraverser = vertexTraversers.get(edge.to());
-            toVertexTraverser.addEdgeInput(edge, vertexTraverser.vertex());
-            if (!toVertexTraverser.hasNextVertex() && toVertexTraverser.vertexFilterCauses.isEmpty()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private void removeFromSuccessors(ProcedureVertex<?, ?> procedureVertex) {
-        procedureVertex.outs().forEach(edge -> {
-            vertexTraversers.get(edge.to()).removeEdgeInput(edge);
-            removeFromSuccessors(edge.to());
-        });
-    }
-
-    private void failed(ProcedureVertex<?, ?> procedureVertex) {
-        procedureVertex.ins().forEach(edge -> toRevisit.add(edge.from()));
-        VertexTraverser vertexTraverser = vertexTraversers.get(procedureVertex);
-        toRevisit.addAll(vertexTraverser.vertexFilterCauses);
-        vertexTraverser.vertexFilterCauses.clear(); // TODO where does this belong??
-        vertexTraverser.reset();
-        toTraverse.add(procedureVertex);
-        direction = Direction.REVISIT;
-    }
-
-    private boolean verifyTraversedScopes(ProcedureVertex<?, ?> procedureVertex, Set<ProcedureVertex<?, ?>>
-            verifyFailureCauses) {
-        if (procedureVertex.id().isScoped()) {
-            Scope scope = scopes.get(procedureVertex.id().asScoped().scope());
-            return verifyScopedUpToOrder(scope, procedureVertex.order(), verifyFailureCauses);
-        } else if (procedureVertex.isThing() && !procedureVertex.asThing().inRolePlayers().isEmpty()) {
-            for (ProcedureEdge<?, ?> edge : procedureVertex.asThing().inRolePlayers()) {
-                assert edge.isRolePlayer();
-                Scope scope = scopes.get(edge.asRolePlayer().scope());
-                if (!verifyScopedUpToOrder(scope, procedureVertex.order(), verifyFailureCauses)) return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean verifyScopedUpToOrder(Scope scoped, int order, Set<ProcedureVertex<?, ?>> verifyFailureCauses) {
-        if (!scoped.isValidUpTo(order)) {
-            scoped.scopedOrdersUpTo(order).forEach(scopedOrder -> {
-                if (scopedOrder != order) verifyFailureCauses.add(procedure.vertex(scopedOrder));
+        if (vertexTraverser.findNextVertex()) {
+            vertexTraverser.procedureVertex.outs().forEach(e -> {
+                toTraverse.add(e.to());
+                vertexTraversers.get(e.to()).reset();
             });
-            return false;
+            vertexTraverser.implicitDependents.forEach(v -> {
+                toTraverse.add(v);
+                vertexTraversers.get(v).reset();
+            });
+        } else {
+            vertexTraverser.clear();
+            vertexTraverser.procedureVertex.ins().forEach(e -> recordRevisit(procedureVertex, e.from()));
+            vertexTraverser.implicitDependees.forEach(toRevisit::add);
+            toTraverse.add(procedureVertex);
+            direction = Direction.REVISIT;
         }
-        return true;
+    }
+
+    private void recordRevisit(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> revisit) {
+        toRevisit.add(revisit);
+        iterate(vertexTraversers.get(revisit).implicitDependents)
+                .filter(v -> v.order() < from.order()).forEachRemaining(toRevisit::add);
     }
 
     private void revisit(ProcedureVertex<?, ?> procedureVertex) {
-        removeFromSuccessors(procedureVertex);
-        iterate(procedureVertex.transitiveOuts()).map(ProcedureEdge::to).forEachRemaining(toTraverse::remove);
         toTraverse.add(procedureVertex);
         direction = Direction.TRAVERSE;
     }
@@ -278,34 +239,28 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private class VertexTraverser {
 
         private final ProcedureVertex<?, ?> procedureVertex;
-        private final Map<ProcedureEdge<?, ?>, Vertex<?, ?>> edgeInputs;
-        private final SortedMap<Map<ProcedureEdge<?, ?>, Vertex<?, ?>>, Vertex<?, ?>> edgeInputIntersectionCache;
-        private final Set<ProcedureVertex<?, ?>> vertexFilterCauses;
+        private final Set<ProcedureVertex<?, ?>> implicitDependents;
+        private final Set<ProcedureVertex<?, ?>> implicitDependees;
         private Forwardable<Vertex<?, ?>, Order.Asc> iterator;
         private Vertex<?, ?> vertex;
 
         private VertexTraverser(ProcedureVertex<?, ?> procedureVertex) {
             this.procedureVertex = procedureVertex;
-            this.edgeInputs = new HashMap<>();
-            this.edgeInputIntersectionCache = new TreeMap<>(Comparator.comparing(Map::size));
-            this.vertexFilterCauses = new HashSet<>();
+            this.implicitDependents = new HashSet<>();
+            this.implicitDependees = new HashSet<>();
         }
 
-        private boolean hasNextVertex() {
-            return getIterator().hasNext();
-        }
-
-        private void takeNextVertex() {
-            assert hasNextVertex();
-            vertex = getIterator().next();
+        private boolean findNextVertex() {
+            Forwardable<Vertex<?, ?>, Order.Asc> iterator = getIterator();
+            while (iterator.hasNext()) {
+                vertex = getIterator().next();
+                if (verifyLoops()) return true;
+            }
+            return false;
         }
 
         private Vertex<?, ?> vertex() {
             return vertex;
-        }
-
-        private Set<ProcedureEdge<?, ?>> edgeInputs() {
-            return edgeInputs.keySet();
         }
 
         private boolean verifyLoops() {
@@ -325,25 +280,16 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
         }
 
-        private void addEdgeInput(ProcedureEdge<?, ?> edge, Vertex<?, ?> fromVertex) {
-            assert !edgeInputs.containsKey(edge);
-            if (iterator != null && iterator.hasNext()) {
-                edgeInputIntersectionCache.put(new HashMap<>(edgeInputs), iterator.peek());
-            }
-            edgeInputs.put(edge, fromVertex);
-            reset();
-        }
-
-        private void removeEdgeInput(ProcedureEdge<?, ?> edge) {
-            edgeInputIntersectionCache.remove(edgeInputs);
-            edgeInputs.remove(edge);
-            reset();
-        }
-
         private void clear() {
-            edgeInputs.clear();
-            edgeInputIntersectionCache.clear();
             reset();
+            if (procedureVertex.id().isScoped()) {
+                scopes.get(procedureVertex.id().asScoped().scope()).remove(procedureVertex);
+            } else {
+                iterate(procedureVertex.ins()).filter(ProcedureEdge::isRolePlayer).forEachRemaining(e -> {
+                    Scope scope = scopes.get(e.asRolePlayer().scope());
+                    scope.remove(e);
+                });
+            }
         }
 
         private void reset() {
@@ -356,25 +302,13 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private void clearCurrentVertex() {
             vertex = null;
-            edgeInputs.keySet().forEach(e -> {
-                if (e.isRolePlayer()) {
-                    scopes.get(e.asRolePlayer().scope()).remove(e);
-                }
-            });
-            if (procedureVertex.id().isScoped()) {
-                scopes.get(procedureVertex.id().asScoped().scope()).remove(procedureVertex);
-            }
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> getIterator() {
-            assert procedureVertex.isStartingVertex() || !edgeInputs.isEmpty();
             if (iterator == null) {
                 if (procedureVertex.equals(procedure.initialVertex())) iterator = createIteratorFromInitial();
                 else if (procedureVertex.isStartingVertex()) iterator = createIteratorFromStart();
-                else {
-                    iterator = createIteratorFromEdges();
-                    cachedIntersection().ifPresent(value -> iterator.forward(value));
-                }
+                else iterator = createIteratorFromEdges();
                 // TODO: we may only need to find one valid answer if all dependents are not included in the filter and also find an answer
             }
             return iterator;
@@ -402,55 +336,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromEdges() {
-            Map<Vertex<?, ?>, List<ProcedureEdge.Native.Thing.RolePlayer>> overlappingRPEdges = new HashMap<>();
-            List<ProcedureEdge<?, ?>> otherEdges = new ArrayList<>();
-            edgeInputs.forEach((edge, vertex) -> {
-                if (edge.isRolePlayer()) {
-                    overlappingRPEdges.computeIfAbsent(vertex, v -> new ArrayList<>()).add(edge.asRolePlayer());
-                } else otherEdges.add(edge);
-            });
-            return intersectEdges(overlappingRPEdges, otherEdges);
-        }
-
-        private Forwardable<Vertex<?, ?>, Order.Asc> intersectEdges(Map<Vertex<?, ?>, List<ProcedureEdge.Native.Thing.RolePlayer>> rpEdges,
-                                                                    List<ProcedureEdge<?, ?>> otherEdges) {
             List<Forwardable<Vertex<?, ?>, Order.Asc>> iterators = new ArrayList<>();
-            otherEdges.forEach(e -> iterators.add(branch(edgeInputs.get(e), e)));
+            procedureVertex.ins().forEach(edge -> iterators.add(branch(vertexTraversers.get(edge.from()).vertex(), edge)));
             if (iterators.size() == 1) return iterators.get(0);
             else return intersect(iterate(iterators), ASC);
-        }
-
-        /**
-         * Overlapping RolePlayer edges (ie. from the same vertex are either):
-         * identical -- (upper: $x, upper: $y); $x is $y;
-         * strict subsets/supersets of each other -- (role: $x, upper: $y); $x is $y; -- solved by sorting most restrictive iterators first
-         * completely disjoint -- (upper: $x, lower: $x); $x isa $y;
-         * It is impossible for two RolePlayer edges to return partially overlapping iterators.
-         */
-        private Forwardable<Vertex<?, ?>, Order.Asc> intersectOverlapping(List<ProcedureEdge.Native.Thing.RolePlayer> edges) {
-            assert edges.size() > 1 && iterate(edges).map(edgeInputs::get).toSet().size() == 1;
-            ArrayList<Forwardable<Vertex<?, ?>, Order.Asc>> iterators = new ArrayList<>(edges.size());
-            edges.stream().sorted(Comparator.comparing(e -> e.roleTypes().size()))
-                    .forEach(e -> {
-                        // rare cases have RP edges in different directions from the same vertex, so look up scope each time
-                        Scope scope = scopes.get(e.scope());
-                        iterators.add(branch(edgeInputs.get(e), e)
-                                .filter(thingAndRole -> isRoleAvailable(thingAndRole.value(), e, scope, edges))
-                                .mapSorted(KeyValue::key, v -> KeyValue.of(v.asThing(), null), ASC));
-                    });
-            // WARN: we rely on the intersection operating in order of the iterators provided...
-            return intersect(iterate(iterators), ASC);
-        }
-
-        private boolean isRoleAvailable(ThingVertex role, ProcedureEdge.Native.Thing.RolePlayer sourceEdge,
-                                        Scope scope) {
-            for (ProcedureEdge.Native.Thing.RolePlayer e : edges) {
-                if (!e.equals(sourceEdge)) {
-                    Optional<ThingVertex> otherRole = scope.getRole(e);
-                    if (otherRole.isPresent() && otherRole.get().equals(role)) return false;
-                }
-            }
-            return true;
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> branch(Vertex<?, ?> fromVertex, ProcedureEdge<?, ?> edge) {
@@ -460,10 +349,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 toIter = edge.branch(graphMgr, fromVertex, params)
                         .filter(role -> {
                             Optional<ProcedureVertex<?, ?>> source = scope.getRoleVertexSource(role.asThing());
-                            if (source.isPresent() && !source.get().equals(procedureVertex)) {
-                                vertexFilterCauses.add(source.get());
-                                return false;
-                            } else return true;
+                            return source.isEmpty();
                         }).mapSorted(
                                 role -> {
                                     scope.record(procedureVertex, role.asThing());
@@ -477,10 +363,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 toIter = edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params)
                         .filter(thingAndRole -> {
                             Optional<ProcedureEdge<?, ?>> source = scope.getRoleEdgeSource(thingAndRole.value());
-                            if (source.isPresent() && !source.get().to().equals(procedureVertex)) {
-                                vertexFilterCauses.add(source.get().to());
-                                return false;
-                            } else return true;
+                            return source.isEmpty();
                         }).mapSorted(
                                 thingAndRole -> {
                                     scope.record(edge, thingAndRole.value());
