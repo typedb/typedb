@@ -332,7 +332,7 @@ public class Unifier {
                 assert conclusionValueConstraint.predicate().isEquality() &&
                         conclusionValueConstraint.predicate().asEquality().equals(EQ);
 
-                satisfiable &= iterate(concludableThingVar.value()).allMatch( v -> !v.inconsistentWith(conclusionValueConstraint) );
+                satisfiable &= iterate(concludableThingVar.value()).allMatch(v -> !v.inconsistentWith(conclusionValueConstraint));
             }
             return satisfiable;
         }
@@ -413,8 +413,8 @@ public class Unifier {
                             return PredicateOperator.SubString.LIKE.apply(a.asString().getValue(), Pattern.compile(value.asString().value()));
                         } else throw TypeDBException.of(ILLEGAL_STATE);
                     };
-                }  else throw TypeDBException.of(ILLEGAL_STATE);
-            }  else {
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }
 
