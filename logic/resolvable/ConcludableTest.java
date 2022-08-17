@@ -643,7 +643,7 @@ public class ConcludableTest {
         };
 
         for (Pair<String, String> pair : constraintValuePairs) {
-            Concludable constraint = iterate(Concludable.create(parseConjunction(pair.second()))).next();
+            Concludable constraint = iterate(Concludable.create(parseConjunction(pair.first()))).next();
             Concludable value = iterate(Concludable.create(parseConjunction(pair.second()))).next();
 
             assertTrue(constraint.isAttribute());
