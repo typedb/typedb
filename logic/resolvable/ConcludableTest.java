@@ -17,7 +17,6 @@
 
 package com.vaticle.typedb.core.logic.resolvable;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
@@ -28,7 +27,6 @@ import org.junit.Test;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
