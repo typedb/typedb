@@ -24,6 +24,8 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
@@ -43,10 +45,12 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,14 +58,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 import static java.util.stream.Collectors.toSet;
 
 public abstract class Concludable extends Resolvable<Conjunction> implements AlphaEquivalent<Concludable> {
@@ -146,6 +153,10 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         return clone;
     }
 
+    private static Set<ValueConstraint<?>> equalsConstantConstraints(Set<ValueConstraint<?>> values) {
+        return iterate(values).filter(v -> v.predicate().equals(EQ)).filter(v -> !v.isVariable()).toSet();
+    }
+
     private static FunctionalIterator<AlphaEquivalence> alphaEqualValueConstraints(Set<ValueConstraint<?>> set1,
                                                                                    Set<ValueConstraint<?>> set2) {
         if (set1.size() != set2.size()) return Iterators.empty();
@@ -160,6 +171,14 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                 }
             }
             return Iterators.single(AlphaEquivalence.empty());
+        }
+    }
+
+    static void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
+                                      Retrievable id, Retrievable unifiedId) {
+        for (ValueConstraint<?> value : equalsConstantConstraints(values)) {
+            unifierBuilder.unifiedRequirements().predicates(unifiedId, Unifier.Builder.valuePredicate(value));
+            unifierBuilder.requirements().predicates(id, Unifier.Builder.valuePredicate((value)));
         }
     }
 
@@ -404,7 +423,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(has);
             if (isa != null) constraints.add(isa);
-            constraints.addAll(values);
+            constraints.addAll(equalsConstantConstraints(values));
             return set(constraints);
         }
 
@@ -438,7 +457,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                             Unifier.Builder.subtypeLabels(attr.isa().get().type().label().get().properLabel(), conceptMgr).toSet()
                                     .containsAll(unifierBuilder.requirements().isaExplicit().get(attr.id()));
                 }
-                unifierBuilder.addConstantValueRequirements(values, attr.id(), conclusionAttr.id());
+                addConstantValueRequirements(unifierBuilder, values, attr.id(), conclusionAttr.id());
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -526,7 +545,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         public Set<Constraint> concludableConstraints() {
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(isa);
-            constraints.addAll(values);
+            constraints.addAll(equalsConstantConstraints(values));
             return set(constraints);
         }
 
@@ -560,7 +579,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                 } else {
                     unifierBuilder.addVariableType(type, unifiedType.id());
                 }
-                unifierBuilder.addConstantValueRequirements(values, owner.id(), unifiedOwner.id());
+                addConstantValueRequirements(unifierBuilder, values, owner.id(), unifiedOwner.id());
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -649,7 +668,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         @Override
         public Set<Constraint> concludableConstraints() {
-            return new HashSet<>(values);
+            return new HashSet<>(equalsConstantConstraints(values));
         }
 
         public ThingVariable attribute() {
@@ -677,7 +696,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             if (Unifier.Builder.unificationSatisfiable(attribute, value.value().owner())) {
                 unifierBuilder.addThing(attribute, value.value().owner().id());
             } else return Iterators.empty();
-            unifierBuilder.addConstantValueRequirements(values, attribute.id(), value.value().owner().id());
+            addConstantValueRequirements(unifierBuilder, values, attribute.id(), value.value().owner().id());
             return single(unifierBuilder.build());
         }
 
