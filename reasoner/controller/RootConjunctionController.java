@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -64,10 +65,9 @@ public class RootConjunctionController
     }
 
     @Override
-    Set<Concludable> concludablesTriggeringRules() {
+    FunctionalIterator<Concludable> concludablesTriggeringRules() {
         return Iterators.iterate(Concludable.create(conjunction))
-                .filter(c -> registry().logicManager().applicableRules(c).hasNext())
-                .toSet();
+                .filter(c -> registry().logicManager().applicableRules(c).hasNext());
     }
 
     @Override

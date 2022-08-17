@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
@@ -26,7 +27,6 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -47,10 +47,9 @@ public class ConditionController extends ConjunctionController<
     }
 
     @Override
-    Set<Concludable> concludablesTriggeringRules() {
+    FunctionalIterator<Concludable> concludablesTriggeringRules() {
         return iterate(condition.conjunction().concludables())
-                .filter(c -> registry().logicManager().applicableRules(c).hasNext())
-                .toSet();
+                .filter(c -> registry().logicManager().applicableRules(c).hasNext());
     }
 
     @Override
