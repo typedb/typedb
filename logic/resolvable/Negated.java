@@ -33,10 +33,10 @@ public class Negated extends Resolvable<Disjunction> {
     private final Set<Retrievable> identifiers;
     private final ResolvableDisjunction disjunction;
 
-    public Negated(Disjunction disjunction) {
-        super(disjunction);
+    public Negated(Negation negation) {
+        super(negation.disjunction());
         this.identifiers = new HashSet<>();
-        this.disjunction = ResolvableDisjunction.of(disjunction);
+        this.disjunction = ResolvableDisjunction.of(negation.disjunction());
         pattern().conjunctions().forEach(c -> iterate(c.retrieves()).forEachRemaining(identifiers::add));
     }
 

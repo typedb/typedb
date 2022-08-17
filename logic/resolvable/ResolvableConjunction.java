@@ -37,7 +37,7 @@ public class ResolvableConjunction {
     public static ResolvableConjunction of(Conjunction conjunction) {
         Set<Concludable> concludables = Concludable.create(conjunction);
         Set<Negated> negations = iterate(conjunction.negations())
-                .map(negation -> new Negated(negation.disjunction()))
+                .map(negation -> new Negated(negation))
                 .toSet();
 
         return new ResolvableConjunction(conjunction, concludables, negations);
