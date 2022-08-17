@@ -184,7 +184,7 @@ public class ForwardChainingMaterialiser {
                 negatedDependencies = iterate(logicRule.condition().conjunction().negations())
                     .flatMap(negation -> iterate(negation.disjunction().conjunctions()))
                     .flatMap(conj -> iterate(conj.concludables()))
-                    .flatMap(concludable -> iterate(tx.logic().applicableRules(concludable).keySet()))
+                    .flatMap(concludable -> tx.logic().applicableRules(concludable))
                     .map(r -> rules.get(r))
                     .toSet();
             }
@@ -194,7 +194,7 @@ public class ForwardChainingMaterialiser {
         private Set<Rule> unnegatedDependencies() {
             if (unnegatedDependencies == null) {
                 unnegatedDependencies = iterate(logicRule.condition().conjunction().concludables())
-                        .flatMap(concludable -> iterate(tx.logic().applicableRules(concludable).keySet()))
+                        .flatMap(concludable -> tx.logic().applicableRules(concludable))
                         .map(r -> rules.get(r))
                         .toSet();
             }

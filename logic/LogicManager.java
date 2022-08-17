@@ -107,10 +107,14 @@ public class LogicManager {
     }
 
     public FunctionalIterator<Unifier> unifiers(Concludable concludable, Rule rule) {
-        return iterate(applicableRules(concludable).getOrDefault(rule, new HashSet<>()));
+        return iterate(unifyingRules(concludable).getOrDefault(rule, new HashSet<>()));
     }
 
-    public Map<Rule, Set<Unifier>> applicableRules(Concludable concludable) {
+    public FunctionalIterator<Rule> applicableRules(Concludable concludable) {
+        return iterate(unifyingRules(concludable).keySet());
+    }
+
+    private Map<Rule, Set<Unifier>> unifyingRules(Concludable concludable) {
         return logicCache.unifiers().get(concludable, c -> c.applicableRules(conceptMgr, this));
     }
 
@@ -167,7 +171,8 @@ public class LogicManager {
 
     private FunctionalIterator<RuleDependency> ruleDependencies(Rule rule) {
         return link(iterate(negatedRuleDependencies(rule)),
-                    iterate(rule.condition().conjunction().concludables()).flatMap(c -> iterate(applicableRules(c).keySet()))
+                    iterate(rule.condition().conjunction().concludables())
+                        .flatMap(c -> applicableRules(c))
                         .map(recursiveRule -> RuleDependency.of(recursiveRule, rule))
         );
     }
@@ -176,7 +181,7 @@ public class LogicManager {
         return iterate(rule.condition().conjunction().negations())
                 .flatMap(neg -> iterate(neg.disjunction().conjunctions()))
                 .flatMap(conj -> iterate(conj.concludables()))
-                .flatMap(concludable -> iterate(applicableRules(concludable).keySet()))
+                .flatMap(concludable -> applicableRules(concludable))
                 .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
     }
 

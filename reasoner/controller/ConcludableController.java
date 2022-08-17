@@ -72,12 +72,10 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
     @Override
     public void setUpUpstreamControllers() {
-        iterate(registry().logicManager().applicableRules(concludable).entrySet()).forEachRemaining( ruleAndUnifiers -> {
-                Rule rule = ruleAndUnifiers.getKey();
-                Set<Unifier> unifiers = ruleAndUnifiers.getValue();
+        iterate(registry().logicManager().applicableRules(concludable)).forEachRemaining( rule -> {
                 Driver<? extends ConclusionController<INPUT, ?, ?>> controller = registerConclusionController(rule);
                 conclusionControllers.put(rule.conclusion(), controller);
-                conclusionUnifiers.put(rule.conclusion(), unifiers);
+                conclusionUnifiers.put(rule.conclusion(), registry().logicManager().unifiers(concludable, rule).toSet());
         });
     }
 

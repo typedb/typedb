@@ -49,7 +49,7 @@ public class ConditionController extends ConjunctionController<
     @Override
     Set<Concludable> concludablesTriggeringRules() {
         return iterate(condition.conjunction().concludables())
-                .filter(c -> !registry().logicManager().applicableRules(c).isEmpty())
+                .filter(c -> registry().logicManager().applicableRules(c).hasNext())
                 .toSet();
     }
 
