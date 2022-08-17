@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
@@ -36,6 +37,8 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,9 +50,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICATION_MISSING_CONCEPT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
@@ -243,6 +248,14 @@ public class Unifier {
             unifiedRequirements.types(target, allowedTypes);
         }
 
+        void addConstantValueRequirements(Set<ValueConstraint<?>> values,
+                                          Retrievable id, Retrievable unifiedId) {
+            for(ValueConstraint<?> value: values) {
+                unifiedRequirements().predicates(unifiedId, valuePredicate(value));
+                requirements().predicates(id, valuePredicate(value));
+            }
+        }
+
         public Requirements.Constraint requirements() {
             return requirements;
         }
@@ -333,6 +346,81 @@ public class Unifier {
             satisfiable &= unificationSatisfiable(concludableRolePlayer.player(), conclusionRolePlayer.player());
             return satisfiable;
         }
+
+        static Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valuePredicate(ValueConstraint<?> value) {
+            Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> predicateFn;
+
+            if (value.predicate().isEquality()) {
+                PredicateOperator.Equality predicateOperator = PredicateOperator.Equality.of(value.predicate().asEquality());
+
+                if (value.isLong()) {
+                    predicateFn = (a) -> {
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                .comparableTo(Encoding.ValueType.LONG)) return false;
+
+                        assert a.getType().isDouble() || a.getType().isLong();
+                        if (a.getType().isLong())
+                            return predicateOperator.apply(Predicate.compareLongs(a.asLong().getValue(), value.asLong().value()));
+                        else if (a.getType().isDouble())
+                            return predicateOperator.apply(Predicate.compareDoubleToLong(a.asDouble().getValue(), value.asLong().value()));
+                        else throw TypeDBException.of(ILLEGAL_STATE);
+                    };
+                } else if (value.isDouble()) {
+                    predicateFn = (a) -> {
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                .comparableTo(Encoding.ValueType.DOUBLE)) return false;
+
+                        assert a.getType().isDouble() || a.getType().isLong();
+                        if (a.getType().isLong())
+                            return predicateOperator.apply(Predicate.compareLongToDouble(a.asLong().getValue(), value.asDouble().value()));
+                        else if (a.getType().isDouble())
+                            return predicateOperator.apply(Predicate.compareDoubles(a.asDouble().getValue(), value.asDouble().value()));
+                        else throw TypeDBException.of(ILLEGAL_STATE);
+                    };
+                } else if (value.isBoolean()) {
+                    predicateFn = (a) -> {
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                .comparableTo(Encoding.ValueType.BOOLEAN)) return false;
+                        assert a.getType().isBoolean();
+                        return predicateOperator.apply(Predicate.compareBooleans(a.asBoolean().getValue(), value.asBoolean().value()));
+                    };
+                } else if (value.isString()) {
+                    predicateFn = (a) -> {
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                .comparableTo(Encoding.ValueType.STRING)) return false;
+                        assert a.getType().isString();
+                        return predicateOperator.apply(Predicate.compareStrings(a.asString().getValue(), value.asString().value()));
+                    };
+                } else if (value.isDateTime()) {
+                    predicateFn = (a) -> {
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                .comparableTo(Encoding.ValueType.DATETIME)) return false;
+                        assert a.getType().isDateTime();
+                        return predicateOperator.apply(Predicate.compareDateTimes(a.asDateTime().getValue(), value.asDateTime().value()));
+                    };
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            } else if (value.predicate().isSubString()) {
+                PredicateOperator.SubString predicateOperator = PredicateOperator.SubString.of(value.predicate().asSubString());
+
+                if (value.isString()) {
+                    predicateFn = (a) -> {
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                .comparableTo(Encoding.ValueType.STRING)) return false;
+                        assert a.getType().isString();
+                        if (predicateOperator == PredicateOperator.SubString.CONTAINS) {
+                            return PredicateOperator.SubString.CONTAINS.apply(a.asString().getValue(), value.asString().value());
+                        } else if (predicateOperator == PredicateOperator.SubString.LIKE) {
+                            return PredicateOperator.SubString.LIKE.apply(a.asString().getValue(), Pattern.compile(value.asString().value()));
+                        } else throw TypeDBException.of(ILLEGAL_STATE);
+                    };
+                }  else throw TypeDBException.of(ILLEGAL_STATE);
+            }  else {
+                throw TypeDBException.of(ILLEGAL_STATE);
+            }
+
+            return predicateFn;
+        }
+
     }
 
     public static abstract class Requirements {

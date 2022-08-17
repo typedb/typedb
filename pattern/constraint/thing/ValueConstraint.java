@@ -235,7 +235,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() ||
                     (conclusionValueConstraint.isLong() &&
                             PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongs(conclusionValueConstraint.asLong().value(), value))) ||
@@ -286,7 +286,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() ||
                     (conclusionValueConstraint.isLong() &&
                             PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongToDouble(conclusionValueConstraint.asLong().value(), value))) ||
@@ -327,7 +327,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isBoolean() &&
                     PredicateOperator.Equality.of(predicate()).apply(Predicate.compareBooleans(conclusionValueConstraint.asBoolean().value(), value)));
         }
@@ -365,7 +365,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             if (conclusionValueConstraint.isVariable()) return true;
             if (!conclusionValueConstraint.isString()) return false;
             if (predicate.isEquality()) {
@@ -413,7 +413,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isDateTime() &&
                     PredicateOperator.Equality.of(predicate.asEquality()).apply(Predicate.compareDateTimes(conclusionValueConstraint.asDateTime().value(), value)));
         }
@@ -461,7 +461,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
+        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             return true;
         }
     }

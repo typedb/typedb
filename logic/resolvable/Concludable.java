@@ -24,8 +24,6 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Thing;
-import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
@@ -45,12 +43,10 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
-import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,17 +54,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
-import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 import static java.util.stream.Collectors.toSet;
 
 public abstract class Concludable extends Resolvable<Conjunction> implements AlphaEquivalent<Concludable> {
@@ -153,61 +146,6 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         return clone;
     }
 
-    private static Set<ValueConstraint<?>> equalsConstantConstraints(Set<ValueConstraint<?>> values) {
-        return iterate(values).filter(v -> v.predicate().equals(EQ)).filter(v -> !v.isVariable()).toSet();
-    }
-
-    private static Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valueEqualsFunction(ValueConstraint<?> value) {
-        Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> predicateFn;
-        if (value.isLong()) {
-            predicateFn = (a) -> {
-                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                        .comparableTo(Encoding.ValueType.LONG)) return false;
-
-                assert a.getType().isDouble() || a.getType().isLong();
-                if (a.getType().isLong())
-                    return Predicate.compareLongs(a.asLong().getValue(), value.asLong().value()) == 0;
-                else if (a.getType().isDouble())
-                    return Predicate.compareDoubleToLong(a.asDouble().getValue(), value.asLong().value()) == 0;
-                else throw TypeDBException.of(ILLEGAL_STATE);
-            };
-        } else if (value.isDouble()) {
-            predicateFn = (a) -> {
-                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                        .comparableTo(Encoding.ValueType.DOUBLE)) return false;
-
-                assert a.getType().isDouble() || a.getType().isLong();
-                if (a.getType().isLong())
-                    return Predicate.compareLongToDouble(a.asLong().getValue(), value.asDouble().value()) == 0;
-                else if (a.getType().isDouble())
-                    return Predicate.compareDoubles(a.asDouble().getValue(), value.asDouble().value()) == 0;
-                else throw TypeDBException.of(ILLEGAL_STATE);
-            };
-        } else if (value.isBoolean()) {
-            predicateFn = (a) -> {
-                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                        .comparableTo(Encoding.ValueType.BOOLEAN)) return false;
-                assert a.getType().isBoolean();
-                return Predicate.compareBooleans(a.asBoolean().getValue(), value.asBoolean().value()) == 0;
-            };
-        } else if (value.isString()) {
-            predicateFn = (a) -> {
-                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                        .comparableTo(Encoding.ValueType.STRING)) return false;
-                assert a.getType().isString();
-                return Predicate.compareStrings(a.asString().getValue(), value.asString().value()) == 0;
-            };
-        } else if (value.isDateTime()) {
-            predicateFn = (a) -> {
-                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                        .comparableTo(Encoding.ValueType.DATETIME)) return false;
-                assert a.getType().isDateTime();
-                return Predicate.compareDateTimes(a.asDateTime().getValue(), value.asDateTime().value()) == 0;
-            };
-        } else throw TypeDBException.of(ILLEGAL_STATE);
-        return predicateFn;
-    }
-
     private static FunctionalIterator<AlphaEquivalence> alphaEqualValueConstraints(Set<ValueConstraint<?>> set1,
                                                                                    Set<ValueConstraint<?>> set2) {
         if (set1.size() != set2.size()) return Iterators.empty();
@@ -222,14 +160,6 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                 }
             }
             return Iterators.single(AlphaEquivalence.empty());
-        }
-    }
-
-    static void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
-                                      Retrievable id, Retrievable unifiedId) {
-        for (ValueConstraint<?> value : equalsConstantConstraints(values)) {
-            unifierBuilder.unifiedRequirements().predicates(unifiedId, valueEqualsFunction(value));
-            unifierBuilder.requirements().predicates(id, valueEqualsFunction(value));
         }
     }
 
@@ -474,7 +404,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(has);
             if (isa != null) constraints.add(isa);
-            constraints.addAll(equalsConstantConstraints(values));
+            constraints.addAll(values);
             return set(constraints);
         }
 
@@ -508,7 +438,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                             Unifier.Builder.subtypeLabels(attr.isa().get().type().label().get().properLabel(), conceptMgr).toSet()
                                     .containsAll(unifierBuilder.requirements().isaExplicit().get(attr.id()));
                 }
-                addConstantValueRequirements(unifierBuilder, values, attr.id(), conclusionAttr.id());
+                unifierBuilder.addConstantValueRequirements(values, attr.id(), conclusionAttr.id());
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -596,7 +526,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         public Set<Constraint> concludableConstraints() {
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(isa);
-            constraints.addAll(equalsConstantConstraints(values));
+            constraints.addAll(values);
             return set(constraints);
         }
 
@@ -630,7 +560,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                 } else {
                     unifierBuilder.addVariableType(type, unifiedType.id());
                 }
-                addConstantValueRequirements(unifierBuilder, values, owner.id(), unifiedOwner.id());
+                unifierBuilder.addConstantValueRequirements(values, owner.id(), unifiedOwner.id());
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -719,7 +649,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         @Override
         public Set<Constraint> concludableConstraints() {
-            return new HashSet<>(equalsConstantConstraints(values));
+            return new HashSet<>(values);
         }
 
         public ThingVariable attribute() {
@@ -747,7 +677,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             if (Unifier.Builder.unificationSatisfiable(attribute, value.value().owner())) {
                 unifierBuilder.addThing(attribute, value.value().owner().id());
             } else return Iterators.empty();
-            addConstantValueRequirements(unifierBuilder, values, attribute.id(), value.value().owner().id());
+            unifierBuilder.addConstantValueRequirements(values, attribute.id(), value.value().owner().id());
             return single(unifierBuilder.build());
         }
 
