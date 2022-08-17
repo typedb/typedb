@@ -111,7 +111,7 @@ public class LogicManager {
     }
 
     public Map<Rule, Set<Unifier>> applicableRules(Concludable concludable) {
-        return logicCache.applicableRules().get(concludable, c -> c.applicableRules(conceptMgr, this));
+        return logicCache.unifiers().get(concludable, c -> c.applicableRules(conceptMgr, this));
     }
 
     /**
@@ -122,6 +122,7 @@ public class LogicManager {
      */
     public void revalidateAndReindexRules() {
         logicCache.rule().clear();
+        logicCache.unifiers().clear();
 
         // re-validate all rules are valid
         rules().forEachRemaining(rule -> rule.validate(this, conceptMgr));

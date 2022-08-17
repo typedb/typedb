@@ -33,18 +33,18 @@ public class LogicCache {
 
     private final CommonCache<GraphTraversal.Type, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> typeInferenceCache;
     private final CommonCache<String, Rule> ruleCache;
-    private final CommonCache<Concludable, Map<Rule, Set<Unifier>>> applicableRules;
+    private final CommonCache<Concludable, Map<Rule, Set<Unifier>>> unifiers;
 
     public LogicCache() {
         this.ruleCache = new CommonCache<>();
         this.typeInferenceCache = new CommonCache<>();
-        this.applicableRules = new CommonCache<>();
+        this.unifiers = new CommonCache<>();
     }
 
     public LogicCache(int size, int timeOutMinutes) {
         this.ruleCache = new CommonCache<>(size, timeOutMinutes);
         this.typeInferenceCache = new CommonCache<>(size, timeOutMinutes);
-        this.applicableRules = new CommonCache<>(size, timeOutMinutes);
+        this.unifiers = new CommonCache<>(size, timeOutMinutes);
     }
 
     public CommonCache<GraphTraversal.Type, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> inference() {
@@ -55,7 +55,7 @@ public class LogicCache {
         return ruleCache;
     }
 
-    CommonCache<Concludable, Map<Rule, Set<Unifier>>> applicableRules(){
-        return applicableRules;
+    CommonCache<Concludable, Map<Rule, Set<Unifier>>> unifiers(){
+        return unifiers;
     }
 }
