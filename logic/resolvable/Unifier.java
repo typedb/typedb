@@ -23,10 +23,16 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
@@ -46,6 +52,7 @@ import java.util.stream.Collectors;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICATION_MISSING_CONCEPT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 
 public class Unifier {
 
@@ -254,6 +261,77 @@ public class Unifier {
             Requirements.Constraint requirementsCopy = requirements.duplicate();
             Requirements.Constraint unifiedRequirementsCopy = unifiedRequirements.duplicate();
             return new Builder(unifierCopy, requirementsCopy, unifiedRequirementsCopy);
+        }
+
+        static FunctionalIterator<Label> subtypeLabels(Set<Label> labels, ConceptManager conceptMgr) {
+            return iterate(labels).flatMap(l -> subtypeLabels(l, conceptMgr));
+        }
+
+        static FunctionalIterator<Label> subtypeLabels(Label label, ConceptManager conceptMgr) {
+            // TODO: this is cachable, and is a hot code path - analyse and see impact of cache
+            if (label.scope().isPresent()) {
+                assert conceptMgr.getRelationType(label.scope().get()) != null;
+                return conceptMgr.getRelationType(label.scope().get()).getRelates(label.name()).getSubtypes()
+                        .map(RoleType::getLabel);
+            } else {
+                return conceptMgr.getThingType(label.name()).getSubtypes().map(Type::getLabel);
+            }
+        }
+
+        /*
+        Unifying a source type variable with a target type variable is impossible if none of the source's allowed labels,
+        and their subtypes' labels, are found in the allowed labels of the target type.
+
+        Improvements:
+        * we could take information such as negated constraints into account.
+         */
+        static boolean unificationSatisfiable(TypeVariable concludableTypeVar, TypeVariable conclusionTypeVar, ConceptManager conceptMgr) {
+
+            if (!concludableTypeVar.inferredTypes().isEmpty() && !conclusionTypeVar.inferredTypes().isEmpty()) {
+                return !Collections.disjoint(subtypeLabels(concludableTypeVar.inferredTypes(), conceptMgr).toSet(),
+                        conclusionTypeVar.inferredTypes());
+            } else {
+                // if either variable is allowed to be any type (ie empty set), its possible to do unification
+                return true;
+            }
+        }
+
+        /*
+        Unifying a source thing variable with a target thing variable is impossible if none of the source's
+        allowed types are found in the target's allowed types.
+        It is also impossible, if there are value constraints on the source that are incompatible with value constraints
+        on the target. eg. `$x > 10` and `$x = 5`.
+
+        Improvements:
+        * take into account negated constraints
+        * take into account if an attribute owned is a key but the unification target requires a different value
+         */
+        static boolean unificationSatisfiable(ThingVariable concludableThingVar, ThingVariable conclusionThingVar) {
+            boolean satisfiable = true;
+            if (!concludableThingVar.inferredTypes().isEmpty() && !conclusionThingVar.inferredTypes().isEmpty()) {
+                satisfiable = !Collections.disjoint(concludableThingVar.inferredTypes(), conclusionThingVar.inferredTypes());
+            }
+
+            if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
+                assert conclusionThingVar.value().size() == 1;
+                ValueConstraint<?> conclusionValueConstraint = iterate(conclusionThingVar.value()).next();
+
+                assert conclusionValueConstraint.predicate().isEquality() &&
+                        conclusionValueConstraint.predicate().asEquality().equals(EQ);
+
+                satisfiable &= iterate(concludableThingVar.value()).allMatch( v -> !v.inconsistentWith(conclusionValueConstraint) );
+            }
+            return satisfiable;
+        }
+
+        static boolean unificationSatisfiable(RelationConstraint.RolePlayer concludableRolePlayer, RelationConstraint.RolePlayer conclusionRolePlayer, ConceptManager conceptMgr) {
+            assert conclusionRolePlayer.roleType().isPresent();
+            boolean satisfiable = true;
+            if (concludableRolePlayer.roleType().isPresent()) {
+                satisfiable = unificationSatisfiable(concludableRolePlayer.roleType().get(), conclusionRolePlayer.roleType().get(), conceptMgr);
+            }
+            satisfiable &= unificationSatisfiable(concludableRolePlayer.player(), conclusionRolePlayer.player());
+            return satisfiable;
         }
     }
 

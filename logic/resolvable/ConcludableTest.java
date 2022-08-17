@@ -382,7 +382,7 @@ public class ConcludableTest {
 
             assertTrue(constraint.isHas());
             assertTrue(value.isHas());
-            assertTrue(constraint.unificationSatisfiable(constraint.asHas().attribute(), value.asHas().attribute()));
+            assertTrue(Unifier.Builder.unificationSatisfiable(constraint.asHas().attribute(), value.asHas().attribute()));
         }
     }
     @Test
@@ -458,7 +458,7 @@ public class ConcludableTest {
 
             assertTrue(constraint.isHas());
             assertTrue(value.isHas());
-            assertTrue(constraint.unificationSatisfiable(constraint.asHas().attribute(), value.asHas().attribute()));
+            assertTrue(Unifier.Builder.unificationSatisfiable(constraint.asHas().attribute(), value.asHas().attribute()));
         }
     }
 
@@ -544,7 +544,7 @@ public class ConcludableTest {
 
             assertTrue(constraint.isAttribute());
             assertTrue(value.isAttribute());
-            assertTrue(constraint.unificationSatisfiable(constraint.asAttribute().attribute(), value.asAttribute().attribute()));
+            assertTrue(Unifier.Builder.unificationSatisfiable(constraint.asAttribute().attribute(), value.asAttribute().attribute()));
         }
     }
 
@@ -648,7 +648,7 @@ public class ConcludableTest {
 
             assertTrue(constraint.isAttribute());
             assertTrue(value.isAttribute());
-            assertFalse(constraint.unificationSatisfiable(constraint.asAttribute().attribute(), value.asAttribute().attribute()));
+            assertFalse(Unifier.Builder.unificationSatisfiable(constraint.asAttribute().attribute(), value.asAttribute().attribute()));
         }
     }
 
@@ -665,7 +665,7 @@ public class ConcludableTest {
 
             assertTrue(constraint.isHas());
             assertTrue(value.isHas());
-            assertTrue(constraint.unificationSatisfiable(constraint.asHas().attribute(), value.asHas().attribute()));
+            assertTrue(Unifier.Builder.unificationSatisfiable(constraint.asHas().attribute(), value.asHas().attribute()));
         }
     }
 
@@ -683,7 +683,7 @@ public class ConcludableTest {
 
             assertTrue(constraint.isHas());
             assertTrue(value.isHas());
-            assertFalse(constraint.unificationSatisfiable(constraint.asHas().attribute(), value.asHas().attribute()));
+            assertFalse(Unifier.Builder.unificationSatisfiable(constraint.asHas().attribute(), value.asHas().attribute()));
         }
     }
 }
