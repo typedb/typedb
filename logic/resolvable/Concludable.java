@@ -97,7 +97,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
     public abstract Set<Constraint> concludableConstraints();
 
-    public abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
+    public abstract Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
 
     public abstract FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
@@ -418,7 +418,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedRelation = generating().get();
             Set<Label> relationTypes = generatedRelation.inferredTypes();
@@ -576,7 +576,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedAttribute = generating().get();
             Set<Label> attributeTypes = generatedAttribute.inferredTypes();
@@ -698,7 +698,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generated = generating().get();
             Set<Label> types = generated.inferredTypes();
@@ -813,7 +813,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedAttr = generating().get();
             Set<Label> attributeTypes = generatedAttr.inferredTypes();

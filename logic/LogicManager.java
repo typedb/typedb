@@ -115,7 +115,7 @@ public class LogicManager {
     }
 
     private Map<Rule, Set<Unifier>> unifyingRules(Concludable concludable) {
-        return logicCache.unifiers().get(concludable, c -> c.applicableRules(conceptMgr, this));
+        return logicCache.unifiers().get(concludable, c -> c.computeApplicableRules(conceptMgr, this));
     }
 
     /**
