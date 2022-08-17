@@ -250,10 +250,10 @@ public class Unifier {
 
         void addConstantValueRequirements(Set<ValueConstraint<?>> values,
                                           Retrievable id, Retrievable unifiedId) {
-            for(ValueConstraint<?> value: values) {
+            iterate(values).filter(v -> v.predicate().equals(EQ)).forEachRemaining(value -> {
                 unifiedRequirements().predicates(unifiedId, valuePredicate(value));
                 requirements().predicates(id, valuePredicate(value));
-            }
+            });
         }
 
         public Requirements.Constraint requirements() {
