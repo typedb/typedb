@@ -97,7 +97,7 @@ public abstract class ConjunctionController<
             retrievableControllers.put(r, registry().createRetrievable(r));
         });
         iterate(conjunction.negations()).forEachRemaining(negation -> {
-            Negated negated = new Negated(negation);
+            Negated negated = new Negated(negation.disjunction());
             try {
                 negationControllers.put(negated, registry().createNegation(negated, conjunction));
                 negateds.add(negated);
