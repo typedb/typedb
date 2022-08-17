@@ -200,15 +200,15 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     public boolean inconsistentWith(ValueConstraint<?> valueConstraint) {
         if (valueConstraint.predicate == EQ) {
-            return !isConsistentWithEqualityConstraint(valueConstraint);
+            return !isConsistentWithEquality(valueConstraint);
         } else { // TODO: implement inequality compatibility when useful
             return true;
         }
     }
 
-    protected abstract boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint);
+    abstract boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint);
 
-    public static class Long extends ValueConstraint<java.lang.Long> {
+    static class Long extends ValueConstraint<java.lang.Long> {
 
         public Long(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, long value) {
             super(owner, predicate, value, set());
@@ -235,7 +235,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
+        boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() ||
                     (conclusionValueConstraint.isLong() &&
                             PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongs(conclusionValueConstraint.asLong().value(), value))) ||
@@ -254,7 +254,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
     }
 
-    public static class Double extends ValueConstraint<java.lang.Double> {
+    static class Double extends ValueConstraint<java.lang.Double> {
 
         public Double(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, double value) {
             super(owner, predicate, value, set());
@@ -286,7 +286,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
+        boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() ||
                     (conclusionValueConstraint.isLong() &&
                             PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongToDouble(conclusionValueConstraint.asLong().value(), value))) ||
@@ -295,7 +295,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
     }
 
-    public static class Boolean extends ValueConstraint<java.lang.Boolean> {
+    static class Boolean extends ValueConstraint<java.lang.Boolean> {
 
         public Boolean(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, boolean value) {
             super(owner, predicate, value, set());
@@ -327,13 +327,13 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
+        boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isBoolean() &&
                     PredicateOperator.Equality.of(predicate()).apply(Predicate.compareBooleans(conclusionValueConstraint.asBoolean().value(), value)));
         }
     }
 
-    public static class String extends ValueConstraint<java.lang.String> {
+    static class String extends ValueConstraint<java.lang.String> {
 
         public String(ThingVariable owner, TypeQLToken.Predicate predicate, java.lang.String value) {
             super(owner, predicate, value, set());
@@ -365,7 +365,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
+        boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             if (conclusionValueConstraint.isVariable()) return true;
             if (!conclusionValueConstraint.isString()) return false;
             if (predicate.isEquality()) {
@@ -381,7 +381,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
     }
 
-    public static class DateTime extends ValueConstraint<LocalDateTime> {
+    static class DateTime extends ValueConstraint<LocalDateTime> {
 
         public DateTime(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, LocalDateTime value) {
             super(owner, predicate, value, set());
@@ -413,13 +413,13 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
+        boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isDateTime() &&
                     PredicateOperator.Equality.of(predicate.asEquality()).apply(Predicate.compareDateTimes(conclusionValueConstraint.asDateTime().value(), value)));
         }
     }
 
-    public static class Variable extends ValueConstraint<ThingVariable> {
+    static class Variable extends ValueConstraint<ThingVariable> {
 
         public Variable(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, ThingVariable variable) {
             super(owner, predicate, variable, set(variable));
@@ -461,7 +461,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         }
 
         @Override
-        public boolean isConsistentWithEqualityConstraint(ValueConstraint<?> conclusionValueConstraint) {
+        boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             return true;
         }
     }
