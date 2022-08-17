@@ -143,6 +143,9 @@ public class LogicManager {
             graphMgr.schema().rules().conclusions().outdated(false);
         }
 
+        // re-index the concludable-rule unifiers
+        this.rules().forEachRemaining(rule -> indexConcludables(rule.condition().conjunction()));
+
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
         validateCyclesThroughNegations();
     }
