@@ -48,8 +48,9 @@ public class ConditionController extends ConjunctionController<
 
     @Override
     FunctionalIterator<Concludable> concludablesTriggeringRules() {
+        registry().logicManager().indexConcludables(condition.conjunction());
         return iterate(condition.conjunction().concludables())
-                .filter(c -> registry().logicManager().applicableRules(c).hasNext());
+                .filter(c -> !registry().logicManager().applicableRules(c).isEmpty());
     }
 
     @Override

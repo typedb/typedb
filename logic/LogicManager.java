@@ -20,12 +20,14 @@ package com.vaticle.typedb.core.logic;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -35,7 +37,6 @@ import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -106,16 +107,21 @@ public class LogicManager {
         return rules().filter(rule -> !rule.when().negations().isEmpty());
     }
 
-    public FunctionalIterator<Unifier> unifiers(Concludable concludable, Rule rule) {
-        return iterate(unifyingRules(concludable).getOrDefault(rule, new HashSet<>()));
+    public Map<Rule, Set<Unifier>> applicableRules(Concludable concludable) {
+        Map<Rule, Set<Unifier>> unifiers = logicCache.unifiers().getIfPresent(concludable);
+        if (unifiers == null) {
+            unifiers = concludable.computeApplicableRules(conceptMgr, this);
+        }
+        return unifiers;
     }
 
-    public FunctionalIterator<Rule> applicableRules(Concludable concludable) {
-        return iterate(unifyingRules(concludable).keySet());
-    }
-
-    private Map<Rule, Set<Unifier>> unifyingRules(Concludable concludable) {
-        return logicCache.unifiers().get(concludable, c -> c.computeApplicableRules(conceptMgr, this));
+    public void indexConcludables(ResolvableConjunction conjunction) {
+        link(Iterators.single(conjunction),
+                iterate(conjunction.negations()).flatMap(negation -> iterate(negation.disjunction().conjunctions())))
+                .flatMap(conj -> iterate(conj.concludables())).
+                forEachRemaining(concludable -> {
+                    logicCache.unifiers().get(concludable, c -> c.computeApplicableRules(conceptMgr, this));
+                });
     }
 
     /**
@@ -171,8 +177,8 @@ public class LogicManager {
 
     private FunctionalIterator<RuleDependency> ruleDependencies(Rule rule) {
         return link(iterate(negatedRuleDependencies(rule)),
-                    iterate(rule.condition().conjunction().concludables())
-                        .flatMap(c -> applicableRules(c))
+                iterate(rule.condition().conjunction().concludables())
+                        .flatMap(c -> iterate(applicableRules(c).keySet()))
                         .map(recursiveRule -> RuleDependency.of(recursiveRule, rule))
         );
     }
@@ -181,7 +187,7 @@ public class LogicManager {
         return iterate(rule.condition().conjunction().negations())
                 .flatMap(neg -> iterate(neg.disjunction().conjunctions()))
                 .flatMap(conj -> iterate(conj.concludables()))
-                .flatMap(concludable -> applicableRules(concludable))
+                .flatMap(concludable -> iterate(applicableRules(concludable).keySet()))
                 .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
     }
 
