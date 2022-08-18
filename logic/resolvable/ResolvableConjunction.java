@@ -17,11 +17,13 @@
  */
 package com.vaticle.typedb.core.logic.resolvable;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.pattern.Conjunction;
 
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 
 public class ResolvableConjunction {
     private final Conjunction conjunctionPattern;
@@ -53,5 +55,15 @@ public class ResolvableConjunction {
 
     public Set<Concludable> concludables() {
         return concludables;
+    }
+
+    public FunctionalIterator<Concludable> iterateConcludables(boolean recurseIntoSubFormulae) {
+        if (recurseIntoSubFormulae) {
+            return link(iterate(concludables),
+                        iterate(negations()).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+                            .flatMap(conj -> conj.iterateConcludables(true)));
+        } else {
+            return iterate(concludables);
+        }
     }
 }

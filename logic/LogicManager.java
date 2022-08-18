@@ -115,13 +115,8 @@ public class LogicManager {
         return unifiers;
     }
 
-    public void indexConcludables(ResolvableConjunction conjunction) {
-        link(Iterators.single(conjunction),
-                iterate(conjunction.negations()).flatMap(negation -> iterate(negation.disjunction().conjunctions())))
-                .flatMap(conj -> iterate(conj.concludables())).
-                forEachRemaining(concludable -> {
-                    logicCache.unifiers().get(concludable, c -> c.computeApplicableRules(conceptMgr, this));
-                });
+    public void indexApplicableRules(Concludable concludable) {
+        logicCache.unifiers().get(concludable, c -> c.computeApplicableRules(conceptMgr, this));
     }
 
     /**
@@ -144,7 +139,9 @@ public class LogicManager {
         }
 
         // re-index the concludable-rule unifiers
-        this.rules().forEachRemaining(rule -> indexConcludables(rule.condition().conjunction()));
+        this.rules().forEachRemaining(rule -> {
+            rule.condition().conjunction().iterateConcludables(true).forEachRemaining(this::indexApplicableRules);
+        });
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
         validateCyclesThroughNegations();
