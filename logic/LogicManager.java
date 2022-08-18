@@ -176,17 +176,18 @@ public class LogicManager {
     }
 
     private FunctionalIterator<RuleDependency> ruleDependencies(Rule rule) {
-        return link(iterate(negatedRuleDependencies(rule)),
-                iterate(rule.condition().conjunction().concludables())
-                        .flatMap(c -> iterate(applicableRules(c).keySet()))
-                        .map(recursiveRule -> RuleDependency.of(recursiveRule, rule))
-        );
+        return rule.condition().conjunction().iterateConcludables(true)
+                    .flatMap(c -> iterate(applicableRules(c).keySet()))
+                    .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
     }
 
     private FunctionalIterator<RuleDependency> negatedRuleDependencies(Rule rule) {
+        assert iterate(rule.condition().conjunction().negations())
+                .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+                .allMatch(conj -> conj.negations().isEmpty()); // Revise when we support nested negations in rules
         return iterate(rule.condition().conjunction().negations())
                 .flatMap(neg -> iterate(neg.disjunction().conjunctions()))
-                .flatMap(conj -> iterate(conj.concludables()))
+                .flatMap(conj -> conj.iterateConcludables(true))
                 .flatMap(concludable -> iterate(applicableRules(concludable).keySet()))
                 .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
     }
