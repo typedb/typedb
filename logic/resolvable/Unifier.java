@@ -23,13 +23,22 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,11 +50,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICATION_MISSING_CONCEPT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 
 public class Unifier {
 
@@ -236,6 +248,13 @@ public class Unifier {
             unifiedRequirements.types(target, allowedTypes);
         }
 
+        void addConstantValueRequirements(Set<ValueConstraint<?>> values, Retrievable id, Retrievable unifiedId) {
+            for(ValueConstraint<?> value: constantValueConstraints(values)){
+                unifiedRequirements().predicates(unifiedId, valuePredicate(value));
+                requirements().predicates(id, valuePredicate(value));
+            }
+        }
+
         public Requirements.Constraint requirements() {
             return requirements;
         }
@@ -255,6 +274,157 @@ public class Unifier {
             Requirements.Constraint unifiedRequirementsCopy = unifiedRequirements.duplicate();
             return new Builder(unifierCopy, requirementsCopy, unifiedRequirementsCopy);
         }
+
+        static FunctionalIterator<Label> subtypeLabels(Set<Label> labels, ConceptManager conceptMgr) {
+            return iterate(labels).flatMap(l -> subtypeLabels(l, conceptMgr));
+        }
+
+        static FunctionalIterator<Label> subtypeLabels(Label label, ConceptManager conceptMgr) {
+            // TODO: this is cachable, and is a hot code path - analyse and see impact of cache
+            if (label.scope().isPresent()) {
+                assert conceptMgr.getRelationType(label.scope().get()) != null;
+                return conceptMgr.getRelationType(label.scope().get()).getRelates(label.name()).getSubtypes()
+                        .map(RoleType::getLabel);
+            } else {
+                return conceptMgr.getThingType(label.name()).getSubtypes().map(Type::getLabel);
+            }
+        }
+
+        /*
+        Unifying a source type variable with a target type variable is impossible if none of the source's allowed labels,
+        and their subtypes' labels, are found in the allowed labels of the target type.
+
+        Improvements:
+        * we could take information such as negated constraints into account.
+         */
+        static boolean unificationSatisfiable(TypeVariable concludableTypeVar, TypeVariable conclusionTypeVar, ConceptManager conceptMgr) {
+            if (!concludableTypeVar.inferredTypes().isEmpty() && !conclusionTypeVar.inferredTypes().isEmpty()) {
+                return !Collections.disjoint(subtypeLabels(concludableTypeVar.inferredTypes(), conceptMgr).toSet(),
+                        conclusionTypeVar.inferredTypes());
+            } else {
+                // if either variable is allowed to be any type (ie empty set), its possible to do unification
+                return true;
+            }
+        }
+
+        /*
+        Unifying a source thing variable with a target thing variable is impossible if none of the source's
+        allowed types are found in the target's allowed types.
+        It is also impossible, if there are value constraints on the source that are incompatible with value constraints
+        on the target. eg. `$x > 10` and `$x = 5`.
+
+        Improvements:
+        * take into account negated constraints
+        * take into account if an attribute owned is a key but the unification target requires a different value
+         */
+        static boolean unificationSatisfiable(ThingVariable concludableThingVar, ThingVariable conclusionThingVar) {
+            boolean satisfiable = true;
+            if (!concludableThingVar.inferredTypes().isEmpty() && !conclusionThingVar.inferredTypes().isEmpty()) {
+                satisfiable = !Collections.disjoint(concludableThingVar.inferredTypes(), conclusionThingVar.inferredTypes());
+            }
+
+            if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
+                assert conclusionThingVar.value().size() == 1;
+                ValueConstraint<?> conclusionValueConstraint = iterate(conclusionThingVar.value()).next();
+
+                assert conclusionValueConstraint.predicate().isEquality() &&
+                        conclusionValueConstraint.predicate().asEquality().equals(EQ);
+
+                satisfiable &= iterate(concludableThingVar.value()).allMatch(v -> !v.inconsistentWith(conclusionValueConstraint));
+            }
+            return satisfiable;
+        }
+
+        static boolean unificationSatisfiable(RelationConstraint.RolePlayer concludableRolePlayer, RelationConstraint.RolePlayer conclusionRolePlayer, ConceptManager conceptMgr) {
+            assert conclusionRolePlayer.roleType().isPresent();
+            boolean satisfiable = true;
+            if (concludableRolePlayer.roleType().isPresent()) {
+                satisfiable = unificationSatisfiable(concludableRolePlayer.roleType().get(), conclusionRolePlayer.roleType().get(), conceptMgr);
+            }
+            satisfiable &= unificationSatisfiable(concludableRolePlayer.player(), conclusionRolePlayer.player());
+            return satisfiable;
+        }
+
+        static Set<ValueConstraint<?>> constantValueConstraints(Set<ValueConstraint<?>> values) {
+            return iterate(values).filter(v -> !v.isVariable()).toSet();
+        }
+
+        static Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valuePredicate(ValueConstraint<?> value) {
+            // TODO: Leverage more of traversal.Predicate
+            Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> predicateFn;
+            assert !value.isVariable();
+
+            if (value.predicate().isEquality()) {
+                PredicateOperator.Equality predicateOperator = PredicateOperator.Equality.of(value.predicate().asEquality());
+
+                if (value.isLong()) {
+                    predicateFn = (a) -> {
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                .comparableTo(Encoding.ValueType.LONG)) return false;
+
+                        assert a.getType().isDouble() || a.getType().isLong();
+                        if (a.getType().isLong())
+                            return predicateOperator.apply(Predicate.compareLongs(a.asLong().getValue(), value.asLong().value()));
+                        else if (a.getType().isDouble())
+                            return predicateOperator.apply(Predicate.compareDoubleToLong(a.asDouble().getValue(), value.asLong().value()));
+                        else throw TypeDBException.of(ILLEGAL_STATE);
+                    };
+                } else if (value.isDouble()) {
+                    predicateFn = (a) -> {
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                .comparableTo(Encoding.ValueType.DOUBLE)) return false;
+
+                        assert a.getType().isDouble() || a.getType().isLong();
+                        if (a.getType().isLong())
+                            return predicateOperator.apply(Predicate.compareLongToDouble(a.asLong().getValue(), value.asDouble().value()));
+                        else if (a.getType().isDouble())
+                            return predicateOperator.apply(Predicate.compareDoubles(a.asDouble().getValue(), value.asDouble().value()));
+                        else throw TypeDBException.of(ILLEGAL_STATE);
+                    };
+                } else if (value.isBoolean()) {
+                    predicateFn = (a) -> {
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                .comparableTo(Encoding.ValueType.BOOLEAN)) return false;
+                        assert a.getType().isBoolean();
+                        return predicateOperator.apply(Predicate.compareBooleans(a.asBoolean().getValue(), value.asBoolean().value()));
+                    };
+                } else if (value.isString()) {
+                    predicateFn = (a) -> {
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                .comparableTo(Encoding.ValueType.STRING)) return false;
+                        assert a.getType().isString();
+                        return predicateOperator.apply(Predicate.compareStrings(a.asString().getValue(), value.asString().value()));
+                    };
+                } else if (value.isDateTime()) {
+                    predicateFn = (a) -> {
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                .comparableTo(Encoding.ValueType.DATETIME)) return false;
+                        assert a.getType().isDateTime();
+                        return predicateOperator.apply(Predicate.compareDateTimes(a.asDateTime().getValue(), value.asDateTime().value()));
+                    };
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            } else if (value.predicate().isSubString()) {
+                PredicateOperator.SubString predicateOperator = PredicateOperator.SubString.of(value.predicate().asSubString());
+
+                if (value.isString()) {
+                    predicateFn = (a) -> {
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
+                                .comparableTo(Encoding.ValueType.STRING)) return false;
+                        assert a.getType().isString();
+                        if (predicateOperator == PredicateOperator.SubString.CONTAINS) {
+                            return PredicateOperator.SubString.CONTAINS.apply(a.asString().getValue(), value.asString().value());
+                        } else if (predicateOperator == PredicateOperator.SubString.LIKE) {
+                            return PredicateOperator.SubString.LIKE.apply(a.asString().getValue(), Pattern.compile(value.asString().value()));
+                        } else throw TypeDBException.of(ILLEGAL_STATE);
+                    };
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            } else {
+                throw TypeDBException.of(ILLEGAL_STATE);
+            }
+
+            return predicateFn;
+        }
+
     }
 
     public static abstract class Requirements {

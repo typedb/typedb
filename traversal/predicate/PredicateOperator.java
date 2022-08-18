@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
@@ -85,7 +86,11 @@ public abstract class PredicateOperator {
             super(token);
         }
 
-        abstract boolean apply(int comparisonResult);
+        public static Equality of(TypeQLToken.Predicate.Equality operator) {
+            return Equality.operators.get(operator);
+        }
+
+        public abstract boolean apply(int comparisonResult);
 
         abstract Equality reflection();
 
@@ -101,7 +106,7 @@ public abstract class PredicateOperator {
 
         public static final Equality EQ = new Equality(TypeQLToken.Predicate.Equality.EQ) {
             @Override
-            boolean apply(int comparisonResult) {
+             public boolean apply(int comparisonResult) {
                 return comparisonResult == 0;
             }
 
@@ -113,7 +118,7 @@ public abstract class PredicateOperator {
 
         public static final Equality NEQ = new Equality(TypeQLToken.Predicate.Equality.NEQ) {
             @Override
-            boolean apply(int comparisonResult) {
+            public boolean apply(int comparisonResult) {
                 return comparisonResult != 0;
             }
 
@@ -125,7 +130,7 @@ public abstract class PredicateOperator {
 
         public static final Equality GT = new Equality(TypeQLToken.Predicate.Equality.GT) {
             @Override
-            boolean apply(int comparisonResult) {
+            public boolean apply(int comparisonResult) {
                 return comparisonResult > 0;
             }
 
@@ -137,7 +142,7 @@ public abstract class PredicateOperator {
 
         public static final Equality GTE = new Equality(TypeQLToken.Predicate.Equality.GTE) {
             @Override
-            boolean apply(int comparisonResult) {
+            public boolean apply(int comparisonResult) {
                 return comparisonResult >= 0;
             }
 
@@ -149,7 +154,7 @@ public abstract class PredicateOperator {
 
         public static final Equality LT = new Equality(TypeQLToken.Predicate.Equality.LT) {
             @Override
-            boolean apply(int comparisonResult) {
+            public boolean apply(int comparisonResult) {
                 return comparisonResult < 0;
             }
 
@@ -161,7 +166,7 @@ public abstract class PredicateOperator {
 
         public static final Equality LTE = new Equality(TypeQLToken.Predicate.Equality.LTE) {
             @Override
-            boolean apply(int comparisonResult) {
+            public boolean apply(int comparisonResult) {
                 return comparisonResult <= 0;
             }
 
@@ -179,19 +184,21 @@ public abstract class PredicateOperator {
                 pair(TypeQLToken.Predicate.Equality.LT, Equality.LT),
                 pair(TypeQLToken.Predicate.Equality.LTE, Equality.LTE)
         );
-
-        public static Equality of(TypeQLToken.Predicate.Equality operator) {
-            return Equality.operators.get(operator);
-        }
     }
 
-    public static abstract class SubString extends PredicateOperator {
+    public static abstract class SubString<PRED_VALUE> extends PredicateOperator {
 
-        public SubString(TypeQLToken.Predicate.SubString token) {
+        private SubString(TypeQLToken.Predicate.SubString token) {
             super(token);
         }
 
-        abstract boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue);
+        public static SubString<?> of(TypeQLToken.Predicate.SubString token) {
+            return operators.get(token);
+        }
+
+        abstract public boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue);
+
+        abstract public boolean apply(String vertexValue, PRED_VALUE predicateValue);
 
         @Override
         boolean isSubString() {
@@ -203,35 +210,29 @@ public abstract class PredicateOperator {
             return this;
         }
 
-        private static final SubString CONTAINS = new SubString(TypeQLToken.Predicate.SubString.CONTAINS) {
+        public static final SubString CONTAINS = new SubString<String>(TypeQLToken.Predicate.SubString.CONTAINS) {
             @Override
-            boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
+            public boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
                 assert predicateValue.isString();
-                return containsIgnoreCase(vertexValue, predicateValue.getString());
+                return apply(vertexValue, predicateValue.getString());
             }
 
-            private boolean containsIgnoreCase(String str1, String str2) {
-                int len2 = str2.length();
-                if (len2 == 0) return true; // Empty string is contained
-
-                char first2Lo = Character.toLowerCase(str2.charAt(0));
-                char first2Up = Character.toUpperCase(str2.charAt(0));
-
-                for (int i = 0; i <= str1.length() - len2; i++) {
-                    // Quick check before calling the more expensive regionMatches() method:
-                    char first1 = str1.charAt(i);
-                    if (first1 != first2Lo && first1 != first2Up) continue;
-                    if (str1.regionMatches(true, i, str2, 0, len2)) return true;
-                }
-                return false;
+            @Override
+            public boolean apply(String vertexValue, String predicateValue) {
+                return Predicate.stringContains(vertexValue, predicateValue);
             }
         };
 
-        private static final SubString LIKE = new SubString(TypeQLToken.Predicate.SubString.LIKE) {
+        public static final SubString LIKE = new SubString<Pattern>(TypeQLToken.Predicate.SubString.LIKE) {
             @Override
-            boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
+            public boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
                 assert predicateValue.isRegex();
-                return predicateValue.getRegex().matcher(vertexValue).matches();
+                return apply(vertexValue, predicateValue.getRegex());
+            }
+
+            @Override
+            public boolean apply(String vertexValue, Pattern predicateValue) {
+                return Predicate.stringLike(predicateValue, vertexValue);
             }
         };
 
@@ -239,9 +240,5 @@ public abstract class PredicateOperator {
                 pair(TypeQLToken.Predicate.SubString.CONTAINS, SubString.CONTAINS),
                 pair(TypeQLToken.Predicate.SubString.LIKE, SubString.LIKE)
         );
-
-        private static SubString of(TypeQLToken.Predicate.SubString token) {
-            return operators.get(token);
-        }
     }
 }

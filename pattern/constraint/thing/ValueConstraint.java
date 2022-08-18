@@ -26,11 +26,14 @@ import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
+import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -195,6 +198,16 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
                 .flatMap(a -> a.alphaEqualIf(this.value.equals(that.value)));
     }
 
+    public boolean inconsistentWith(ValueConstraint<?> valueConstraint) {
+        if (valueConstraint.predicate == EQ) {
+            return !isConsistentWithEquality(valueConstraint);
+        } else { // TODO: implement inequality compatibility when useful
+            return true;
+        }
+    }
+
+    abstract boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint);
+
     public static class Long extends ValueConstraint<java.lang.Long> {
 
         public Long(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, long value) {
@@ -219,6 +232,15 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public Double asDouble() {
             return new Double(owner, predicate.asEquality(), value);
+        }
+
+        @Override
+        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
+            return conclusionValueConstraint.isVariable() ||
+                    (conclusionValueConstraint.isLong() &&
+                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongs(conclusionValueConstraint.asLong().value(), value))) ||
+                    (conclusionValueConstraint.isDouble() &&
+                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareDoubleToLong(conclusionValueConstraint.asDouble().value(), value)));
         }
 
         @Override
@@ -262,6 +284,15 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         public Double clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueDouble(predicate(), value);
         }
+
+        @Override
+        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
+            return conclusionValueConstraint.isVariable() ||
+                    (conclusionValueConstraint.isLong() &&
+                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongToDouble(conclusionValueConstraint.asLong().value(), value))) ||
+                    (conclusionValueConstraint.isDouble() &&
+                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareDoubles(conclusionValueConstraint.asDouble().value(), value)));
+        }
     }
 
     public static class Boolean extends ValueConstraint<java.lang.Boolean> {
@@ -293,6 +324,12 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public Boolean clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueBoolean(predicate(), value);
+        }
+
+        @Override
+        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
+            return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isBoolean() &&
+                    PredicateOperator.Equality.of(predicate()).apply(Predicate.compareBooleans(conclusionValueConstraint.asBoolean().value(), value)));
         }
     }
 
@@ -326,6 +363,22 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         public String clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueString(predicate(), value);
         }
+
+        @Override
+        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
+            if (conclusionValueConstraint.isVariable()) return true;
+            if (!conclusionValueConstraint.isString()) return false;
+            if (predicate.isEquality()) {
+                return PredicateOperator.Equality.of(predicate.asEquality()).apply(Predicate.compareStrings(conclusionValueConstraint.asString().value(), value));
+            } else if (predicate.isSubString()) {
+                PredicateOperator.SubString operator = PredicateOperator.SubString.of(predicate.asSubString());
+                if (operator == PredicateOperator.SubString.CONTAINS) {
+                    return PredicateOperator.SubString.CONTAINS.apply(conclusionValueConstraint.asString().value(), value);
+                } else if (operator == PredicateOperator.SubString.LIKE) {
+                    return PredicateOperator.SubString.LIKE.apply(conclusionValueConstraint.asString().value(), Pattern.compile(value));
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+        }
     }
 
     public static class DateTime extends ValueConstraint<LocalDateTime> {
@@ -357,6 +410,12 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public DateTime clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueDateTime(predicate(), value);
+        }
+
+        @Override
+        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
+            return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isDateTime() &&
+                    PredicateOperator.Equality.of(predicate.asEquality()).apply(Predicate.compareDateTimes(conclusionValueConstraint.asDateTime().value(), value)));
         }
     }
 
@@ -399,6 +458,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public Variable clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueVariable(predicate(), cloner.cloneVariable(value));
+        }
+
+        @Override
+        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
+            return true;
         }
     }
 }

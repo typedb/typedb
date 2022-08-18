@@ -62,6 +62,7 @@ host_compatible_java_test(
         "resolvable/ConcludableTest.java",
     ],
     native_libraries_deps = [
+        "//common:common",
         "//logic:logic",
         "//pattern:pattern",
     ],
@@ -92,6 +93,28 @@ host_compatible_java_test(
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
+    ],
+)
+
+host_compatible_java_test(
+    name = "test-unifier",
+    srcs = [
+        "resolvable/UnifierTest.java",
+    ],
+    native_libraries_deps = [
+        "//common:common",
+        "//logic:logic",
+        "//pattern:pattern",
+        "//traversal:traversal"
+    ],
+    test_class = "com.vaticle.typedb.core.logic.resolvable.UnifierTest",
+    deps = [
+        # Internal dependencies
+
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/pattern:pattern"
     ],
 )
 
