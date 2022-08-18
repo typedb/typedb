@@ -250,7 +250,7 @@ public class Unifier {
 
         void addConstantValueRequirements(Set<ValueConstraint<?>> values,
                                           Retrievable id, Retrievable unifiedId) {
-            iterate(values).filter(v -> v.predicate().equals(EQ)).forEachRemaining(value -> {
+            iterate(values).filter(v -> !v.isVariable()).forEachRemaining(value -> {
                 unifiedRequirements().predicates(unifiedId, valuePredicate(value));
                 requirements().predicates(id, valuePredicate(value));
             });
@@ -349,6 +349,7 @@ public class Unifier {
 
         static Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valuePredicate(ValueConstraint<?> value) {
             Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> predicateFn;
+            assert !value.isVariable();
 
             if (value.predicate().isEquality()) {
                 PredicateOperator.Equality predicateOperator = PredicateOperator.Equality.of(value.predicate().asEquality());

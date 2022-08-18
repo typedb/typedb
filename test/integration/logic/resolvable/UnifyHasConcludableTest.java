@@ -141,6 +141,12 @@ public class UnifyHasConcludableTest {
         return type.asString().put(stringValue);
     }
 
+    private Thing instanceOf(String longAttributeLabel, Long longValue) {
+        AttributeType type = conceptMgr.getAttributeType(longAttributeLabel);
+        assert type != null;
+        return type.asLong().put(longValue);
+    }
+
     //TODO: create more tests when type inference is working to test unifier pruning
 
     @Test
@@ -487,5 +493,285 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("self-owning-attribute")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
         assertEquals(0, unifier.requirements().predicates().size());
+    }
+
+    @Test
+    public void has_attribute_notequal_unifies_rule_has_exact() {
+        String conjunction = "{ $y has name != 'john'; }";
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
+        Concludable.Has queryConcludable = concludables.iterator().next().asHas();
+
+        Rule rule = createRule("has-rule", "{ $x isa person; }", "$x has first-name 'jane'", logicMgr);
+
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
+        assertEquals(1, unifiers.size());
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$y", set("$x"));
+            put("$_0", set("$_0"));
+        }};
+        assertEquals(expected, result);
+
+        // test requirements
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
+        assertEquals(1, unifier.requirements().predicates().size()); // NEW CASE
+
+        // test filter allows a valid answer
+        Map<Identifier.Variable, Concept> concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.anon(0), instanceOf("first-name", "jane"))
+        );
+
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        assertEquals(2, unified.next().concepts().size());
+
+        // filter out invalid value
+        concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
+        );
+
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertFalse(unified.hasNext());
+    }
+
+    @Test
+    public void has_attribute_notequal_unifies_rule_has_variable() {
+        String conjunction = "{ $y has name != 'john'; }";
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
+        Concludable.Has queryConcludable = concludables.iterator().next().asHas();
+
+        Rule rule = createRule("has-rule", "{ $x isa person; $n isa first-name; }", "$x has $n", logicMgr);
+
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
+        assertEquals(1, unifiers.size());
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$y", set("$x"));
+            put("$_0", set("$n"));
+        }};
+        assertEquals(expected, result);
+
+        // test requirements
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
+        assertEquals(1, unifier.requirements().predicates().size());
+
+        // test filter allows a valid answer
+        Map<Identifier.Variable, Concept> concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("n"), instanceOf("last-name", "bob"))
+        );
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        assertEquals(2, unified.next().concepts().size());
+
+        // filter out invalid type
+        concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("n"), instanceOf("age"))
+        );
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertFalse(unified.hasNext());
+
+        // filter out invalid value
+        concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("n"), instanceOf("first-name", "john"))
+        );
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertFalse(unified.hasNext());
+    }
+
+    @Test
+    public void has_attribute_LT_unifies_rule_has_var() {
+        String conjunction = "{ $y has age < 20; }";
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
+        Concludable.Has queryConcludable = concludables.iterator().next().asHas();
+
+        Rule rule = createRule("has-rule", "{ $x isa person; $a isa age; }", "$x has $a", logicMgr);
+
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
+        assertEquals(1, unifiers.size());
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$y", set("$x"));
+            put("$_0", set("$a"));
+        }};
+        assertEquals(expected, result);
+
+        // test requirements
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(1, unifier.requirements().predicates().size());
+
+        // test filter allows a valid answer
+        Map<Identifier.Variable, Concept> concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("a"), instanceOf("age", 15L))
+        );
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        assertEquals(2, unified.next().concepts().size());
+
+        // filter out invalid value
+        concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("a"), instanceOf("age", 25L))
+        );
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertFalse(unified.hasNext());
+    }
+
+    @Test
+    public void has_attribute_GT_unifies_rule_has_var() {
+        String conjunction = "{ $y has age > 20; }";
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
+        Concludable.Has queryConcludable = concludables.iterator().next().asHas();
+
+        Rule rule = createRule("has-rule", "{ $x isa person; $a isa age; }", "$x has $a", logicMgr);
+
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
+        assertEquals(1, unifiers.size());
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$y", set("$x"));
+            put("$_0", set("$a"));
+        }};
+        assertEquals(expected, result);
+
+        // test requirements
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(1, unifier.requirements().predicates().size());
+
+        // test filter allows a valid answer
+        Map<Identifier.Variable, Concept> concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("a"), instanceOf("age", 25L))
+        );
+
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        assertEquals(2, unified.next().concepts().size());
+
+        // filter out invalid value
+        concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("a"), instanceOf("age", 15L))
+        );
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertFalse(unified.hasNext());
+    }
+
+    @Test
+    public void has_attribute_contains_unifies_rule_has_var() {
+        String conjunction = "{ $y has name contains 'van'; }";
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
+        Concludable.Has queryConcludable = concludables.iterator().next().asHas();
+
+        Rule rule = createRule("has-rule", "{ $x isa person; $n isa last-name; }", "$x has $n", logicMgr);
+
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
+        assertEquals(1, unifiers.size());
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$y", set("$x"));
+            put("$_0", set("$n"));
+        }};
+        assertEquals(expected, result);
+
+        // test requirements
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
+        assertEquals(1, unifier.requirements().predicates().size());
+
+        // test filter allows a valid answer
+        Map<Identifier.Variable, Concept> concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("n"), instanceOf("last-name", "van Gogh"))
+        );
+
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        assertEquals(2, unified.next().concepts().size());
+
+        // filter out invalid type
+        concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("n"), instanceOf("age"))
+        );
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertFalse(unified.hasNext());
+
+        // filter out invalid value
+        concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("n"), instanceOf("first-name", "john"))
+        );
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertFalse(unified.hasNext());
+    }
+
+
+    @Test
+    public void has_attribute_like_unifies_rule_has_var() {
+        String conjunction = "{ $y has name like '[a-z]+@[a-z]+\\.(com|net)'; }";
+        Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
+        Concludable.Has queryConcludable = concludables.iterator().next().asHas();
+
+        Rule rule = createRule("has-rule", "{ $x isa person; $n isa last-name; }", "$x has $n", logicMgr);
+
+        List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
+        assertEquals(1, unifiers.size());
+        Unifier unifier = unifiers.get(0);
+        Map<String, Set<String>> result = getStringMapping(unifier.mapping());
+        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
+            put("$y", set("$x"));
+            put("$_0", set("$n"));
+        }};
+        assertEquals(expected, result);
+
+        // test requirements
+        assertEquals(0, unifier.requirements().types().size());
+        assertEquals(2, unifier.requirements().isaExplicit().size());
+        assertEquals(set(Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.anon(0)));
+        assertEquals(1, unifier.requirements().predicates().size());
+
+        // test filter allows a valid answer
+        Map<Identifier.Variable, Concept> concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("n"), instanceOf("last-name", "reasoner@vaticle.com"))
+        );
+
+        FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertTrue(unified.hasNext());
+        assertEquals(2, unified.next().concepts().size());
+
+        // filter out invalid type
+        concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("n"), instanceOf("age"))
+        );
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertFalse(unified.hasNext());
+
+        // filter out invalid value
+        concepts = map(
+                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.name("n"), instanceOf("first-name", "reasoner@grakn.ai"))
+        );
+        unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
+        assertFalse(unified.hasNext());
     }
 }
