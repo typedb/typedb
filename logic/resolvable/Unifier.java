@@ -351,6 +351,7 @@ public class Unifier {
         }
 
         static Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valuePredicate(ValueConstraint<?> value) {
+            // TODO: Leverage more of traversal.Predicate
             Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> predicateFn;
             assert !value.isVariable();
 
