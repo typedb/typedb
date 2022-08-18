@@ -104,7 +104,7 @@ public class LogicManager {
     }
 
     /**
-     * On commit we must clear the rule cache and revalidate rules - this will force re-running type resolution
+     * On commit we must clear the rule cache and revalidate rules - this will force re-running type inference
      * when we re-load the Rule objects
      * Rule indexes should also be deleted and regenerated as needed
      * Note: does not need to be synchronized as only called by one schema transaction at a time
@@ -112,13 +112,12 @@ public class LogicManager {
     public void revalidateAndReindexRules() {
         logicCache.rule().clear();
 
-        // re-validate all rules are valid
-        rules().forEachRemaining(rule -> rule.validate(this, conceptMgr));
+        if (graphMgr.schema().typesModified()) {
+            // re-validate all rules are valid
+            rules().forEachRemaining(rule -> rule.validate(this, conceptMgr));
 
-        // re-index if rules are valid and satisfiable
-        if (graphMgr.schema().rules().conclusions().isOutdated()) {
-            graphMgr.schema().rules().all().forEachRemaining(s -> fromStructure(s).reindex());
-            graphMgr.schema().rules().conclusions().outdated(false);
+            // recreate rule index conclusions
+            graphMgr.schema().rules().all().forEachRemaining(s -> fromStructure(s).conclusion().reindex());
         }
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
