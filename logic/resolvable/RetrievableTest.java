@@ -158,10 +158,10 @@ public class RetrievableTest {
     }
 
     @Test
-    public void test_has_value_constraints_are_in_retrievable_and_concludable() {
-        Set<Concludable> concludables = Concludable.create(parse("{ $a has $b; $b > 5; $b < 10; }"));
+    public void test_has_value_constraints_are_in_retrievable_iff_they_are_not_in_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a has $b; $b > 5; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b > 5; $b < 10; }"), concludables);
-        assertEquals(set(parse("{ $b > 5; $b < 10; }")),
+        assertEquals(set(parse("{ $b < 10; }")),
                      iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
@@ -173,18 +173,18 @@ public class RetrievableTest {
     }
 
     @Test
-    public void test_isa_value_constraints_are_in_retrievable_and_concludable() {
-        Set<Concludable> concludables = Concludable.create(parse("{ $a isa $b; $a > 5; $a < 10; }"));
+    public void test_isa_value_constraints_are_in_retrievable_iff_they_are_not_in_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a isa $b; $a > 5; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a isa $b; $a > 5; $a < 10; }"), concludables);
-        assertEquals(set(parse("{ $a > 5; $a < 10; }")),
+        assertEquals(set(parse("{ $a < 10; }")),
                      iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
-    public void test_attribute_value_constraints_are_in_retrievable_and_concludable() {
-        Set<Concludable> concludables = Concludable.create(parse("{ $a > 5; $a < 10; }"));
+    public void test_attribute_value_constraints_are_in_retrievable_iff_they_are_not_in_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a > 5; }"));
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a > 5; $a < 10; }"), concludables);
-        assertEquals(set(parse("{ $a > 5; $a < 10; }")),
+        assertEquals(set(parse("{ $a < 10; }")),
                      iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 

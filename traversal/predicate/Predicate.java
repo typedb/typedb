@@ -23,7 +23,9 @@ import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE_PRECISION;
 
@@ -39,11 +41,56 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
         this.hash = Objects.hash(operator, argument);
     }
 
+    // TODO: Move this where it belongs - Encoding?
+    public static int compareBooleans(boolean first, boolean second) {
+        return Boolean.compare(first, second);
+    }
+
+    public static int compareLongs(long first, long second) {
+        return Long.compare(first, second);
+    }
+
     public static int compareDoubles(double first, double second) {
         int res = Double.compare(first, second);
         if (res == 0) return 0;
         else if (Math.abs(first - second) < DOUBLE_PRECISION) return 0;
         else return res;
+    }
+
+    public static int compareLongToDouble(long first, double second) {
+        return compareDoubles(first, second);
+    }
+
+    public static int compareDoubleToLong(double first, long second) {
+        return compareDoubles(first, second);
+    }
+
+    public static int compareDateTimes(LocalDateTime first, LocalDateTime second) {
+        return first.compareTo(second);
+    }
+
+    public static int compareStrings(String first, String second) {
+        return first.compareTo(second);
+    }
+
+    public static boolean stringContains(String superString, String subString) {
+        int len2 = subString.length();
+        if (len2 == 0) return true; // Empty string is contained
+
+        char first2Lo = Character.toLowerCase(subString.charAt(0));
+        char first2Up = Character.toUpperCase(subString.charAt(0));
+
+        for (int i = 0; i <= superString.length() - len2; i++) {
+            // Quick check before calling the more expensive regionMatches() method:
+            char first1 = superString.charAt(i);
+            if (first1 != first2Lo && first1 != first2Up) continue;
+            if (superString.regionMatches(true, i, subString, 0, len2)) return true;
+        }
+        return false;
+    }
+
+    public static boolean stringLike(Pattern regex, String value) {
+        return regex.matcher(value).matches();
     }
 
     public PRED_OP operator() {

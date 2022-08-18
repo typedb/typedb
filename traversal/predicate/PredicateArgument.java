@@ -82,7 +82,7 @@ public abstract class PredicateArgument {
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Boolean value) {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.BOOLEAN)) return false;
                 assert vertex.isBoolean();
-                return vertex.asBoolean().value().equals(value);
+                return operator.apply(Predicate.compareBooleans(vertex.asBoolean().value(), value));
             }
         };
 
@@ -98,9 +98,12 @@ public abstract class PredicateArgument {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.LONG)) return false;
                 assert (vertex.isLong() || vertex.isDouble());
 
-                if (vertex.isLong()) return operator.apply(vertex.asLong().value().compareTo(value));
-                else if (vertex.isDouble())
-                    return operator.apply(Predicate.compareDoubles(vertex.asDouble().value(), value));
+                if (vertex.isLong()) {
+                    return operator.apply(Predicate.compareLongs(vertex.asLong().value(), value));
+                }
+                else if (vertex.isDouble()){
+                    return operator.apply(Predicate.compareDoubleToLong(vertex.asDouble().value(), value));
+                }
                 else throw TypeDBException.of(ILLEGAL_STATE);
             }
         };
@@ -117,11 +120,13 @@ public abstract class PredicateArgument {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.DOUBLE)) return false;
                 assert (vertex.isLong() || vertex.isDouble());
 
-                double vertexValue;
-                if (vertex.isLong()) vertexValue = vertex.asLong().value();
-                else if (vertex.isDouble()) vertexValue = vertex.asDouble().value();
+                if (vertex.isLong()){
+                    return operator.apply(Predicate.compareLongToDouble(vertex.asLong().value(), value));
+                }
+                else if (vertex.isDouble()) {
+                    return operator.apply(Predicate.compareDoubles(vertex.asDouble().value(), value));
+                }
                 else throw TypeDBException.of(ILLEGAL_STATE);
-                return operator.apply(Predicate.compareDoubles(vertexValue, value));
             }
         };
 
@@ -137,7 +142,7 @@ public abstract class PredicateArgument {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.DATETIME)) return false;
                 assert vertex.isDateTime();
 
-                return operator.apply(vertex.asDateTime().value().compareTo(value));
+                return operator.apply(Predicate.compareDateTimes(vertex.asDateTime().value(), value));
             }
         };
 
@@ -154,7 +159,7 @@ public abstract class PredicateArgument {
             public boolean apply(PredicateOperator operator, AttributeVertex<?> vertex, String value) {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
                 assert vertex.isString() && operator.isEquality();
-                return operator.asEquality().apply(vertex.asString().value().compareTo(value));
+                return operator.asEquality().apply(Predicate.compareStrings(vertex.asString().value(), value));
             }
         };
     }

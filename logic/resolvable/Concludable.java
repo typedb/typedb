@@ -24,9 +24,6 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Thing;
-import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.concept.type.Type;
-import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.pattern.Conjunction;
@@ -45,12 +42,10 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
-import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,17 +53,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
-import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 import static java.util.stream.Collectors.toSet;
 
 public abstract class Concludable extends Resolvable<Conjunction> implements AlphaEquivalent<Concludable> {
@@ -147,121 +139,10 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Attribute.class));
     }
 
-    <T, V> Map<T, Set<V>> cloneMapping(Map<T, Set<V>> mapping) {
+    static <T, V> Map<T, Set<V>> cloneMapping(Map<T, Set<V>> mapping) {
         Map<T, Set<V>> clone = new HashMap<>();
         mapping.forEach((key, set) -> clone.put(key, new HashSet<>(set)));
         return clone;
-    }
-
-    /*
-    Unifying a source type variable with a target type variable is impossible if none of the source's allowed labels,
-    and their subtypes' labels, are found in the allowed labels of the target type.
-
-    Improvements:
-    * we could take information such as negated constraints into account.
-     */
-    boolean unificationSatisfiable(TypeVariable concludableTypeVar, TypeVariable conclusionTypeVar, ConceptManager conceptMgr) {
-
-        if (!concludableTypeVar.inferredTypes().isEmpty() && !conclusionTypeVar.inferredTypes().isEmpty()) {
-            return !Collections.disjoint(subtypeLabels(concludableTypeVar.inferredTypes(), conceptMgr).toSet(),
-                                         conclusionTypeVar.inferredTypes());
-        } else {
-            // if either variable is allowed to be any type (ie empty set), its possible to do unification
-            return true;
-        }
-    }
-
-    /*
-    Unifying a source thing variable with a target thing variable is impossible if none of the source's
-    allowed types are found in the target's allowed types.
-    It is also impossible, if there are value constraints on the source that are incompatible with value constraints
-    on the target. eg. `$x > 10` and `$x = 5`.
-
-    Improvements:
-    * take into account negated constraints
-    * take into account if an attribute owned is a key but the unification target requires a different value
-     */
-    boolean unificationSatisfiable(ThingVariable concludableThingVar, ThingVariable conclusionThingVar) {
-        boolean satisfiable = true;
-        if (!concludableThingVar.inferredTypes().isEmpty() && !conclusionThingVar.inferredTypes().isEmpty()) {
-            satisfiable = !Collections.disjoint(concludableThingVar.inferredTypes(), conclusionThingVar.inferredTypes());
-        }
-
-        if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
-            // TODO: detect value contradictions between constant predicates
-            satisfiable &= true;
-        }
-        return satisfiable;
-    }
-
-    FunctionalIterator<Label> subtypeLabels(Set<Label> labels, ConceptManager conceptMgr) {
-        return iterate(labels).flatMap(l -> subtypeLabels(l, conceptMgr));
-    }
-
-    FunctionalIterator<Label> subtypeLabels(Label label, ConceptManager conceptMgr) {
-        // TODO: this is cachable, and is a hot code path - analyse and see impact of cache
-        if (label.scope().isPresent()) {
-            assert conceptMgr.getRelationType(label.scope().get()) != null;
-            return conceptMgr.getRelationType(label.scope().get()).getRelates(label.name()).getSubtypes()
-                    .map(RoleType::getLabel);
-        } else {
-            return conceptMgr.getThingType(label.name()).getSubtypes().map(Type::getLabel);
-        }
-    }
-
-    private static Set<ValueConstraint<?>> equalsConstantConstraints(Set<ValueConstraint<?>> values) {
-        return iterate(values).filter(v -> v.predicate().equals(EQ)).filter(v -> !v.isVariable()).toSet();
-    }
-
-    private static Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valueEqualsFunction(ValueConstraint<?> value) {
-        Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> predicateFn;
-        if (value.isLong()) {
-            predicateFn = (a) -> {
-                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                        .comparableTo(Encoding.ValueType.LONG)) return false;
-
-                assert a.getType().isDouble() || a.getType().isLong();
-                if (a.getType().isLong())
-                    return value.asLong().value().compareTo(a.asLong().getValue()) == 0;
-                else if (a.getType().isDouble())
-                    return Predicate.compareDoubles(a.asDouble().getValue(), value.asLong().value()) == 0;
-                else throw TypeDBException.of(ILLEGAL_STATE);
-            };
-        } else if (value.isDouble()) {
-            predicateFn = (a) -> {
-                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                        .comparableTo(Encoding.ValueType.DOUBLE)) return false;
-
-                assert a.getType().isDouble() || a.getType().isLong();
-                if (a.getType().isLong())
-                    return Predicate.compareDoubles(a.asLong().getValue(), value.asDouble().value()) == 0;
-                else if (a.getType().isDouble())
-                    return Predicate.compareDoubles(a.asDouble().getValue(), value.asDouble().value()) == 0;
-                else throw TypeDBException.of(ILLEGAL_STATE);
-            };
-        } else if (value.isBoolean()) {
-            predicateFn = (a) -> {
-                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                        .comparableTo(Encoding.ValueType.BOOLEAN)) return false;
-                assert a.getType().isBoolean();
-                return a.asBoolean().getValue().compareTo(value.asBoolean().value()) == 0;
-            };
-        } else if (value.isString()) {
-            predicateFn = (a) -> {
-                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                        .comparableTo(Encoding.ValueType.STRING)) return false;
-                assert a.getType().isString();
-                return a.asString().getValue().compareTo(value.asString().value()) == 0;
-            };
-        } else if (value.isDateTime()) {
-            predicateFn = (a) -> {
-                if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                        .comparableTo(Encoding.ValueType.DATETIME)) return false;
-                assert a.getType().isDateTime();
-                return a.asDateTime().getValue().compareTo(value.asDateTime().value()) == 0;
-            };
-        } else throw TypeDBException.of(ILLEGAL_STATE);
-        return predicateFn;
     }
 
     private static FunctionalIterator<AlphaEquivalence> alphaEqualValueConstraints(Set<ValueConstraint<?>> set1,
@@ -278,14 +159,6 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                 }
             }
             return Iterators.single(AlphaEquivalence.empty());
-        }
-    }
-
-    void addConstantValueRequirements(Unifier.Builder unifierBuilder, Set<ValueConstraint<?>> values,
-                                      Retrievable id, Retrievable unifiedId) {
-        for (ValueConstraint<?> value : equalsConstantConstraints(values)) {
-            unifierBuilder.unifiedRequirements().predicates(unifiedId, valueEqualsFunction(value));
-            unifierBuilder.requirements().predicates(id, valueEqualsFunction(value));
         }
     }
 
@@ -365,16 +238,16 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             Unifier.Builder unifierBuilder = Unifier.builder();
             ThingVariable relVar = relation().owner();
             ThingVariable unifiedRelVar = relationConclusion.relation().owner();
-            if (unificationSatisfiable(relVar, unifiedRelVar)) {
+            if (Unifier.Builder.unificationSatisfiable(relVar, unifiedRelVar)) {
                 unifierBuilder.addThing(relVar, unifiedRelVar.id());
             } else return Iterators.empty();
 
             if (relVar.isa().isPresent()) {
                 if (relVar.isa().get().type().id().isLabel()) {
                     // require the unification target type variable satisfies a set of labels
-                    Set<Label> allowedTypes = iterate(relVar.isa().get().type().inferredTypes()).flatMap(label -> subtypeLabels(label, conceptMgr)).toSet();
+                    Set<Label> allowedTypes = iterate(relVar.isa().get().type().inferredTypes()).flatMap(label -> Unifier.Builder.subtypeLabels(label, conceptMgr)).toSet();
                     assert allowedTypes.containsAll(relVar.inferredTypes())
-                            && unificationSatisfiable(relVar.isa().get().type(), unifiedRelVar.isa().get().type(), conceptMgr);
+                            && Unifier.Builder.unificationSatisfiable(relVar.isa().get().type(), unifiedRelVar.isa().get().type(), conceptMgr);
                     unifierBuilder.addLabelType(relVar.isa().get().type().id().asLabel(), allowedTypes, unifiedRelVar.isa().get().type().id());
                 } else {
                     unifierBuilder.addVariableType(relVar.isa().get().type(), unifiedRelVar.isa().get().type().id());
@@ -395,7 +268,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             RolePlayer conjRP = conjRolePLayers.get(0);
             return iterate(thenRolePlayers)
                     .filter(thenRP -> iterate(mapping.values()).noneMatch(rolePlayers -> rolePlayers.contains(thenRP)))
-                    .filter(thenRP -> unificationSatisfiable(conjRP, thenRP, conceptMgr))
+                    .filter(thenRP -> Unifier.Builder.unificationSatisfiable(conjRP, thenRP, conceptMgr))
                     .map(thenRP -> {
                         Map<RolePlayer, Set<RolePlayer>> clone = cloneMapping(mapping);
                         clone.putIfAbsent(conjRP, new HashSet<>());
@@ -415,7 +288,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                     TypeVariable thenRoleType = thenRP.roleType().get();
                     if (conjRoleType.id().isLabel()) {
                         Set<Label> allowedTypes = iterate(conjRoleType.inferredTypes())
-                                .flatMap(roleLabel -> subtypeLabels(roleLabel, conceptMgr))
+                                .flatMap(roleLabel -> Unifier.Builder.subtypeLabels(roleLabel, conceptMgr))
                                 .toSet();
                         unifierBuilder.addLabelType(conjRoleType.id().asLabel(), allowedTypes, thenRoleType.id());
                     } else {
@@ -425,16 +298,6 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             }));
 
             return unifierBuilder.build();
-        }
-
-        private boolean unificationSatisfiable(RolePlayer concludableRolePlayer, RolePlayer conclusionRolePlayer, ConceptManager conceptMgr) {
-            assert conclusionRolePlayer.roleType().isPresent();
-            boolean satisfiable = true;
-            if (concludableRolePlayer.roleType().isPresent()) {
-                satisfiable = unificationSatisfiable(concludableRolePlayer.roleType().get(), conclusionRolePlayer.roleType().get(), conceptMgr);
-            }
-            satisfiable &= unificationSatisfiable(concludableRolePlayer.player(), conclusionRolePlayer.player());
-            return satisfiable;
         }
 
         @Override
@@ -540,7 +403,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(has);
             if (isa != null) constraints.add(isa);
-            constraints.addAll(equalsConstantConstraints(values));
+            constraints.addAll(Unifier.Builder.constantValueConstraints(values));
             return set(constraints);
         }
 
@@ -560,21 +423,21 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             Unifier.Builder unifierBuilder = Unifier.builder();
             ThingVariable owner = has().owner();
             ThingVariable unifiedOwner = hasConclusion.owner();
-            if (unificationSatisfiable(owner, unifiedOwner)) {
+            if (Unifier.Builder.unificationSatisfiable(owner, unifiedOwner)) {
                 unifierBuilder.addThing(owner, unifiedOwner.id());
             } else return Iterators.empty();
 
             ThingVariable attr = has().attribute();
             ThingVariable conclusionAttr = hasConclusion.attribute();
-            if (unificationSatisfiable(attr, conclusionAttr)) {
+            if (Unifier.Builder.unificationSatisfiable(attr, conclusionAttr)) {
                 unifierBuilder.addThing(attr, conclusionAttr.id());
                 if (attr.isa().isPresent() && attr.isa().get().type().label().isPresent()) {
                     // $x has [type] $a/"John"
                     assert attr.isa().isPresent() && attr.isa().get().type().label().isPresent() &&
-                            subtypeLabels(attr.isa().get().type().label().get().properLabel(), conceptMgr).toSet()
+                            Unifier.Builder.subtypeLabels(attr.isa().get().type().label().get().properLabel(), conceptMgr).toSet()
                                     .containsAll(unifierBuilder.requirements().isaExplicit().get(attr.id()));
                 }
-                addConstantValueRequirements(unifierBuilder, values, attr.id(), conclusionAttr.id());
+                unifierBuilder.addConstantValueRequirements(values, attr.id(), conclusionAttr.id());
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -662,7 +525,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         public Set<Constraint> concludableConstraints() {
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(isa);
-            constraints.addAll(equalsConstantConstraints(values));
+            constraints.addAll(Unifier.Builder.constantValueConstraints(values));
             return set(constraints);
         }
 
@@ -681,22 +544,22 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             Unifier.Builder unifierBuilder = Unifier.builder();
             ThingVariable owner = isa().owner();
             ThingVariable unifiedOwner = isa.isa().owner();
-            if (unificationSatisfiable(owner, unifiedOwner)) {
+            if (Unifier.Builder.unificationSatisfiable(owner, unifiedOwner)) {
                 unifierBuilder.addThing(owner, unifiedOwner.id());
             } else return Iterators.empty();
 
             TypeVariable type = isa().type();
             TypeVariable unifiedType = isa.isa().type();
-            if (unificationSatisfiable(type, unifiedType, conceptMgr)) {
+            if (Unifier.Builder.unificationSatisfiable(type, unifiedType, conceptMgr)) {
                 if (type.id().isLabel()) {
                     // form: $r isa friendship -> require type subs(friendship) for anonymous type variable
-                    Set<Label> allowedTypes = subtypeLabels(type.inferredTypes(), conceptMgr).toSet();
+                    Set<Label> allowedTypes = Unifier.Builder.subtypeLabels(type.inferredTypes(), conceptMgr).toSet();
                     assert allowedTypes.containsAll(unifierBuilder.requirements().isaExplicit().get(owner.id()));
                     unifierBuilder.addLabelType(type.id().asLabel(), allowedTypes, unifiedType.id());
                 } else {
                     unifierBuilder.addVariableType(type, unifiedType.id());
                 }
-                addConstantValueRequirements(unifierBuilder, values, owner.id(), unifiedOwner.id());
+                unifierBuilder.addConstantValueRequirements(values, owner.id(), unifiedOwner.id());
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -785,7 +648,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         @Override
         public Set<Constraint> concludableConstraints() {
-            return new HashSet<>(equalsConstantConstraints(values));
+            return new HashSet<>(Unifier.Builder.constantValueConstraints(values));
         }
 
         public ThingVariable attribute() {
@@ -810,10 +673,10 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         FunctionalIterator<Unifier> unify(Rule.Conclusion.Value value) {
             assert iterate(values).filter(ValueConstraint::isVariable).toSet().size() == 0;
             Unifier.Builder unifierBuilder = Unifier.builder();
-            if (unificationSatisfiable(attribute, value.value().owner())) {
+            if (Unifier.Builder.unificationSatisfiable(attribute, value.value().owner())) {
                 unifierBuilder.addThing(attribute, value.value().owner().id());
             } else return Iterators.empty();
-            addConstantValueRequirements(unifierBuilder, values, attribute.id(), value.value().owner().id());
+            unifierBuilder.addConstantValueRequirements(values, attribute.id(), value.value().owner().id());
             return single(unifierBuilder.build());
         }
 
