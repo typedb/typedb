@@ -28,6 +28,8 @@ import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
@@ -135,7 +137,7 @@ public class ControllerTest {
                 ControllerRegistry registry = transaction.reasoner().controllerRegistry();
                 AnswerProducer answerProducer = new AnswerProducer();
                 try {
-                    registry.createRootConjunction(conjunctionPattern, Filter.create(new HashSet<>()), options.explain(), answerProducer);
+                    registry.createRootConjunction(ResolvableConjunction.of(conjunctionPattern), Filter.create(new HashSet<>()), options.explain(), answerProducer);
                 } catch (TypeDBException e) {
                     fail();
                 }
@@ -541,7 +543,7 @@ public class ControllerTest {
         AnswerProducer answerProducer = new AnswerProducer();
         answerProducer.getNextAnswer();
         try {
-            registry.createRootDisjunction(disjunction, Filter.create(filter), options.explain(), answerProducer);
+            registry.createRootDisjunction(ResolvableDisjunction.of(disjunction), Filter.create(filter), options.explain(), answerProducer);
         } catch (TypeDBException e) {
             fail();
             return;
@@ -558,7 +560,7 @@ public class ControllerTest {
         AnswerProducer answerProducer = new AnswerProducer();
         answerProducer.getNextAnswer();
         try {
-            registry.createRootConjunction(conjunction, Filter.create(filter), options.explain(), answerProducer);
+            registry.createRootConjunction(ResolvableConjunction.of(conjunction), Filter.create(filter), options.explain(), answerProducer);
         } catch (TypeDBException e) {
             fail();
             return;

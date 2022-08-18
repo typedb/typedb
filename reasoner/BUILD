@@ -38,6 +38,7 @@ native_java_libraries(
         "controller/*.java",
         "answer/*.java",
         "common/*.java",
+        "planner/*.java"
         ], exclude = ["*Test.java", "**/*Test.java"],
     ),
     native_libraries_deps = [
