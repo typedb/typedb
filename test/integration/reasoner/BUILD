@@ -91,8 +91,8 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-planner",
-    srcs = ["common/PlannerTest.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.common.PlannerTest",
+    srcs = ["planner/PlannerTest.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.planner.PlannerTest",
     native_libraries_deps = [
         # Internal dependencies
         "//database:database",
@@ -102,6 +102,7 @@ host_compatible_java_test(
         "//pattern:pattern",
         "//logic:logic",
         "//reasoner:reasoner",
+         "//traversal:traversal",
     ],
     deps = [
         "//test/integration/util",
@@ -117,7 +118,7 @@ checkstyle_test(
     include = glob([
         "*",
         "controller/*",
-        "common/*",
+        "planner/*",
     ]),
     license_type = "agpl-header",
 )

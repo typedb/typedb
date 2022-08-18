@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.common;
+package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
@@ -28,11 +28,13 @@ import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
 import org.junit.Before;
@@ -41,8 +43,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
@@ -70,8 +73,8 @@ public class PlannerTest {
         databaseMgr.create(database);
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
         transaction.query().define(TypeQL.parseQuery("define person sub entity, plays friendship:friend, owns name; " +
-                                                                  "friendship sub relation, relates friend;" +
-                                                                  "name sub attribute, value string;"));
+                "friendship sub relation, relates friend;" +
+                "name sub attribute, value string;"));
         transaction.commit();
         session.close();
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
@@ -97,7 +100,8 @@ public class PlannerTest {
         Retrievable retrievable = new Retrievable(resolvedConjunction("{ $c($b); }", logicMgr));
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .computeResolvableOrdering(resolvables, set()).plan();
         assertEquals(list(concludable, retrievable), plan);
     }
 
@@ -108,7 +112,8 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
 
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .computeResolvableOrdering(resolvables, set()).plan();
         assertEquals(list(retrievable, concludable), plan);
     }
 
@@ -119,15 +124,30 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
 
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .computeResolvableOrdering(resolvables, set()).plan();
+        assertEquals(list(concludable, concludable2), plan);
+    }
+
+    @Test
+    public void test_planner_starts_at_bound_concludable() {
+        Concludable concludable = Concludable.create(resolvedConjunction("{ $r($a, $b); }", logicMgr)).iterator().next();
+        Concludable concludable2 = Concludable.create(resolvedConjunction("{ $s($b, $c); }", logicMgr)).iterator().next();
+
+        Set<Resolvable<?>> resolvables = set(concludable, concludable2);
+
+        Optional<Identifier.Variable.Retrievable> varA = concludable.retrieves().stream().filter(v -> v.isRetrievable() && v.asRetrievable().isName() && v.asRetrievable().asName().name().equals("a")).findFirst();
+        assert varA.isPresent();
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .computeResolvableOrdering(resolvables, set(varA.get())).plan();
         assertEquals(list(concludable, concludable2), plan);
     }
 
     @Test
     public void test_planner_multiple_dependencies() {
         transaction.query().define(TypeQL.parseQuery("define employment sub relation, relates employee, relates employer;" +
-                                                                  "person plays employment:employee;" +
-                                                                  "company sub entity, plays employment:employer, owns name;"));
+                "person plays employment:employee;" +
+                "company sub entity, plays employment:employer, owns name;"));
         transaction.commit();
         session.close();
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
@@ -145,7 +165,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $e($c, $p2) isa employment; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable, concludable2);
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .computeResolvableOrdering(resolvables, set()).plan();
 
         assertEquals(list(retrievable, concludable, retrievable2, concludable2), plan);
     }
@@ -156,7 +177,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b has $a; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .computeResolvableOrdering(resolvables, set()).plan();
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -168,7 +190,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b($a); }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .computeResolvableOrdering(resolvables, set()).plan();
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -180,10 +203,42 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $c($d); }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .computeResolvableOrdering(resolvables, set()).plan();
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
+    }
+
+    @Test
+    public void test_planner_negations_with_dependencies() {
+        transaction.query().define(TypeQL.parseQuery("define employment sub relation, relates employee, relates employer;" +
+                "work-permit sub relation, relates person;" +
+                "person plays employment:employee, plays work-permit:person;"));
+        transaction.commit();
+        session.close();
+        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+
+        EntityType person = conceptMgr.putEntityType("person");
+        AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+        person.setOwns(name);
+        conceptMgr.putRelationType("employment");
+        conceptMgr.putRelationType("work-permit");
+
+
+        Conjunction conjunction = resolvedConjunction("{ ($p,$e) isa employment;  not{ ($p) isa work-permit; }; }", logicMgr);
+        Set<Concludable> concludables = Concludable.create(conjunction);
+        Negated negated = new Negated(conjunction.negations().get(0));
+
+        Set<Resolvable<?>> resolvables = new HashSet<>();
+        resolvables.add(negated);
+        resolvables.addAll(concludables);
+
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .computeResolvableOrdering(resolvables, set()).plan();
+
+        assertEquals(plan.size(), 2);
+        assertEquals(plan.get(1), negated);
     }
 
     private static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
@@ -197,5 +252,4 @@ public class PlannerTest {
         logicMgr.typeInference().applyCombination(disjunction);
         return disjunction;
     }
-
 }

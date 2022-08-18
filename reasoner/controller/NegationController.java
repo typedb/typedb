@@ -58,7 +58,7 @@ public class NegationController extends AbstractController<
 
     @Override
     public void setUpUpstreamControllers() {
-        disjunctionContoller = registry().createNestedDisjunction(negated.pattern());
+        disjunctionContoller = registry().createNestedDisjunction(negated.disjunction());
     }
 
     @Override
