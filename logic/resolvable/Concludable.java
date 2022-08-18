@@ -61,7 +61,6 @@ import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
-import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 import static java.util.stream.Collectors.toSet;
 
 public abstract class Concludable extends Resolvable<Conjunction> implements AlphaEquivalent<Concludable> {
@@ -144,10 +143,6 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         Map<T, Set<V>> clone = new HashMap<>();
         mapping.forEach((key, set) -> clone.put(key, new HashSet<>(set)));
         return clone;
-    }
-
-    private static Set<ValueConstraint<?>> equalsConstantConstraints(Set<ValueConstraint<?>> values) {
-        return iterate(values).filter(v -> v.predicate().equals(EQ)).filter(v -> !v.isVariable()).toSet();
     }
 
     private static FunctionalIterator<AlphaEquivalence> alphaEqualValueConstraints(Set<ValueConstraint<?>> set1,
@@ -408,7 +403,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(has);
             if (isa != null) constraints.add(isa);
-            constraints.addAll(equalsConstantConstraints(values));
+            constraints.addAll(Unifier.Builder.constantValueConstraints(values));
             return set(constraints);
         }
 
@@ -530,7 +525,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         public Set<Constraint> concludableConstraints() {
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(isa);
-            constraints.addAll(equalsConstantConstraints(values));
+            constraints.addAll(Unifier.Builder.constantValueConstraints(values));
             return set(constraints);
         }
 
@@ -653,7 +648,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         @Override
         public Set<Constraint> concludableConstraints() {
-            return new HashSet<>(equalsConstantConstraints(values));
+            return new HashSet<>(Unifier.Builder.constantValueConstraints(values));
         }
 
         public ThingVariable attribute() {

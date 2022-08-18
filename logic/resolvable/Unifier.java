@@ -248,12 +248,11 @@ public class Unifier {
             unifiedRequirements.types(target, allowedTypes);
         }
 
-        void addConstantValueRequirements(Set<ValueConstraint<?>> values,
-                                          Retrievable id, Retrievable unifiedId) {
-            iterate(values).filter(v -> !v.isVariable()).forEachRemaining(value -> {
+        void addConstantValueRequirements(Set<ValueConstraint<?>> values, Retrievable id, Retrievable unifiedId) {
+            for(ValueConstraint<?> value: constantValueConstraints(values)){
                 unifiedRequirements().predicates(unifiedId, valuePredicate(value));
                 requirements().predicates(id, valuePredicate(value));
-            });
+            }
         }
 
         public Requirements.Constraint requirements() {
@@ -345,6 +344,10 @@ public class Unifier {
             }
             satisfiable &= unificationSatisfiable(concludableRolePlayer.player(), conclusionRolePlayer.player());
             return satisfiable;
+        }
+
+        static Set<ValueConstraint<?>> constantValueConstraints(Set<ValueConstraint<?>> values) {
+            return iterate(values).filter(v -> !v.isVariable()).toSet();
         }
 
         static Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valuePredicate(ValueConstraint<?> value) {
