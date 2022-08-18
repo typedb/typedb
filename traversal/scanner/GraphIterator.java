@@ -101,19 +101,22 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
         }
         iterate(procedure.vertices()).filter(v -> v.isThing() && v.asThing().isScope())
-                .forEachRemaining(v -> setupImplicitDependencies(v.outs()));
+                .forEachRemaining(this::setupImplicitDependencies);
     }
 
-    private void setupImplicitDependencies(Set<ProcedureEdge<?, ?>> edges) {
-        assert iterate(edges).map(TraversalEdge::from).toSet().size() <= 1;
-        Set<ProcedureEdge<?, ?>> forwardRPs = iterate(edges).filter(e -> e.isRolePlayer() && e.direction().isForward()).toSet();
-        iterate(forwardRPs).forEachRemaining(rp1 ->
-                iterate(forwardRPs).forEachRemaining(rp2 -> {
-                    if (rp1.to().order() < rp2.to().order() && rp1.asRolePlayer().overlaps(rp2.asRolePlayer(), params)) {
-                        setupImplicitDependency(rp1.to(), rp2.to());
-                    }
-                })
-        );
+    private void setupImplicitDependencies(ProcedureVertex<?, ?> vertex) {
+        Set<ProcedureEdge<?, ?>> rpEdges = iterate(vertex.outs()).filter(e -> e.isRolePlayer() && e.direction().isForward()).toSet();
+        iterate(rpEdges).forEachRemaining(rp1 -> iterate(rpEdges).forEachRemaining(rp2 -> {
+            if (rp1.to().order() < rp2.to().order() && rp1.asRolePlayer().overlaps(rp2.asRolePlayer(), params)) {
+                setupImplicitDependency(rp1.to(), rp2.to());
+            }
+        }));
+        Set<ProcedureEdge<?, ?>> relatingEdges = iterate(vertex.outs()).filter(e -> e.isRelating() && e.direction().isForward()).toSet();
+        iterate(relatingEdges).forEachRemaining(relating1 -> iterate(relatingEdges).forEachRemaining(relating2 -> {
+            if (relating1.to().order() < relating2.to().order() && relating1.asRelating().overlaps(relating2.asRelating(), params)) {
+                setupImplicitDependency(relating1.to(), relating2.to());
+            }
+        }));
     }
 
     private void setupImplicitDependency(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
@@ -215,7 +218,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             vertexTraverser.clear();
             vertexTraverser.procedureVertex.ins().forEach(e -> recordRevisit(procedureVertex, e.from()));
             vertexTraverser.implicitDependees.forEach(toRevisit::add);
-            toTraverse.add(procedureVertex);
+            toTraverse.add(procedureVertex);// TODO: do we need this? Implicit deps make sure we always come back
             direction = Direction.REVISIT;
         }
     }
@@ -349,7 +352,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 toIter = edge.branch(graphMgr, fromVertex, params)
                         .filter(role -> {
                             Optional<ProcedureVertex<?, ?>> source = scope.getRoleVertexSource(role.asThing());
-                            return source.isEmpty();
+                            return source.isEmpty() || source.get().equals(edge.to());
                         }).mapSorted(
                                 role -> {
                                     scope.record(procedureVertex, role.asThing());
@@ -404,42 +407,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         public void record(ProcedureVertex<?, ?> source, ThingVertex role) {
             assert source.id().isScoped() && role.type().isRoleType();
             vertexSources.put(source, role);
-        }
-
-        private Optional<ThingVertex> getRole(ProcedureEdge<?, ?> edge) {
-            return Optional.ofNullable(edgeSources.get(edge));
-        }
-
-        private boolean isValidUpTo(int order) {
-            Set<ThingVertex> roles = new HashSet<>();
-            for (Map.Entry<ProcedureEdge<?, ?>, ThingVertex> entry : edgeSources.entrySet()) {
-                if (entry.getKey().to().order() <= order) {
-                    if (roles.contains(entry.getValue())) return false;
-                    else roles.add(entry.getValue());
-                }
-            }
-            for (Map.Entry<ProcedureVertex<?, ?>, ThingVertex> entry : vertexSources.entrySet()) {
-                if (entry.getKey().order() <= order) {
-                    if (roles.contains(entry.getValue())) return false;
-                    else roles.add(entry.getValue());
-                }
-            }
-            return true;
-        }
-
-        private Set<Integer> scopedOrdersUpTo(int order) {
-            Set<Integer> orders = new HashSet<>();
-            for (Map.Entry<ProcedureEdge<?, ?>, ThingVertex> entry : edgeSources.entrySet()) {
-                if (entry.getKey().to().order() <= order) {
-                    orders.add(entry.getKey().to().order());
-                }
-            }
-            for (Map.Entry<ProcedureVertex<?, ?>, ThingVertex> entry : vertexSources.entrySet()) {
-                if (entry.getKey().order() <= order) {
-                    orders.add(entry.getKey().order());
-                }
-            }
-            return orders;
         }
 
         public Optional<ProcedureVertex<?, ?>> getRoleVertexSource(ThingVertex role) {

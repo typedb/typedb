@@ -147,6 +147,10 @@ public abstract class ProcedureEdge<
         return false;
     }
 
+    public Native.Thing.Relating asRelating() {
+        throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Native.Thing.Relating.class));
+    }
+
     public boolean isRolePlayer() {
         return false;
     }
@@ -1007,7 +1011,7 @@ public abstract class ProcedureEdge<
                 }
             }
 
-            static abstract class Relating extends Thing {
+            public static abstract class Relating extends Thing {
 
                 private Relating(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
                                  Encoding.Direction.Edge direction) {
@@ -1017,6 +1021,20 @@ public abstract class ProcedureEdge<
                 @Override
                 public boolean isRelating() {
                     return true;
+                }
+
+                @Override
+                public Relating asRelating() {
+                    return this;
+                }
+
+                public boolean overlaps(Relating other, Traversal.Parameters params) {
+                    assert direction().equals(other.direction());
+                    if (to().props().hasIID() && other.to().props().hasIID()) {
+                        return params.getIID(to().id().asVariable()).equals(params.getIID(other.to().id().asVariable()));
+                    } else {
+                        return !intersection(to().props().types(), other.to().props().types()).isEmpty();
+                    }
                 }
 
                 static class Forward extends Relating {
@@ -1152,8 +1170,9 @@ public abstract class ProcedureEdge<
                     if (to().props().hasIID() && other.to().props().hasIID()) {
                         return params.getIID(to().id().asVariable()).equals(params.getIID(other.to().id().asVariable()));
                     } else {
-                        Set<Label> intersection = intersection(to().props().types(), other.to().props().types());
-                        return !intersection.isEmpty();
+                        Set<Label> roleTypeIntersection = intersection(roleTypes(), other.roleTypes());
+                        Set<Label> playerIntersection = intersection(to().props().types(), other.to().props().types());
+                        return !roleTypeIntersection.isEmpty() && !playerIntersection.isEmpty();
                     }
                 }
 
