@@ -298,7 +298,6 @@ public class Unifier {
         * we could take information such as negated constraints into account.
          */
         static boolean unificationSatisfiable(TypeVariable concludableTypeVar, TypeVariable conclusionTypeVar, ConceptManager conceptMgr) {
-
             if (!concludableTypeVar.inferredTypes().isEmpty() && !conclusionTypeVar.inferredTypes().isEmpty()) {
                 return !Collections.disjoint(subtypeLabels(concludableTypeVar.inferredTypes(), conceptMgr).toSet(),
                         conclusionTypeVar.inferredTypes());
