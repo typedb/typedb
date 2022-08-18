@@ -1222,7 +1222,7 @@ public abstract class ProcedureEdge<
                     }
 
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
-                                             Traversal.Parameters params, GraphIterator.Scope scoped) {
+                                             Traversal.Parameters params, GraphIterator.Scope scope) {
                         ThingVertex rel = fromVertex.asThing();
                         ThingVertex player = toVertex.asThing();
                         Set<TypeVertex> relationRoleTypes = graphMgr.schema().relatedRoleTypes(rel.type());
@@ -1234,11 +1234,13 @@ public abstract class ProcedureEdge<
                                                 .edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type())
                                                 .toAndOptimised(),
                                         ASC
-                                ).filter(kv -> kv.key().equals(player));
+                                ).filter(kv -> kv.key().equals(rel) &&
+                                        scope.getRoleEdgeSource(kv.value()).map(source -> !source.equals(this)).orElse(true)
+                                );
                         closures.forward(KeyValue.of(player, null));
                         Optional<KeyValue<ThingVertex, ThingVertex>> next = closures.first();
                         if (next.isPresent() && next.get().key().equals(player)) {
-                            scoped.record(this, next.get().value());
+                            scope.record(this, next.get().value());
                             return true;
                         } else {
                             return false;
@@ -1292,7 +1294,7 @@ public abstract class ProcedureEdge<
                     }
 
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
-                                             Traversal.Parameters params, GraphIterator.Scope scoped) {
+                                             Traversal.Parameters params, GraphIterator.Scope scope) {
                         ThingVertex player = fromVertex.asThing();
                         ThingVertex rel = toVertex.asThing();
                         Set<TypeVertex> relationRoleTypes = graphMgr.schema().relatedRoleTypes(rel.type());
@@ -1303,11 +1305,14 @@ public abstract class ProcedureEdge<
                                         rt -> player.ins().edge(ROLEPLAYER, rt, rel.iid().prefix(), rel.iid().type())
                                                 .fromAndOptimised(),
                                         ASC
-                                ).filter(kv -> kv.key().equals(rel));
+                                ).filter(kv -> kv.key().equals(rel) &&
+                                        scope.getRoleEdgeSource(kv.value()).map(source -> !source.equals(this)).orElse(true)
+                                );
                         closures.forward(KeyValue.of(rel, null));
+
                         Optional<KeyValue<ThingVertex, ThingVertex>> next = closures.first();
                         if (next.isPresent() && next.get().key().equals(rel)) {
-                            scoped.record(this, next.get().value());
+                            scope.record(this, next.get().value());
                             return true;
                         } else {
                             return false;
