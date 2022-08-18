@@ -137,11 +137,10 @@ class SoundnessVerifier {
         ).boundConcludables();
         assert boundConcludable.size() == 1;
         boundConcludable.forEach(bc -> {
-            bc.concludable().getApplicableRules(tx.concepts(), tx.logic());
             AtomicInteger numExplanationsExpected = new AtomicInteger();
 
             materialiser.concludableMaterialisations(bc).forEachRemaining(materialisation -> {
-                bc.concludable().getUnifiers(materialisation.boundConclusion().conclusion().rule()).forEachRemaining(unifier -> {
+                bc.concludable().unify(materialisation.boundConclusion().conclusion(), tx.concepts()).forEachRemaining(unifier -> {
                     Optional<Pair<ConceptMap, Unifier.Requirements.Instance>> boundsAndRequirements = unifier.unify(bc.pattern().bounds());
                     assert boundsAndRequirements.isPresent();
                     numExplanationsExpected.getAndAdd(unifier.unUnify(materialisation.boundConclusion().bounds(), boundsAndRequirements.get().second()).toSet().size());

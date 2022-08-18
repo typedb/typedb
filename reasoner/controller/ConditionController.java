@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
@@ -26,9 +27,9 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanOut;
 
 public class ConditionController extends ConjunctionController<
@@ -41,13 +42,17 @@ public class ConditionController extends ConjunctionController<
     private final Rule.Condition condition;
 
     ConditionController(Driver<ConditionController> driver, Rule.Condition condition, Context context) {
-        super(driver, condition.conjunction(), context);
+        super(driver, condition.pattern(), context);
         this.condition = condition;
     }
 
     @Override
-    Set<Concludable> concludablesTriggeringRules() {
-        return condition.concludablesTriggeringRules(registry().conceptManager(), registry().logicManager());
+    FunctionalIterator<Concludable> concludablesTriggeringRules() {
+        condition.conjunction().allConcludables().forEachRemaining(concludable -> {
+            registry().logicManager().indexApplicableRules(concludable);
+        });
+        return iterate(condition.conjunction().positiveConcludables())
+                .filter(c -> !registry().logicManager().applicableRules(c).isEmpty());
     }
 
     @Override
@@ -55,7 +60,7 @@ public class ConditionController extends ConjunctionController<
                                                           ConceptMap bounds) {
         return new Processor(
                 processorDriver, driver(), processorContext(), bounds, plan(bounds.concepts().keySet()),
-                () -> Processor.class.getSimpleName() + "(pattern: " + condition.conjunction() + ", bounds: " + bounds + ")"
+                () -> Processor.class.getSimpleName() + "(pattern: " + condition.pattern() + ", bounds: " + bounds + ")"
         );
     }
 

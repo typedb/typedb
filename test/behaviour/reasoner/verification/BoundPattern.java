@@ -165,12 +165,12 @@ public class BoundPattern {
             this.conjunction = conjunction;
             this.unboundConclusion = unboundConclusion;
             this.bounds = bounds;
-            assert this.unboundConclusion.conjunction().retrieves().containsAll(conjunction.bounds().concepts().keySet());
+            assert this.unboundConclusion.pattern().retrieves().containsAll(conjunction.bounds().concepts().keySet());
         }
 
         public static BoundConclusion create(Rule.Conclusion conclusion, Map<Variable, Concept> conclusionAnswer) {
             return new BoundConclusion(BoundConjunction.create(
-                    conclusion.conjunction(),
+                    conclusion.pattern(),
                     new ConceptMap(filterRetrievable(conclusionAnswer))
             ), conclusion, conclusionAnswer);
         }
@@ -248,7 +248,7 @@ public class BoundPattern {
         }
 
         static BoundCondition create(Rule.Condition condition, ConceptMap conditionAnswer) {
-            return new BoundCondition(BoundConjunction.create(condition.conjunction(), conditionAnswer), condition);
+            return new BoundCondition(BoundConjunction.create(condition.pattern(), conditionAnswer), condition);
         }
 
         BoundConjunction conjunction() {

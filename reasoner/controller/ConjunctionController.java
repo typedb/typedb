@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -69,7 +70,7 @@ public abstract class ConjunctionController<
     private final Map<Retrievable, FilteredRetrievable> retrievableControllers;
     private final Map<Concludable, MappedConcludable> concludableControllers;
     private final Map<Negated, FilteredNegation> negationControllers;
-    private List<Resolvable<?>> plan;
+    private final Map<Set<Variable.Retrievable>, List<Resolvable<?>>> plans;
     final Conjunction conjunction;
 
     ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction, Context context) {
@@ -80,12 +81,13 @@ public abstract class ConjunctionController<
         this.retrievableControllers = new HashMap<>();
         this.concludableControllers = new HashMap<>();
         this.negationControllers = new HashMap<>();
+        this.plans = new HashMap<>();
     }
 
     @Override
     protected void setUpUpstreamControllers() {
         assert resolvables.isEmpty();
-        Set<Concludable> concludables = concludablesTriggeringRules();
+        Set<Concludable> concludables = concludablesTriggeringRules().toSet();
         Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
         resolvables.addAll(concludables);
         resolvables.addAll(retrievables);
@@ -106,14 +108,15 @@ public abstract class ConjunctionController<
         });
     }
 
-    abstract Set<Concludable> concludablesTriggeringRules();
+    abstract FunctionalIterator<Concludable> concludablesTriggeringRules();
 
     List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
-        if (plan == null) {
-            plan = Planner.plan(resolvables, new HashMap<>(), boundVariables);
+        if (!plans.containsKey(boundVariables)) {
+            List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), boundVariables);
             plan.addAll(negateds);
+            plans.put(boundVariables, plan);
         }
-        return plan;
+        return plans.get(boundVariables);
     }
 
     static ConceptMap merge(ConceptMap into, ConceptMap from) {

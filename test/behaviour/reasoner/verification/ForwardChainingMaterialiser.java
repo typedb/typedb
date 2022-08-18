@@ -180,19 +180,24 @@ public class ForwardChainingMaterialiser {
         }
 
         private Set<Rule> negatedDependencies() {
+            assert iterate(logicRule.condition().conjunction().negations())
+                    .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+                    .allMatch(conj -> conj.negations().isEmpty()); // Revise when we support nested negations in rules
             if (negatedDependencies == null) {
-                negatedDependencies = iterate(logicRule.condition().negatedConcludablesTriggeringRules(tx.concepts(), tx.logic()))
-                        .flatMap(concludable -> concludable.getApplicableRules(tx.concepts(), tx.logic()))
-                        .map(r -> rules.get(r))
-                        .toSet();
+                negatedDependencies = iterate(logicRule.condition().conjunction().negations())
+                    .flatMap(negation -> iterate(negation.disjunction().conjunctions()))
+                    .flatMap(conj -> conj.allConcludables())
+                    .flatMap(concludable -> iterate(tx.logic().applicableRules(concludable).keySet()))
+                    .map(r -> rules.get(r))
+                    .toSet();
             }
             return negatedDependencies;
         }
 
         private Set<Rule> unnegatedDependencies() {
             if (unnegatedDependencies == null) {
-                unnegatedDependencies = iterate(logicRule.condition().concludablesTriggeringRules(tx.concepts(), tx.logic()))
-                        .flatMap(concludable -> concludable.getApplicableRules(tx.concepts(), tx.logic()))
+                unnegatedDependencies = iterate(logicRule.condition().conjunction().positiveConcludables())
+                        .flatMap(concludable -> iterate(tx.logic().applicableRules(concludable).keySet()))
                         .map(r -> rules.get(r))
                         .toSet();
             }

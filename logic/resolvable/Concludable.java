@@ -51,7 +51,6 @@ import com.vaticle.typeql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,7 +58,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -74,11 +72,9 @@ import static java.util.stream.Collectors.toSet;
 public abstract class Concludable extends Resolvable<Conjunction> implements AlphaEquivalent<Concludable> {
 
     private final Set<Retrievable> retrievableIds;
-    private Map<Rule, Set<Unifier>> applicableRules;
 
     private Concludable(Conjunction conjunction) {
         super(conjunction);
-        this.applicableRules = null;
         this.retrievableIds = pattern().retrieves();
     }
 
@@ -101,25 +97,9 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
     public abstract Set<Constraint> concludableConstraints();
 
-    public FunctionalIterator<Unifier> getUnifiers(Rule rule) {
-        assert applicableRules != null;
-        return iterate(applicableRules.get(rule));
-    }
+    public abstract Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
 
-    public FunctionalIterator<Rule> getApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-        if (applicableRules == null) {
-            synchronized (this) {
-                if (applicableRules == null) applicableRules = applicableRules(conceptMgr, logicMgr);
-            }
-        }
-        // This gives a deterministic ordering to the applicable rules, which is important for testing.
-        return Iterators.iterate(applicableRules.keySet().stream().sorted(Comparator.comparing(Rule::getLabel))
-                                         .collect(Collectors.toList()));
-    }
-
-    abstract Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr);
-
-    abstract FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
+    public abstract FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr);
 
     public abstract boolean isInferredAnswer(ConceptMap conceptMap);
 
@@ -344,7 +324,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
+        public FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isRelation()) return unify(conclusion.asRelation(), conceptMgr);
             return Iterators.empty();
         }
@@ -438,7 +418,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedRelation = generating().get();
             Set<Label> relationTypes = generatedRelation.inferredTypes();
@@ -545,7 +525,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
+        public FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isHas()) return unify(conclusion.asHas(), conceptMgr);
             return Iterators.empty();
         }
@@ -596,7 +576,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedAttribute = generating().get();
             Set<Label> attributeTypes = generatedAttribute.inferredTypes();
@@ -667,7 +647,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
+        public FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isIsa()) return unify(conclusion.asIsa(), conceptMgr);
             return Iterators.empty();
         }
@@ -718,7 +698,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generated = generating().get();
             Set<Label> types = generated.inferredTypes();
@@ -797,7 +777,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
+        public FunctionalIterator<Unifier> unify(Rule.Conclusion conclusion, ConceptManager conceptMgr) {
             if (conclusion.isValue()) return unify(conclusion.asValue());
             return Iterators.empty();
         }
@@ -833,7 +813,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        public Map<Rule, Set<Unifier>> applicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
+        public Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
             assert generating().isPresent();
             Variable generatedAttr = generating().get();
             Set<Label> attributeTypes = generatedAttr.inferredTypes();
@@ -865,7 +845,6 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         private final Set<Concludable> concludables = new HashSet<>();
 
         Extractor(Conjunction conjunction) {
-            assert conjunction.isCoherent();
             Set<Constraint> constraints = conjunction.variables().stream().flatMap(variable -> variable.constraints().stream())
                     .collect(toSet());
             constraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isRelation)

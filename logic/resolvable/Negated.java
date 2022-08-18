@@ -29,14 +29,19 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class Negated extends Resolvable<Disjunction> {
-
     // note: we always guarantee unique anonymous IDs within one query
     private final Set<Retrievable> identifiers;
+    private final ResolvableDisjunction disjunction;
 
     public Negated(Negation negation) {
         super(negation.disjunction());
         this.identifiers = new HashSet<>();
+        this.disjunction = ResolvableDisjunction.of(negation.disjunction());
         pattern().conjunctions().forEach(c -> iterate(c.retrieves()).forEachRemaining(identifiers::add));
+    }
+
+    public ResolvableDisjunction disjunction() {
+        return disjunction;
     }
 
     @Override

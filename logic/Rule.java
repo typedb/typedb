@@ -32,10 +32,9 @@ import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
-import com.vaticle.typedb.core.pattern.Negation;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
@@ -49,12 +48,9 @@ import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -224,13 +220,11 @@ public class Rule {
     public static class Condition {
 
         private final Rule rule;
-        private Set<Concludable> concludablesTriggeringRules;
-        private Set<Concludable> negatedConcludablesTriggeringRules;
+        private final ResolvableConjunction conjunction;
 
         Condition(Rule rule) {
             this.rule = rule;
-            this.concludablesTriggeringRules = null;
-            this.negatedConcludablesTriggeringRules = null;
+            this.conjunction = ResolvableConjunction.of(rule.when());
         }
 
         public static Condition create(Rule rule) {
@@ -241,41 +235,12 @@ public class Rule {
             return rule;
         }
 
-        public Conjunction conjunction() {
+        public ResolvableConjunction conjunction() {
+            return conjunction;
+        }
+
+        public Conjunction pattern() {
             return rule().when();
-        }
-
-        public Set<Concludable> concludablesTriggeringRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            if (concludablesTriggeringRules == null) { // only acquire lock if required
-                synchronized (this) { // only compute concludables once
-                    if (concludablesTriggeringRules == null) {
-                        concludablesTriggeringRules = iterate(Concludable.create(rule.when()))
-                                .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
-                    }
-                }
-            }
-            return concludablesTriggeringRules;
-        }
-
-        public Set<Concludable> negatedConcludablesTriggeringRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            synchronized (this) { // can be more contentious as only used for validation
-                if (negatedConcludablesTriggeringRules == null) {
-                    negatedConcludablesTriggeringRules = concludables(rule.when().negations())
-                            .filter(c -> c.getApplicableRules(conceptMgr, logicMgr).hasNext()).toSet();
-                }
-            }
-            return negatedConcludablesTriggeringRules;
-        }
-
-        private FunctionalIterator<Concludable> concludables(List<Negation> negations) {
-            return iterate(negations)
-                    .flatMap(neg -> {
-                        assert neg.disjunction().conjunctions().size() == 1;
-                        return iterate(neg.disjunction().conjunctions());
-                    }).flatMap(conjunction -> {
-                        assert conjunction.negations().isEmpty();
-                        return iterate(Concludable.create(conjunction));
-                    });
         }
 
         @Override
@@ -301,9 +266,11 @@ public class Rule {
 
         private final Rule rule;
         private final Set<Identifier.Variable.Retrievable> retrievableIds;
+        private final ResolvableConjunction conjunction;
 
         Conclusion(Rule rule, Set<Identifier.Variable.Retrievable> retrievableIds) {
             this.rule = rule;
+            this.conjunction = ResolvableConjunction.of(rule.then());
             this.retrievableIds = retrievableIds;
         }
 
@@ -317,7 +284,11 @@ public class Rule {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-        public Conjunction conjunction() {
+        public ResolvableConjunction conjunction() {
+            return conjunction;
+        }
+
+        public Conjunction pattern() {
             return rule().then();
         }
 
