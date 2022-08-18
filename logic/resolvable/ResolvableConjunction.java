@@ -53,17 +53,13 @@ public class ResolvableConjunction {
         return negations;
     }
 
-    public Set<Concludable> concludables() {
+    public Set<Concludable> positiveConcludables() {
         return concludables;
     }
 
-    public FunctionalIterator<Concludable> iterateConcludables(boolean recurseIntoSubFormulae) {
-        if (recurseIntoSubFormulae) {
-            return link(iterate(concludables),
-                        iterate(negations()).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                            .flatMap(conj -> conj.iterateConcludables(true)));
-        } else {
-            return iterate(concludables);
-        }
+    public FunctionalIterator<Concludable> allConcludables() {
+        return link(iterate(concludables),
+                iterate(negations()).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+                        .flatMap(conj -> conj.allConcludables()));
     }
 }

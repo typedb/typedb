@@ -20,14 +20,12 @@ package com.vaticle.typedb.core.logic;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
-import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -140,7 +138,7 @@ public class LogicManager {
 
         // re-index the concludable-rule unifiers
         this.rules().forEachRemaining(rule -> {
-            rule.condition().conjunction().iterateConcludables(true).forEachRemaining(this::indexApplicableRules);
+            rule.condition().conjunction().allConcludables().forEachRemaining(this::indexApplicableRules);
         });
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
@@ -176,7 +174,7 @@ public class LogicManager {
     }
 
     private FunctionalIterator<RuleDependency> ruleDependencies(Rule rule) {
-        return rule.condition().conjunction().iterateConcludables(true)
+        return rule.condition().conjunction().allConcludables()
                     .flatMap(c -> iterate(applicableRules(c).keySet()))
                     .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
     }
@@ -187,7 +185,7 @@ public class LogicManager {
                 .allMatch(conj -> conj.negations().isEmpty()); // Revise when we support nested negations in rules
         return iterate(rule.condition().conjunction().negations())
                 .flatMap(neg -> iterate(neg.disjunction().conjunctions()))
-                .flatMap(conj -> conj.iterateConcludables(true))
+                .flatMap(conj -> conj.allConcludables())
                 .flatMap(concludable -> iterate(applicableRules(concludable).keySet()))
                 .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
     }
