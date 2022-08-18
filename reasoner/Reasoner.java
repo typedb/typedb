@@ -41,6 +41,7 @@ import com.vaticle.typedb.core.pattern.Negation;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry;
+import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers.Filter;
@@ -77,13 +78,15 @@ public class Reasoner {
     private final LogicManager logicMgr;
     private final ControllerRegistry controllerRegistry;
     private final ExplainablesManager explainablesManager;
+    private final ReasonerPlanner planner;
 
     public Reasoner(ConceptManager conceptMgr, LogicManager logicMgr,
                     TraversalEngine traversalEng, Context.Transaction context) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
-        this.controllerRegistry = new ControllerRegistry(actor(), traversalEng, conceptMgr, logicMgr, context);
+        this.planner = ReasonerPlanner.create(traversalEng, conceptMgr, logicMgr);
+        this.controllerRegistry = new ControllerRegistry(actor(), traversalEng, conceptMgr, logicMgr, planner, context);
         this.explainablesManager = new ExplainablesManager();
     }
 

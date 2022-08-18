@@ -18,14 +18,14 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
-import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
 
 public class NestedConjunctionController extends ConjunctionController<
@@ -34,16 +34,15 @@ public class NestedConjunctionController extends ConjunctionController<
         NestedConjunctionController.NestedConjunctionProcessor
         > {
 
-    public NestedConjunctionController(Driver<NestedConjunctionController> driver, Conjunction conjunction,
+    public NestedConjunctionController(Driver<NestedConjunctionController> driver, ResolvableConjunction conjunction,
                                        Context context) {
         super(driver, conjunction, context);
     }
 
     @Override
-    Set<Concludable> concludablesTriggeringRules() {
-        return Iterators.iterate(Concludable.create(conjunction))
-                .filter(c -> c.getApplicableRules(registry().conceptManager(), registry().logicManager()).hasNext())
-                .toSet();
+    FunctionalIterator<Concludable> concludablesTriggeringRules() {
+        return Iterators.iterate(conjunction.positiveConcludables())
+                .filter(c -> !registry().logicManager().applicableRules(c).isEmpty());
     }
 
     @Override

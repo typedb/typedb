@@ -21,8 +21,8 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.controller.DisjunctionController.Processor.Request;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
@@ -50,11 +50,11 @@ public abstract class DisjunctionController<
         CONTROLLER extends DisjunctionController<PROCESSOR, CONTROLLER>
         > extends AbstractController<ConceptMap, ConceptMap, ConceptMap, Request, PROCESSOR, CONTROLLER> {
 
-    private final List<Pair<Conjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
-    Disjunction disjunction;
+    private final List<Pair<ResolvableConjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
+    ResolvableDisjunction disjunction;
 
-    DisjunctionController(Driver<CONTROLLER> driver, Disjunction disjunction, Context context) {
-        super(driver, context, () -> DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction + ")");
+    DisjunctionController(Driver<CONTROLLER> driver, ResolvableDisjunction disjunction, Context context) {
+        super(driver, context, () -> DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction.pattern() + ")");
         this.disjunction = disjunction;
         this.conjunctionControllers = new ArrayList<>();
     }
@@ -74,7 +74,7 @@ public abstract class DisjunctionController<
                 .execute(actor -> actor.establishProcessorConnection(req.withMap(c -> merge(c, req.bounds()))));
     }
 
-    private Driver<NestedConjunctionController> getConjunctionController(Conjunction conjunction) {
+    private Driver<NestedConjunctionController> getConjunctionController(ResolvableConjunction conjunction) {
         // TODO: Only necessary because conjunction equality is not well defined
         Optional<Driver<NestedConjunctionController>> controller =
                 iterate(conjunctionControllers).filter(p -> p.first() == conjunction).map(Pair::second).first();
@@ -85,12 +85,12 @@ public abstract class DisjunctionController<
     protected abstract static class Processor<PROCESSOR extends Processor<PROCESSOR>>
             extends AbstractProcessor<ConceptMap, ConceptMap, Request, PROCESSOR> {
 
-        private final Disjunction disjunction;
+        private final ResolvableDisjunction disjunction;
         private final ConceptMap bounds;
 
         Processor(Driver<PROCESSOR> driver,
                   Driver<? extends DisjunctionController<PROCESSOR, ?>> controller,
-                  Context context, Disjunction disjunction, ConceptMap bounds,
+                  Context context, ResolvableDisjunction disjunction, ConceptMap bounds,
                   Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.disjunction = disjunction;
@@ -101,10 +101,10 @@ public abstract class DisjunctionController<
         public void setUp() {
             PoolingStream<ConceptMap> fanIn = new BufferStream<>(this);
             setHubReactive(getOrCreateHubReactive(fanIn));
-            for (com.vaticle.typedb.core.pattern.Conjunction conjunction : disjunction.conjunctions()) {
+            for (ResolvableConjunction conjunction : disjunction.conjunctions()) {
                 InputPort<ConceptMap> input = createInputPort();
                 input.registerSubscriber(fanIn);
-                Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.variables())
+                Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.pattern().variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
                 requestConnection(new Request(
@@ -118,11 +118,11 @@ public abstract class DisjunctionController<
             return fanIn;
         }
 
-        static class Request extends AbstractRequest<Conjunction, ConceptMap, ConceptMap, NestedConjunctionController> {
+        static class Request extends AbstractRequest<ResolvableConjunction, ConceptMap, ConceptMap, NestedConjunctionController> {
 
             Request(
                     Reactive.Identifier inputPortId, Driver<? extends Processor<?>> inputPortProcessor,
-                    Conjunction controllerId, ConceptMap processorId
+                    ResolvableConjunction controllerId, ConceptMap processorId
             ) {
                 super(inputPortId, inputPortProcessor, controllerId, processorId);
             }

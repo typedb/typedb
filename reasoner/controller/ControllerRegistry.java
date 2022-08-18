@@ -31,13 +31,15 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
+import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -63,6 +65,7 @@ public class ControllerRegistry {
 
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
+    private final ReasonerPlanner reasonerPlanner;
     private final Map<Concludable, Driver<ConcludableController.Match>> concludableControllers;
     private final Map<Driver<ConcludableController.Match>, Set<Concludable>> controllerConcludables;
     private final Map<Rule, Driver<ConditionController>> conditions;
@@ -76,9 +79,10 @@ public class ControllerRegistry {
     private TypeDBException terminationCause;
 
     public ControllerRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                              LogicManager logicMgr, Context.Transaction context) {
+                              LogicManager logicMgr, ReasonerPlanner reasonerPlanner, Context.Transaction context) {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
+        this.reasonerPlanner = reasonerPlanner;
         this.logicMgr = logicMgr;
         this.concludableControllers = new ConcurrentHashMap<>();
         this.controllerConcludables = new ConcurrentHashMap<>();
@@ -112,6 +116,10 @@ public class ControllerRegistry {
         return logicMgr;
     }
 
+    public ReasonerPlanner planner() {
+        return this.reasonerPlanner;
+    }
+
     public void terminate(Throwable e) {
         if (terminated.compareAndSet(false, true)) {
             terminationCause = TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, e);
@@ -143,7 +151,7 @@ public class ControllerRegistry {
         return controller;
     }
 
-    public void createRootConjunction(Conjunction conjunction, Modifiers.Filter filter,
+    public void createRootConjunction(ResolvableConjunction conjunction, Modifiers.Filter filter,
                                       boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         Function<Driver<RootConjunctionController>, RootConjunctionController> actorFn = driver ->
                 new RootConjunctionController(driver, conjunction, filter, explain, controllerContext, reasonerConsumer);
@@ -151,7 +159,7 @@ public class ControllerRegistry {
         createRootController(reasonerConsumer, actorFn);
     }
 
-    public void createRootDisjunction(Disjunction disjunction, Modifiers.Filter filter,
+    public void createRootDisjunction(ResolvableDisjunction disjunction, Modifiers.Filter filter,
                                       boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         Function<Driver<RootDisjunctionController>, RootDisjunctionController> actorFn =
                 driver -> new RootDisjunctionController(driver, disjunction, filter, explain, controllerContext, reasonerConsumer);
@@ -166,14 +174,14 @@ public class ControllerRegistry {
         createRootController(reasonerConsumer, actorFn);
     }
 
-    Driver<NestedConjunctionController> createNestedConjunction(Conjunction conjunction) {
+    Driver<NestedConjunctionController> createNestedConjunction(ResolvableConjunction conjunction) {
         Function<Driver<NestedConjunctionController>, NestedConjunctionController> actorFn =
                 driver -> new NestedConjunctionController(driver, conjunction, controllerContext);
         LOG.debug("Create Nested Conjunction for: '{}'", conjunction);
         return createController(actorFn);
     }
 
-    Driver<NestedDisjunctionController> createNestedDisjunction(Disjunction disjunction) {
+    Driver<NestedDisjunctionController> createNestedDisjunction(ResolvableDisjunction disjunction) {
         Function<Driver<NestedDisjunctionController>, NestedDisjunctionController> actorFn =
                 driver -> new NestedDisjunctionController(driver, disjunction, controllerContext);
         LOG.debug("Create Nested Disjunction for: '{}'", disjunction);
@@ -224,15 +232,15 @@ public class ControllerRegistry {
         return ControllerView.retrievable(createController(actorFn), Modifiers.Filter.create(retrievable.retrieves()));
     }
 
-    ControllerView.FilteredNegation createNegation(Negated negated, Conjunction conjunction) {
+    ControllerView.FilteredNegation createNegation(Negated negated, ResolvableConjunction conjunction) {
         Function<Driver<NegationController>, NegationController> actorFn =
                 driver -> new NegationController(driver, negated, controllerContext);
         LOG.debug("Create NegationController for : {}", negated);
         return ControllerView.negation(createController(actorFn), filter(conjunction, negated));
     }
 
-    private static Modifiers.Filter filter(Conjunction scope, Negated inner) {
-        return Modifiers.Filter.create(scope.variables().stream()
+    private static Modifiers.Filter filter(ResolvableConjunction scope, Negated inner) {
+        return Modifiers.Filter.create(scope.pattern().variables().stream()
                 .filter(var -> var.id().isRetrievable() && inner.retrieves().contains(var.id().asRetrievable()))
                 .map(var -> var.id().asRetrievable())
                 .collect(Collectors.toSet()));

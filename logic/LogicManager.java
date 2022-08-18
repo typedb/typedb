@@ -25,6 +25,11 @@ import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.Retrievable;
+import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typeql.lang.pattern.Conjunction;
@@ -33,6 +38,7 @@ import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +50,6 @@ import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.logic.LogicManager.RuleExporter.writeRule;
 import static java.util.Comparator.comparing;
 
@@ -54,12 +59,14 @@ public class LogicManager {
     private final ConceptManager conceptMgr;
     private final TypeInference typeInference;
     private final LogicCache logicCache;
+    private final Map<ResolvableConjunction, Set<Resolvable<?>>> compiledConjunctions;
 
     public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
         this.typeInference = new TypeInference(logicCache, traversalEng, graphMgr);
+        this.compiledConjunctions = new HashMap<>();
     }
 
     GraphManager graph() { return graphMgr; }
@@ -103,6 +110,35 @@ public class LogicManager {
         return rules().filter(rule -> !rule.when().negations().isEmpty());
     }
 
+    public Map<Rule, Set<Unifier>> applicableRules(Concludable concludable) {
+        Map<Rule, Set<Unifier>> unifiers = logicCache.unifiers().getIfPresent(concludable);
+        if (unifiers == null) {
+            unifiers = concludable.computeApplicableRules(conceptMgr, this);
+        }
+        return unifiers;
+    }
+
+    public void indexApplicableRules(Concludable concludable) {
+        logicCache.unifiers().get(concludable, c -> c.computeApplicableRules(conceptMgr, this));
+    }
+
+    public Set<Resolvable<?>> compile(ResolvableConjunction conjunction) {
+        if (!compiledConjunctions.containsKey(conjunction)) {
+            synchronized (compiledConjunctions) {
+                if (!compiledConjunctions.containsKey(conjunction)){
+                    Set<Concludable> concludablesTriggeringRules = iterate(conjunction.positiveConcludables())
+                            .filter(concludable -> !applicableRules(concludable).isEmpty())
+                            .toSet();
+                    Set<Resolvable<?>> resolvables = new HashSet<>();
+                    resolvables.addAll(concludablesTriggeringRules);
+                    resolvables.addAll(Retrievable.extractFrom(conjunction.pattern(), concludablesTriggeringRules));
+                    resolvables.addAll(conjunction.negations());
+                    compiledConjunctions.put(conjunction, resolvables);
+                }
+            }
+        }
+        return compiledConjunctions.get(conjunction);
+    }
     /**
      * On commit we must clear the rule cache and revalidate rules - this will force re-running type inference
      * when we re-load the Rule objects
@@ -111,6 +147,7 @@ public class LogicManager {
      */
     public void revalidateAndReindexRules() {
         logicCache.rule().clear();
+        logicCache.unifiers().clear();
 
         if (graphMgr.schema().typesModified()) {
             // re-validate all rules are valid
@@ -120,22 +157,27 @@ public class LogicManager {
             graphMgr.schema().rules().all().forEachRemaining(s -> fromStructure(s).conclusion().reindex());
         }
 
+        // re-index the concludable-rule unifiers
+        this.rules().forEachRemaining(rule -> {
+            rule.condition().conjunction().allConcludables().forEachRemaining(this::indexApplicableRules);
+        });
+
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
-        validateCyclesThroughNegations(conceptMgr, this);
+        validateCyclesThroughNegations();
     }
 
     private Rule fromStructure(RuleStructure ruleStructure) {
         return logicCache.rule().get(ruleStructure.label(), l -> Rule.of(this, ruleStructure));
     }
 
-    private void validateCyclesThroughNegations(ConceptManager conceptMgr, LogicManager logicMgr) {
-        Set<Rule> negationRulesTriggeringRules = logicMgr.rulesWithNegations()
-                .filter(rule -> !rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr).isEmpty())
+    private void validateCyclesThroughNegations() {
+        Set<Rule> negationRulesTriggeringRules = this.rulesWithNegations()
+                .filter(rule -> negatedRuleDependencies(rule).hasNext())
                 .toSet();
 
         for (Rule negationRule : negationRulesTriggeringRules) {
             Map<Rule, RuleDependency> visitedDependentRules = new HashMap<>();
-            LinkedList<RuleDependency> frontier = new LinkedList<>(negatedRuleDependencies(negationRule, conceptMgr, logicMgr));
+            LinkedList<RuleDependency> frontier = new LinkedList<>(negatedRuleDependencies(negationRule).toList());
             while (!frontier.isEmpty()) {
                 RuleDependency dependency = frontier.removeFirst();
                 visitedDependentRules.put(dependency.recursiveRule, dependency);
@@ -144,8 +186,7 @@ public class LogicManager {
                     String readableCycle = cycle.stream().map(Rule::getLabel).collect(Collectors.joining(" -> \n", "\n", "\n"));
                     throw TypeDBException.of(CONTRADICTORY_RULE_CYCLE, readableCycle);
                 } else {
-                    Set<RuleDependency> recursive = ruleDependencies(dependency.recursiveRule, conceptMgr, logicMgr);
-                    iterate(recursive)
+                    ruleDependencies(dependency.recursiveRule)
                             .filter(rule -> !visitedDependentRules.containsKey(rule.recursiveRule))
                             .forEachRemaining(frontier::add);
                 }
@@ -153,17 +194,21 @@ public class LogicManager {
         }
     }
 
-    private Set<RuleDependency> ruleDependencies(Rule rule, ConceptManager conceptMgr, LogicManager logicMgr) {
-        return link(iterate(rule.condition().concludablesTriggeringRules(conceptMgr, logicMgr)),
-                iterate(rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr)))
-                .flatMap(concludable -> concludable.getApplicableRules(conceptMgr, logicMgr))
-                .map(recursiveRule -> RuleDependency.of(recursiveRule, rule)).toSet();
+    private FunctionalIterator<RuleDependency> ruleDependencies(Rule rule) {
+        return rule.condition().conjunction().allConcludables()
+                    .flatMap(c -> iterate(applicableRules(c).keySet()))
+                    .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
     }
 
-    private Set<RuleDependency> negatedRuleDependencies(Rule rule, ConceptManager conceptMgr, LogicManager logicMgr) {
-        return iterate(rule.condition().negatedConcludablesTriggeringRules(conceptMgr, logicMgr))
-                .flatMap(concludable -> concludable.getApplicableRules(conceptMgr, logicMgr))
-                .map(recursiveRule -> RuleDependency.of(recursiveRule, rule)).toSet();
+    private FunctionalIterator<RuleDependency> negatedRuleDependencies(Rule rule) {
+        assert iterate(rule.condition().conjunction().negations())
+                .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+                .allMatch(conj -> conj.negations().isEmpty()); // Revise when we support nested negations in rules
+        return iterate(rule.condition().conjunction().negations())
+                .flatMap(neg -> iterate(neg.disjunction().conjunctions()))
+                .flatMap(conj -> conj.allConcludables())
+                .flatMap(concludable -> iterate(applicableRules(concludable).keySet()))
+                .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
     }
 
     private List<Rule> findCycle(RuleDependency dependency, Map<Rule, RuleDependency> visitedDependentRules) {
