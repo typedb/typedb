@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
-import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -34,14 +34,14 @@ public class NestedConjunctionController extends ConjunctionController<
         NestedConjunctionController.NestedConjunctionProcessor
         > {
 
-    public NestedConjunctionController(Driver<NestedConjunctionController> driver, Conjunction conjunction,
+    public NestedConjunctionController(Driver<NestedConjunctionController> driver, ResolvableConjunction conjunction,
                                        Context context) {
         super(driver, conjunction, context);
     }
 
     @Override
     FunctionalIterator<Concludable> concludablesTriggeringRules() {
-        return Iterators.iterate(Concludable.create(conjunction))
+        return Iterators.iterate(conjunction.positiveConcludables())
                 .filter(c -> !registry().logicManager().applicableRules(c).isEmpty());
     }
 

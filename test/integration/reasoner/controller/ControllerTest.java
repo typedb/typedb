@@ -28,6 +28,8 @@ import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
@@ -54,7 +56,6 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_TERMINATED_WITH_CAUSE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static java.lang.Thread.sleep;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
@@ -135,7 +136,7 @@ public class ControllerTest {
                 ControllerRegistry registry = transaction.reasoner().controllerRegistry();
                 AnswerProducer answerProducer = new AnswerProducer();
                 try {
-                    registry.createRootConjunction(conjunctionPattern, new HashSet<>(), options.explain(), answerProducer);
+                    registry.createRootConjunction(ResolvableConjunction.of(conjunctionPattern), new HashSet<>(), options.explain(), answerProducer);
                 } catch (TypeDBException e) {
                     fail();
                 }
@@ -541,7 +542,7 @@ public class ControllerTest {
         AnswerProducer answerProducer = new AnswerProducer();
         answerProducer.getNextAnswer();
         try {
-             registry.createRootDisjunction(disjunction, filter, options.explain(), answerProducer);
+             registry.createRootDisjunction(ResolvableDisjunction.of(disjunction), filter, options.explain(), answerProducer);
         } catch (TypeDBException e) {
             fail();
             return;
@@ -558,7 +559,7 @@ public class ControllerTest {
         AnswerProducer answerProducer = new AnswerProducer();
         answerProducer.getNextAnswer();
         try {
-            registry.createRootConjunction(conjunction, filter, options.explain(), answerProducer);
+            registry.createRootConjunction(ResolvableConjunction.of(conjunction), filter, options.explain(), answerProducer);
         } catch (TypeDBException e) {
             fail();
             return;
