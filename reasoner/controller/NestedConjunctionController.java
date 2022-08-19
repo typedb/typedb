@@ -18,10 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 
@@ -37,12 +34,6 @@ public class NestedConjunctionController extends ConjunctionController<
     public NestedConjunctionController(Driver<NestedConjunctionController> driver, ResolvableConjunction conjunction,
                                        Context context) {
         super(driver, conjunction, context);
-    }
-
-    @Override
-    FunctionalIterator<Concludable> concludablesTriggeringRules() {
-        return Iterators.iterate(conjunction.positiveConcludables())
-                .filter(c -> !registry().logicManager().applicableRules(c).isEmpty());
     }
 
     @Override

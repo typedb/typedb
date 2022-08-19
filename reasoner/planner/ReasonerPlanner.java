@@ -38,7 +38,7 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ReasonerPlanner {
-    protected final Map<Plannable, Plan> planCache;
+    protected final Map<Pair<ResolvableConjunction, Set<Identifier.Variable.Retrievable>>, Plan<Resolvable<?>>> planCache;
     protected final ConceptManager conceptMgr;
     protected final TraversalEngine traversalEng;
     protected final LogicManager logicMgr;
@@ -56,32 +56,28 @@ public abstract class ReasonerPlanner {
         return new GreedyCostSearch.OldPlannerEmulator(traversalEng, conceptMgr, logicMgr);
     }
 
-    public Pair<Set<Concludable>, Set<Retrievable>> compile(ResolvableConjunction conjunction){
-        synchronized (compiled) {
-            return compiled.computeIfAbsent(conjunction, conj -> {
-                Set<Concludable> concludablesTriggeringRules = iterate(conjunction.positiveConcludables()).filter(concludable -> !logicMgr.applicableRules(concludable).isEmpty()).toSet();
-                return new Pair(concludablesTriggeringRules, Retrievable.extractFrom(conjunction.pattern(), concludablesTriggeringRules));
-            });
+    public Pair<Set<Concludable>, Set<Retrievable>> compile(ResolvableConjunction conjunction) {
+        if (!compiled.containsKey(conjunction)) {
+            synchronized (compiled) {
+                if (!compiled.containsKey(conjunction)){
+                    Set<Concludable> concludablesTriggeringRules = iterate(conjunction.positiveConcludables()).filter(concludable -> !logicMgr.applicableRules(concludable).isEmpty()).toSet();
+                    compiled.put(conjunction, new Pair<>(concludablesTriggeringRules, Retrievable.extractFrom(conjunction.pattern(), concludablesTriggeringRules)));
+                }
+            }
         }
+        return compiled.get(conjunction);
     }
 
-    public Plan getPlan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
-        return getPlan(Plannable.ofConjunction(conjunction, bounds));
-    }
-
-    private Plan getPlan(Plannable plannableKey) {
-        Plan plan = null;
+    public Plan<Resolvable<?>> getPlan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
+        Pair<ResolvableConjunction, Set<Identifier.Variable.Retrievable>> plannableKey = new Pair<>(conjunction, bounds);
         if (!planCache.containsKey(plannableKey)) {
-            plan = plannableKey.callPlannerFunction(this);
             synchronized (planCache) {
-                planCache.put(plannableKey, plan);
-            }
-        } else {
-            synchronized (planCache) {
-                plan = planCache.get(plannableKey);
+                if (!planCache.containsKey(plannableKey)) {
+                    planCache.put(plannableKey, planConjunction(conjunction, bounds));
+                }
             }
         }
-        return plan;
+        return planCache.get(plannableKey);
     }
 
     protected abstract Plan<Resolvable<?>> planConjunction(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds);
@@ -125,16 +121,16 @@ public abstract class ReasonerPlanner {
     }
 
     public static class Plan<PLANELEMENT> {
-        List<PLANELEMENT> elementOrder;
-        long cost;
+        private final List<PLANELEMENT> elementOrder;
+        private final long cost;
 
-        Plan(List<PLANELEMENT> elementOrder, long cost) {
+        public Plan(List<PLANELEMENT> elementOrder, long cost) {
             this.elementOrder = elementOrder;
             this.cost = cost;
         }
 
-        public List<PLANELEMENT> resolvableOrder() {
-            return elementOrder;
-        }
+        public List<PLANELEMENT> planOrder() { return elementOrder; }
+        
+        public long cost() { return cost; }
     }
 }

@@ -70,7 +70,7 @@ public abstract class GreedyCostSearch extends ReasonerPlanner {
                     .filter(r -> dependenciesSatisfied(r, bounds, dependencies))
                     .min(Comparator.comparing(r -> estimateCost(r, bounds)));
 
-            if (!nextResolvableOpt.isPresent()) {
+            if (nextResolvableOpt.isEmpty()) {
                 nextResolvableOpt = remaining.stream()
                         .min(Comparator.comparing(r -> estimateCost(r, bounds)));
             }
@@ -82,7 +82,7 @@ public abstract class GreedyCostSearch extends ReasonerPlanner {
             bounds.addAll(nextResolvable.retrieves());
         }
         assert resolvables.size() == orderedResolvables.size() && iterate(orderedResolvables).allMatch(r -> resolvables.contains(r));
-        return new Plan(orderedResolvables, cost);
+        return new Plan<>(orderedResolvables, cost);
     }
 
     abstract long estimateCost(Resolvable<?> resolvable, Set<Identifier.Variable.Retrievable> bounds);

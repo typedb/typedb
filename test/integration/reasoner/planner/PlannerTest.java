@@ -35,6 +35,7 @@ import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
 import org.junit.Before;
@@ -79,13 +80,14 @@ public class PlannerTest {
 
         @Override
         public Pair<Set<Concludable>, Set<Retrievable>> compile(ResolvableConjunction conjunction){
-            return new Pair(iterate(mockResolvables).filter(r -> r.isConcludable()).toSet(),
-                            iterate(mockResolvables).filter(r -> r.isRetrievable()).toSet());
+            return new Pair<>(
+                    iterate(mockResolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable).toSet(),
+                    iterate(mockResolvables).filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).toSet());
         }
 
-        private static List<Resolvable<?>> planResolvables(Set<Resolvable<?>> resolvables, Set inputBounds) {
+        private static List<Resolvable<?>> planResolvables(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> inputBounds) {
             ReasonerPlannerTestWrapper planSearch = new ReasonerPlannerTestWrapper(transaction, resolvables);
-            return planSearch.planConjunction(planSearch.mockConjunction, inputBounds).resolvableOrder();
+            return planSearch.planConjunction(planSearch.mockConjunction, inputBounds).planOrder();
         }
     }
 

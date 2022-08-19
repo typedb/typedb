@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -84,8 +83,6 @@ public abstract class ConjunctionController<
     @Override
     protected void setUpUpstreamControllers() {
         assert resolvables.isEmpty();
-//        Set<Concludable> concludables = concludablesTriggeringRules().toSet();
-//        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction.pattern(), concludables);
         Pair<Set<Concludable>, Set<Retrievable>> compiled = registry().planner().compile(conjunction);
         Set<Concludable> concludables = compiled.first();
         Set<Retrievable> retrievables = compiled.second();
@@ -108,11 +105,9 @@ public abstract class ConjunctionController<
         });
     }
 
-    abstract FunctionalIterator<Concludable> concludablesTriggeringRules();
-
     List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
-        ReasonerPlanner.Plan planObj = registry().planner().getPlan(conjunction, boundVariables);
-        List<Resolvable<?>> newPlan = planObj.resolvableOrder();
+        ReasonerPlanner.Plan<Resolvable<?>> planObj = registry().planner().getPlan(conjunction, boundVariables);
+        List<Resolvable<?>> newPlan = planObj.planOrder();
         assert resolvables.size() + conjunction.negations().size() == newPlan.size() && newPlan.stream().allMatch(r -> resolvables.contains(r) || conjunction.negations().contains(r));
         return newPlan;
     }
