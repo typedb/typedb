@@ -158,11 +158,26 @@ public class RetrievableTest {
     }
 
     @Test
-    public void test_has_value_constraints_are_in_retrievable_iff_they_are_not_in_concludable() {
-        Set<Concludable> concludables = Concludable.create(parse("{ $a has $b; $b > 5; }"));
+    public void test_has_value_constraints_are_in_retrievable_if_they_are_not_in_concludable() {
+        Set<Concludable> concludables = set();
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b > 5; $b < 10; }"), concludables);
-        assertEquals(set(parse("{ $b < 10; }")),
+        assertEquals(set(parse("{ $a has $b; $b > 5; $b < 10; }")),
                      iterate(retrievables).map(Retrievable::pattern).toSet());
+    }
+
+    @Test
+    public void test_has_value_constraints_are_not_in_retrievable_if_they_are_in_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a has $b; $b > 5; $b < 10; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b > 5; $b < 10; }"), concludables);
+        assertEquals(set(), iterate(retrievables).map(Retrievable::pattern).toSet());
+    }
+
+    @Test
+    public void test_has_variable_value_constraints_are_in_retrievable_constant_value_constraints_are_in_retrievable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a has $b; $b > 5; $b < $z; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a has $b; $b > 5; $b < $z; }"), concludables);
+        assertEquals(set(parse("{ $b < $z; }")),
+                iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
@@ -173,19 +188,33 @@ public class RetrievableTest {
     }
 
     @Test
-    public void test_isa_value_constraints_are_in_retrievable_iff_they_are_not_in_concludable() {
-        Set<Concludable> concludables = Concludable.create(parse("{ $a isa $b; $a > 5; }"));
+    public void test_isa_value_constraints_are_in_retrievable_if_they_are_not_in_concludable() {
+        Set<Concludable> concludables = set();
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a isa $b; $a > 5; $a < 10; }"), concludables);
-        assertEquals(set(parse("{ $a < 10; }")),
+        assertEquals(set(parse("{ $a isa $b; $a > 5; $a < 10; }")),
                      iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
-    public void test_attribute_value_constraints_are_in_retrievable_iff_they_are_not_in_concludable() {
-        Set<Concludable> concludables = Concludable.create(parse("{ $a > 5; }"));
+    public void test_isa_value_constraints_are_not_in_retrievable_if_they_are_in_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a isa $b; $a > 5; $a < 10; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a isa $b; $a > 5; $a < 10; }"), concludables);
+        assertEquals(set(), iterate(retrievables).map(Retrievable::pattern).toSet());
+    }
+
+    @Test
+    public void test_attribute_value_constraints_are_in_retrievable_if_they_are_not_in_concludable() {
+        Set<Concludable> concludables = set();
         Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a > 5; $a < 10; }"), concludables);
-        assertEquals(set(parse("{ $a < 10; }")),
+        assertEquals(set(parse("{ $a > 5; $a < 10; }")),
                      iterate(retrievables).map(Retrievable::pattern).toSet());
+    }
+
+    @Test
+    public void test_attribute_value_constraints_are_not_in_retrievable_if_they_are_in_concludable() {
+        Set<Concludable> concludables = Concludable.create(parse("{ $a > 5; $a < 10; }"));
+        Set<Retrievable> retrievables = Retrievable.extractFrom(parse("{ $a > 5; $a < 10; }"), concludables);
+        assertEquals(set(), iterate(retrievables).map(Retrievable::pattern).toSet());
     }
 
     @Test
