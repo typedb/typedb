@@ -63,7 +63,9 @@ public abstract class ProcedureVertex<
         > extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
     private int order;
-    private Set<ProcedureEdge<?, ?>> transitiveOuts;
+    private Set<ProcedureVertex<?, ?>> dependents;
+    private Set<ProcedureVertex<?, ?>> dependees;
+    private Set<ProcedureVertex<?, ?>> transitiveDependees;
 
     ProcedureVertex(Identifier identifier) {
         super(identifier);
@@ -89,6 +91,36 @@ public abstract class ProcedureVertex<
 
     void setOrder(int order) {
         this.order = order;
+    }
+
+    public Set<ProcedureVertex<?, ?>> dependents() {
+        if (dependents == null) {
+            Set<ProcedureVertex<?, ?>> vertices = new HashSet<>();
+            outs().forEach(e -> vertices.add(e.to()));
+            dependents = vertices;
+        }
+        return dependents;
+    }
+
+    public Set<ProcedureVertex<?, ?>> dependees() {
+        if (dependees == null) {
+            Set<ProcedureVertex<?, ?>> vertices = new HashSet<>();
+            ins().forEach(e -> vertices.add(e.from()));
+            dependees = vertices;
+        }
+        return dependees;
+    }
+
+    public Set<ProcedureVertex<?, ?>> transitiveDependees() {
+        if (transitiveDependees == null) {
+            Set<ProcedureVertex<?, ?>> vertices = new HashSet<>();
+            ins().forEach(e -> {
+                vertices.add(e.from());
+                vertices.addAll(e.from().transitiveDependees());
+            });
+            transitiveDependees = vertices;
+        }
+        return transitiveDependees;
     }
 
     @Override

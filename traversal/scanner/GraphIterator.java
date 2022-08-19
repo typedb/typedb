@@ -91,14 +91,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void setup() {
-        for (int pos = 0; pos < procedure.vertexCount(); pos++) {
-            ProcedureVertex<?, ?> procedureVertex = procedure.vertex(pos);
-            VertexTraverser traverser = new VertexTraverser(procedureVertex);
-            vertexTraversers.put(procedureVertex, traverser);
-            if (procedureVertex.isThing() && procedureVertex.asThing().isScope()) {
-                scopes.put(procedureVertex.id().asVariable(), new Scope());
-            }
-        }
+        // set up scopes
+        iterate(procedure.vertices()).filter(v -> v.isThing() && v.asThing().isScope())
+                .forEachRemaining(v -> scopes.put(v.id().asVariable(), new Scope()));
+        // set up traversers
+        iterate(procedure.vertices()).forEachRemaining(v -> vertexTraversers.put(v, new VertexTraverser(v)));
+        // add implicit dependencies between traversers
         iterate(procedure.vertices()).filter(v -> v.isThing() && v.asThing().isScope())
                 .forEachRemaining(this::setupImplicitDependencies);
     }
@@ -204,7 +202,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             ProcedureVertex<?, ?> vertex;
             if (direction == Direction.TRAVERSE) {
                 toTraverse.remove(vertex = toTraverse.first());
-                traverseVertex(vertex);
+                traverse(vertex);
             } else {
                 toRevisit.remove(vertex = toRevisit.last());
                 revisit(vertex);
@@ -213,30 +211,34 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         return direction == Direction.TRAVERSE;
     }
 
-    private void traverseVertex(ProcedureVertex<?, ?> procedureVertex) {
+    private void traverse(ProcedureVertex<?, ?> procedureVertex) {
         VertexTraverser vertexTraverser = vertexTraversers.get(procedureVertex);
-        if (vertexTraverser.findNextVertex()) {
-            vertexTraverser.procedureVertex.outs().forEach(e -> {
-                toTraverse.add(e.to());
-                vertexTraversers.get(e.to()).reset();
-            });
-            vertexTraverser.implicitDependents.forEach(v -> {
-                toTraverse.add(v);
-                vertexTraversers.get(v).reset();
-            });
-        } else {
-            vertexTraverser.clear();
-            vertexTraverser.procedureVertex.ins().forEach(e -> recordRevisit(procedureVertex, e.from()));
-            vertexTraverser.implicitDependees.forEach(toRevisit::add);
-            toTraverse.add(procedureVertex);
-            direction = Direction.REVISIT;
-        }
+        if (vertexTraverser.findNextVertex()) success(vertexTraverser);
+        else failed(vertexTraverser);
     }
 
-    private void recordRevisit(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> revisit) {
-        toRevisit.add(revisit);
-        iterate(vertexTraversers.get(revisit).implicitDependents)
-                .filter(v -> v.order() < from.order()).forEachRemaining(toRevisit::add);
+    private void success(VertexTraverser vertexTraverser) {
+        iterate(vertexTraverser.procedureVertex.dependents()).link(iterate(vertexTraverser.implicitDependents))
+                .forEachRemaining(v -> {
+                    toTraverse.add(v);
+                    vertexTraversers.get(v).reset();
+                });
+    }
+
+    private void failed(VertexTraverser vertexTraverser) {
+        iterate(vertexTraverser.procedureVertex.dependees()).forEachRemaining(dependee -> {
+            toRevisit.add(dependee);
+            // clear traversers that are related to a predecessor but are not directly predecessors
+            vertexTraversers.get(dependee).implicitDependents.forEach(implicit -> {
+                if (!vertexTraverser.procedureVertex.transitiveDependees().contains(implicit) && !vertexTraverser.implicitDependees.contains(implicit)) {
+                    vertexTraversers.get(implicit).clear(); // does not need to be backtracked to, but must be cleared
+                }
+            });
+        });
+        vertexTraverser.implicitDependees.forEach(toRevisit::add);
+        vertexTraverser.clear();
+        toTraverse.add(vertexTraverser.procedureVertex);
+        direction = Direction.REVISIT;
     }
 
     private void revisit(ProcedureVertex<?, ?> procedureVertex) {
