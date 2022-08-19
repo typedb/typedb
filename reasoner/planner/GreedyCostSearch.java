@@ -52,18 +52,12 @@ public abstract class GreedyCostSearch extends ReasonerPlanner {
     @Override
     protected Plan<Resolvable<?>> planConjunction(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> inputBounds) {
         Set<Identifier.Variable.Retrievable> bounds = new HashSet<>(inputBounds);
-        Set<Resolvable<?>> resolvables = new HashSet<>();
-
-        Pair<Set<Concludable>, Set<Retrievable>> compiled = compile(conjunction);
-        resolvables.addAll(compiled.first());
-        resolvables.addAll(compiled.second());
-        resolvables.addAll(conjunction.negations());
+        Set<Resolvable<?>> resolvables = compile(conjunction);
 
         Set<Resolvable<?>> remaining = new HashSet<>(resolvables);
         long cost = 0;
         List<Resolvable<?>> orderedResolvables = new ArrayList<>();
         Map<Resolvable<?>, Set<Identifier.Variable.Retrievable>> dependencies = dependencies(resolvables);
-
 
         while (!remaining.isEmpty()) {
             Optional<Resolvable<?>> nextResolvableOpt = remaining.stream()

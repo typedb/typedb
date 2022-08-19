@@ -83,20 +83,15 @@ public abstract class ConjunctionController<
     @Override
     protected void setUpUpstreamControllers() {
         assert resolvables.isEmpty();
-        Pair<Set<Concludable>, Set<Retrievable>> compiled = registry().planner().compile(conjunction);
-        Set<Concludable> concludables = compiled.first();
-        Set<Retrievable> retrievables = compiled.second();
+        resolvables.addAll(registry().planner().compile(conjunction));
 
-        resolvables.addAll(concludables);
-        resolvables.addAll(retrievables);
-
-        iterate(concludables).forEachRemaining(c -> {
+        iterate(resolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable).forEachRemaining(c -> {
             concludableControllers.put(c, registry().getOrCreateConcludable(c));
         });
-        iterate(retrievables).forEachRemaining(r -> {
+        iterate(resolvables).filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(r -> {
             retrievableControllers.put(r, registry().createRetrievable(r));
         });
-        iterate(conjunction.negations()).forEachRemaining(negated -> {
+        iterate(resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated).forEachRemaining(negated -> {
             try {
                 negationControllers.put(negated, registry().createNegation(negated, conjunction));
             } catch (TypeDBException e) {
@@ -108,7 +103,7 @@ public abstract class ConjunctionController<
     List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
         ReasonerPlanner.Plan<Resolvable<?>> planObj = registry().planner().getPlan(conjunction, boundVariables);
         List<Resolvable<?>> newPlan = planObj.planOrder();
-        assert resolvables.size() + conjunction.negations().size() == newPlan.size() && newPlan.stream().allMatch(r -> resolvables.contains(r) || conjunction.negations().contains(r));
+        assert resolvables.size() == newPlan.size() && newPlan.stream().allMatch(r -> resolvables.contains(r));
         return newPlan;
     }
 

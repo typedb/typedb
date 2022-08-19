@@ -79,10 +79,8 @@ public class PlannerTest {
         }
 
         @Override
-        public Pair<Set<Concludable>, Set<Retrievable>> compile(ResolvableConjunction conjunction){
-            return new Pair<>(
-                    iterate(mockResolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable).toSet(),
-                    iterate(mockResolvables).filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).toSet());
+        public Set<Resolvable<?>> compile(ResolvableConjunction conjunction){
+            return mockResolvables;
         }
 
         private static List<Resolvable<?>> planResolvables(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> inputBounds) {

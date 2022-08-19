@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ReasonerPlanner {
@@ -42,7 +43,7 @@ public abstract class ReasonerPlanner {
     protected final ConceptManager conceptMgr;
     protected final TraversalEngine traversalEng;
     protected final LogicManager logicMgr;
-    private final HashMap<ResolvableConjunction, Pair<Set<Concludable>, Set<Retrievable>>> compiled;
+    private final HashMap<ResolvableConjunction, Set<Resolvable<?>>> compiled;
 
     public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
         planCache = new HashMap<>();
@@ -56,12 +57,18 @@ public abstract class ReasonerPlanner {
         return new GreedyCostSearch.OldPlannerEmulator(traversalEng, conceptMgr, logicMgr);
     }
 
-    public Pair<Set<Concludable>, Set<Retrievable>> compile(ResolvableConjunction conjunction) {
+    public Set<Resolvable<?>> compile(ResolvableConjunction conjunction) {
         if (!compiled.containsKey(conjunction)) {
             synchronized (compiled) {
                 if (!compiled.containsKey(conjunction)){
-                    Set<Concludable> concludablesTriggeringRules = iterate(conjunction.positiveConcludables()).filter(concludable -> !logicMgr.applicableRules(concludable).isEmpty()).toSet();
-                    compiled.put(conjunction, new Pair<>(concludablesTriggeringRules, Retrievable.extractFrom(conjunction.pattern(), concludablesTriggeringRules)));
+                    Set<Concludable> concludablesTriggeringRules = iterate(conjunction.positiveConcludables())
+                            .filter(concludable -> !logicMgr.applicableRules(concludable).isEmpty())
+                            .toSet();
+                    Set<Resolvable<?>> resolvables = new HashSet<>();
+                    resolvables.addAll(concludablesTriggeringRules);
+                    resolvables.addAll(Retrievable.extractFrom(conjunction.pattern(), concludablesTriggeringRules));
+                    resolvables.addAll(conjunction.negations());
+                    compiled.put(conjunction, resolvables);
                 }
             }
         }
