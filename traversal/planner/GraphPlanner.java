@@ -215,10 +215,6 @@ public class GraphPlanner implements Planner {
         return isUpToDate;
     }
 
-    private boolean isFeasible() {
-        return optimiser.isFeasible() || optimiser.isOptimal();
-    }
-
     @Override
     public boolean isOptimal() {
         return optimiser.isOptimal();

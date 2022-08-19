@@ -28,11 +28,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 public abstract class StructureVertex<PROPERTY extends TraversalVertex.Properties>
         extends TraversalVertex<StructureEdge<?, ?>, PROPERTY> {
 
-    final Structure structure;
-
-    StructureVertex(Structure structure, Identifier identifier) {
+    StructureVertex(Identifier identifier) {
         super(identifier);
-        this.structure = structure;
     }
 
     public StructureVertex.Thing asThing() {
@@ -45,8 +42,8 @@ public abstract class StructureVertex<PROPERTY extends TraversalVertex.Propertie
 
     public static class Thing extends StructureVertex<TraversalVertex.Properties.Thing> {
 
-        Thing(Structure structure, Identifier identifier) {
-            super(structure, identifier);
+        Thing(Identifier identifier) {
+            super(identifier);
         }
 
         @Override
@@ -67,8 +64,8 @@ public abstract class StructureVertex<PROPERTY extends TraversalVertex.Propertie
 
     public static class Type extends StructureVertex<Properties.Type> {
 
-        Type(Structure structure, Identifier identifier) {
-            super(structure, identifier);
+        Type(Identifier identifier) {
+            super(identifier);
         }
 
         @Override

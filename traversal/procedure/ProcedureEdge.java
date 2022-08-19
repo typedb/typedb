@@ -1234,7 +1234,7 @@ public abstract class ProcedureEdge<
                                                 .edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type())
                                                 .toAndOptimised(),
                                         ASC
-                                ).filter(kv -> kv.key().equals(rel) &&
+                                ).filter(kv -> kv.key().equals(player) &&
                                         scope.getRoleEdgeSource(kv.value()).map(source -> !source.equals(this)).orElse(true)
                                 );
                         closures.forward(KeyValue.of(player, null));

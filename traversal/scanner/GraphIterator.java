@@ -35,7 +35,6 @@ import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -229,6 +228,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             vertexTraverser.clear();
             vertexTraverser.procedureVertex.ins().forEach(e -> recordRevisit(procedureVertex, e.from()));
             vertexTraverser.implicitDependees.forEach(toRevisit::add);
+            toTraverse.add(procedureVertex);
             direction = Direction.REVISIT;
         }
     }

@@ -51,7 +51,7 @@ public class Structure {
 
     public StructureVertex.Thing thingVertex(Identifier identifier) {
         return vertices.computeIfAbsent(identifier, id -> {
-            StructureVertex.Thing v = new StructureVertex.Thing(this, id);
+            StructureVertex.Thing v = new StructureVertex.Thing(id);
             // TODO: remove this with this.properties
             if (id.isVariable()) properties.put(id.asVariable(), v.props());
             return v;
@@ -60,7 +60,7 @@ public class Structure {
 
     public StructureVertex.Type typeVertex(Identifier identifier) {
         return vertices.computeIfAbsent(identifier, id -> {
-            StructureVertex.Type v = new StructureVertex.Type(this, id);
+            StructureVertex.Type v = new StructureVertex.Type(id);
             // TODO: remove this with this.properties
             if (id.isVariable()) properties.put(id.asVariable(), v.props());
             return v;
@@ -92,10 +92,6 @@ public class Structure {
     public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, boolean isTransitive) {
         StructureEdge.Native<?, ?> edge = new StructureEdge.Native<>(from, to, encoding, isTransitive);
         recordEdge(edge);
-    }
-
-    public void rolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, int repetition) {
-        rolePlayer(from, to, new HashSet<>(), repetition);
     }
 
     public void rolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes, int repetition) {

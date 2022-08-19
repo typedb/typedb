@@ -63,7 +63,6 @@ public abstract class ProcedureVertex<
         > extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
     private int order;
-    private List<ProcedureEdge<?, ?>> orderedOuts;
     private Set<ProcedureEdge<?, ?>> transitiveOuts;
 
     ProcedureVertex(Identifier identifier) {
@@ -88,25 +87,6 @@ public abstract class ProcedureVertex<
         return order;
     }
 
-    public List<ProcedureEdge<?, ?>> orderedOuts() {
-        if (orderedOuts == null) {
-            orderedOuts = outs().stream().sorted(Comparator.comparingInt(e -> e.to().order())).collect(toList());
-        }
-        return orderedOuts;
-    }
-
-    public Set<ProcedureEdge<?, ?>> transitiveOuts() {
-        if (transitiveOuts == null) {
-            HashSet<ProcedureEdge<?, ?>> transitive = new HashSet<>();
-            outs().forEach(edge -> {
-                transitive.add(edge);
-                transitive.addAll(edge.to().transitiveOuts());
-            });
-            transitiveOuts = transitive;
-        }
-        return transitiveOuts;
-    }
-
     void setOrder(int order) {
         this.order = order;
     }
@@ -121,7 +101,6 @@ public abstract class ProcedureVertex<
 
     public static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
 
-        private Set<ProcedureEdge<?, ?>> inRolePlayers;
         private Boolean isScope;
 
         Thing(Identifier identifier) {
@@ -141,13 +120,6 @@ public abstract class ProcedureVertex<
         @Override
         public Thing asThing() {
             return this;
-        }
-
-        public Set<ProcedureEdge<?, ?>> inRolePlayers() {
-            if (inRolePlayers == null) {
-                inRolePlayers = iterate(ins()).filter(ProcedureEdge::isRolePlayer).toSet();
-            }
-            return inRolePlayers;
         }
 
         public boolean isScope() {
