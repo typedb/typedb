@@ -30,8 +30,8 @@ public class ResolvableConjunction {
     private final Set<Negated> negations;
     private final Set<Concludable> concludables;
 
-    private ResolvableConjunction(Conjunction conjunction, Set<Concludable> concludables, Set<Negated> negations) {
-        this.conjunctionPattern = conjunction;
+    private ResolvableConjunction(Conjunction conjunctionPattern, Set<Concludable> concludables, Set<Negated> negations) {
+        this.conjunctionPattern = conjunctionPattern;
         this.negations = negations;
         this.concludables = concludables;
     }
