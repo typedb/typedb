@@ -210,11 +210,6 @@ public class Rule {
         return conj;
     }
 
-    public void reindex() {
-        conclusion().unindex();
-        conclusion().index();
-    }
-
     @Override
     public String toString() {
         return "" + RULE + SPACE + getLabel() + COLON + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
@@ -420,6 +415,11 @@ public class Rule {
 
         public interface Value {
             ValueConstraint<?> value();
+        }
+
+        public void reindex() {
+            unindex();
+            index();
         }
 
         @Override

@@ -479,7 +479,6 @@ public class TypeGraph {
         } finally {
             singleLabelLocks.get(scopedLabel).writeLock().unlock();
             multiLabelLock.readLock().unlock();
-            rules().conclusions().outdated(true);
         }
     }
 
@@ -523,6 +522,10 @@ public class TypeGraph {
 
     public boolean isModified() {
         return isModified;
+    }
+
+    public boolean typesModified() {
+        return iterate(typesByIID.values()).anyMatch(TypeVertex::isModified);
     }
 
     public FunctionalIterator<Pair<ByteArray, ByteArray>> committedIIDs() {
@@ -694,33 +697,21 @@ public class TypeGraph {
 
             private final Buffered buffered;
             private final Persisted persisted;
-            private boolean outdated;
 
             public Conclusions() {
                 buffered = new Buffered();
                 persisted = new Persisted();
-                outdated = false;
             }
 
             public Buffered buffered() {
                 return buffered;
             }
 
-            public boolean isOutdated() {
-                return outdated;
-            }
-
-            public void outdated(boolean isOutdated) {
-                this.outdated = isOutdated;
-            }
-
             public FunctionalIterator<RuleStructure> concludesVertex(TypeVertex type) {
-                assert !outdated;
                 return link(persisted.concludesVertex(type), buffered.concludesVertex(type));
             }
 
             public FunctionalIterator<RuleStructure> concludesEdgeTo(TypeVertex type) {
-                assert !outdated;
                 return link(persisted.concludesEdgeTo(type), buffered.concludesEdgeTo(type));
             }
 
@@ -750,12 +741,10 @@ public class TypeGraph {
                 }
 
                 private FunctionalIterator<RuleStructure> concludesVertex(TypeVertex type) {
-                    assert !outdated;
                     return iterate(concludesVertex.computeIfAbsent(type, this::loadConcludesVertex));
                 }
 
                 public FunctionalIterator<RuleStructure> concludesEdgeTo(TypeVertex type) {
-                    assert !outdated;
                     return iterate(concludesEdgeTo.computeIfAbsent(type, this::loadConcludesEdgeTo));
                 }
 
