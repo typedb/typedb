@@ -30,9 +30,10 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
-import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
@@ -141,7 +142,7 @@ public class ControllerRegistry {
         return controller;
     }
 
-    public void createRootConjunction(Conjunction conjunction, Set<Variable.Retrievable> filter,
+    public void createRootConjunction(ResolvableConjunction conjunction, Set<Variable.Retrievable> filter,
                                       boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         Function<Driver<RootConjunctionController>, RootConjunctionController> actorFn = driver ->
                 new RootConjunctionController(driver, conjunction, filter, explain, controllerContext, reasonerConsumer);
@@ -149,7 +150,7 @@ public class ControllerRegistry {
         createRootController(reasonerConsumer, actorFn);
     }
 
-    public void createRootDisjunction(Disjunction disjunction, Set<Variable.Retrievable> filter,
+    public void createRootDisjunction(ResolvableDisjunction disjunction, Set<Variable.Retrievable> filter,
                                       boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         Function<Driver<RootDisjunctionController>, RootDisjunctionController> actorFn =
                 driver -> new RootDisjunctionController(driver, disjunction, filter, explain, controllerContext, reasonerConsumer);
@@ -164,14 +165,14 @@ public class ControllerRegistry {
         createRootController(reasonerConsumer, actorFn);
     }
 
-    Driver<NestedConjunctionController> createNestedConjunction(Conjunction conjunction) {
+    Driver<NestedConjunctionController> createNestedConjunction(ResolvableConjunction conjunction) {
         Function<Driver<NestedConjunctionController>, NestedConjunctionController> actorFn =
                 driver -> new NestedConjunctionController(driver, conjunction, controllerContext);
         LOG.debug("Create Nested Conjunction for: '{}'", conjunction);
         return createController(actorFn);
     }
 
-    Driver<NestedDisjunctionController> createNestedDisjunction(Disjunction disjunction) {
+    Driver<NestedDisjunctionController> createNestedDisjunction(ResolvableDisjunction disjunction) {
         Function<Driver<NestedDisjunctionController>, NestedDisjunctionController> actorFn =
                 driver -> new NestedDisjunctionController(driver, disjunction, controllerContext);
         LOG.debug("Create Nested Disjunction for: '{}'", disjunction);
@@ -222,15 +223,15 @@ public class ControllerRegistry {
         return ControllerView.retrievable(createController(actorFn), retrievable.retrieves());
     }
 
-    ControllerView.FilteredNegation createNegation(Negated negated, Conjunction conjunction) {
+    ControllerView.FilteredNegation createNegation(Negated negated, ResolvableConjunction conjunction) {
         Function<Driver<NegationController>, NegationController> actorFn =
                 driver -> new NegationController(driver, negated, controllerContext);
         LOG.debug("Create NegationController for : {}", negated);
         return ControllerView.negation(createController(actorFn), filter(conjunction, negated));
     }
 
-    private static Set<Variable.Retrievable> filter(Conjunction scope, Negated inner) {
-        return scope.variables().stream()
+    private static Set<Variable.Retrievable> filter(ResolvableConjunction scope, Negated inner) {
+        return scope.pattern().variables().stream()
                 .filter(var -> var.id().isRetrievable() && inner.retrieves().contains(var.id().asRetrievable()))
                 .map(var -> var.id().asRetrievable())
                 .collect(Collectors.toSet());

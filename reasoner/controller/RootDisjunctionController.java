@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
@@ -36,7 +36,7 @@ public class RootDisjunctionController
     private final boolean explain;
     private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
-    RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
+    RootDisjunctionController(Driver<RootDisjunctionController> driver, ResolvableDisjunction disjunction,
                               Set<Identifier.Variable.Retrievable> filter, boolean explain,
                               Context context, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         super(driver, disjunction, context);
@@ -74,7 +74,7 @@ public class RootDisjunctionController
         private RootSink<ConceptMap> rootSink;
 
         private Processor(Driver<Processor> driver, Driver<RootDisjunctionController> controller,
-                          Context context, Disjunction disjunction, ConceptMap bounds,
+                          Context context, ResolvableDisjunction disjunction, ConceptMap bounds,
                           Set<Identifier.Variable.Retrievable> filter, boolean explain,
                           ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, context, disjunction, bounds, debugName);

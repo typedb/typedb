@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
-import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
@@ -41,7 +41,7 @@ public class RootConjunctionController
     private final boolean explain;
     private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
-    RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
+    RootConjunctionController(Driver<RootConjunctionController> driver, ResolvableConjunction conjunction,
                               Set<Identifier.Variable.Retrievable> filter, boolean explain,
                               Context context, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         super(driver, conjunction, context);
@@ -66,7 +66,7 @@ public class RootConjunctionController
 
     @Override
     FunctionalIterator<Concludable> concludablesTriggeringRules() {
-        return Iterators.iterate(Concludable.create(conjunction))
+        return Iterators.iterate(conjunction.positiveConcludables())
                 .filter(c -> !registry().logicManager().applicableRules(c).isEmpty());
     }
 

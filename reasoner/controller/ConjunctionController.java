@@ -26,8 +26,8 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
-import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
 import com.vaticle.typedb.core.reasoner.common.Planner;
 import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.ConcludableRequest;
@@ -66,18 +66,16 @@ public abstract class ConjunctionController<
         > {
 
     private final Set<Resolvable<?>> resolvables;
-    private final Set<Negated> negateds;
     private final Map<Retrievable, FilteredRetrievable> retrievableControllers;
     private final Map<Concludable, MappedConcludable> concludableControllers;
     private final Map<Negated, FilteredNegation> negationControllers;
     private final Map<Set<Variable.Retrievable>, List<Resolvable<?>>> plans;
-    final Conjunction conjunction;
+    final ResolvableConjunction conjunction;
 
-    ConjunctionController(Driver<CONTROLLER> driver, Conjunction conjunction, Context context) {
+    ConjunctionController(Driver<CONTROLLER> driver, ResolvableConjunction conjunction, Context context) {
         super(driver, context, () -> ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")");
         this.conjunction = conjunction;
         this.resolvables = new HashSet<>();
-        this.negateds = new HashSet<>();
         this.retrievableControllers = new HashMap<>();
         this.concludableControllers = new HashMap<>();
         this.negationControllers = new HashMap<>();
@@ -88,7 +86,7 @@ public abstract class ConjunctionController<
     protected void setUpUpstreamControllers() {
         assert resolvables.isEmpty();
         Set<Concludable> concludables = concludablesTriggeringRules().toSet();
-        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction, concludables);
+        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction.pattern(), concludables);
         resolvables.addAll(concludables);
         resolvables.addAll(retrievables);
         iterate(concludables).forEachRemaining(c -> {
@@ -97,11 +95,9 @@ public abstract class ConjunctionController<
         iterate(retrievables).forEachRemaining(r -> {
             retrievableControllers.put(r, registry().createRetrievable(r));
         });
-        iterate(conjunction.negations()).forEachRemaining(negation -> {
-            Negated negated = new Negated(negation);
+        iterate(conjunction.negations()).forEachRemaining(negated -> {
             try {
                 negationControllers.put(negated, registry().createNegation(negated, conjunction));
-                negateds.add(negated);
             } catch (TypeDBException e) {
                 terminate(e);
             }
@@ -113,7 +109,7 @@ public abstract class ConjunctionController<
     List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
         if (!plans.containsKey(boundVariables)) {
             List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), boundVariables);
-            plan.addAll(negateds);
+            plan.addAll(conjunction.negations());
             plans.put(boundVariables, plan);
         }
         return plans.get(boundVariables);

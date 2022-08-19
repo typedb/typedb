@@ -22,6 +22,8 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
@@ -182,7 +184,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
 
             @Override
             protected synchronized void initialiseRootController() {
-                controllerRegistry().createRootConjunction(conjunction, filter, options.explain(), this);
+                controllerRegistry().createRootConjunction(ResolvableConjunction.of(conjunction), filter, options.explain(), this);
             }
         }
 
@@ -201,7 +203,7 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
 
             @Override
             protected synchronized void initialiseRootController() {
-                controllerRegistry().createRootDisjunction(disjunction, filter, options.explain(), this);
+                controllerRegistry().createRootDisjunction(ResolvableDisjunction.of(disjunction), filter, options.explain(), this);
             }
         }
     }

@@ -42,7 +42,7 @@ public class ConditionController extends ConjunctionController<
     private final Rule.Condition condition;
 
     ConditionController(Driver<ConditionController> driver, Rule.Condition condition, Context context) {
-        super(driver, condition.pattern(), context);
+        super(driver, condition.conjunction(), context);
         this.condition = condition;
     }
 
