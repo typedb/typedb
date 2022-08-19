@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
@@ -38,7 +39,7 @@ import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
-import com.vaticle.typedb.core.reasoner.planner.GreedyAnswerSizeSearch;
+import com.vaticle.typedb.core.reasoner.planner.GreedyCostSearch;
 import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -78,10 +79,10 @@ public class ControllerRegistry {
     private TypeDBException terminationCause;
 
     public ControllerRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                              LogicManager logicMgr, com.vaticle.typedb.core.common.parameters.Context.Query context) {
+                              LogicManager logicMgr, ReasonerPlanner reasonerPlanner, Context.Query context) {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
-        this.reasonerPlanner = new GreedyAnswerSizeSearch(traversalEngine, conceptMgr, logicMgr);
+        this.reasonerPlanner = reasonerPlanner;
         this.logicMgr = logicMgr;
         this.concludableControllers = new ConcurrentHashMap<>();
         this.controllerConcludables = new ConcurrentHashMap<>();

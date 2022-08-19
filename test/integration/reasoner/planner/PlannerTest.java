@@ -66,7 +66,7 @@ public class PlannerTest {
     private static ConceptManager conceptMgr;
     private static LogicManager logicMgr;
 
-    private static class ReasonerPlannerTestWrapper extends GreedyAnswerSizeSearch.OldPlannerEmulator {
+    private static class ReasonerPlannerTestWrapper extends GreedyCostSearch.OldPlannerEmulator {
 
         private final Set<Resolvable<?>> mockResolvables;
         public ResolvableConjunction mockConjunction;

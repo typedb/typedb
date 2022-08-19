@@ -74,59 +74,59 @@ Feature: Debugging Space
     Then verify answer size is: 2
     Then verify answers are sound
     Then verify answers are complete
-    Given reasoning query
-      """
-      match
-        $x isa person;
-        $y isa person;
-        (actor: $x, writer: $y) isa film-production;
-        $y has name 'a';
-      """
-    Then verify answer size is: 2
-    Then verify answers are sound
-    Then verify answers are complete
-    Given reasoning query
-      """
-      match
-        $x isa person;
-        $y isa child;
-        (actor: $x, writer: $y) isa film-production;
-      """
-    # Answer is (actor:$x, writer:$v) ONLY
-    Then verify answer size is: 1
-    Then verify answers are sound
-    Then verify answers are complete
-    Given reasoning query
-      """
-      match
-        $x isa person;
-        $y isa child;
-        (actor: $x, writer: $y) isa film-production;
-        $y has name 'a';
-      """
-    Then verify answer size is: 1
-    Then verify answers are sound
-    Then verify answers are complete
-    Given reasoning query
-      """
-      match
-        $x isa child;
-        $y isa person;
-        (actor: $x, writer: $y) isa film-production;
-      """
-    # Answers are (actor:$x, writer:$z) and (actor:$x, writer:$v)
-    Then verify answer size is: 2
-    Then verify answers are sound
-    Then verify answers are complete
-    Given reasoning query
-      """
-      match
-        $x isa child;
-        $y isa person;
-        (actor: $x, writer: $y) isa film-production;
-        $y has name 'a';
-      """
-    Then verify answer size is: 2
-    Then verify answers are sound
-    Then verify answers are complete
-
+#    Given reasoning query
+#      """
+#      match
+#        $x isa person;
+#        $y isa person;
+#        (actor: $x, writer: $y) isa film-production;
+#        $y has name 'a';
+#      """
+#    Then verify answer size is: 2
+#    Then verify answers are sound
+#    Then verify answers are complete
+#    Given reasoning query
+#      """
+#      match
+#        $x isa person;
+#        $y isa child;
+#        (actor: $x, writer: $y) isa film-production;
+#      """
+#    # Answer is (actor:$x, writer:$v) ONLY
+#    Then verify answer size is: 1
+#    Then verify answers are sound
+#    Then verify answers are complete
+#    Given reasoning query
+#      """
+#      match
+#        $x isa person;
+#        $y isa child;
+#        (actor: $x, writer: $y) isa film-production;
+#        $y has name 'a';
+#      """
+#    Then verify answer size is: 1
+#    Then verify answers are sound
+#    Then verify answers are complete
+#    Given reasoning query
+#      """
+#      match
+#        $x isa child;
+#        $y isa person;
+#        (actor: $x, writer: $y) isa film-production;
+#      """
+#    # Answers are (actor:$x, writer:$z) and (actor:$x, writer:$v)
+#    Then verify answer size is: 2
+#    Then verify answers are sound
+#    Then verify answers are complete
+#    Given reasoning query
+#      """
+#      match
+#        $x isa child;
+#        $y isa person;
+#        (actor: $x, writer: $y) isa film-production;
+#        $y has name 'a';
+#      """
+#    Then verify answer size is: 2
+#    Then verify answers are sound
+#    Then verify answers are complete
+#
