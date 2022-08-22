@@ -187,7 +187,7 @@ public class TypeQLSteps {
                         traversal.parameters(), traversal.filter()).toSet();
                 for (int i = 1; i < procedurePermutations.size(); i++) {
                     Set<VertexMap> permutationAnswers = procedurePermutations.get(i).iterator(tx().concepts().graph(),
-                            traversal.parameters(), traversal.filter()).toSet();
+                            traversal.parameters(), filter).toSet();
                     assertEquals(answers, permutationAnswers);
                 }
             }

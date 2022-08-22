@@ -77,7 +77,7 @@ public abstract class GraphTraversal extends Traversal {
         filter = new HashSet<>();
     }
 
-    public abstract Set<Identifier.Variable.Retrievable> filter();
+    abstract Set<Identifier.Variable.Retrievable> filter();
 
     public abstract void filter(Set<? extends Identifier.Variable.Retrievable> filter);
 
@@ -171,7 +171,7 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         @Override
-        public Set<Identifier.Variable.Retrievable> filter() {
+        Set<Identifier.Variable.Retrievable> filter() {
             return filter;
         }
 
@@ -238,7 +238,7 @@ public abstract class GraphTraversal extends Traversal {
         //       We should introduce a "builder pattern" to Traversal, such that users of this library will build
         //       traversals with Traversal.Builder, and call .build() in the end to produce a final Object.
         @Override
-        public Set<Identifier.Variable.Retrievable> filter() {
+        Set<Identifier.Variable.Retrievable> filter() {
             if (filter.isEmpty()) {
                 modifiable = false;
                 iterate(structure.vertices()).filter(v -> v.id().isRetrievable()).map(v -> v.id().asVariable().asRetrievable())
