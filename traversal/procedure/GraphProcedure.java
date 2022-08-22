@@ -26,11 +26,15 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.planner.GraphPlanner;
 import com.vaticle.typedb.core.traversal.planner.PlannerEdge;
 import com.vaticle.typedb.core.traversal.planner.PlannerVertex;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.scanner.GraphIterator;
+import com.vaticle.typedb.core.traversal.structure.Structure;
+import com.vaticle.typedb.core.traversal.structure.StructureEdge;
+import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,14 +62,6 @@ public class GraphProcedure implements PermutationProcedure {
 
     private GraphProcedure(ProcedureVertex<?, ?>[] vertices) {
         this.vertices = vertices;
-    }
-
-    public static GraphProcedure create(GraphPlanner planner) {
-        GraphProcedure.Builder builder = new Builder();
-        Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
-        Set<PlannerEdge.Directional<?, ?>> registeredEdges = new HashSet<>();
-        planner.vertices().forEach(vertex -> builder.registerVertex(vertex, registeredVertices, registeredEdges));
-        return builder.build();
     }
 
     public ProcedureVertex<?, ?>[] vertices() {
@@ -182,6 +178,21 @@ public class GraphProcedure implements PermutationProcedure {
             this.vertices = new HashMap<>();
         }
 
+        public static Builder create(GraphPlanner planner) {
+            Builder builder = new Builder();
+            Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
+            Set<PlannerEdge.Directional<?, ?>> registeredEdges = new HashSet<>();
+            planner.vertices().forEach(vertex -> builder.registerVertex(vertex, registeredVertices, registeredEdges));
+            return builder;
+        }
+
+        public static Builder create(Structure structure, Map<Identifier, Integer> orders) {
+            Builder builder = new Builder();
+            structure.vertices().forEach(vertex -> builder.vertex(vertex).setOrder(orders.get(vertex.id())));
+            structure.vertices().forEach(builder::registerEdges);
+            return builder;
+        }
+
         public GraphProcedure build() {
             return new GraphProcedure(vertices.values().stream().sorted(comparing(ProcedureVertex::order))
                     .toArray(ProcedureVertex[]::new));
@@ -194,8 +205,6 @@ public class GraphProcedure implements PermutationProcedure {
             List<PlannerVertex<?>> adjacents = new ArrayList<>();
 
             ProcedureVertex<?, ?> vertex = vertex(plannerVertex);
-            if (vertex.isThing()) vertex.asThing().props(plannerVertex.asThing().props());
-            else vertex.asType().props(plannerVertex.asType().props());
             vertex.setOrder(plannerVertex.getOrder());
 
             plannerVertex.outs().forEach(plannerEdge -> {
@@ -221,6 +230,26 @@ public class GraphProcedure implements PermutationProcedure {
             adjacents.forEach(v -> registerVertex(v, registeredVertices, registeredEdges));
         }
 
+        private void registerEdges(StructureVertex<?> structureVertex) {
+            assert vertices.containsKey(structureVertex.id());
+            structureVertex.outs().forEach(e -> registerEdge(e, true));
+            structureVertex.ins().forEach(e -> registerEdge(e, false));
+            structureVertex.loops().forEach(e -> registerEdge(e, true));
+        }
+
+        private void registerEdge(StructureEdge<?, ?> structureEdge, boolean isForward) {
+            ProcedureVertex<?, ?> from = vertex(structureEdge.from());
+            ProcedureVertex<?, ?> to = vertex(structureEdge.to());
+            if (!isForward) {
+                ProcedureVertex<?, ?> tmp = to;
+                to = from;
+                from = tmp;
+            }
+            if (from.order() > to.order()) return;
+            ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, isForward);
+            registerEdge(edge);
+        }
+
         private void registerEdge(PlannerEdge.Directional<?, ?> plannerEdge) {
             ProcedureVertex<?, ?> from = vertex(plannerEdge.from());
             ProcedureVertex<?, ?> to = vertex(plannerEdge.to());
@@ -237,9 +266,16 @@ public class GraphProcedure implements PermutationProcedure {
             }
         }
 
-        private ProcedureVertex<?, ?> vertex(PlannerVertex<?> plannerVertex) {
-            if (plannerVertex.isThing()) return thingVertex(plannerVertex.asThing());
-            else return typeVertex(plannerVertex.asType());
+        private ProcedureVertex<?, ?> vertex(TraversalVertex<?, ?> traversalVertex) {
+            if (traversalVertex.isThing()) {
+                ProcedureVertex.Thing vertex = thingVertex(traversalVertex.id());
+                vertex.asThing().props(traversalVertex.props().asThing());
+                return vertex;
+            } else {
+                ProcedureVertex.Type vertex = typeVertex(traversalVertex.id());
+                vertex.asType().props(traversalVertex.props().asType());
+                return vertex;
+            }
         }
 
         private ProcedureVertex.Thing thingVertex(PlannerVertex.Thing plannerVertex) {

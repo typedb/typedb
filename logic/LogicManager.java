@@ -62,7 +62,7 @@ public class LogicManager {
         this.typeInference = new TypeInference(logicCache, traversalEng, graphMgr);
     }
 
-    GraphManager graph() { return graphMgr; }
+    public GraphManager graph() { return graphMgr; }
 
     public TypeInference typeInference() {
         return typeInference;

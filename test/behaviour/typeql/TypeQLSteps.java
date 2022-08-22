@@ -24,7 +24,15 @@ import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
 import com.vaticle.typedb.core.concept.answer.Numeric;
 import com.vaticle.typedb.core.concept.answer.NumericGroup;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.behaviour.exception.ScenarioDefinitionException;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
+import com.vaticle.typedb.core.traversal.structure.Structure;
+import com.vaticle.typedb.core.traversal.test.ProcedurePermutations;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
@@ -50,6 +58,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
@@ -151,11 +160,36 @@ public class TypeQLSteps {
             TypeQLMatch typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatch();
             clearAnswers();
             answers = tx().query().match(typeQLQuery).toList();
+            testProcedurePermutations(typeQLQuery);
         } catch (TypeQLException e) {
             // NOTE: We manually close transaction here, because we want to align with all non-java clients,
             // where parsing happens at server-side which closes transaction if they fail
             tx().close();
             throw e;
+        }
+    }
+
+    private void testProcedurePermutations(TypeQLMatch typeQLQuery) {
+        Disjunction disjunction = Disjunction.create(typeQLQuery.conjunction().normalise());
+        Set<Identifier.Variable.Retrievable> filter = iterate(typeQLQuery.modifiers().filter())
+                .map(unboundVar -> Identifier.Variable.of(unboundVar.reference().asReferable()))
+                .filter(Identifier::isRetrievable).map(Identifier.Variable::asRetrievable)
+                .toSet();
+        tx().logic().typeInference().applyCombination(disjunction);
+        for (Conjunction conjunction : disjunction.conjunctions()) {
+            GraphTraversal.Thing traversal = conjunction.traversal();
+            traversal.filter(filter);
+            // TODO we expect there to be be only 1 structure in the future
+            List<Structure> structures = traversal.structure().asGraphs();
+            for (Structure structure : structures) {
+                if (structure.vertices().size() == 1)  continue;
+                List<GraphProcedure> procedurePermutations = ProcedurePermutations.generate(structure);
+                Set<VertexMap> answers = procedurePermutations.get(0).iterator(tx().logic().graph(), traversal.parameters(), traversal.filter()).toSet();
+                for (int i = 1; i < procedurePermutations.size(); i++) {
+                    Set<VertexMap> permutationAnswers = procedurePermutations.get(i).iterator(tx().logic().graph(), traversal.parameters(), traversal.filter()).toSet();
+                    assertEquals(answers, permutationAnswers);
+                }
+            }
         }
     }
 
@@ -503,7 +537,7 @@ public class TypeQLSteps {
             assertEquals(1, answerSize);
         }
     }
-   
+
     @Then("templated typeql match; throws exception")
     public void templated_typeql_match_throws_exception(String templatedTypeQLQuery) {
         String templatedQuery = String.join("\n", templatedTypeQLQuery);

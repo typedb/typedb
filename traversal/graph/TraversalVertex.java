@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.traversal.graph;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -27,6 +28,9 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTIES extends TraversalVertex.Properties> {
 
@@ -128,6 +132,22 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
         @Override
         public abstract int hashCode();
 
+        public boolean isThing() {
+            return false;
+        }
+
+        public boolean isType() {
+            return false;
+        }
+
+        public Thing asThing() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(TraversalVertex.Properties.Thing.class));
+        }
+
+        public Type asType() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(TraversalVertex.Properties.Type.class));
+        }
+
         public static class Thing extends Properties {
 
             private boolean hasIID;
@@ -162,6 +182,16 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
             public void predicate(Predicate.Value<?> predicate) {
                 predicates.add(predicate);
+            }
+
+            @Override
+            public boolean isThing() {
+                return true;
+            }
+
+            @Override
+            public Thing asThing() {
+                return this;
             }
 
             @Override
@@ -246,6 +276,16 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
             public void regex(String regex) {
                 this.regex = regex;
+            }
+
+            @Override
+            public boolean isType() {
+                return true;
+            }
+
+            @Override
+            public Type asType() {
+                return this;
             }
 
             @Override
