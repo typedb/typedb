@@ -171,14 +171,13 @@ public class TypeQLSteps {
 
     private void testProcedurePermutations(TypeQLMatch typeQLQuery) {
         Disjunction disjunction = Disjunction.create(typeQLQuery.conjunction().normalise());
+        tx().logic().typeInference().applyCombination(disjunction);
         Set<Identifier.Variable.Retrievable> filter = iterate(typeQLQuery.modifiers().filter())
                 .map(unboundVar -> Identifier.Variable.of(unboundVar.reference().asReferable()))
                 .filter(Identifier::isRetrievable).map(Identifier.Variable::asRetrievable)
                 .toSet();
-        tx().logic().typeInference().applyCombination(disjunction);
         for (Conjunction conjunction : disjunction.conjunctions()) {
-            GraphTraversal.Thing traversal = conjunction.traversal();
-            traversal.filter(filter);
+            GraphTraversal.Thing traversal = conjunction.traversal(filter);
             // TODO we expect there to be be only 1 structure in the future
             List<Structure> structures = traversal.structure().asGraphs();
             for (Structure structure : structures) {
