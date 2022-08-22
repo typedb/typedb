@@ -184,9 +184,11 @@ public class TypeQLSteps {
             for (Structure structure : structures) {
                 if (structure.vertices().size() == 1)  continue;
                 List<GraphProcedure> procedurePermutations = ProcedurePermutations.generate(structure);
-                Set<VertexMap> answers = procedurePermutations.get(0).iterator(tx().logic().graph(), traversal.parameters(), traversal.filter()).toSet();
+                Set<VertexMap> answers = procedurePermutations.get(0).iterator(tx().concepts().graph(),
+                        traversal.parameters(), traversal.filter()).toSet();
                 for (int i = 1; i < procedurePermutations.size(); i++) {
-                    Set<VertexMap> permutationAnswers = procedurePermutations.get(i).iterator(tx().logic().graph(), traversal.parameters(), traversal.filter()).toSet();
+                    Set<VertexMap> permutationAnswers = procedurePermutations.get(i).iterator(tx().concepts().graph(),
+                            traversal.parameters(), traversal.filter()).toSet();
                     assertEquals(answers, permutationAnswers);
                 }
             }
