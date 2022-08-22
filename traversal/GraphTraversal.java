@@ -171,7 +171,7 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         @Override
-        Set<Identifier.Variable.Retrievable> filter() {
+        public Set<Identifier.Variable.Retrievable> filter() {
             return filter;
         }
 
