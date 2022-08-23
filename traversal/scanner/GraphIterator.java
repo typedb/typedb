@@ -102,15 +102,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     /**
-     * We make explicit hidden dependencies caused by filtering roles through scopes.
-     * Any case where backtracking must occur to a non-predecessor is recorded via an implicit dependency.
+     * We make explicit hidden dependencies caused by filtering roles through scopes. A vertex that must backtrack
+     * to another vertex in order to find permutations of role instances is annotated with an implicit dependency.
+     *
      * Specifically, this occurs when traversing over two sibling edges that can take on an overlapping set of roles.
      * In this case, the two destinations vertices have an implicit dependency.
-     *
-     * We do not need to record dependencies between incoming edges' vertices because we externally guarantee
-     * that overlapping role player edges are de-optimised into vertices. In the exactly equal case, because
-     * the incoming edges' from vertex is already occupied, if they are identical, the filtering does not require
-     * backtracking. If the vertices are different, they visit mutually exclusive.
+     * It can also happen between a pair of vertices that can take on overlapping Role instances.
      */
     private void setupImplicitDependencies(ProcedureVertex<?, ?> vertex) {
         Set<ProcedureEdge<?, ?>> rpEdges = iterate(vertex.outs()).filter(e -> e.isRolePlayer() && e.direction().isForward()).toSet();
@@ -119,10 +116,16 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 setupImplicitDependency(rp1.to(), rp2.to());
             }
         }));
-        Set<ProcedureEdge<?, ?>> relatingEdges = iterate(vertex.outs()).filter(e -> e.isRelating() && e.direction().isForward()).toSet();
-        iterate(relatingEdges).forEachRemaining(relating1 -> iterate(relatingEdges).forEachRemaining(relating2 -> {
+        Set<ProcedureEdge<?, ?>> outRelatingEdges = iterate(vertex.outs()).filter(e -> e.isRelating() && e.direction().isForward()).toSet();
+        iterate(outRelatingEdges).forEachRemaining(relating1 -> iterate(outRelatingEdges).forEachRemaining(relating2 -> {
             if (relating1.to().order() < relating2.to().order() && relating1.asRelating().overlaps(relating2.asRelating(), params)) {
                 setupImplicitDependency(relating1.to(), relating2.to());
+            }
+        }));
+        Set<ProcedureEdge<?, ?>> inRelatingEdges = iterate(vertex.ins()).filter(e -> e.isRelating() && e.direction().isBackward()).toSet();
+        iterate(inRelatingEdges).forEachRemaining(relating1 -> iterate(inRelatingEdges).forEachRemaining(relating2 -> {
+            if (relating1.from().order() < relating2.from().order() && relating1.asRelating().overlaps(relating2.asRelating(), params)) {
+                setupImplicitDependency(relating1.from(), relating2.from());
             }
         }));
     }
@@ -221,20 +224,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         iterate(vertexTraverser.procedureVertex.dependents()).link(iterate(vertexTraverser.implicitDependents))
                 .forEachRemaining(v -> {
                     toTraverse.add(v);
-                    vertexTraversers.get(v).reset();
+                    vertexTraversers.get(v).clear();
                 });
     }
 
     private void failed(VertexTraverser vertexTraverser) {
-        iterate(vertexTraverser.procedureVertex.dependees()).forEachRemaining(dependee -> {
-            toRevisit.add(dependee);
-            // clear traversers that are related to a predecessor but are not directly predecessors
-            vertexTraversers.get(dependee).implicitDependents.forEach(implicit -> {
-                if (!vertexTraverser.procedureVertex.transitiveDependees().contains(implicit) && !vertexTraverser.implicitDependees.contains(implicit)) {
-                    vertexTraversers.get(implicit).clear(); // does not need to be backtracked to, but must be cleared
-                }
-            });
-        });
+        iterate(vertexTraverser.procedureVertex.dependees()).forEachRemaining(dependee -> toRevisit.add(dependee));
         vertexTraverser.implicitDependees.forEach(toRevisit::add);
         vertexTraverser.clear();
         toTraverse.add(vertexTraverser.procedureVertex);
@@ -243,6 +238,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void revisit(ProcedureVertex<?, ?> procedureVertex) {
         toTraverse.add(procedureVertex);
+        vertexTraversers.get(procedureVertex).implicitDependents.forEach(implicit -> vertexTraversers.get(implicit).clear());
         direction = Direction.TRAVERSE;
     }
 
@@ -255,7 +251,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private final ProcedureVertex<?, ?> procedureVertex;
         private final Scope localScope;
-        private final Set<ProcedureVertex<?, ?>> implicitDependents;
+        final Set<ProcedureVertex<?, ?>> implicitDependents;
         private final Set<ProcedureVertex<?, ?>> implicitDependees;
         private Forwardable<Vertex<?, ?>, Order.Asc> iterator;
         private Vertex<?, ?> vertex;
@@ -297,8 +293,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
         }
 
-        private void clear() {
-            reset();
+        void clear() {
+            if (iterator != null) {
+                iterator.recycle();
+                iterator = null;
+            }
+            clearCurrentVertex();
             if (procedureVertex.id().isScoped()) localScope.remove(procedureVertex);
             else {
                 iterate(procedureVertex.ins()).filter(ProcedureEdge::isRolePlayer).forEachRemaining(e -> {
@@ -306,14 +306,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                     scope.remove(e);
                 });
             }
-        }
-
-        private void reset() {
-            if (iterator != null) {
-                iterator.recycle();
-                iterator = null;
-            }
-            clearCurrentVertex();
         }
 
         private void clearCurrentVertex() {
