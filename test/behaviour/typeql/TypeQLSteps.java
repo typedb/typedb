@@ -36,6 +36,7 @@ import com.vaticle.typedb.core.traversal.test.ProcedurePermutations;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
+import com.vaticle.typeql.lang.pattern.variable.Variable;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
@@ -152,6 +153,7 @@ public class TypeQLSteps {
         TypeQLInsert typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asInsert();
         clearAnswers();
         answers = tx().query().insert(typeQLQuery).toList();
+        if (typeQLQuery.match().isPresent()) assertProcedurePermutationsEquivalent(typeQLQuery.match().get());
     }
 
     @When("get answers of typeql match")
@@ -160,7 +162,7 @@ public class TypeQLSteps {
             TypeQLMatch typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatch();
             clearAnswers();
             answers = tx().query().match(typeQLQuery).toList();
-            testProcedurePermutations(typeQLQuery);
+            assertProcedurePermutationsEquivalent(typeQLQuery);
         } catch (TypeQLException e) {
             // NOTE: We manually close transaction here, because we want to align with all non-java clients,
             // where parsing happens at server-side which closes transaction if they fail
@@ -169,10 +171,11 @@ public class TypeQLSteps {
         }
     }
 
-    private void testProcedurePermutations(TypeQLMatch typeQLQuery) {
+    private void assertProcedurePermutationsEquivalent(TypeQLMatch typeQLQuery) {
         Disjunction disjunction = Disjunction.create(typeQLQuery.conjunction().normalise());
         tx().logic().typeInference().applyCombination(disjunction);
-        Set<Identifier.Variable.Retrievable> filter = iterate(typeQLQuery.modifiers().filter())
+        Set<Identifier.Variable.Retrievable> filter = (typeQLQuery.modifiers().filter().isEmpty() ?
+                iterate(typeQLQuery.variables()).map(Variable::asUnbound) : iterate(typeQLQuery.modifiers().filter()))
                 .map(unboundVar -> Identifier.Variable.of(unboundVar.reference().asReferable()))
                 .filter(Identifier::isRetrievable).map(Identifier.Variable::asRetrievable)
                 .toSet();
@@ -181,7 +184,7 @@ public class TypeQLSteps {
             // TODO we expect there to be be only 1 structure in the future
             List<Structure> structures = traversal.structure().asGraphs();
             for (Structure structure : structures) {
-                if (structure.vertices().size() == 1)  continue;
+                if (structure.vertices().size() == 1) continue;
                 List<GraphProcedure> procedurePermutations = ProcedurePermutations.generate(structure);
                 Set<VertexMap> answers = procedurePermutations.get(0).iterator(tx().concepts().graph(),
                         traversal.parameters(), filter).toSet();
@@ -204,6 +207,7 @@ public class TypeQLSteps {
         TypeQLMatch.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatchAggregate();
         clearAnswers();
         numericAnswer = tx().query().match(typeQLQuery);
+        assertProcedurePermutationsEquivalent(typeQLQuery.match());
     }
 
     @When("typeql match aggregate; throws exception")
@@ -216,6 +220,7 @@ public class TypeQLSteps {
         TypeQLMatch.Group typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatchGroup();
         clearAnswers();
         answerGroups = tx().query().match(typeQLQuery).toList();
+        assertProcedurePermutationsEquivalent(typeQLQuery.match());
     }
 
     @When("typeql match group; throws exception")
@@ -228,6 +233,7 @@ public class TypeQLSteps {
         TypeQLMatch.Group.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatchGroupAggregate();
         clearAnswers();
         numericAnswerGroups = tx().query().match(typeQLQuery).toList();
+        assertProcedurePermutationsEquivalent(typeQLQuery.group().match());
     }
 
     @Then("answer size is: {number}")
