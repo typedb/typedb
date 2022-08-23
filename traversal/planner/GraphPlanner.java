@@ -379,7 +379,7 @@ public class GraphPlanner implements Planner {
 
     private void createProcedure() {
         assert iterate(vertices.values()).allMatch(PlannerVertex::validResults);
-        procedure = GraphProcedure.Builder.create(this).build();
+        procedure = GraphProcedure.create(this);
     }
 
     @Override

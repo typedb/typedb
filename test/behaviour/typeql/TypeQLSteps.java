@@ -32,7 +32,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
-import com.vaticle.typedb.core.traversal.test.ProcedurePermutations;
+import com.vaticle.typedb.core.traversal.test.ProcedurePermutator;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
@@ -185,7 +185,7 @@ public class TypeQLSteps {
             List<Structure> structures = traversal.structure().asGraphs();
             for (Structure structure : structures) {
                 if (structure.vertices().size() == 1) continue;
-                List<GraphProcedure> procedurePermutations = ProcedurePermutations.generate(structure);
+                List<GraphProcedure> procedurePermutations = ProcedurePermutator.generate(structure);
                 Set<VertexMap> answers = procedurePermutations.get(0).iterator(tx().concepts().graph(),
                         traversal.parameters(), filter).toSet();
                 for (int i = 1; i < procedurePermutations.size(); i++) {

@@ -64,6 +64,21 @@ public class GraphProcedure implements PermutationProcedure {
         this.vertices = vertices;
     }
 
+    public static GraphProcedure create(GraphPlanner planner) {
+        Builder builder = new Builder();
+        Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
+        Set<PlannerEdge.Directional<?, ?>> registeredEdges = new HashSet<>();
+        planner.vertices().forEach(vertex -> builder.registerVertex(vertex, registeredVertices, registeredEdges));
+        return builder.build();
+    }
+
+    public static GraphProcedure create(Structure structure, Map<Identifier, Integer> orders) {
+        Builder builder = new Builder();
+        structure.vertices().forEach(vertex -> builder.vertex(vertex).setOrder(orders.get(vertex.id())));
+        structure.vertices().forEach(builder::registerEdges);
+        return builder.build();
+    }
+
     public ProcedureVertex<?, ?>[] vertices() {
         return vertices;
     }
@@ -176,21 +191,6 @@ public class GraphProcedure implements PermutationProcedure {
 
         public Builder() {
             this.vertices = new HashMap<>();
-        }
-
-        public static Builder create(GraphPlanner planner) {
-            Builder builder = new Builder();
-            Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
-            Set<PlannerEdge.Directional<?, ?>> registeredEdges = new HashSet<>();
-            planner.vertices().forEach(vertex -> builder.registerVertex(vertex, registeredVertices, registeredEdges));
-            return builder;
-        }
-
-        public static Builder create(Structure structure, Map<Identifier, Integer> orders) {
-            Builder builder = new Builder();
-            structure.vertices().forEach(vertex -> builder.vertex(vertex).setOrder(orders.get(vertex.id())));
-            structure.vertices().forEach(builder::registerEdges);
-            return builder;
         }
 
         public GraphProcedure build() {

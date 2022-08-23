@@ -33,8 +33,9 @@ import static com.vaticle.typedb.common.collection.Collections.permutations;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class ProcedurePermutations {
+public class ProcedurePermutator {
 
+    // TODO: receive a Traversal object once the asGraphs call disappears
     public static List<GraphProcedure> generate(Structure structure) {
         if (structure.asGraphs().size() != 1) throw TypeDBException.of(ILLEGAL_ARGUMENT);
         List<GraphProcedure> procedures = new ArrayList<>();
@@ -43,7 +44,7 @@ public class ProcedurePermutations {
             for (int index = 0; index < ordering.size(); index++) {
                 orderingMap.put(ordering.get(index), index);
             }
-            procedures.add(GraphProcedure.Builder.create(structure, orderingMap).build());
+            procedures.add(GraphProcedure.create(structure, orderingMap));
         }
         return procedures;
     }
