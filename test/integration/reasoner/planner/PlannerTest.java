@@ -82,8 +82,8 @@ public class PlannerTest {
         }
 
         private static List<Resolvable<?>> planResolvables(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> inputBounds) {
-            ReasonerPlannerTestWrapper planSearch = new ReasonerPlannerTestWrapper(transaction, resolvables);
-            return planSearch.planConjunction(planSearch.mockConjunction, inputBounds).planOrder();
+            ReasonerPlannerTestWrapper planner = new ReasonerPlannerTestWrapper(transaction, resolvables);
+            return planner.planConjunction(planner.mockConjunction, inputBounds).planOrder();
         }
     }
 
