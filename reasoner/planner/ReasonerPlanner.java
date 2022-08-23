@@ -100,15 +100,17 @@ public abstract class ReasonerPlanner {
         Set<Identifier.Variable.Retrievable> generated = iterate(resolvables).map(Resolvable::generating).filter(Optional::isPresent)
                 .map(Optional::get).map(ThingVariable::id).toSet();
 
-        Map<Identifier.Variable.Retrievable, Integer> refCounts = new HashMap<>();
+        Map<Identifier.Variable.Retrievable, Integer> unnegatedRefCount = new HashMap<>();
         for (Resolvable<?> resolvable : resolvables) {
             Optional<ThingVariable> generating = resolvable.generating();
             deps.putIfAbsent(resolvable, new HashSet<>());
             for (Identifier.Variable.Retrievable v : resolvable.retrieves()) {
-                refCounts.put(v, 1 + refCounts.getOrDefault(v, 0));
                 if (generated.contains(v) && !(generating.isPresent() && generating.get().id().equals(v))) {
                     // TODO: Should this rule the Resolvable<?> out if generates it's own dependency?
                     deps.get(resolvable).add(v);
+                }
+                if (!resolvable.isNegated()) {
+                    unnegatedRefCount.put(v, 1 + unnegatedRefCount.getOrDefault(v, 0));
                 }
             }
         }
@@ -116,7 +118,7 @@ public abstract class ReasonerPlanner {
         for (Resolvable<?> resolvable : resolvables) {
             if (resolvable.isNegated()) {
                 for (Identifier.Variable.Retrievable v : resolvable.retrieves()) {
-                    if (refCounts.get(v) > 1) {
+                    if (unnegatedRefCount.getOrDefault(v, 0) > 0) {
                         deps.get(resolvable).add(v);
                     }
                 }

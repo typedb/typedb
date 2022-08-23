@@ -63,7 +63,7 @@ public abstract class GreedyCostSearch extends ReasonerPlanner {
 
             if (nextResolvableOpt.isEmpty()) {
                 nextResolvableOpt = remaining.stream()
-                        .filter(r -> !dependenciesSatisfied(r, bounds, dependencies))
+                        .filter(r -> !dependenciesSatisfied(r, bounds, dependencies) && !r.isNegated())
                         .min(Comparator.comparing(r -> estimateCost(r, bounds)));
             }
             assert nextResolvableOpt.isPresent();

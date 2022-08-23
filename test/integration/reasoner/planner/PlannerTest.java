@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
@@ -44,6 +45,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -208,6 +210,36 @@ public class PlannerTest {
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
+    }
+
+    @Test
+    public void test_planner_negations_with_dependencies() {
+        transaction.query().define(TypeQL.parseQuery("define employment sub relation, relates employee, relates employer;" +
+                "work-permit sub relation, relates person;" +
+                "person plays employment:employee, plays work-permit:person;"));
+        transaction.commit();
+        session.close();
+        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+
+        EntityType person = conceptMgr.putEntityType("person");
+        AttributeType name = conceptMgr.putAttributeType("name", AttributeType.ValueType.STRING);
+        person.setOwns(name);
+        conceptMgr.putRelationType("employment");
+        conceptMgr.putRelationType("work-permit");
+
+
+        Conjunction conjunction = resolvedConjunction("{ ($p,$e) isa employment;  not{ ($p) isa work-permit; }; }", logicMgr);
+        Set<Concludable> concludables = Concludable.create(conjunction);
+        Negated negated = new Negated(conjunction.negations().get(0));
+
+        Set<Resolvable<?>> resolvables = new HashSet<>();
+        resolvables.add(negated);
+        resolvables.addAll(concludables);
+
+        List<Resolvable<?>> plan = ReasonerPlannerTestWrapper.planResolvables(resolvables, set());
+
+        assertEquals(plan.size(), 2);
+        assertEquals(plan.get(1), negated);
     }
 
     private static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
