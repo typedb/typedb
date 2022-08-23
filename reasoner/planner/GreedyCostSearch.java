@@ -17,13 +17,10 @@
  */
 package com.vaticle.typedb.core.reasoner.planner;
 
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
-import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 

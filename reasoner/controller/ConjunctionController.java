@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
