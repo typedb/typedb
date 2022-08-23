@@ -102,6 +102,7 @@ host_compatible_java_test(
         "//pattern:pattern",
         "//logic:logic",
         "//reasoner:reasoner",
+         "//traversal:traversal",
     ],
     deps = [
         "//test/integration/util",
