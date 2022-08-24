@@ -42,7 +42,10 @@ host_compatible_java_library(
     ],
     native_libraries_deps = [
         "//concept:concept",
+        "//common:common",
         "//common/test:util",
+        "//traversal:traversal",
+        "//pattern:pattern",
     ],
     runtime_deps = [
         "//test/behaviour/connection/database:steps",

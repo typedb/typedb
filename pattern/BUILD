@@ -25,6 +25,7 @@ package(
         "//logic:__subpackages__",
         "//query:__subpackages__",
         "//reasoner:__subpackages__",
+        "//test/behaviour:__subpackages__",
         "//test/integration:__subpackages__",
         "//test/behaviour/reasoner:__subpackages__",
     ]

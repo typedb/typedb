@@ -79,6 +79,10 @@ public final class ConceptManager {
         return new ConceptMap(map);
     }
 
+    public GraphManager graph() {
+        return graphMgr;
+    }
+
     public ThingType getRootThingType() {
         TypeVertex vertex = graphMgr.schema().rootThingType();
         if (vertex != null) return new ThingTypeImpl.Root(graphMgr, vertex);
