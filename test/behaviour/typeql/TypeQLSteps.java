@@ -153,7 +153,7 @@ public class TypeQLSteps {
         TypeQLInsert typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asInsert();
         clearAnswers();
         answers = tx().query().insert(typeQLQuery).toList();
-        if (typeQLQuery.match().isPresent()) assertProcedurePermutationsEquivalent(typeQLQuery.match().get());
+        if (typeQLQuery.match().isPresent()) assertQueryPlansCorrect(typeQLQuery.match().get());
     }
 
     @When("get answers of typeql match")
@@ -162,7 +162,7 @@ public class TypeQLSteps {
             TypeQLMatch typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatch();
             clearAnswers();
             answers = tx().query().match(typeQLQuery).toList();
-            assertProcedurePermutationsEquivalent(typeQLQuery);
+            assertQueryPlansCorrect(typeQLQuery);
         } catch (TypeQLException e) {
             // NOTE: We manually close transaction here, because we want to align with all non-java clients,
             // where parsing happens at server-side which closes transaction if they fail
@@ -171,7 +171,7 @@ public class TypeQLSteps {
         }
     }
 
-    private void assertProcedurePermutationsEquivalent(TypeQLMatch typeQLQuery) {
+    private void assertQueryPlansCorrect(TypeQLMatch typeQLQuery) {
         Disjunction disjunction = Disjunction.create(typeQLQuery.conjunction().normalise());
         tx().logic().typeInference().applyCombination(disjunction);
         Set<Identifier.Variable.Retrievable> filter = (typeQLQuery.modifiers().filter().isEmpty() ?
@@ -207,7 +207,7 @@ public class TypeQLSteps {
         TypeQLMatch.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatchAggregate();
         clearAnswers();
         numericAnswer = tx().query().match(typeQLQuery);
-        assertProcedurePermutationsEquivalent(typeQLQuery.match());
+        assertQueryPlansCorrect(typeQLQuery.match());
     }
 
     @When("typeql match aggregate; throws exception")
@@ -220,7 +220,7 @@ public class TypeQLSteps {
         TypeQLMatch.Group typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatchGroup();
         clearAnswers();
         answerGroups = tx().query().match(typeQLQuery).toList();
-        assertProcedurePermutationsEquivalent(typeQLQuery.match());
+        assertQueryPlansCorrect(typeQLQuery.match());
     }
 
     @When("typeql match group; throws exception")
@@ -233,7 +233,7 @@ public class TypeQLSteps {
         TypeQLMatch.Group.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatchGroupAggregate();
         clearAnswers();
         numericAnswerGroups = tx().query().match(typeQLQuery).toList();
-        assertProcedurePermutationsEquivalent(typeQLQuery.group().match());
+        assertQueryPlansCorrect(typeQLQuery.group().match());
     }
 
     @Then("answer size is: {number}")
