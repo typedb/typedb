@@ -47,6 +47,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
@@ -79,7 +80,7 @@ public class PlannerTest {
         }
 
         @Override
-        public Set<Resolvable<?>> compile(ResolvableConjunction conjunction){
+        public Set<Resolvable<?>> compile(ResolvableConjunction conjunction) {
             return mockResolvables;
         }
 
@@ -146,6 +147,19 @@ public class PlannerTest {
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
 
         List<Resolvable<?>> plan = ReasonerPlannerTestWrapper.planResolvables(resolvables, set());
+        assertEquals(list(concludable, concludable2), plan);
+    }
+
+    @Test
+    public void test_planner_starts_at_bound_concludable() {
+        Concludable concludable = Concludable.create(resolvedConjunction("{ $r($a, $b); }", logicMgr)).iterator().next();
+        Concludable concludable2 = Concludable.create(resolvedConjunction("{ $s($b, $c); }", logicMgr)).iterator().next();
+
+        Set<Resolvable<?>> resolvables = set(concludable, concludable2);
+
+        Optional<Identifier.Variable.Retrievable> varA = concludable.retrieves().stream().filter(v -> v.isRetrievable() && v.asRetrievable().isName() && v.asRetrievable().asName().name().equals("a")).findFirst();
+        assert varA.isPresent();
+        List<Resolvable<?>> plan = ReasonerPlannerTestWrapper.planResolvables(resolvables, set(varA.get()));
         assertEquals(list(concludable, concludable2), plan);
     }
 
