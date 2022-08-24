@@ -24,10 +24,19 @@ import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
 import com.vaticle.typedb.core.concept.answer.Numeric;
 import com.vaticle.typedb.core.concept.answer.NumericGroup;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.behaviour.exception.ScenarioDefinitionException;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
+import com.vaticle.typedb.core.traversal.structure.Structure;
+import com.vaticle.typedb.core.traversal.test.ProcedurePermutator;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
+import com.vaticle.typeql.lang.pattern.variable.Variable;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
@@ -50,6 +59,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
@@ -143,6 +153,7 @@ public class TypeQLSteps {
         TypeQLInsert typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asInsert();
         clearAnswers();
         answers = tx().query().insert(typeQLQuery).toList();
+        if (typeQLQuery.match().isPresent()) assertQueryPlansCorrect(typeQLQuery.match().get());
     }
 
     @When("get answers of typeql match")
@@ -151,11 +162,38 @@ public class TypeQLSteps {
             TypeQLMatch typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatch();
             clearAnswers();
             answers = tx().query().match(typeQLQuery).toList();
+            assertQueryPlansCorrect(typeQLQuery);
         } catch (TypeQLException e) {
             // NOTE: We manually close transaction here, because we want to align with all non-java clients,
             // where parsing happens at server-side which closes transaction if they fail
             tx().close();
             throw e;
+        }
+    }
+
+    private void assertQueryPlansCorrect(TypeQLMatch typeQLQuery) {
+        Disjunction disjunction = Disjunction.create(typeQLQuery.conjunction().normalise());
+        tx().logic().typeInference().applyCombination(disjunction);
+        Set<Identifier.Variable.Retrievable> filter = (typeQLQuery.modifiers().filter().isEmpty() ?
+                iterate(typeQLQuery.variables()).map(Variable::asUnbound) : iterate(typeQLQuery.modifiers().filter()))
+                .map(unboundVar -> Identifier.Variable.of(unboundVar.reference().asReferable()))
+                .filter(Identifier::isRetrievable).map(Identifier.Variable::asRetrievable)
+                .toSet();
+        for (Conjunction conjunction : disjunction.conjunctions()) {
+            GraphTraversal.Thing traversal = conjunction.traversal(filter);
+            // TODO we expect there to be be only 1 structure in the future
+            List<Structure> structures = traversal.structure().asGraphs();
+            for (Structure structure : structures) {
+                if (structure.vertices().size() == 1) continue;
+                List<GraphProcedure> procedurePermutations = ProcedurePermutator.generate(structure);
+                Set<VertexMap> answers = procedurePermutations.get(0).iterator(tx().concepts().graph(),
+                        traversal.parameters(), filter).toSet();
+                for (int i = 1; i < procedurePermutations.size(); i++) {
+                    Set<VertexMap> permutationAnswers = procedurePermutations.get(i).iterator(tx().concepts().graph(),
+                            traversal.parameters(), filter).toSet();
+                    assertEquals(answers, permutationAnswers);
+                }
+            }
         }
     }
 
@@ -169,6 +207,7 @@ public class TypeQLSteps {
         TypeQLMatch.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatchAggregate();
         clearAnswers();
         numericAnswer = tx().query().match(typeQLQuery);
+        assertQueryPlansCorrect(typeQLQuery.match());
     }
 
     @When("typeql match aggregate; throws exception")
@@ -181,6 +220,7 @@ public class TypeQLSteps {
         TypeQLMatch.Group typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatchGroup();
         clearAnswers();
         answerGroups = tx().query().match(typeQLQuery).toList();
+        assertQueryPlansCorrect(typeQLQuery.match());
     }
 
     @When("typeql match group; throws exception")
@@ -193,6 +233,7 @@ public class TypeQLSteps {
         TypeQLMatch.Group.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatchGroupAggregate();
         clearAnswers();
         numericAnswerGroups = tx().query().match(typeQLQuery).toList();
+        assertQueryPlansCorrect(typeQLQuery.group().match());
     }
 
     @Then("answer size is: {number}")
@@ -503,7 +544,7 @@ public class TypeQLSteps {
             assertEquals(1, answerSize);
         }
     }
-   
+
     @Then("templated typeql match; throws exception")
     public void templated_typeql_match_throws_exception(String templatedTypeQLQuery) {
         String templatedQuery = String.join("\n", templatedTypeQLQuery);
