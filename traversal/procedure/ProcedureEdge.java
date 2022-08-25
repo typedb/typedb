@@ -1028,15 +1028,6 @@ public abstract class ProcedureEdge<
                     return this;
                 }
 
-                public boolean overlaps(Relating other, Traversal.Parameters params) {
-                    assert direction().equals(other.direction());
-                    if (to().props().hasIID() && other.to().props().hasIID()) {
-                        return params.getIID(to().id().asVariable()).equals(params.getIID(other.to().id().asVariable()));
-                    } else {
-                        return !intersection(to().props().types(), other.to().props().types()).isEmpty();
-                    }
-                }
-
                 static class Forward extends Relating {
 
                     Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to) {

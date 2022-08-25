@@ -45,6 +45,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static com.vaticle.typedb.common.collection.Collections.intersection;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -160,6 +161,14 @@ public abstract class ProcedureVertex<
                         iterate(ins()).anyMatch(e -> e.direction().isBackward() && (e.isRolePlayer() || e.isRelating()));
             }
             return isScope;
+        }
+
+        public boolean overlaps(Thing other, Traversal.Parameters params) {
+            if (props().hasIID() && other.props().hasIID()) {
+                return params.getIID(id().asVariable()).equals(params.getIID(other.id().asVariable()));
+            } else {
+                return !intersection(props().types(), other.props().types()).isEmpty();
+            }
         }
 
         @Override

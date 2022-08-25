@@ -116,17 +116,15 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 setupImplicitDependency(rp1.to(), rp2.to());
             }
         }));
-        Set<ProcedureEdge<?, ?>> outRelatingEdges = iterate(vertex.outs()).filter(e -> e.isRelating() && e.direction().isForward()).toSet();
-        iterate(outRelatingEdges).forEachRemaining(relating1 -> iterate(outRelatingEdges).forEachRemaining(relating2 -> {
-            if (relating1.to().order() < relating2.to().order() && relating1.asRelating().overlaps(relating2.asRelating(), params)) {
-                setupImplicitDependency(relating1.to(), relating2.to());
-            }
+        Set<ProcedureVertex.Thing> roleVerticesOut = iterate(vertex.outs()).filter(e -> e.isRelating() && e.direction().isForward())
+                .map(e -> e.asRelating().to()).toSet();
+        iterate(roleVerticesOut).forEachRemaining(v1 -> iterate(roleVerticesOut).forEachRemaining(v2 -> {
+            if (v1.order() < v2.order() && v1.overlaps(v2, params)) setupImplicitDependency(v1, v2);
         }));
-        Set<ProcedureEdge<?, ?>> inRelatingEdges = iterate(vertex.ins()).filter(e -> e.isRelating() && e.direction().isBackward()).toSet();
-        iterate(inRelatingEdges).forEachRemaining(relating1 -> iterate(inRelatingEdges).forEachRemaining(relating2 -> {
-            if (relating1.from().order() < relating2.from().order() && relating1.asRelating().overlaps(relating2.asRelating(), params)) {
-                setupImplicitDependency(relating1.from(), relating2.from());
-            }
+        Set<ProcedureVertex.Thing> roleVerticesIn = iterate(vertex.ins()).filter(e -> e.isRelating() && e.direction().isBackward())
+                .map(e -> e.asRelating().from()).toSet();
+        iterate(roleVerticesIn).forEachRemaining(v1 -> iterate(roleVerticesIn).forEachRemaining(v2 -> {
+            if (v1.order() < v2.order() && v1.overlaps(v2, params)) setupImplicitDependency(v1, v2);
         }));
     }
 
