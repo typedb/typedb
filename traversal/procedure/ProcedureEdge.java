@@ -1158,13 +1158,12 @@ public abstract class ProcedureEdge<
 
                 public boolean overlaps(RolePlayer other, Traversal.Parameters params) {
                     assert direction().equals(other.direction());
-                    if (to().props().hasIID() && other.to().props().hasIID()) {
+                    Set<Label> roleTypeIntersection = intersection(roleTypes(), other.roleTypes());
+                    Set<Label> playerIntersection = intersection(to().props().types(), other.to().props().types());
+                    boolean typesIntersect = !roleTypeIntersection.isEmpty() && !playerIntersection.isEmpty();
+                    if (typesIntersect && to().props().hasIID() && other.to().props().hasIID()) {
                         return params.getIID(to().id().asVariable()).equals(params.getIID(other.to().id().asVariable()));
-                    } else {
-                        Set<Label> roleTypeIntersection = intersection(roleTypes(), other.roleTypes());
-                        Set<Label> playerIntersection = intersection(to().props().types(), other.to().props().types());
-                        return !roleTypeIntersection.isEmpty() && !playerIntersection.isEmpty();
-                    }
+                    } else return typesIntersect;
                 }
 
                 static class Forward extends RolePlayer {
