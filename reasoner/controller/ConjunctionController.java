@@ -83,7 +83,7 @@ public abstract class ConjunctionController<
     @Override
     protected void setUpUpstreamControllers() {
         assert resolvables.isEmpty();
-        resolvables.addAll(registry().planner().compile(conjunction));
+        resolvables.addAll(registry().logicManager().compile(conjunction));
 
         iterate(resolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable).forEachRemaining(c -> {
             concludableControllers.put(c, registry().getOrCreateConcludable(c));

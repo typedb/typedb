@@ -26,6 +26,9 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -35,6 +38,7 @@ import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -55,12 +59,14 @@ public class LogicManager {
     private final ConceptManager conceptMgr;
     private final TypeInference typeInference;
     private final LogicCache logicCache;
+    private final Map<ResolvableConjunction, Set<Resolvable<?>>> compiled;
 
     public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
         this.typeInference = new TypeInference(logicCache, traversalEng, graphMgr);
+        this.compiled = new HashMap<>();
     }
 
     GraphManager graph() { return graphMgr; }
@@ -116,6 +122,23 @@ public class LogicManager {
         logicCache.unifiers().get(concludable, c -> c.computeApplicableRules(conceptMgr, this));
     }
 
+    public Set<Resolvable<?>> compile(ResolvableConjunction conjunction) {
+        if (!compiled.containsKey(conjunction)) {
+            synchronized (compiled) {
+                if (!compiled.containsKey(conjunction)){
+                    Set<Concludable> concludablesTriggeringRules = iterate(conjunction.positiveConcludables())
+                            .filter(concludable -> !applicableRules(concludable).isEmpty())
+                            .toSet();
+                    Set<Resolvable<?>> resolvables = new HashSet<>();
+                    resolvables.addAll(concludablesTriggeringRules);
+                    resolvables.addAll(Retrievable.extractFrom(conjunction.pattern(), concludablesTriggeringRules));
+                    resolvables.addAll(conjunction.negations());
+                    compiled.put(conjunction, resolvables);
+                }
+            }
+        }
+        return compiled.get(conjunction);
+    }
     /**
      * On commit we must clear the rule cache and revalidate rules - this will force re-running type resolution
      * when we re-load the Rule objects

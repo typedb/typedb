@@ -30,7 +30,6 @@ import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
-import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
@@ -44,7 +43,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -67,28 +65,6 @@ public class PlannerTest {
     private static CoreTransaction transaction;
     private static ConceptManager conceptMgr;
     private static LogicManager logicMgr;
-
-    private static class ReasonerPlannerTestWrapper extends GreedyCostSearch.OldPlannerEmulator {
-
-        private final Set<Resolvable<?>> mockResolvables;
-        public ResolvableConjunction mockConjunction;
-
-        public ReasonerPlannerTestWrapper(CoreTransaction tx, Set<Resolvable<?>> mockResolvables) {
-            super(tx.traversal(), tx.concepts(), tx.logic());
-            this.mockResolvables = mockResolvables;
-            this.mockConjunction = ResolvableConjunction.of(new Conjunction(set(), new ArrayList<>()));
-        }
-
-        @Override
-        public Set<Resolvable<?>> compile(ResolvableConjunction conjunction) {
-            return mockResolvables;
-        }
-
-        private static List<Resolvable<?>> planResolvables(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> inputBounds) {
-            ReasonerPlannerTestWrapper planner = new ReasonerPlannerTestWrapper(transaction, resolvables);
-            return planner.planConjunction(planner.mockConjunction, inputBounds).planOrder();
-        }
-    }
 
     @Before
     public void setUp() throws IOException {
@@ -124,7 +100,8 @@ public class PlannerTest {
         Retrievable retrievable = new Retrievable(resolvedConjunction("{ $c($b); }", logicMgr));
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
-        List<Resolvable<?>> plan = ReasonerPlannerTestWrapper.planResolvables(resolvables, set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .planResolvableOrdering(resolvables, set()).planOrder();
         assertEquals(list(concludable, retrievable), plan);
     }
 
@@ -135,7 +112,8 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
 
-        List<Resolvable<?>> plan = ReasonerPlannerTestWrapper.planResolvables(resolvables, set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .planResolvableOrdering(resolvables, set()).planOrder();
         assertEquals(list(retrievable, concludable), plan);
     }
 
@@ -146,7 +124,8 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
 
-        List<Resolvable<?>> plan = ReasonerPlannerTestWrapper.planResolvables(resolvables, set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .planResolvableOrdering(resolvables, set()).planOrder();
         assertEquals(list(concludable, concludable2), plan);
     }
 
@@ -159,7 +138,8 @@ public class PlannerTest {
 
         Optional<Identifier.Variable.Retrievable> varA = concludable.retrieves().stream().filter(v -> v.isRetrievable() && v.asRetrievable().isName() && v.asRetrievable().asName().name().equals("a")).findFirst();
         assert varA.isPresent();
-        List<Resolvable<?>> plan = ReasonerPlannerTestWrapper.planResolvables(resolvables, set(varA.get()));
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .planResolvableOrdering(resolvables, set(varA.get())).planOrder();
         assertEquals(list(concludable, concludable2), plan);
     }
 
@@ -185,7 +165,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $e($c, $p2) isa employment; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable, concludable2);
-        List<Resolvable<?>> plan = ReasonerPlannerTestWrapper.planResolvables(resolvables, set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .planResolvableOrdering(resolvables, set()).planOrder();
 
         assertEquals(list(retrievable, concludable, retrievable2, concludable2), plan);
     }
@@ -196,7 +177,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b has $a; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = ReasonerPlannerTestWrapper.planResolvables(resolvables, set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .planResolvableOrdering(resolvables, set()).planOrder();
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -208,7 +190,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b($a); }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = ReasonerPlannerTestWrapper.planResolvables(resolvables, set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .planResolvableOrdering(resolvables, set()).planOrder();
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -220,7 +203,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $c($d); }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = ReasonerPlannerTestWrapper.planResolvables(resolvables, set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .planResolvableOrdering(resolvables, set()).planOrder();
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -250,7 +234,8 @@ public class PlannerTest {
         resolvables.add(negated);
         resolvables.addAll(concludables);
 
-        List<Resolvable<?>> plan = ReasonerPlannerTestWrapper.planResolvables(resolvables, set());
+        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
+                .planResolvableOrdering(resolvables, set()).planOrder();
 
         assertEquals(plan.size(), 2);
         assertEquals(plan.get(1), negated);
@@ -267,5 +252,4 @@ public class PlannerTest {
         logicMgr.typeInference().applyCombination(disjunction);
         return disjunction;
     }
-
 }

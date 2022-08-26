@@ -42,36 +42,16 @@ public abstract class ReasonerPlanner {
     protected final ConceptManager conceptMgr;
     protected final TraversalEngine traversalEng;
     protected final LogicManager logicMgr;
-    private final HashMap<ResolvableConjunction, Set<Resolvable<?>>> compiled;
 
     public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
         planCache = new HashMap<>();
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
-        this.compiled = new HashMap<>();
     }
 
     public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
         return new GreedyCostSearch.OldPlannerEmulator(traversalEng, conceptMgr, logicMgr);
-    }
-
-    public Set<Resolvable<?>> compile(ResolvableConjunction conjunction) {
-        if (!compiled.containsKey(conjunction)) {
-            synchronized (compiled) {
-                if (!compiled.containsKey(conjunction)){
-                    Set<Concludable> concludablesTriggeringRules = iterate(conjunction.positiveConcludables())
-                            .filter(concludable -> !logicMgr.applicableRules(concludable).isEmpty())
-                            .toSet();
-                    Set<Resolvable<?>> resolvables = new HashSet<>();
-                    resolvables.addAll(concludablesTriggeringRules);
-                    resolvables.addAll(Retrievable.extractFrom(conjunction.pattern(), concludablesTriggeringRules));
-                    resolvables.addAll(conjunction.negations());
-                    compiled.put(conjunction, resolvables);
-                }
-            }
-        }
-        return compiled.get(conjunction);
     }
 
     public Plan<Resolvable<?>> getPlan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
@@ -86,7 +66,11 @@ public abstract class ReasonerPlanner {
         return planCache.get(plannableKey);
     }
 
-    protected abstract Plan<Resolvable<?>> planConjunction(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds);
+    Plan<Resolvable<?>> planConjunction(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> inputBounds) {
+        return planResolvableOrdering(logicMgr.compile(conjunction), inputBounds);
+    }
+
+    abstract Plan<Resolvable<?>> planResolvableOrdering(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> bounds);
 
     protected boolean dependenciesSatisfied(Resolvable<?> resolvable, Set<Identifier.Variable.Retrievable> bounds, Map<Resolvable<?>, Set<Identifier.Variable.Retrievable>> dependencies) {
         return bounds.containsAll(dependencies.get(resolvable));
@@ -117,11 +101,9 @@ public abstract class ReasonerPlanner {
 
         for (Resolvable<?> resolvable : resolvables) {
             if (resolvable.isNegated()) {
-                for (Identifier.Variable.Retrievable v : resolvable.retrieves()) {
-                    if (unnegatedRefCount.getOrDefault(v, 0) > 0) {
-                        deps.get(resolvable).add(v);
-                    }
-                }
+                iterate(resolvable.retrieves())
+                    .filter(v -> unnegatedRefCount.getOrDefault(v, 0) > 0)
+                    .forEachRemaining(v -> deps.get(resolvable).add(v));
             }
         }
 

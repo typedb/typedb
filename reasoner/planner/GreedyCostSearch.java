@@ -47,10 +47,9 @@ public abstract class GreedyCostSearch extends ReasonerPlanner {
      * Effect? Schedule stronger constraints first.
      */
     @Override
-    protected Plan<Resolvable<?>> planConjunction(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> inputBounds) {
-        Set<Identifier.Variable.Retrievable> bounds = new HashSet<>(inputBounds);
-        Set<Resolvable<?>> resolvables = compile(conjunction);
+    Plan<Resolvable<?>> planResolvableOrdering(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> inputBounds) {
 
+        Set<Identifier.Variable.Retrievable> bounds = new HashSet<>(inputBounds);
         Set<Resolvable<?>> remaining = new HashSet<>(resolvables);
         long cost = 0;
         List<Resolvable<?>> orderedResolvables = new ArrayList<>();
