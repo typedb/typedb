@@ -18,6 +18,7 @@
 package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.cache.CommonCache;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -38,16 +39,16 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ReasonerPlanner {
-    protected final Map<Pair<ResolvableConjunction, Set<Identifier.Variable.Retrievable>>, Plan<Resolvable<?>>> planCache;
     protected final ConceptManager conceptMgr;
     protected final TraversalEngine traversalEng;
     protected final LogicManager logicMgr;
+    protected final CommonCache<Pair<ResolvableConjunction, Set<Identifier.Variable.Retrievable>>, Plan<Resolvable<?>>> planCache;
 
     public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
-        planCache = new HashMap<>();
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
+        this.planCache = new CommonCache<>();
     }
 
     public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
@@ -55,15 +56,7 @@ public abstract class ReasonerPlanner {
     }
 
     public Plan<Resolvable<?>> plan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
-        Pair<ResolvableConjunction, Set<Identifier.Variable.Retrievable>> plannableKey = new Pair<>(conjunction, bounds);
-        if (!planCache.containsKey(plannableKey)) {
-            synchronized (planCache) {
-                if (!planCache.containsKey(plannableKey)) {
-                    planCache.put(plannableKey, planConjunction(conjunction, bounds));
-                }
-            }
-        }
-        return planCache.get(plannableKey);
+        return planCache.get(new Pair<>(conjunction, bounds), cbPair -> planConjunction(cbPair.first(), cbPair.second()));
     }
 
     Plan<Resolvable<?>> planConjunction(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> inputBounds) {
@@ -102,8 +95,8 @@ public abstract class ReasonerPlanner {
         for (Resolvable<?> resolvable : resolvables) {
             if (resolvable.isNegated()) {
                 iterate(resolvable.retrieves())
-                    .filter(v -> unnegatedRefCount.getOrDefault(v, 0) > 0)
-                    .forEachRemaining(v -> deps.get(resolvable).add(v));
+                        .filter(v -> unnegatedRefCount.getOrDefault(v, 0) > 0)
+                        .forEachRemaining(v -> deps.get(resolvable).add(v));
             }
         }
 
@@ -119,8 +112,12 @@ public abstract class ReasonerPlanner {
             this.cost = cost;
         }
 
-        public List<PLANELEMENT> planOrder() { return elementOrder; }
-        
-        public long cost() { return cost; }
+        public List<PLANELEMENT> planOrder() {
+            return elementOrder;
+        }
+
+        public long cost() {
+            return cost;
+        }
     }
 }
