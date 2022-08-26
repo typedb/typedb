@@ -103,7 +103,7 @@ public abstract class ConjunctionController<
     abstract FunctionalIterator<Concludable> concludablesTriggeringRules();
 
     List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
-        ReasonerPlanner.Plan<Resolvable<?>> planObj = registry().planner().getPlan(conjunction, boundVariables);
+        ReasonerPlanner.Plan<Resolvable<?>> planObj = registry().planner().plan(conjunction, boundVariables);
         List<Resolvable<?>> newPlan = planObj.planOrder();
         assert resolvables.size() == newPlan.size() && newPlan.stream().allMatch(r -> resolvables.contains(r));
         return newPlan;

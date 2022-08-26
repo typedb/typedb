@@ -54,7 +54,7 @@ public abstract class ReasonerPlanner {
         return new GreedyCostSearch.OldPlannerEmulator(traversalEng, conceptMgr, logicMgr);
     }
 
-    public Plan<Resolvable<?>> getPlan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
+    public Plan<Resolvable<?>> plan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
         Pair<ResolvableConjunction, Set<Identifier.Variable.Retrievable>> plannableKey = new Pair<>(conjunction, bounds);
         if (!planCache.containsKey(plannableKey)) {
             synchronized (planCache) {
