@@ -296,6 +296,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 iterator = null;
             }
             clearCurrentVertex();
+            clearScopes();
+        }
+
+        private void clearCurrentVertex() {
+            vertex = null;
+        }
+
+        private void clearScopes() {
             if (localScope != null) localScope.removeSource(procedureVertex);
             else {
                 for (ProcedureEdge<?, ?> edge : procedureVertex.ins()) {
@@ -305,10 +313,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                     }
                 }
             }
-        }
-
-        private void clearCurrentVertex() {
-            vertex = null;
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> getIterator() {
