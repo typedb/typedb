@@ -219,16 +219,19 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void success(VertexTraverser vertexTraverser) {
-        iterate(vertexTraverser.procedureVertex.dependents()).link(iterate(vertexTraverser.implicitDependents))
-                .forEachRemaining(v -> {
-                    toTraverse.add(v);
-                    vertexTraversers.get(v).clear();
-                });
+        for (ProcedureVertex<?, ?> vertex : vertexTraverser.procedureVertex.dependents()) {
+            toTraverse.add(vertex);
+            vertexTraversers.get(vertex).clear();
+        }
+        for (ProcedureVertex<?, ?> vertex : vertexTraverser.implicitDependents) {
+            toTraverse.add(vertex);
+            vertexTraversers.get(vertex).clear();
+        }
     }
 
     private void failed(VertexTraverser vertexTraverser) {
-        iterate(vertexTraverser.procedureVertex.dependees()).link(iterate(vertexTraverser.implicitDependees))
-                .forEachRemaining(toRevisit::add);
+        toRevisit.addAll(vertexTraverser.procedureVertex.dependees());
+        toRevisit.addAll(vertexTraverser.implicitDependees);
         vertexTraverser.clear();
         toTraverse.add(vertexTraverser.procedureVertex);
         direction = Direction.REVISIT;
@@ -299,10 +302,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             clearCurrentVertex();
             if (procedureVertex.id().isScoped()) localScope.remove(procedureVertex);
             else {
-                iterate(procedureVertex.ins()).filter(ProcedureEdge::isRolePlayer).forEachRemaining(e -> {
-                    Scope scope = scopes.get(e.asRolePlayer().scope());
-                    scope.remove(e);
-                });
+                for (ProcedureEdge<?, ?> edge : procedureVertex.ins()) {
+                    if (edge.isRolePlayer()) {
+                        Scope scope = scopes.get(edge.asRolePlayer().scope());
+                        scope.remove(edge);
+                    }
+                }
             }
         }
 

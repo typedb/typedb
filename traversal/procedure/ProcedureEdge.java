@@ -45,6 +45,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.intersection;
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -1194,17 +1195,15 @@ public abstract class ProcedureEdge<
                             ).filter(kv -> kv.key().equals(player));
                             iter.forward(KeyValue.of(player, null));
                         } else {
-                            iter = instanceRoleTypes.mergeMap(
-                                    rt -> iterate(to.props().types())
-                                            .map(l -> graphMgr.schema().getType(l))
-                                            .mergeMap(
-                                                    t -> rel.outs()
-                                                            .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
-                                                            .toAndOptimised(),
-                                                    ASC
-                                            ),
-                                    ASC
-                            );
+                            iter = instanceRoleTypes.flatMap(
+                                    rt -> {
+                                        return iterate(to.props().types())
+                                                .map(l -> graphMgr.schema().getType(l))
+                                                .map(t -> rel.outs()
+                                                        .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
+                                                        .toAndOptimised()
+                                                );
+                                    }).mergeMap(Function.identity(), ASC);
                         }
 
                         if (!to.props().predicates().isEmpty()) iter = to.filterPredicatesOnEdge(iter, params);
@@ -1271,14 +1270,14 @@ public abstract class ProcedureEdge<
                             ).filter(kv -> kv.key().equals(relation));
                             iter.forward(KeyValue.of(relation, null));
                         } else {
-                            iter = roleTypeVertices.mergeMap(
-                                    rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
-                                            .mergeMap(t -> player.ins()
-                                                    .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
-                                                    .fromAndOptimised(), ASC
-                                            ),
-                                    ASC
-                            );
+                            iter = roleTypeVertices.flatMap(
+                                    rt -> {
+                                        return iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
+                                                .map(t -> player.ins()
+                                                        .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
+                                                        .fromAndOptimised()
+                                                );
+                                    }).mergeMap(Function.identity(), ASC);
                         }
                         return iter;
                     }
