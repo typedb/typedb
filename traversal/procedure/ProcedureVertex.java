@@ -37,7 +37,6 @@ import com.vaticle.typedb.core.traversal.predicate.Predicate;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -56,7 +55,6 @@ import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.For
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
-import static java.util.stream.Collectors.toList;
 
 public abstract class ProcedureVertex<
         VERTEX extends Vertex<?, ?>,
@@ -66,7 +64,6 @@ public abstract class ProcedureVertex<
     private int order;
     private Set<ProcedureVertex<?, ?>> dependents;
     private Set<ProcedureVertex<?, ?>> dependees;
-    private Set<ProcedureVertex<?, ?>> transitiveDependees;
 
     ProcedureVertex(Identifier identifier) {
         super(identifier);
@@ -110,18 +107,6 @@ public abstract class ProcedureVertex<
             dependees = vertices;
         }
         return dependees;
-    }
-
-    public Set<ProcedureVertex<?, ?>> transitiveDependees() {
-        if (transitiveDependees == null) {
-            Set<ProcedureVertex<?, ?>> vertices = new HashSet<>();
-            ins().forEach(e -> {
-                vertices.add(e.from());
-                vertices.addAll(e.from().transitiveDependees());
-            });
-            transitiveDependees = vertices;
-        }
-        return transitiveDependees;
     }
 
     @Override

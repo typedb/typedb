@@ -223,10 +223,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             toTraverse.add(vertex);
             vertexTraversers.get(vertex).clear();
         }
-        for (ProcedureVertex<?, ?> vertex : vertexTraverser.implicitDependents) {
-            toTraverse.add(vertex);
-            vertexTraversers.get(vertex).clear();
-        }
     }
 
     private void failed(VertexTraverser vertexTraverser) {
@@ -300,12 +296,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 iterator = null;
             }
             clearCurrentVertex();
-            if (procedureVertex.id().isScoped()) localScope.remove(procedureVertex);
+            if (localScope != null) localScope.removeSource(procedureVertex);
             else {
                 for (ProcedureEdge<?, ?> edge : procedureVertex.ins()) {
                     if (edge.isRolePlayer()) {
                         Scope scope = scopes.get(edge.asRolePlayer().scope());
-                        scope.remove(edge);
+                        scope.removeSource(edge);
                     }
                 }
             }
@@ -326,9 +322,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromInitial() {
-            if (procedureVertex.id().isScoped()) {
-                localScope.record(procedureVertex, initial.asThing());
-            }
+            if (localScope != null) localScope.record(procedureVertex, initial.asThing());
             return iterateSorted(ASC, initial);
         }
 
@@ -423,11 +417,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             return Optional.empty();
         }
 
-        public void remove(ProcedureEdge<?, ?> edgeSource) {
+        public void removeSource(ProcedureEdge<?, ?> edgeSource) {
             edgeSources.remove(edgeSource);
         }
 
-        public void remove(ProcedureVertex<?, ?> vertexSource) {
+        public void removeSource(ProcedureVertex<?, ?> vertexSource) {
             vertexSources.remove(vertexSource);
         }
     }
