@@ -39,10 +39,10 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ReasonerPlanner {
-    protected final ConceptManager conceptMgr;
-    protected final TraversalEngine traversalEng;
-    protected final LogicManager logicMgr;
-    protected final CommonCache<Pair<ResolvableConjunction, Set<Identifier.Variable.Retrievable>>, Plan<Resolvable<?>>> planCache;
+    final ConceptManager conceptMgr;
+    final TraversalEngine traversalEng;
+    final LogicManager logicMgr;
+    final CommonCache<Pair<ResolvableConjunction, Set<Identifier.Variable.Retrievable>>, Plan> planCache;
 
     public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
         this.traversalEng = traversalEng;
@@ -55,15 +55,19 @@ public abstract class ReasonerPlanner {
         return new GreedyCostSearch.OldPlannerEmulator(traversalEng, conceptMgr, logicMgr);
     }
 
-    public Plan<Resolvable<?>> plan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
+    public List<Resolvable<?>> plan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
+        return getOrComputePlan(conjunction, bounds).planOrder();
+    }
+
+    Plan getOrComputePlan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
         return planCache.get(new Pair<>(conjunction, bounds), cbPair -> planConjunction(cbPair.first(), cbPair.second()));
     }
 
-    Plan<Resolvable<?>> planConjunction(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> inputBounds) {
+    Plan planConjunction(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> inputBounds) {
         return planResolvableOrdering(logicMgr.compile(conjunction), inputBounds);
     }
 
-    abstract Plan<Resolvable<?>> planResolvableOrdering(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> bounds);
+    abstract Plan planResolvableOrdering(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> bounds);
 
     protected boolean dependenciesSatisfied(Resolvable<?> resolvable, Set<Identifier.Variable.Retrievable> bounds, Map<Resolvable<?>, Set<Identifier.Variable.Retrievable>> dependencies) {
         return bounds.containsAll(dependencies.get(resolvable));
@@ -103,16 +107,16 @@ public abstract class ReasonerPlanner {
         return deps;
     }
 
-    public static class Plan<PLANELEMENT> {
-        private final List<PLANELEMENT> elementOrder;
+    public static class Plan {
+        private final List<Resolvable<?>> elementOrder;
         private final long cost;
 
-        public Plan(List<PLANELEMENT> elementOrder, long cost) {
+        public Plan(List<Resolvable<?>> elementOrder, long cost) {
             this.elementOrder = elementOrder;
             this.cost = cost;
         }
 
-        public List<PLANELEMENT> planOrder() {
+        public List<Resolvable<?>> planOrder() {
             return elementOrder;
         }
 

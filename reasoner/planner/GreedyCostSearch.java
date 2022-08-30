@@ -47,7 +47,7 @@ public abstract class GreedyCostSearch extends ReasonerPlanner {
      * Effect? Schedule stronger constraints first.
      */
     @Override
-    Plan<Resolvable<?>> planResolvableOrdering(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> inputBounds) {
+    Plan planResolvableOrdering(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> inputBounds) {
 
         Set<Identifier.Variable.Retrievable> bounds = new HashSet<>(inputBounds);
         Set<Resolvable<?>> remaining = new HashSet<>(resolvables);
@@ -73,7 +73,7 @@ public abstract class GreedyCostSearch extends ReasonerPlanner {
             bounds.addAll(nextResolvable.retrieves());
         }
         assert resolvables.size() == orderedResolvables.size() && iterate(orderedResolvables).allMatch(r -> resolvables.contains(r));
-        return new Plan<>(orderedResolvables, cost);
+        return new Plan(orderedResolvables, cost);
     }
 
     abstract long estimateCost(Resolvable<?> resolvable, Set<Identifier.Variable.Retrievable> bounds);
