@@ -227,8 +227,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void failed(VertexTraverser vertexTraverser) {
-        iterate(vertexTraverser.procedureVertex.dependees()).forEachRemaining(dependee -> toRevisit.add(dependee));
-        vertexTraverser.implicitDependees.forEach(toRevisit::add);
+        iterate(vertexTraverser.procedureVertex.dependees()).link(iterate(vertexTraverser.implicitDependees))
+                .forEachRemaining(toRevisit::add);
         vertexTraverser.clear();
         toTraverse.add(vertexTraverser.procedureVertex);
         direction = Direction.REVISIT;

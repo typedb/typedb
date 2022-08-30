@@ -1126,6 +1126,15 @@ public abstract class ProcedureEdge<
                     throw TypeDBException.of(ILLEGAL_OPERATION);
                 }
 
+                public Identifier.Variable scope() {
+                    if (direction().isForward()) return from.id().asVariable();
+                    else return to.id().asVariable();
+                }
+
+                private Set<Label> roleTypes() {
+                    return roleTypes;
+                }
+
                 @Override
                 public boolean isRolePlayer() {
                     return true;
@@ -1134,15 +1143,6 @@ public abstract class ProcedureEdge<
                 @Override
                 public RolePlayer asRolePlayer() {
                     return this;
-                }
-
-                public Set<Label> roleTypes() {
-                    return roleTypes;
-                }
-
-                public Identifier.Variable scope() {
-                    if (direction().isForward()) return from.id().asVariable();
-                    else return to.id().asVariable();
                 }
 
                 @Override
