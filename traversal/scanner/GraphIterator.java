@@ -248,7 +248,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private final ProcedureVertex<?, ?> procedureVertex;
         private final Scope localScope;
-        final Set<ProcedureVertex<?, ?>> implicitDependents;
+        private final Set<ProcedureVertex<?, ?>> implicitDependents;
         private final Set<ProcedureVertex<?, ?>> implicitDependees;
         private Forwardable<Vertex<?, ?>, Order.Asc> iterator;
         private Vertex<?, ?> vertex;
