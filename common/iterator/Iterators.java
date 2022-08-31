@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.common.iterator;
 
-import com.vaticle.typedb.common.collection.Either;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -52,11 +50,11 @@ public class Iterators {
     }
 
     public static <T> FunctionalIterator<T> iterate(Collection<T> collection) {
-        return new BaseIterator<>(Either.second(collection.iterator()));
+        return new BaseIterator<>(collection.iterator());
     }
 
     public static <T> FunctionalIterator<T> iterate(Iterator<T> iterator) {
-        return new BaseIterator<>(Either.second(iterator));
+        return new BaseIterator<>(iterator);
     }
 
     public static <T> FunctionalIterator<T> link(Iterator<? extends T> iter1, Iterator<? extends T> iter2) {

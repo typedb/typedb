@@ -18,31 +18,28 @@
 
 package com.vaticle.typedb.core.common.iterator;
 
-import com.vaticle.typedb.common.collection.Either;
-
 import java.util.Iterator;
 
 class BaseIterator<T> extends AbstractFunctionalIterator<T> {
 
-    private final Either<FunctionalIterator<T>, Iterator<T>> iterator;
+    private final Iterator<T> iterator;
 
-    BaseIterator(Either<FunctionalIterator<T>, Iterator<T>> iterator) {
+    BaseIterator(Iterator<T> iterator) {
         this.iterator = iterator;
     }
 
     @Override
     public boolean hasNext() {
-        return iterator.apply(Iterator::hasNext, Iterator::hasNext);
+        return iterator.hasNext();
     }
 
     @Override
     public T next() {
-        return iterator.apply(Iterator::next, Iterator::next);
+        return iterator.next();
     }
 
     @Override
     public void recycle() {
-        iterator.ifFirst(FunctionalIterator::recycle);
+        // do nothing
     }
-
 }

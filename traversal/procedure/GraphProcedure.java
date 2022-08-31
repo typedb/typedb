@@ -494,17 +494,17 @@ public class GraphProcedure implements PermutationProcedure {
         }
 
         public ProcedureEdge.Native.Thing.RolePlayer.Forward forwardRolePlayer(
-                ProcedureVertex.Thing relation, ProcedureVertex.Thing player, Set<Label> roleTypes) {
+                ProcedureVertex.Thing relation, ProcedureVertex.Thing player, int repetition, Set<Label> roleTypes) {
             ProcedureEdge.Native.Thing.RolePlayer.Forward edge =
-                    new ProcedureEdge.Native.Thing.RolePlayer.Forward(relation, player, roleTypes);
+                    new ProcedureEdge.Native.Thing.RolePlayer.Forward(relation, player, repetition, roleTypes);
             registerEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Thing.RolePlayer.Backward backwardRolePlayer(
-                ProcedureVertex.Thing player, ProcedureVertex.Thing relation, Set<Label> roleTypes) {
+                ProcedureVertex.Thing player, ProcedureVertex.Thing relation, int repetition, Set<Label> roleTypes) {
             ProcedureEdge.Native.Thing.RolePlayer.Backward edge =
-                    new ProcedureEdge.Native.Thing.RolePlayer.Backward(player, relation, roleTypes);
+                    new ProcedureEdge.Native.Thing.RolePlayer.Backward(player, relation, repetition, roleTypes);
             registerEdge(edge);
             return edge;
         }

@@ -222,6 +222,10 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
                 return this;
             }
 
+            public int repetition() {
+                return repetition;
+            }
+
             @Override
             public boolean equals(Object o) {
                 if (this == o) return true;

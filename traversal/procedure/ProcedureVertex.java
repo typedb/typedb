@@ -37,7 +37,6 @@ import com.vaticle.typedb.core.traversal.predicate.Predicate;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -45,6 +44,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
+import static com.vaticle.typedb.common.collection.Collections.intersection;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -55,7 +55,6 @@ import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.For
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
-import static java.util.stream.Collectors.toList;
 
 public abstract class ProcedureVertex<
         VERTEX extends Vertex<?, ?>,
@@ -63,8 +62,8 @@ public abstract class ProcedureVertex<
         > extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
     private int order;
-    private List<ProcedureEdge<?, ?>> orderedOuts;
-    private Set<ProcedureEdge<?, ?>> transitiveOuts;
+    private Set<ProcedureVertex<?, ?>> dependents;
+    private Set<ProcedureVertex<?, ?>> dependees;
 
     ProcedureVertex(Identifier identifier) {
         super(identifier);
@@ -88,27 +87,26 @@ public abstract class ProcedureVertex<
         return order;
     }
 
-    public List<ProcedureEdge<?, ?>> orderedOuts() {
-        if (orderedOuts == null) {
-            orderedOuts = outs().stream().sorted(Comparator.comparingInt(e -> e.to().order())).collect(toList());
-        }
-        return orderedOuts;
-    }
-
-    public Set<ProcedureEdge<?, ?>> transitiveOuts() {
-        if (transitiveOuts == null) {
-            HashSet<ProcedureEdge<?, ?>> transitive = new HashSet<>();
-            outs().forEach(edge -> {
-                transitive.add(edge);
-                transitive.addAll(edge.to().transitiveOuts());
-            });
-            transitiveOuts = transitive;
-        }
-        return transitiveOuts;
-    }
-
     void setOrder(int order) {
         this.order = order;
+    }
+
+    public Set<ProcedureVertex<?, ?>> dependents() {
+        if (dependents == null) {
+            Set<ProcedureVertex<?, ?>> vertices = new HashSet<>();
+            outs().forEach(e -> vertices.add(e.to()));
+            dependents = vertices;
+        }
+        return dependents;
+    }
+
+    public Set<ProcedureVertex<?, ?>> dependees() {
+        if (dependees == null) {
+            Set<ProcedureVertex<?, ?>> vertices = new HashSet<>();
+            ins().forEach(e -> vertices.add(e.from()));
+            dependees = vertices;
+        }
+        return dependees;
     }
 
     @Override
@@ -121,7 +119,7 @@ public abstract class ProcedureVertex<
 
     public static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
 
-        private Set<ProcedureEdge<?, ?>> inRolePlayers;
+        private Boolean isScope;
 
         Thing(Identifier identifier) {
             super(identifier);
@@ -142,11 +140,20 @@ public abstract class ProcedureVertex<
             return this;
         }
 
-        public Set<ProcedureEdge<?, ?>> inRolePlayers() {
-            if (inRolePlayers == null) {
-                inRolePlayers = iterate(ins()).filter(ProcedureEdge::isRolePlayer).toSet();
+        public boolean isScope() {
+            if (isScope == null) {
+                isScope = iterate(outs()).anyMatch(e -> e.direction().isForward() && (e.isRolePlayer() || e.isRelating())) ||
+                        iterate(ins()).anyMatch(e -> e.direction().isBackward() && (e.isRolePlayer() || e.isRelating()));
             }
-            return inRolePlayers;
+            return isScope;
+        }
+
+        public boolean overlaps(Thing other, Traversal.Parameters params) {
+            if (props().hasIID() && other.props().hasIID()) {
+                return params.getIID(id().asVariable()).equals(params.getIID(other.id().asVariable()));
+            } else {
+                return !intersection(props().types(), other.props().types()).isEmpty();
+            }
         }
 
         @Override
