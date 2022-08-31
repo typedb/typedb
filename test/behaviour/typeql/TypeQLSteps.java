@@ -181,18 +181,13 @@ public class TypeQLSteps {
                 .toSet();
         for (Conjunction conjunction : disjunction.conjunctions()) {
             GraphTraversal.Thing traversal = conjunction.traversal(filter);
-            // TODO we expect there to be be only 1 structure in the future
-            List<Structure> structures = traversal.structure().asGraphs();
-            for (Structure structure : structures) {
-                if (structure.vertices().size() == 1) continue;
-                List<GraphProcedure> procedurePermutations = ProcedurePermutator.generate(structure);
-                Set<VertexMap> answers = procedurePermutations.get(0).iterator(tx().concepts().graph(),
+            List<GraphProcedure> procedurePermutations = ProcedurePermutator.generate(traversal.structure());
+            Set<VertexMap> answers = procedurePermutations.get(0).iterator(tx().concepts().graph(),
+                    traversal.parameters(), filter).toSet();
+            for (int i = 1; i < procedurePermutations.size(); i++) {
+                Set<VertexMap> permutationAnswers = procedurePermutations.get(i).iterator(tx().concepts().graph(),
                         traversal.parameters(), filter).toSet();
-                for (int i = 1; i < procedurePermutations.size(); i++) {
-                    Set<VertexMap> permutationAnswers = procedurePermutations.get(i).iterator(tx().concepts().graph(),
-                            traversal.parameters(), filter).toSet();
-                    assertEquals(answers, permutationAnswers);
-                }
+                assertEquals(answers, permutationAnswers);
             }
         }
     }
