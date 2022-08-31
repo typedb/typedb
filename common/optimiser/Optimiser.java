@@ -116,6 +116,7 @@ public class Optimiser {
 
     private void createSolver() {
         solver = MPSolver.createSolver("SAT");
+        solver.suppressOutput();
         solver.objective().setMinimization();
         parameters = new MPSolverParameters();
         parameters.setIntegerParam(PRESOLVE, PRESOLVE_ON.swigValue());

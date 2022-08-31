@@ -45,7 +45,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 
+import static com.vaticle.typedb.common.collection.Collections.intersection;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -140,6 +142,14 @@ public abstract class ProcedureEdge<
 
     public boolean onlyStartsFromThingType() {
         return false;
+    }
+
+    public boolean isRelating() {
+        return false;
+    }
+
+    public Native.Thing.Relating asRelating() {
+        throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Native.Thing.Relating.class));
     }
 
     public boolean isRolePlayer() {
@@ -750,7 +760,7 @@ public abstract class ProcedureEdge<
             }
         }
 
-        static abstract class Thing extends Native<ProcedureVertex.Thing, ProcedureVertex.Thing> {
+        public static abstract class Thing extends Native<ProcedureVertex.Thing, ProcedureVertex.Thing> {
 
             private Thing(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
                           Encoding.Direction.Edge direction, Encoding.Edge encoding) {
@@ -772,8 +782,8 @@ public abstract class ProcedureEdge<
                     else return new Relating.Backward(from, to);
                 } else if (edge.isRolePlayer()) {
                     PlannerEdge.Native.Thing.RolePlayer.Directional rp = edge.asRolePlayer();
-                    if (isForward) return new RolePlayer.Forward(from, to, rp.roleTypes());
-                    else return new RolePlayer.Backward(from, to, rp.roleTypes());
+                    if (isForward) return new RolePlayer.Forward(from, to, rp.repetition(), rp.roleTypes());
+                    else return new RolePlayer.Backward(from, to, rp.repetition(), rp.roleTypes());
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
@@ -792,8 +802,9 @@ public abstract class ProcedureEdge<
                     if (isForward) return new Playing.Forward(from, to);
                     else return new Playing.Backward(from, to);
                 } else if (encoding == ROLEPLAYER) {
-                    if (isForward) return new RolePlayer.Forward(from, to, edge.asRolePlayer().types());
-                    else return new RolePlayer.Backward(from, to, edge.asRolePlayer().types());
+                    StructureEdge.Native.RolePlayer rp = edge.asRolePlayer();
+                    if (isForward) return new RolePlayer.Forward(from, to, rp.repetition(), rp.types());
+                    else return new RolePlayer.Backward(from, to, rp.repetition(), rp.types());
                 } else {
                     throw TypeDBException.of(UNRECOGNISED_VALUE);
                 }
@@ -1001,11 +1012,21 @@ public abstract class ProcedureEdge<
                 }
             }
 
-            static abstract class Relating extends Thing {
+            public static abstract class Relating extends Thing {
 
                 private Relating(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
                                  Encoding.Direction.Edge direction) {
                     super(from, to, direction, RELATING);
+                }
+
+                @Override
+                public boolean isRelating() {
+                    return true;
+                }
+
+                @Override
+                public Relating asRelating() {
+                    return this;
                 }
 
                 static class Forward extends Relating {
@@ -1075,11 +1096,13 @@ public abstract class ProcedureEdge<
 
             public static abstract class RolePlayer extends Thing {
 
+                final int repetition;
                 final Set<Label> roleTypes;
 
                 private RolePlayer(ProcedureVertex.Thing from, ProcedureVertex.Thing to,
-                                   Encoding.Direction.Edge direction, Set<Label> roleTypes) {
+                                   Encoding.Direction.Edge direction, int repetition, Set<Label> roleTypes) {
                     super(from, to, direction, ROLEPLAYER);
+                    this.repetition = repetition;
                     this.roleTypes = roleTypes;
                 }
 
@@ -1088,7 +1111,7 @@ public abstract class ProcedureEdge<
 
                 public abstract boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex,
                                                   Vertex<?, ?> toVertex, Traversal.Parameters params,
-                                                  GraphIterator.Scopes.Scoped withinScope);
+                                                  GraphIterator.Scope withinScope);
 
                 @Override
                 public Forwardable<? extends ThingVertex, Order.Asc> branch(GraphManager graphMgr,
@@ -1104,6 +1127,15 @@ public abstract class ProcedureEdge<
                     throw TypeDBException.of(ILLEGAL_OPERATION);
                 }
 
+                public Identifier.Variable scope() {
+                    if (direction().isForward()) return from.id().asVariable();
+                    else return to.id().asVariable();
+                }
+
+                private Set<Label> roleTypes() {
+                    return roleTypes;
+                }
+
                 @Override
                 public boolean isRolePlayer() {
                     return true;
@@ -1114,25 +1146,31 @@ public abstract class ProcedureEdge<
                     return this;
                 }
 
-                public Identifier.Variable scope() {
-                    if (direction().isForward()) return from.id().asVariable();
-                    else return to.id().asVariable();
-                }
-
                 @Override
                 public boolean equals(Object o) {
-                    return super.equals(o) && ((RolePlayer) o).roleTypes.equals(roleTypes);
+                    return super.equals(o) && ((RolePlayer) o).repetition == repetition &&
+                            ((RolePlayer) o).roleTypes.equals(roleTypes);
                 }
 
                 @Override
                 public String toString() {
-                    return super.toString() + String.format(" { roleTypes: %s }", roleTypes);
+                    return super.toString() + String.format(" { repetition: %d, roleTypes: %s }", repetition, roleTypes);
+                }
+
+                public boolean overlaps(RolePlayer other, Traversal.Parameters params) {
+                    assert direction().equals(other.direction());
+                    Set<Label> roleTypeIntersection = intersection(roleTypes(), other.roleTypes());
+                    Set<Label> playerIntersection = intersection(to().props().types(), other.to().props().types());
+                    boolean typesIntersect = !roleTypeIntersection.isEmpty() && !playerIntersection.isEmpty();
+                    if (typesIntersect && to().props().hasIID() && other.to().props().hasIID()) {
+                        return params.getIID(to().id().asVariable()).equals(params.getIID(other.to().id().asVariable()));
+                    } else return typesIntersect;
                 }
 
                 static class Forward extends RolePlayer {
 
-                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, Set<Label> roleTypes) {
-                        super(from, to, FORWARD, roleTypes);
+                    Forward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int repetition, Set<Label> roleTypes) {
+                        super(from, to, FORWARD, repetition, roleTypes);
                     }
 
                     @Override
@@ -1157,17 +1195,15 @@ public abstract class ProcedureEdge<
                             ).filter(kv -> kv.key().equals(player));
                             iter.forward(KeyValue.of(player, null));
                         } else {
-                            iter = instanceRoleTypes.mergeMap(
-                                    rt -> iterate(to.props().types())
-                                            .map(l -> graphMgr.schema().getType(l))
-                                            .mergeMap(
-                                                    t -> rel.outs()
-                                                            .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
-                                                            .toAndOptimised(),
-                                                    ASC
-                                            ),
-                                    ASC
-                            );
+                            iter = instanceRoleTypes.flatMap(
+                                    rt -> {
+                                        return iterate(to.props().types())
+                                                .map(l -> graphMgr.schema().getType(l))
+                                                .map(t -> rel.outs()
+                                                        .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
+                                                        .toAndOptimised()
+                                                );
+                                    }).mergeMap(Function.identity(), ASC);
                         }
 
                         if (!to.props().predicates().isEmpty()) iter = to.filterPredicatesOnEdge(iter, params);
@@ -1175,7 +1211,7 @@ public abstract class ProcedureEdge<
                     }
 
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
-                                             Traversal.Parameters params, GraphIterator.Scopes.Scoped scoped) {
+                                             Traversal.Parameters params, GraphIterator.Scope scope) {
                         ThingVertex rel = fromVertex.asThing();
                         ThingVertex player = toVertex.asThing();
                         Set<TypeVertex> relationRoleTypes = graphMgr.schema().relatedRoleTypes(rel.type());
@@ -1187,11 +1223,13 @@ public abstract class ProcedureEdge<
                                                 .edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type())
                                                 .toAndOptimised(),
                                         ASC
-                                ).filter(kv -> kv.key().equals(player));
+                                ).filter(kv -> kv.key().equals(player) &&
+                                        scope.getRoleEdgeSource(kv.value()).map(source -> !source.equals(this)).orElse(true)
+                                );
                         closures.forward(KeyValue.of(player, null));
                         Optional<KeyValue<ThingVertex, ThingVertex>> next = closures.first();
                         if (next.isPresent() && next.get().key().equals(player)) {
-                            scoped.record(this, next.get().value());
+                            scope.record(this, next.get().value());
                             return true;
                         } else {
                             return false;
@@ -1200,14 +1238,14 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Backward(to, from, roleTypes);
+                        return new Backward(to, from, repetition, roleTypes);
                     }
                 }
 
                 static class Backward extends RolePlayer {
 
-                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, Set<Label> roleTypes) {
-                        super(from, to, BACKWARD, roleTypes);
+                    Backward(ProcedureVertex.Thing from, ProcedureVertex.Thing to, int repetition, Set<Label> roleTypes) {
+                        super(from, to, BACKWARD, repetition, roleTypes);
                     }
 
                     @Override
@@ -1232,20 +1270,20 @@ public abstract class ProcedureEdge<
                             ).filter(kv -> kv.key().equals(relation));
                             iter.forward(KeyValue.of(relation, null));
                         } else {
-                            iter = roleTypeVertices.mergeMap(
-                                    rt -> iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
-                                            .mergeMap(t -> player.ins()
-                                                    .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
-                                                    .fromAndOptimised(), ASC
-                                            ),
-                                    ASC
-                            );
+                            iter = roleTypeVertices.flatMap(
+                                    rt -> {
+                                        return iterate(to.props().types()).map(l -> graphMgr.schema().getType(l))
+                                                .map(t -> player.ins()
+                                                        .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
+                                                        .fromAndOptimised()
+                                                );
+                                    }).mergeMap(Function.identity(), ASC);
                         }
                         return iter;
                     }
 
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
-                                             Traversal.Parameters params, GraphIterator.Scopes.Scoped scoped) {
+                                             Traversal.Parameters params, GraphIterator.Scope scope) {
                         ThingVertex player = fromVertex.asThing();
                         ThingVertex rel = toVertex.asThing();
                         Set<TypeVertex> relationRoleTypes = graphMgr.schema().relatedRoleTypes(rel.type());
@@ -1256,11 +1294,14 @@ public abstract class ProcedureEdge<
                                         rt -> player.ins().edge(ROLEPLAYER, rt, rel.iid().prefix(), rel.iid().type())
                                                 .fromAndOptimised(),
                                         ASC
-                                ).filter(kv -> kv.key().equals(rel));
+                                ).filter(kv -> kv.key().equals(rel) &&
+                                        scope.getRoleEdgeSource(kv.value()).map(source -> !source.equals(this)).orElse(true)
+                                );
                         closures.forward(KeyValue.of(rel, null));
+
                         Optional<KeyValue<ThingVertex, ThingVertex>> next = closures.first();
                         if (next.isPresent() && next.get().key().equals(rel)) {
-                            scoped.record(this, next.get().value());
+                            scope.record(this, next.get().value());
                             return true;
                         } else {
                             return false;
@@ -1269,7 +1310,7 @@ public abstract class ProcedureEdge<
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Forward(to, from, roleTypes);
+                        return new Forward(to, from, repetition, roleTypes);
                     }
                 }
             }
