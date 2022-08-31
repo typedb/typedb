@@ -38,7 +38,6 @@ def vaticle_typedb_common():
         commit = "ade03259f43e7779098f7174111078e7810bc890" # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_common
     )
 
-
 def vaticle_typedb_protocol():
     git_repository(
         name = "vaticle_typedb_protocol",

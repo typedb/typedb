@@ -130,8 +130,8 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         }
 
         int numIns = ins().size();
-        OptimiserConstraint conIsStartingVertex = planner.optimiser().constraint(1, numIns, conPrefix + "is_starting_vertex");
-        conIsStartingVertex.setCoefficient(varIsStartingVertex, numIns);
+        OptimiserConstraint conIsStartingVertex = planner.optimiser().constraint(1, numIns + 1, conPrefix + "is_starting_vertex");
+        conIsStartingVertex.setCoefficient(varIsStartingVertex, numIns + 1);
         for (PlannerEdge.Directional<?, ?> edge : ins()) conIsStartingVertex.setCoefficient(edge.varIsSelected, 1);
     }
 
