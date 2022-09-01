@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
-import com.vaticle.typedb.core.reasoner.common.Planner;
 import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.ConcludableRequest;
 import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.NegatedRequest;
 import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.RetrievableRequest;
@@ -69,7 +68,6 @@ public abstract class ConjunctionController<
     private final Map<Retrievable, FilteredRetrievable> retrievableControllers;
     private final Map<Concludable, MappedConcludable> concludableControllers;
     private final Map<Negated, FilteredNegation> negationControllers;
-    private final Map<Set<Variable.Retrievable>, List<Resolvable<?>>> plans;
     final ResolvableConjunction conjunction;
 
     ConjunctionController(Driver<CONTROLLER> driver, ResolvableConjunction conjunction, Context context) {
@@ -79,23 +77,20 @@ public abstract class ConjunctionController<
         this.retrievableControllers = new HashMap<>();
         this.concludableControllers = new HashMap<>();
         this.negationControllers = new HashMap<>();
-        this.plans = new HashMap<>();
     }
 
     @Override
     protected void setUpUpstreamControllers() {
         assert resolvables.isEmpty();
-        Set<Concludable> concludables = concludablesTriggeringRules().toSet();
-        Set<Retrievable> retrievables = Retrievable.extractFrom(conjunction.pattern(), concludables);
-        resolvables.addAll(concludables);
-        resolvables.addAll(retrievables);
-        iterate(concludables).forEachRemaining(c -> {
+        resolvables.addAll(registry().logicManager().compile(conjunction));
+
+        iterate(resolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable).forEachRemaining(c -> {
             concludableControllers.put(c, registry().getOrCreateConcludable(c));
         });
-        iterate(retrievables).forEachRemaining(r -> {
+        iterate(resolvables).filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(r -> {
             retrievableControllers.put(r, registry().createRetrievable(r));
         });
-        iterate(conjunction.negations()).forEachRemaining(negated -> {
+        iterate(resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated).forEachRemaining(negated -> {
             try {
                 negationControllers.put(negated, registry().createNegation(negated, conjunction));
             } catch (TypeDBException e) {
@@ -107,12 +102,9 @@ public abstract class ConjunctionController<
     abstract FunctionalIterator<Concludable> concludablesTriggeringRules();
 
     List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
-        if (!plans.containsKey(boundVariables)) {
-            List<Resolvable<?>> plan = Planner.plan(resolvables, new HashMap<>(), boundVariables);
-            plan.addAll(conjunction.negations());
-            plans.put(boundVariables, plan);
-        }
-        return plans.get(boundVariables);
+        List<Resolvable<?>> plan = registry().planner().plan(conjunction, boundVariables).plan();
+        assert resolvables.size() == plan.size() && plan.stream().allMatch(r -> resolvables.contains(r));
+        return plan;
     }
 
     static ConceptMap merge(ConceptMap into, ConceptMap from) {
@@ -258,13 +250,13 @@ public abstract class ConjunctionController<
             InputPort<ConceptMap> input = createInputPort();
             if (planElement.isRetrievable()) {
                 requestConnection(new RetrievableRequest(input.identifier(), driver(), planElement.asRetrievable(),
-                                                         carriedBounds.filter(planElement.retrieves())));
+                        carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isConcludable()) {
                 requestConnection(new ConcludableRequest(input.identifier(), driver(), planElement.asConcludable(),
-                                                         carriedBounds.filter(planElement.retrieves())));
+                        carriedBounds.filter(planElement.retrieves())));
             } else if (planElement.isNegated()) {
                 requestConnection(new NegatedRequest(input.identifier(), driver(), planElement.asNegated(),
-                                                     carriedBounds.filter(planElement.retrieves())));
+                        carriedBounds.filter(planElement.retrieves())));
             } else {
                 throw TypeDBException.of(ILLEGAL_STATE);
             }

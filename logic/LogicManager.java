@@ -26,6 +26,9 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -35,6 +38,7 @@ import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +50,6 @@ import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.logic.LogicManager.RuleExporter.writeRule;
 import static java.util.Comparator.comparing;
 
@@ -56,12 +59,14 @@ public class LogicManager {
     private final ConceptManager conceptMgr;
     private final TypeInference typeInference;
     private final LogicCache logicCache;
+    private final Map<ResolvableConjunction, Set<Resolvable<?>>> compiledConjunctions;
 
     public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
         this.typeInference = new TypeInference(logicCache, traversalEng, graphMgr);
+        this.compiledConjunctions = new HashMap<>();
     }
 
     GraphManager graph() { return graphMgr; }
@@ -117,6 +122,23 @@ public class LogicManager {
         logicCache.unifiers().get(concludable, c -> c.computeApplicableRules(conceptMgr, this));
     }
 
+    public Set<Resolvable<?>> compile(ResolvableConjunction conjunction) {
+        if (!compiledConjunctions.containsKey(conjunction)) {
+            synchronized (compiledConjunctions) {
+                if (!compiledConjunctions.containsKey(conjunction)){
+                    Set<Concludable> concludablesTriggeringRules = iterate(conjunction.positiveConcludables())
+                            .filter(concludable -> !applicableRules(concludable).isEmpty())
+                            .toSet();
+                    Set<Resolvable<?>> resolvables = new HashSet<>();
+                    resolvables.addAll(concludablesTriggeringRules);
+                    resolvables.addAll(Retrievable.extractFrom(conjunction.pattern(), concludablesTriggeringRules));
+                    resolvables.addAll(conjunction.negations());
+                    compiledConjunctions.put(conjunction, resolvables);
+                }
+            }
+        }
+        return compiledConjunctions.get(conjunction);
+    }
     /**
      * On commit we must clear the rule cache and revalidate rules - this will force re-running type resolution
      * when we re-load the Rule objects
