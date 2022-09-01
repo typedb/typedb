@@ -59,14 +59,14 @@ public class LogicManager {
     private final ConceptManager conceptMgr;
     private final TypeInference typeInference;
     private final LogicCache logicCache;
-    private final Map<ResolvableConjunction, Set<Resolvable<?>>> compiled;
+    private final Map<ResolvableConjunction, Set<Resolvable<?>>> compiledConjunctions;
 
     public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
         this.typeInference = new TypeInference(logicCache, traversalEng, graphMgr);
-        this.compiled = new HashMap<>();
+        this.compiledConjunctions = new HashMap<>();
     }
 
     GraphManager graph() { return graphMgr; }
@@ -123,9 +123,9 @@ public class LogicManager {
     }
 
     public Set<Resolvable<?>> compile(ResolvableConjunction conjunction) {
-        if (!compiled.containsKey(conjunction)) {
-            synchronized (compiled) {
-                if (!compiled.containsKey(conjunction)){
+        if (!compiledConjunctions.containsKey(conjunction)) {
+            synchronized (compiledConjunctions) {
+                if (!compiledConjunctions.containsKey(conjunction)){
                     Set<Concludable> concludablesTriggeringRules = iterate(conjunction.positiveConcludables())
                             .filter(concludable -> !applicableRules(concludable).isEmpty())
                             .toSet();
@@ -133,11 +133,11 @@ public class LogicManager {
                     resolvables.addAll(concludablesTriggeringRules);
                     resolvables.addAll(Retrievable.extractFrom(conjunction.pattern(), concludablesTriggeringRules));
                     resolvables.addAll(conjunction.negations());
-                    compiled.put(conjunction, resolvables);
+                    compiledConjunctions.put(conjunction, resolvables);
                 }
             }
         }
-        return compiled.get(conjunction);
+        return compiledConjunctions.get(conjunction);
     }
     /**
      * On commit we must clear the rule cache and revalidate rules - this will force re-running type resolution
