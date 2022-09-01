@@ -35,7 +35,6 @@ import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Process
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.FilteredNegation;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.FilteredRetrievable;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.MappedConcludable;
-import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
@@ -103,7 +102,7 @@ public abstract class ConjunctionController<
     abstract FunctionalIterator<Concludable> concludablesTriggeringRules();
 
     List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
-        List<Resolvable<?>> plan = registry().planner().plan(conjunction, boundVariables);
+        List<Resolvable<?>> plan = registry().planner().plan(conjunction, boundVariables).plan();
         assert resolvables.size() == plan.size() && plan.stream().allMatch(r -> resolvables.contains(r));
         return plan;
     }

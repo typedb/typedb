@@ -101,7 +101,7 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
         List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .planResolvableOrdering(resolvables, set()).planOrder();
+                .computeResolvableOrdering(resolvables, set()).plan();
         assertEquals(list(concludable, retrievable), plan);
     }
 
@@ -113,7 +113,7 @@ public class PlannerTest {
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
 
         List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .planResolvableOrdering(resolvables, set()).planOrder();
+                .computeResolvableOrdering(resolvables, set()).plan();
         assertEquals(list(retrievable, concludable), plan);
     }
 
@@ -125,7 +125,7 @@ public class PlannerTest {
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
 
         List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .planResolvableOrdering(resolvables, set()).planOrder();
+                .computeResolvableOrdering(resolvables, set()).plan();
         assertEquals(list(concludable, concludable2), plan);
     }
 
@@ -139,7 +139,7 @@ public class PlannerTest {
         Optional<Identifier.Variable.Retrievable> varA = concludable.retrieves().stream().filter(v -> v.isRetrievable() && v.asRetrievable().isName() && v.asRetrievable().asName().name().equals("a")).findFirst();
         assert varA.isPresent();
         List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .planResolvableOrdering(resolvables, set(varA.get())).planOrder();
+                .computeResolvableOrdering(resolvables, set(varA.get())).plan();
         assertEquals(list(concludable, concludable2), plan);
     }
 
@@ -166,7 +166,7 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable, concludable2);
         List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .planResolvableOrdering(resolvables, set()).planOrder();
+                .computeResolvableOrdering(resolvables, set()).plan();
 
         assertEquals(list(retrievable, concludable, retrievable2, concludable2), plan);
     }
@@ -178,7 +178,7 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
         List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .planResolvableOrdering(resolvables, set()).planOrder();
+                .computeResolvableOrdering(resolvables, set()).plan();
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -191,7 +191,7 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
         List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .planResolvableOrdering(resolvables, set()).planOrder();
+                .computeResolvableOrdering(resolvables, set()).plan();
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -204,7 +204,7 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
         List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .planResolvableOrdering(resolvables, set()).planOrder();
+                .computeResolvableOrdering(resolvables, set()).plan();
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -235,7 +235,7 @@ public class PlannerTest {
         resolvables.addAll(concludables);
 
         List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .planResolvableOrdering(resolvables, set()).planOrder();
+                .computeResolvableOrdering(resolvables, set()).plan();
 
         assertEquals(plan.size(), 2);
         assertEquals(plan.get(1), negated);

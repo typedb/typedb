@@ -21,10 +21,8 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.cache.CommonCache;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
-import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -55,28 +53,20 @@ public abstract class ReasonerPlanner {
         return new GreedyCostSearch.OldPlannerEmulator(traversalEng, conceptMgr, logicMgr);
     }
 
-    public List<Resolvable<?>> plan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
-        return getOrComputePlan(conjunction, bounds).planOrder();
+    public Plan plan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
+        return planCache.get(new Pair<>(conjunction, bounds), cbPair -> computeResolvableOrdering(logicMgr.compile(cbPair.first()), cbPair.second()));
     }
 
-    Plan getOrComputePlan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
-        return planCache.get(new Pair<>(conjunction, bounds), cbPair -> planConjunction(cbPair.first(), cbPair.second()));
-    }
+    abstract Plan computeResolvableOrdering(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> bounds);
 
-    Plan planConjunction(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> inputBounds) {
-        return planResolvableOrdering(logicMgr.compile(conjunction), inputBounds);
-    }
-
-    abstract Plan planResolvableOrdering(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> bounds);
-
-    protected boolean dependenciesSatisfied(Resolvable<?> resolvable, Set<Identifier.Variable.Retrievable> bounds, Map<Resolvable<?>, Set<Identifier.Variable.Retrievable>> dependencies) {
+    boolean dependenciesSatisfied(Resolvable<?> resolvable, Set<Identifier.Variable.Retrievable> bounds, Map<Resolvable<?>, Set<Identifier.Variable.Retrievable>> dependencies) {
         return bounds.containsAll(dependencies.get(resolvable));
     }
 
     /**
      * Determine the resolvables that are dependent upon the generation of each variable
      */
-    protected static Map<Resolvable<?>, Set<Identifier.Variable.Retrievable>> dependencies(Set<Resolvable<?>> resolvables) {
+    static Map<Resolvable<?>, Set<Identifier.Variable.Retrievable>> dependencies(Set<Resolvable<?>> resolvables) {
         Map<Resolvable<?>, Set<Identifier.Variable.Retrievable>> deps = new HashMap<>();
         Set<Identifier.Variable.Retrievable> generated = iterate(resolvables).map(Resolvable::generating).filter(Optional::isPresent)
                 .map(Optional::get).map(ThingVariable::id).toSet();
@@ -116,7 +106,7 @@ public abstract class ReasonerPlanner {
             this.cost = cost;
         }
 
-        public List<Resolvable<?>> planOrder() {
+        public List<Resolvable<?>> plan() {
             return elementOrder;
         }
 
