@@ -1,10 +1,12 @@
 package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.procedure.PermutationProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -32,6 +34,9 @@ public class MultiPlanner implements Planner {
         CompletableFuture.allOf(optimising.toArray(new CompletableFuture[0])).join();
 
         // create procedure based on optimal ordering of all the planners
+        GraphProcedure.Builder builder = new GraphProcedure.Builder();
+        Comparator<Planner> comparator = Comparator.comparing(planner -> planner.isVertex() ? 1 : planner.asGraph().vertices().size()).reversed();
+        planners.stream().sorted(comparator).forEach(planner -> GraphProcedure.Builder.create(builder, planner, builder.vertices().size()));
     }
 
     @Override
