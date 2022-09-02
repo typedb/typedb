@@ -53,7 +53,7 @@ import static java.time.Duration.between;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class GraphPlanner implements Planner {
+public class GraphPlanner implements ConnectedPlanner {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphPlanner.class);
 
@@ -91,7 +91,7 @@ public class GraphPlanner implements Planner {
     }
 
     static GraphPlanner create(Structure structure) {
-        assert structure.vertices().size() > 1;
+        assert structure.asGraphs().size() == 1 && structure.vertices().size() > 1;
         GraphPlanner planner = new GraphPlanner();
         Set<StructureVertex<?>> registeredVertices = new HashSet<>();
         Set<StructureEdge<?, ?>> registeredEdges = new HashSet<>();

@@ -23,6 +23,8 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.procedure.PermutationProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
+import java.util.List;
+
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
@@ -37,8 +39,9 @@ public interface Planner {
     }
 
     static Planner create(Structure structure) {
-        if (structure.vertices().size() == 1) return VertexPlanner.create(structure);
-        else return GraphPlanner.create(structure);
+        List<Structure> structures = structure.asGraphs();
+        if (structures.size() == 1) return ConnectedPlanner.create(structure);
+        else return MultiPlanner.create(structures);
     }
 
     default boolean isVertex() {

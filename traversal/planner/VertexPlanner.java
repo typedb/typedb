@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.traversal.planner;
 import com.vaticle.typedb.core.traversal.procedure.VertexProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
-public class VertexPlanner implements Planner {
+public class VertexPlanner implements ConnectedPlanner {
 
     private final VertexProcedure procedure;
 
