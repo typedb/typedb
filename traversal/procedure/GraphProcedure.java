@@ -27,7 +27,9 @@ import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
+import com.vaticle.typedb.core.traversal.planner.ConnectedPlanner;
 import com.vaticle.typedb.core.traversal.planner.GraphPlanner;
+import com.vaticle.typedb.core.traversal.planner.MultiPlanner;
 import com.vaticle.typedb.core.traversal.planner.PlannerEdge;
 import com.vaticle.typedb.core.traversal.planner.PlannerVertex;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
@@ -40,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -64,18 +65,24 @@ public class GraphProcedure implements PermutationProcedure {
         this.vertices = vertices;
     }
 
+    public static GraphProcedure create(List<ConnectedPlanner> planners) {
+        Builder builder = new Builder();
+        planners.forEach(p -> {
+            if (p.isGraph()) builder.register(p.asGraph(), builder.vertices.size());
+            else builder.vertex(p.asVertex().structureVertex()).setOrder(builder.vertices.size());
+        });
+        return builder.build();
+    }
+
     public static GraphProcedure create(GraphPlanner planner) {
         Builder builder = new Builder();
-        Set<PlannerVertex<?>> registeredVertices = new HashSet<>();
-        Set<PlannerEdge.Directional<?, ?>> registeredEdges = new HashSet<>();
-        planner.vertices().forEach(vertex -> builder.registerVertex(vertex, registeredVertices, registeredEdges));
+        builder.register(planner, 0);
         return builder.build();
     }
 
     public static GraphProcedure create(Structure structure, Map<Identifier, Integer> orders) {
         Builder builder = new Builder();
-        structure.vertices().forEach(vertex -> builder.vertex(vertex).setOrder(orders.get(vertex.id())));
-        structure.vertices().forEach(builder::registerEdges);
+        builder.register(structure, orders);
         return builder.build();
     }
 
@@ -198,36 +205,38 @@ public class GraphProcedure implements PermutationProcedure {
                     .toArray(ProcedureVertex[]::new));
         }
 
-        private void registerVertex(PlannerVertex<?> plannerVertex, Set<PlannerVertex<?>> registeredVertices,
-                                    Set<PlannerEdge.Directional<?, ?>> registeredEdges) {
-            if (registeredVertices.contains(plannerVertex)) return;
-            registeredVertices.add(plannerVertex);
-            List<PlannerVertex<?>> adjacents = new ArrayList<>();
+        private void register(GraphPlanner planner, int startOrder) {
+            assert iterate(vertices.values()).allMatch(v -> v.order() < startOrder);
+            planner.vertices().forEach(v -> vertex(v).setOrder(startOrder + v.getOrder()));
+            planner.vertices().forEach(this::registerEdges);
+        }
 
-            ProcedureVertex<?, ?> vertex = vertex(plannerVertex);
-            vertex.setOrder(plannerVertex.getOrder());
+        private void register(Structure structure, Map<Identifier, Integer> orders) {
+            assert iterate(structure.vertices()).allMatch(v -> orders.containsKey(v.id())) &&
+                    iterate(structure.vertices()).noneMatch(v ->
+                            !vertices.containsKey(v.id()) || vertices.get(v.id()).order() == orders.get(v.id())
+                    );
+            structure.vertices().forEach(vertex -> vertex(vertex).setOrder(orders.get(vertex.id())));
+            structure.vertices().forEach(this::registerEdges);
+        }
 
+        private void registerEdges(PlannerVertex<?> plannerVertex) {
             plannerVertex.outs().forEach(plannerEdge -> {
-                if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
-                    registeredEdges.add(plannerEdge);
-                    adjacents.add(plannerEdge.to());
-                    registerEdge(plannerEdge);
-                }
+                if (plannerEdge.isSelected()) registerEdge(plannerEdge);
             });
             plannerVertex.ins().forEach(plannerEdge -> {
-                if (!registeredEdges.contains(plannerEdge) && plannerEdge.isSelected()) {
-                    registeredEdges.add(plannerEdge);
-                    adjacents.add(plannerEdge.from());
-                    registerEdge(plannerEdge);
-                }
+                if (plannerEdge.isSelected()) registerEdge(plannerEdge);
             });
             plannerVertex.loops().forEach(plannerEdge -> {
-                if (!registeredEdges.contains(plannerEdge) && plannerEdge.direction().isForward()) {
-                    registeredEdges.add(plannerEdge);
-                    registerEdge(plannerEdge);
-                }
+                if (plannerEdge.direction().isForward()) registerEdge(plannerEdge);
             });
-            adjacents.forEach(v -> registerVertex(v, registeredVertices, registeredEdges));
+        }
+
+        private void registerEdge(PlannerEdge.Directional<?, ?> plannerEdge) {
+            ProcedureVertex<?, ?> from = vertex(plannerEdge.from());
+            ProcedureVertex<?, ?> to = vertex(plannerEdge.to());
+            ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, plannerEdge);
+            registerEdge(edge);
         }
 
         private void registerEdges(StructureVertex<?> structureVertex) {
@@ -247,13 +256,6 @@ public class GraphProcedure implements PermutationProcedure {
             }
             if (from.order() > to.order()) return;
             ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, isForward);
-            registerEdge(edge);
-        }
-
-        private void registerEdge(PlannerEdge.Directional<?, ?> plannerEdge) {
-            ProcedureVertex<?, ?> from = vertex(plannerEdge.from());
-            ProcedureVertex<?, ?> to = vertex(plannerEdge.to());
-            ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, plannerEdge);
             registerEdge(edge);
         }
 

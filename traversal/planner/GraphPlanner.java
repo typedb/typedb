@@ -53,12 +53,10 @@ import static java.time.Duration.between;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class GraphPlanner implements Planner {
+public class GraphPlanner implements ConnectedPlanner {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphPlanner.class);
 
-    static final long DEFAULT_TIME_LIMIT_MILLIS = 100;
-    static final long HIGHER_TIME_LIMIT_MILLIS = 200;
     static final double OBJECTIVE_PLANNER_COST_MAX_CHANGE = 0.2;
     static final double OBJECTIVE_VARIABLE_COST_MAX_CHANGE = 2.0;
     static final double OBJECTIVE_VARIABLE_TO_PLANNER_COST_MIN_CHANGE = 0.02;
@@ -90,13 +88,11 @@ public class GraphPlanner implements Planner {
         snapshot = -1L;
     }
 
-    static GraphPlanner create(List<Structure> structures) {
+    static GraphPlanner create(Structure structure) {
         GraphPlanner planner = new GraphPlanner();
         Set<StructureVertex<?>> registeredVertices = new HashSet<>();
         Set<StructureEdge<?, ?>> registeredEdges = new HashSet<>();
-        structures.forEach(s ->
-                s.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges))
-        );
+        structure.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
         assert planner.vertices().size() > 1;
         planner.initialiseOptimiserModel();
         return planner;
@@ -229,7 +225,8 @@ public class GraphPlanner implements Planner {
         return optimiser;
     }
 
-    void mayOptimise(GraphManager graphMgr, boolean singleUse) {
+    @Override
+    public void tryOptimise(GraphManager graphMgr, boolean singleUse) {
         long timeLimitMillis = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
         if (backgroundOptimisation == null) startFirstOptimise(graphMgr, timeLimitMillis);
         else if (isOptimising.compareAndSet(false, true)) startReOptimise(graphMgr, timeLimitMillis);

@@ -18,25 +18,37 @@
 
 package com.vaticle.typedb.core.traversal.planner;
 
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.procedure.VertexProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
-public class VertexPlanner implements Planner {
+public class VertexPlanner implements ConnectedPlanner {
 
+    private final StructureVertex<?> structureVertex;
     private final VertexProcedure procedure;
 
-    private VertexPlanner(VertexProcedure procedure) {
+    private VertexPlanner(StructureVertex<?> structureVertex, VertexProcedure procedure) {
+        this.structureVertex = structureVertex;
         this.procedure = procedure;
     }
 
     static VertexPlanner create(StructureVertex<?> structureVertex) {
-        return new VertexPlanner(VertexProcedure.create(structureVertex));
+        return new VertexPlanner(structureVertex, VertexProcedure.create(structureVertex));
     }
 
     @Override
     public VertexProcedure procedure() {
         return procedure;
+    }
+
+    public StructureVertex<?> structureVertex() {
+        return structureVertex;
+    }
+
+    @Override
+    public void tryOptimise(GraphManager graphMgr, boolean singleUse) {
+        assert this.procedure != null;
     }
 
     @Override
