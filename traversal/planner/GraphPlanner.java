@@ -95,7 +95,13 @@ public class GraphPlanner implements Planner {
         GraphPlanner planner = new GraphPlanner();
         Set<StructureVertex<?>> registeredVertices = new HashSet<>();
         Set<StructureEdge<?, ?>> registeredEdges = new HashSet<>();
-        structure.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
+        structure.asGraphs().forEach(s -> {
+            // we can eliminate subgraphs that are not retrievable
+            // TODO elimination can further be improved if the planning includes the traversal filter
+            if (iterate(s.vertices()).anyMatch(v -> v.id().isRetrievable())) {
+                s.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
+            }
+        });
         assert planner.vertices().size() > 1;
         planner.initialiseOptimiserModel();
         return planner;
