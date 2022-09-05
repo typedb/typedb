@@ -31,9 +31,6 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public interface Planner {
 
-    long DEFAULT_TIME_LIMIT_MILLIS = 100;
-    long HIGHER_TIME_LIMIT_MILLIS = 200;
-
     PermutationProcedure procedure();
 
     boolean isOptimal();
@@ -41,14 +38,19 @@ public interface Planner {
     void tryOptimise(GraphManager graphMgr, boolean singleUse);
 
     static Planner create(Structure structure) {
-//        List<Structure> retrievedStructures = iterate(structure.asGraphs()).filter(s ->
-////             we can eliminate subgraphs that are not retrievable
-////             TODO elimination can further be improved if the planning includes the traversal filter
-//            iterate(s.vertices()).anyMatch(v -> v.id().isRetrievable())
-//        ).toList();
-        List<Structure> retrievedStructures = structure.asGraphs();
+        List<Structure> retrievedStructures = retrievedStructures(structure.asGraphs());
         if (retrievedStructures.size() == 1) return ConnectedPlanner.create(retrievedStructures.get(0));
         else return MultiPlanner.create(retrievedStructures);
+    }
+
+    /**
+     * Filter out structures that are not retrievable, such as disconnected type vertices
+     * TODO: We can further improve this if we have access to the filter as well
+     */
+    static List<Structure> retrievedStructures(List<Structure> structures) {
+        return iterate(structures).filter(s ->
+                        iterate(s.vertices()).anyMatch(v -> v.id().isRetrievable())
+        ).toList();
     }
 
     default boolean isVertex() {
