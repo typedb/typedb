@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.traversal.procedure.VertexProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
+import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
 public class VertexPlanner implements Planner {
 
@@ -29,9 +30,8 @@ public class VertexPlanner implements Planner {
         this.procedure = procedure;
     }
 
-    static VertexPlanner create(Structure structure) {
-        assert structure.vertices().size() == 1;
-        return new VertexPlanner(VertexProcedure.create(structure.vertices().iterator().next()));
+    static VertexPlanner create(StructureVertex<?> structureVertex) {
+        return new VertexPlanner(VertexProcedure.create(structureVertex));
     }
 
     @Override

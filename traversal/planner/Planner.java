@@ -23,8 +23,11 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.procedure.PermutationProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
+import java.util.List;
+
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public interface Planner {
 
@@ -37,8 +40,14 @@ public interface Planner {
     }
 
     static Planner create(Structure structure) {
-        if (structure.vertices().size() == 1) return VertexPlanner.create(structure);
-        else return GraphPlanner.create(structure);
+        List<Structure> retrievedGraphs = iterate(structure.asGraphs()).filter(s ->
+            // we can eliminate subgraphs that are not retrievable
+            // TODO elimination can further be improved if the planning includes the traversal filter
+            iterate(s.vertices()).anyMatch(v -> v.id().isRetrievable())
+        ).toList();
+        if (retrievedGraphs.size() == 1 && retrievedGraphs.get(0).vertices().size() == 1) {
+            return VertexPlanner.create(retrievedGraphs.get(0).vertices().iterator().next());
+        } else return GraphPlanner.create(retrievedGraphs);
     }
 
     default boolean isVertex() {
