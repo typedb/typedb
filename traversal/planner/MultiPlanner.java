@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -17,13 +17,12 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public class MultiPlanner implements Planner {
 
     private final List<ConnectedPlanner> planners;
-    private final AtomicBoolean isOptimising;
-    private CompletableFuture<Void> optimisation;
+    private final Semaphore optimisationLock;
     private GraphProcedure procedure;
 
     public MultiPlanner(List<ConnectedPlanner> planners) {
         this.planners = planners;
-        this.isOptimising = new AtomicBoolean(false);
+        this.optimisationLock = new Semaphore(1);
     }
 
     static MultiPlanner create(List<Structure> structures) {
@@ -34,15 +33,29 @@ public class MultiPlanner implements Planner {
 
     @Override
     public void tryOptimise(GraphManager graphMgr, boolean singleUse) {
-        if (isOptimising.compareAndSet(false, true)) mayOptimise(graphMgr, singleUse);
-        optimisation.join();
+        if (optimisationLock.tryAcquire()) {
+            mayOptimise(graphMgr, singleUse);
+            optimisationLock.release();
+        } else {
+            try {
+                // await current optimisation
+                optimisationLock.acquire();
+                optimisationLock.release();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
-    private synchronized void mayOptimise(GraphManager graphMgr, boolean singleUse) {
-        if (isOptimal()) return;
+    private void mayOptimise(GraphManager graphMgr, boolean singleUse) {
+        if (isOptimal()) {
+            if (procedure == null) createProcedure();
+            return;
+        }
         List<CompletableFuture<Void>> futures = new ArrayList<>(planners.size());
         planners.forEach(planner -> futures.add(CompletableFuture.runAsync(() -> planner.tryOptimise(graphMgr, singleUse))));
-        optimisation = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenRun(this::createProcedure);
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        createProcedure();
     }
 
     private void createProcedure() {

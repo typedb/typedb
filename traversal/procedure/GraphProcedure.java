@@ -213,7 +213,7 @@ public class GraphProcedure implements PermutationProcedure {
 
         private void register(Structure structure, Map<Identifier, Integer> orders) {
             assert iterate(structure.vertices()).allMatch(v -> orders.containsKey(v.id())) &&
-                    iterate(structure.vertices()).noneMatch(v ->
+                    iterate(structure.vertices()).allMatch(v ->
                             !vertices.containsKey(v.id()) || vertices.get(v.id()).order() == orders.get(v.id())
                     );
             structure.vertices().forEach(vertex -> vertex(vertex).setOrder(orders.get(vertex.id())));
