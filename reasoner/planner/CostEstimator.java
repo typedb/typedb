@@ -47,8 +47,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class CostEstimator {
-    // TODO: If we compute a Conjunction's -> LocalEstimates with the maximal set of variablesOfInterest,
-    //          we should be able to derive estimates for subsets of variables.
     private final LogicManager logicMgr;
     private final Map<ResolvableConjunction, ConjunctionAnswerCountEstimator> costEstimators;
 
@@ -63,8 +61,7 @@ public class CostEstimator {
     }
 
     public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variablesOfInterest) {
-        registerConjunction(conjunction);
-        return costEstimators.get(conjunction).estimateAnswers(variablesOfInterest);
+        return estimateAnswers(conjunction, variablesOfInterest, logicMgr.compile(conjunction));
     }
 
     public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variablesOfInterest, Set<Resolvable<?>> includedResolvables) {
@@ -77,10 +74,6 @@ public class CostEstimator {
             costEstimators.put(conjunction, new ConjunctionAnswerCountEstimator(this, conjunction));
             costEstimators.get(conjunction).initializeOnce();
         }
-    }
-
-    private long computeAnswerEstimate(ResolvableConjunction conjunction, Set<Variable> variablesOfInterest) {
-        return costEstimators.get(conjunction).estimateAnswers(variablesOfInterest);
     }
 
     private static class ConjunctionAnswerCountEstimator {
@@ -103,10 +96,6 @@ public class CostEstimator {
             return this.fullAnswerCount;
         }
 
-        public long estimateAnswers(Set<Variable> projectToVariables) {
-            return estimateAnswers(projectToVariables, resolvables().toSet());
-        }
-
         public long estimateAnswers(Set<Variable> projectToVariables, Set<Resolvable<?>> includedResolvables) {
             List<LocalEstimate> enabledEstimates = iterate(includedResolvables)
                     .flatMap(resolvable -> iterate(multivarEstimates.get(resolvable)))
@@ -115,8 +104,7 @@ public class CostEstimator {
         }
 
         private long computeCostCover(List<LocalEstimate> multivarEstimates, Set<Variable> projectToVariables) {
-            // Does a greedy set cover - may not be optimal
-            // TODO: Is this still correct if there are cyclic binary constraints? We do go in increasing order
+            // Does a greedy set cover
             Map<Variable, CostCover> costCover = new HashMap<>(unaryCostCover);
             multivarEstimates.sort(Comparator.comparing(x -> x.answerEstimate(this, projectToVariables)));
             for (LocalEstimate multivarEstimate : multivarEstimates) {
@@ -155,22 +143,18 @@ public class CostEstimator {
 
 
         private void initializeOnce() {
-            // First, we compute estimates from types and  (retrievables) non-inferrable resolvables
-            // That's enough for cycle-head estimates.
+            // TODO: Move this after the retrievable estimates, so cycle-head estimates are easy.
             registerTriggeredRules();
 
             assert unaryCostCover == null;
             unaryCostCover = new HashMap<>();
             {
-                // Create a base estimate from type information
+                // Create a baseline estimate from type information
                 List<LocalEstimate> unaryEstimates = new ArrayList<>();
-                Map<ThingVariable, Long> inferredUnaryEstimates = computeInferredUnaryEstimates();
                 iterate(conjunction.pattern().variables()).forEachRemaining(v -> {
-                    unaryEstimates.add(estimateFromTypes(v, inferredUnaryEstimates));
+                    unaryEstimates.add(estimateFromTypes(v));
                 });
 
-                // TODO: Is this a bit redundant? Should we just add unaryEstimates to multiVarEstimates and generalize?
-                // TODO: ^Yes please. Everything around it has changed since it was written
                 unaryEstimates.sort(Comparator.comparing(x -> x.answerEstimate(this, new HashSet<>(x.variables))));
                 for (LocalEstimate unaryEstimate : unaryEstimates) {
                     if (!unaryCostCover.containsKey(unaryEstimate.variables.get(0))) {
@@ -183,17 +167,17 @@ public class CostEstimator {
             multivarEstimates = new HashMap<>();
             resolvables().forEachRemaining(resolvable -> multivarEstimates.put(resolvable, new ArrayList<>()));
 
-            //TODO: Type Variables?
+            //TODO: How does traversal handle type Variables?
 
             resolvables().filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(retrievable -> {
                 Set<Concludable> concludablesInRetrievable = ResolvableConjunction.of(retrievable.pattern()).positiveConcludables();
                 iterate(concludablesInRetrievable).forEachRemaining(concludable -> {
-                    multivarEstimates.get(retrievable).addAll(estimatesFromConcludable(concludable));
+                    multivarEstimates.get(retrievable).addAll(computeEstimatesFromConcludable(concludable));
                 });
             });
 
             iterate(resolvables()).filter(this::isInferrable).map(Resolvable::asConcludable).forEachRemaining(concludable -> {
-                multivarEstimates.get(concludable).addAll(estimatesFromConcludable(concludable));
+                multivarEstimates.get(concludable).addAll(computeEstimatesFromConcludable(concludable));
             });
 
             // TODO: Negateds for the total -cost?
@@ -202,7 +186,7 @@ public class CostEstimator {
             this.fullAnswerCount = computeCostCover(iterate(multivarEstimates.values()).flatMap(Iterators::iterate).toList(), conjunction.pattern().variables());
         }
 
-        private List<LocalEstimate> estimatesFromConcludable(Concludable concludable) {
+        private List<LocalEstimate> computeEstimatesFromConcludable(Concludable concludable) {
             if (concludable.isHas()) {
                 return list(estimatesFromHasEdges(concludable.asHas()));
             } else if (concludable.isRelation()) {
@@ -212,11 +196,64 @@ public class CostEstimator {
             }
         }
 
-        private LocalEstimate estimateFromTypes(Variable var, Map<ThingVariable, Long> inferredUnaryEstimates) {
+        private long computeInferredUnaryEstimates(ThingVariable generatedVariable) {
+            List<Concludable> relevantConcludables = resolvables()
+                    .filter(resolvable -> isInferrable(resolvable) && resolvable.generating().isPresent() &&
+                        resolvable.generating().get().equals(generatedVariable))
+                    .map(Resolvable::asConcludable)
+                    .toList();
+
+            if (relevantConcludables.isEmpty()) {
+                return 0L;
+            }
+
+            long mostConstrainedAnswer = Long.MAX_VALUE;
+            for (Concludable concludable: relevantConcludables) {
+                Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
+                AtomicLong nInferred = new AtomicLong(0L);
+                long answersGeneratedByThisResolvable = iterate(unifiers.keySet()).map(rule -> {
+                    Optional<Unifier> firstUnifier = unifiers.get(rule).stream().findFirst();
+                    // Increment the estimates for variables generated by the rule
+                    assert rule.conclusion().generating().isPresent() && firstUnifier.isPresent();
+
+                    if (rule.conclusion().isRelation()) { // Is a relation
+                        Set<Variable> answerVariables = iterate(rule.conclusion().pattern().variables())
+                                .filter(v -> rule.condition().pattern().variables().contains(v)).toSet();
+                        return costEstimator.estimateAnswers(rule.condition().conjunction(), answerVariables);
+                    } else if (rule.conclusion().isExplicitHas()) {
+                        return 1L;
+                    }  else {
+                        assert rule.conclusion().isVariableHas();
+                        return 0L;
+                    }
+                }).reduce(0L, Long::sum);
+
+                mostConstrainedAnswer = Math.min(mostConstrainedAnswer, answersGeneratedByThisResolvable);
+            }
+            assert mostConstrainedAnswer != Long.MAX_VALUE;
+            return mostConstrainedAnswer;
+        }
+
+        private long estimateInferredAnswerCount(Concludable concludable, Set<Variable> variablesOfInterest) {
+            Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
+            long inferredEstimate = 0;
+            for (Rule rule: unifiers.keySet()) {
+                for(Unifier unifier: unifiers.get(rule)) {
+                    Set<Identifier.Variable> ruleSideIds = iterate(variablesOfInterest)
+                            .flatMap(v -> iterate(unifier.mapping().get(v.id()))).toSet();
+                    Set<Variable> ruleSideVariables =iterate(ruleSideIds).map(id -> rule.condition().conjunction().pattern().variable(id))
+                            .toSet();
+                    inferredEstimate += costEstimator.estimateAnswers(rule.condition().conjunction(), ruleSideVariables);
+                }
+            }
+            return inferredEstimate;
+        }
+
+        private LocalEstimate estimateFromTypes(Variable var) {
             long estimate;
             if (var.isThing()) {
                 estimate = (var.asThing().iid().isPresent()) ? 1 :
-                        countPersistedThingsMatchingType(var.asThing()) + inferredUnaryEstimates.getOrDefault(var.asThing(), 0L);
+                        countPersistedThingsMatchingType(var.asThing()) + computeInferredUnaryEstimates(var.asThing());
 
             } else if (var.isType()) {
                 estimate = logicMgr.graph().schema().stats().typeCount(); // TODO: Refine
@@ -270,52 +307,6 @@ public class CostEstimator {
                             .map(attrType -> logicMgr.graph().data().stats().hasEdgeCount(ownerType, attrType))
                             .reduce(0L, Long::sum)
             ).reduce(0L, Long::sum);
-        }
-
-        private Map<ThingVariable, Long> computeInferredUnaryEstimates() {
-            Map<ThingVariable, Long> inferredUnaryEstimates = new HashMap<>();
-            resolvables().forEachRemaining(resolvable -> {
-                if (!isInferrable(resolvable)) return;
-                Concludable concludable = resolvable.asConcludable();
-                if ( concludable.generating().isEmpty()) return;
-
-                ThingVariable generatedVariable = concludable.generating().get();
-                Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
-                AtomicLong nInferred = new AtomicLong(0L);
-                iterate(unifiers.keySet()).forEachRemaining(rule -> {
-                    Optional<Unifier> firstUnifier = unifiers.get(rule).stream().findFirst();
-                    // Increment the estimates for variables generated by the rule
-                    if (rule.conclusion().generating().isPresent() && firstUnifier.isPresent()) {
-                        if (rule.conclusion().isRelation()) { // Is a relation
-                            Set<Variable> answerVariables = iterate(rule.conclusion().pattern().variables())
-                                    .filter(v -> rule.condition().pattern().variables().contains(v)).toSet();
-                            nInferred.addAndGet(costEstimator.computeAnswerEstimate(rule.condition().conjunction(), answerVariables));
-
-                        } else if (rule.conclusion().isExplicitHas()) {
-                            nInferred.addAndGet(1L);
-                        }  else assert rule.conclusion().isVariableHas();
-                    }
-                });
-                inferredUnaryEstimates.put(generatedVariable,
-                        Math.min(nInferred.get(), inferredUnaryEstimates.getOrDefault(generatedVariable, Long.MAX_VALUE)));
-            });
-
-            return inferredUnaryEstimates;
-        }
-
-        private long estimateInferredAnswerCount(Concludable concludable, Set<Variable> variablesOfInterest) {
-            Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
-            long inferredEstimate = 0;
-            for (Rule rule: unifiers.keySet()) {
-                for(Unifier unifier: unifiers.get(rule)) {
-                    Set<Identifier.Variable> ruleSideIds = iterate(variablesOfInterest)
-                            .flatMap(v -> iterate(unifier.mapping().get(v.id()))).toSet();
-                    Set<Variable> ruleSideVariables =iterate(ruleSideIds).map(id -> rule.condition().conjunction().pattern().variable(id))
-                            .toSet();
-                    inferredEstimate += costEstimator.computeAnswerEstimate(rule.condition().conjunction(), ruleSideVariables);
-                }
-            }
-            return inferredEstimate;
         }
 
         private static abstract class LocalEstimate {
@@ -375,19 +366,19 @@ public class CostEstimator {
                 }
             }
         }
-    }
 
-    private static class CostCover {
-        private final long cost;
+        private static class CostCover {
+            private final long cost;
 
-        private CostCover(long cost) {
-            this.cost = cost;
-        }
+            private CostCover(long cost) {
+                this.cost = cost;
+            }
 
-        private static long costToCover(Collection<Variable> subset, Map<Variable, CostCover> coverMap) {
-            Set<CostCover> subsetCoveredBy = coverMap.keySet().stream().filter(subset::contains)
-                    .map(coverMap::get).collect(Collectors.toSet());
-            return subsetCoveredBy.stream().map(cc -> cc.cost).reduce(1L, (x, y) -> x * y);
+            private static long costToCover(Collection<Variable> subset, Map<Variable, CostCover> coverMap) {
+                Set<CostCover> subsetCoveredBy = coverMap.keySet().stream().filter(subset::contains)
+                        .map(coverMap::get).collect(Collectors.toSet());
+                return subsetCoveredBy.stream().map(cc -> cc.cost).reduce(1L, (x, y) -> x * y);
+            }
         }
     }
 }
