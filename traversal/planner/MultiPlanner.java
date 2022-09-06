@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
 
 public class MultiPlanner implements Planner {
 
@@ -69,7 +70,7 @@ public class MultiPlanner implements Planner {
     private void mayOptimise(GraphManager graphMgr, boolean singleUse) {
         if (isOptimal()) return;
         List<CompletableFuture<Void>> futures = new ArrayList<>(planners.size());
-        planners.forEach(planner -> futures.add(CompletableFuture.runAsync(() -> planner.tryOptimise(graphMgr, singleUse))));
+        planners.forEach(planner -> futures.add(CompletableFuture.runAsync(() -> planner.tryOptimise(graphMgr, singleUse), async1())));
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         createProcedure();
     }
