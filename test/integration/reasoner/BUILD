@@ -113,6 +113,31 @@ host_compatible_java_test(
     ],
 )
 
+host_compatible_java_test(
+    name = "test-costestimator",
+    srcs = ["planner/CostEstimatorTest.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.planner.CostEstimatorTest",
+    native_libraries_deps = [
+        # Internal dependencies
+        "//database:database",
+        "//:typedb",
+        "//common:common",
+        "//concept:concept",
+        "//pattern:pattern",
+        "//logic:logic",
+        "//reasoner:reasoner",
+         "//traversal:traversal",
+    ],
+    deps = [
+        "//test/integration/util",
+
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/pattern:pattern",
+    ],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob([
