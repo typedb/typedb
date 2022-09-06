@@ -1,5 +1,6 @@
 package com.vaticle.typedb.core.traversal.planner;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.procedure.PermutationProcedure;
@@ -12,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class MultiPlanner implements Planner {
@@ -42,7 +44,7 @@ public class MultiPlanner implements Planner {
                 optimisationLock.acquire();
                 optimisationLock.release();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                throw TypeDBException.of(ILLEGAL_STATE);
             }
         }
     }
