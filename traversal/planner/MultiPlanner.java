@@ -47,9 +47,7 @@ public class MultiPlanner implements Planner {
     }
 
     static MultiPlanner create(List<Structure> structures) {
-        List<ConnectedPlanner> planners = new ArrayList<>(structures.size());
-        structures.forEach(s -> planners.add(ConnectedPlanner.create(s)));
-        return new MultiPlanner(planners);
+        return new MultiPlanner(iterate(structures).map(ConnectedPlanner::create).toList());
     }
 
     @Override
