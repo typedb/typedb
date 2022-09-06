@@ -223,6 +223,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             toTraverse.add(vertex);
             vertexTraversers.get(vertex).clear();
         }
+        for (ProcedureVertex<?, ?> vertex : vertexTraverser.implicitDependents) {
+            toTraverse.add(vertex);
+            vertexTraversers.get(vertex).clear();
+        }
     }
 
     private void failed(VertexTraverser vertexTraverser) {
