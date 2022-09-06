@@ -45,6 +45,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async2;
@@ -375,7 +376,7 @@ public class GraphPlanner implements ConnectedPlanner {
 
     private void createProcedure() {
         assert iterate(vertices.values()).allMatch(PlannerVertex::validResults);
-        procedure = GraphProcedure.create(this);
+        procedure = GraphProcedure.create(list(this));
     }
 
     @Override

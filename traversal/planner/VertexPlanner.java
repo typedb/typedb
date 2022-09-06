@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.procedure.VertexProcedure;
-import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
 public class VertexPlanner implements ConnectedPlanner {
@@ -28,13 +27,13 @@ public class VertexPlanner implements ConnectedPlanner {
     private final StructureVertex<?> structureVertex;
     private final VertexProcedure procedure;
 
-    private VertexPlanner(StructureVertex<?> structureVertex, VertexProcedure procedure) {
+    private VertexPlanner(StructureVertex<?> structureVertex) {
         this.structureVertex = structureVertex;
-        this.procedure = procedure;
+        this.procedure = VertexProcedure.create(structureVertex);
     }
 
     static VertexPlanner create(StructureVertex<?> structureVertex) {
-        return new VertexPlanner(structureVertex, VertexProcedure.create(structureVertex));
+        return new VertexPlanner(structureVertex);
     }
 
     @Override

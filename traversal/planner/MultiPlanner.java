@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class MultiPlanner implements Planner {
@@ -40,9 +40,10 @@ public class MultiPlanner implements Planner {
     private final Semaphore optimisationLock;
     private GraphProcedure procedure;
 
-    public MultiPlanner(List<ConnectedPlanner> planners) {
+    private MultiPlanner(List<ConnectedPlanner> planners) {
         this.planners = planners;
         this.optimisationLock = new Semaphore(1);
+        if (iterate(planners).allMatch(Planner::isOptimal)) createProcedure();
     }
 
     static MultiPlanner create(List<Structure> structures) {
@@ -62,16 +63,13 @@ public class MultiPlanner implements Planner {
                 optimisationLock.acquire();
                 optimisationLock.release();
             } catch (InterruptedException e) {
-                throw TypeDBException.of(ILLEGAL_STATE);
+                throw TypeDBException.of(UNEXPECTED_INTERRUPTION);
             }
         }
     }
 
     private void mayOptimise(GraphManager graphMgr, boolean singleUse) {
-        if (isOptimal()) {
-            if (procedure == null) createProcedure();
-            return;
-        }
+        if (isOptimal()) return;
         List<CompletableFuture<Void>> futures = new ArrayList<>(planners.size());
         planners.forEach(planner -> futures.add(CompletableFuture.runAsync(() -> planner.tryOptimise(graphMgr, singleUse))));
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -79,8 +77,9 @@ public class MultiPlanner implements Planner {
     }
 
     private void createProcedure() {
-        // create procedure based on optimal ordering of all the planners, heuristically estimated
-        Comparator<Planner> comparator = Comparator.<Planner, Integer>comparing(planner ->
+        // create procedure based on optimal ordering of all the planners
+        // rather than solving the optimisation, we estimate the most expensive traversals are the largest ones
+        Comparator<ConnectedPlanner> comparator = Comparator.<ConnectedPlanner, Integer>comparing(planner ->
                 planner.isVertex() ? 1 : planner.asGraph().vertices().size()
         ).reversed();
         procedure = GraphProcedure.create(planners.stream().sorted(comparator).collect(Collectors.toList()));

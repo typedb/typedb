@@ -18,7 +18,11 @@
 
 package com.vaticle.typedb.core.traversal.planner;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.traversal.structure.Structure;
+
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
 public interface ConnectedPlanner extends Planner {
 
@@ -28,4 +32,19 @@ public interface ConnectedPlanner extends Planner {
         else return GraphPlanner.create(structure);
     }
 
+    default boolean isVertex() {
+        return false;
+    }
+
+    default boolean isGraph() {
+        return false;
+    }
+
+    default VertexPlanner asVertex() {
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(VertexPlanner.class));
+    }
+
+    default GraphPlanner asGraph() {
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(GraphPlanner.class));
+    }
 }

@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.planner.ConnectedPlanner;
 import com.vaticle.typedb.core.traversal.planner.GraphPlanner;
-import com.vaticle.typedb.core.traversal.planner.MultiPlanner;
 import com.vaticle.typedb.core.traversal.planner.PlannerEdge;
 import com.vaticle.typedb.core.traversal.planner.PlannerVertex;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
@@ -44,7 +43,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,14 +67,8 @@ public class GraphProcedure implements PermutationProcedure {
         Builder builder = new Builder();
         planners.forEach(p -> {
             if (p.isGraph()) builder.register(p.asGraph(), builder.vertices.size());
-            else builder.vertex(p.asVertex().structureVertex()).setOrder(builder.vertices.size());
+            else builder.registerVertex(p.asVertex().structureVertex(), builder.vertices.size());
         });
-        return builder.build();
-    }
-
-    public static GraphProcedure create(GraphPlanner planner) {
-        Builder builder = new Builder();
-        builder.register(planner, 0);
         return builder.build();
     }
 
@@ -207,17 +199,8 @@ public class GraphProcedure implements PermutationProcedure {
 
         private void register(GraphPlanner planner, int startOrder) {
             assert iterate(vertices.values()).allMatch(v -> v.order() < startOrder);
-            planner.vertices().forEach(v -> vertex(v).setOrder(startOrder + v.getOrder()));
+            planner.vertices().forEach(v -> registerVertex(v, startOrder + v.getOrder()));
             planner.vertices().forEach(this::registerEdges);
-        }
-
-        private void register(Structure structure, Map<Identifier, Integer> orders) {
-            assert iterate(structure.vertices()).allMatch(v -> orders.containsKey(v.id())) &&
-                    iterate(structure.vertices()).allMatch(v ->
-                            !vertices.containsKey(v.id()) || vertices.get(v.id()).order() == orders.get(v.id())
-                    );
-            structure.vertices().forEach(vertex -> vertex(vertex).setOrder(orders.get(vertex.id())));
-            structure.vertices().forEach(this::registerEdges);
         }
 
         private void registerEdges(PlannerVertex<?> plannerVertex) {
@@ -236,7 +219,16 @@ public class GraphProcedure implements PermutationProcedure {
             ProcedureVertex<?, ?> from = vertex(plannerEdge.from());
             ProcedureVertex<?, ?> to = vertex(plannerEdge.to());
             ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, plannerEdge);
-            registerEdge(edge);
+            attachEdge(edge);
+        }
+
+        private void register(Structure structure, Map<Identifier, Integer> orders) {
+            assert iterate(structure.vertices()).allMatch(v -> orders.containsKey(v.id())) &&
+                    iterate(structure.vertices()).allMatch(v ->
+                            !vertices.containsKey(v.id()) || vertices.get(v.id()).order() == orders.get(v.id())
+                    );
+            structure.vertices().forEach(vertex -> registerVertex(vertex, orders.get(vertex.id())));
+            structure.vertices().forEach(this::registerEdges);
         }
 
         private void registerEdges(StructureVertex<?> structureVertex) {
@@ -256,10 +248,10 @@ public class GraphProcedure implements PermutationProcedure {
             }
             if (from.order() > to.order()) return;
             ProcedureEdge<?, ?> edge = ProcedureEdge.of(from, to, structureEdge, isForward);
-            registerEdge(edge);
+            attachEdge(edge);
         }
 
-        public void registerEdge(ProcedureEdge<?, ?> edge) {
+        public void attachEdge(ProcedureEdge<?, ?> edge) {
             if (edge.from().equals(edge.to())) {
                 edge.from().loop(edge);
             } else {
@@ -268,62 +260,65 @@ public class GraphProcedure implements PermutationProcedure {
             }
         }
 
-        private ProcedureVertex<?, ?> vertex(TraversalVertex<?, ?> traversalVertex) {
+        private void registerVertex(TraversalVertex<?, ?> traversalVertex, int order) {
             if (traversalVertex.isThing()) {
-                ProcedureVertex.Thing vertex = thingVertex(traversalVertex.id());
-                vertex.asThing().props(traversalVertex.props().asThing());
-                return vertex;
+                ProcedureVertex.Thing vertex = registerThingVertex(traversalVertex.id());
+                vertex.props(traversalVertex.props().asThing());
+                vertex.setOrder(order);
             } else {
-                ProcedureVertex.Type vertex = typeVertex(traversalVertex.id());
-                vertex.asType().props(traversalVertex.props().asType());
-                return vertex;
+                ProcedureVertex.Type vertex = registerTypeVertex(traversalVertex.id());
+                vertex.props(traversalVertex.props().asType());
+                vertex.setOrder(order);
             }
         }
 
-        private ProcedureVertex.Thing thingVertex(PlannerVertex.Thing plannerVertex) {
-            return thingVertex(plannerVertex.id());
+        private ProcedureVertex.Thing registerThingVertex(Identifier id) {
+            assert !vertices.containsKey(id);
+            ProcedureVertex.Thing vertex = new ProcedureVertex.Thing(id);
+            vertices.put(id, vertex);
+            return vertex;
         }
 
-        private ProcedureVertex.Type typeVertex(PlannerVertex.Type plannerVertex) {
-            return typeVertex(plannerVertex.id());
+        private ProcedureVertex.Type registerTypeVertex(Identifier id) {
+            assert !vertices.containsKey(id);
+            ProcedureVertex.Type vertex = new ProcedureVertex.Type(id);
+            vertices.put(id, vertex);
+            return vertex;
         }
 
-        private ProcedureVertex.Thing thingVertex(Identifier identifier) {
-            return vertices.computeIfAbsent(identifier, ProcedureVertex.Thing::new).asThing();
-        }
-
-        private ProcedureVertex.Type typeVertex(Identifier identifier) {
-            return vertices.computeIfAbsent(identifier, ProcedureVertex.Type::new).asType();
+        private ProcedureVertex<?, ?> vertex(TraversalVertex<?, ?> traversalVertex) {
+            if (traversalVertex.isThing()) return vertices.get(traversalVertex.id()).asThing();
+            else return vertices.get(traversalVertex.id()).asType();
         }
 
         // ---- manual builder methods ----
 
         public ProcedureVertex.Type labelledType(int order, String label) {
-            ProcedureVertex.Type vertex = typeVertex(Identifier.Variable.of(Reference.label(label)));
+            ProcedureVertex.Type vertex = registerTypeVertex(Identifier.Variable.of(Reference.label(label)));
             vertex.setOrder(order);
             return vertex;
         }
 
         public ProcedureVertex.Type namedType(int order, String name) {
-            ProcedureVertex.Type vertex = typeVertex(Identifier.Variable.of(Reference.name(name)));
+            ProcedureVertex.Type vertex = registerTypeVertex(Identifier.Variable.of(Reference.name(name)));
             vertex.setOrder(order);
             return vertex;
         }
 
         public ProcedureVertex.Thing namedThing(int order, String name) {
-            ProcedureVertex.Thing vertex = thingVertex(Identifier.Variable.of(Reference.name(name)));
+            ProcedureVertex.Thing vertex = registerThingVertex(Identifier.Variable.of(Reference.name(name)));
             vertex.setOrder(order);
             return vertex;
         }
 
         public ProcedureVertex.Thing anonymousThing(int order, int id) {
-            ProcedureVertex.Thing vertex = thingVertex(Identifier.Variable.anon(id));
+            ProcedureVertex.Thing vertex = registerThingVertex(Identifier.Variable.anon(id));
             vertex.setOrder(order);
             return vertex;
         }
 
         public ProcedureVertex.Thing scopedThing(int order, ProcedureVertex.Thing relation, @Nullable ProcedureVertex.Type roleType, ProcedureVertex.Thing player, int repetition) {
-            ProcedureVertex.Thing vertex = thingVertex(Identifier.Scoped.of(relation.id().asVariable(), roleType != null ? roleType.id().asVariable() : null, player.id().asVariable(), repetition));
+            ProcedureVertex.Thing vertex = registerThingVertex(Identifier.Scoped.of(relation.id().asVariable(), roleType != null ? roleType.id().asVariable() : null, player.id().asVariable(), repetition));
             vertex.setOrder(order);
             return vertex;
         }
@@ -347,7 +342,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Type child, ProcedureVertex.Type parent, boolean isTransitive) {
             ProcedureEdge.Native.Type.Sub.Forward edge =
                     new ProcedureEdge.Native.Type.Sub.Forward(child, parent, isTransitive);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -355,7 +350,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Type parent, ProcedureVertex.Type child, boolean isTransitive) {
             ProcedureEdge.Native.Type.Sub.Backward edge =
                     new ProcedureEdge.Native.Type.Sub.Backward(parent, child, isTransitive);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -363,7 +358,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Type player, ProcedureVertex.Type roleType) {
             ProcedureEdge.Native.Type.Plays.Forward edge =
                     new ProcedureEdge.Native.Type.Plays.Forward(player, roleType);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -371,7 +366,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Type roleType, ProcedureVertex.Type player) {
             ProcedureEdge.Native.Type.Plays.Backward edge =
                     new ProcedureEdge.Native.Type.Plays.Backward(roleType, player);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -379,7 +374,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Type owner, ProcedureVertex.Type att, boolean isKey) {
             ProcedureEdge.Native.Type.Owns.Forward edge =
                     new ProcedureEdge.Native.Type.Owns.Forward(owner, att, isKey);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -387,31 +382,31 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Type att, ProcedureVertex.Type owner, boolean isKey) {
             ProcedureEdge.Native.Type.Owns.Backward edge =
                     new ProcedureEdge.Native.Type.Owns.Backward(att, owner, isKey);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Equal forwardEqual(ProcedureVertex.Type from, ProcedureVertex.Type to) {
             ProcedureEdge.Equal edge = new ProcedureEdge.Equal(from, to, Encoding.Direction.Edge.FORWARD);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Equal backwardEqual(ProcedureVertex.Type from, ProcedureVertex.Type to) {
             ProcedureEdge.Equal edge = new ProcedureEdge.Equal(from, to, Encoding.Direction.Edge.BACKWARD);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Predicate forwardPredicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, Predicate.Variable predicate) {
             ProcedureEdge.Predicate edge = new ProcedureEdge.Predicate(from, to, Encoding.Direction.Edge.FORWARD, predicate);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
         public ProcedureEdge.Predicate backwardPredicate(ProcedureVertex.Thing from, ProcedureVertex.Thing to, Predicate.Variable predicate) {
             ProcedureEdge.Predicate edge = new ProcedureEdge.Predicate(from, to, Encoding.Direction.Edge.BACKWARD, predicate);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -419,7 +414,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Thing thing, ProcedureVertex.Type type, boolean isTransitive) {
             ProcedureEdge.Native.Isa.Forward edge =
                     new ProcedureEdge.Native.Isa.Forward(thing, type, isTransitive);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -427,7 +422,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Type type, ProcedureVertex.Thing thing, boolean isTransitive) {
             ProcedureEdge.Native.Isa.Backward edge =
                     new ProcedureEdge.Native.Isa.Backward(type, thing, isTransitive);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -435,7 +430,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Type relationType, ProcedureVertex.Type roleType) {
             ProcedureEdge.Native.Type.Relates.Forward edge =
                     new ProcedureEdge.Native.Type.Relates.Forward(relationType, roleType);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -443,7 +438,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Type roleType, ProcedureVertex.Type relationType) {
             ProcedureEdge.Native.Type.Relates.Backward edge =
                     new ProcedureEdge.Native.Type.Relates.Backward(roleType, relationType);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -451,7 +446,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Thing owner, ProcedureVertex.Thing attribute) {
             ProcedureEdge.Native.Thing.Has.Forward edge =
                     new ProcedureEdge.Native.Thing.Has.Forward(owner, attribute);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -459,7 +454,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Thing attribute, ProcedureVertex.Thing owner) {
             ProcedureEdge.Native.Thing.Has.Backward edge =
                     new ProcedureEdge.Native.Thing.Has.Backward(attribute, owner);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -467,7 +462,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Thing relation, ProcedureVertex.Thing role) {
             ProcedureEdge.Native.Thing.Relating.Forward edge =
                     new ProcedureEdge.Native.Thing.Relating.Forward(relation, role);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -475,7 +470,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Thing role, ProcedureVertex.Thing relation) {
             ProcedureEdge.Native.Thing.Relating.Backward edge =
                     new ProcedureEdge.Native.Thing.Relating.Backward(role, relation);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -483,7 +478,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Thing player, ProcedureVertex.Thing role) {
             ProcedureEdge.Native.Thing.Playing.Forward edge =
                     new ProcedureEdge.Native.Thing.Playing.Forward(player, role);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -491,7 +486,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Thing role, ProcedureVertex.Thing player) {
             ProcedureEdge.Native.Thing.Playing.Backward edge =
                     new ProcedureEdge.Native.Thing.Playing.Backward(role, player);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -499,7 +494,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Thing relation, ProcedureVertex.Thing player, int repetition, Set<Label> roleTypes) {
             ProcedureEdge.Native.Thing.RolePlayer.Forward edge =
                     new ProcedureEdge.Native.Thing.RolePlayer.Forward(relation, player, repetition, roleTypes);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
 
@@ -507,7 +502,7 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Thing player, ProcedureVertex.Thing relation, int repetition, Set<Label> roleTypes) {
             ProcedureEdge.Native.Thing.RolePlayer.Backward edge =
                     new ProcedureEdge.Native.Thing.RolePlayer.Backward(player, relation, repetition, roleTypes);
-            registerEdge(edge);
+            attachEdge(edge);
             return edge;
         }
     }

@@ -32,7 +32,6 @@ import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
-import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typedb.core.traversal.test.ProcedurePermutator;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
@@ -186,16 +185,10 @@ public class TypeQLSteps {
             FunctionalIterator<GraphProcedure> procedurePermutations = ProcedurePermutator.generate(traversal.structure()).limit(5000);
             Set<VertexMap> answers = procedurePermutations.next().iterator(tx().concepts().graph(),
                     traversal.parameters(), filter).toSet();
-            int i = 0;
-            while (procedurePermutations.hasNext()) {
-                i++;
-                long start = System.nanoTime();
+            for (int i = 0; procedurePermutations.hasNext(); i++) {
                 Set<VertexMap> permutationAnswers = procedurePermutations.next().iterator(tx().concepts().graph(),
                         traversal.parameters(), filter).toSet();
                 assertEquals(answers, permutationAnswers);
-                long end = System.nanoTime();
-                long elapsed = end - start;
-                start = 0 ;
             }
         }
     }

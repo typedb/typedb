@@ -18,24 +18,15 @@
 
 package com.vaticle.typedb.core.traversal.planner;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.procedure.PermutationProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
 import java.util.List;
 
-import static com.vaticle.typedb.common.util.Objects.className;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public interface Planner {
-
-    PermutationProcedure procedure();
-
-    boolean isOptimal();
-
-    void tryOptimise(GraphManager graphMgr, boolean singleUse);
 
     static Planner create(Structure structure) {
         List<Structure> retrievedStructures = retrievedStructures(structure.asGraphs());
@@ -49,23 +40,13 @@ public interface Planner {
      */
     static List<Structure> retrievedStructures(List<Structure> structures) {
         return iterate(structures).filter(s ->
-                        iterate(s.vertices()).anyMatch(v -> v.id().isRetrievable())
+                iterate(s.vertices()).anyMatch(v -> v.id().isRetrievable())
         ).toList();
     }
 
-    default boolean isVertex() {
-        return false;
-    }
+    PermutationProcedure procedure();
 
-    default boolean isGraph() {
-        return false;
-    }
+    boolean isOptimal();
 
-    default VertexPlanner asVertex() {
-        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(VertexPlanner.class));
-    }
-
-    default GraphPlanner asGraph() {
-        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(GraphPlanner.class));
-    }
+    void tryOptimise(GraphManager graphMgr, boolean singleUse);
 }

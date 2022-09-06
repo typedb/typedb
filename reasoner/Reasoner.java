@@ -160,15 +160,13 @@ public class Reasoner {
 
     private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter) {
         if (conjunction.negations().isEmpty()) {
-            return traversalEng.producer(
-                    conjunction.traversal(filter), PARALLELISATION_FACTOR
-            ).map(conceptMgr::conceptMap);
+            return traversalEng.producer(conjunction.traversal(filter), PARALLELISATION_FACTOR)
+                    .map(conceptMgr::conceptMap);
         } else {
-            return traversalEng.producer(
-                    conjunction.traversal(), PARALLELISATION_FACTOR
-            ).map(conceptMgr::conceptMap).filter(answer -> !iterate(conjunction.negations()).flatMap(
-                    negation -> iterator(negation.disjunction(), answer)
-            ).hasNext()).map(answer -> answer.filter(filter)).distinct();
+            return traversalEng.producer(conjunction.traversal(), PARALLELISATION_FACTOR)
+                    .map(conceptMgr::conceptMap).filter(answer -> !iterate(conjunction.negations()).flatMap(
+                            negation -> iterator(negation.disjunction(), answer)).hasNext()
+                    ).map(answer -> answer.filter(filter)).distinct();
         }
     }
 
@@ -203,7 +201,7 @@ public class Reasoner {
         ConceptMap explainableBounds = explainablesManager.getBounds(explainableId);
         return Producers.produce(
                 list(new ReasonerProducer.Explain(explainableConcludable, explainableBounds, defaultContext.options(),
-                                                  controllerRegistry, explainablesManager)),
+                        controllerRegistry, explainablesManager)),
                 Either.first(Arguments.Query.Producer.INCREMENTAL),
                 async1()
         );
