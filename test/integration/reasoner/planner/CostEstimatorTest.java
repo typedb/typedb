@@ -425,6 +425,56 @@ public class CostEstimatorTest {
         }
     }
 
+    @Test
+    public void test_cycles() {
+        initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
+        transaction.query().define(TypeQL.parseQuery("define " +
+                "transitive-friendship sub relation, relates friendor, relates friendee;" +
+                "person plays transitive-friendship:friendor, plays transitive-friendship:friendee;" +
+
+                "rule friendship-is-transitive-1: " +
+                "when { (friendor: $f1, friendee: $f2) isa friendship; } " +
+                "then { (friendor: $f1, friendee: $f2) isa transitive-friendship; };" +
+
+                "rule friendship-is-transitive-2: " +
+                "when { (friendor: $f1, friendee: $f2) isa friendship; (friendor: $f2, friendee: $f3) isa transitive-friendship;  } " +
+                "then { (friendor: $f1, friendee: $f3) isa transitive-friendship; };"));
+        transaction.commit();
+        session.close();
+
+        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+        CostEstimator costEstimator = new CostEstimator(transaction.logic());
+        {
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
+            long cost = costEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
+            assertEquals(18L, cost);
+            // 18 = 3 + 3 * 5  =  3 from rule-1 (coplayer) +  3 * 5  ($f1.unary(rp) * $f2.unary(type))  from rule-2
+        }
+    }
+
+    @Test
+    public void test_cycles_same_type_transitive() {
+        initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
+        transaction.query().define(TypeQL.parseQuery("define " +
+                "transitive-friendship sub relation, relates friendor, relates friendee;" +
+                "person plays transitive-friendship:friendor, plays transitive-friendship:friendee;" +
+
+                "rule friendship-iteself-is-transitive: " +
+                "when { (friendor: $f1, friendee: $f2) isa friendship; (friendor: $f2, friendee: $f3) isa friendship;  } " +
+                "then { (friendor: $f1, friendee: $f3) isa friendship; };"));
+        transaction.commit();
+        session.close();
+
+        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+        CostEstimator costEstimator = new CostEstimator(transaction.logic());
+        {
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa friendship; }", transaction.logic()));
+            long cost = costEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
+            assertEquals(25L, cost);
+            // 25 = 5 * 5 = $x-unary(type) from ; $y-unary(type);   The multivar estimates aren't used because they are 3 + 25
+        }
+    }
+
     private static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
         Disjunction disjunction = resolvedDisjunction(query, logicMgr);
         assert disjunction.conjunctions().size() == 1;

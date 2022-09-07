@@ -32,15 +32,7 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -152,7 +144,6 @@ public class CostEstimator {
         public long estimateAnswers(Set<Variable> projectToVariables, Set<Resolvable<?>> includedResolvables) {
             if (this.initializationStatus == InitializationStatus.IN_PROGRESS) {
                 costEstimator.reportInitializationCycle(this.conjunction);
-
             }
 
             List<LocalEstimate> enabledEstimates = iterate(includedResolvables)
@@ -205,6 +196,12 @@ public class CostEstimator {
                     .toSet();
         }
 
+        private FunctionalIterator<Resolvable<?>> resolvablesGenerating(ThingVariable generatedVariable) {
+            return resolvables()
+                    .filter(resolvable -> isInferrable(resolvable) && resolvable.generating().isPresent() &&
+                            resolvable.generating().get().equals(generatedVariable));
+        }
+
         private List<LocalEstimate> multivarEstimate(Resolvable<?> resolvable){
             assert resolvables().toSet().contains(resolvable);
             if (resolvable.isNegated()) return new ArrayList<>();
@@ -227,7 +224,7 @@ public class CostEstimator {
                 // Create a baseline estimate from type information
                 List<LocalEstimate> unaryEstimates = new ArrayList<>();
                 iterate(allVariables()).forEachRemaining(v -> {
-                    unaryEstimates.add(estimateFromTypes(v.asThing()));
+                    unaryEstimates.add(estimateFromTypes(v.asThing(), false));
                 });
 
                 unaryEstimates.sort(Comparator.comparing(x -> x.answerEstimate(this, new HashSet<>(x.variables))));
@@ -241,7 +238,6 @@ public class CostEstimator {
             if (retrievableEstimates == null) {
                 retrievableEstimates = new HashMap<>();
                 //TODO: How does traversal handle type Variables?
-
                 resolvables().filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(retrievable -> {
                     retrievableEstimates.put(retrievable, new ArrayList<>());
                     Set<Concludable> concludablesInRetrievable = ResolvableConjunction.of(retrievable.pattern()).positiveConcludables();
@@ -254,10 +250,26 @@ public class CostEstimator {
             registerTriggeredRules();
 
             if (inferrableEstimates == null) {
-                inferrableEstimates = new HashMap<>();
+                HashMap<Resolvable<?>, List<LocalEstimate>> tempInferrableEstimates = new HashMap<>();
                 iterate(resolvables()).filter(this::isInferrable).map(Resolvable::asConcludable).forEachRemaining(concludable -> {
-                    inferrableEstimates.put(concludable, computeEstimatesFromConcludable(concludable));
+                    tempInferrableEstimates.put(concludable, computeEstimatesFromConcludable(concludable));
                 });
+                inferrableEstimates = tempInferrableEstimates;
+
+                // We also have to recompute the unaryCostCover now.
+                unaryCostCover = new HashMap<>();
+                // Create a baseline estimate from type information
+                List<LocalEstimate> unaryEstimates = new ArrayList<>();
+                iterate(allVariables()).forEachRemaining(v -> {
+                    unaryEstimates.add(estimateFromTypes(v.asThing(), true));
+                });
+
+                unaryEstimates.sort(Comparator.comparing(x -> x.answerEstimate(this, new HashSet<>(x.variables))));
+                for (LocalEstimate unaryEstimate : unaryEstimates) {
+                    if (!unaryCostCover.containsKey(unaryEstimate.variables.get(0))) {
+                        unaryCostCover.put(unaryEstimate.variables.get(0), new CostCover(unaryEstimate.answerEstimate(this, new HashSet<>(unaryEstimate.variables))));
+                    }
+                }
             }
 
             if (this.negatedsCost == -1) {
@@ -270,7 +282,7 @@ public class CostEstimator {
             }
 
             List<LocalEstimate> allEstimates = resolvables().flatMap(resolvable -> iterate(multivarEstimate(resolvable))).toList();
-            Map<Variable, CostCover> fullCostCover = computeCostCover(allEstimates, conjunction.pattern().variables());
+            Map<Variable, CostCover> fullCostCover = computeCostCover(allEstimates, allVariables());
             this.fullAnswerCount = CostCover.costToCover(allVariables(), fullCostCover) + this.negatedsCost;
 
             // Can we prune the multiVarEstimates stored?
@@ -289,9 +301,7 @@ public class CostEstimator {
         }
 
         private long computeInferredUnaryEstimates(ThingVariable generatedVariable) {
-            List<Concludable> relevantConcludables = resolvables()
-                    .filter(resolvable -> isInferrable(resolvable) && resolvable.generating().isPresent() &&
-                            resolvable.generating().get().equals(generatedVariable))
+            List<Concludable> relevantConcludables = resolvablesGenerating(generatedVariable)
                     .map(Resolvable::asConcludable)
                     .toList();
 
@@ -348,9 +358,16 @@ public class CostEstimator {
             return inferredEstimate;
         }
 
-        private LocalEstimate estimateFromTypes(ThingVariable var) {
-            long estimate = (var.asThing().iid().isPresent()) ? 1 :
-                    countPersistedThingsMatchingType(var.asThing()) + computeInferredUnaryEstimates(var.asThing());
+        private LocalEstimate estimateFromTypes(ThingVariable var, boolean considerInferrable) {
+            long estimate;
+            if (var.iid().isPresent()) {
+                estimate = 1;
+            }
+            else {
+                estimate = countPersistedThingsMatchingType(var.asThing());
+                estimate += considerInferrable ? computeInferredUnaryEstimates(var.asThing()) : 0;
+                if (estimate == 0 && resolvablesGenerating(var.asThing()).hasNext()) estimate = 1; // When it's purely inferrable
+            }
 
             return new LocalEstimate.SimpleEstimate(list(var), estimate);
         }
