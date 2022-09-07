@@ -162,7 +162,7 @@ public class CostEstimator {
                 // Create a baseline estimate from type information
                 List<LocalEstimate> unaryEstimates = new ArrayList<>();
                 iterate(allVariables()).forEachRemaining(v -> {
-                    unaryEstimates.add(estimateFromTypes(v));
+                    unaryEstimates.add(estimateFromTypes(v.asThing()));
                 });
 
                 unaryEstimates.sort(Comparator.comparing(x -> x.answerEstimate(this, new HashSet<>(x.variables))));
@@ -276,15 +276,9 @@ public class CostEstimator {
             return inferredEstimate;
         }
 
-        private LocalEstimate estimateFromTypes(Variable var) {
-            long estimate;
-            if (var.isThing()) {
-                estimate = (var.asThing().iid().isPresent()) ? 1 :
-                        countPersistedThingsMatchingType(var.asThing()) + computeInferredUnaryEstimates(var.asThing());
-
-            } else if (var.isType()) {
-                estimate = logicMgr.graph().schema().stats().typeCount(); // TODO: Refine
-            } else throw TypeDBException.of(ILLEGAL_STATE);
+        private LocalEstimate estimateFromTypes(ThingVariable var) {
+            long estimate = (var.asThing().iid().isPresent()) ? 1 :
+                    countPersistedThingsMatchingType(var.asThing()) + computeInferredUnaryEstimates(var.asThing());
 
             return new LocalEstimate.SimpleEstimate(list(var), estimate);
         }
