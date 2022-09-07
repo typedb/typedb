@@ -53,9 +53,17 @@ public class CostEstimator {
     private final LogicManager logicMgr;
     private final Map<ResolvableConjunction, ConjunctionAnswerCountEstimator> costEstimators;
 
+    // Cycle handling
+    private final ArrayList<ResolvableConjunction> initializationStack;
+    private final Set<ResolvableConjunction> cycleHeads;
+    private final Set<ResolvableConjunction> toReset;
+
     public CostEstimator(LogicManager logicMgr) {
         this.logicMgr = logicMgr;
         this.costEstimators = new HashMap<>();
+        this.initializationStack = new ArrayList<>();
+        this.cycleHeads = new HashSet<>();
+        this.toReset = new HashSet<>();
     }
 
     public long estimateAllAnswers(ResolvableConjunction conjunction) {
@@ -75,7 +83,29 @@ public class CostEstimator {
     private void registerConjunction(ResolvableConjunction conjunction) {
         if (!costEstimators.containsKey(conjunction)) {
             costEstimators.put(conjunction, new ConjunctionAnswerCountEstimator(this, conjunction));
+        }
+
+        if (costEstimators.get(conjunction).mayInitialize()) {
+            initializationStack.add(conjunction);
             costEstimators.get(conjunction).initializeOnce();
+            assert initializationStack.get(initializationStack.size()-1) == conjunction;
+            initializationStack.remove(initializationStack.size()-1);
+
+            // In cyclic paths
+            if (cycleHeads.size() == 1 && cycleHeads.contains(conjunction)) {
+                // We can reset and recompute all!
+                for (ResolvableConjunction conjunctionToReset: toReset) {
+                    costEstimators.get(conjunctionToReset).reset();
+                }
+                costEstimators.get(conjunction).initializeOnce(); // no loop needed. This is the maximal cycle.
+            }
+        }
+    }
+
+    public void reportInitializationCycle(ResolvableConjunction conjunction) {
+        cycleHeads.add(conjunction);
+        for (int i=initializationStack.size()-1; initializationStack.get(i) != conjunction ; i--) {
+            toReset.add(initializationStack.get(i));
         }
     }
 
@@ -85,9 +115,17 @@ public class CostEstimator {
         private final CostEstimator costEstimator;
         private final LogicManager logicMgr;
         private Map<Variable, CostCover> unaryCostCover;
-        private Map<Resolvable<?>, List<LocalEstimate>> multivarEstimates;
+        private Map<Resolvable<?>, List<LocalEstimate>> retrievableEstimates;
+        private Map<Resolvable<?>, List<LocalEstimate>> inferrableEstimates;
         private long fullAnswerCount;
         private long negatedsCost;
+
+        public boolean mayInitialize() {
+            return initializationStatus == InitializationStatus.NOT_STARTED || initializationStatus == InitializationStatus.RESET;
+        }
+
+        private enum InitializationStatus {NOT_STARTED, RESET, IN_PROGRESS, COMPLETE};
+        private InitializationStatus initializationStatus;
 
         public ConjunctionAnswerCountEstimator(CostEstimator costEstimator, ResolvableConjunction conjunction) {
             this.costEstimator = costEstimator;
@@ -95,15 +133,30 @@ public class CostEstimator {
             this.conjunction = conjunction;
             this.fullAnswerCount = -1;
             this.negatedsCost = -1;
+            this.initializationStatus = InitializationStatus.NOT_STARTED;
+        }
+
+        private void reset() {
+            assert this.initializationStatus == InitializationStatus.COMPLETE;
+            this.initializationStatus = InitializationStatus.RESET;
+            this.inferrableEstimates = null;
+            this.fullAnswerCount = -1;
+            this.negatedsCost = -1;
         }
 
         public long estimateAllAnswers() {
+            assert this.fullAnswerCount >= 0;
             return this.fullAnswerCount;
         }
 
         public long estimateAnswers(Set<Variable> projectToVariables, Set<Resolvable<?>> includedResolvables) {
+            if (this.initializationStatus == InitializationStatus.IN_PROGRESS) {
+                costEstimator.reportInitializationCycle(this.conjunction);
+
+            }
+
             List<LocalEstimate> enabledEstimates = iterate(includedResolvables)
-                    .flatMap(resolvable -> iterate(multivarEstimates.get(resolvable)))
+                    .flatMap(resolvable -> iterate(multivarEstimate(resolvable)))
                     .toList();
             Map<Variable, CostCover> costCover = computeCostCover(enabledEstimates, projectToVariables);
             long ret = CostCover.costToCover(projectToVariables, costCover);
@@ -152,13 +205,25 @@ public class CostEstimator {
                     .toSet();
         }
 
-        private void initializeOnce() {
-            // TODO: Move this after the retrievable estimates, so cycle-head estimates are easy.
-            registerTriggeredRules();
+        private List<LocalEstimate> multivarEstimate(Resolvable<?> resolvable){
+            assert resolvables().toSet().contains(resolvable);
+            if (resolvable.isNegated()) return new ArrayList<>();
+            if (retrievableEstimates.containsKey(resolvable)) return retrievableEstimates.get(resolvable);
+            else if (inferrableEstimates == null) {
+                assert this.initializationStatus == InitializationStatus.IN_PROGRESS || this.initializationStatus == InitializationStatus.RESET;
+                return new ArrayList<>();
+            } else {
+                return inferrableEstimates.get(resolvable);
+            }
+        }
 
-            assert unaryCostCover == null;
-            unaryCostCover = new HashMap<>();
-            {
+        private void initializeOnce() {
+            if (!this.mayInitialize()) return;
+
+            initializationStatus = InitializationStatus.IN_PROGRESS;
+            // TODO: Move this after the retrievable estimates, so cycle-head estimates are easy.
+            if (unaryCostCover == null) {
+                unaryCostCover = new HashMap<>();
                 // Create a baseline estimate from type information
                 List<LocalEstimate> unaryEstimates = new ArrayList<>();
                 iterate(allVariables()).forEachRemaining(v -> {
@@ -173,22 +238,27 @@ public class CostEstimator {
                 }
             }
 
-            assert multivarEstimates == null;
-            multivarEstimates = new HashMap<>();
-            resolvables().forEachRemaining(resolvable -> multivarEstimates.put(resolvable, new ArrayList<>()));
+            if (retrievableEstimates == null) {
+                retrievableEstimates = new HashMap<>();
+                //TODO: How does traversal handle type Variables?
 
-            //TODO: How does traversal handle type Variables?
-
-            resolvables().filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(retrievable -> {
-                Set<Concludable> concludablesInRetrievable = ResolvableConjunction.of(retrievable.pattern()).positiveConcludables();
-                iterate(concludablesInRetrievable).forEachRemaining(concludable -> {
-                    multivarEstimates.get(retrievable).addAll(computeEstimatesFromConcludable(concludable));
+                resolvables().filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(retrievable -> {
+                    retrievableEstimates.put(retrievable, new ArrayList<>());
+                    Set<Concludable> concludablesInRetrievable = ResolvableConjunction.of(retrievable.pattern()).positiveConcludables();
+                    iterate(concludablesInRetrievable).forEachRemaining(concludable -> {
+                        retrievableEstimates.get(retrievable).addAll(computeEstimatesFromConcludable(concludable));
+                    });
                 });
-            });
+            }
 
-            iterate(resolvables()).filter(this::isInferrable).map(Resolvable::asConcludable).forEachRemaining(concludable -> {
-                multivarEstimates.get(concludable).addAll(computeEstimatesFromConcludable(concludable));
-            });
+            registerTriggeredRules();
+
+            if (inferrableEstimates == null) {
+                inferrableEstimates = new HashMap<>();
+                iterate(resolvables()).filter(this::isInferrable).map(Resolvable::asConcludable).forEachRemaining(concludable -> {
+                    inferrableEstimates.put(concludable, computeEstimatesFromConcludable(concludable));
+                });
+            }
 
             if (this.negatedsCost == -1) {
                 this.negatedsCost = resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
@@ -199,11 +269,13 @@ public class CostEstimator {
                         }).reduce(0L, Long::sum);
             }
 
+            List<LocalEstimate> allEstimates = resolvables().flatMap(resolvable -> iterate(multivarEstimate(resolvable))).toList();
+            Map<Variable, CostCover> fullCostCover = computeCostCover(allEstimates, conjunction.pattern().variables());
+            this.fullAnswerCount = CostCover.costToCover(allVariables(), fullCostCover) + this.negatedsCost;
+
             // Can we prune the multiVarEstimates stored?
             // Not if we want to order-resolvables. Else, yes based on queryableVariables.
-
-            Map<Variable, CostCover> fullCostCover = computeCostCover(iterate(multivarEstimates.values()).flatMap(Iterators::iterate).toList(), allVariables());
-            this.fullAnswerCount = CostCover.costToCover(allVariables(), fullCostCover) + this.negatedsCost;
+            initializationStatus = InitializationStatus.COMPLETE;
         }
 
         private List<LocalEstimate> computeEstimatesFromConcludable(Concludable concludable) {
