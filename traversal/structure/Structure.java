@@ -107,7 +107,6 @@ public class Structure {
             edge.to().in(edge);
         }
     }
-
     public List<Structure> asGraphs() {
         if (structures == null) {
             structures = new ArrayList<>();

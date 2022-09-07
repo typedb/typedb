@@ -54,6 +54,10 @@ import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.intersect;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 
+/**
+ * We have to include the optimisation to only find an answer if a connected predecessor or successor is retrieved
+ * and we only have to find 1 answer if all successors are not filtered in
+ */
 public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphIterator.class);
@@ -76,7 +80,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> initial, GraphProcedure procedure,
                          Traversal.Parameters params, Set<Identifier.Variable.Retrievable> filter) {
-        assert procedure.vertexCount() > 1;
         this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.params = params;
@@ -92,13 +95,17 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void setup() {
         // set up scopes
-        iterate(procedure.vertices()).filter(v -> v.isThing() && v.asThing().isScope())
-                .forEachRemaining(v -> scopes.put(v.id().asVariable(), new Scope()));
+        for (ProcedureVertex<?, ?> v : procedure.vertices()) {
+            if (v.isThing() && v.asThing().isScope()) scopes.put(v.id().asVariable(), new Scope());
+        }
         // set up traversers
-        iterate(procedure.vertices()).forEachRemaining(v -> vertexTraversers.put(v, new VertexTraverser(v)));
+        for (ProcedureVertex<?, ?> v : procedure.vertices()) {
+            vertexTraversers.put(v, new VertexTraverser(v));
+        }
         // add implicit dependencies between traversers
-        iterate(procedure.vertices()).filter(v -> v.isThing() && v.asThing().isScope())
-                .forEachRemaining(this::setupImplicitDependencies);
+        for (ProcedureVertex<?, ?> v : procedure.vertices()) {
+            if (v.isThing() && v.asThing().isScope()) setupImplicitDependencies(v);
+        }
     }
 
     /**
@@ -111,19 +118,19 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
      */
     private void setupImplicitDependencies(ProcedureVertex<?, ?> vertex) {
         Set<ProcedureEdge<?, ?>> rpEdges = iterate(vertex.outs()).filter(e -> e.isRolePlayer() && e.direction().isForward()).toSet();
-        iterate(rpEdges).forEachRemaining(rp1 -> iterate(rpEdges).forEachRemaining(rp2 -> {
+        rpEdges.forEach(rp1 -> rpEdges.forEach(rp2 -> {
             if (rp1.to().order() < rp2.to().order() && rp1.asRolePlayer().overlaps(rp2.asRolePlayer(), params)) {
                 setupImplicitDependency(rp1.to(), rp2.to());
             }
         }));
         Set<ProcedureVertex.Thing> roleVerticesOut = iterate(vertex.outs()).filter(e -> e.isRelating() && e.direction().isForward())
                 .map(e -> e.asRelating().to()).toSet();
-        iterate(roleVerticesOut).forEachRemaining(v1 -> iterate(roleVerticesOut).forEachRemaining(v2 -> {
+        roleVerticesOut.forEach(v1 -> roleVerticesOut.forEach(v2 -> {
             if (v1.order() < v2.order() && v1.overlaps(v2, params)) setupImplicitDependency(v1, v2);
         }));
         Set<ProcedureVertex.Thing> roleVerticesIn = iterate(vertex.ins()).filter(e -> e.isRelating() && e.direction().isBackward())
                 .map(e -> e.asRelating().from()).toSet();
-        iterate(roleVerticesIn).forEachRemaining(v1 -> iterate(roleVerticesIn).forEachRemaining(v2 -> {
+        roleVerticesIn.forEach(v1 -> roleVerticesIn.forEach(v2 -> {
             if (v1.order() < v2.order() && v1.overlaps(v2, params)) setupImplicitDependency(v1, v2);
         }));
     }

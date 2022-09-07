@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.common;
 
-import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -37,7 +36,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 
 public class Traversal {
 
@@ -53,7 +51,7 @@ public class Traversal {
                                                          ConceptMap bounds, int parallelisation) {
         return compatibleBounds(conjunction, bounds).map(b -> {
             GraphTraversal.Thing traversal = boundTraversal(conjunction.traversal(), b);
-            return registry.traversalEngine().producer(traversal, Either.first(INCREMENTAL), parallelisation)
+            return registry.traversalEngine().producer(traversal, parallelisation)
                     .map(vertexMap -> registry.conceptManager().conceptMap(vertexMap));
         }).orElse(Producers.empty());
     }

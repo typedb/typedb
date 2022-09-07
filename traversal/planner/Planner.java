@@ -18,42 +18,35 @@
 
 package com.vaticle.typedb.core.traversal.planner;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.procedure.PermutationProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
-import static com.vaticle.typedb.common.util.Objects.className;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import java.util.List;
+
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public interface Planner {
+
+    static Planner create(Structure structure) {
+        List<Structure> retrievedStructures = retrievedStructures(structure.asGraphs());
+        if (retrievedStructures.size() == 1) return ConnectedPlanner.create(retrievedStructures.get(0));
+        else return MultiPlanner.create(retrievedStructures);
+    }
+
+    /**
+     * Filter out structures that are not retrievable, such as disconnected type vertices
+     * TODO: We can further improve this if we have access to the filter as well
+     */
+    static List<Structure> retrievedStructures(List<Structure> structures) {
+        return iterate(structures).filter(s ->
+                iterate(s.vertices()).anyMatch(v -> v.id().isRetrievable())
+        ).toList();
+    }
 
     PermutationProcedure procedure();
 
     boolean isOptimal();
 
-    default void tryOptimise(GraphManager graphMgr, boolean singleUse) {
-        if (isGraph()) this.asGraph().mayOptimise(graphMgr, singleUse);
-    }
-
-    static Planner create(Structure structure) {
-        if (structure.vertices().size() == 1) return VertexPlanner.create(structure);
-        else return GraphPlanner.create(structure);
-    }
-
-    default boolean isVertex() {
-        return false;
-    }
-
-    default boolean isGraph() {
-        return false;
-    }
-
-    default VertexPlanner asVertex() {
-        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(VertexPlanner.class));
-    }
-
-    default GraphPlanner asGraph() {
-        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(GraphPlanner.class));
-    }
+    void tryOptimise(GraphManager graphMgr, boolean singleUse);
 }

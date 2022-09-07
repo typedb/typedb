@@ -45,6 +45,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async2;
@@ -53,7 +54,7 @@ import static java.time.Duration.between;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class GraphPlanner implements Planner {
+public class GraphPlanner implements ConnectedPlanner {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphPlanner.class);
 
@@ -91,12 +92,11 @@ public class GraphPlanner implements Planner {
     }
 
     static GraphPlanner create(Structure structure) {
-        assert structure.vertices().size() > 1;
         GraphPlanner planner = new GraphPlanner();
         Set<StructureVertex<?>> registeredVertices = new HashSet<>();
         Set<StructureEdge<?, ?>> registeredEdges = new HashSet<>();
         structure.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
-        assert planner.vertices().size() > 1 && !planner.edges().isEmpty();
+        assert planner.vertices().size() > 1;
         planner.initialiseOptimiserModel();
         return planner;
     }
@@ -228,7 +228,8 @@ public class GraphPlanner implements Planner {
         return optimiser;
     }
 
-    void mayOptimise(GraphManager graphMgr, boolean singleUse) {
+    @Override
+    public void tryOptimise(GraphManager graphMgr, boolean singleUse) {
         long timeLimitMillis = singleUse ? HIGHER_TIME_LIMIT_MILLIS : DEFAULT_TIME_LIMIT_MILLIS;
         if (backgroundOptimisation == null) startFirstOptimise(graphMgr, timeLimitMillis);
         else if (isOptimising.compareAndSet(false, true)) startReOptimise(graphMgr, timeLimitMillis);
@@ -375,7 +376,7 @@ public class GraphPlanner implements Planner {
 
     private void createProcedure() {
         assert iterate(vertices.values()).allMatch(PlannerVertex::validResults);
-        procedure = GraphProcedure.create(this);
+        procedure = GraphProcedure.create(list(this));
     }
 
     @Override

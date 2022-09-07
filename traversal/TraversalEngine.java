@@ -18,9 +18,7 @@
 
 package com.vaticle.typedb.core.traversal;
 
-import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -45,10 +43,9 @@ public class TraversalEngine {
         return graphMgr;
     }
 
-    public FunctionalProducer<VertexMap> producer(GraphTraversal.Thing traversal, Either<Arguments.Query.Producer, Long> context,
-                                                  int parallelisation) {
+    public FunctionalProducer<VertexMap> producer(GraphTraversal.Thing traversal, int parallelisation) {
         traversal.initialise(cache);
-        return traversal.permutationProducer(graphMgr, context, parallelisation);
+        return traversal.permutationProducer(graphMgr, parallelisation);
     }
 
     public FunctionalIterator<VertexMap> iterator(GraphTraversal.Thing traversal) {

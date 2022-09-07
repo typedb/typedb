@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.common.cache.CommonCache;
 import com.vaticle.typedb.core.traversal.planner.Planner;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
-import java.util.Map;
 import java.util.function.Function;
 
 public class TraversalCache {
@@ -41,15 +40,13 @@ public class TraversalCache {
         return activePlanners.get(structure, constructor);
     }
 
-    public void mayUpdatePlanners(Map<Structure, Planner> planners) {
-        planners.forEach((structure, planner) -> {
-            if (planner.isOptimal() && optimalPlanners.getIfPresent(structure) == null) {
-                optimalPlanners.put(structure, planner);
-                activePlanners.invalidate(structure);
-            } else if (!planner.isOptimal() && activePlanners.getIfPresent(structure) == null) {
-                activePlanners.put(structure, planner);
-                optimalPlanners.invalidate(structure);
-            }
-        });
+    public void mayUpdatePlanner(Structure structure, Planner planner) {
+        if (planner.isOptimal() && optimalPlanners.getIfPresent(structure) == null) {
+            optimalPlanners.put(structure, planner);
+            activePlanners.invalidate(structure);
+        } else if (!planner.isOptimal() && activePlanners.getIfPresent(structure) == null) {
+            activePlanners.put(structure, planner);
+            optimalPlanners.invalidate(structure);
+        }
     }
 }

@@ -18,17 +18,14 @@
 
 package com.vaticle.typedb.core.traversal;
 
-import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.planner.Planner;
@@ -36,13 +33,10 @@ import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
 import com.vaticle.typedb.core.traversal.procedure.CombinationProcedure;
 import com.vaticle.typedb.core.traversal.scanner.CombinationFinder;
-import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -50,12 +44,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static com.vaticle.typedb.core.common.iterator.Iterators.cartesian;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
-import static com.vaticle.typedb.core.concurrent.executor.Executors.async2;
-import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
-import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.ISA;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
@@ -66,7 +55,6 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.SubString.LIKE;
-import static java.util.stream.Collectors.toList;
 
 public abstract class GraphTraversal extends Traversal {
 
@@ -81,28 +69,10 @@ public abstract class GraphTraversal extends Traversal {
 
     public abstract void filter(Set<? extends Identifier.Variable.Retrievable> filter);
 
-    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Collection<Planner> planners, boolean singleUse,
+    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Planner planner, boolean singleUse,
                                                       Set<Identifier.Variable.Retrievable> filter) {
-        assert !planners.isEmpty();
-        if (planners.size() == 1) {
-            planners.iterator().next().tryOptimise(graphMgr, singleUse);
-            return planners.iterator().next().procedure().iterator(graphMgr, parameters, filter);
-        } else {
-            return cartesian(planners.parallelStream().map(planner -> {
-                planner.tryOptimise(graphMgr, singleUse);
-                return planner.procedure().iterator(graphMgr, parameters, filter);
-            }).collect(toList())).map(partialAnswers -> {
-                Map<Identifier.Variable.Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
-                partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
-                return VertexMap.of(combinedAnswers);
-            });
-        }
-    }
-
-    FunctionalIterator<Structure> structures() {
-        return iterate(structure.asGraphs()).filter(p -> iterate(p.vertices()).anyMatch(
-                v -> v.id().isRetrievable() && filter().contains(v.id().asVariable().asRetrievable())
-        ));
+        planner.tryOptimise(graphMgr, singleUse);
+        return planner.procedure().iterator(graphMgr, parameters, filter);
     }
 
     public void labels(Identifier.Variable type, Set<Label> labels) {
@@ -160,14 +130,12 @@ public abstract class GraphTraversal extends Traversal {
 
         @Override
         FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
-            return permutationIterator(graphMgr, structures().map(Planner::create).toList(), true, filter());
+            return permutationIterator(graphMgr, Planner.create(structure), true, filter());
         }
 
         public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
                 GraphManager graphMgr, Set<Identifier.Variable.Retrievable> concreteVarIds) {
-            Set<CombinationProcedure> combinationProcedures = new HashSet<>();
-            structures().forEachRemaining(structure -> combinationProcedures.add(CombinationProcedure.create(structure)));
-            return new CombinationFinder(graphMgr, combinationProcedures, filter(), concreteVarIds).combination();
+            return new CombinationFinder(graphMgr, CombinationProcedure.create(structure), filter(), concreteVarIds).combination();
         }
 
         @Override
@@ -184,7 +152,7 @@ public abstract class GraphTraversal extends Traversal {
 
     public static class Thing extends GraphTraversal {
 
-        private Map<Structure, Planner> planners;
+        private Planner planner;
         private TraversalCache cache;
         private boolean modifiable;
 
@@ -194,43 +162,25 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         public void initialise(TraversalCache cache) {
-            assert planners == null;
+            assert planner == null;
             this.cache = cache;
-            planners = new HashMap<>();
-            structures().forEachRemaining(structure -> {
-                Planner planner = this.cache.getPlanner(structure, Planner::create);
-                planners.put(structure, planner);
-            });
+            planner = this.cache.getPlanner(structure, Planner::create);
         }
 
         @Override
         FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
-            assert !planners.isEmpty() && cache != null;
-            FunctionalIterator<VertexMap> iter = permutationIterator(graphMgr, planners.values(), false, filter());
-            cache.mayUpdatePlanners(planners);
+            assert planner != null && cache != null;
+            FunctionalIterator<VertexMap> iter = permutationIterator(graphMgr, planner, false, filter());
+            cache.mayUpdatePlanner(structure, planner);
             return iter;
         }
 
         FunctionalProducer<VertexMap> permutationProducer(GraphManager graphMgr,
-                                                          Either<Arguments.Query.Producer, Long> context,
                                                           int parallelisation) {
-            assert !planners.isEmpty() && cache != null;
-            FunctionalProducer<VertexMap> producer;
-            if (planners.size() == 1) {
-                planners.values().iterator().next().tryOptimise(graphMgr, false);
-                producer = planners.values().iterator().next().procedure().producer(graphMgr, parameters, filter(), parallelisation);
-            } else {
-                Either<Arguments.Query.Producer, Long> nestedCtx = context.isFirst() ? context : Either.first(INCREMENTAL);
-                producer = async(cartesian(planners.values().parallelStream().map(planner -> {
-                    planner.tryOptimise(graphMgr, false);
-                    return planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
-                }).map(p -> produce(p, nestedCtx, async2())).collect(toList())).map(partialAnswers -> {
-                    Map<Identifier.Variable.Retrievable, Vertex<?, ?>> combinedAnswers = new HashMap<>();
-                    partialAnswers.forEach(p -> combinedAnswers.putAll(p.map()));
-                    return VertexMap.of(combinedAnswers);
-                }));
-            }
-            cache.mayUpdatePlanners(planners);
+            assert planner != null && cache != null;
+            planner.tryOptimise(graphMgr, false);
+            FunctionalProducer<VertexMap> producer = planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
+            cache.mayUpdatePlanner(structure, planner);
             return producer;
         }
 

@@ -18,34 +18,28 @@
 
 package com.vaticle.typedb.core.traversal.test;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static com.vaticle.typedb.common.collection.Collections.permutations;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class ProcedurePermutator {
 
-    // TODO: receive a Traversal object once the asGraphs call disappears
-    public static List<GraphProcedure> generate(Structure structure) {
-        if (structure.asGraphs().size() != 1) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-        List<GraphProcedure> procedures = new ArrayList<>();
-        for (List<Identifier> ordering : permutations(iterate(structure.vertices()).map(TraversalVertex::id).toList())) {
-            Map<Identifier, Integer> orderingMap = new HashMap<>();
-            for (int index = 0; index < ordering.size(); index++) {
-                orderingMap.put(ordering.get(index), index);
-            }
-            procedures.add(GraphProcedure.create(structure, orderingMap));
-        }
-        return procedures;
+    public static FunctionalIterator<GraphProcedure> generate(Structure structure) {
+        return iterate(permutations(iterate(structure.vertices()).map(TraversalVertex::id).toSet()))
+                .map(idPermutation -> {
+                    Map<Identifier, Integer> orderingMap = new HashMap<>();
+                    for (int index = 0; index < idPermutation.size(); index++) {
+                        orderingMap.put(idPermutation.get(index), index);
+                    }
+                    return GraphProcedure.create(structure, orderingMap);
+                });
     }
 }
