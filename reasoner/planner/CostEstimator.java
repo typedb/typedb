@@ -87,12 +87,14 @@ public class CostEstimator {
         private Map<Variable, CostCover> unaryCostCover;
         private Map<Resolvable<?>, List<LocalEstimate>> multivarEstimates;
         private long fullAnswerCount;
+        private long negatedsCost;
 
         public ConjunctionAnswerCountEstimator(CostEstimator costEstimator, ResolvableConjunction conjunction) {
             this.costEstimator = costEstimator;
             this.logicMgr = costEstimator.logicMgr;
             this.conjunction = conjunction;
             this.fullAnswerCount = -1;
+            this.negatedsCost = -1;
         }
 
         public long estimateAllAnswers() {
@@ -144,6 +146,11 @@ public class CostEstimator {
             return iterate(logicMgr.compile(conjunction));
         }
 
+        private Set<Variable> allVariables() {
+            return iterate(conjunction.pattern().variables())
+                    .filter(v -> v.isThing())
+                    .toSet();
+        }
 
         private void initializeOnce() {
             // TODO: Move this after the retrievable estimates, so cycle-head estimates are easy.
@@ -154,7 +161,7 @@ public class CostEstimator {
             {
                 // Create a baseline estimate from type information
                 List<LocalEstimate> unaryEstimates = new ArrayList<>();
-                iterate(conjunction.pattern().variables()).forEachRemaining(v -> {
+                iterate(allVariables()).forEachRemaining(v -> {
                     unaryEstimates.add(estimateFromTypes(v));
                 });
 
@@ -183,11 +190,20 @@ public class CostEstimator {
                 multivarEstimates.get(concludable).addAll(computeEstimatesFromConcludable(concludable));
             });
 
-            // TODO: Negateds for the total -cost?
-            // TODO: can we prune the multiVarEstimates stored?
+            if (this.negatedsCost == -1) {
+                this.negatedsCost = resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
+                        .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+                        .map(negatedConjunction -> {
+                            costEstimator.registerConjunction(negatedConjunction);
+                            return costEstimator.estimateAllAnswers(negatedConjunction);
+                        }).reduce(0L, Long::sum);
+            }
 
-            Map<Variable, CostCover> fullCostCover = computeCostCover(iterate(multivarEstimates.values()).flatMap(Iterators::iterate).toList(), conjunction.pattern().variables());
-            this.fullAnswerCount = CostCover.costToCover(conjunction.pattern().variables(), fullCostCover);
+            // Can we prune the multiVarEstimates stored?
+            // Not if we want to order-resolvables. Else, yes based on queryableVariables.
+
+            Map<Variable, CostCover> fullCostCover = computeCostCover(iterate(multivarEstimates.values()).flatMap(Iterators::iterate).toList(), allVariables());
+            this.fullAnswerCount = CostCover.costToCover(allVariables(), fullCostCover) + this.negatedsCost;
         }
 
         private List<LocalEstimate> computeEstimatesFromConcludable(Concludable concludable) {
@@ -221,9 +237,16 @@ public class CostEstimator {
                     assert rule.conclusion().generating().isPresent() && firstUnifier.isPresent();
 
                     if (rule.conclusion().isRelation()) { // Is a relation
-                        Set<Variable> answerVariables = iterate(rule.conclusion().pattern().variables())
-                                .filter(v -> rule.condition().pattern().variables().contains(v)).toSet();
+                        Set<Variable> answerVariables = iterate(firstUnifier.get().mapping().values()).flatMap(Iterators::iterate)
+                                .map(v -> rule.conclusion().pattern().variable(v))
+                                .toSet();
+                        // The answers to the generated variable = answers to all variables
+                        if (answerVariables.contains(rule.conclusion().generating().get())) {
+                            answerVariables = new HashSet<>(rule.conclusion().pattern().variables());
+                            answerVariables.remove(rule.conclusion().generating().get());
+                        }
                         return costEstimator.estimateAnswers(rule.condition().conjunction(), answerVariables);
+
                     } else if (rule.conclusion().isExplicitHas()) {
                         return 1L;
                     } else {

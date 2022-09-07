@@ -350,20 +350,20 @@ public class CostEstimatorTest {
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(first: $p1, second: $p2, third: $p3) isa one-hop-friends; }", transaction.logic()));
             long cost = costEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2", "p3")));
-            assertEquals(9, cost);
+            assertEquals(9L, cost);
         }
 
         {   // Works without fancy projection
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (first: $p1) isa one-hop-friends; }", transaction.logic()));
             long cost = costEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
-            assertEquals(3, cost);
+            assertEquals(3L, cost);
         }
 
         boolean FANCY_PROJECTION_IS_IMPLEMENTED = false;
         if (FANCY_PROJECTION_IS_IMPLEMENTED) {   // Needs fancy projection
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (first: $p1, second: $p2, third: $p3) isa one-hop-friends; }", transaction.logic()));
             long cost = costEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
-            assertEquals(3, cost);
+            assertEquals(3L, cost);
         }
     }
 
@@ -404,6 +404,24 @@ public class CostEstimatorTest {
             Set<Resolvable<?>> justJealous = resolvables.stream().filter(resolvable -> resolvable.isConcludable()).collect(Collectors.toSet());
             long cost = costEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2")), justJealous);
             assertEquals(25L, cost);
+        }
+    }
+
+    @Test
+    public void test_negations() {
+        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+        CostEstimator costEstimator = new CostEstimator(transaction.logic());
+        {   // bringing a friend to your friends party is awkward if they arent friends with the host
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction( "{" +
+                    " (friendor: $host, friendee: $you) isa friendship;" +
+                    " (friendor: $you, friendee: $guest) isa friendship; " +
+                    " not{ (friendor: $host, friendee: $guest) isa friendship;}; " +
+                    "}", transaction.logic()));
+            Set<Resolvable<?>> resolvables = transaction.logic().compile(conjunction);
+            long cost = costEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("host", "guest")), resolvables);
+            assertEquals(9L, cost);
+            long allAnswers = costEstimator.estimateAllAnswers(conjunction);
+            assertEquals(12L, allAnswers);
         }
     }
 
