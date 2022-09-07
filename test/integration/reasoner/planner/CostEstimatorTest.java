@@ -333,6 +333,41 @@ public class CostEstimatorTest {
     }
 
     @Test
+    public void test_inferred_relation_projection() {
+        initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
+        transaction.query().define(TypeQL.parseQuery("define " +
+                "one-hop-friends sub relation, relates first, relates second, relates third;" +
+                "person plays one-hop-friends:first, plays one-hop-friends:second, plays one-hop-friends:third;" +
+                "rule all-ternary: " +
+                "when { (friendor: $p1, friendee: $p2) isa friendship; (friendor: $p2, friendee: $p3) isa friendship; } " +
+                "then { (first: $p1, second: $p2, third: $p3) isa one-hop-friends; };"));
+
+        transaction.commit();
+        session.close();
+
+        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+        CostEstimator costEstimator = new CostEstimator(transaction.logic());
+        {
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(first: $p1, second: $p2, third: $p3) isa one-hop-friends; }", transaction.logic()));
+            long cost = costEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2", "p3")));
+            assertEquals(9, cost);
+        }
+
+        {   // Works without fancy projection
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (first: $p1) isa one-hop-friends; }", transaction.logic()));
+            long cost = costEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
+            assertEquals(3, cost);
+        }
+
+        boolean FANCY_PROJECTION_IS_IMPLEMENTED = false;
+        if (FANCY_PROJECTION_IS_IMPLEMENTED) {   // Needs fancy projection
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (first: $p1, second: $p2, third: $p3) isa one-hop-friends; }", transaction.logic()));
+            long cost = costEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
+            assertEquals(3, cost);
+        }
+    }
+
+    @Test
     public void test_included_resolvables() {
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
         transaction.query().define(TypeQL.parseQuery("define " +
