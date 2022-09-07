@@ -22,7 +22,10 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
-import com.vaticle.typedb.core.logic.resolvable.*;
+import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
@@ -199,7 +202,7 @@ public class CostEstimator {
         private long computeInferredUnaryEstimates(ThingVariable generatedVariable) {
             List<Concludable> relevantConcludables = resolvables()
                     .filter(resolvable -> isInferrable(resolvable) && resolvable.generating().isPresent() &&
-                        resolvable.generating().get().equals(generatedVariable))
+                            resolvable.generating().get().equals(generatedVariable))
                     .map(Resolvable::asConcludable)
                     .toList();
 
@@ -208,7 +211,7 @@ public class CostEstimator {
             }
 
             long mostConstrainedAnswer = Long.MAX_VALUE;
-            for (Concludable concludable: relevantConcludables) {
+            for (Concludable concludable : relevantConcludables) {
                 Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
                 AtomicLong nInferred = new AtomicLong(0L);
                 long answersGeneratedByThisResolvable = iterate(unifiers.keySet()).map(rule -> {
@@ -222,7 +225,7 @@ public class CostEstimator {
                         return costEstimator.estimateAnswers(rule.condition().conjunction(), answerVariables);
                     } else if (rule.conclusion().isExplicitHas()) {
                         return 1L;
-                    }  else {
+                    } else {
                         assert rule.conclusion().isVariableHas();
                         return 0L;
                     }
@@ -237,11 +240,11 @@ public class CostEstimator {
         private long estimateInferredAnswerCount(Concludable concludable, Set<Variable> variablesOfInterest) {
             Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
             long inferredEstimate = 0;
-            for (Rule rule: unifiers.keySet()) {
-                for(Unifier unifier: unifiers.get(rule)) {
+            for (Rule rule : unifiers.keySet()) {
+                for (Unifier unifier : unifiers.get(rule)) {
                     Set<Identifier.Variable> ruleSideIds = iterate(variablesOfInterest)
                             .flatMap(v -> iterate(unifier.mapping().get(v.id()))).toSet();
-                    Set<Variable> ruleSideVariables =iterate(ruleSideIds).map(id -> rule.condition().conjunction().pattern().variable(id))
+                    Set<Variable> ruleSideVariables = iterate(ruleSideIds).map(id -> rule.condition().conjunction().pattern().variable(id))
                             .toSet();
                     inferredEstimate += costEstimator.estimateAnswers(rule.condition().conjunction(), ruleSideVariables);
                 }
@@ -265,7 +268,7 @@ public class CostEstimator {
         private LocalEstimate estimatesFromHasEdges(Concludable.Has concludableHas) {
 
             long estimate = countPersistedHasEdges(concludableHas.asHas().owner().inferredTypes(), concludableHas.asHas().attribute().inferredTypes()) +
-                            estimateInferredAnswerCount(concludableHas, set(concludableHas.asHas().owner(), concludableHas.asHas().attribute()));
+                    estimateInferredAnswerCount(concludableHas, set(concludableHas.asHas().owner(), concludableHas.asHas().attribute()));
 
             return new LocalEstimate.SimpleEstimate(list(concludableHas.asHas().owner(), concludableHas.asHas().attribute()), estimate);
         }
@@ -284,7 +287,7 @@ public class CostEstimator {
                 constrainedVars.add(rp.player());
                 TypeVariable key = rp.roleType().orElse(null);
                 rolePlayerCounts.put(key, rolePlayerCounts.getOrDefault(key, 0) + 1);
-                if (!rolePlayerEstimates.containsKey(key)){
+                if (!rolePlayerEstimates.containsKey(key)) {
                     rolePlayerEstimates.put(key, countPersistedRolePlayers(rp));
                 }
             }
@@ -313,7 +316,9 @@ public class CostEstimator {
 
             final List<Variable> variables;
 
-            private LocalEstimate(List<Variable> variables) { this.variables = variables; }
+            private LocalEstimate(List<Variable> variables) {
+                this.variables = variables;
+            }
 
             abstract long answerEstimate(ConjunctionAnswerCountEstimator costEstimator, Set<Variable> variablesOfInterest);
 
@@ -326,7 +331,9 @@ public class CostEstimator {
                 }
 
                 @Override
-                long answerEstimate(ConjunctionAnswerCountEstimator costEstimator, Set<Variable> variablesOfInterest) { return staticEstimate; }
+                long answerEstimate(ConjunctionAnswerCountEstimator costEstimator, Set<Variable> variablesOfInterest) {
+                    return staticEstimate;
+                }
             }
 
             public static class CoPlayerEstimate extends LocalEstimate {
@@ -350,7 +357,7 @@ public class CostEstimator {
                     long singleRelationEstimate = 1L;
                     for (TypeVariable key : rolePlayerCounts.keySet()) {
                         assert rolePlayerEstimates.containsKey(key);
-                        long avgRolePlayers = Double.valueOf(Math.ceil(rolePlayerEstimates.get(key)/relationTypeEstimate)).longValue();
+                        long avgRolePlayers = Double.valueOf(Math.ceil(rolePlayerEstimates.get(key) / relationTypeEstimate)).longValue();
                         singleRelationEstimate *= nPermuteKforSmallK(avgRolePlayers, rolePlayerCounts.get(key));
                     }
 
@@ -361,7 +368,7 @@ public class CostEstimator {
 
                 private long nPermuteKforSmallK(long n, long k) {
                     long ans = 1;
-                    for(int i=0; i < k; i++)    ans *= n-i;
+                    for (int i = 0; i < k; i++) ans *= n - i;
                     return ans;
                 }
             }

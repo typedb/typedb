@@ -306,8 +306,8 @@ public class CostEstimatorTest {
 
         {   // Is not inferred.
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ " +
-                        "(friendor: $x, friendee: $y) isa friendship;" +
-                        "(friendor: $y, friendee: $z) isa friendship; " +
+                    "(friendor: $x, friendee: $y) isa friendship;" +
+                    "(friendor: $y, friendee: $z) isa friendship; " +
                     "}", transaction.logic()));
             long cost = costEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "z")));
             assertEquals(9L, cost); // TODO: 9 because it's currently at local, disconnected estimates.
