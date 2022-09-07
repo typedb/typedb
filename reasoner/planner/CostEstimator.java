@@ -113,13 +113,13 @@ public class CostEstimator {
             // Does a greedy set cover
             Map<Variable, CostCover> costCover = new HashMap<>(unaryCostCover);
             enabledEstimates.sort(Comparator.comparing(x -> x.answerEstimate(this, projectToVariables)));
-            for (LocalEstimate multivarEstimate : enabledEstimates) {
-                Set<Variable> interestingSubsetOfVariables = multivarEstimate.variables.stream()
+            for (LocalEstimate enabledEstimate : enabledEstimates) {
+                Set<Variable> interestingSubsetOfVariables = enabledEstimate.variables.stream()
                         .filter(projectToVariables::contains).collect(Collectors.toSet());
 
                 long currentCostToCover = CostCover.costToCover(interestingSubsetOfVariables, costCover);
-                if (currentCostToCover > multivarEstimate.answerEstimate(this, interestingSubsetOfVariables)) {
-                    CostCover variablesNowCoveredBy = new CostCover(multivarEstimate.answerEstimate(this, interestingSubsetOfVariables));
+                if (currentCostToCover > enabledEstimate.answerEstimate(this, interestingSubsetOfVariables)) {
+                    CostCover variablesNowCoveredBy = new CostCover(enabledEstimate.answerEstimate(this, interestingSubsetOfVariables));
                     interestingSubsetOfVariables.forEach(v -> costCover.put(v, variablesNowCoveredBy));
                 }
             }
@@ -293,7 +293,9 @@ public class CostEstimator {
                 }
             }
 
-            return new LocalEstimate.CoPlayerEstimate(concludable, constrainedVars, relationTypeEstimate, rolePlayerEstimates, rolePlayerCounts);
+            // TODO: Can improve estimate by collecting List<List<LocalEstimate>> from the triggered rules and doign sum(costCover).
+            long inferredRelationsEstimate = estimateInferredAnswerCount(concludable, new HashSet<>(constrainedVars));
+            return new LocalEstimate.CoPlayerEstimate(constrainedVars, relationTypeEstimate, rolePlayerEstimates, rolePlayerCounts, inferredRelationsEstimate);
 
         }
 
@@ -342,15 +344,16 @@ public class CostEstimator {
                 private final Map<TypeVariable, Integer> rolePlayerCounts;
                 private final Map<TypeVariable, Long> rolePlayerEstimates;
                 private final double relationTypeEstimate;
-                private final Concludable concludable;
+                private final long inferredRelationEstimate;
 
-                public CoPlayerEstimate(Concludable concludable, List<Variable> variables, double relationTypeEstimate,
-                                        Map<TypeVariable, Long> rolePlayerEstimates, Map<TypeVariable, Integer> rolePlayerCounts) {
+                public CoPlayerEstimate(List<Variable> variables, double relationTypeEstimate,
+                                        Map<TypeVariable, Long> rolePlayerEstimates, Map<TypeVariable, Integer> rolePlayerCounts,
+                                        long inferredRelationEstimate) {
                     super(variables);
-                    this.concludable = concludable;
                     this.relationTypeEstimate = relationTypeEstimate;
                     this.rolePlayerEstimates = rolePlayerEstimates;
                     this.rolePlayerCounts = rolePlayerCounts;
+                    this.inferredRelationEstimate = inferredRelationEstimate;
                 }
 
                 @Override
@@ -362,8 +365,7 @@ public class CostEstimator {
                         singleRelationEstimate *= nPermuteKforSmallK(avgRolePlayers, rolePlayerCounts.get(key));
                     }
 
-                    long fullEstimate = Double.valueOf(Math.ceil(relationTypeEstimate * singleRelationEstimate)).longValue() +
-                            costEstimator.estimateInferredAnswerCount(concludable, variablesOfInterest.stream().filter(this.variables::contains).collect(Collectors.toSet()));
+                    long fullEstimate = Double.valueOf(Math.ceil(relationTypeEstimate * singleRelationEstimate)).longValue() + inferredRelationEstimate;
                     return fullEstimate;
                 }
 
