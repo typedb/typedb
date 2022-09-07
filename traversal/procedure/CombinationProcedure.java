@@ -26,10 +26,13 @@ import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class CombinationProcedure {
 
@@ -37,7 +40,7 @@ public class CombinationProcedure {
     private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> forwardEdges;
     private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> reverseEdges;
     private final Map<ProcedureVertex.Type, Set<ProcedureEdge<?, ?>>> loopEdges;
-    private ProcedureVertex.Type startVertex;
+    private final Set<ProcedureVertex.Type> startVertices;
     private Set<ProcedureVertex.Type> terminals;
 
     CombinationProcedure() {
@@ -45,17 +48,18 @@ public class CombinationProcedure {
         this.forwardEdges = new HashMap<>();
         this.reverseEdges = new HashMap<>();
         this.loopEdges = new HashMap<>();
+        this.startVertices = new HashSet<>();
     }
 
     public static CombinationProcedure create(Structure structure) {
-        StructureVertex.Type startVertex = structure.vertices().iterator().next().asType();
+        assert iterate(structure.vertices()).allMatch(StructureVertex::isType);
         CombinationProcedure procedure = new CombinationProcedure();
-        procedure.registerBFS(startVertex);
+        procedure.registerBFS(structure.vertices());
         return procedure;
     }
 
-    public ProcedureVertex.Type startVertex() {
-        return startVertex;
+    public Set<ProcedureVertex.Type> startVertices() {
+        return startVertices;
     }
 
     public Collection<ProcedureVertex.Type> vertices() {
@@ -86,19 +90,26 @@ public class CombinationProcedure {
         return loopEdges.computeIfAbsent(vertex, (v) -> new HashSet<>());
     }
 
-    private void registerBFS(StructureVertex.Type start) {
+    private void registerBFS(Collection<StructureVertex<?>> vertices) {
         Set<StructureEdge<?, ?>> visitedEdges = new HashSet<>();
-        Queue<StructureVertex.Type> queue = new LinkedList<>();
-        queue.add(start);
+        Queue<StructureVertex.Type> startVertices = new LinkedList<>();
+        Queue<StructureVertex.Type> frontier = new LinkedList<>();
+        iterate(vertices).forEachRemaining(v -> startVertices.add(v.asType()));
+
         StructureVertex.Type vertex;
-        while (!queue.isEmpty()) {
-            vertex = queue.remove();
+        while (!frontier.isEmpty() || !startVertices.isEmpty()) {
             ProcedureVertex.Type procedureVertex;
-            if (vertices.isEmpty()) procedureVertex = registerVertex(vertex, true);
-            else procedureVertex = registerVertex(vertex);
-            queue.addAll(registerOutEdges(procedureVertex, vertex.outs(), visitedEdges));
-            queue.addAll(registerInEdges(procedureVertex, vertex.ins(), visitedEdges));
+            if (frontier.isEmpty()) {
+                vertex = startVertices.remove();
+                procedureVertex = registerVertex(vertex, true);
+            } else {
+                vertex = frontier.remove();
+                procedureVertex = registerVertex(vertex);
+            }
+            frontier.addAll(registerOutEdges(procedureVertex, vertex.outs(), visitedEdges));
+            frontier.addAll(registerInEdges(procedureVertex, vertex.ins(), visitedEdges));
             registerLoopEdges(procedureVertex, vertex.loops(), visitedEdges);
+            startVertices.removeAll(frontier);
         }
     }
 
@@ -112,7 +123,7 @@ public class CombinationProcedure {
             v.props(vertex.props());
             return v;
         });
-        if (isStart) startVertex = procedureVertex;
+        if (isStart) startVertices.add(procedureVertex);
         return procedureVertex;
     }
 

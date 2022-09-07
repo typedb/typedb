@@ -44,8 +44,6 @@ import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
@@ -155,23 +153,20 @@ public class Reasoner {
         FunctionalIterator<ConceptMap> answers;
         FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
         if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter));
-        else answers = produce(conjs.map(c -> producer(c, filter, context)).toList(), context.producer(), async1());
+        else answers = produce(conjs.map(c -> producer(c, filter)).toList(), context.producer(), async1());
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
     }
 
-    private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter,
-                                          Context.Query context) {
+    private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter) {
         if (conjunction.negations().isEmpty()) {
-            return traversalEng.producer(
-                    conjunction.traversal(filter), context.producer(), PARALLELISATION_FACTOR
-            ).map(conceptMgr::conceptMap);
+            return traversalEng.producer(conjunction.traversal(filter), PARALLELISATION_FACTOR)
+                    .map(conceptMgr::conceptMap);
         } else {
-            return traversalEng.producer(
-                    conjunction.traversal(), context.producer(), PARALLELISATION_FACTOR
-            ).map(conceptMgr::conceptMap).filter(answer -> !iterate(conjunction.negations()).flatMap(
-                    negation -> iterator(negation.disjunction(), answer)
-            ).hasNext()).map(answer -> answer.filter(filter)).distinct();
+            return traversalEng.producer(conjunction.traversal(), PARALLELISATION_FACTOR)
+                    .map(conceptMgr::conceptMap).filter(answer -> !iterate(conjunction.negations()).flatMap(
+                            negation -> iterator(negation.disjunction(), answer)).hasNext()
+                    ).map(answer -> answer.filter(filter)).distinct();
         }
     }
 
@@ -206,7 +201,7 @@ public class Reasoner {
         ConceptMap explainableBounds = explainablesManager.getBounds(explainableId);
         return Producers.produce(
                 list(new ReasonerProducer.Explain(explainableConcludable, explainableBounds, defaultContext.options(),
-                                                  controllerRegistry, explainablesManager)),
+                        controllerRegistry, explainablesManager)),
                 Either.first(Arguments.Query.Producer.INCREMENTAL),
                 async1()
         );

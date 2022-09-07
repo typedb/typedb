@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.test.behaviour.typeql;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
@@ -31,7 +32,6 @@ import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
-import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typedb.core.traversal.test.ProcedurePermutator;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
@@ -181,18 +181,14 @@ public class TypeQLSteps {
                 .toSet();
         for (Conjunction conjunction : disjunction.conjunctions()) {
             GraphTraversal.Thing traversal = conjunction.traversal(filter);
-            // TODO we expect there to be be only 1 structure in the future
-            List<Structure> structures = traversal.structure().asGraphs();
-            for (Structure structure : structures) {
-                if (structure.vertices().size() == 1) continue;
-                List<GraphProcedure> procedurePermutations = ProcedurePermutator.generate(structure);
-                Set<VertexMap> answers = procedurePermutations.get(0).iterator(tx().concepts().graph(),
+            // limited permutation space to avoid OOMs and timeouts
+            FunctionalIterator<GraphProcedure> procedurePermutations = ProcedurePermutator.generate(traversal.structure()).limit(5000);
+            Set<VertexMap> answers = procedurePermutations.next().iterator(tx().concepts().graph(),
+                    traversal.parameters(), filter).toSet();
+            for (int i = 0; procedurePermutations.hasNext(); i++) {
+                Set<VertexMap> permutationAnswers = procedurePermutations.next().iterator(tx().concepts().graph(),
                         traversal.parameters(), filter).toSet();
-                for (int i = 1; i < procedurePermutations.size(); i++) {
-                    Set<VertexMap> permutationAnswers = procedurePermutations.get(i).iterator(tx().concepts().graph(),
-                            traversal.parameters(), filter).toSet();
-                    assertEquals(answers, permutationAnswers);
-                }
+                assertEquals(answers, permutationAnswers);
             }
         }
     }
