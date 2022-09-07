@@ -103,14 +103,17 @@ public class CostEstimator {
             List<LocalEstimate> enabledEstimates = iterate(includedResolvables)
                     .flatMap(resolvable -> iterate(multivarEstimates.get(resolvable)))
                     .toList();
-            return computeCostCover(enabledEstimates, projectToVariables);
+            Map<Variable, CostCover> costCover = computeCostCover(enabledEstimates, projectToVariables);
+            long ret = CostCover.costToCover(projectToVariables, costCover);
+            assert ret > 0;             // Flag in tests if it happens.
+            return Math.max(ret, 1);    // Don't do stupid stuff in prod when it happens.
         }
 
-        private long computeCostCover(List<LocalEstimate> multivarEstimates, Set<Variable> projectToVariables) {
+        private Map<Variable, CostCover> computeCostCover(List<LocalEstimate> enabledEstimates, Set<Variable> projectToVariables) {
             // Does a greedy set cover
             Map<Variable, CostCover> costCover = new HashMap<>(unaryCostCover);
-            multivarEstimates.sort(Comparator.comparing(x -> x.answerEstimate(this, projectToVariables)));
-            for (LocalEstimate multivarEstimate : multivarEstimates) {
+            enabledEstimates.sort(Comparator.comparing(x -> x.answerEstimate(this, projectToVariables)));
+            for (LocalEstimate multivarEstimate : enabledEstimates) {
                 Set<Variable> interestingSubsetOfVariables = multivarEstimate.variables.stream()
                         .filter(projectToVariables::contains).collect(Collectors.toSet());
 
@@ -120,10 +123,7 @@ public class CostEstimator {
                     interestingSubsetOfVariables.forEach(v -> costCover.put(v, variablesNowCoveredBy));
                 }
             }
-
-            long ret = CostCover.costToCover(projectToVariables, costCover);
-            assert ret > 0;             // Flag in tests if it happens.
-            return Math.max(ret, 1);    // Don't do stupid stuff in prod when it happens.
+            return costCover;
         }
 
         private void registerTriggeredRules() {
@@ -186,7 +186,8 @@ public class CostEstimator {
             // TODO: Negateds for the total -cost?
             // TODO: can we prune the multiVarEstimates stored?
 
-            this.fullAnswerCount = computeCostCover(iterate(multivarEstimates.values()).flatMap(Iterators::iterate).toList(), conjunction.pattern().variables());
+            Map<Variable, CostCover> fullCostCover = computeCostCover(iterate(multivarEstimates.values()).flatMap(Iterators::iterate).toList(), conjunction.pattern().variables());
+            this.fullAnswerCount = CostCover.costToCover(conjunction.pattern().variables(), fullCostCover);
         }
 
         private List<LocalEstimate> computeEstimatesFromConcludable(Concludable concludable) {
