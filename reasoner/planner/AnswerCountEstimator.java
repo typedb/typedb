@@ -16,7 +16,6 @@
  */
 package com.vaticle.typedb.core.reasoner.planner;
 
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Label;
@@ -38,48 +37,47 @@ import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class CostEstimator {
+public class AnswerCountEstimator {
     private final LogicManager logicMgr;
-    private final Map<ResolvableConjunction, ConjunctionAnswerCountEstimator> costEstimators;
+    private final Map<ResolvableConjunction, ConjunctionAnswerCountEstimator> estimators;
 
     // Cycle handling
     private final ArrayList<ResolvableConjunction> initializationStack;
     private final Set<ResolvableConjunction> cycleHeads;
     private final Set<ResolvableConjunction> toReset;
 
-    public CostEstimator(LogicManager logicMgr) {
+    public AnswerCountEstimator(LogicManager logicMgr) {
         this.logicMgr = logicMgr;
-        this.costEstimators = new HashMap<>();
+        this.estimators = new HashMap<>();
         this.initializationStack = new ArrayList<>();
         this.cycleHeads = new HashSet<>();
         this.toReset = new HashSet<>();
     }
 
     public long estimateAllAnswers(ResolvableConjunction conjunction) {
-        registerConjunction(conjunction);
-        return costEstimators.get(conjunction).estimateAllAnswers();
+        registerConjunctionAndInitialize(conjunction);
+        return estimators.get(conjunction).estimateAllAnswers();
     }
 
-    public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variablesOfInterest) {
-        return estimateAnswers(conjunction, variablesOfInterest, logicMgr.compile(conjunction));
+    public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variableFilter) {
+        return estimateAnswers(conjunction, variableFilter, logicMgr.compile(conjunction));
     }
 
-    public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variablesOfInterest, Set<Resolvable<?>> includedResolvables) {
-        registerConjunction(conjunction);
-        return costEstimators.get(conjunction).estimateAnswers(variablesOfInterest, includedResolvables);
+    public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
+        registerConjunctionAndInitialize(conjunction);
+        return estimators.get(conjunction).estimateAnswers(variableFilter, includedResolvables);
     }
 
-    private void registerConjunction(ResolvableConjunction conjunction) {
-        if (!costEstimators.containsKey(conjunction)) {
-            costEstimators.put(conjunction, new ConjunctionAnswerCountEstimator(this, conjunction));
+    private void registerConjunctionAndInitialize(ResolvableConjunction conjunction) {
+        if (!estimators.containsKey(conjunction)) {
+            estimators.put(conjunction, new ConjunctionAnswerCountEstimator(this, conjunction));
         }
 
-        if (costEstimators.get(conjunction).mayInitialize()) {
+        if (estimators.get(conjunction).mayInitialize()) {
             initializationStack.add(conjunction);
-            costEstimators.get(conjunction).initializeOnce();
+            estimators.get(conjunction).initialize();
             assert initializationStack.get(initializationStack.size()-1) == conjunction;
             initializationStack.remove(initializationStack.size()-1);
 
@@ -87,14 +85,14 @@ public class CostEstimator {
             if (cycleHeads.size() == 1 && cycleHeads.contains(conjunction)) {
                 // We can reset and recompute all!
                 for (ResolvableConjunction conjunctionToReset: toReset) {
-                    costEstimators.get(conjunctionToReset).reset();
+                    estimators.get(conjunctionToReset).reset();
                 }
-                costEstimators.get(conjunction).initializeOnce(); // no loop needed. This is the maximal cycle.
+                estimators.get(conjunction).initialize(); // no loop needed. This is the maximal cycle.
             }
         }
     }
 
-    public void reportInitializationCycle(ResolvableConjunction conjunction) {
+    private void reportInitializationCycle(ResolvableConjunction conjunction) {
         cycleHeads.add(conjunction);
         for (int i=initializationStack.size()-1; initializationStack.get(i) != conjunction ; i--) {
             toReset.add(initializationStack.get(i));
@@ -104,81 +102,30 @@ public class CostEstimator {
     private static class ConjunctionAnswerCountEstimator {
 
         private final ResolvableConjunction conjunction;
-        private final CostEstimator costEstimator;
+        private final AnswerCountEstimator answerCountEstimator;
         private final LogicManager logicMgr;
-        private Map<Variable, CostCover> unaryCostCover;
+        private Map<Variable, LocalEstimate> unaryEstimateCover;
         private Map<Resolvable<?>, List<LocalEstimate>> retrievableEstimates;
         private Map<Resolvable<?>, List<LocalEstimate>> inferrableEstimates;
         private long fullAnswerCount;
         private long negatedsCost;
 
-        public boolean mayInitialize() {
-            return initializationStatus == InitializationStatus.NOT_STARTED || initializationStatus == InitializationStatus.RESET;
-        }
 
-        private enum InitializationStatus {NOT_STARTED, RESET, IN_PROGRESS, COMPLETE};
+        private enum InitializationStatus {NOT_STARTED, RESET, IN_PROGRESS, COMPLETE}
         private InitializationStatus initializationStatus;
 
-        public ConjunctionAnswerCountEstimator(CostEstimator costEstimator, ResolvableConjunction conjunction) {
-            this.costEstimator = costEstimator;
-            this.logicMgr = costEstimator.logicMgr;
+        public ConjunctionAnswerCountEstimator(AnswerCountEstimator answerCountEstimator, ResolvableConjunction conjunction) {
+            this.answerCountEstimator = answerCountEstimator;
+            this.logicMgr = answerCountEstimator.logicMgr;
             this.conjunction = conjunction;
             this.fullAnswerCount = -1;
             this.negatedsCost = -1;
             this.initializationStatus = InitializationStatus.NOT_STARTED;
         }
 
-        private void reset() {
-            assert this.initializationStatus == InitializationStatus.COMPLETE;
-            this.initializationStatus = InitializationStatus.RESET;
-            this.inferrableEstimates = null;
-            this.fullAnswerCount = -1;
-            this.negatedsCost = -1;
-        }
-
-        public long estimateAllAnswers() {
-            assert this.fullAnswerCount >= 0;
-            return this.fullAnswerCount;
-        }
-
-        public long estimateAnswers(Set<Variable> projectToVariables, Set<Resolvable<?>> includedResolvables) {
-            if (this.initializationStatus == InitializationStatus.IN_PROGRESS) {
-                costEstimator.reportInitializationCycle(this.conjunction);
-            }
-
-            List<LocalEstimate> enabledEstimates = iterate(includedResolvables)
-                    .flatMap(resolvable -> iterate(multivarEstimate(resolvable)))
-                    .toList();
-            Map<Variable, CostCover> costCover = computeCostCover(enabledEstimates, projectToVariables);
-            long ret = CostCover.costToCover(projectToVariables, costCover);
-            assert ret > 0;             // Flag in tests if it happens.
-            return Math.max(ret, 1);    // Don't do stupid stuff in prod when it happens.
-        }
-
-        private Map<Variable, CostCover> computeCostCover(List<LocalEstimate> enabledEstimates, Set<Variable> projectToVariables) {
-            // Does a greedy set cover
-            Map<Variable, CostCover> costCover = new HashMap<>(unaryCostCover);
-            enabledEstimates.sort(Comparator.comparing(x -> x.answerEstimate(this, projectToVariables)));
-            for (LocalEstimate enabledEstimate : enabledEstimates) {
-                Set<Variable> interestingSubsetOfVariables = enabledEstimate.variables.stream()
-                        .filter(projectToVariables::contains).collect(Collectors.toSet());
-
-                long currentCostToCover = CostCover.costToCover(interestingSubsetOfVariables, costCover);
-                if (currentCostToCover > enabledEstimate.answerEstimate(this, interestingSubsetOfVariables)) {
-                    CostCover variablesNowCoveredBy = new CostCover(enabledEstimate.answerEstimate(this, interestingSubsetOfVariables));
-                    interestingSubsetOfVariables.forEach(v -> costCover.put(v, variablesNowCoveredBy));
-                }
-            }
-            return costCover;
-        }
-
-        private void registerTriggeredRules() {
-            resolvables().filter(this::isInferrable).map(Resolvable::asConcludable).forEachRemaining(concludable -> {
-                Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
-                iterate(unifiers.keySet()).forEachRemaining(rule -> {
-                    costEstimator.registerConjunction(rule.condition().conjunction());
-                });
-            });
+        // <editor-fold desc="utils">
+        private FunctionalIterator<Resolvable<?>> resolvables() {
+            return iterate(logicMgr.compile(conjunction));
         }
 
         private boolean isInferrable(Resolvable<?> resolvable) {
@@ -186,20 +133,16 @@ public class CostEstimator {
                     !logicMgr.applicableRules(resolvable.asConcludable()).isEmpty();
         }
 
-        private FunctionalIterator<Resolvable<?>> resolvables() {
-            return iterate(logicMgr.compile(conjunction));
+        private FunctionalIterator<Resolvable<?>> resolvablesGenerating(ThingVariable generatedVariable) {
+            return resolvables()
+                    .filter(resolvable -> isInferrable(resolvable) && resolvable.generating().isPresent() &&
+                            resolvable.generating().get().equals(generatedVariable));
         }
 
         private Set<Variable> allVariables() {
             return iterate(conjunction.pattern().variables())
                     .filter(v -> v.isThing())
                     .toSet();
-        }
-
-        private FunctionalIterator<Resolvable<?>> resolvablesGenerating(ThingVariable generatedVariable) {
-            return resolvables()
-                    .filter(resolvable -> isInferrable(resolvable) && resolvable.generating().isPresent() &&
-                            resolvable.generating().get().equals(generatedVariable));
         }
 
         private List<LocalEstimate> multivarEstimate(Resolvable<?> resolvable){
@@ -213,84 +156,140 @@ public class CostEstimator {
                 return inferrableEstimates.get(resolvable);
             }
         }
+        // </editor-fold>
 
-        private void initializeOnce() {
-            if (!this.mayInitialize()) return;
+        // <editor-fold desc="query">
+        public long estimateAllAnswers() {
+            assert this.fullAnswerCount >= 0;
+            return this.fullAnswerCount;
+        }
 
-            initializationStatus = InitializationStatus.IN_PROGRESS;
-            // TODO: Move this after the retrievable estimates, so cycle-head estimates are easy.
-            if (unaryCostCover == null) {
-                unaryCostCover = new HashMap<>();
-                // Create a baseline estimate from type information
-                List<LocalEstimate> unaryEstimates = new ArrayList<>();
-                iterate(allVariables()).forEachRemaining(v -> {
-                    unaryEstimates.add(estimateFromTypes(v.asThing(), false));
-                });
+        public long estimateAnswers(Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
+            if (this.initializationStatus == InitializationStatus.IN_PROGRESS) {
+                answerCountEstimator.reportInitializationCycle(this.conjunction);
+            }
 
-                unaryEstimates.sort(Comparator.comparing(x -> x.answerEstimate(this, new HashSet<>(x.variables))));
-                for (LocalEstimate unaryEstimate : unaryEstimates) {
-                    if (!unaryCostCover.containsKey(unaryEstimate.variables.get(0))) {
-                        unaryCostCover.put(unaryEstimate.variables.get(0), new CostCover(unaryEstimate.answerEstimate(this, new HashSet<>(unaryEstimate.variables))));
-                    }
+            List<LocalEstimate> includedEstimates = iterate(includedResolvables)
+                    .flatMap(resolvable -> iterate(multivarEstimate(resolvable)))
+                    .toList();
+            Map<Variable, LocalEstimate> costCover = computeCheapestEstimateCoverForVariables(variableFilter, includedEstimates);
+            long ret = costOfEstimateCover(variableFilter, costCover);
+            assert ret > 0;             // Flag in tests if it happens.
+            return Math.max(ret, 1);    // Don't do stupid stuff in prod when it happens.
+        }
+
+        private Map<Variable, LocalEstimate> computeCheapestEstimateCoverForVariables(Set<Variable> variableFilter, List<LocalEstimate> includedEstimates) {
+            // Does a greedy set cover
+            Map<Variable, LocalEstimate> costCover = new HashMap<>(unaryEstimateCover);
+            includedEstimates.sort(Comparator.comparing(x -> x.answerEstimate(variableFilter)));
+            for (LocalEstimate estimate : includedEstimates) {
+                Set<Variable> filteredVariablesInEstimate = estimate.variables.stream()
+                        .filter(variableFilter::contains).collect(Collectors.toSet());
+
+                long currentCostToCover = costOfEstimateCover(filteredVariablesInEstimate, costCover);
+                if (currentCostToCover > estimate.answerEstimate(filteredVariablesInEstimate)) {
+                    filteredVariablesInEstimate.forEach(v -> costCover.put(v, estimate));
                 }
             }
+            return costCover;
+        }
 
-            if (retrievableEstimates == null) {
-                retrievableEstimates = new HashMap<>();
-                //TODO: How does traversal handle type Variables?
-                resolvables().filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(retrievable -> {
-                    retrievableEstimates.put(retrievable, new ArrayList<>());
-                    Set<Concludable> concludablesInRetrievable = ResolvableConjunction.of(retrievable.pattern()).positiveConcludables();
-                    iterate(concludablesInRetrievable).forEachRemaining(concludable -> {
-                        retrievableEstimates.get(retrievable).addAll(computeEstimatesFromConcludable(concludable));
-                    });
+        private static long costOfEstimateCover(Set<Variable> variablesToConsider, Map<Variable, LocalEstimate> coverMap) {
+            Set<LocalEstimate> subsetCoveredBy = coverMap.keySet().stream().filter(variablesToConsider::contains)
+                    .map(coverMap::get).collect(Collectors.toSet());
+            return subsetCoveredBy.stream().map(estimate -> estimate.answerEstimate(variablesToConsider)).reduce(1L, (x, y) -> x * y);
+        }
+        // </editor-fold>
+
+        // <editor-fold desc="initialization, recursive initialization & cycle-handling">
+        public boolean mayInitialize() {
+            return initializationStatus == InitializationStatus.NOT_STARTED || initializationStatus == InitializationStatus.RESET;
+        }
+
+        private void reset() {
+            assert this.initializationStatus == InitializationStatus.COMPLETE;
+            this.initializationStatus = InitializationStatus.RESET;
+            this.inferrableEstimates = null;
+            this.fullAnswerCount = -1;
+            this.negatedsCost = -1;
+        }
+
+        private void registerTriggeredRules() {
+            resolvables().filter(this::isInferrable).map(Resolvable::asConcludable).forEachRemaining(concludable -> {
+                Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
+                iterate(unifiers.keySet()).forEachRemaining(rule -> {
+                    answerCountEstimator.registerConjunctionAndInitialize(rule.condition().conjunction());
                 });
-            }
+            });
+        }
+
+        private void initialize() {
+            if (!this.mayInitialize()) return;
+            //TODO: How does traversal handle type Variables?
+
+            initializationStatus = InitializationStatus.IN_PROGRESS;
+            // Create a baseline estimate from type information
+            if (unaryEstimateCover == null) unaryEstimateCover = computeUnaryEstimateCover(false);
+
+            if (retrievableEstimates == null) retrievableEstimates = deriveEstimatesFromRetrievables();
 
             registerTriggeredRules();
 
             if (inferrableEstimates == null) {
-                HashMap<Resolvable<?>, List<LocalEstimate>> tempInferrableEstimates = new HashMap<>();
-                iterate(resolvables()).filter(this::isInferrable).map(Resolvable::asConcludable).forEachRemaining(concludable -> {
-                    tempInferrableEstimates.put(concludable, computeEstimatesFromConcludable(concludable));
-                });
-                inferrableEstimates = tempInferrableEstimates;
-
-                // We also have to recompute the unaryCostCover now.
-                unaryCostCover = new HashMap<>();
-                // Create a baseline estimate from type information
-                List<LocalEstimate> unaryEstimates = new ArrayList<>();
-                iterate(allVariables()).forEachRemaining(v -> {
-                    unaryEstimates.add(estimateFromTypes(v.asThing(), true));
-                });
-
-                unaryEstimates.sort(Comparator.comparing(x -> x.answerEstimate(this, new HashSet<>(x.variables))));
-                for (LocalEstimate unaryEstimate : unaryEstimates) {
-                    if (!unaryCostCover.containsKey(unaryEstimate.variables.get(0))) {
-                        unaryCostCover.put(unaryEstimate.variables.get(0), new CostCover(unaryEstimate.answerEstimate(this, new HashSet<>(unaryEstimate.variables))));
-                    }
-                }
+                inferrableEstimates = deriveEstimatesFromInferrables();
+                unaryEstimateCover = computeUnaryEstimateCover(true); // recompute with inferred
             }
 
-            if (this.negatedsCost == -1) {
-                this.negatedsCost = resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
-                        .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                        .map(negatedConjunction -> {
-                            costEstimator.registerConjunction(negatedConjunction);
-                            return costEstimator.estimateAllAnswers(negatedConjunction);
-                        }).reduce(0L, Long::sum);
-            }
+            if (this.negatedsCost == -1) this.negatedsCost = computeNegatedsCost();
 
             List<LocalEstimate> allEstimates = resolvables().flatMap(resolvable -> iterate(multivarEstimate(resolvable))).toList();
-            Map<Variable, CostCover> fullCostCover = computeCostCover(allEstimates, allVariables());
-            this.fullAnswerCount = CostCover.costToCover(allVariables(), fullCostCover) + this.negatedsCost;
+            Map<Variable, LocalEstimate> fullCostCover = computeCheapestEstimateCoverForVariables(allVariables(), allEstimates);
+            this.fullAnswerCount = costOfEstimateCover(allVariables(), fullCostCover) + this.negatedsCost;
 
             // Can we prune the multiVarEstimates stored?
             // Not if we want to order-resolvables. Else, yes based on queryableVariables.
             initializationStatus = InitializationStatus.COMPLETE;
         }
+        // </editor-fold>
 
-        private List<LocalEstimate> computeEstimatesFromConcludable(Concludable concludable) {
+        // <editor-fold desc="Derive LocalEstimate objects from conjunction ">
+        private Map<Variable, LocalEstimate> computeUnaryEstimateCover(boolean considerInferrable) {
+            Map<Variable, LocalEstimate> unaryEstimateCover =new HashMap<>();
+            List<LocalEstimate> unaryEstimates = new ArrayList<>();
+            iterate(allVariables()).forEachRemaining(v -> {
+                unaryEstimates.add(estimateFromTypes(v.asThing(), considerInferrable));
+            });
+
+            unaryEstimates.sort(Comparator.comparing(x -> x.answerEstimate(new HashSet<>(x.variables))));
+            for (LocalEstimate unaryEstimate : unaryEstimates) {
+                unaryEstimateCover.putIfAbsent(unaryEstimate.variables.get(0), unaryEstimate);
+            }
+
+            return unaryEstimateCover;
+        }
+
+        private Map<Resolvable<?>, List<LocalEstimate>> deriveEstimatesFromRetrievables() {
+            Map<Resolvable<?>, List<LocalEstimate>> retrievableEstimates = new HashMap<>();
+            resolvables().filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(retrievable -> {
+                retrievableEstimates.put(retrievable, new ArrayList<>());
+                Set<Concludable> concludablesInRetrievable = ResolvableConjunction.of(retrievable.pattern()).positiveConcludables();
+                iterate(concludablesInRetrievable).forEachRemaining(concludable -> {
+                    retrievableEstimates.get(retrievable).addAll(deriveEstimatesFromConcludable(concludable));
+                });
+            });
+
+            return retrievableEstimates;
+        }
+
+        private Map<Resolvable<?>, List<LocalEstimate>> deriveEstimatesFromInferrables() {
+            Map<Resolvable<?>, List<LocalEstimate>> inferrableEstimates = new HashMap<>();
+            iterate(resolvables()).filter(this::isInferrable).map(Resolvable::asConcludable).forEachRemaining(concludable -> {
+                inferrableEstimates.put(concludable, deriveEstimatesFromConcludable(concludable));
+            });
+            return inferrableEstimates;
+        }
+
+        private List<LocalEstimate> deriveEstimatesFromConcludable(Concludable concludable) {
             if (concludable.isHas()) {
                 return list(estimatesFromHasEdges(concludable.asHas()));
             } else if (concludable.isRelation()) {
@@ -298,6 +297,32 @@ public class CostEstimator {
             } else {
                 return list();
             }
+        }
+
+        private long computeNegatedsCost() {
+            return resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
+                    .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+                    .map(negatedConjunction -> {
+                        answerCountEstimator.registerConjunctionAndInitialize(negatedConjunction);
+                        return answerCountEstimator.estimateAllAnswers(negatedConjunction);
+                    }).reduce(0L, Long::sum);
+        }
+        // </editor-fold>
+
+        // <editor-fold desc="Answer estimate computation">
+        private long estimateInferredAnswerCount(Concludable concludable, Set<Variable> variableFilter) {
+            Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
+            long inferredEstimate = 0;
+            for (Rule rule : unifiers.keySet()) {
+                for (Unifier unifier : unifiers.get(rule)) {
+                    Set<Identifier.Variable> ruleSideIds = iterate(variableFilter)
+                            .flatMap(v -> iterate(unifier.mapping().get(v.id()))).toSet();
+                    Set<Variable> ruleSideVariables = iterate(ruleSideIds).map(id -> rule.condition().conjunction().pattern().variable(id))
+                            .toSet();
+                    inferredEstimate += answerCountEstimator.estimateAnswers(rule.condition().conjunction(), ruleSideVariables);
+                }
+            }
+            return inferredEstimate;
         }
 
         private long computeInferredUnaryEstimates(ThingVariable generatedVariable) {
@@ -312,7 +337,6 @@ public class CostEstimator {
             long mostConstrainedAnswer = Long.MAX_VALUE;
             for (Concludable concludable : relevantConcludables) {
                 Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
-                AtomicLong nInferred = new AtomicLong(0L);
                 long answersGeneratedByThisResolvable = iterate(unifiers.keySet()).map(rule -> {
                     Optional<Unifier> firstUnifier = unifiers.get(rule).stream().findFirst();
                     // Increment the estimates for variables generated by the rule
@@ -327,7 +351,7 @@ public class CostEstimator {
                             answerVariables = new HashSet<>(rule.conclusion().pattern().variables());
                             answerVariables.remove(rule.conclusion().generating().get());
                         }
-                        return costEstimator.estimateAnswers(rule.condition().conjunction(), answerVariables);
+                        return answerCountEstimator.estimateAnswers(rule.condition().conjunction(), answerVariables);
 
                     } else if (rule.conclusion().isExplicitHas()) {
                         return 1L;
@@ -341,21 +365,6 @@ public class CostEstimator {
             }
             assert mostConstrainedAnswer != Long.MAX_VALUE;
             return mostConstrainedAnswer;
-        }
-
-        private long estimateInferredAnswerCount(Concludable concludable, Set<Variable> variablesOfInterest) {
-            Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
-            long inferredEstimate = 0;
-            for (Rule rule : unifiers.keySet()) {
-                for (Unifier unifier : unifiers.get(rule)) {
-                    Set<Identifier.Variable> ruleSideIds = iterate(variablesOfInterest)
-                            .flatMap(v -> iterate(unifier.mapping().get(v.id()))).toSet();
-                    Set<Variable> ruleSideVariables = iterate(ruleSideIds).map(id -> rule.condition().conjunction().pattern().variable(id))
-                            .toSet();
-                    inferredEstimate += costEstimator.estimateAnswers(rule.condition().conjunction(), ruleSideVariables);
-                }
-            }
-            return inferredEstimate;
         }
 
         private LocalEstimate estimateFromTypes(ThingVariable var, boolean considerInferrable) {
@@ -404,7 +413,9 @@ public class CostEstimator {
             return new LocalEstimate.CoPlayerEstimate(constrainedVars, relationTypeEstimate, rolePlayerEstimates, rolePlayerCounts, inferredRelationsEstimate);
 
         }
+        // </editor-fold>
 
+        // <editor-fold desc="stats">
         private long countPersistedRolePlayers(RelationConstraint.RolePlayer rolePlayer) {
             return logicMgr.graph().data().stats().thingVertexSum(rolePlayer.inferredRoleTypes());
         }
@@ -420,6 +431,7 @@ public class CostEstimator {
                             .reduce(0L, Long::sum)
             ).reduce(0L, Long::sum);
         }
+        // </editor-fold>
 
         private static abstract class LocalEstimate {
 
@@ -429,7 +441,7 @@ public class CostEstimator {
                 this.variables = variables;
             }
 
-            abstract long answerEstimate(ConjunctionAnswerCountEstimator costEstimator, Set<Variable> variablesOfInterest);
+            abstract long answerEstimate(Set<Variable> variableFilter);
 
             private static class SimpleEstimate extends LocalEstimate {
                 private final long staticEstimate;
@@ -440,7 +452,7 @@ public class CostEstimator {
                 }
 
                 @Override
-                long answerEstimate(ConjunctionAnswerCountEstimator costEstimator, Set<Variable> variablesOfInterest) {
+                long answerEstimate(Set<Variable> variableFilter) {
                     return staticEstimate;
                 }
             }
@@ -463,7 +475,7 @@ public class CostEstimator {
                 }
 
                 @Override
-                long answerEstimate(ConjunctionAnswerCountEstimator costEstimator, Set<Variable> variablesOfInterest) {
+                long answerEstimate(Set<Variable> variableFilter) {
                     long singleRelationEstimate = 1L;
                     for (TypeVariable key : rolePlayerCounts.keySet()) {
                         assert rolePlayerEstimates.containsKey(key);
@@ -480,20 +492,6 @@ public class CostEstimator {
                     for (int i = 0; i < k; i++) ans *= n - i;
                     return ans;
                 }
-            }
-        }
-
-        private static class CostCover {
-            private final long cost;
-
-            private CostCover(long cost) {
-                this.cost = cost;
-            }
-
-            private static long costToCover(Collection<Variable> subset, Map<Variable, CostCover> coverMap) {
-                Set<CostCover> subsetCoveredBy = coverMap.keySet().stream().filter(subset::contains)
-                        .map(coverMap::get).collect(Collectors.toSet());
-                return subsetCoveredBy.stream().map(cc -> cc.cost).reduce(1L, (x, y) -> x * y);
             }
         }
     }

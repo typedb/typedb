@@ -114,9 +114,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-costestimator",
-    srcs = ["planner/CostEstimatorTest.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.planner.CostEstimatorTest",
+    name = "test-answercountestimator",
+    srcs = ["planner/AnswerCountEstimatorTest.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.planner.AnswerCountEstimatorTest",
     native_libraries_deps = [
         # Internal dependencies
         "//database:database",
