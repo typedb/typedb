@@ -87,13 +87,11 @@ public class AnswerCountEstimator {
             assert initializationStack.get(initializationStack.size() - 1) == conjunction;
             initializationStack.remove(initializationStack.size() - 1);
 
-            // In cyclic paths
             if (cycleHeads.size() == 1 && cycleHeads.contains(conjunction)) {
-                // We can reset and recompute all!
+                // Reset all cyclic paths
                 for (ResolvableConjunction conjunctionToReset : toReset) {
                     estimators.get(conjunctionToReset).reset();
                 }
-                estimators.get(conjunction).initialize(); // no loop needed. This is the maximal cycle.
             }
         }
     }
@@ -179,13 +177,13 @@ public class AnswerCountEstimator {
             List<LocalEstimate> includedEstimates = iterate(includedResolvables)
                     .flatMap(resolvable -> iterate(multivarEstimate(resolvable)))
                     .toList();
-            Map<Variable, LocalEstimate> costCover = computeCheapestEstimateCoverForVariables(variableFilter, includedEstimates);
+            Map<Variable, LocalEstimate> costCover = computeGreedyEstimateCoverForVariables(variableFilter, includedEstimates);
             long ret = costOfEstimateCover(variableFilter, costCover);
             assert ret > 0;             // Flag in tests if it happens.
             return Math.max(ret, 1);    // Don't do stupid stuff in prod when it happens.
         }
 
-        private Map<Variable, LocalEstimate> computeCheapestEstimateCoverForVariables(Set<Variable> variableFilter, List<LocalEstimate> includedEstimates) {
+        private Map<Variable, LocalEstimate> computeGreedyEstimateCoverForVariables(Set<Variable> variableFilter, List<LocalEstimate> includedEstimates) {
             // Does a greedy set cover
             Map<Variable, LocalEstimate> costCover = new HashMap<>(unaryEstimateCover);
             includedEstimates.sort(Comparator.comparing(x -> x.answerEstimate(variableFilter)));
@@ -250,7 +248,7 @@ public class AnswerCountEstimator {
             if (this.negatedsCost == -1) this.negatedsCost = computeNegatedsCost();
 
             List<LocalEstimate> allEstimates = resolvables().flatMap(resolvable -> iterate(multivarEstimate(resolvable))).toList();
-            Map<Variable, LocalEstimate> fullCostCover = computeCheapestEstimateCoverForVariables(allVariables(), allEstimates);
+            Map<Variable, LocalEstimate> fullCostCover = computeGreedyEstimateCoverForVariables(allVariables(), allEstimates);
             this.fullAnswerCount = costOfEstimateCover(allVariables(), fullCostCover) + this.negatedsCost;
 
             // Can we prune the multiVarEstimates stored?
