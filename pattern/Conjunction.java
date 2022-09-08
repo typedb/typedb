@@ -118,8 +118,6 @@ public class Conjunction implements Pattern, Cloneable {
         }
     }
 
-
-
     public void bound(Map<Retrievable, Either<Label, ByteArray>> bounds) {
         variableSet.forEach(var -> {
             if (var.id().isRetrievable() && bounds.containsKey(var.id().asRetrievable())) {

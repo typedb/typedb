@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
@@ -183,22 +184,22 @@ public class Reasoner {
         return produce(producer, context.producer(), async1());
     }
 
-    public FunctionalIterator<ConceptMap.Ordered> executeTraversalSorted(Disjunction disjunction, Context.Query context,
-                                                                         Set<Identifier.Variable.Retrievable> filter,
-                                                                         Sortable.Sorting sorting) {
-        FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
-        SortedIterator.Order order = sorting.order() == TypeQLArg.Order.ASC ? ASC : SortedIterator.DESC;
-        FunctionalIterator<ConceptMap.Ordered> answers = conjs.flatMap(conj -> iteratorSorted(conj, filter, sorting.vars(), order));
-        if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
-        return answers;
-    }
-
     public FunctionalIterator<ConceptMap> executeTraversal(Disjunction disjunction, Context.Query context,
                                                            Set<Identifier.Variable.Retrievable> filter) {
         FunctionalIterator<ConceptMap> answers;
         FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
         if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter));
         else answers = produce(conjs.map(c -> producer(c, filter)).toList(), context.producer(), async1());
+        if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
+        return answers;
+    }
+
+    public FunctionalIterator<ConceptMap.Ordered> executeTraversalSorted(Disjunction disjunction, Context.Query context,
+                                                                         Set<Identifier.Variable.Retrievable> filter,
+                                                                         Sortable.Sorting sorting) {
+        FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
+        SortedIterator.Order order = sorting.order() == TypeQLArg.Order.ASC ? ASC : SortedIterator.DESC;
+        FunctionalIterator<ConceptMap.Ordered> answers = conjs.flatMap(conj -> iteratorSorted(conj, filter, sorting.vars(), order));
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
     }
@@ -228,6 +229,7 @@ public class Reasoner {
 
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction,
                                                     Set<Identifier.Variable.Retrievable> filter) {
+        if (!conjunction.isCoherent()) return Iterators.empty();
         FunctionalIterator<ConceptMap> answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
         if (conjunction.negations().isEmpty()) return answers;
         else {
