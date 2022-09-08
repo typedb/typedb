@@ -31,8 +31,14 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
@@ -78,13 +84,13 @@ public class AnswerCountEstimator {
         if (estimators.get(conjunction).mayInitialize()) {
             initializationStack.add(conjunction);
             estimators.get(conjunction).initialize();
-            assert initializationStack.get(initializationStack.size()-1) == conjunction;
-            initializationStack.remove(initializationStack.size()-1);
+            assert initializationStack.get(initializationStack.size() - 1) == conjunction;
+            initializationStack.remove(initializationStack.size() - 1);
 
             // In cyclic paths
             if (cycleHeads.size() == 1 && cycleHeads.contains(conjunction)) {
                 // We can reset and recompute all!
-                for (ResolvableConjunction conjunctionToReset: toReset) {
+                for (ResolvableConjunction conjunctionToReset : toReset) {
                     estimators.get(conjunctionToReset).reset();
                 }
                 estimators.get(conjunction).initialize(); // no loop needed. This is the maximal cycle.
@@ -94,7 +100,7 @@ public class AnswerCountEstimator {
 
     private void reportInitializationCycle(ResolvableConjunction conjunction) {
         cycleHeads.add(conjunction);
-        for (int i=initializationStack.size()-1; initializationStack.get(i) != conjunction ; i--) {
+        for (int i = initializationStack.size() - 1; initializationStack.get(i) != conjunction; i--) {
             toReset.add(initializationStack.get(i));
         }
     }
@@ -112,6 +118,7 @@ public class AnswerCountEstimator {
 
 
         private enum InitializationStatus {NOT_STARTED, RESET, IN_PROGRESS, COMPLETE}
+
         private InitializationStatus initializationStatus;
 
         public ConjunctionAnswerCountEstimator(AnswerCountEstimator answerCountEstimator, ResolvableConjunction conjunction) {
@@ -145,7 +152,7 @@ public class AnswerCountEstimator {
                     .toSet();
         }
 
-        private List<LocalEstimate> multivarEstimate(Resolvable<?> resolvable){
+        private List<LocalEstimate> multivarEstimate(Resolvable<?> resolvable) {
             assert resolvables().toSet().contains(resolvable);
             if (resolvable.isNegated()) return new ArrayList<>();
             if (retrievableEstimates.containsKey(resolvable)) return retrievableEstimates.get(resolvable);
@@ -254,7 +261,7 @@ public class AnswerCountEstimator {
 
         // <editor-fold desc="Derive LocalEstimate objects from conjunction ">
         private Map<Variable, LocalEstimate> computeUnaryEstimateCover(boolean considerInferrable) {
-            Map<Variable, LocalEstimate> unaryEstimateCover =new HashMap<>();
+            Map<Variable, LocalEstimate> unaryEstimateCover = new HashMap<>();
             List<LocalEstimate> unaryEstimates = new ArrayList<>();
             iterate(allVariables()).forEachRemaining(v -> {
                 unaryEstimates.add(estimateFromTypes(v.asThing(), considerInferrable));
@@ -371,11 +378,11 @@ public class AnswerCountEstimator {
             long estimate;
             if (var.iid().isPresent()) {
                 estimate = 1;
-            }
-            else {
+            } else {
                 estimate = countPersistedThingsMatchingType(var.asThing());
                 estimate += considerInferrable ? computeInferredUnaryEstimates(var.asThing()) : 0;
-                if (estimate == 0 && resolvablesGenerating(var.asThing()).hasNext()) estimate = 1; // When it's purely inferrable
+                if (estimate == 0 && resolvablesGenerating(var.asThing()).hasNext())
+                    estimate = 1; // When it's purely inferrable
             }
 
             return new LocalEstimate.SimpleEstimate(list(var), estimate);

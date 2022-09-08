@@ -412,7 +412,7 @@ public class AnswerCountEstimatorTest {
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic());
         {   // bringing a friend to your friends party is awkward if they arent friends with the host
-            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction( "{" +
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{" +
                     " (friendor: $host, friendee: $you) isa friendship;" +
                     " (friendor: $you, friendee: $guest) isa friendship; " +
                     " not{ (friendor: $host, friendee: $guest) isa friendship;}; " +
