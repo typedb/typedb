@@ -117,7 +117,6 @@ public class AnswerCountEstimator {
         private long fullAnswerCount;
         private long negatedsCost;
 
-
         private enum InitializationStatus {NOT_STARTED, RESET, IN_PROGRESS, COMPLETE}
 
         private InitializationStatus initializationStatus;
@@ -132,7 +131,6 @@ public class AnswerCountEstimator {
             this.initializationStatus = InitializationStatus.NOT_STARTED;
         }
 
-        // <editor-fold desc="utils">
         private FunctionalIterator<Resolvable<?>> resolvables() {
             return iterate(logicMgr.compile(conjunction));
         }
@@ -165,9 +163,7 @@ public class AnswerCountEstimator {
                 return inferrableEstimates.get(resolvable);
             }
         }
-        // </editor-fold>
 
-        // <editor-fold desc="query">
         public long estimateAllAnswers() {
             assert this.fullAnswerCount >= 0;
             return this.fullAnswerCount;
@@ -208,9 +204,7 @@ public class AnswerCountEstimator {
                     .map(coverMap::get).collect(Collectors.toSet());
             return subsetCoveredBy.stream().map(estimate -> estimate.answerEstimate(variablesToConsider)).reduce(1L, (x, y) -> x * y);
         }
-        // </editor-fold>
 
-        // <editor-fold desc="initialization, recursive initialization & cycle-handling">
         public boolean mayInitialize() {
             return initializationStatus == InitializationStatus.NOT_STARTED || initializationStatus == InitializationStatus.RESET;
         }
@@ -260,10 +254,6 @@ public class AnswerCountEstimator {
             initializationStatus = InitializationStatus.COMPLETE;
         }
 
-
-        // </editor-fold>
-
-        // <editor-fold desc="Derive LocalEstimate objects from conjunction ">
         private Map<Variable, LocalEstimate> computeUnaryEstimateCover(boolean considerInferrable) {
             Set<Concludable> emptySet = new HashSet<>();
 
@@ -323,7 +313,6 @@ public class AnswerCountEstimator {
                         return answerCountEstimator.estimateAllAnswers(negatedConjunction);
                     }).reduce(0L, Long::sum);
         }
-        // </editor-fold>
 
         private static abstract class LocalEstimate {
 
@@ -394,7 +383,7 @@ public class AnswerCountEstimator {
         public AnswerCountModel(AnswerCountEstimator answerCountEstimator) {
             this.answerCountEstimator = answerCountEstimator;
         }
-        // <editor-fold desc="Answer estimate computation">
+
         private long estimateInferredAnswerCount(Concludable concludable, Set<Variable> variableFilter) {
             Map<Rule, Set<Unifier>> unifiers = answerCountEstimator.logicMgr.applicableRules(concludable);
             long inferredEstimate = 0;
@@ -494,9 +483,7 @@ public class AnswerCountEstimator {
             return new ConjunctionAnswerCountEstimator.LocalEstimate.CoPlayerEstimate(constrainedVars, relationTypeEstimate, rolePlayerEstimates, rolePlayerCounts, inferredRelationsEstimate);
 
         }
-        // </editor-fold>
 
-        // <editor-fold desc="stats">
         private long countPersistedRolePlayers(RelationConstraint.RolePlayer rolePlayer) {
             return answerCountEstimator.logicMgr.graph().data().stats().thingVertexSum(rolePlayer.inferredRoleTypes());
         }
@@ -512,7 +499,6 @@ public class AnswerCountEstimator {
                             .reduce(0L, Long::sum)
             ).reduce(0L, Long::sum);
         }
-        // </editor-fold>
 
     }
 }
