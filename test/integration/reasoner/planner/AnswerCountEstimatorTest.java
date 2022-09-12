@@ -401,7 +401,7 @@ public class AnswerCountEstimatorTest {
         {   // With just jealous
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $f (friendor: $p1, friendee: $p2) isa friendship; $j (who: $p1, whom: $p2) isa jealous;  }", transaction.logic()));
             Set<Resolvable<?>> resolvables = transaction.logic().compile(conjunction);
-            Set<Resolvable<?>> justJealous = resolvables.stream().filter(resolvable -> resolvable.isConcludable()).collect(Collectors.toSet());
+            Set<Resolvable<?>> justJealous = resolvables.stream().filter(Resolvable::isConcludable).collect(Collectors.toSet());
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2")), justJealous);
             assertEquals(25L, answers);
         }
