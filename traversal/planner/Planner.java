@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.procedure.PermutationProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
@@ -28,19 +29,19 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public interface Planner {
 
-    static Planner create(Structure structure) {
-        List<Structure> retrievedStructures = retrievedStructures(structure.asGraphs());
-        if (retrievedStructures.size() == 1) return ConnectedPlanner.create(retrievedStructures.get(0));
-        else return MultiPlanner.create(retrievedStructures);
+    static Planner create(Structure structure, Modifiers modifiers) {
+        List<Structure> retrievedStructures = splitStructure(structure, modifiers);
+        if (retrievedStructures.size() == 1) return ConnectedPlanner.create(retrievedStructures.get(0), modifiers);
+        else return MultiPlanner.create(retrievedStructures, modifiers);
     }
 
     /**
-     * Filter out structures that are not retrievable, such as disconnected type vertices
-     * TODO: We can further improve this if we have access to the filter as well
+     * Split the structure into subgraphs, while maintaining semantics required for sorting
+     * Additionally, optimise away subgraphs that are not included in the filter
      */
-    static List<Structure> retrievedStructures(List<Structure> structures) {
-        return iterate(structures).filter(s ->
-                iterate(s.vertices()).anyMatch(v -> v.id().isRetrievable())
+    static List<Structure> splitStructure(Structure structure, Modifiers modifiers) {
+        return iterate(structure.splitConnected(modifiers.sorting().variables())).filter(s ->
+                iterate(s.vertices()).anyMatch(v -> v.id().isRetrievable() && modifiers.filter().variables().contains(v.id().asVariable().asRetrievable()))
         ).toList();
     }
 

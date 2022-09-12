@@ -49,6 +49,7 @@ import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 
 import java.util.Comparator;
@@ -64,7 +65,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSA
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_SUB_PATTERN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
-import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
 
@@ -176,14 +176,14 @@ public class TypeInference {
             this.rolePlayerToInference = new HashMap<>();
             this.nextGeneratedID = largestAnonymousVar(conjunction) + 1;
             conjunction.variables().forEach(this::register);
-            traversal.filter(iterate(inferenceToOriginal.keySet())
+            traversal.filter(Modifiers.Filter.create(iterate(inferenceToOriginal.keySet())
                     .link(iterate(rolePlayerToInference.values()).map(var -> var.id().asRetrievable())).toSet()
-            );
+            ));
         }
 
         private FunctionalIterator<Map<Identifier.Variable.Name, Label>> typePermutations(Set<Identifier.Variable.Name> filter) {
-            Set<Retrievable> inferenceFilter = iterate(filter).map(id -> originalToInference.get(id).id().asRetrievable()).toSet();
-            traversal.filter().retainAll(inferenceFilter);
+            Modifiers.Filter inferenceFilter = Modifiers.Filter.create(iterate(filter).map(id -> originalToInference.get(id).id().asRetrievable()).toSet());
+            traversal.modifiers().filter(inferenceFilter);
             return traversalEng.iterator(traversal).map(vertexMap -> {
                 Map<Retrievable.Name, Label> labels = new HashMap<>();
                 vertexMap.forEach((id, vertex) -> {

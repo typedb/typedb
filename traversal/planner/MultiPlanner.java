@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.procedure.PermutationProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
@@ -47,8 +48,8 @@ public class MultiPlanner implements Planner {
         if (iterate(planners).allMatch(Planner::isOptimal)) createProcedure();
     }
 
-    static MultiPlanner create(List<Structure> structures) {
-        return new MultiPlanner(iterate(structures).map(ConnectedPlanner::create).toList());
+    static MultiPlanner create(List<Structure> structures, Modifiers modifiers) {
+        return new MultiPlanner(iterate(structures).map(structure -> ConnectedPlanner.create(structure, modifiers)).toList());
     }
 
     @Override

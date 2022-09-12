@@ -47,7 +47,7 @@ public class RelationTraversal extends Traversal {
     }
 
     @Override
-    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, SortedIterator.Order order) {
+    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
         return new RelationIterator(this, graphMgr);
     }
 

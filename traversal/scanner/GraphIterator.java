@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
@@ -65,7 +66,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private final GraphManager graphMgr;
     private final GraphProcedure procedure;
     private final Traversal.Parameters params;
-    private final Set<Identifier.Variable.Retrievable> filter;
+    private final Modifiers modifiers;
     private final Map<Identifier.Variable, Scope> scopes;
     private final Map<ProcedureVertex<?, ?>, VertexTraverser> vertexTraversers;
     private final Vertex<?, ?> initial;
@@ -79,12 +80,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private enum IteratorState {INIT, EMPTY, FETCHED, COMPLETED}
 
     public GraphIterator(GraphManager graphMgr, Vertex<?, ?> initial, GraphProcedure procedure,
-                         Traversal.Parameters params, Set<Identifier.Variable.Retrievable> filter) {
+                         Traversal.Parameters params, Modifiers modifiers) {
         this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.params = params;
-        this.filter = filter;
         this.initial = initial;
+        this.modifiers = modifiers;
         this.toTraverse = new TreeSet<>(Comparator.comparing(ProcedureVertex::order));
         this.toRevisit = new TreeSet<>(Comparator.comparing(ProcedureVertex::order));
         this.scopes = new HashMap<>();
@@ -149,7 +150,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private VertexMap toVertexMap() {
         Map<Identifier.Variable.Retrievable, Vertex<?, ?>> answer = new HashMap<>();
         for (ProcedureVertex<?, ?> procedureVertex : procedure.vertices()) {
-            if (procedureVertex.id().isRetrievable() && filter.contains(procedureVertex.id().asVariable().asRetrievable())) {
+            if (procedureVertex.id().isRetrievable() && modifiers.filter().variables().contains(procedureVertex.id().asVariable().asRetrievable())) {
                 answer.put(procedureVertex.id().asVariable().asRetrievable(), vertexTraversers.get(procedureVertex).vertex());
             }
         }
@@ -360,9 +361,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromStart() {
             assert procedureVertex.isStartVertex();
             if (procedureVertex.id().isScoped()) {
-                return applyLocalScope((Forwardable<Vertex<?, ?>, Order.Asc>) procedureVertex.iterator(graphMgr, params));
+                return applyLocalScope((Forwardable<Vertex<?, ?>, Order.Asc>) procedureVertex.iterator(graphMgr, params, modifiers.sorting()));
             } else {
-                return (Forwardable<Vertex<?, ?>, Order.Asc>) procedureVertex.iterator(graphMgr, params);
+                return (Forwardable<Vertex<?, ?>, Order.Asc>) procedureVertex.iterator(graphMgr, params, modifiers.sorting());
             }
         }
 

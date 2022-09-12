@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.optimiser.Optimiser;
 import com.vaticle.typedb.core.common.optimiser.OptimiserConstraint;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
@@ -78,8 +79,10 @@ public class GraphPlanner implements ConnectedPlanner {
 
     private volatile double totalCostLastRecorded;
     private double totalCost;
+    private final Modifiers modifiers;
 
-    private GraphPlanner() {
+    private GraphPlanner(Modifiers modifiers) {
+        this.modifiers = modifiers;
         optimiser = new Optimiser();
         vertices = new HashMap<>();
         edges = new HashSet<>();
@@ -91,8 +94,8 @@ public class GraphPlanner implements ConnectedPlanner {
         snapshot = -1L;
     }
 
-    static GraphPlanner create(Structure structure) {
-        GraphPlanner planner = new GraphPlanner();
+    static GraphPlanner create(Structure structure, Modifiers modifiers) {
+        GraphPlanner planner = new GraphPlanner(modifiers);
         Set<StructureVertex<?>> registeredVertices = new HashSet<>();
         Set<StructureEdge<?, ?>> registeredEdges = new HashSet<>();
         structure.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
@@ -178,6 +181,13 @@ public class GraphPlanner implements ConnectedPlanner {
             for (PlannerVertex<?> vertex : vertices.values()) {
                 conOneVertexAtOrderI.setCoefficient(vertex.varOrderAssignment[i], 1);
             }
+        }
+        for (int i = 0; i < modifiers.sorting().variables().size(); i++) {
+            Identifier.Variable.Retrievable sortVariable = modifiers.sorting().variables().get(i);
+            PlannerVertex<?> vertex = vertices.get(sortVariable);
+            assert vertex != null;
+            OptimiserConstraint conSetVertexAtOrderI = optimiser.constraint(1, 1, conPrefix + "set_vertex_at_order_" + i);
+            conSetVertexAtOrderI.setCoefficient(vertex.varOrderAssignment[i], 1);
         }
         vertices.values().forEach(PlannerVertex::createOptimiserConstraints);
         edges.forEach(PlannerEdge::createOptimiserConstraints);

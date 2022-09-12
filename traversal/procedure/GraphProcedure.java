@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.planner.ConnectedPlanner;
@@ -106,49 +107,41 @@ public class GraphProcedure implements PermutationProcedure {
         return vertices.length;
     }
 
-    private void assertWithinFilterBounds(Set<Identifier.Variable.Retrievable> filter) {
-        assert iterate(vertices).anyMatch(vertex ->
-                vertex.id().isRetrievable() && filter.contains(vertex.id().asVariable().asRetrievable())
-        );
-    }
-
     @Override
     public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                                  Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
+                                                  Modifiers modifiers, int parallelisation) {
         if (LOG.isTraceEnabled()) {
             LOG.trace(params.toString());
             LOG.trace(this.toString());
         }
-        assertWithinFilterBounds(filter);
-        if (initialVertex().id().isRetrievable() && filter.contains(initialVertex().id().asVariable().asRetrievable())) {
-            return async(initialVertex().iterator(graphMgr, params).map(v ->
-                    new GraphIterator(graphMgr, v, this, params, filter).distinct()
+        if (initialVertex().id().isRetrievable() && modifiers.filter().variables().contains(initialVertex().id().asVariable().asRetrievable())) {
+            return async(initialVertex().iterator(graphMgr, params, modifiers.sorting()).map(v ->
+                    new GraphIterator(graphMgr, v, this, params, modifiers).distinct()
             ), parallelisation);
         } else {
             // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-            return async(initialVertex().iterator(graphMgr, params).map(v ->
-                    new GraphIterator(graphMgr, v, this, params, filter)
+            return async(initialVertex().iterator(graphMgr, params, modifiers.sorting()).map(v ->
+                    new GraphIterator(graphMgr, v, this, params, modifiers)
             ), parallelisation).distinct();
         }
     }
 
     @Override
     public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                  Set<Identifier.Variable.Retrievable> filter) {
+                                                  Modifiers modifiers) {
         if (LOG.isTraceEnabled()) {
             LOG.trace(params.toString());
             LOG.trace(this.toString());
         }
-        assertWithinFilterBounds(filter);
-        if (initialVertex().id().isRetrievable() && filter.contains(initialVertex().id().asVariable().asRetrievable())) {
-            return initialVertex().iterator(graphMgr, params).flatMap(
+        if (initialVertex().id().isRetrievable() && modifiers.filter().variables().contains(initialVertex().id().asVariable().asRetrievable())) {
+            return initialVertex().iterator(graphMgr, params, modifiers.sorting()).flatMap(
                     // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                    sv -> new GraphIterator(graphMgr, sv, this, params, filter).distinct()
+                    sv -> new GraphIterator(graphMgr, sv, this, params, modifiers).distinct()
             );
         } else {
             // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-            return initialVertex().iterator(graphMgr, params).flatMap(
-                    sv -> new GraphIterator(graphMgr, sv, this, params, filter)
+            return initialVertex().iterator(graphMgr, params, modifiers.sorting()).flatMap(
+                    sv -> new GraphIterator(graphMgr, sv, this, params, modifiers)
             ).distinct();
         }
     }

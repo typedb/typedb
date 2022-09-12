@@ -26,11 +26,11 @@ import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -104,9 +104,14 @@ public class ConceptMap implements Answer {
         concepts.forEach(consumer);
     }
 
-    public ConceptMap filter(Set<? extends Retrievable> vars) {
-        return new ConceptMap(filteredMap(concepts, vars)); // TODO this should include explainables?
+    public ConceptMap filter(Modifiers.Filter filter) {
+        return filter(filter.variables());
     }
+
+    public ConceptMap filter(Set<Identifier.Variable.Retrievable> filter) {
+        return new ConceptMap(filteredMap(concepts, filter)); // TODO this should include explainables?
+    }
+
 
     static Map<Retrievable, ? extends Concept> filteredMap(Map<Retrievable, ? extends Concept> concepts, Set<? extends Retrievable> vars) {
         return concepts.entrySet().stream()
@@ -159,8 +164,13 @@ public class ConceptMap implements Answer {
         }
 
         @Override
-        public ConceptMap.Ordered filter(Set<? extends Retrievable> vars) {
-            return new Ordered(filteredMap(concepts(), vars), conceptsComparator); // TODO this should include explainables?
+        public ConceptMap.Ordered filter(Modifiers.Filter filter) {
+            return filter(filter.variables());
+        }
+
+        @Override
+        public ConceptMap.Ordered filter(Set<Retrievable> filter) {
+            return new Ordered(filteredMap(concepts(), filter), conceptsComparator); // TODO this should include explainables?
         }
 
         @Override
@@ -186,20 +196,28 @@ public class ConceptMap implements Answer {
 
         public static class Comparator implements java.util.Comparator<ConceptMap> {
 
-            private final List<? extends Retrievable> sortVars;
-            private final boolean isAscending;
+            private final Modifiers.Sorting sorting;
             private final java.util.Comparator<ConceptMap> comparator;
 
-            public Comparator(List<? extends Retrievable> sortVars, boolean isAscending, java.util.Comparator<ConceptMap> comparator) {
-                this.sortVars = sortVars;
-                this.isAscending = isAscending;
+            public Comparator(Modifiers.Sorting sorting, java.util.Comparator<ConceptMap> comparator) {
+                this.sorting = sorting;
                 this.comparator = comparator;
             }
 
-            public static Comparator create(List<? extends Retrievable> sortVars, boolean isAscending) {
-                assert !sortVars.isEmpty();
-                Optional<java.util.Comparator<ConceptMap>> comparator = sortVars.stream()
-                        .map(var -> java.util.Comparator.comparing((ConceptMap conceptMap) -> conceptMap.get(var), (concept1, concept2) -> {
+            public static Comparator create(Modifiers.Sorting sorting){
+                assert !sorting.variables().isEmpty();
+                Optional<java.util.Comparator<ConceptMap>> comparator = sorting.variables().stream()
+                        .map(var -> {
+                            java.util.Comparator<ConceptMap> variableComparator = variableComparator(var.asRetrievable());
+                            // TODO: sort order per-variable
+                            return sorting.isAscending(var) ? variableComparator : variableComparator.reversed();
+                        }).reduce(java.util.Comparator::thenComparing);
+                return new Comparator(sorting, comparator.get());
+            }
+
+            private static java.util.Comparator<ConceptMap> variableComparator(Retrievable var) {
+                return java.util.Comparator.comparing(
+                        (ConceptMap conceptMap) -> conceptMap.get(var), (concept1, concept2) -> {
                             if (concept1.isAttribute() && concept2.isAttribute()) {
                                 Attribute att1 = concept1.asAttribute();
                                 Attribute att2 = concept2.asAttribute();
@@ -223,10 +241,9 @@ public class ConceptMap implements Answer {
                             } else if (concept1.isType() && concept2.isType()) {
                                 return concept1.asType().compareTo(concept2.asType());
                             } else {
-                                throw TypeDBException.of(ILLEGAL_STATE); // TODO
+                                throw TypeDBException.of(ILLEGAL_STATE); // TODO: better exception
                             }
-                        })).reduce(java.util.Comparator::thenComparing);
-                return new Comparator(sortVars, isAscending, isAscending ? comparator.get() : comparator.get().reversed());
+                        });
             }
 
             @Override
@@ -239,12 +256,12 @@ public class ConceptMap implements Answer {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Comparator that = (Comparator) o;
-                return sortVars.equals(that.sortVars) && isAscending == that.isAscending;
+                return sorting.equals(that.sorting);
             }
 
             @Override
             public int hashCode() {
-                return Objects.hash(sortVars, isAscending);
+                return Objects.hash(sorting);
             }
         }
     }

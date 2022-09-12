@@ -33,6 +33,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.list;
+
 public class Structure {
 
     // TODO: create vertex properties first, then the vertex itself, then edges
@@ -41,7 +45,6 @@ public class Structure {
     final Map<Identifier.Variable, TraversalVertex.Properties> properties;
     private final Map<Identifier, StructureVertex<?>> vertices;
     private final Set<StructureEdge<?, ?>> edges;
-    private List<Structure> structures;
 
     public Structure() {
         vertices = new HashMap<>();
@@ -107,24 +110,36 @@ public class Structure {
             edge.to().in(edge);
         }
     }
-    public List<Structure> asGraphs() {
-        if (structures == null) {
-            structures = new ArrayList<>();
-            Set<StructureVertex<?>> verticesToVisit = new HashSet<>(this.vertices.values());
-            Set<StructureEdge<?, ?>> edgesToVisit = new HashSet<>(this.edges);
-            while (!verticesToVisit.isEmpty()) {
-                Structure newStructure = new Structure();
-                splitGraph(verticesToVisit.iterator().next(), newStructure, verticesToVisit, edgesToVisit);
-                if (newStructure.vertices().size() > 1 || newStructure.vertices().iterator().next().id().isRetrievable()) {
-                    structures.add(newStructure);
-                }
+
+    public List<Structure> splitConnected() {
+        return splitConnected(emptyList());
+    }
+
+    public List<Structure> splitConnected(List<? extends Identifier> forceConnect) {
+        List<Structure> structures = new ArrayList<>();
+        Set<? extends StructureVertex<?>> verticesToConnect = iterate(forceConnect).map(vertices::get).toSet();
+        Set<StructureVertex<?>> verticesToVisit = new HashSet<>(this.vertices.values());
+        Set<StructureEdge<?, ?>> edgesToVisit = new HashSet<>(this.edges);
+        Structure structure;
+        if (!forceConnect.isEmpty()) {
+            structure = new Structure();
+            while (!verticesToConnect.isEmpty()) {
+                StructureVertex<?> vertex = verticesToConnect.iterator().next();
+                splitConnectedTo(vertex, structure, verticesToVisit, edgesToVisit);
+                verticesToConnect.remove(vertex);
             }
+            structures.add(structure);
+        }
+        while (!verticesToVisit.isEmpty()) {
+            structure = new Structure();
+            splitConnectedTo(verticesToVisit.iterator().next(), structure, verticesToVisit, edgesToVisit);
+            structures.add(structure);
         }
         return structures;
     }
 
-    private void splitGraph(StructureVertex<?> vertex, Structure newStructure,
-                            Set<StructureVertex<?>> verticesToVisit, Set<StructureEdge<?, ?>> edgesToVisit) {
+    private void splitConnectedTo(StructureVertex<?> vertex, Structure newStructure,
+                                  Set<StructureVertex<?>> verticesToVisit, Set<StructureEdge<?, ?>> edgesToVisit) {
         if (!verticesToVisit.contains(vertex)) return;
 
         verticesToVisit.remove(vertex);
@@ -154,7 +169,7 @@ public class Structure {
                 newStructure.edges.add(loop);
             }
         });
-        adjacents.forEach(v -> splitGraph(v, newStructure, verticesToVisit, edgesToVisit));
+        adjacents.forEach(v -> splitConnectedTo(v, newStructure, verticesToVisit, edgesToVisit));
     }
 
     @Override

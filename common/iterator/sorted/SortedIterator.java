@@ -49,6 +49,10 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
             return orderer().compare(last, next) <= 0;
         }
 
+        public boolean isAscending() { return false; }
+
+        public boolean isDescending() { return false; }
+
         public static class Asc extends Order {
 
             private static final Orderer orderer = new Orderer() {
@@ -71,6 +75,11 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
             @Override
             Orderer orderer() {
                 return orderer;
+            }
+
+            @Override
+            public boolean isAscending() {
+                return true;
             }
         }
 
@@ -97,6 +106,11 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
             @Override
             Orderer orderer() {
                 return orderer;
+            }
+
+            @Override
+            public boolean isDescending() {
+                return true;
             }
         }
     }

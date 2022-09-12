@@ -21,11 +21,11 @@ package com.vaticle.typedb.core.traversal;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.structure.Structure;
@@ -40,7 +40,6 @@ import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
@@ -50,11 +49,13 @@ import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 public abstract class Traversal {
 
     final Parameters parameters;
+    final Modifiers modifiers;
     final Structure structure;
 
     Traversal() {
         structure = new Structure();
         parameters = new Parameters();
+        modifiers = new Modifiers();
     }
 
     public Structure structure() {
@@ -65,23 +66,23 @@ public abstract class Traversal {
         return parameters;
     }
 
-    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
-        return permutationIterator(graphMgr, ASC);
+    public Modifiers modifiers() {
+        return modifiers;
     }
 
-    abstract FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, SortedIterator.Order order);
+    abstract FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr);
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Traversal that = (Traversal) o;
-        return this.structure.equals(that.structure) && this.parameters.equals(that.parameters);
+        return this.structure.equals(that.structure) && this.parameters.equals(that.parameters) && this.modifiers.equals(that.modifiers);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.structure, this.parameters);
+        return Objects.hash(this.structure, this.parameters, this.modifiers);
     }
 
     public static class Parameters {

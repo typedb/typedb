@@ -24,20 +24,19 @@ import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
-import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 
-import java.util.Set;
 import java.util.function.Supplier;
 
 public class RootDisjunctionController
         extends DisjunctionController<RootDisjunctionController.Processor, RootDisjunctionController> {
 
-    private final Set<Identifier.Variable.Retrievable> filter;
+    private final Modifiers.Filter filter;
     private final boolean explain;
     private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
     RootDisjunctionController(Driver<RootDisjunctionController> driver, Disjunction disjunction,
-                              Set<Identifier.Variable.Retrievable> filter, boolean explain,
+                              Modifiers.Filter filter, boolean explain,
                               Context context, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         super(driver, disjunction, context);
         this.filter = filter;
@@ -68,14 +67,14 @@ public class RootDisjunctionController
 
     protected static class Processor extends DisjunctionController.Processor<Processor> {
 
-        private final Set<Identifier.Variable.Retrievable> filter;
+        private final Modifiers.Filter filter;
         private final boolean explain;
         private final ReasonerConsumer<ConceptMap> reasonerConsumer;
         private RootSink<ConceptMap> rootSink;
 
         private Processor(Driver<Processor> driver, Driver<RootDisjunctionController> controller,
                           Context context, Disjunction disjunction, ConceptMap bounds,
-                          Set<Identifier.Variable.Retrievable> filter, boolean explain,
+                          Modifiers.Filter filter, boolean explain,
                           ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, context, disjunction, bounds, debugName);
             this.filter = filter;

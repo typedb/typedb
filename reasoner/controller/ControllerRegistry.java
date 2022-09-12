@@ -41,6 +41,7 @@ import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,7 +143,7 @@ public class ControllerRegistry {
         return controller;
     }
 
-    public void createRootConjunction(Conjunction conjunction, Set<Variable.Retrievable> filter,
+    public void createRootConjunction(Conjunction conjunction, Modifiers.Filter filter,
                                       boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         Function<Driver<RootConjunctionController>, RootConjunctionController> actorFn = driver ->
                 new RootConjunctionController(driver, conjunction, filter, explain, controllerContext, reasonerConsumer);
@@ -150,7 +151,7 @@ public class ControllerRegistry {
         createRootController(reasonerConsumer, actorFn);
     }
 
-    public void createRootDisjunction(Disjunction disjunction, Set<Variable.Retrievable> filter,
+    public void createRootDisjunction(Disjunction disjunction, Modifiers.Filter filter,
                                       boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         Function<Driver<RootDisjunctionController>, RootDisjunctionController> actorFn =
                 driver -> new RootDisjunctionController(driver, disjunction, filter, explain, controllerContext, reasonerConsumer);
@@ -220,7 +221,7 @@ public class ControllerRegistry {
         Function<Driver<RetrievableController>, RetrievableController> actorFn =
                 driver -> new RetrievableController(driver, retrievable, controllerContext);
         LOG.debug("Create RetrievableController: '{}'", retrievable.pattern());
-        return ControllerView.retrievable(createController(actorFn), retrievable.retrieves());
+        return ControllerView.retrievable(createController(actorFn), Modifiers.Filter.create(retrievable.retrieves()));
     }
 
     ControllerView.FilteredNegation createNegation(Negated negated, Conjunction conjunction) {
@@ -230,11 +231,11 @@ public class ControllerRegistry {
         return ControllerView.negation(createController(actorFn), filter(conjunction, negated));
     }
 
-    private static Set<Variable.Retrievable> filter(Conjunction scope, Negated inner) {
-        return scope.variables().stream()
+    private static Modifiers.Filter filter(Conjunction scope, Negated inner) {
+        return Modifiers.Filter.create(scope.variables().stream()
                 .filter(var -> var.id().isRetrievable() && inner.retrieves().contains(var.id().asRetrievable()))
                 .map(var -> var.id().asRetrievable())
-                .collect(Collectors.toSet());
+                .collect(Collectors.toSet()));
     }
 
     Driver<ConclusionController.Match> getOrCreateMatchConclusion(Rule.Conclusion conclusion) {
@@ -281,11 +282,11 @@ public class ControllerRegistry {
             return new MappedConcludable(controller, mapping);
         }
 
-        private static FilteredNegation negation(Driver<NegationController> controller, Set<Variable.Retrievable> filter) {
+        private static FilteredNegation negation(Driver<NegationController> controller, Modifiers.Filter filter) {
             return new FilteredNegation(controller, filter);
         }
 
-        private static FilteredRetrievable retrievable(Driver<RetrievableController> controller, Set<Variable.Retrievable> filter) {
+        private static FilteredRetrievable retrievable(Driver<RetrievableController> controller, Modifiers.Filter filter) {
             return new FilteredRetrievable(controller, filter);
         }
 
@@ -313,14 +314,14 @@ public class ControllerRegistry {
 
         public static class FilteredNegation extends ControllerView {
             private final Driver<NegationController> controller;
-            private final Set<Variable.Retrievable> filter;
+            private final Modifiers.Filter filter;
 
-            private FilteredNegation(Driver<NegationController> controller, Set<Variable.Retrievable> filter) {
+            private FilteredNegation(Driver<NegationController> controller, Modifiers.Filter filter) {
                 this.controller = controller;
                 this.filter = filter;
             }
 
-            public Set<Variable.Retrievable> filter() {
+            public Modifiers.Filter filter() {
                 return filter;
             }
 
@@ -332,14 +333,14 @@ public class ControllerRegistry {
 
         public static class FilteredRetrievable extends ControllerView {
             private final Driver<RetrievableController> controller;
-            private final Set<Variable.Retrievable> filter;
+            private final Modifiers.Filter filter;
 
-            private FilteredRetrievable(Driver<RetrievableController> controller, Set<Variable.Retrievable> filter) {
+            private FilteredRetrievable(Driver<RetrievableController> controller, Modifiers.Filter filter) {
                 this.controller = controller;
                 this.filter = filter;
             }
 
-            public Set<Variable.Retrievable> filter() {
+            public Modifiers.Filter filter() {
                 return filter;
             }
 

@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
@@ -111,14 +112,16 @@ public class TraversalTest {
             proc.backwardIsa(type, x, true);
 
             Traversal.Parameters params = new Traversal.Parameters();
+            Modifiers modifiers = new Modifiers();
 
             Set<Identifier.Variable.Retrievable> filter = set(
                     x.id().asVariable().asRetrievable(),
                     type.id().asVariable().asRetrievable()
             );
+            modifiers.filter(Modifiers.Filter.create(filter));
 
             GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, modifiers);
             assertEquals(3, vertices.count());
         }
     }
@@ -176,6 +179,7 @@ public class TraversalTest {
             proc.forwardRolePlayer(_1, r, 0, set(Label.of("reply", "reply-of")));
 
             Traversal.Parameters params = new Traversal.Parameters();
+            Modifiers modifiers = new Modifiers();
 
             Set<Identifier.Variable.Retrievable> filter = set(
                     r.id().asVariable().asRetrievable(),
@@ -183,9 +187,10 @@ public class TraversalTest {
                     d1.id().asVariable().asRetrievable(),
                     d2.id().asVariable().asRetrievable()
             );
+            modifiers.filter(Modifiers.Filter.create(filter));
 
             GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, modifiers);
             assertEquals(10, vertices.count());
         }
     }
@@ -243,6 +248,7 @@ public class TraversalTest {
             proc.forwardPredicate(d1, d2, Predicate.Variable.of(TypeQLToken.Predicate.Equality.LT));
 
             Traversal.Parameters params = new Traversal.Parameters();
+            Modifiers modifiers = new Modifiers();
 
             Set<Identifier.Variable.Retrievable> filter = set(
                     r.id().asVariable().asRetrievable(),
@@ -250,9 +256,10 @@ public class TraversalTest {
                     d1.id().asVariable().asRetrievable(),
                     d2.id().asVariable().asRetrievable()
             );
+            modifiers.filter(Modifiers.Filter.create(filter));
 
             GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, modifiers);
             assertEquals(10, vertices.count());
         }
     }
@@ -425,6 +432,7 @@ public class TraversalTest {
             proc.forwardHas(refl, r1);
             proc.forwardHas(f1, r2);
 
+            Modifiers modifiers = new Modifiers();
             Set<Identifier.Variable.Retrievable> filter = set(
                     n.id().asVariable().asRetrievable(),
                     x.id().asVariable().asRetrievable(),
@@ -436,9 +444,10 @@ public class TraversalTest {
                     _0.id().asVariable().asRetrievable(),
                     _1.id().asVariable().asRetrievable()
             );
+            modifiers.filter(Modifiers.Filter.create(filter));
 
             GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, modifiers);
             vertices.next();
         }
         session.close();
