@@ -216,20 +216,6 @@ docker_container_image(
     visibility = ["//test:__subpackages__"],
 )
 
-"""
-docker_container_bundle(
-    name = "assemble-docker-bundle",
-    images = {
-        "{}/{}/{}:{{version}}".format(
-            deployment_docker['docker.release'], deployment_docker['docker.organisation'], deployment_docker['docker.repository']
-        ): ":assemble-docker",
-        "{}/{}/{}:latest".format(
-            deployment_docker['docker.release'], deployment_docker['docker.organisation'], deployment_docker['docker.repository']
-        ): ":assemble-docker",
-    }
-)
-"""
-
 docker_container_push(
     name = "deploy-docker-latest",
     image = ":assemble-docker",
