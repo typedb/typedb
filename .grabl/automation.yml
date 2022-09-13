@@ -114,18 +114,12 @@ build:
         bazel test //test/assembly:assembly --test_output=streamed
     test-assembly-docker:
       image: vaticle-ubuntu-21.04
-      #filter:
-      #  owner: vaticle
-      #  branch: master
+      filter:
+        owner: vaticle
+        branch: master
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable, test-behaviour-reasoner]
       command: |
         bazel test //test/assembly:docker --test_output=streamed
-    test-deploy-docker:
-      image: vaticle-ubuntu-21.04
-      command: |
-        docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
-        bazel run //:deploy-docker-latest
-        bazel run //:deploy-docker-versioned
     deploy-artifact-snapshot:
       image: vaticle-ubuntu-21.04
       dependencies: [test-assembly-linux-targz]

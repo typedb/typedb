@@ -18,7 +18,7 @@
 deployment = {
   'docker.release': 'index.docker.io',
   'docker.organisation': 'vaticle',
-  'docker.repository': 'cloud-dev',
+  'docker.repository': 'typedb',
   'github.organisation': 'vaticle',
   'github.repository': 'typedb'
 }
