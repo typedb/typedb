@@ -220,7 +220,7 @@ docker_container_image(
 docker_container_bundle(
     name = "assemble-docker-bundle",
     images = {
-        "{}/{}/{}:{{DOCKER_VERSION}}".format(
+        "{}/{}/{}:123".format(
             deployment_docker['docker.release'], deployment_docker['docker.organisation'], deployment_docker['docker.repository']
         ): ":assemble-docker",
         "{}/{}/{}:latest".format(
