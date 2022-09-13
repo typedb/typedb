@@ -424,7 +424,6 @@ public class AnswerCountEstimator {
         }
 
         private ConjunctionAnswerCountEstimator.LocalEstimate estimatesFromHasEdges(Concludable.Has concludableHas) {
-
             long estimate = countPersistedHasEdges(concludableHas.asHas().owner().inferredTypes(), concludableHas.asHas().attribute().inferredTypes()) +
                     estimateInferredAnswerCount(concludableHas, set(concludableHas.asHas().owner(), concludableHas.asHas().attribute()));
 
