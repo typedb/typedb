@@ -26,9 +26,8 @@ load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
-load("@io_bazel_rules_docker//container:bundle.bzl", docker_container_bundle = "container_bundle")
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
-load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
+load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
 
 exports_files(
     ["VERSION", "deployment.bzl", "RELEASE_TEMPLATE.md", "LICENSE", "README.md"],
@@ -217,10 +216,11 @@ docker_container_image(
     visibility = ["//test:__subpackages__"],
 )
 
+"""
 docker_container_bundle(
     name = "assemble-docker-bundle",
     images = {
-        "{}/{}/{}:123".format(
+        "{}/{}/{}:{{version}}".format(
             deployment_docker['docker.release'], deployment_docker['docker.organisation'], deployment_docker['docker.repository']
         ): ":assemble-docker",
         "{}/{}/{}:latest".format(
@@ -228,10 +228,30 @@ docker_container_bundle(
         ): ":assemble-docker",
     }
 )
+"""
 
-docker_push(
-    name = "deploy-docker",
-    bundle = ":assemble-docker-bundle",
+docker_container_push(
+    name = "deploy-docker-latest",
+    image = ":assemble-docker",
+    format = "Docker",
+    registry = deployment_docker["docker.release"],
+    repository = "{}/{}".format(
+        deployment_docker["docker.organisation"],
+        deployment_docker["docker.repository"],
+    ),
+    tag = "latest"
+)
+
+docker_container_push(
+    name = "deploy-docker-versioned",
+    image = ":assemble-docker",
+    format = "Docker",
+    registry = deployment_docker["docker.release"],
+    repository = "{}/{}".format(
+        deployment_docker["docker.organisation"],
+        deployment_docker["docker.repository"],
+    ),
+    tag_file = ":VERSION",
 )
 
 checkstyle_test(
