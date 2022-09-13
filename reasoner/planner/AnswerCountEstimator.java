@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.reasoner.planner;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -56,9 +57,9 @@ public class AnswerCountEstimator {
     private final Set<ResolvableConjunction> toReset;
     private final AnswerCountModel answerCountModel;
 
-    public AnswerCountEstimator(LogicManager logicMgr) {
+    public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph) {
         this.logicMgr = logicMgr;
-        this.answerCountModel = new AnswerCountModel(this);
+        this.answerCountModel = new AnswerCountModel(this, graph);
         this.estimators = new HashMap<>();
         this.initializationStack = new ArrayList<>();
         this.cycleHeads = new HashSet<>();
@@ -138,11 +139,6 @@ public class AnswerCountEstimator {
             return iterate(logicMgr.compile(conjunction));
         }
 
-        private boolean isInferrable(Resolvable<?> resolvable) {
-            return resolvable.isConcludable() &&
-                    !logicMgr.applicableRules(resolvable.asConcludable()).isEmpty();
-        }
-
         private Set<Variable> allVariables() {
             return iterate(conjunction.pattern().variables())
                     .filter(Variable::isThing)
@@ -216,7 +212,7 @@ public class AnswerCountEstimator {
         }
 
         private void registerTriggeredRules() {
-            resolvables().filter(this::isInferrable).map(Resolvable::asConcludable).forEachRemaining(concludable -> {
+            resolvables().filter(Resolvable::isConcludable).map(Resolvable::asConcludable).forEachRemaining(concludable -> {
                 Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
                 iterate(unifiers.keySet()).forEachRemaining(rule -> {
                     answerCountEstimator.registerConjunctionAndInitialize(rule.condition().conjunction());
@@ -304,7 +300,7 @@ public class AnswerCountEstimator {
 
         private Map<Resolvable<?>, LocalEstimate> deriveEstimatesFromInferrables() {
             Map<Resolvable<?>, LocalEstimate> inferrableEstimates = new HashMap<>();
-            iterate(resolvables()).filter(this::isInferrable).map(Resolvable::asConcludable)
+            iterate(resolvables()).filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
                     .forEachRemaining(concludable -> {
                         deriveEstimatesFromConcludable(concludable)
                                 .ifPresent(estimate -> inferrableEstimates.put(concludable, estimate));
@@ -399,9 +395,11 @@ public class AnswerCountEstimator {
 
     private static class AnswerCountModel {
         private final AnswerCountEstimator answerCountEstimator;
+        private GraphManager graphMgr;
 
-        public AnswerCountModel(AnswerCountEstimator answerCountEstimator) {
+        public AnswerCountModel(AnswerCountEstimator answerCountEstimator, GraphManager graphMgr) {
             this.answerCountEstimator = answerCountEstimator;
+            this.graphMgr = graphMgr;
         }
 
         private long estimateInferredAnswerCount(Concludable concludable, Set<Variable> variableFilter) {
@@ -468,17 +466,17 @@ public class AnswerCountEstimator {
         }
 
         private long countPersistedRolePlayers(RelationConstraint.RolePlayer rolePlayer) {
-            return answerCountEstimator.logicMgr.graph().data().stats().thingVertexSum(rolePlayer.inferredRoleTypes());
+            return graphMgr.data().stats().thingVertexSum(rolePlayer.inferredRoleTypes());
         }
 
         private long countPersistedThingsMatchingType(ThingVariable thingVar) {
-            return answerCountEstimator.logicMgr.graph().data().stats().thingVertexSum(thingVar.inferredTypes());
+            return graphMgr.data().stats().thingVertexSum(thingVar.inferredTypes());
         }
 
         private long countPersistedHasEdges(Set<Label> ownerTypes, Set<Label> attributeTypes) {
             return ownerTypes.stream().map(ownerType ->
                     attributeTypes.stream()
-                            .map(attrType -> answerCountEstimator.logicMgr.graph().data().stats().hasEdgeCount(ownerType, attrType))
+                            .map(attrType -> graphMgr.data().stats().hasEdgeCount(ownerType, attrType))
                             .reduce(0L, Long::sum)
             ).reduce(0L, Long::sum);
         }

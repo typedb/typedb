@@ -69,7 +69,7 @@ public class LogicManager {
         this.compiledConjunctions = new HashMap<>();
     }
 
-    public GraphManager graph() { return graphMgr; }
+    GraphManager graph() { return graphMgr; }
 
     public TypeInference typeInference() {
         return typeInference;
