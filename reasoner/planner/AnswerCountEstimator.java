@@ -456,8 +456,8 @@ public class AnswerCountEstimator {
             }
             long inferredRelationsEstimate = estimateInferredAnswerCount(concludable, new HashSet<>(constrainedVars));
             constrainedVars.add(concludable.relation().owner()); // Now add it.
-            return new ConjunctionAnswerCountEstimator.LocalEstimate.CoPlayerEstimate(constrainedVars, relationTypeEstimate, rolePlayerEstimates, rolePlayerCounts, inferredRelationsEstimate);
 
+            return new ConjunctionAnswerCountEstimator.LocalEstimate.CoPlayerEstimate(constrainedVars, relationTypeEstimate, rolePlayerEstimates, rolePlayerCounts, inferredRelationsEstimate);
         }
 
         public long attributesCreatedByExplicitHas(Concludable concludable) {
