@@ -67,7 +67,7 @@ public class AnswerCountEstimator {
     }
 
     public long estimateAllAnswers(ResolvableConjunction conjunction) {
-        registerConjunctionAndInitialize(conjunction);
+        registerAndInitializeConjunction(conjunction);
         return estimators.get(conjunction).estimateAllAnswers();
     }
 
@@ -76,18 +76,18 @@ public class AnswerCountEstimator {
     }
 
     public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
-        registerConjunctionAndInitialize(conjunction);
+        registerAndInitializeConjunction(conjunction);
         return estimators.get(conjunction).estimateAnswers(variableFilter, includedResolvables);
     }
 
-    private void registerConjunctionAndInitialize(ResolvableConjunction conjunction) {
+    private void registerAndInitializeConjunction(ResolvableConjunction conjunction) {
         if (!estimators.containsKey(conjunction)) {
             estimators.put(conjunction, new ConjunctionAnswerCountEstimator(this, conjunction));
         }
 
-        if (estimators.get(conjunction).mayInitialize()) {
+        if (estimators.get(conjunction).needsPreparation()) {
             initializationStack.add(conjunction);
-            estimators.get(conjunction).initialize();
+            estimators.get(conjunction).initializeLocalEstimates();
             assert initializationStack.get(initializationStack.size() - 1) == conjunction;
             initializationStack.remove(initializationStack.size() - 1);
 
@@ -199,7 +199,7 @@ public class AnswerCountEstimator {
             return subsetCoveredBy.stream().map(estimate -> estimate.answerEstimate(variablesToConsider)).reduce(1L, (x, y) -> x * y);
         }
 
-        public boolean mayInitialize() {
+        public boolean needsPreparation() {
             return initializationStatus == InitializationStatus.NOT_STARTED || initializationStatus == InitializationStatus.RESET;
         }
 
@@ -211,17 +211,17 @@ public class AnswerCountEstimator {
             this.negatedsCost = -1;
         }
 
-        private void registerTriggeredRules() {
+        private void recursivelyInitializeTriggeredRules() {
             resolvables().filter(Resolvable::isConcludable).map(Resolvable::asConcludable).forEachRemaining(concludable -> {
                 Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
                 iterate(unifiers.keySet()).forEachRemaining(rule -> {
-                    answerCountEstimator.registerConjunctionAndInitialize(rule.condition().conjunction());
+                    answerCountEstimator.registerAndInitializeConjunction(rule.condition().conjunction());
                 });
             });
         }
 
-        private void initialize() {
-            if (!this.mayInitialize()) return;
+        private void initializeLocalEstimates() {
+            if (!this.needsPreparation()) return;
             //TODO: How does traversal handle type Variables?
 
             initializationStatus = InitializationStatus.IN_PROGRESS;
@@ -230,7 +230,7 @@ public class AnswerCountEstimator {
 
             if (retrievableEstimates == null) retrievableEstimates = deriveEstimatesFromRetrievables();
 
-            registerTriggeredRules();
+            recursivelyInitializeTriggeredRules();
 
             if (inferrableEstimates == null) {
                 inferrableEstimates = deriveEstimatesFromInferrables();
@@ -325,7 +325,7 @@ public class AnswerCountEstimator {
             return resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
                     .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                     .map(negatedConjunction -> {
-                        answerCountEstimator.registerConjunctionAndInitialize(negatedConjunction);
+                        answerCountEstimator.registerAndInitializeConjunction(negatedConjunction);
                         return answerCountEstimator.estimateAllAnswers(negatedConjunction);
                     }).reduce(0L, Long::sum);
         }
