@@ -312,7 +312,6 @@ public class AnswerCountEstimator {
             return inferrableEstimates;
         }
 
-
         private Optional<LocalEstimate> deriveEstimatesFromConcludable(Concludable concludable) {
             if (concludable.isHas()) {
                 return Optional.of(answerCountModel.estimatesFromHasEdges(concludable.asHas()));
