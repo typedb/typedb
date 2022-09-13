@@ -48,9 +48,9 @@ import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 
 public abstract class Traversal {
 
+    final Structure structure;
     final Parameters parameters;
     final Modifiers modifiers;
-    final Structure structure;
 
     Traversal() {
         structure = new Structure();

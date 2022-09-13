@@ -29,6 +29,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 
 public class SortedIterators {
 
@@ -77,7 +78,11 @@ public class SortedIterators {
     public static class Forwardable {
 
         public static <T extends Comparable<? super T>> SortedIterator.Forwardable<T, SortedIterator.Order.Asc> emptySorted() {
-            return iterateSorted(new TreeSet<T>(), SortedIterator.ASC);
+            return emptySorted(ASC);
+        }
+
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> emptySorted(ORDER order) {
+            return iterateSorted(new TreeSet<T>(), order);
         }
 
         public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> iterateSorted(Collection<T> elements, ORDER order) {

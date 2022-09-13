@@ -147,6 +147,10 @@ public class GraphPlanner implements ConnectedPlanner {
         }
     }
 
+    public PlannerVertex<?> vertex(Identifier id) {
+        return vertices.get(id);
+    }
+
     private PlannerVertex<?> vertex(StructureVertex<?> structureVertex) {
         if (structureVertex.isThing()) return thingVertex(structureVertex.asThing());
         else return typeVertex(structureVertex.asType());
@@ -209,8 +213,8 @@ public class GraphPlanner implements ConnectedPlanner {
         return this;
     }
 
-    public Collection<PlannerVertex<?>> vertices() {
-        return vertices.values();
+    public Set<Identifier> vertices() {
+        return vertices.keySet();
     }
 
     public Set<PlannerEdge<?, ?>> edges() {

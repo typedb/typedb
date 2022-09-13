@@ -45,7 +45,11 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> mappingFn);
 
-    <U extends Comparable<? super U>, ORDER extends Order> SortedIterator.Forwardable<U, ORDER> mergeMap(
+    <U extends Comparable<? super U>, ORDER extends Order> SortedIterator<U, ORDER> mergeMap(
+            Function<T, SortedIterator<U, ORDER>> mappingFn, ORDER order
+    );
+
+    <U extends Comparable<? super U>, ORDER extends Order> SortedIterator.Forwardable<U, ORDER> mergeMapForwardable(
             Function<T, SortedIterator.Forwardable<U, ORDER>> mappingFn, ORDER order
     );
 

@@ -40,7 +40,6 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class CombinationFinder {
@@ -152,7 +151,7 @@ public class CombinationFinder {
     }
 
     private FunctionalIterator<? extends TypeVertex> vertexIter(ProcedureVertex.Type vertex) {
-        FunctionalIterator<? extends TypeVertex> iterator = vertex.iterator(graphMgr, params, Modifiers.Sorting.create(list()));
+        FunctionalIterator<? extends TypeVertex> iterator = vertex.iterator(graphMgr, params, Modifiers.Sorting.EMPTY);
         if (vertex.id().isRetrievable() && concreteVarIds.contains(vertex.id().asVariable().asRetrievable())) {
             iterator = iterator.filter(type -> !type.isAbstract());
         }
@@ -170,7 +169,6 @@ public class CombinationFinder {
     private Map<Retrievable, Set<TypeVertex>> filtered(Map<Identifier, Set<TypeVertex>> answer) {
         Map<Retrievable, Set<TypeVertex>> filtered = new HashMap<>();
         answer.forEach((id, vertices) -> {
-            // TODO move into filter?
             if (id.isRetrievable() && filter.variables().contains(id.asVariable().asRetrievable())) {
                 filtered.put(id.asVariable().asRetrievable(), vertices);
             }

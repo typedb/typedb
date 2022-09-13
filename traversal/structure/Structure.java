@@ -35,7 +35,6 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.list;
 
 public class Structure {
 

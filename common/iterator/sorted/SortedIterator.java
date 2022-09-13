@@ -119,8 +119,6 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
 
     T peek();
 
-    SortedIterator<T, ORDER> merge(SortedIterator<T, ORDER> iterator);
-
     @Override
     SortedIterator<T, ORDER> distinct();
 

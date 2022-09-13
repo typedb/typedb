@@ -43,15 +43,14 @@ import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers.Filter;
 import com.vaticle.typedb.core.traversal.common.Modifiers.Sorting;
-import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
-import com.vaticle.typeql.lang.query.builder.Sortable;
 
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
@@ -90,14 +89,15 @@ public class Reasoner {
         inferAndValidateTypes(disjunction);
         FunctionalIterator<? extends ConceptMap> answers;
         Filter filter = Filter.create(modifiers.filter());
+        Optional<Sorting> sorting = modifiers.sort().map(Sorting::create);
         if (mayReason(disjunction, context)) {
             answers = executeReasoner(disjunction, filter, context);
-            if (modifiers.sort().isPresent()) answers = eagerSort(answers, Sorting.create(modifiers.sort().get()));
-        } else if (modifiers.sort().isPresent() && isNativelySortable(disjunction, modifiers.sort().get())) {
-            answers = executeTraversalSorted(disjunction, filter, Sorting.create(modifiers.sort().get()));
+            if (sorting.isPresent()) answers = eagerSort(answers, sorting.get());
+        } else if (sorting.isPresent() && isNativelySortable(disjunction, sorting.get())) {
+            answers = executeTraversalSorted(disjunction, filter, sorting.get());
         } else {
             answers = executeTraversal(disjunction, context, filter);
-            if (modifiers.sort().isPresent()) answers = eagerSort(answers, Sorting.create(modifiers.sort().get()));
+            if (sorting.isPresent()) answers = eagerSort(answers, sorting.get());
         }
 
         if (modifiers.offset().isPresent()) answers = answers.offset(modifiers.offset().get());
@@ -152,11 +152,10 @@ public class Reasoner {
         return logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext();
     }
 
-    private boolean isNativelySortable(Disjunction disjunction, Sortable.Sorting sorting) {
+    private boolean isNativelySortable(Disjunction disjunction, Sorting sorting) {
         for (Conjunction conjunction : disjunction.conjunctions()) {
-            for (UnboundVariable sortVar : sorting.vars()) {
-                assert sortVar.isNamed();
-                Variable variable = conjunction.variable(Identifier.Variable.name(sortVar.name()));
+            for (Identifier.Variable.Retrievable id : sorting.variables()) {
+                Variable variable = conjunction.variable(id);
                 if (variable.isThing() && iterate(variable.inferredTypes()).map(traversalEng.graph().schema()::getType)
                         .anyMatch(type -> type.isAttributeType() && !type.asType().valueType().isNativelySorted())) {
                     return false;
@@ -167,7 +166,7 @@ public class Reasoner {
     }
 
     private FunctionalIterator<? extends ConceptMap> eagerSort(FunctionalIterator<? extends ConceptMap> answers, Sorting sorting) {
-        Comparator<ConceptMap> comparator = ConceptMap.Ordered.Comparator.create(sorting);
+        Comparator<ConceptMap> comparator = ConceptMap.Comparator.create(sorting);
         return iterate(answers.stream().sorted(comparator).iterator());
     }
 
@@ -187,11 +186,11 @@ public class Reasoner {
         return answers;
     }
 
-    public FunctionalIterator<ConceptMap.Ordered> executeTraversalSorted(Disjunction disjunction, Filter filter,
-                                                                         Sorting sorting) {
+    public SortedIterator<ConceptMap.Ordered, SortedIterator.Order.Asc> executeTraversalSorted(Disjunction disjunction, Filter filter,
+                                                                                               Sorting sorting) {
         // TODO: parallelised sorted queries
         FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
-        FunctionalIterator<ConceptMap.Ordered> answers = conjs.flatMap(conj -> iteratorSorted(conj, filter, sorting));
+        SortedIterator<ConceptMap.Ordered, SortedIterator.Order.Asc> answers = conjs.mergeMap(conj -> iteratorSorted(conj, filter, sorting), ASC);
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
     }
@@ -232,7 +231,7 @@ public class Reasoner {
 
     private SortedIterator<ConceptMap.Ordered, SortedIterator.Order.Asc> iteratorSorted(Conjunction conjunction,
                                                                                         Filter filter, Sorting sorting) {
-        ConceptMap.Ordered.Comparator comparator = ConceptMap.Ordered.Comparator.create(sorting);
+        ConceptMap.Ordered.Comparator comparator = ConceptMap.Comparator.create(sorting);
         SortedIterator<ConceptMap.Ordered, SortedIterator.Order.Asc> answers = traversalEng.iterator(conjunction.traversal(filter, sorting))
                 .mapSorted(vertexMap -> conceptMgr.conceptMapOrdered(vertexMap, comparator), ASC);
         if (conjunction.negations().isEmpty()) return answers;

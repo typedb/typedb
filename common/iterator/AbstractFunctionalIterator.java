@@ -72,7 +72,14 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     }
 
     @Override
-    public <U extends Comparable<? super U>, ORDER extends Order> Forwardable<U, ORDER> mergeMap(
+    public <U extends Comparable<? super U>, ORDER extends Order> SortedIterator<U, ORDER> mergeMap(
+            Function<T, SortedIterator<U, ORDER>> mappingFn, ORDER order
+    ) {
+        return new MergeMappedSortedIterator<>(this, mappingFn, order);
+    }
+
+    @Override
+    public <U extends Comparable<? super U>, ORDER extends Order> Forwardable<U, ORDER> mergeMapForwardable(
             Function<T, Forwardable<U, ORDER>> mappingFn, ORDER order
     ) {
         return new MergeMappedSortedIterator.Forwardable<>(this, mappingFn, order);

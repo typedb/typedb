@@ -19,8 +19,13 @@
 package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.procedure.VertexProcedure;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
+
+import java.util.Set;
+
+import static com.vaticle.typedb.common.collection.Collections.set;
 
 public class VertexPlanner implements ConnectedPlanner {
 
@@ -34,6 +39,11 @@ public class VertexPlanner implements ConnectedPlanner {
 
     static VertexPlanner create(StructureVertex<?> structureVertex) {
         return new VertexPlanner(structureVertex);
+    }
+
+    @Override
+    public Set<Identifier> vertices() {
+        return set(structureVertex.id());
     }
 
     @Override

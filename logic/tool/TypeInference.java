@@ -183,7 +183,7 @@ public class TypeInference {
 
         private FunctionalIterator<Map<Identifier.Variable.Name, Label>> typePermutations(Set<Identifier.Variable.Name> filter) {
             Modifiers.Filter inferenceFilter = Modifiers.Filter.create(iterate(filter).map(id -> originalToInference.get(id).id().asRetrievable()).toSet());
-            traversal.modifiers().filter(inferenceFilter);
+            traversal.modifiers().filter(inferenceFilter).sorting(Modifiers.Sorting.EMPTY);
             return traversalEng.iterator(traversal).map(vertexMap -> {
                 Map<Retrievable.Name, Label> labels = new HashMap<>();
                 vertexMap.forEach((id, vertex) -> {

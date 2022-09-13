@@ -19,8 +19,11 @@
 package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.structure.Structure;
+
+import java.util.Set;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -32,6 +35,8 @@ public interface ConnectedPlanner extends Planner {
         if (structure.vertices().size() == 1) return VertexPlanner.create(structure.vertices().iterator().next());
         else return GraphPlanner.create(structure, modifiers);
     }
+
+    Set<Identifier> vertices();
 
     default boolean isVertex() {
         return false;

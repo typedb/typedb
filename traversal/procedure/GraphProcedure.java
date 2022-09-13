@@ -189,8 +189,8 @@ public class GraphProcedure implements PermutationProcedure {
 
         private void register(GraphPlanner planner, int startOrder) {
             assert iterate(vertices.values()).allMatch(v -> v.order() < startOrder);
-            planner.vertices().forEach(v -> registerVertex(v, startOrder + v.getOrder()));
-            planner.vertices().forEach(this::registerEdges);
+            planner.vertices().forEach(id -> registerVertex(planner.vertex(id), startOrder + planner.vertex(id).getOrder()));
+            planner.vertices().forEach(id -> registerEdges(planner.vertex(id)));
         }
 
         private void registerEdges(PlannerVertex<?> plannerVertex) {

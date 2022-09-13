@@ -184,7 +184,7 @@ public class ConceptMap implements Answer {
         }
 
         @Override
-        public ConceptMap withExplainableOwnership(Retrievable ownerID, Retrievable attrID, Conjunction conjunction) {
+        public ConceptMap.Ordered withExplainableOwnership(Retrievable ownerID, Retrievable attrID, Conjunction conjunction) {
             return new Ordered(concepts(), explainables().cloneWithOwnership(ownerID, attrID, conjunction), conceptsComparator);
         }
 
@@ -193,76 +193,76 @@ public class ConceptMap implements Answer {
             assert conceptsComparator.equals(other.conceptsComparator);
             return conceptsComparator.compare(this, other);
         }
+    }
 
-        public static class Comparator implements java.util.Comparator<ConceptMap> {
+    public static class Comparator implements java.util.Comparator<ConceptMap> {
 
-            private final Modifiers.Sorting sorting;
-            private final java.util.Comparator<ConceptMap> comparator;
+        private final Modifiers.Sorting sorting;
+        private final java.util.Comparator<ConceptMap> comparator;
 
-            public Comparator(Modifiers.Sorting sorting, java.util.Comparator<ConceptMap> comparator) {
-                this.sorting = sorting;
-                this.comparator = comparator;
-            }
+        private Comparator(Modifiers.Sorting sorting, java.util.Comparator<ConceptMap> comparator) {
+            this.sorting = sorting;
+            this.comparator = comparator;
+        }
 
-            public static Comparator create(Modifiers.Sorting sorting){
-                assert !sorting.variables().isEmpty();
-                Optional<java.util.Comparator<ConceptMap>> comparator = sorting.variables().stream()
-                        .map(var -> {
-                            java.util.Comparator<ConceptMap> variableComparator = variableComparator(var.asRetrievable());
-                            // TODO: sort order per-variable
-                            return sorting.isAscending(var) ? variableComparator : variableComparator.reversed();
-                        }).reduce(java.util.Comparator::thenComparing);
-                return new Comparator(sorting, comparator.get());
-            }
+        public static Comparator create(Modifiers.Sorting sorting){
+            assert !sorting.variables().isEmpty();
+            Optional<java.util.Comparator<ConceptMap>> comparator = sorting.variables().stream()
+                    .map(var -> {
+                        java.util.Comparator<ConceptMap> variableComparator = variableComparator(var.asRetrievable());
+                        // TODO: sort order per-variable
+                        return sorting.isAscending(var) ? variableComparator : variableComparator.reversed();
+                    }).reduce(java.util.Comparator::thenComparing);
+            return new Comparator(sorting, comparator.get());
+        }
 
-            private static java.util.Comparator<ConceptMap> variableComparator(Retrievable var) {
-                return java.util.Comparator.comparing(
-                        (ConceptMap conceptMap) -> conceptMap.get(var), (concept1, concept2) -> {
-                            if (concept1.isAttribute() && concept2.isAttribute()) {
-                                Attribute att1 = concept1.asAttribute();
-                                Attribute att2 = concept2.asAttribute();
-                                if (att1.isString()) {
-                                    return att1.asString().getValue().compareToIgnoreCase(att2.asString().getValue());
-                                } else if (att1.isBoolean()) {
-                                    return att1.asBoolean().getValue().compareTo(att2.asBoolean().getValue());
-                                } else if (att1.isLong() && att2.isLong()) {
-                                    return att1.asLong().getValue().compareTo(att2.asLong().getValue());
-                                } else if (att1.isDouble() || att2.isDouble()) {
-                                    Double double1 = att1.isLong() ? att1.asLong().getValue() : att1.asDouble().getValue();
-                                    Double double2 = att2.isLong() ? att2.asLong().getValue() : att2.asDouble().getValue();
-                                    return double1.compareTo(double2);
-                                } else if (att1.isDateTime()) {
-                                    return (att1.asDateTime().getValue()).compareTo(att2.asDateTime().getValue());
-                                } else {
-                                    throw TypeDBException.of(ILLEGAL_STATE);
-                                }
-                            } else if (concept1.isThing() && concept2.isThing()) {
-                                return concept1.asThing().compareTo(concept2.asThing());
-                            } else if (concept1.isType() && concept2.isType()) {
-                                return concept1.asType().compareTo(concept2.asType());
+        private static java.util.Comparator<ConceptMap> variableComparator(Retrievable var) {
+            return java.util.Comparator.comparing(
+                    (ConceptMap conceptMap) -> conceptMap.get(var), (concept1, concept2) -> {
+                        if (concept1.isAttribute() && concept2.isAttribute()) {
+                            Attribute att1 = concept1.asAttribute();
+                            Attribute att2 = concept2.asAttribute();
+                            if (att1.isString()) {
+                                return att1.asString().getValue().compareToIgnoreCase(att2.asString().getValue());
+                            } else if (att1.isBoolean()) {
+                                return att1.asBoolean().getValue().compareTo(att2.asBoolean().getValue());
+                            } else if (att1.isLong() && att2.isLong()) {
+                                return att1.asLong().getValue().compareTo(att2.asLong().getValue());
+                            } else if (att1.isDouble() || att2.isDouble()) {
+                                Double double1 = att1.isLong() ? att1.asLong().getValue() : att1.asDouble().getValue();
+                                Double double2 = att2.isLong() ? att2.asLong().getValue() : att2.asDouble().getValue();
+                                return double1.compareTo(double2);
+                            } else if (att1.isDateTime()) {
+                                return (att1.asDateTime().getValue()).compareTo(att2.asDateTime().getValue());
                             } else {
-                                throw TypeDBException.of(ILLEGAL_STATE); // TODO: better exception
+                                throw TypeDBException.of(ILLEGAL_STATE);
                             }
-                        });
-            }
+                        } else if (concept1.isThing() && concept2.isThing()) {
+                            return concept1.asThing().compareTo(concept2.asThing());
+                        } else if (concept1.isType() && concept2.isType()) {
+                            return concept1.asType().compareTo(concept2.asType());
+                        } else {
+                            throw TypeDBException.of(ILLEGAL_STATE); // TODO: better exception
+                        }
+                    });
+        }
 
-            @Override
-            public int compare(ConceptMap o1, ConceptMap o2) {
-                return comparator.compare(o1, o2);
-            }
+        @Override
+        public int compare(ConceptMap o1, ConceptMap o2) {
+            return comparator.compare(o1, o2);
+        }
 
-            @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                Comparator that = (Comparator) o;
-                return sorting.equals(that.sorting);
-            }
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Comparator that = (Comparator) o;
+            return sorting.equals(that.sorting);
+        }
 
-            @Override
-            public int hashCode() {
-                return Objects.hash(sorting);
-            }
+        @Override
+        public int hashCode() {
+            return Objects.hash(sorting);
         }
     }
 

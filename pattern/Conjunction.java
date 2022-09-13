@@ -174,7 +174,7 @@ public class Conjunction implements Pattern, Cloneable {
     }
 
     public GraphTraversal.Thing traversal(Modifiers.Filter filter) {
-        return traversal(filter, Modifiers.Sorting.create(list()));
+        return traversal(filter, Modifiers.Sorting.EMPTY);
     }
 
     public GraphTraversal.Thing traversal(Modifiers.Filter filter, Modifiers.Sorting sorting) {

@@ -239,7 +239,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 iids = newIIDs;
             }
 
-            return iterate(iids).mergeMap(iid -> {
+            return iterate(iids).mergeMapForwardable(iid -> {
                 ConcurrentNavigableMap<EDGE_VIEW, ThingEdgeImpl.Buffered> res;
                 return (res = edges.get(iid)) != null ? iterateSorted(res.keySet(), ASC) : emptySorted();
             }, ASC);

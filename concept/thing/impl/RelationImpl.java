@@ -123,7 +123,7 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     private Forwardable<Thing, Order.Asc> getPlayers(FunctionalIterator<TypeVertex> roleTypeVertices) {
         assert roleTypeVertices.hasNext();
-        return roleTypeVertices.mergeMap(v -> readableVertex().outs().edge(ROLEPLAYER, v).to(), ASC)
+        return roleTypeVertices.mergeMapForwardable(v -> readableVertex().outs().edge(ROLEPLAYER, v).to(), ASC)
                 .mapSorted(ThingImpl::of, thing -> ((ThingImpl) thing).readableVertex(), ASC);
     }
 
