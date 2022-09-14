@@ -150,46 +150,46 @@ public class ConceptMap implements Answer {
         return hash;
     }
 
-    public static class Ordered extends ConceptMap implements Comparable<Ordered> {
+    public static class Sortable extends ConceptMap implements Comparable<Sortable> {
 
         private final Comparator conceptsComparator;
 
-        public Ordered(Map<Retrievable, ? extends Concept> concepts, Comparator conceptsComparator) {
+        public Sortable(Map<Retrievable, ? extends Concept> concepts, Comparator conceptsComparator) {
             this(concepts, new Explainables(), conceptsComparator);
         }
 
-        public Ordered(Map<Retrievable, ? extends Concept> concepts, Explainables explainables, Comparator conceptsComparator) {
+        public Sortable(Map<Retrievable, ? extends Concept> concepts, Explainables explainables, Comparator conceptsComparator) {
             super(concepts, explainables);
             this.conceptsComparator = conceptsComparator;
         }
 
         @Override
-        public ConceptMap.Ordered filter(Modifiers.Filter filter) {
+        public Sortable filter(Modifiers.Filter filter) {
             return filter(filter.variables());
         }
 
         @Override
-        public ConceptMap.Ordered filter(Set<Retrievable> filter) {
-            return new Ordered(filteredMap(concepts(), filter), conceptsComparator); // TODO this should include explainables?
+        public Sortable filter(Set<Retrievable> filter) {
+            return new Sortable(filteredMap(concepts(), filter), conceptsComparator); // TODO this should include explainables?
         }
 
         @Override
-        public ConceptMap.Ordered withExplainableConcept(Retrievable id, Conjunction conjunction) {
+        public Sortable withExplainableConcept(Retrievable id, Conjunction conjunction) {
             assert get(id).isRelation() || get(id).isAttribute();
             if (get(id).isRelation()) {
-                return new Ordered(concepts(), explainables().cloneWithRelation(id, conjunction), conceptsComparator);
+                return new Sortable(concepts(), explainables().cloneWithRelation(id, conjunction), conceptsComparator);
             } else {
-                return new Ordered(concepts(), explainables().cloneWithAttribute(id, conjunction), conceptsComparator);
+                return new Sortable(concepts(), explainables().cloneWithAttribute(id, conjunction), conceptsComparator);
             }
         }
 
         @Override
-        public ConceptMap.Ordered withExplainableOwnership(Retrievable ownerID, Retrievable attrID, Conjunction conjunction) {
-            return new Ordered(concepts(), explainables().cloneWithOwnership(ownerID, attrID, conjunction), conceptsComparator);
+        public Sortable withExplainableOwnership(Retrievable ownerID, Retrievable attrID, Conjunction conjunction) {
+            return new Sortable(concepts(), explainables().cloneWithOwnership(ownerID, attrID, conjunction), conceptsComparator);
         }
 
         @Override
-        public int compareTo(Ordered other) {
+        public int compareTo(Sortable other) {
             assert conceptsComparator.equals(other.conceptsComparator);
             return conceptsComparator.compare(this, other);
         }

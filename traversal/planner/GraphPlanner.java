@@ -416,7 +416,12 @@ public class GraphPlanner implements ConnectedPlanner {
 
     private void initialiseVertexOrderGreedy() {
         Set<PlannerVertex<?>> unorderedVertices = new HashSet<>(vertices.values());
-        int vertexOrder = 0;
+        int vertexOrder;
+        for (vertexOrder = 0; vertexOrder < modifiers.sorting().variables().size(); vertexOrder++) {
+            PlannerVertex<?> vertex = vertices.get(modifiers.sorting().variables().get(vertexOrder));
+            vertex.setOrder(vertexOrder);
+            unorderedVertices.remove(vertex);
+        }
         while (!unorderedVertices.isEmpty()) {
             PlannerVertex<?> vertex = unorderedVertices.stream().min(comparing(
                     v -> v.ins().stream().filter(e -> !unorderedVertices.contains(e.from()))

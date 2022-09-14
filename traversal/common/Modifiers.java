@@ -125,6 +125,10 @@ public class Modifiers {
             this.ascending = ascending;
         }
 
+        public static Sorting create(List<Identifier.Variable.Retrievable> variables, Map<Identifier.Variable.Retrievable, Boolean> ascending) {
+            return new Sorting(variables, ascending);
+        }
+
         public static Sorting create(Sortable.Sorting sort) {
             List<Identifier.Variable.Retrievable> variables = new ArrayList<>();
             Map<Identifier.Variable.Retrievable, Boolean> ascending = new HashMap<>();

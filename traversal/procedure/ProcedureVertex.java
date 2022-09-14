@@ -71,8 +71,8 @@ public abstract class ProcedureVertex<
         super(identifier);
     }
 
-    public abstract Forwardable<? extends VERTEX, ? extends Order> iterator(GraphManager graphMgr, Traversal.Parameters parameters,
-                                                                            Modifiers.Sorting sorting);
+    public abstract <ORDER extends Order> Forwardable<? extends VERTEX, ORDER> iterator(GraphManager graphMgr, Traversal.Parameters parameters,
+                                                                                        ORDER order);
 
     public boolean isStartVertex() {
         return ins().isEmpty();
@@ -160,9 +160,8 @@ public abstract class ProcedureVertex<
         }
 
         @Override
-        public Forwardable<? extends ThingVertex, Order> iterator(GraphManager graphMgr, Traversal.Parameters parameters,
-                                                                  Modifiers.Sorting sorting) {
-            Order order = sorting.isAscending(id()) ? ASC : DESC;
+        public <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterator(GraphManager graphMgr, Traversal.Parameters parameters,
+                                                                                        ORDER order) {
             if (props().hasIID()) return iterateAndFilterFromIID(graphMgr, parameters, order);
             else return iterateAndFilterFromTypes(graphMgr, parameters, order);
         }
@@ -319,11 +318,10 @@ public abstract class ProcedureVertex<
         }
 
         @Override
-        public Forwardable<? extends TypeVertex, ? extends Order> iterator(GraphManager graphMgr, Traversal.Parameters parameters,
-                                                                           Modifiers.Sorting sorting) {
+        public <ORDER extends Order> Forwardable<? extends TypeVertex, ORDER> iterator(GraphManager graphMgr, Traversal.Parameters parameters,
+                                                                                       ORDER order) {
             assert id().isVariable();
-            Forwardable<TypeVertex, Order> iterator = null;
-            Order order = sorting.isAscending(id()) ? ASC : DESC;
+            Forwardable<TypeVertex, ORDER> iterator = null;
 
             if (!props().labels().isEmpty()) iterator = iterateLabels(graphMgr, order);
             if (!props().valueTypes().isEmpty()) iterator = iterateOrFilterValueTypes(graphMgr, iterator, order);

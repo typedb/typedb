@@ -186,11 +186,11 @@ public class Reasoner {
         return answers;
     }
 
-    public SortedIterator<ConceptMap.Ordered, SortedIterator.Order.Asc> executeTraversalSorted(Disjunction disjunction, Filter filter,
-                                                                                               Sorting sorting) {
+    public SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> executeTraversalSorted(Disjunction disjunction, Filter filter,
+                                                                                                Sorting sorting) {
         // TODO: parallelised sorted queries
         FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
-        SortedIterator<ConceptMap.Ordered, SortedIterator.Order.Asc> answers = conjs.mergeMap(conj -> iteratorSorted(conj, filter, sorting), ASC);
+        SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> answers = conjs.mergeMap(conj -> iteratorSorted(conj, filter, sorting), ASC);
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
     }
@@ -229,10 +229,10 @@ public class Reasoner {
         }
     }
 
-    private SortedIterator<ConceptMap.Ordered, SortedIterator.Order.Asc> iteratorSorted(Conjunction conjunction,
-                                                                                        Filter filter, Sorting sorting) {
-        ConceptMap.Ordered.Comparator comparator = ConceptMap.Comparator.create(sorting);
-        SortedIterator<ConceptMap.Ordered, SortedIterator.Order.Asc> answers = traversalEng.iterator(conjunction.traversal(filter, sorting))
+    private SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> iteratorSorted(Conjunction conjunction,
+                                                                                         Filter filter, Sorting sorting) {
+        ConceptMap.Sortable.Comparator comparator = ConceptMap.Comparator.create(sorting);
+        SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> answers = traversalEng.iterator(conjunction.traversal(filter, sorting))
                 .mapSorted(vertexMap -> conceptMgr.conceptMapOrdered(vertexMap, comparator), ASC);
         if (conjunction.negations().isEmpty()) return answers;
         else {

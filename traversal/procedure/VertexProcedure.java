@@ -35,6 +35,8 @@ import java.util.List;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.DESC;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 
 public class VertexProcedure implements PermutationProcedure {
@@ -73,7 +75,7 @@ public class VertexProcedure implements PermutationProcedure {
         LOG.trace(params.toString());
         LOG.trace(this.toString());
         assert vertex.id().isRetrievable() && modifiers.filter().variables().contains(vertex.id().asVariable().asRetrievable());
-        FunctionalIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params, modifiers.sorting());
+        FunctionalIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params, modifiers.sorting().isAscending(vertex.id()) ? ASC : DESC);
         for (ProcedureEdge<?, ?> e : vertex.loops()) {
             iterator = iterator.filter(v -> e.isClosure(graphMgr, v, v, params));
         }
