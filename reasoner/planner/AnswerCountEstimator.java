@@ -53,17 +53,17 @@ public class AnswerCountEstimator {
 
     // Cycle handling
     private final ArrayList<ResolvableConjunction> initializationStack;
-    private final Set<ResolvableConjunction> cycleHeads;
-    private final Set<ResolvableConjunction> toReset;
     private final AnswerCountModel answerCountModel;
+    private final Map<ResolvableConjunction, Set<ResolvableConjunction>> cyclePathToHead;
+    private final Map<ResolvableConjunction, Set<ResolvableConjunction>> cycleHeadToPaths;
 
     public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph) {
         this.logicMgr = logicMgr;
         this.answerCountModel = new AnswerCountModel(this, graph);
         this.estimators = new HashMap<>();
         this.initializationStack = new ArrayList<>();
-        this.cycleHeads = new HashSet<>();
-        this.toReset = new HashSet<>();
+        this.cycleHeadToPaths = new HashMap<>();
+        this.cyclePathToHead = new HashMap<>();
     }
 
     public long estimateAllAnswers(ResolvableConjunction conjunction) {
@@ -83,27 +83,47 @@ public class AnswerCountEstimator {
     private void registerAndInitializeConjunction(ResolvableConjunction conjunction) {
         if (!estimators.containsKey(conjunction)) {
             estimators.put(conjunction, new ConjunctionAnswerCountEstimator(this, conjunction));
+            estimators.get(conjunction).initializeNonInferredLocalEstimates();
         }
 
-        if (estimators.get(conjunction).needsPreparation()) {
-            initializationStack.add(conjunction);
-            estimators.get(conjunction).initializeLocalEstimates();
-            assert initializationStack.get(initializationStack.size() - 1) == conjunction;
-            initializationStack.remove(initializationStack.size() - 1);
+        {
+            Set<ResolvableConjunction> cycleHeads = new HashSet<>();
+            if (initializationStack.contains(conjunction)) {
+                cycleHeads.add(conjunction);
+            }
+            if (cyclePathToHead.containsKey(conjunction)) {
+                iterate(cyclePathToHead.get(conjunction))
+                        .filter(initializationStack::contains) // Should be redundant
+                        .forEachRemaining(cycleHeads::add);
+            }
 
-            if (cycleHeads.size() == 1 && cycleHeads.contains(conjunction)) {
-                // Reset all cyclic paths
-                for (ResolvableConjunction conjunctionToReset : toReset) {
-                    estimators.get(conjunctionToReset).reset();
+            if (!cycleHeads.isEmpty()) {
+                for (ResolvableConjunction cycleHead : cycleHeads) {
+                    cycleHeadToPaths.putIfAbsent(cycleHead, new HashSet<>());
+                    for (int i = initializationStack.size() - 1; initializationStack.get(i) != cycleHead; i--) {
+                        ResolvableConjunction pathNode = initializationStack.get(i);
+                        cycleHeadToPaths.get(cycleHead).add(pathNode);
+                        cyclePathToHead.putIfAbsent(pathNode, new HashSet<>());
+                        cyclePathToHead.get(pathNode).add(cycleHead);
+
+                    }
                 }
+                return;
             }
         }
-    }
 
-    private void reportInitializationCycle(ResolvableConjunction conjunction) {
-        cycleHeads.add(conjunction);
-        for (int i = initializationStack.size() - 1; initializationStack.get(i) != conjunction; i--) {
-            toReset.add(initializationStack.get(i));
+        initializationStack.add(conjunction);
+        estimators.get(conjunction).dependencies().forEach(this::registerAndInitializeConjunction);
+        initializationStack.remove(initializationStack.size()-1);
+        estimators.get(conjunction).initializeInferredLocalEstimates();
+
+        if (cycleHeadToPaths.containsKey(conjunction)) {
+            for (ResolvableConjunction pathNode : cycleHeadToPaths.get(conjunction)) {
+                estimators.get(pathNode).resetInferrableEstimates();
+                cyclePathToHead.get(pathNode).remove(conjunction);
+            }
+            cycleHeadToPaths.remove(conjunction);
+            // TODO: Do we need to explicitly re-initialize?
         }
     }
 
@@ -121,9 +141,8 @@ public class AnswerCountEstimator {
         private long fullAnswerCount;
         private long negatedsCost;
 
-        private enum InitializationStatus {NOT_STARTED, RESET, IN_PROGRESS, COMPLETE}
-
-        private InitializationStatus initializationStatus;
+        private enum LocalEstimateStatus {EMPTY, NON_INFERRED, INFERRED_IN_PROGRESS, COMPLETE };
+        private LocalEstimateStatus localEstimateStatus;
 
         public ConjunctionAnswerCountEstimator(AnswerCountEstimator answerCountEstimator, ResolvableConjunction conjunction) {
             this.answerCountEstimator = answerCountEstimator;
@@ -132,7 +151,7 @@ public class AnswerCountEstimator {
             this.conjunction = conjunction;
             this.fullAnswerCount = -1;
             this.negatedsCost = -1;
-            this.initializationStatus = InitializationStatus.NOT_STARTED;
+            this.localEstimateStatus = LocalEstimateStatus.EMPTY;
         }
 
         private FunctionalIterator<Resolvable<?>> resolvables() {
@@ -148,7 +167,8 @@ public class AnswerCountEstimator {
         private List<LocalEstimate> estimatesFromResolvable(Resolvable<?> resolvable) {
             List<LocalEstimate> results = new ArrayList<>();
             assert retrievableEstimates != null;
-            assert inferrableEstimates != null || this.initializationStatus == InitializationStatus.IN_PROGRESS || this.initializationStatus == InitializationStatus.RESET;
+            assert inferrableEstimates != null ||
+                    this.localEstimateStatus == LocalEstimateStatus.NON_INFERRED || this.localEstimateStatus == LocalEstimateStatus.INFERRED_IN_PROGRESS;
 
             if (retrievableEstimates.containsKey(resolvable)) results.addAll(retrievableEstimates.get(resolvable));
             if (unaryEstimates != null && unaryEstimates.containsKey(resolvable))
@@ -164,10 +184,6 @@ public class AnswerCountEstimator {
         }
 
         public long estimateAnswers(Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
-            if (this.initializationStatus == InitializationStatus.IN_PROGRESS) {
-                answerCountEstimator.reportInitializationCycle(this.conjunction);
-            }
-
             List<LocalEstimate> includedEstimates = iterate(includedResolvables)
                     .flatMap(resolvable -> iterate(estimatesFromResolvable(resolvable)))
                     .toList();
@@ -199,57 +215,46 @@ public class AnswerCountEstimator {
             return subsetCoveredBy.stream().map(estimate -> estimate.answerEstimate(variablesToConsider)).reduce(1L, (x, y) -> x * y);
         }
 
-        public boolean needsPreparation() {
-            return initializationStatus == InitializationStatus.NOT_STARTED || initializationStatus == InitializationStatus.RESET;
-        }
-
-        private void reset() {
-            assert this.initializationStatus == InitializationStatus.COMPLETE;
-            this.initializationStatus = InitializationStatus.RESET;
+        private void resetInferrableEstimates() {
+            assert this.localEstimateStatus == LocalEstimateStatus.COMPLETE;
+            this.localEstimateStatus = LocalEstimateStatus.NON_INFERRED;
             this.inferrableEstimates = null;
             this.unaryEstimates = null;
             this.fullAnswerCount = -1;
-            this.negatedsCost = -1;
         }
 
-        private void recursivelyInitializeTriggeredRules() {
-            resolvables().filter(Resolvable::isConcludable).map(Resolvable::asConcludable).forEachRemaining(concludable -> {
-                Map<Rule, Set<Unifier>> unifiers = logicMgr.applicableRules(concludable);
-                iterate(unifiers.keySet()).forEachRemaining(rule -> {
-                    answerCountEstimator.registerAndInitializeConjunction(rule.condition().conjunction());
-                });
-            });
+        public Set<ResolvableConjunction> dependencies() {
+            return resolvables().filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
+                    .flatMap(concludable -> iterate(logicMgr.applicableRules(concludable).keySet()))
+                    .map(rule -> rule.condition().conjunction())
+                    .toSet();
         }
 
-        private void initializeLocalEstimates() {
-            if (!this.needsPreparation()) return;
-            //TODO: How does traversal handle type Variables?
+        private void initializeNonInferredLocalEstimates() {
+            assert this.localEstimateStatus == LocalEstimateStatus.EMPTY;
+            assert unaryEstimateCover == null && retrievableEstimates == null;
+            unaryEstimateCover = computeNonInferredUnaryEstimateCover();
+            retrievableEstimates = deriveEstimatesFromRetrievables();
+            negatedsCost = computeNegatedsCost(); // Can't be involved in cycles because stratified-negation
+            this.localEstimateStatus = LocalEstimateStatus.NON_INFERRED;
+        }
 
-            InitializationStatus originalStatus = initializationStatus;
-            initializationStatus = InitializationStatus.IN_PROGRESS;
-            // Create a baseline estimate from type information
-            if (originalStatus == InitializationStatus.NOT_STARTED) {
-                assert unaryEstimateCover == null && retrievableEstimates == null;
-                unaryEstimateCover = computeNonInferredUnaryEstimateCover();
-                retrievableEstimates = deriveEstimatesFromRetrievables();
-                recursivelyInitializeTriggeredRules();
+        private void initializeInferredLocalEstimates() {
+            assert localEstimateStatus != LocalEstimateStatus.EMPTY;
+            if (localEstimateStatus == LocalEstimateStatus.NON_INFERRED) {
+                assert inferrableEstimates == null && unaryEstimates == null;
+                localEstimateStatus = LocalEstimateStatus.INFERRED_IN_PROGRESS;
+                inferrableEstimates = deriveEstimatesFromInferrables();
+                unaryEstimates = computeUnaryEstimatesWithInference(unaryEstimateCover);
+                unaryEstimateCover = computeFinalUnaryEstimateCover(unaryEstimateCover); // recompute with inferred
+
+                List<LocalEstimate> allEstimates = resolvables().flatMap(resolvable -> iterate(estimatesFromResolvable(resolvable))).toList();
+                Map<Variable, LocalEstimate> fullCostCover = computeGreedyEstimateCoverForVariables(allVariables(), allEstimates);
+                this.fullAnswerCount = costOfEstimateCover(allVariables(), fullCostCover) + this.negatedsCost;
+                // Can we prune the multiVarEstimates stored?
+                // Not if we want to order-resolvables. Else, yes based on queryableVariables.
+                localEstimateStatus = LocalEstimateStatus.COMPLETE;
             }
-
-            assert inferrableEstimates == null && unaryEstimates == null;
-            inferrableEstimates = deriveEstimatesFromInferrables();
-            unaryEstimates = computeUnaryEstimatesWithInference(unaryEstimateCover);
-            unaryEstimateCover = computeFinalUnaryEstimateCover(unaryEstimateCover); // recompute with inferred
-
-            assert this.negatedsCost == -1 || originalStatus == InitializationStatus.RESET;
-            if (originalStatus == InitializationStatus.NOT_STARTED) this.negatedsCost = computeNegatedsCost();
-
-            List<LocalEstimate> allEstimates = resolvables().flatMap(resolvable -> iterate(estimatesFromResolvable(resolvable))).toList();
-            Map<Variable, LocalEstimate> fullCostCover = computeGreedyEstimateCoverForVariables(allVariables(), allEstimates);
-            this.fullAnswerCount = costOfEstimateCover(allVariables(), fullCostCover) + this.negatedsCost;
-
-            // Can we prune the multiVarEstimates stored?
-            // Not if we want to order-resolvables. Else, yes based on queryableVariables.
-            initializationStatus = InitializationStatus.COMPLETE;
         }
 
         private Map<Resolvable<?>, LocalEstimate> computeUnaryEstimatesWithInference(Map<Variable, LocalEstimate> nonInferredCover) {
