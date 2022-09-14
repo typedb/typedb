@@ -207,6 +207,7 @@ public class AnswerCountEstimator {
             assert this.initializationStatus == InitializationStatus.COMPLETE;
             this.initializationStatus = InitializationStatus.RESET;
             this.inferrableEstimates = null;
+            this.unaryEstimates = null;
             this.fullAnswerCount = -1;
             this.negatedsCost = -1;
         }
@@ -224,21 +225,23 @@ public class AnswerCountEstimator {
             if (!this.needsPreparation()) return;
             //TODO: How does traversal handle type Variables?
 
+            InitializationStatus originalStatus = initializationStatus;
             initializationStatus = InitializationStatus.IN_PROGRESS;
             // Create a baseline estimate from type information
-            if (unaryEstimateCover == null) unaryEstimateCover = computeNonInferredUnaryEstimateCover();
-
-            if (retrievableEstimates == null) retrievableEstimates = deriveEstimatesFromRetrievables();
-
-            recursivelyInitializeTriggeredRules();
-
-            if (inferrableEstimates == null) {
-                inferrableEstimates = deriveEstimatesFromInferrables();
-                unaryEstimates = computeUnaryEstimatesWithInference(unaryEstimateCover);
-                unaryEstimateCover = computeFinalUnaryEstimateCover(unaryEstimateCover); // recompute with inferred
+            if (originalStatus == InitializationStatus.NOT_STARTED) {
+                assert unaryEstimateCover == null && retrievableEstimates == null;
+                unaryEstimateCover = computeNonInferredUnaryEstimateCover();
+                retrievableEstimates = deriveEstimatesFromRetrievables();
+                recursivelyInitializeTriggeredRules();
             }
 
-            if (this.negatedsCost == -1) this.negatedsCost = computeNegatedsCost();
+            assert inferrableEstimates == null && unaryEstimates == null;
+            inferrableEstimates = deriveEstimatesFromInferrables();
+            unaryEstimates = computeUnaryEstimatesWithInference(unaryEstimateCover);
+            unaryEstimateCover = computeFinalUnaryEstimateCover(unaryEstimateCover); // recompute with inferred
+
+            assert this.negatedsCost == -1 || originalStatus == InitializationStatus.RESET;
+            if (originalStatus == InitializationStatus.NOT_STARTED) this.negatedsCost = computeNegatedsCost();
 
             List<LocalEstimate> allEstimates = resolvables().flatMap(resolvable -> iterate(estimatesFromResolvable(resolvable))).toList();
             Map<Variable, LocalEstimate> fullCostCover = computeGreedyEstimateCoverForVariables(allVariables(), allEstimates);
