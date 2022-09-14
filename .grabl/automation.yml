@@ -214,7 +214,8 @@ release:
       dependencies: [deploy-github]
       command: |
         docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
-        bazel run //:deploy-docker
+        bazel run //:deploy-docker-latest
+        bazel run //:deploy-docker-versioned
     deploy-artifact-release:
       image: vaticle-ubuntu-21.04
       filter:
