@@ -178,11 +178,15 @@ public class AnswerCountEstimator {
         private List<LocalEstimate> estimatesFromResolvable(Resolvable<?> resolvable) {
             List<LocalEstimate> results = new ArrayList<>();
 
-            if (retrievableEstimates.containsKey(resolvable)) results.addAll(retrievableEstimates.get(resolvable));
-            if (unaryEstimates != null && unaryEstimates.containsKey(resolvable))
+            if (retrievableEstimates.containsKey(resolvable)) {
+                results.addAll(retrievableEstimates.get(resolvable));
+            }
+            if (unaryEstimates != null && unaryEstimates.containsKey(resolvable)) {
                 results.add(unaryEstimates.get(resolvable));
-            if (inferrableEstimates != null && inferrableEstimates.containsKey(resolvable))
+            }
+            if (inferrableEstimates != null && inferrableEstimates.containsKey(resolvable)) {
                 results.add(inferrableEstimates.get(resolvable));
+            }
             return results;
         }
 
