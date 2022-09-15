@@ -273,6 +273,14 @@ public class AnswerCountEstimator {
             }
         }
 
+        private Map<Variable, LocalEstimate> computeNonInferredUnaryEstimateCover() {
+            Map<Variable, LocalEstimate> unaryEstimateCover = new HashMap<>();
+            iterate(allVariables()).forEachRemaining(v -> {
+                unaryEstimateCover.put(v.asThing(), new LocalEstimate.SimpleEstimate(list(v.asThing()), answerCountModel.countPersistedThingsMatchingType(v.asThing())));
+            });
+            return unaryEstimateCover;
+        }
+
         private Map<Resolvable<?>, LocalEstimate> computeUnaryEstimatesWithInference(Map<Variable, LocalEstimate> nonInferredCover) {
             assert inferrableEstimates != null;
             Map<Resolvable<?>, LocalEstimate> unaryEstimates = new HashMap<>();
@@ -285,14 +293,6 @@ public class AnswerCountEstimator {
                         unaryEstimates.put(concludable, new LocalEstimate.SimpleEstimate(list(v), nonInferredCover.get(v).answerEstimate(set(v)) + inferredAnswerCount));
                     });
             return unaryEstimates;
-        }
-
-        private Map<Variable, LocalEstimate> computeNonInferredUnaryEstimateCover() {
-            Map<Variable, LocalEstimate> unaryEstimateCover = new HashMap<>();
-            iterate(allVariables()).forEachRemaining(v -> {
-                unaryEstimateCover.put(v.asThing(), new LocalEstimate.SimpleEstimate(list(v.asThing()), answerCountModel.countPersistedThingsMatchingType(v.asThing())));
-            });
-            return unaryEstimateCover;
         }
 
         private Map<Variable, LocalEstimate> computeFinalUnaryEstimateCover(Map<Variable, LocalEstimate> nonInferredUnaryEstimateCover) {
