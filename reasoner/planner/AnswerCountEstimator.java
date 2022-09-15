@@ -78,7 +78,7 @@ public class AnswerCountEstimator {
         return estimators.get(conjunction).estimateAnswers(variableFilter, includedResolvables);
     }
 
-    public void registerAndInitializeConjunction(ResolvableConjunction conjunction){
+    public void registerAndInitializeConjunction(ResolvableConjunction conjunction) {
         registerConjunction(conjunction);
         initializeConjunction(conjunction);
     }
@@ -126,7 +126,10 @@ public class AnswerCountEstimator {
         private long fullAnswerCount;
         private long negatedsCost;
         private Set<Concludable> cyclicConcludables;
-        private enum InitializationStatus {NOT_STARTED, REGISTERED, IN_PROGRESS, COMPLETE };
+
+        private enum InitializationStatus {NOT_STARTED, REGISTERED, IN_PROGRESS, COMPLETE}
+
+        ;
         private InitializationStatus initializationStatus;
 
         public ConjunctionAnswerCountEstimator(AnswerCountEstimator answerCountEstimator, ResolvableConjunction conjunction) {
@@ -221,7 +224,7 @@ public class AnswerCountEstimator {
         }
 
         private void initialize() {
-            assert initializationStatus == InitializationStatus.REGISTERED  || initializationStatus == InitializationStatus.IN_PROGRESS || initializationStatus == InitializationStatus.COMPLETE;
+            assert initializationStatus == InitializationStatus.REGISTERED || initializationStatus == InitializationStatus.IN_PROGRESS || initializationStatus == InitializationStatus.COMPLETE;
             if (initializationStatus == InitializationStatus.REGISTERED) {
                 initializationStatus = InitializationStatus.IN_PROGRESS;
 
@@ -238,7 +241,7 @@ public class AnswerCountEstimator {
                 // First non-cyclic recursives
                 Set<Concludable> acyclicConcludables = resolvables()
                         .filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
-                        .filter(concludable-> !cyclicConcludables.contains(concludable))
+                        .filter(concludable -> !cyclicConcludables.contains(concludable))
                         .toSet();
 
                 iterate(acyclicConcludables)
@@ -251,7 +254,6 @@ public class AnswerCountEstimator {
                             deriveEstimatesFromConcludable(concludable)
                                     .ifPresent(estimate -> inferrableEstimates.put(concludable, estimate));
                         });
-
 
                 iterate(cyclicConcludables)
                         .flatMap(concludable -> iterate(logicMgr.applicableRules(concludable).keySet()))

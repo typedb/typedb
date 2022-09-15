@@ -538,7 +538,6 @@ public class AnswerCountEstimatorTest {
         transaction.commit();
         session.close();
 
-
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         {
