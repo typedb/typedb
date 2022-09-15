@@ -113,17 +113,22 @@ public class AnswerCountEstimator {
         }
 
         initializationStack.add(conjunction);
-        estimators.get(conjunction).dependencies().forEach(this::registerAndInitializeConjunction);
+        Set<ResolvableConjunction> dependencies = estimators.get(conjunction).dependencies();
+        dependencies.forEach(this::registerAndInitializeConjunction);
         initializationStack.remove(initializationStack.size()-1);
         estimators.get(conjunction).initializeInferredLocalEstimates();
 
         if (cycleHeadToPaths.containsKey(conjunction)) {
+            Set<ResolvableConjunction> toReinitialize = new HashSet<>();
             for (ResolvableConjunction pathNode : cycleHeadToPaths.get(conjunction)) {
                 estimators.get(pathNode).resetInferrableEstimates();
                 cyclePathToHead.get(pathNode).remove(conjunction);
+                if (dependencies.contains(pathNode)) {
+                    toReinitialize.add(pathNode);
+                }
             }
             cycleHeadToPaths.remove(conjunction);
-            // TODO: Do we need to explicitly re-initialize?
+            toReinitialize.forEach(this::registerAndInitializeConjunction);
         }
     }
 
