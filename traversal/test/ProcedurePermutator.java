@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.traversal.structure.Structure;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.vaticle.typedb.common.collection.Collections.permutations;
+import static com.vaticle.typedb.common.collection.Permutations.permutations;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class ProcedurePermutator {
