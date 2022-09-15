@@ -164,7 +164,7 @@ public class RelationTypeSteps {
     }
 
     private Set<String> relation_type_get_role_type_players_actuals(String relationLabel, String roleLabel) {
-        return tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getPlayers().map(Type::getLabel).map(Label::toString).toSet();
+        return tx().concepts().getRelationType(relationLabel).getRelates(roleLabel).getPlayerTypes().map(Type::getLabel).map(Label::toString).toSet();
     }
 
     @Then("relation\\( ?{type_label} ?) get role\\( ?{type_label} ?) get players contain:")

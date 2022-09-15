@@ -45,23 +45,21 @@ import com.vaticle.typedb.protocol.SessionProto;
 import com.vaticle.typedb.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-
-import javax.annotation.Nullable;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
-
+import javax.annotation.Nullable;
 import static com.google.protobuf.ByteString.copyFrom;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeUUID;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.conceptMap;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.numeric;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Concept.protoThing;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Logic.Rule.protoRule;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.protoThing;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoType;
 import static java.util.stream.Collectors.toList;
 
@@ -320,36 +318,6 @@ public class ResponseBuilder {
                 return ConceptProto.Concept.newBuilder().setType(protoType(concept.asType())).build();
             }
         }
-
-        public static ConceptProto.Thing protoThing(com.vaticle.typedb.core.concept.thing.Thing thing) {
-            ConceptProto.Thing.Builder protoThing = ConceptProto.Thing.newBuilder()
-                    .setIid(ByteString.copyFrom(thing.getIID().getBytes()))
-                    .setType(protoType(thing.getType()))
-                    .setInferred(thing.isInferred());
-            if (thing.isAttribute()) protoThing.setValue(attributeValue(thing.asAttribute()));
-            return protoThing.build();
-        }
-
-        public static ConceptProto.Attribute.Value attributeValue(Attribute attribute) {
-            ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
-
-            if (attribute.isString()) {
-                builder.setString(attribute.asString().getValue());
-            } else if (attribute.isLong()) {
-                builder.setLong(attribute.asLong().getValue());
-            } else if (attribute.isBoolean()) {
-                builder.setBoolean(attribute.asBoolean().getValue());
-            } else if (attribute.isDateTime()) {
-                builder.setDateTime(attribute.asDateTime().getValue().toInstant(ZoneOffset.UTC).toEpochMilli());
-            } else if (attribute.isDouble()) {
-                builder.setDouble(attribute.asDouble().getValue());
-            } else {
-                throw TypeDBException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
-            }
-
-            return builder.build();
-        }
-
     }
 
     public static class Type {
@@ -448,11 +416,25 @@ public class ResponseBuilder {
                                 relationTypes.stream().map(Type::protoType).collect(toList()))));
             }
 
-            public static TransactionProto.Transaction.ResPart getPlayersResPart(
+            public static TransactionProto.Transaction.ResPart getPlayerTypesResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> players) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayersResPart(
-                        ConceptProto.RoleType.GetPlayers.ResPart.newBuilder().addAllThingTypes(
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayerTypesResPart(
+                        ConceptProto.RoleType.GetPlayerTypes.ResPart.newBuilder().addAllThingTypes(
                                 players.stream().map(Type::protoType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.ResPart getPlayerInstancesResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> players) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayerInstancesResPart(
+                        ConceptProto.RoleType.GetPlayerInstances.ResPart.newBuilder().addAllThings(
+                                players.stream().map(Thing::protoThing).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.ResPart getPlayerInstancesExplicitResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> players) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayerInstancesExplicitResPart(
+                        ConceptProto.RoleType.GetPlayerInstancesExplicit.ResPart.newBuilder().addAllThings(
+                                players.stream().map(Thing::protoThing).collect(toList()))));
             }
         }
 
@@ -462,14 +444,14 @@ public class ResponseBuilder {
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> things) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetInstancesResPart(
                         ConceptProto.ThingType.GetInstances.ResPart.newBuilder().addAllThings(
-                                things.stream().map(Concept::protoThing).collect(toList()))));
+                                things.stream().map(Thing::protoThing).collect(toList()))));
             }
 
             public static TransactionProto.Transaction.ResPart getInstancesExplicitResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> things) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetInstancesExplicitResPart(
                         ConceptProto.ThingType.GetInstancesExplicit.ResPart.newBuilder().addAllThings(
-                                things.stream().map(Concept::protoThing).collect(toList()))));
+                                things.stream().map(Thing::protoThing).collect(toList()))));
             }
 
             public static TransactionProto.Transaction.Res setAbstractRes(UUID reqID) {
@@ -684,6 +666,15 @@ public class ResponseBuilder {
 
     public static class Thing {
 
+        public static ConceptProto.Thing protoThing(com.vaticle.typedb.core.concept.thing.Thing thing) {
+            ConceptProto.Thing.Builder protoThing = ConceptProto.Thing.newBuilder()
+                    .setIid(ByteString.copyFrom(thing.getIID().getBytes()))
+                    .setType(protoType(thing.getType()))
+                    .setInferred(thing.isInferred());
+            if (thing.isAttribute()) protoThing.setValue(Attribute.attributeValue(thing.asAttribute()));
+            return protoThing.build();
+        }
+
         public static TransactionProto.Transaction.Res thingRes(UUID reqID, ConceptProto.Thing.Res.Builder res) {
             return TransactionProto.Transaction.Res.newBuilder().setReqId(UUIDAsByteString(reqID)).setThingRes(res).build();
         }
@@ -709,7 +700,7 @@ public class ResponseBuilder {
                 UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Attribute> attributes) {
             return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetHasResPart(
                     ConceptProto.Thing.GetHas.ResPart.newBuilder().addAllAttributes(
-                            attributes.stream().map(Concept::protoThing).collect(toList()))
+                            attributes.stream().map(Thing::protoThing).collect(toList()))
             ));
         }
 
@@ -729,7 +720,7 @@ public class ResponseBuilder {
                 UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Relation> relations) {
             return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetRelationsResPart(
                     ConceptProto.Thing.GetRelations.ResPart.newBuilder().addAllRelations(
-                            relations.stream().map(Concept::protoThing).collect(toList()))
+                            relations.stream().map(Thing::protoThing).collect(toList()))
             ));
         }
 
@@ -759,7 +750,7 @@ public class ResponseBuilder {
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> players) {
                 return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetPlayersResPart(
                         ConceptProto.Relation.GetPlayers.ResPart.newBuilder().addAllThings(
-                                players.stream().map(Concept::protoThing).collect(toList()))
+                                players.stream().map(Thing::protoThing).collect(toList()))
                 ));
             }
 
@@ -782,11 +773,31 @@ public class ResponseBuilder {
 
         public static class Attribute {
 
+            public static ConceptProto.Attribute.Value attributeValue(com.vaticle.typedb.core.concept.thing.Attribute attribute) {
+                ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
+
+                if (attribute.isString()) {
+                    builder.setString(attribute.asString().getValue());
+                } else if (attribute.isLong()) {
+                    builder.setLong(attribute.asLong().getValue());
+                } else if (attribute.isBoolean()) {
+                    builder.setBoolean(attribute.asBoolean().getValue());
+                } else if (attribute.isDateTime()) {
+                    builder.setDateTime(attribute.asDateTime().getValue().toInstant(ZoneOffset.UTC).toEpochMilli());
+                } else if (attribute.isDouble()) {
+                    builder.setDouble(attribute.asDouble().getValue());
+                } else {
+                    throw TypeDBException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
+                }
+
+                return builder.build();
+            }
+
             public static TransactionProto.Transaction.ResPart getOwnersResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> owners) {
                 return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setAttributeGetOwnersResPart(
                         ConceptProto.Attribute.GetOwners.ResPart.newBuilder().addAllThings(
-                                owners.stream().map(Concept::protoThing).collect(toList()))
+                                owners.stream().map(Thing::protoThing).collect(toList()))
                 ));
             }
         }

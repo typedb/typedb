@@ -30,12 +30,10 @@ import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.server.TransactionService;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.TransactionProto.Transaction;
-
-import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.regex.Pattern;
-
+import javax.annotation.Nullable;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
@@ -58,7 +56,9 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.Relatio
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.getRelatesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.setRelatesRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.unsetRelatesRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayersResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayerInstancesExplicitResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayerInstancesResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayerTypesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getRelationTypesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesResPart;
@@ -133,8 +133,14 @@ public class TypeService {
             case ROLE_TYPE_GET_RELATION_TYPES_REQ:
                 getRelationTypes(type.asRoleType(), reqID);
                 return;
-            case ROLE_TYPE_GET_PLAYERS_REQ:
-                getPlayers(type.asRoleType(), reqID);
+            case ROLE_TYPE_GET_PLAYER_TYPES_REQ:
+                getPlayerTypes(type.asRoleType(), reqID);
+                return;
+            case ROLE_TYPE_GET_PLAYER_INSTANCES_REQ:
+                getPlayerInstances(type.asRoleType(), reqID);
+                return;
+            case ROLE_TYPE_GET_PLAYER_INSTANCES_EXPLICIT_REQ:
+                getPlayerInstancesExplicit(type.asRoleType(), reqID);
                 return;
             case THING_TYPE_SET_ABSTRACT_REQ:
                 setAbstract(type.asThingType(), reqID);
@@ -502,12 +508,21 @@ public class TypeService {
 
     private void getRelationTypes(RoleType roleType, UUID reqID) {
         transactionSvc.stream(roleType.getRelationTypes(), reqID,
-                relationTypes -> getRelationTypesResPart(reqID, relationTypes));
+                              relationTypes -> getRelationTypesResPart(reqID, relationTypes));
     }
 
-    private void getPlayers(RoleType roleType, UUID reqID) {
-        transactionSvc.stream(roleType.getPlayers(), reqID,
-                players -> getPlayersResPart(reqID, players));
+    private void getPlayerTypes(RoleType roleType, UUID reqID) {
+        transactionSvc.stream(roleType.getPlayerTypes(), reqID, types -> getPlayerTypesResPart(reqID, types));
+    }
+
+    private void getPlayerInstances(RoleType roleType, UUID reqID) {
+        transactionSvc.stream(roleType.getPlayerInstances(), reqID,
+                              players -> getPlayerInstancesResPart(reqID, players));
+    }
+
+    private void getPlayerInstancesExplicit(RoleType roleType, UUID reqID) {
+        transactionSvc.stream(roleType.getPlayerInstancesExplicit(), reqID,
+                              players -> getPlayerInstancesExplicitResPart(reqID, players));
     }
 
     private void create(EntityType entityType, UUID reqID) {
