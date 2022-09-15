@@ -80,56 +80,65 @@ public class AnswerCountEstimator {
         return estimators.get(conjunction).estimateAnswers(variableFilter, includedResolvables);
     }
 
-    private void registerAndInitializeConjunction(ResolvableConjunction conjunction) {
+    void registerAndInitializeConjunction(ResolvableConjunction conjunction) {
         if (!estimators.containsKey(conjunction)) {
-            estimators.put(conjunction, new ConjunctionAnswerCountEstimator(this, conjunction));
-            estimators.get(conjunction).initializeNonInferredLocalEstimates();
+            ConjunctionAnswerCountEstimator estimator = new ConjunctionAnswerCountEstimator(this, conjunction);
+            estimator.initializeNonInferredLocalEstimates();
+            estimators.put(conjunction, estimator);
         }
 
-        // cycle-detection
-        Set<ResolvableConjunction> cycleHeads = new HashSet<>();
-        if (initializationStack.contains(conjunction)) {
-            cycleHeads.add(conjunction);
-        }
-        if (cyclePathToHead.containsKey(conjunction)) {
-            iterate(cyclePathToHead.get(conjunction))
-                    .filter(initializationStack::contains) // Should be redundant
-                    .forEachRemaining(cycleHeads::add);
-        }
-
-        if (!cycleHeads.isEmpty()) {
-            for (ResolvableConjunction cycleHead : cycleHeads) {
-                cycleHeadToPaths.putIfAbsent(cycleHead, new HashSet<>());
-                for (int i = initializationStack.size() - 1; initializationStack.get(i) != cycleHead; i--) {
-                    ResolvableConjunction pathNode = initializationStack.get(i);
-                    cycleHeadToPaths.get(cycleHead).add(pathNode);
-                    cyclePathToHead.putIfAbsent(pathNode, new HashSet<>());
-                    cyclePathToHead.get(pathNode).add(cycleHead);
-
-                }
-            }
+        if (estimators.get(conjunction).localEstimateStatus == ConjunctionAnswerCountEstimator.LocalEstimateStatus.COMPLETE) {
             return;
         }
 
-        // recurse
-        initializationStack.add(conjunction);
-        Set<ResolvableConjunction> dependencies = estimators.get(conjunction).dependencies();
-        dependencies.forEach(this::registerAndInitializeConjunction);
-        initializationStack.remove(initializationStack.size() - 1);
-        estimators.get(conjunction).initializeInferredLocalEstimates();
 
-        // Reset cycles ending here.
-        if (cycleHeadToPaths.containsKey(conjunction)) {
-            Set<ResolvableConjunction> directChildrenInCycles = new HashSet<>();
-            for (ResolvableConjunction pathNode : cycleHeadToPaths.get(conjunction)) {
-                estimators.get(pathNode).resetInferrableEstimates();
-                cyclePathToHead.get(pathNode).remove(conjunction);
-                if (dependencies.contains(pathNode)) {
-                    directChildrenInCycles.add(pathNode);
+        // cycle-detection
+        if (initializationStack.contains(conjunction) || (cyclePathToHead.containsKey(conjunction) && !cyclePathToHead.get(conjunction).isEmpty())) {
+            Set<ResolvableConjunction> cycleHeads = new HashSet<>();
+            if (initializationStack.contains(conjunction)) {
+                cycleHeads.add(conjunction);
+            }
+            if (cyclePathToHead.containsKey(conjunction) && !cyclePathToHead.get(conjunction).isEmpty()) {
+                iterate(cyclePathToHead.get(conjunction))
+                        .filter(initializationStack::contains) // Should be redundant
+                        .forEachRemaining(cycleHeads::add);
+            }
+
+            if (!cycleHeads.isEmpty()) {
+                for (ResolvableConjunction cycleHead : cycleHeads) {
+                    cycleHeadToPaths.putIfAbsent(cycleHead, new HashSet<>());
+                    for (int i = initializationStack.size() - 1; initializationStack.get(i) != cycleHead; i--) {
+                        ResolvableConjunction pathNode = initializationStack.get(i);
+                        cycleHeadToPaths.get(cycleHead).add(pathNode);
+                        cyclePathToHead.putIfAbsent(pathNode, new HashSet<>());
+                        cyclePathToHead.get(pathNode).add(cycleHead);
+                    }
                 }
             }
-            cycleHeadToPaths.remove(conjunction);
-            directChildrenInCycles.forEach(this::registerAndInitializeConjunction);
+        } else {
+            // recurse
+            initializationStack.add(conjunction);
+
+            Set<ResolvableConjunction> dependencies = estimators.get(conjunction).dependencies();
+            dependencies.forEach(this::registerAndInitializeConjunction);
+            estimators.get(conjunction).initializeInferredLocalEstimates();
+
+            // Reset cycles ending here.
+            if (cycleHeadToPaths.containsKey(conjunction)) {
+                Set<ResolvableConjunction> directDependenciesReset = new HashSet<>();
+                for (ResolvableConjunction pathNode : cycleHeadToPaths.get(conjunction)) {
+                    estimators.get(pathNode).resetInferrableEstimates();
+                    if (dependencies.contains(pathNode)) directDependenciesReset.add(pathNode);
+                    cyclePathToHead.get(pathNode).remove(conjunction);
+                }
+                cycleHeadToPaths.remove(conjunction);
+                directDependenciesReset.forEach(this::registerAndInitializeConjunction);
+            }
+            initializationStack.remove(initializationStack.size() - 1);
+
+            assert estimators.get(conjunction).localEstimateStatus == ConjunctionAnswerCountEstimator.LocalEstimateStatus.COMPLETE;
+            assert initializationStack.size() > 0 || // TODO: Remove
+                    estimators.values().stream().allMatch(estimator -> estimator.localEstimateStatus == ConjunctionAnswerCountEstimator.LocalEstimateStatus.COMPLETE);
         }
     }
 
@@ -147,7 +156,7 @@ public class AnswerCountEstimator {
         private long fullAnswerCount;
         private long negatedsCost;
 
-        private enum LocalEstimateStatus {EMPTY, NON_INFERRED, INFERRED_IN_PROGRESS, COMPLETE}
+        private enum LocalEstimateStatus {EMPTY, NON_INFERRED, INFERRED_IN_PROGRESS, RESET, COMPLETE}
 
         private LocalEstimateStatus localEstimateStatus;
 
@@ -175,7 +184,8 @@ public class AnswerCountEstimator {
             List<LocalEstimate> results = new ArrayList<>();
             assert retrievableEstimates != null;
             assert inferrableEstimates != null ||
-                    this.localEstimateStatus == LocalEstimateStatus.NON_INFERRED || this.localEstimateStatus == LocalEstimateStatus.INFERRED_IN_PROGRESS;
+                    this.localEstimateStatus == LocalEstimateStatus.NON_INFERRED || this.localEstimateStatus == LocalEstimateStatus.INFERRED_IN_PROGRESS ||
+                    this.localEstimateStatus == LocalEstimateStatus.RESET;
 
             if (retrievableEstimates.containsKey(resolvable)) results.addAll(retrievableEstimates.get(resolvable));
             if (unaryEstimates != null && unaryEstimates.containsKey(resolvable))
@@ -223,8 +233,8 @@ public class AnswerCountEstimator {
         }
 
         private void resetInferrableEstimates() {
-            assert this.localEstimateStatus == LocalEstimateStatus.COMPLETE;
-            this.localEstimateStatus = LocalEstimateStatus.NON_INFERRED;
+            assert this.localEstimateStatus == LocalEstimateStatus.COMPLETE || this.localEstimateStatus == LocalEstimateStatus.RESET;
+            this.localEstimateStatus = LocalEstimateStatus.RESET;
             this.inferrableEstimates = null;
             this.unaryEstimates = null;
             this.fullAnswerCount = -1;
@@ -248,7 +258,7 @@ public class AnswerCountEstimator {
 
         private void initializeInferredLocalEstimates() {
             assert localEstimateStatus != LocalEstimateStatus.EMPTY;
-            if (localEstimateStatus == LocalEstimateStatus.NON_INFERRED) {
+            if (localEstimateStatus != LocalEstimateStatus.COMPLETE) {
                 assert inferrableEstimates == null && unaryEstimates == null;
                 localEstimateStatus = LocalEstimateStatus.INFERRED_IN_PROGRESS;
                 inferrableEstimates = deriveEstimatesFromInferrables();
