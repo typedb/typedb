@@ -474,7 +474,6 @@ public class AnswerCountEstimatorTest {
         }
     }
 
-
     private static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
         Disjunction disjunction = resolvedDisjunction(query, logicMgr);
         assert disjunction.conjunctions().size() == 1;
