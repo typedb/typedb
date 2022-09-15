@@ -20,28 +20,27 @@ package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.impl.RoleImpl;
+import com.vaticle.typedb.core.concept.thing.impl.ThingImpl;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
+import javax.annotation.Nullable;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ROLE;
@@ -117,9 +116,24 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public Forwardable<ThingTypeImpl, Order.Asc> getPlayers() {
+    public Forwardable<ThingTypeImpl, Order.Asc> getPlayerTypes() {
         return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from()
                 .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
+    }
+
+    @Override
+    public FunctionalIterator<ThingImpl> getPlayerInstances() {
+        return getSubtypes().filter(t -> !t.isAbstract())
+                .flatMap(t -> graphMgr.data().getReadable(t.vertex))
+                .flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.PLAYING).from())
+                .map(ThingImpl::of);
+    }
+
+    @Override
+    public FunctionalIterator<ThingImpl> getPlayerInstancesExplicit() {
+        return graphMgr.data().getReadable(vertex)
+                .flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.PLAYING).from())
+                .map(ThingImpl::of);
     }
 
     @Override
@@ -151,7 +165,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     private List<TypeDBException> validatePlayersNotAbstract() {
         if (!isAbstract()) return Collections.emptyList();
-        else return getPlayers().filter(o -> !o.isAbstract()).map(
+        else return getPlayerTypes().filter(o -> !o.isAbstract()).map(
                 player -> TypeDBException.of(PLAYS_ABSTRACT_ROLE_TYPE, player.getLabel(), getLabel())
         ).toList();
     }
