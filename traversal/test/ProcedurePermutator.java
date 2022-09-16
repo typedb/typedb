@@ -20,16 +20,12 @@ package com.vaticle.typedb.core.traversal.test;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
-import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Permutations.permutations;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -37,19 +33,13 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public class ProcedurePermutator {
 
     public static FunctionalIterator<GraphProcedure> generate(Structure structure) {
-        // to reduce the permutation space, we always will put the type vertices at the start
-        Set<Identifier.Variable.Retrievable> retrievables = new HashSet<>();
-        List<Identifier.Variable.Label> labels = new ArrayList<>();
-        for (StructureVertex<?> vertex : structure.vertices()) {
-            if (vertex.id().isLabel()) labels.add(vertex.id().asVariable().asLabel());
-            else retrievables.add(vertex.id().asVariable().asRetrievable());
-        }
-
-        return iterate(permutations(retrievables)).map(idPermutation -> {
-            Map<Identifier, Integer> orderingMap = new HashMap<>();
-            labels.forEach(labelled -> orderingMap.put(labelled, orderingMap.size()));
-            idPermutation.forEach(retrievable -> orderingMap.put(retrievable, orderingMap.size()));
-            return GraphProcedure.create(structure, orderingMap);
-        });
+        return iterate(permutations(iterate(structure.vertices()).map(TraversalVertex::id).toSet()))
+                .map(idPermutation -> {
+                    Map<Identifier, Integer> orderingMap = new HashMap<>();
+                    for (int index = 0; index < idPermutation.size(); index++) {
+                        orderingMap.put(idPermutation.get(index), index);
+                    }
+                    return GraphProcedure.create(structure, orderingMap);
+                });
     }
 }
