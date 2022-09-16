@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 import com.vaticle.typedb.core.concept.thing.Entity;
+import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.thing.impl.RoleImpl;
 import com.vaticle.typedb.core.concept.thing.impl.ThingImpl;
 import com.vaticle.typedb.core.concept.type.RoleType;
@@ -119,6 +120,21 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     public Forwardable<ThingTypeImpl, Order.Asc> getPlayerTypes() {
         return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from()
                 .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
+    }
+
+    @Override
+    public FunctionalIterator<RelationImpl> getRelationInstances() {
+        return getSubtypes().filter(t -> !t.isAbstract())
+                .flatMap(t -> graphMgr.data().getReadable(t.vertex))
+                .flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.RELATING).from())
+                .map(RelationImpl::of);
+    }
+
+    @Override
+    public FunctionalIterator<RelationImpl> getRelationInstancesExplicit() {
+        return graphMgr.data().getReadable(vertex)
+                .flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.RELATING).from())
+                .map(RelationImpl::of);
     }
 
     @Override
