@@ -59,6 +59,8 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.Relatio
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayerInstancesExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayerInstancesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayerTypesResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getRelationInstancesExplicitResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getRelationInstancesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getRelationTypesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesExplicitResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesResPart;
@@ -135,6 +137,12 @@ public class TypeService {
                 return;
             case ROLE_TYPE_GET_PLAYER_TYPES_REQ:
                 getPlayerTypes(type.asRoleType(), reqID);
+                return;
+            case ROLE_TYPE_GET_RELATION_INSTANCES_REQ:
+                getRelationInstances(type.asRoleType(), reqID);
+                return;
+            case ROLE_TYPE_GET_RELATION_INSTANCES_EXPLICIT_REQ:
+                getRelationInstancesExplicit(type.asRoleType(), reqID);
                 return;
             case ROLE_TYPE_GET_PLAYER_INSTANCES_REQ:
                 getPlayerInstances(type.asRoleType(), reqID);
@@ -513,6 +521,16 @@ public class TypeService {
 
     private void getPlayerTypes(RoleType roleType, UUID reqID) {
         transactionSvc.stream(roleType.getPlayerTypes(), reqID, types -> getPlayerTypesResPart(reqID, types));
+    }
+
+    private void getRelationInstances(RoleType roleType, UUID reqID) {
+        transactionSvc.stream(roleType.getRelationInstances(), reqID,
+                              relations -> getRelationInstancesResPart(reqID, relations));
+    }
+
+    private void getRelationInstancesExplicit(RoleType roleType, UUID reqID) {
+        transactionSvc.stream(roleType.getRelationInstancesExplicit(), reqID,
+                              relations -> getRelationInstancesExplicitResPart(reqID, relations));
     }
 
     private void getPlayerInstances(RoleType roleType, UUID reqID) {
