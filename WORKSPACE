@@ -98,7 +98,7 @@ load("@vaticle_bazel_distribution//pip:deps.bzl", pip_deps = "deps")
 pip_deps()
 
 ######################################
-# Load @vaticle_dependencies//distribution docker #
+# Load @vaticle_dependencies//distribution/docker #
 ######################################
 
 # Load //distribution/docker
