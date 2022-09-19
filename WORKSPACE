@@ -89,6 +89,18 @@ rules_pkg()
 load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
 rules_pkg_dependencies()
 
+# Load //github
+load("@vaticle_bazel_distribution//github:deps.bzl", github_deps = "deps")
+github_deps()
+
+# Load //pip
+load("@vaticle_bazel_distribution//pip:deps.bzl", pip_deps = "deps")
+pip_deps()
+
+######################################
+# Load @vaticle_dependencies//distribution docker #
+######################################
+
 # Load //distribution/docker
 load("@vaticle_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
 docker_deps()
@@ -106,14 +118,6 @@ container_pull(
   repository = "vaticle/ubuntu",
   tag = "4ee548cea883c716055566847c4736a7ef791c38"
 )
-
-# Load //github
-load("@vaticle_bazel_distribution//github:deps.bzl", github_deps = "deps")
-github_deps()
-
-# Load //pip
-load("@vaticle_bazel_distribution//pip:deps.bzl", pip_deps = "deps")
-pip_deps()
 
 #####################################
 # Load @vaticle/typedb dependencies #
