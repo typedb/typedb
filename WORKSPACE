@@ -76,6 +76,19 @@ sonarcloud_dependencies()
 load("@vaticle_dependencies//tool/unuseddeps:deps.bzl", unuseddeps_deps = "deps")
 unuseddeps_deps()
 
+######################################
+# Load @vaticle_bazel_distribution #
+######################################
+
+load("@vaticle_dependencies//distribution:deps.bzl", "vaticle_bazel_distribution")
+vaticle_bazel_distribution()
+
+# Load //common
+load("@vaticle_bazel_distribution//common:deps.bzl", "rules_pkg")
+rules_pkg()
+load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
+rules_pkg_dependencies()
+
 # Load //distribution/docker
 load("@vaticle_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
 docker_deps()
@@ -93,19 +106,6 @@ container_pull(
   repository = "vaticle/ubuntu",
   tag = "4ee548cea883c716055566847c4736a7ef791c38"
 )
-
-######################################
-# Load @vaticle_bazel_distribution #
-######################################
-
-load("@vaticle_dependencies//distribution:deps.bzl", "vaticle_bazel_distribution")
-vaticle_bazel_distribution()
-
-# Load //common
-load("@vaticle_bazel_distribution//common:deps.bzl", "rules_pkg")
-rules_pkg()
-load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
-rules_pkg_dependencies()
 
 # Load //github
 load("@vaticle_bazel_distribution//github:deps.bzl", github_deps = "deps")
