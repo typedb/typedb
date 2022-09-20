@@ -248,9 +248,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void revisit(ProcedureVertex<?, ?> procedureVertex) {
         toTraverse.add(procedureVertex);
-        for (int i = procedureVertex.order() + 1; i < procedure.vertexCount(); i++) {
-            vertexTraversers.get(procedure.vertex(i)).clear();
-        }
         direction = Direction.TRAVERSE;
     }
 
