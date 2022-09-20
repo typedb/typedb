@@ -163,7 +163,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             if (iteratorState == IteratorState.COMPLETED) return false;
             else if (iteratorState == IteratorState.FETCHED) return true;
             else if (iteratorState == IteratorState.INIT) {
-                initialiseStarts();
+                initialiseStart();
                 if (computeAnswer()) iteratorState = IteratorState.FETCHED;
                 else setCompleted();
             } else if (iteratorState == IteratorState.EMPTY) {
@@ -192,7 +192,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         recycle();
     }
 
-    private void initialiseStarts() {
+    private void initialiseStart() {
         toTraverse.add(procedure.vertex(0));
         direction = Direction.TRAVERSE;
     }
