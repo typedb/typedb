@@ -211,6 +211,9 @@ public class AnswerCountEstimator {
             assert initializationStatus != InitializationStatus.NOT_STARTED;
             if (initializationStatus == InitializationStatus.REGISTERED) {
                 // Acyclic estimates
+                resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
+                        .flatMap(negated-> iterate(negated.disjunction().conjunctions()))
+                        .forEachRemaining(answerCountEstimator::initializeConjunction);
                 iterate(acyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::initializeConjunction);
                 initializeAcyclicEstimates();
                 initializationStatus = InitializationStatus.ACYCLIC_ESTIMATES;
@@ -224,9 +227,7 @@ public class AnswerCountEstimator {
                         .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                         .map(answerCountEstimator::estimateAllAnswers).reduce(0L, Long::sum);
 
-                List<LocalEstimate> allEstimates = resolvables().flatMap(resolvable -> iterate(estimatesFromResolvable.get(resolvable))).toList();
-                Map<Variable, LocalEstimate> fullCostCover = computeGreedyEstimateCoverForVariables(allVariables(), allEstimates);
-                this.fullAnswerCount = costOfEstimateCover(allVariables(), fullCostCover) + this.negatedsCost;
+                this.fullAnswerCount = estimateAnswers(allVariables(), resolvables().toSet()) + this.negatedsCost;
 
                 initializationStatus = InitializationStatus.COMPLETE;
             }
@@ -268,22 +269,11 @@ public class AnswerCountEstimator {
         private Map<Resolvable<?>, List<LocalEstimate>> initializeEstimatesFromNegations() {
             Map<Resolvable<?>, List<LocalEstimate>> estimatesFromNegateds = new HashMap<>();
             Set<Negated> negateds = resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated).toSet();
-            iterate(negateds).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                    .forEachRemaining(answerCountEstimator::initializeConjunction);
-
             iterate(negateds).forEachRemaining(negated -> estimatesFromNegateds.put(negated, list()));
             return estimatesFromNegateds;
         }
 
         private Map<Resolvable<?>, List<LocalEstimate>> initializeEstimatesFromAcyclicConcludables() {
-            Set<Concludable> acyclicConcludables = resolvables()
-                    .filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
-                    .filter(concludable -> !cyclicConcludables.contains(concludable))
-                    .toSet();
-
-            iterate(acyclicConcludables).flatMap(this::dependencies)
-                    .forEachRemaining(answerCountEstimator::initializeConjunction);
-
             Map<Resolvable<?>, List<LocalEstimate>> estimatesFromAcyclicConcludables = new HashMap<>();
             iterate(acyclicConcludables).forEachRemaining(concludable -> {
                 estimatesFromAcyclicConcludables.put(concludable, list(deriveEstimateFromConcludable(concludable)));
