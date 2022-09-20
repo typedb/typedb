@@ -76,24 +76,6 @@ sonarcloud_dependencies()
 load("@vaticle_dependencies//tool/unuseddeps:deps.bzl", unuseddeps_deps = "deps")
 unuseddeps_deps()
 
-# Load //distribution/docker
-load("@vaticle_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
-docker_deps()
-
-load("@io_bazel_rules_docker//repositories:repositories.bzl", bazel_rules_docker_repositories = "repositories")
-bazel_rules_docker_repositories()
-
-load("@io_bazel_rules_docker//repositories:deps.bzl", bazel_rules_docker_container_deps = "deps")
-bazel_rules_docker_container_deps()
-
-load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
-container_pull(
-  name = "vaticle_ubuntu_image",
-  registry = "index.docker.io",
-  repository = "vaticle/ubuntu",
-  tag = "4ee548cea883c716055566847c4736a7ef791c38"
-)
-
 ######################################
 # Load @vaticle_bazel_distribution #
 ######################################
@@ -114,6 +96,31 @@ github_deps()
 # Load //pip
 load("@vaticle_bazel_distribution//pip:deps.bzl", pip_deps = "deps")
 pip_deps()
+
+######################################
+# Load @vaticle_dependencies//distribution/docker #
+######################################
+
+# must be loaded after `vaticle_bazel_distribution` to ensure
+# `rules_pkg` is correctly patched (bazel-distribution #251)
+
+# Load //distribution/docker
+load("@vaticle_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
+docker_deps()
+
+load("@io_bazel_rules_docker//repositories:repositories.bzl", bazel_rules_docker_repositories = "repositories")
+bazel_rules_docker_repositories()
+
+load("@io_bazel_rules_docker//repositories:deps.bzl", bazel_rules_docker_container_deps = "deps")
+bazel_rules_docker_container_deps()
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
+container_pull(
+  name = "vaticle_ubuntu_image",
+  registry = "index.docker.io",
+  repository = "vaticle/ubuntu",
+  tag = "4ee548cea883c716055566847c4736a7ef791c38"
+)
 
 #####################################
 # Load @vaticle/typedb dependencies #
