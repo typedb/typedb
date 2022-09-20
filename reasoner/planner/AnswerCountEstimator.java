@@ -18,6 +18,7 @@ package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.logic.LogicManager;
@@ -72,19 +73,13 @@ public class AnswerCountEstimator {
             estimators.put(conjunction, new ConjunctionAnswerCountEstimator(this, conjunction));
         }
 
-        // TODO: Improve cycle-detection using caching to avoid re-traversing the graph
-        if (initializationStack.contains(conjunction)) {
-            return true;
-        }
+        // TODO: Improve cycle-detection using caching to avoid re-traversing the graph?
+        if (initializationStack.contains(conjunction)) return true;
 
         initializationStack.add(conjunction);
         boolean onCycle = estimators.get(conjunction).registerDependencies();
         initializationStack.remove(initializationStack.size() - 1);
-        if (onCycle) {
-            return true;
-        } else {
-            return false;
-        }
+        return onCycle;
     }
 
     private void initializeConjunction(ResolvableConjunction conjunction) {
@@ -289,20 +284,18 @@ public class AnswerCountEstimator {
                     .forEachRemaining(answerCountEstimator::initializeConjunction);
 
             Map<Resolvable<?>, List<LocalEstimate>> estimatesFromAcyclicConcludables = new HashMap<>();
-            iterate(acyclicConcludables)
-                    .forEachRemaining(concludable -> {
-                        estimatesFromAcyclicConcludables.put(concludable, list(deriveEstimateFromConcludable(concludable)));
-                    });
+            iterate(acyclicConcludables).forEachRemaining(concludable -> {
+                estimatesFromAcyclicConcludables.put(concludable, list(deriveEstimateFromConcludable(concludable)));
+            });
 
             return estimatesFromAcyclicConcludables;
         }
 
         private Map<Resolvable<?>, List<LocalEstimate>> initializeEstimatesFromCyclicConcludables() {
             Map<Resolvable<?>, List<LocalEstimate>> estimatesFromCyclicConcludables = new HashMap<>();
-            iterate(cyclicConcludables)
-                    .forEachRemaining(concludable -> {
-                        estimatesFromCyclicConcludables.put(concludable, list(deriveEstimateFromConcludable(concludable)));
-                    });
+            iterate(cyclicConcludables).forEachRemaining(concludable -> {
+                estimatesFromCyclicConcludables.put(concludable, list(deriveEstimateFromConcludable(concludable)));
+            });
 
             return estimatesFromCyclicConcludables;
         }
@@ -327,8 +320,7 @@ public class AnswerCountEstimator {
                 newUnaryEstimateCover.put(v, new LocalEstimate.SimpleEstimate(list(v), answerCountModel.countPersistedThingsMatchingType(v)));
             });
 
-            iterate(unaryEstimates.values())
-                    .flatMap(estimateList -> iterate(estimateList))
+            iterate(unaryEstimates.values()).flatMap(Iterators::iterate)
                     .forEachRemaining(estimate -> {
                         Variable v = estimate.variables.get(0);
                         long existingEstimate = newUnaryEstimateCover.get(v).answerEstimate(set(v));
