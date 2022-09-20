@@ -220,11 +220,10 @@ public class AnswerCountEstimator {
                 this.estimatesFromResolvable.putAll(initializeEstimatesFromRetrievables());
                 this.estimatesFromResolvable.putAll(initializeEstimatesFromNegations());
                 this.estimatesFromResolvable.putAll(initializeEstimatesFromAcyclicConcludables());
+                iterate(cyclicConcludables).forEachRemaining(concludable -> estimatesFromResolvable.put(concludable, list()));
                 initializationStatus = InitializationStatus.ACYCLIC_ESTIMATES;
 
                 // cyclic calls to this estimator will answer based on acyclic estimates.
-                assert !cyclicConcludables.stream().anyMatch(estimatesFromResolvable::containsKey);
-                iterate(cyclicConcludables).forEachRemaining(concludable -> estimatesFromResolvable.put(concludable, list()));
                 iterate(cyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::initializeConjunction);
                 Map<Resolvable<?>, List<LocalEstimate>> estimatesFromCyclicConcludables = initializeEstimatesFromCyclicConcludables();
                 iterate(cyclicConcludables).forEachRemaining(concludable -> estimatesFromResolvable.remove(concludable));
