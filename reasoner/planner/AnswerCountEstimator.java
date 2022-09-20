@@ -140,11 +140,12 @@ public class AnswerCountEstimator {
         }
 
         public long estimateAllAnswers() {
-            assert this.fullAnswerCount >= 0;
+            assert this.initializationStatus == InitializationStatus.COMPLETE && this.fullAnswerCount >= 0;
             return this.fullAnswerCount;
         }
 
         public long estimateAnswers(Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
+            assert this.initializationStatus == InitializationStatus.ACYCLIC_ESTIMATES || this.initializationStatus == InitializationStatus.COMPLETE;
             List<LocalEstimate> includedEstimates = iterate(includedResolvables)
                     .flatMap(resolvable -> iterate(estimatesFromResolvable.get(resolvable)))
                     .toList();
