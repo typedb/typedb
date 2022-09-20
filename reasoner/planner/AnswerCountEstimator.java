@@ -34,13 +34,7 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
@@ -53,14 +47,14 @@ public class AnswerCountEstimator {
     private final Map<ResolvableConjunction, ConjunctionAnswerCountEstimator> estimators;
 
     // Cycle handling
-    private final ArrayList<ResolvableConjunction> initializationStack;
+    private final Set<ResolvableConjunction> initializationStack;
     private final AnswerCountModel answerCountModel;
 
     public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph) {
         this.logicMgr = logicMgr;
         this.answerCountModel = new AnswerCountModel(this, graph);
         this.estimators = new HashMap<>();
-        this.initializationStack = new ArrayList<>();
+        this.initializationStack = new HashSet<>();
     }
 
     public void registerAndInitializeConjunction(ResolvableConjunction conjunction) {
@@ -78,7 +72,7 @@ public class AnswerCountEstimator {
 
         initializationStack.add(conjunction);
         boolean onCycle = estimators.get(conjunction).registerDependencies();
-        initializationStack.remove(initializationStack.size() - 1);
+        initializationStack.remove(conjunction);
         return onCycle;
     }
 
