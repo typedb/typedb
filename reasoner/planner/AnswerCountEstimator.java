@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
+import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
@@ -38,7 +39,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -111,15 +111,14 @@ public class AnswerCountEstimator {
         private final AnswerCountModel answerCountModel;
 
         private Map<Variable, LocalEstimate> unaryEstimateCover;
-        private Map<Resolvable<?>, List<LocalEstimate>> retrievableEstimates;
-        private Map<Resolvable<?>, LocalEstimate> inferrableEstimates;
-        private Map<Resolvable<?>, LocalEstimate> unaryEstimates;
         private long fullAnswerCount;
         private long negatedsCost;
 
         private Set<Concludable> cyclicConcludables;
+        private Set<Concludable> acyclicConcludables;
+        private final HashMap<Resolvable<?>, List<LocalEstimate>> estimatesFromResolvable;
 
-        private enum InitializationStatus {NOT_STARTED, REGISTERED, IN_PROGRESS, COMPLETE}
+        private enum InitializationStatus {NOT_STARTED, REGISTERED, ACYCLIC_ESTIMATES, COMPLETE}
 
         private InitializationStatus initializationStatus;
 
@@ -128,9 +127,12 @@ public class AnswerCountEstimator {
             this.answerCountModel = answerCountEstimator.answerCountModel;
             this.logicMgr = answerCountEstimator.logicMgr;
             this.conjunction = conjunction;
+
+            this.estimatesFromResolvable = new HashMap<>();
             this.fullAnswerCount = -1;
             this.negatedsCost = -1;
             this.initializationStatus = InitializationStatus.NOT_STARTED;
+
         }
 
         private FunctionalIterator<Resolvable<?>> resolvables() {
@@ -143,21 +145,6 @@ public class AnswerCountEstimator {
                     .toSet();
         }
 
-        private List<LocalEstimate> estimatesFromResolvable(Resolvable<?> resolvable) {
-            List<LocalEstimate> results = new ArrayList<>();
-
-            if (retrievableEstimates.containsKey(resolvable)) {
-                results.addAll(retrievableEstimates.get(resolvable));
-            }
-            if (unaryEstimates != null && unaryEstimates.containsKey(resolvable)) {
-                results.add(unaryEstimates.get(resolvable));
-            }
-            if (inferrableEstimates != null && inferrableEstimates.containsKey(resolvable)) {
-                results.add(inferrableEstimates.get(resolvable));
-            }
-            return results;
-        }
-
         public long estimateAllAnswers() {
             assert this.fullAnswerCount >= 0;
             return this.fullAnswerCount;
@@ -165,7 +152,7 @@ public class AnswerCountEstimator {
 
         public long estimateAnswers(Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
             List<LocalEstimate> includedEstimates = iterate(includedResolvables)
-                    .flatMap(resolvable -> iterate(estimatesFromResolvable(resolvable)))
+                    .flatMap(resolvable -> iterate(estimatesFromResolvable.get(resolvable)))
                     .toList();
             Map<Variable, LocalEstimate> costCover = computeGreedyEstimateCoverForVariables(variableFilter, includedEstimates);
             long ret = costOfEstimateCover(variableFilter, costCover);
@@ -195,18 +182,24 @@ public class AnswerCountEstimator {
             return subsetCoveredBy.stream().map(estimate -> estimate.answerEstimate(variablesToConsider)).reduce(1L, (x, y) -> x * y);
         }
 
+        private FunctionalIterator<ResolvableConjunction> dependencies(Concludable concludable) {
+            return iterate(logicMgr.applicableRules(concludable).keySet())
+                    .map(rule -> rule.condition().conjunction());
+        }
+
         public boolean registerDependencies() {
             if (initializationStatus == InitializationStatus.NOT_STARTED) {
                 cyclicConcludables = new HashSet<>();
+                acyclicConcludables = new HashSet<>();
                 resolvables().filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
                         .forEachRemaining(concludable -> {
-                            iterate(logicMgr.applicableRules(concludable).keySet())
-                                    .map(rule -> rule.condition().conjunction())
+                            dependencies(concludable)
                                     .forEachRemaining(dependency -> {
                                         if (answerCountEstimator.registerConjunction(dependency)) {
                                             cyclicConcludables.add(concludable);
                                         }
                                     });
+                            if (!cyclicConcludables.contains(concludable)) acyclicConcludables.add(concludable);
                         });
 
                 resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
@@ -219,58 +212,108 @@ public class AnswerCountEstimator {
         }
 
         private void initialize() {
-            assert initializationStatus == InitializationStatus.REGISTERED || initializationStatus == InitializationStatus.IN_PROGRESS || initializationStatus == InitializationStatus.COMPLETE;
+            assert initializationStatus != InitializationStatus.NOT_STARTED;
             if (initializationStatus == InitializationStatus.REGISTERED) {
-                initializationStatus = InitializationStatus.IN_PROGRESS;
+                // Acyclic estimates
+                this.unaryEstimateCover = computeNonInferredUnaryEstimateCover();
+                iterate(acyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::initializeConjunction);
+                this.estimatesFromResolvable.putAll(initializeEstimatesFromRetrievables());
+                this.estimatesFromResolvable.putAll(initializeEstimatesFromNegations());
+                this.estimatesFromResolvable.putAll(initializeEstimatesFromAcyclicConcludables());
+                initializationStatus = InitializationStatus.ACYCLIC_ESTIMATES;
 
-                unaryEstimateCover = computeNonInferredUnaryEstimateCover();
-                retrievableEstimates = deriveEstimatesFromRetrievables();
+                // cyclic calls to this estimator will answer based on acyclic estimates.
+                assert !cyclicConcludables.stream().anyMatch(estimatesFromResolvable::containsKey);
+                iterate(cyclicConcludables).forEachRemaining(concludable -> estimatesFromResolvable.put(concludable, list()));
+                iterate(cyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::initializeConjunction);
+                Map<Resolvable<?>, List<LocalEstimate>> estimatesFromCyclicConcludables = initializeEstimatesFromCyclicConcludables();
+                iterate(cyclicConcludables).forEachRemaining(concludable -> estimatesFromResolvable.remove(concludable));
+                estimatesFromResolvable.putAll(estimatesFromCyclicConcludables);
 
-                // First the negateds
-                resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
+                Map<Resolvable<?>, List<LocalEstimate>> unaryEstimates = initializeUnaryEstimatesWithInference();
+                iterate(unaryEstimates.entrySet()).forEachRemaining(entry -> {
+                    this.estimatesFromResolvable.put(entry.getKey(), list(this.estimatesFromResolvable.get(entry.getKey()), entry.getValue()));
+                });
+
+                this.unaryEstimateCover = computeFinalUnaryEstimateCover(unaryEstimateCover, unaryEstimates); // recompute with inferred
+
+                // Compute costs
+                this.negatedsCost = resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
                         .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                        .forEachRemaining(answerCountEstimator::initializeConjunction);
-                negatedsCost = computeNegatedsCost(); // Can't be involved in cycles because stratified-negation
+                        .map(answerCountEstimator::estimateAllAnswers).reduce(0L, Long::sum);
 
-                inferrableEstimates = new HashMap<>();
-                // First non-cyclic recursives
-                Set<Concludable> acyclicConcludables = resolvables()
-                        .filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
-                        .filter(concludable -> !cyclicConcludables.contains(concludable))
-                        .toSet();
-
-                iterate(acyclicConcludables)
-                        .flatMap(concludable -> iterate(logicMgr.applicableRules(concludable).keySet()))
-                        .map(rule -> rule.condition().conjunction())
-                        .forEachRemaining(answerCountEstimator::initializeConjunction);
-
-                iterate(acyclicConcludables)
-                        .forEachRemaining(concludable -> {
-                            deriveEstimatesFromConcludable(concludable)
-                                    .ifPresent(estimate -> inferrableEstimates.put(concludable, estimate));
-                        });
-
-                iterate(cyclicConcludables)
-                        .flatMap(concludable -> iterate(logicMgr.applicableRules(concludable).keySet()))
-                        .map(rule -> rule.condition().conjunction())
-                        .forEachRemaining(answerCountEstimator::initializeConjunction);
-
-                iterate(cyclicConcludables)
-                        .forEachRemaining(concludable -> {
-                            deriveEstimatesFromConcludable(concludable)
-                                    .ifPresent(estimate -> inferrableEstimates.put(concludable, estimate));
-                        });
-
-                // Final updates
-                unaryEstimates = computeUnaryEstimatesWithInference(unaryEstimateCover);
-                unaryEstimateCover = computeFinalUnaryEstimateCover(unaryEstimateCover); // recompute with inferred
-
-                List<LocalEstimate> allEstimates = resolvables().flatMap(resolvable -> iterate(estimatesFromResolvable(resolvable))).toList();
+                List<LocalEstimate> allEstimates = resolvables().flatMap(resolvable -> iterate(estimatesFromResolvable.get(resolvable))).toList();
                 Map<Variable, LocalEstimate> fullCostCover = computeGreedyEstimateCoverForVariables(allVariables(), allEstimates);
                 this.fullAnswerCount = costOfEstimateCover(allVariables(), fullCostCover) + this.negatedsCost;
 
+                assert !resolvables().filter(resolvable -> !estimatesFromResolvable.containsKey(resolvable)).hasNext();
                 initializationStatus = InitializationStatus.COMPLETE;
             }
+        }
+
+        private Map<Resolvable<?>, List<LocalEstimate>> initializeEstimatesFromRetrievables() {
+            Map<Resolvable<?>, List<LocalEstimate>> estimatesFromRetrievable = new HashMap<>();
+            resolvables().filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(retrievable -> {
+                List<LocalEstimate> retrievableEstimates = new ArrayList<>();
+                Set<Concludable> concludablesInRetrievable = ResolvableConjunction.of(retrievable.pattern()).positiveConcludables();
+                iterate(concludablesInRetrievable).forEachRemaining(concludable -> {
+                    retrievableEstimates.add(deriveEstimateFromConcludable(concludable));
+                });
+                estimatesFromRetrievable.put(retrievable, retrievableEstimates);
+            });
+            return estimatesFromRetrievable;
+        }
+
+        private Map<Resolvable<?>, List<LocalEstimate>> initializeEstimatesFromNegations() {
+            Map<Resolvable<?>, List<LocalEstimate>> estimatesFromNegateds = new HashMap<>();
+            Set<Negated> negateds = resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated).toSet();
+            iterate(negateds).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+                    .forEachRemaining(answerCountEstimator::initializeConjunction);
+
+            iterate(negateds).forEachRemaining(negated -> estimatesFromNegateds.put(negated, list()));
+            return estimatesFromNegateds;
+        }
+
+        private Map<Resolvable<?>, List<LocalEstimate>> initializeEstimatesFromAcyclicConcludables() {
+            Set<Concludable> acyclicConcludables = resolvables()
+                    .filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
+                    .filter(concludable -> !cyclicConcludables.contains(concludable))
+                    .toSet();
+
+            iterate(acyclicConcludables).flatMap(this::dependencies)
+                    .forEachRemaining(answerCountEstimator::initializeConjunction);
+
+            Map<Resolvable<?>, List<LocalEstimate>> estimatesFromAcyclicConcludables = new HashMap<>();
+            iterate(acyclicConcludables)
+                    .forEachRemaining(concludable -> {
+                        estimatesFromAcyclicConcludables.put(concludable, list(deriveEstimateFromConcludable(concludable)));
+                    });
+
+            return estimatesFromAcyclicConcludables;
+        }
+
+        private Map<Resolvable<?>, List<LocalEstimate>> initializeEstimatesFromCyclicConcludables() {
+            Map<Resolvable<?>, List<LocalEstimate>> estimatesFromCyclicConcludables = new HashMap<>();
+            iterate(cyclicConcludables)
+                    .forEachRemaining(concludable -> {
+                        estimatesFromCyclicConcludables.put(concludable, list(deriveEstimateFromConcludable(concludable)));
+                    });
+
+            return estimatesFromCyclicConcludables;
+        }
+
+        private Map<Resolvable<?>, List<LocalEstimate>> initializeUnaryEstimatesWithInference() {
+            Map<Resolvable<?>, List<LocalEstimate>> unaryEstimates = new HashMap<>();
+            resolvables().filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
+                    .forEachRemaining(concludable -> {
+                        ThingVariable v = concludable.generating().get();
+                        long persistedAnswerCount = answerCountModel.countPersistedThingsMatchingType(v.asThing());
+                        long inferredAnswerCount = (concludable.isHas() || concludable.isAttribute()) ?
+                                answerCountModel.attributesCreatedByExplicitHas(concludable) :
+                                answerCountModel.estimateInferredAnswerCount(concludable, set(v));
+                        unaryEstimates.put(concludable, list(new LocalEstimate.SimpleEstimate(list(v), persistedAnswerCount + inferredAnswerCount)));
+                    });
+            return unaryEstimates;
         }
 
         private Map<Variable, LocalEstimate> computeNonInferredUnaryEstimateCover() {
@@ -281,64 +324,32 @@ public class AnswerCountEstimator {
             return unaryEstimateCover;
         }
 
-        private Map<Resolvable<?>, LocalEstimate> computeUnaryEstimatesWithInference(Map<Variable, LocalEstimate> nonInferredCover) {
-            assert inferrableEstimates != null;
-            Map<Resolvable<?>, LocalEstimate> unaryEstimates = new HashMap<>();
-            iterate(inferrableEstimates.keySet()).map(Resolvable::asConcludable)
-                    .forEachRemaining(concludable -> {
-                        ThingVariable v = concludable.generating().get();
-                        long inferredAnswerCount = (concludable.isHas() || concludable.isAttribute()) ?
-                                answerCountModel.attributesCreatedByExplicitHas(concludable) :
-                                answerCountModel.estimateInferredAnswerCount(concludable, set(v));
-                        unaryEstimates.put(concludable, new LocalEstimate.SimpleEstimate(list(v), nonInferredCover.get(v).answerEstimate(set(v)) + inferredAnswerCount));
-                    });
-            return unaryEstimates;
-        }
-
-        private Map<Variable, LocalEstimate> computeFinalUnaryEstimateCover(Map<Variable, LocalEstimate> nonInferredUnaryEstimateCover) {
+        private Map<Variable, LocalEstimate> computeFinalUnaryEstimateCover(Map<Variable, LocalEstimate> nonInferredUnaryEstimateCover, Map<Resolvable<?>, List<LocalEstimate>> unaryEstimates) {
             Map<Variable, LocalEstimate> newUnaryEstimateCover = new HashMap<>(nonInferredUnaryEstimateCover);
-            iterate(unaryEstimates.values()).forEachRemaining(estimate -> {
-                Variable v = estimate.variables.get(0);
-                long existingEstimate = newUnaryEstimateCover.get(v).answerEstimate(set(v));
-                long newEstimate = estimate.answerEstimate(set(v));
-                if (newEstimate > existingEstimate) { // Biggest one serves as baseline.
-                    newUnaryEstimateCover.put(v, estimate);
-                }
-            });
+            iterate(unaryEstimates.values())
+                    .flatMap(estimateList -> iterate(estimateList))
+                    .forEachRemaining(estimate -> {
+                        Variable v = estimate.variables.get(0);
+                        long existingEstimate = newUnaryEstimateCover.get(v).answerEstimate(set(v));
+                        long newEstimate = estimate.answerEstimate(set(v));
+                        if (newEstimate > existingEstimate) { // Biggest one serves as baseline.
+                            newUnaryEstimateCover.put(v, estimate);
+                        }
+                    });
             return newUnaryEstimateCover;
         }
 
-        private Map<Resolvable<?>, List<LocalEstimate>> deriveEstimatesFromRetrievables() {
-            Map<Resolvable<?>, List<LocalEstimate>> retrievableEstimates = new HashMap<>();
-            resolvables().filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(retrievable -> {
-                retrievableEstimates.put(retrievable, new ArrayList<>());
-                Set<Concludable> concludablesInRetrievable = ResolvableConjunction.of(retrievable.pattern()).positiveConcludables();
-                iterate(concludablesInRetrievable).forEachRemaining(concludable -> {
-                    deriveEstimatesFromConcludable(concludable)
-                            .ifPresent(estimate -> retrievableEstimates.get(retrievable).add(estimate));
-                });
-            });
-
-            return retrievableEstimates;
-        }
-
-        private Optional<LocalEstimate> deriveEstimatesFromConcludable(Concludable concludable) {
+        private LocalEstimate deriveEstimateFromConcludable(Concludable concludable) {
             if (concludable.isHas()) {
-                return Optional.of(answerCountModel.estimatesFromHasEdges(concludable.asHas()));
+                return answerCountModel.estimatesFromHasEdges(concludable.asHas());
             } else if (concludable.isRelation()) {
-                return Optional.of(answerCountModel.estimatesFromRolePlayersAssumingEvenDistribution(concludable.asRelation()));
+                return answerCountModel.estimatesFromRolePlayersAssumingEvenDistribution(concludable.asRelation());
             } else if (concludable.isIsa()) {
                 assert concludable.generating().isPresent();
                 ThingVariable v = concludable.generating().get();
-                return Optional.of(new LocalEstimate.SimpleEstimate(list(v),
-                        unaryEstimateCover.get(v).answerEstimate(set(v)) + answerCountModel.estimateInferredAnswerCount(concludable, set(v))));
+                return new LocalEstimate.SimpleEstimate(list(v),
+                        unaryEstimateCover.get(v).answerEstimate(set(v)) + answerCountModel.estimateInferredAnswerCount(concludable, set(v)));
             } else throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        private long computeNegatedsCost() {
-            return resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
-                    .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                    .map(answerCountEstimator::estimateAllAnswers).reduce(0L, Long::sum);
         }
 
         private static abstract class LocalEstimate {
