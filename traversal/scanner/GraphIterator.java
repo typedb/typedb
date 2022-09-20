@@ -136,8 +136,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void setupImplicitDependency(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
-        vertexTraversers.get(from).implicitDependents.add(to);
-        vertexTraversers.get(to).implicitDependees.add(from);
+        vertexTraversers.get(to).addImplicitDependee(from);
     }
 
     @Override
@@ -194,7 +193,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void initialiseStarts() {
-        toTraverse.addAll(procedure.startVertices());
+        toTraverse.add(procedure.vertex(0));
         direction = Direction.TRAVERSE;
     }
 
@@ -226,27 +225,32 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void success(VertexTraverser vertexTraverser) {
-        for (ProcedureVertex<?, ?> vertex : vertexTraverser.procedureVertex.dependents()) {
-            toTraverse.add(vertex);
-            vertexTraversers.get(vertex).clear();
-        }
-        for (ProcedureVertex<?, ?> vertex : vertexTraverser.implicitDependents) {
-            toTraverse.add(vertex);
-            vertexTraversers.get(vertex).clear();
-        }
+        if (vertexTraverser.procedureVertex.order() + 1 == procedure.vertexCount()) return;
+        ProcedureVertex<?, ?> next = procedure.vertex(vertexTraverser.procedureVertex.order() + 1);
+        toTraverse.add(next);
+        vertexTraversers.get(next).clear();
     }
 
     private void failed(VertexTraverser vertexTraverser) {
         toRevisit.addAll(vertexTraverser.procedureVertex.dependees());
         toRevisit.addAll(vertexTraverser.implicitDependees);
+        if (!vertexTraverser.anyAnswerFound() && vertexTraverser.lastDependee != null) {
+            // short circuit everything not required to be visited
+            for (int i = vertexTraverser.lastDependee.order() + 1; i < vertexTraverser.procedureVertex.order(); i++) {
+                ProcedureVertex<?, ?> skip = procedure.vertex(i);
+                toRevisit.remove(skip);
+                vertexTraversers.get(skip).clear();
+            }
+        }
         vertexTraverser.clear();
-        toTraverse.add(vertexTraverser.procedureVertex);
         direction = Direction.REVISIT;
     }
 
     private void revisit(ProcedureVertex<?, ?> procedureVertex) {
         toTraverse.add(procedureVertex);
-        vertexTraversers.get(procedureVertex).implicitDependents.forEach(implicit -> vertexTraversers.get(implicit).clear());
+        for (int i = procedureVertex.order() + 1; i < procedure.vertexCount(); i++) {
+            vertexTraversers.get(procedure.vertex(i)).clear();
+        }
         direction = Direction.TRAVERSE;
     }
 
@@ -259,29 +263,43 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private final ProcedureVertex<?, ?> procedureVertex;
         private final Scope localScope;
-        private final Set<ProcedureVertex<?, ?>> implicitDependents;
         private final Set<ProcedureVertex<?, ?>> implicitDependees;
+        private ProcedureVertex<?, ?> lastDependee;
         private Forwardable<Vertex<?, ?>, Order.Asc> iterator;
         private Vertex<?, ?> vertex;
+        private boolean anyAnswerFound;
 
         private VertexTraverser(ProcedureVertex<?, ?> procedureVertex) {
             this.procedureVertex = procedureVertex;
             this.localScope = procedureVertex.id().isScoped() ? scopes.get(procedureVertex.id().asScoped().scope()) : null;
-            this.implicitDependents = new HashSet<>();
             this.implicitDependees = new HashSet<>();
+            this.anyAnswerFound = false;
+            this.lastDependee = procedureVertex.ins().stream().map(ProcedureEdge::from).max(Comparator.comparing(ProcedureVertex::order)).orElse(null);
+        }
+
+        public void addImplicitDependee(ProcedureVertex<?, ?> from) {
+            implicitDependees.add(from);
+            if (lastDependee == null || lastDependee.order() < from.order()) lastDependee = from;
         }
 
         private boolean findNextVertex() {
             Forwardable<Vertex<?, ?>, Order.Asc> iterator = getIterator();
             while (iterator.hasNext()) {
                 vertex = getIterator().next();
-                if (verifyLoops()) return true;
+                if (verifyLoops()) {
+                    anyAnswerFound = true;
+                    return true;
+                }
             }
             return false;
         }
 
         private Vertex<?, ?> vertex() {
             return vertex;
+        }
+
+        private boolean anyAnswerFound() {
+            return anyAnswerFound;
         }
 
         private boolean verifyLoops() {
@@ -308,6 +326,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
             clearCurrentVertex();
             clearScopes();
+            anyAnswerFound = false;
         }
 
         private void clearCurrentVertex() {
