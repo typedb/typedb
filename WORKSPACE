@@ -102,7 +102,7 @@ pip_deps()
 ######################################
 
 # must be loaded after `vaticle_bazel_distribution` to ensure
-# `rules_pkg` is correctly patched (bazel-distribution #issue_no)
+# `rules_pkg` is correctly patched (bazel-distribution #251)
 
 # Load //distribution/docker
 load("@vaticle_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
