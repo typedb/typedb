@@ -234,8 +234,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private void failed(VertexTraverser vertexTraverser) {
         toRevisit.addAll(vertexTraverser.procedureVertex.dependees());
         toRevisit.addAll(vertexTraverser.implicitDependees);
-        if (!vertexTraverser.anyAnswerFound() && vertexTraverser.lastDependee != null) {
-            // short circuit everything not required to be visited
+        if (!vertexTraverser.anyAnswerFound() && !vertexTraverser.procedureVertex.ins().isEmpty()) {
+            // short circuit everything not required to be re-visited
             for (int i = vertexTraverser.lastDependee.order() + 1; i < vertexTraverser.procedureVertex.order(); i++) {
                 ProcedureVertex<?, ?> skip = procedure.vertex(i);
                 toRevisit.remove(skip);
