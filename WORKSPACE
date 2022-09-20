@@ -101,6 +101,9 @@ pip_deps()
 # Load @vaticle_dependencies//distribution/docker #
 ######################################
 
+# must be loaded after `vaticle_bazel_distribution` to ensure
+# `rules_pkg` is correctly patched (bazel-distribution #issue_no)
+
 # Load //distribution/docker
 load("@vaticle_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
 docker_deps()
