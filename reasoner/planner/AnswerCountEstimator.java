@@ -193,13 +193,14 @@ public class AnswerCountEstimator {
                 acyclicConcludables = new HashSet<>();
                 resolvables().filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
                         .forEachRemaining(concludable -> {
-                            dependencies(concludable)
-                                    .forEachRemaining(dependency -> {
-                                        if (answerCountEstimator.registerConjunction(dependency)) {
-                                            cyclicConcludables.add(concludable);
-                                        }
-                                    });
-                            if (!cyclicConcludables.contains(concludable)) acyclicConcludables.add(concludable);
+                            dependencies(concludable).forEachRemaining(dependency -> {
+                                if (answerCountEstimator.registerConjunction(dependency)) {
+                                    cyclicConcludables.add(concludable);
+                                }
+                            });
+                            if (!cyclicConcludables.contains(concludable)) {
+                                acyclicConcludables.add(concludable);
+                            }
                         });
 
                 resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
