@@ -132,7 +132,6 @@ public class AnswerCountEstimator {
             this.fullAnswerCount = -1;
             this.negatedsCost = -1;
             this.initializationStatus = InitializationStatus.NOT_STARTED;
-
         }
 
         private FunctionalIterator<Resolvable<?>> resolvables() {
