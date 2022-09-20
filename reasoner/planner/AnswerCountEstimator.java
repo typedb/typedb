@@ -215,26 +215,13 @@ public class AnswerCountEstimator {
             assert initializationStatus != InitializationStatus.NOT_STARTED;
             if (initializationStatus == InitializationStatus.REGISTERED) {
                 // Acyclic estimates
-                this.unaryEstimateCover = computeNonInferredUnaryEstimateCover();
                 iterate(acyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::initializeConjunction);
-                this.estimatesFromResolvable.putAll(initializeEstimatesFromRetrievables());
-                this.estimatesFromResolvable.putAll(initializeEstimatesFromNegations());
-                this.estimatesFromResolvable.putAll(initializeEstimatesFromAcyclicConcludables());
-                iterate(cyclicConcludables).forEachRemaining(concludable -> estimatesFromResolvable.put(concludable, list()));
+                initializeAcyclicEstimates();
                 initializationStatus = InitializationStatus.ACYCLIC_ESTIMATES;
 
                 // cyclic calls to this estimator will answer based on acyclic estimates.
                 iterate(cyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::initializeConjunction);
-                Map<Resolvable<?>, List<LocalEstimate>> estimatesFromCyclicConcludables = initializeEstimatesFromCyclicConcludables();
-                iterate(cyclicConcludables).forEachRemaining(concludable -> estimatesFromResolvable.remove(concludable));
-                estimatesFromResolvable.putAll(estimatesFromCyclicConcludables);
-
-                Map<Resolvable<?>, List<LocalEstimate>> unaryEstimates = initializeUnaryEstimatesWithInference();
-                iterate(unaryEstimates.entrySet()).forEachRemaining(entry -> {
-                    this.estimatesFromResolvable.put(entry.getKey(), list(this.estimatesFromResolvable.get(entry.getKey()), entry.getValue()));
-                });
-
-                this.unaryEstimateCover = computeFinalUnaryEstimateCover(unaryEstimateCover, unaryEstimates); // recompute with inferred
+                initializeCyclicEstimates();
 
                 // Compute costs
                 this.negatedsCost = resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
@@ -245,9 +232,28 @@ public class AnswerCountEstimator {
                 Map<Variable, LocalEstimate> fullCostCover = computeGreedyEstimateCoverForVariables(allVariables(), allEstimates);
                 this.fullAnswerCount = costOfEstimateCover(allVariables(), fullCostCover) + this.negatedsCost;
 
-                assert !resolvables().filter(resolvable -> !estimatesFromResolvable.containsKey(resolvable)).hasNext();
                 initializationStatus = InitializationStatus.COMPLETE;
             }
+        }
+
+        private void initializeAcyclicEstimates() {
+            this.estimatesFromResolvable.putAll(initializeEstimatesFromRetrievables());
+            this.estimatesFromResolvable.putAll(initializeEstimatesFromNegations());
+            this.estimatesFromResolvable.putAll(initializeEstimatesFromAcyclicConcludables());
+            iterate(cyclicConcludables).forEachRemaining(concludable -> this.estimatesFromResolvable.put(concludable, list()));
+            this.unaryEstimateCover = computeUnaryEstimateCover(new HashMap<>());
+        }
+
+        private void initializeCyclicEstimates() {
+            Map<Resolvable<?>, List<LocalEstimate>> estimatesFromCyclicConcludables = initializeEstimatesFromCyclicConcludables();
+            iterate(cyclicConcludables).forEachRemaining(concludable -> this.estimatesFromResolvable.remove(concludable));
+            this.estimatesFromResolvable.putAll(estimatesFromCyclicConcludables);
+
+            Map<Resolvable<?>, List<LocalEstimate>> unaryEstimates = initializeUnaryEstimatesWithInference();
+            iterate(unaryEstimates.keySet()).forEachRemaining(resolvable -> {
+                this.estimatesFromResolvable.put(resolvable, list(this.estimatesFromResolvable.get(resolvable), unaryEstimates.get(resolvable)));
+            });
+            this.unaryEstimateCover = computeUnaryEstimateCover(unaryEstimates); // recompute with inferred
         }
 
         private Map<Resolvable<?>, List<LocalEstimate>> initializeEstimatesFromRetrievables() {
@@ -315,16 +321,12 @@ public class AnswerCountEstimator {
             return unaryEstimates;
         }
 
-        private Map<Variable, LocalEstimate> computeNonInferredUnaryEstimateCover() {
-            Map<Variable, LocalEstimate> unaryEstimateCover = new HashMap<>();
-            iterate(allVariables()).forEachRemaining(v -> {
-                unaryEstimateCover.put(v.asThing(), new LocalEstimate.SimpleEstimate(list(v.asThing()), answerCountModel.countPersistedThingsMatchingType(v.asThing())));
+        private Map<Variable, LocalEstimate> computeUnaryEstimateCover(Map<Resolvable<?>, List<LocalEstimate>> unaryEstimates) {
+            Map<Variable, LocalEstimate> newUnaryEstimateCover = new HashMap<>();
+            iterate(allVariables()).map(Variable::asThing).forEachRemaining(v -> { // baseline
+                newUnaryEstimateCover.put(v, new LocalEstimate.SimpleEstimate(list(v), answerCountModel.countPersistedThingsMatchingType(v)));
             });
-            return unaryEstimateCover;
-        }
 
-        private Map<Variable, LocalEstimate> computeFinalUnaryEstimateCover(Map<Variable, LocalEstimate> nonInferredUnaryEstimateCover, Map<Resolvable<?>, List<LocalEstimate>> unaryEstimates) {
-            Map<Variable, LocalEstimate> newUnaryEstimateCover = new HashMap<>(nonInferredUnaryEstimateCover);
             iterate(unaryEstimates.values())
                     .flatMap(estimateList -> iterate(estimateList))
                     .forEachRemaining(estimate -> {
@@ -335,6 +337,7 @@ public class AnswerCountEstimator {
                             newUnaryEstimateCover.put(v, estimate);
                         }
                     });
+
             return newUnaryEstimateCover;
         }
 
@@ -347,7 +350,7 @@ public class AnswerCountEstimator {
                 assert concludable.generating().isPresent();
                 ThingVariable v = concludable.generating().get();
                 return new LocalEstimate.SimpleEstimate(list(v),
-                        unaryEstimateCover.get(v).answerEstimate(set(v)) + answerCountModel.estimateInferredAnswerCount(concludable, set(v)));
+                        answerCountModel.countPersistedThingsMatchingType(v) + answerCountModel.estimateInferredAnswerCount(concludable, set(v)));
             } else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
