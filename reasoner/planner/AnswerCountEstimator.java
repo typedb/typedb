@@ -236,10 +236,7 @@ public class AnswerCountEstimator {
         }
 
         private void initializeCyclicEstimates() {
-            Map<Resolvable<?>, List<LocalEstimate>> estimatesFromCyclicConcludables = initializeEstimatesFromCyclicConcludables();
-            iterate(cyclicConcludables).forEachRemaining(concludable -> this.estimatesFromResolvable.remove(concludable));
-            this.estimatesFromResolvable.putAll(estimatesFromCyclicConcludables);
-
+            this.estimatesFromResolvable.putAll(initializeEstimatesFromCyclicConcludables());
             Map<Resolvable<?>, List<LocalEstimate>> unaryEstimates = initializeUnaryEstimatesWithInference();
             iterate(unaryEstimates.keySet()).forEachRemaining(resolvable -> {
                 this.estimatesFromResolvable.put(resolvable, list(this.estimatesFromResolvable.get(resolvable), unaryEstimates.get(resolvable)));
