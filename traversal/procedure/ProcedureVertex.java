@@ -71,8 +71,12 @@ public abstract class ProcedureVertex<
 
     public abstract Forwardable<? extends VERTEX, Order.Asc> iterator(GraphManager graphMgr, Traversal.Parameters parameters);
 
-    public boolean isStartingVertex() {
-        return ins().size() == 0;
+    public boolean isStartVertex() {
+        return ins().isEmpty();
+    }
+
+    public boolean isEndVertex() {
+        return outs().isEmpty();
     }
 
     public Thing asThing() {
@@ -112,7 +116,7 @@ public abstract class ProcedureVertex<
     @Override
     public String toString() {
         String str = order() + ": " + super.toString();
-        if (isStartingVertex()) str += " (start)";
+        if (isStartVertex()) str += " (start)";
         if (outs().isEmpty()) str += " (end)";
         return str;
     }

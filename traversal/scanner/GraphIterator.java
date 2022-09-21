@@ -225,7 +225,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void success(VertexTraverser vertexTraverser) {
-        if (vertexTraverser.procedureVertex.order() + 1 == procedure.vertexCount()) return;
+        if (vertexTraverser.procedureVertex.isEndVertex()) return;
         ProcedureVertex<?, ?> next = procedure.vertex(vertexTraverser.procedureVertex.order() + 1);
         toTraverse.add(next);
         vertexTraversers.get(next).clear();
@@ -234,7 +234,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private void failed(VertexTraverser vertexTraverser) {
         toRevisit.addAll(vertexTraverser.procedureVertex.dependees());
         toRevisit.addAll(vertexTraverser.implicitDependees);
-        if (!vertexTraverser.anyAnswerFound() && !vertexTraverser.procedureVertex.ins().isEmpty()) {
+        if (!vertexTraverser.anyAnswerFound() && !vertexTraverser.procedureVertex.isStartVertex()) {
             // short circuit everything not required to be re-visited
             for (int i = vertexTraverser.lastDependee.order() + 1; i < vertexTraverser.procedureVertex.order(); i++) {
                 ProcedureVertex<?, ?> skip = procedure.vertex(i);
@@ -345,7 +345,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private Forwardable<Vertex<?, ?>, Order.Asc> getIterator() {
             if (iterator == null) {
                 if (procedureVertex.equals(procedure.initialVertex())) iterator = createIteratorFromInitial();
-                else if (procedureVertex.isStartingVertex()) iterator = createIteratorFromStart();
+                else if (procedureVertex.isStartVertex()) iterator = createIteratorFromStart();
                 else iterator = createIteratorFromEdges();
                 // TODO: we may only need to find one valid answer if all dependents are not included in the filter and also find an answer
             }
@@ -358,7 +358,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromStart() {
-            assert procedureVertex.isStartingVertex();
+            assert procedureVertex.isStartVertex();
             if (procedureVertex.id().isScoped()) {
                 return applyLocalScope((Forwardable<Vertex<?, ?>, Order.Asc>) procedureVertex.iterator(graphMgr, params));
             } else {

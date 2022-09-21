@@ -88,7 +88,7 @@ public class GraphProcedure implements PermutationProcedure {
 
     public Set<ProcedureVertex<?, ?>> startVertices() {
         if (startVertices == null) {
-            startVertices = iterate(vertices()).filter(ProcedureVertex::isStartingVertex).toSet();
+            startVertices = iterate(vertices()).filter(ProcedureVertex::isStartVertex).toSet();
         }
         return startVertices;
     }
