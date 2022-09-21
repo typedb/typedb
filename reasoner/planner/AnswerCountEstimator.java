@@ -55,11 +55,11 @@ public class AnswerCountEstimator {
     private final Map<ResolvableConjunction, ConjunctionModel> conjunctionModels;
 
     // Cycle handling
-    private final ConcludableModel concludableModel;
+    private final ConcludableModelBuilder concludableModelBuilder;
 
     public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph) {
         this.logicMgr = logicMgr;
-        this.concludableModel = new ConcludableModel(this, graph);
+        this.concludableModelBuilder = new ConcludableModelBuilder(this, graph);
         this.conjunctionModels = new HashMap<>();
     }
 
@@ -103,7 +103,7 @@ public class AnswerCountEstimator {
         private final ResolvableConjunction conjunction;
         private final AnswerCountEstimator answerCountEstimator;
         private final LogicManager logicMgr;
-        private final ConcludableModel concludableModel;
+        private final ConcludableModelBuilder concludableModelBuilder;
 
         private Map<Variable, ResolvableModel> baselineCover;
         private long fullAnswerCount;
@@ -119,7 +119,7 @@ public class AnswerCountEstimator {
 
         private ConjunctionModel(AnswerCountEstimator answerCountEstimator, ResolvableConjunction conjunction) {
             this.answerCountEstimator = answerCountEstimator;
-            this.concludableModel = answerCountEstimator.concludableModel;
+            this.concludableModelBuilder = answerCountEstimator.concludableModelBuilder;
             this.logicMgr = answerCountEstimator.logicMgr;
             this.conjunction = conjunction;
 
@@ -287,10 +287,10 @@ public class AnswerCountEstimator {
             resolvables().filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
                     .forEachRemaining(concludable -> {
                         ThingVariable v = concludable.generating().get();
-                        long persistedAnswerCount = concludableModel.countPersistedThingsMatchingType(v.asThing());
+                        long persistedAnswerCount = concludableModelBuilder.countPersistedThingsMatchingType(v.asThing());
                         long inferredAnswerCount = (concludable.isHas() || concludable.isAttribute()) ?
-                                concludableModel.attributesCreatedByExplicitHas(concludable) :
-                                concludableModel.estimateInferredAnswerCount(concludable, set(v));
+                                concludableModelBuilder.attributesCreatedByExplicitHas(concludable) :
+                                concludableModelBuilder.estimateInferredAnswerCount(concludable, set(v));
                         singleVariableModels.put(concludable, list(new ResolvableModel.StaticModel(list(v), persistedAnswerCount + inferredAnswerCount)));
                     });
             return singleVariableModels;
@@ -299,7 +299,7 @@ public class AnswerCountEstimator {
         private Map<Variable, ResolvableModel> computeBaselineVariableCover(Map<Resolvable<?>, List<ResolvableModel>> unaryModels) {
             Map<Variable, ResolvableModel> newUnaryModelCover = new HashMap<>();
             iterate(allVariables()).map(Variable::asThing).forEachRemaining(v -> { // baseline
-                newUnaryModelCover.put(v, new ResolvableModel.StaticModel(list(v), concludableModel.countPersistedThingsMatchingType(v)));
+                newUnaryModelCover.put(v, new ResolvableModel.StaticModel(list(v), concludableModelBuilder.countPersistedThingsMatchingType(v)));
             });
 
             iterate(unaryModels.values()).flatMap(Iterators::iterate)
@@ -317,14 +317,14 @@ public class AnswerCountEstimator {
 
         private ResolvableModel buildConcludableModel(Concludable concludable) {
             if (concludable.isHas()) {
-                return concludableModel.modelForHas(concludable.asHas());
+                return concludableModelBuilder.modelForHas(concludable.asHas());
             } else if (concludable.isRelation()) {
-                return concludableModel.modelForRelation(concludable.asRelation());
+                return concludableModelBuilder.modelForRelation(concludable.asRelation());
             } else if (concludable.isIsa()) {
                 assert concludable.generating().isPresent();
                 ThingVariable v = concludable.generating().get();
                 return new ResolvableModel.StaticModel(list(v),
-                        concludableModel.countPersistedThingsMatchingType(v) + concludableModel.estimateInferredAnswerCount(concludable, set(v)));
+                        concludableModelBuilder.countPersistedThingsMatchingType(v) + concludableModelBuilder.estimateInferredAnswerCount(concludable, set(v)));
             } else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
@@ -390,11 +390,11 @@ public class AnswerCountEstimator {
         }
     }
 
-    private static class ConcludableModel {
+    private static class ConcludableModelBuilder {
         private final AnswerCountEstimator answerCountEstimator;
         private final GraphManager graphMgr;
 
-        private ConcludableModel(AnswerCountEstimator answerCountEstimator, GraphManager graphMgr) {
+        private ConcludableModelBuilder(AnswerCountEstimator answerCountEstimator, GraphManager graphMgr) {
             this.answerCountEstimator = answerCountEstimator;
             this.graphMgr = graphMgr;
         }
