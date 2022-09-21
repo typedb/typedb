@@ -182,7 +182,7 @@ public class TypeQLSteps {
         for (Conjunction conjunction : disjunction.conjunctions()) {
             GraphTraversal.Thing traversal = conjunction.traversal(filter);
             // limited permutation space to avoid timeouts
-            FunctionalIterator<GraphProcedure> procedurePermutations = ProcedurePermutator.generate(traversal.structure()).limit(20000);
+            FunctionalIterator<GraphProcedure> procedurePermutations = ProcedurePermutator.generate(traversal.structure()).limit(40320);
             GraphProcedure procedure = procedurePermutations.next();
             Set<VertexMap> answers = procedure.iterator(tx().concepts().graph(),
                     traversal.parameters(), filter).toSet();
