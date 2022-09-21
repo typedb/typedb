@@ -75,10 +75,6 @@ public abstract class ProcedureVertex<
         return ins().isEmpty();
     }
 
-    public boolean isEndVertex() {
-        return outs().isEmpty();
-    }
-
     public Thing asThing() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Thing.class));
     }

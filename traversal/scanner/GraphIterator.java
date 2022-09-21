@@ -225,7 +225,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private void success(VertexTraverser vertexTraverser) {
-        if (vertexTraverser.procedureVertex.isEndVertex()) return;
+        if (vertexTraverser.procedureVertex.equals(procedure.lastVertex())) return;
         ProcedureVertex<?, ?> next = procedure.vertex(vertexTraverser.procedureVertex.order() + 1);
         toTraverse.add(next);
         vertexTraversers.get(next).clear();
