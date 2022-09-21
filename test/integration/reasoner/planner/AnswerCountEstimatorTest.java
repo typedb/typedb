@@ -113,7 +113,7 @@ public class AnswerCountEstimatorTest {
 
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person; }", transaction.logic()));
-        answerCountEstimator.registerAndInitializeConjunction(conjunction);
+        answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
         long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p")));
         assertEquals(5L, answers);
     }
@@ -124,7 +124,7 @@ public class AnswerCountEstimatorTest {
 
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa! person; }", transaction.logic()));
-        answerCountEstimator.registerAndInitializeConjunction(conjunction);
+        answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
         long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p")));
         assertEquals(3L, answers);
     }
@@ -136,28 +136,28 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         {   // Query only count of $p, where $p isa man;
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa man, has name $n; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p")));
             assertEquals(2L, answers);
         }
 
         {   // Query only count of $p and $n, where $p isa man
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa man, has name $n; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
             assertEquals(3L, answers);
         }
 
         {   // Query count of both variables $p and $n, where $p isa! person
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa! person, has name $n; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
             assertEquals(2L, answers);
         }
 
         {   // Query count of both variables $p and $n, where $p isa person (and subtypes)
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person, has name $n; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
             assertEquals(5L, answers);
         }
@@ -170,28 +170,28 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $m isa man, has name $n; $p isa! person, has $n; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
             assertEquals(2L, answers);
         }
 
         {   // Restrict types
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $m isa man, has  first-name $n; $p isa! person, has $n; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
             assertEquals(1L, answers);
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $m isa man, has name $n; $p isa! person, has $n; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("m", "p")));
             assertEquals(4L, answers);
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $m isa man, has first-name $n; $p isa! person, has $n; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("m", "p")));
             assertEquals(2L, answers);
         }
@@ -204,49 +204,49 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         {   // Query a single role-player
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ ($p1) isa household; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
             assertEquals(4L, answers);
         }
 
         {   // Two role-players, projected to one
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ ($p1, $p2) isa household; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
             assertEquals(4L, answers);
         }
 
         {   // Just the relation
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $r isa household; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r")));
             assertEquals(2L, answers);
         }
 
         {   // Project to just the relation
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $r ($p1, $p2) isa household; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r")));
             assertEquals(2L, answers);
         }
 
         {   // Relation and one role-player, binary constraints are considered.
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $r ($p1) isa household; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r", "p1")));
             assertEquals(4L, answers);
         }
 
         {   // Two role-players
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ ($p1, $p2) isa household; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2")));
             assertEquals(4L, answers);
         }
 
         {   // Two role-players and relation
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $r ($p1, $p2) isa household; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2")));
             assertEquals(4L, answers);
         }
@@ -266,7 +266,7 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         {   // The explicit has should add one to the estimate of $n
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
             assertEquals(6L, answers);
         }
@@ -298,28 +298,28 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $f isa symmetric-friendship; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("f")));
             assertEquals(6L, answers);
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $j isa jealous; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("j")));
             assertEquals(25L, answers);
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (who:$x, whom:$y) isa jealous; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
             assertEquals(25L, answers);
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (who:$x, whom:$y) isa jealous; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x")));
             assertEquals(5L, answers);
         }
@@ -329,7 +329,7 @@ public class AnswerCountEstimatorTest {
                     "(friendor: $x, friendee: $y) isa friendship;" +
                     "(friendor: $y, friendee: $z) isa friendship; " +
                     "}", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "z")));
             assertEquals(9L, answers); // TODO: 9 because it's currently at local, disconnected estimates.
         }
@@ -339,7 +339,7 @@ public class AnswerCountEstimatorTest {
                     "(friendor: $x, friendee: $y) isa symmetric-friendship;" +
                     "(friendor: $y, friendee: $z) isa symmetric-friendship; " +
                     "}", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "z")));
             assertEquals(25L, answers); // TODO: 25 because it's currently at local, disconnected estimates.
         }
@@ -349,7 +349,7 @@ public class AnswerCountEstimatorTest {
                     "(friendor: $x, friendee: $y) isa symmetric-friendship;" +
                     "(friendor: $y, friendee: $z) isa symmetric-friendship; " +
                     "}", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y", "z")));
             assertEquals(36L, answers); // {x} (or {x,y}) and {y,z} (or {z}) is each covered by the estimate for symmetric-friendship -> 6 * 6 = 36
         }
@@ -372,14 +372,14 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(first: $p1, second: $p2, third: $p3) isa one-hop-friends; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2", "p3")));
             assertEquals(9L, answers);
         }
 
         {   // Works without fancy projection
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (first: $p1) isa one-hop-friends; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
             assertEquals(3L, answers);
         }
@@ -387,7 +387,7 @@ public class AnswerCountEstimatorTest {
         boolean FANCY_PROJECTION_IS_IMPLEMENTED = false;
         if (FANCY_PROJECTION_IS_IMPLEMENTED) {   // Needs fancy projection
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (first: $p1, second: $p2, third: $p3) isa one-hop-friends; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
             assertEquals(3L, answers);
         }
@@ -419,7 +419,7 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         {   // Total answers
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $f (friendor: $p1, friendee: $p2) isa friendship; $j (who: $p1, whom: $p2) isa jealous;  }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             Set<Resolvable<?>> resolvables = transaction.logic().compile(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2")), resolvables);
             assertEquals(3L, answers);
@@ -427,7 +427,7 @@ public class AnswerCountEstimatorTest {
 
         {   // With just jealous
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $f (friendor: $p1, friendee: $p2) isa friendship; $j (who: $p1, whom: $p2) isa jealous;  }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             Set<Resolvable<?>> resolvables = transaction.logic().compile(conjunction);
             Set<Resolvable<?>> justJealous = resolvables.stream().filter(Resolvable::isConcludable).collect(Collectors.toSet());
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2")), justJealous);
@@ -445,9 +445,9 @@ public class AnswerCountEstimatorTest {
                     " (friendor: $you, friendee: $guest) isa friendship; " +
                     " not{ (friendor: $host, friendee: $guest) isa friendship;}; " +
                     "}", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("host", "guest")));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             assertEquals(9L, answers);
             long allAnswers = answerCountEstimator.estimateAllAnswers(conjunction);
             assertEquals(12L, allAnswers);
@@ -475,7 +475,7 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long cost = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
             assertEquals(18L, cost);
             // 18 = 3 + 3 * 5  =  3 from rule-1 (coplayer) +  3 * 5  ($f1.unary(rp) * $f2.unary(type))  from rule-2
@@ -496,7 +496,7 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa friendship; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long cost = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
             assertEquals(25L, cost);
             // 25 = 5 * 5 = $x-unary(type) from ; $y-unary(type);   The multivar estimates aren't used because they are 3 + 25
@@ -542,13 +542,13 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph());
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long cost = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
             assertEquals(25L, cost);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
         }
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(guest: $x, host: $y) isa can-live-with; }", transaction.logic()));
-            answerCountEstimator.registerAndInitializeConjunction(conjunction);
+            answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long cost = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
             assertEquals(25L, cost);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
         }

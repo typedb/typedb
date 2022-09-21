@@ -55,32 +55,30 @@ public class AnswerCountEstimator {
     private final Map<ResolvableConjunction, ConjunctionModel> conjunctionModels;
 
     // Cycle handling
-    private final Set<ResolvableConjunction> initializationStack;
     private final ConcludableModel concludableModel;
 
     public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph) {
         this.logicMgr = logicMgr;
         this.concludableModel = new ConcludableModel(this, graph);
         this.conjunctionModels = new HashMap<>();
-        this.initializationStack = new HashSet<>();
     }
 
-    public void registerAndInitializeConjunction(ResolvableConjunction conjunction) {
-        registerConjunction(conjunction);
+    public void registerConjunctionAndBuildModel(ResolvableConjunction conjunction) {
+        registerConjunction(conjunction, new HashSet<>());
         buildConjunctionModel(conjunction);
     }
 
-    private boolean registerConjunction(ResolvableConjunction conjunction) {
+    private boolean registerConjunction(ResolvableConjunction conjunction, Set<ResolvableConjunction> dependencyPath) {
         if (!conjunctionModels.containsKey(conjunction)) {
             conjunctionModels.put(conjunction, new ConjunctionModel(this, conjunction));
         }
 
         // TODO: Improve cycle-detection using caching to avoid re-traversing the graph?
-        if (initializationStack.contains(conjunction)) return true;
+        if (dependencyPath.contains(conjunction)) return true;
 
-        initializationStack.add(conjunction);
-        boolean onCycle = conjunctionModels.get(conjunction).registerDependencies();
-        initializationStack.remove(conjunction);
+        dependencyPath.add(conjunction);
+        boolean onCycle = conjunctionModels.get(conjunction).registerDependencies(dependencyPath);
+        dependencyPath.remove(conjunction);
         return onCycle;
     }
 
@@ -115,9 +113,9 @@ public class AnswerCountEstimator {
         private Set<Concludable> acyclicConcludables;
         private final HashMap<Resolvable<?>, List<ResolvableModel>> resolvableModels;
 
-        private enum InitializationStatus {NOT_STARTED, REGISTERED, ACYCLIC_ESTIMATE, COMPLETE}
+        private enum ModelStatus {NOT_STARTED, REGISTERED, ACYCLIC_ESTIMATE, COMPLETE}
 
-        private InitializationStatus initializationStatus;
+        private ModelStatus modelStatus;
 
         private ConjunctionModel(AnswerCountEstimator answerCountEstimator, ResolvableConjunction conjunction) {
             this.answerCountEstimator = answerCountEstimator;
@@ -128,7 +126,7 @@ public class AnswerCountEstimator {
             this.resolvableModels = new HashMap<>();
             this.fullAnswerCount = -1;
             this.negatedsCost = -1;
-            this.initializationStatus = InitializationStatus.NOT_STARTED;
+            this.modelStatus = ModelStatus.NOT_STARTED;
         }
 
         private FunctionalIterator<Resolvable<?>> resolvables() {
@@ -142,16 +140,16 @@ public class AnswerCountEstimator {
         }
 
         private long estimateAllAnswers() {
-            assert this.initializationStatus == InitializationStatus.COMPLETE && this.fullAnswerCount >= 0;
+            assert this.modelStatus == ModelStatus.COMPLETE && this.fullAnswerCount >= 0;
             return this.fullAnswerCount;
         }
 
         private long estimateAnswers(Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
-            assert this.initializationStatus == InitializationStatus.ACYCLIC_ESTIMATE || this.initializationStatus == InitializationStatus.COMPLETE;
-            List<ResolvableModel> includedEstimates = iterate(includedResolvables)
+            assert this.modelStatus == ModelStatus.ACYCLIC_ESTIMATE || this.modelStatus == ModelStatus.COMPLETE;
+            List<ResolvableModel> includedResolvableModels = iterate(includedResolvables)
                     .flatMap(resolvable -> iterate(resolvableModels.get(resolvable)))
                     .toList();
-            Map<Variable, ResolvableModel> costCover = computeGreedyResolvableCoverForVariables(variableFilter, includedEstimates);
+            Map<Variable, ResolvableModel> costCover = computeGreedyResolvableCoverForVariables(variableFilter, includedResolvableModels);
             long ret = costOfResolvableCover(variableFilter, costCover);
             assert ret > 0;             // Flag in tests if it happens.
             return Math.max(ret, 1);    // Don't do stupid stuff in prod when it happens.
@@ -161,13 +159,13 @@ public class AnswerCountEstimator {
             // Does a greedy set cover
             Map<Variable, ResolvableModel> currentCover = new HashMap<>(baselineCover);
             includedResolvableModels.sort(Comparator.comparing(x -> x.estimateAnswers(variableFilter)));
-            for (ResolvableModel estimate : includedResolvableModels) {
-                Set<Variable> filteredVariablesInResolvable = estimate.variables.stream()
+            for (ResolvableModel model : includedResolvableModels) {
+                Set<Variable> filteredVariablesInResolvable = model.variables.stream()
                         .filter(variableFilter::contains).collect(Collectors.toSet());
 
                 long currentCostToCover = costOfResolvableCover(filteredVariablesInResolvable, currentCover);
-                if (currentCostToCover > estimate.estimateAnswers(filteredVariablesInResolvable)) {
-                    filteredVariablesInResolvable.forEach(v -> currentCover.put(v, estimate));
+                if (currentCostToCover > model.estimateAnswers(filteredVariablesInResolvable)) {
+                    filteredVariablesInResolvable.forEach(v -> currentCover.put(v, model));
                 }
             }
             return currentCover;
@@ -176,7 +174,7 @@ public class AnswerCountEstimator {
         private static long costOfResolvableCover(Set<Variable> variablesToConsider, Map<Variable, ResolvableModel> coverMap) {
             Set<ResolvableModel> subsetCoveredBy = coverMap.keySet().stream().filter(variablesToConsider::contains)
                     .map(coverMap::get).collect(Collectors.toSet());
-            return subsetCoveredBy.stream().map(estimate -> estimate.estimateAnswers(variablesToConsider)).reduce(1L, (x, y) -> x * y);
+            return subsetCoveredBy.stream().map(model -> model.estimateAnswers(variablesToConsider)).reduce(1L, (x, y) -> x * y);
         }
 
         private FunctionalIterator<ResolvableConjunction> dependencies(Concludable concludable) {
@@ -184,14 +182,14 @@ public class AnswerCountEstimator {
                     .map(rule -> rule.condition().conjunction());
         }
 
-        private boolean registerDependencies() {
-            if (initializationStatus == InitializationStatus.NOT_STARTED) {
+        private boolean registerDependencies(Set<ResolvableConjunction> dependencyPath) {
+            if (modelStatus == ModelStatus.NOT_STARTED) {
                 cyclicConcludables = new HashSet<>();
                 acyclicConcludables = new HashSet<>();
                 resolvables().filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
                         .forEachRemaining(concludable -> {
                             dependencies(concludable).forEachRemaining(dependency -> {
-                                if (answerCountEstimator.registerConjunction(dependency)) {
+                                if (answerCountEstimator.registerConjunction(dependency, dependencyPath)) {
                                     cyclicConcludables.add(concludable);
                                 }
                             });
@@ -202,23 +200,23 @@ public class AnswerCountEstimator {
 
                 resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
                         .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                        .forEachRemaining(answerCountEstimator::registerConjunction);
+                        .forEachRemaining(dependency -> answerCountEstimator.registerConjunction(dependency, dependencyPath));
 
-                initializationStatus = InitializationStatus.REGISTERED;
+                modelStatus = ModelStatus.REGISTERED;
             }
             return !cyclicConcludables.isEmpty();
         }
 
         private void buildModel() {
-            assert initializationStatus != InitializationStatus.NOT_STARTED;
-            if (initializationStatus == InitializationStatus.REGISTERED) {
+            assert modelStatus != ModelStatus.NOT_STARTED;
+            if (modelStatus == ModelStatus.REGISTERED) {
                 // Acyclic estimates
                 resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
                         .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                         .forEachRemaining(answerCountEstimator::buildConjunctionModel);
                 iterate(acyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::buildConjunctionModel);
                 buildAcyclicModel();
-                initializationStatus = InitializationStatus.ACYCLIC_ESTIMATE;
+                modelStatus = ModelStatus.ACYCLIC_ESTIMATE;
 
                 // cyclic calls to this model will answer based on the acyclic model.
                 iterate(cyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::buildConjunctionModel);
@@ -231,28 +229,28 @@ public class AnswerCountEstimator {
 
                 this.fullAnswerCount = estimateAnswers(allVariables(), resolvables().toSet()) + this.negatedsCost;
 
-                initializationStatus = InitializationStatus.COMPLETE;
+                modelStatus = ModelStatus.COMPLETE;
             }
         }
 
         private void buildAcyclicModel() {
-            this.resolvableModels.putAll(buildResolvableModelsForRetrievables());
-            this.resolvableModels.putAll(buildResolvableModelsForNegateds());
-            this.resolvableModels.putAll(buildResolvableModelsForAcyclicConcludables());
+            this.resolvableModels.putAll(buildModelsForRetrievables());
+            this.resolvableModels.putAll(buildModelsForNegateds());
+            this.resolvableModels.putAll(buildModelsForAcyclicConcludables());
             iterate(cyclicConcludables).forEachRemaining(concludable -> this.resolvableModels.put(concludable, list()));
             this.baselineCover = computeBaselineVariableCover(new HashMap<>());
         }
 
         private void buildCyclicModel() {
             this.resolvableModels.putAll(buildResolvableModelsForCyclicConcludables());
-            Map<Resolvable<?>, List<ResolvableModel>> singleVariableModels = resolvableModelsForSingleVariables();
-            iterate(singleVariableModels.keySet()).forEachRemaining(resolvable -> {
-                this.resolvableModels.put(resolvable, list(this.resolvableModels.get(resolvable), singleVariableModels.get(resolvable)));
+            Map<Resolvable<?>, List<ResolvableModel>> unaryModels = resolvableModelsForSingleVariables();
+            iterate(unaryModels.keySet()).forEachRemaining(resolvable -> {
+                this.resolvableModels.put(resolvable, list(this.resolvableModels.get(resolvable), unaryModels.get(resolvable)));
             });
-            this.baselineCover = computeBaselineVariableCover(singleVariableModels); // recompute with inferred
+            this.baselineCover = computeBaselineVariableCover(unaryModels); // recompute with inferred
         }
 
-        private Map<Resolvable<?>, List<ResolvableModel>> buildResolvableModelsForRetrievables() {
+        private Map<Resolvable<?>, List<ResolvableModel>> buildModelsForRetrievables() {
             Map<Resolvable<?>, List<ResolvableModel>> modelsForRetrievables = new HashMap<>();
             resolvables().filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(retrievable -> {
                 Set<Concludable> concludablesInRetrievable = ResolvableConjunction.of(retrievable.pattern()).positiveConcludables();
@@ -261,14 +259,14 @@ public class AnswerCountEstimator {
             return modelsForRetrievables;
         }
 
-        private Map<Resolvable<?>, List<ResolvableModel>> buildResolvableModelsForNegateds() {
+        private Map<Resolvable<?>, List<ResolvableModel>> buildModelsForNegateds() {
             Map<Resolvable<?>, List<ResolvableModel>> modelsForNegateds = new HashMap<>();
             Set<Negated> negateds = resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated).toSet();
             iterate(negateds).forEachRemaining(negated -> modelsForNegateds.put(negated, list()));
             return modelsForNegateds;
         }
 
-        private Map<Resolvable<?>, List<ResolvableModel>> buildResolvableModelsForAcyclicConcludables() {
+        private Map<Resolvable<?>, List<ResolvableModel>> buildModelsForAcyclicConcludables() {
             Map<Resolvable<?>, List<ResolvableModel>> modelsForAcyclicConcludables = new HashMap<>();
             iterate(acyclicConcludables).forEachRemaining(concludable -> {
                 modelsForAcyclicConcludables.put(concludable, list(buildConcludableModel(concludable)));
@@ -293,28 +291,28 @@ public class AnswerCountEstimator {
                         long inferredAnswerCount = (concludable.isHas() || concludable.isAttribute()) ?
                                 concludableModel.attributesCreatedByExplicitHas(concludable) :
                                 concludableModel.estimateInferredAnswerCount(concludable, set(v));
-                        singleVariableModels.put(concludable, list(new ResolvableModel.SimpleModel(list(v), persistedAnswerCount + inferredAnswerCount)));
+                        singleVariableModels.put(concludable, list(new ResolvableModel.StaticModel(list(v), persistedAnswerCount + inferredAnswerCount)));
                     });
             return singleVariableModels;
         }
 
-        private Map<Variable, ResolvableModel> computeBaselineVariableCover(Map<Resolvable<?>, List<ResolvableModel>> unaryEstimates) {
-            Map<Variable, ResolvableModel> newUnaryEstimateCover = new HashMap<>();
+        private Map<Variable, ResolvableModel> computeBaselineVariableCover(Map<Resolvable<?>, List<ResolvableModel>> unaryModels) {
+            Map<Variable, ResolvableModel> newUnaryModelCover = new HashMap<>();
             iterate(allVariables()).map(Variable::asThing).forEachRemaining(v -> { // baseline
-                newUnaryEstimateCover.put(v, new ResolvableModel.SimpleModel(list(v), concludableModel.countPersistedThingsMatchingType(v)));
+                newUnaryModelCover.put(v, new ResolvableModel.StaticModel(list(v), concludableModel.countPersistedThingsMatchingType(v)));
             });
 
-            iterate(unaryEstimates.values()).flatMap(Iterators::iterate)
-                    .forEachRemaining(estimate -> {
-                        Variable v = estimate.variables.get(0);
-                        long existingEstimate = newUnaryEstimateCover.get(v).estimateAnswers(set(v));
-                        long newEstimate = estimate.estimateAnswers(set(v));
+            iterate(unaryModels.values()).flatMap(Iterators::iterate)
+                    .forEachRemaining(model -> {
+                        Variable v = model.variables.get(0);
+                        long existingEstimate = newUnaryModelCover.get(v).estimateAnswers(set(v));
+                        long newEstimate = model.estimateAnswers(set(v));
                         if (newEstimate > existingEstimate) { // Biggest one serves as baseline.
-                            newUnaryEstimateCover.put(v, estimate);
+                            newUnaryModelCover.put(v, model);
                         }
                     });
 
-            return newUnaryEstimateCover;
+            return newUnaryModelCover;
         }
 
         private ResolvableModel buildConcludableModel(Concludable concludable) {
@@ -325,7 +323,7 @@ public class AnswerCountEstimator {
             } else if (concludable.isIsa()) {
                 assert concludable.generating().isPresent();
                 ThingVariable v = concludable.generating().get();
-                return new ResolvableModel.SimpleModel(list(v),
+                return new ResolvableModel.StaticModel(list(v),
                         concludableModel.countPersistedThingsMatchingType(v) + concludableModel.estimateInferredAnswerCount(concludable, set(v)));
             } else throw TypeDBException.of(ILLEGAL_STATE);
         }
@@ -340,10 +338,10 @@ public class AnswerCountEstimator {
 
             abstract long estimateAnswers(Set<Variable> variableFilter);
 
-            private static class SimpleModel extends ResolvableModel {
+            private static class StaticModel extends ResolvableModel {
                 private final long staticEstimate;
 
-                private SimpleModel(List<Variable> variables, long estimate) {
+                private StaticModel(List<Variable> variables, long estimate) {
                     super(variables);
                     this.staticEstimate = estimate;
                 }
@@ -405,7 +403,7 @@ public class AnswerCountEstimator {
             long estimate = countPersistedHasEdges(concludableHas.asHas().owner().inferredTypes(), concludableHas.asHas().attribute().inferredTypes()) +
                     estimateInferredAnswerCount(concludableHas, set(concludableHas.asHas().owner(), concludableHas.asHas().attribute()));
 
-            return new ConjunctionModel.ResolvableModel.SimpleModel(list(concludableHas.asHas().owner(), concludableHas.asHas().attribute()), estimate);
+            return new ConjunctionModel.ResolvableModel.StaticModel(list(concludableHas.asHas().owner(), concludableHas.asHas().attribute()), estimate);
         }
 
         private ConjunctionModel.ResolvableModel modelForRelation(Concludable.Relation concludable) {
