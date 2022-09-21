@@ -13,7 +13,9 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
+
 package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
@@ -117,7 +119,7 @@ public class AnswerCountEstimator {
 
         private InitializationStatus initializationStatus;
 
-        public ConjunctionModel(AnswerCountEstimator answerCountEstimator, ResolvableConjunction conjunction) {
+        private ConjunctionModel(AnswerCountEstimator answerCountEstimator, ResolvableConjunction conjunction) {
             this.answerCountEstimator = answerCountEstimator;
             this.concludableModel = answerCountEstimator.concludableModel;
             this.logicMgr = answerCountEstimator.logicMgr;
@@ -139,12 +141,12 @@ public class AnswerCountEstimator {
                     .toSet();
         }
 
-        public long estimateAllAnswers() {
+        private long estimateAllAnswers() {
             assert this.initializationStatus == InitializationStatus.COMPLETE && this.fullAnswerCount >= 0;
             return this.fullAnswerCount;
         }
 
-        public long estimateAnswers(Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
+        private long estimateAnswers(Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
             assert this.initializationStatus == InitializationStatus.ACYCLIC_ESTIMATE || this.initializationStatus == InitializationStatus.COMPLETE;
             List<ResolvableModel> includedEstimates = iterate(includedResolvables)
                     .flatMap(resolvable -> iterate(resolvableModels.get(resolvable)))
@@ -182,7 +184,7 @@ public class AnswerCountEstimator {
                     .map(rule -> rule.condition().conjunction());
         }
 
-        public boolean registerDependencies() {
+        private boolean registerDependencies() {
             if (initializationStatus == InitializationStatus.NOT_STARTED) {
                 cyclicConcludables = new HashSet<>();
                 acyclicConcludables = new HashSet<>();
@@ -212,7 +214,7 @@ public class AnswerCountEstimator {
             if (initializationStatus == InitializationStatus.REGISTERED) {
                 // Acyclic estimates
                 resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
-                        .flatMap(negated-> iterate(negated.disjunction().conjunctions()))
+                        .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                         .forEachRemaining(answerCountEstimator::buildConjunctionModel);
                 iterate(acyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::buildConjunctionModel);
                 buildAcyclicModel();
@@ -253,7 +255,6 @@ public class AnswerCountEstimator {
         private Map<Resolvable<?>, List<ResolvableModel>> buildResolvableModelsForRetrievables() {
             Map<Resolvable<?>, List<ResolvableModel>> modelsForRetrievables = new HashMap<>();
             resolvables().filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(retrievable -> {
-                List<ResolvableModel> retrievableEstimates = new ArrayList<>();
                 Set<Concludable> concludablesInRetrievable = ResolvableConjunction.of(retrievable.pattern()).positiveConcludables();
                 modelsForRetrievables.put(retrievable, iterate(concludablesInRetrievable).map(this::buildConcludableModel).toList());
             });
@@ -353,16 +354,16 @@ public class AnswerCountEstimator {
                 }
             }
 
-            public static class RelationModel extends ResolvableModel {
+            private static class RelationModel extends ResolvableModel {
 
                 private final Map<TypeVariable, Integer> rolePlayerCounts;
                 private final Map<TypeVariable, Long> rolePlayerEstimates;
                 private final double relationTypeEstimate;
                 private final long inferredRelationEstimate;
 
-                public RelationModel(List<Variable> variables, double relationTypeEstimate,
-                                     Map<TypeVariable, Long> rolePlayerEstimates, Map<TypeVariable, Integer> rolePlayerCounts,
-                                     long inferredRelationEstimate) {
+                private RelationModel(List<Variable> variables, double relationTypeEstimate,
+                                      Map<TypeVariable, Long> rolePlayerEstimates, Map<TypeVariable, Integer> rolePlayerCounts,
+                                      long inferredRelationEstimate) {
                     super(variables);
                     this.relationTypeEstimate = relationTypeEstimate;
                     this.rolePlayerEstimates = rolePlayerEstimates;
@@ -395,28 +396,9 @@ public class AnswerCountEstimator {
         private final AnswerCountEstimator answerCountEstimator;
         private final GraphManager graphMgr;
 
-        public ConcludableModel(AnswerCountEstimator answerCountEstimator, GraphManager graphMgr) {
+        private ConcludableModel(AnswerCountEstimator answerCountEstimator, GraphManager graphMgr) {
             this.answerCountEstimator = answerCountEstimator;
             this.graphMgr = graphMgr;
-        }
-
-        private long estimateInferredAnswerCount(Concludable concludable, Set<Variable> variableFilter) {
-            Map<Rule, Set<Unifier>> unifiers = answerCountEstimator.logicMgr.applicableRules(concludable);
-            long inferredEstimate = 0;
-            for (Rule rule : unifiers.keySet()) {
-                for (Unifier unifier : unifiers.get(rule)) {
-                    Set<Identifier.Variable> ruleSideIds = iterate(variableFilter)
-                            .flatMap(v -> iterate(unifier.mapping().get(v.id()))).toSet();
-                    Set<Variable> ruleSideVariables = iterate(ruleSideIds).map(id -> rule.conclusion().conjunction().pattern().variable(id))
-                            .toSet();
-                    if (rule.conclusion().generating().isPresent() && ruleSideVariables.contains(rule.conclusion().generating().get())) {
-                        // There is one generated variable per combination of ALL variables in the conclusion
-                        ruleSideVariables = rule.conclusion().pattern().variables().stream().filter(Variable::isThing).collect(Collectors.toSet());
-                    }
-                    inferredEstimate += answerCountEstimator.estimateAnswers(rule.condition().conjunction(), ruleSideVariables);
-                }
-            }
-            return inferredEstimate;
         }
 
         private ConjunctionModel.ResolvableModel modelForHas(Concludable.Has concludableHas) {
@@ -457,7 +439,26 @@ public class AnswerCountEstimator {
             return new ConjunctionModel.ResolvableModel.RelationModel(constrainedVars, relationTypeEstimate, rolePlayerEstimates, rolePlayerCounts, inferredRelationsEstimate);
         }
 
-        public long attributesCreatedByExplicitHas(Concludable concludable) {
+        private long estimateInferredAnswerCount(Concludable concludable, Set<Variable> variableFilter) {
+            Map<Rule, Set<Unifier>> unifiers = answerCountEstimator.logicMgr.applicableRules(concludable);
+            long inferredEstimate = 0;
+            for (Rule rule : unifiers.keySet()) {
+                for (Unifier unifier : unifiers.get(rule)) {
+                    Set<Identifier.Variable> ruleSideIds = iterate(variableFilter)
+                            .flatMap(v -> iterate(unifier.mapping().get(v.id()))).toSet();
+                    Set<Variable> ruleSideVariables = iterate(ruleSideIds).map(id -> rule.conclusion().conjunction().pattern().variable(id))
+                            .toSet();
+                    if (rule.conclusion().generating().isPresent() && ruleSideVariables.contains(rule.conclusion().generating().get())) {
+                        // There is one generated variable per combination of ALL variables in the conclusion
+                        ruleSideVariables = rule.conclusion().pattern().variables().stream().filter(Variable::isThing).collect(Collectors.toSet());
+                    }
+                    inferredEstimate += answerCountEstimator.estimateAnswers(rule.condition().conjunction(), ruleSideVariables);
+                }
+            }
+            return inferredEstimate;
+        }
+
+        private long attributesCreatedByExplicitHas(Concludable concludable) {
             return iterate(answerCountEstimator.logicMgr.applicableRules(concludable).keySet())
                     .filter(rule -> rule.conclusion().isExplicitHas())
                     .map(rule -> rule.conclusion().asExplicitHas().value().value())
