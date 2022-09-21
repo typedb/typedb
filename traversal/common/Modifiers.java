@@ -132,11 +132,10 @@ public class Modifiers {
         public static Sorting create(Sortable.Sorting sort) {
             List<Identifier.Variable.Retrievable> variables = new ArrayList<>();
             Map<Identifier.Variable.Retrievable, Boolean> ascending = new HashMap<>();
-            // TODO: sort order per-variable
-            sort.vars().forEach(typeQLVar -> {
+            sort.variables().forEach(typeQLVar -> {
                 Identifier.Variable.Retrievable var = Identifier.Variable.of(typeQLVar.reference().asReferable()).asRetrievable();
                 variables.add(var);
-                ascending.put(var, sort.order() == TypeQLArg.Order.ASC);
+                ascending.put(var, sort.getOrder(typeQLVar) == TypeQLArg.Order.ASC);
             });
             return new Sorting(variables, ascending);
         }
