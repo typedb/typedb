@@ -206,7 +206,7 @@ public class QueryTest {
                     assertEquals(15 - 5, tx.logic().rules().toList().size());
 
                     // a query that used to trigger a rule should not cause an error
-                    List<ConceptMap> answers = tx.query().match(TypeQL.parseQuery("match $x isa repo-fork;").asMatch()).toList();
+                    List<? extends ConceptMap> answers = tx.query().match(TypeQL.parseQuery("match $x isa repo-fork;").asMatch()).toList();
                 }
             }
         }
@@ -302,7 +302,7 @@ public class QueryTest {
                 try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
                     String matchString = "match $x isa thing;";
                     TypeQLMatch matchQuery = TypeQL.parseQuery(matchString);
-                    FunctionalIterator<ConceptMap> answers = transaction.query().match(matchQuery);
+                    FunctionalIterator<? extends ConceptMap> answers = transaction.query().match(matchQuery);
                     assertFalse(answers.hasNext());
                 }
             }

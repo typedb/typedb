@@ -19,7 +19,9 @@
 package com.vaticle.typedb.core.common.iterator;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.MappedSortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedSortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
@@ -60,15 +62,27 @@ public abstract class AbstractFunctionalIterator<T> implements FunctionalIterato
     }
 
     @Override
+    public <U extends Comparable<? super U>, ORDER extends Order> SortedIterator<U, ORDER> mapSorted(Function<T, U> mappingFn, ORDER order) {
+        return new MappedSortedIterator<>(this, mappingFn, order);
+    }
+
+    @Override
     public <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> mappingFn) {
         return new FlatMappedIterator<>(this, mappingFn);
     }
 
     @Override
-    public <U extends Comparable<? super U>, ORDER extends Order> Forwardable<U, ORDER> mergeMap(
+    public <U extends Comparable<? super U>, ORDER extends Order> SortedIterator<U, ORDER> mergeMap(
+            Function<T, SortedIterator<U, ORDER>> mappingFn, ORDER order
+    ) {
+        return new MergeMappedSortedIterator<>(this, mappingFn, order);
+    }
+
+    @Override
+    public <U extends Comparable<? super U>, ORDER extends Order> Forwardable<U, ORDER> mergeMapForwardable(
             Function<T, Forwardable<U, ORDER>> mappingFn, ORDER order
     ) {
-        return new MergeMappedIterator.Forwardable<>(this, mappingFn, order);
+        return new MergeMappedSortedIterator.Forwardable<>(this, mappingFn, order);
     }
 
     @Override

@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.behaviour.exception.ScenarioDefinitionException;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers.Filter;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.test.ProcedurePermutator;
@@ -69,7 +70,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TypeQLSteps {
 
-    private static List<ConceptMap> answers;
+    private static List<? extends ConceptMap> answers;
     private static Numeric numericAnswer;
     private static List<ConceptMapGroup> answerGroups;
     private static List<NumericGroup> numericAnswerGroups;
@@ -180,16 +181,16 @@ public class TypeQLSteps {
                 .filter(Identifier::isRetrievable).map(Identifier.Variable::asRetrievable)
                 .toSet();
         for (Conjunction conjunction : disjunction.conjunctions()) {
-            GraphTraversal.Thing traversal = conjunction.traversal(filter);
+            GraphTraversal.Thing traversal = conjunction.traversal(Filter.create(filter));
             // limited permutation space to avoid timeouts
             FunctionalIterator<GraphProcedure> procedurePermutations = ProcedurePermutator.generate(traversal.structure()).limit(40320);
             GraphProcedure procedure = procedurePermutations.next();
             Set<VertexMap> answers = procedure.iterator(tx().concepts().graph(),
-                    traversal.parameters(), filter).toSet();
+                    traversal.parameters(), traversal.modifiers()).toSet();
             for (int i = 0; procedurePermutations.hasNext(); i++) {
                 procedure = procedurePermutations.next();
                 Set<VertexMap> permutationAnswers = procedure.iterator(tx().concepts().graph(),
-                        traversal.parameters(), filter).toSet();
+                        traversal.parameters(), traversal.modifiers()).toSet();
                 assertEquals(answers, permutationAnswers);
             }
         }

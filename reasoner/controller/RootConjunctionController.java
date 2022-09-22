@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
-import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 
 import java.util.List;
 import java.util.Set;
@@ -36,12 +36,12 @@ import java.util.function.Supplier;
 public class RootConjunctionController
         extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.Processor> {
 
-    private final Set<Identifier.Variable.Retrievable> filter;
+    private final Modifiers.Filter filter;
     private final boolean explain;
     private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
     RootConjunctionController(Driver<RootConjunctionController> driver, Conjunction conjunction,
-                              Set<Identifier.Variable.Retrievable> filter, boolean explain,
+                              Modifiers.Filter filter, boolean explain,
                               Context context, ReasonerConsumer<ConceptMap> reasonerConsumer) {
         super(driver, conjunction, context);
         this.filter = filter;
@@ -78,14 +78,14 @@ public class RootConjunctionController
 
     protected static class Processor extends ConjunctionController.Processor<ConceptMap, Processor> {
 
-        private final Set<Identifier.Variable.Retrievable> filter;
+        private final Modifiers.Filter filter;
         private RootSink<ConceptMap> rootSink;
         private final boolean explain;
         private final ReasonerConsumer<ConceptMap> reasonerConsumer;
 
         private Processor(Driver<Processor> driver, Driver<RootConjunctionController> controller,
                           Context context, ConceptMap bounds, List<Resolvable<?>> plan,
-                          Set<Identifier.Variable.Retrievable> filter, boolean explain,
+                          Modifiers.Filter filter, boolean explain,
                           ReasonerConsumer<ConceptMap> reasonerConsumer, Supplier<String> debugName) {
             super(driver, controller, context, bounds, plan, debugName);
             this.filter = filter;
@@ -95,7 +95,7 @@ public class RootConjunctionController
 
         @Override
         public void setUp() {
-            Stream<ConceptMap, ConceptMap> op =  new CompoundStream(this, plan, bounds).buffer();
+            Stream<ConceptMap, ConceptMap> op = new CompoundStream(this, plan, bounds).buffer();
             if (!explain) op = op.map(conceptMap -> conceptMap.filter(filter));
             op = op.distinct();
             setHubReactive(op);

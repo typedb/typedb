@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.planner.Planner;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
@@ -37,14 +38,11 @@ import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.ISA;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
@@ -56,23 +54,26 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.SubString.LIKE;
 
+// TODO: We should not this object as a builder, as the hash and equality functions would change
+//       We should introduce a separate "builder pattern" to Traversal, such that users of this library will build
+//       traversals with Traversal.Builder, and call .build() in the end to produce a final Object.
 public abstract class GraphTraversal extends Traversal {
 
-    final Set<Identifier.Variable.Retrievable> filter;
-
-    public GraphTraversal() {
+    GraphTraversal() {
         super();
-        filter = new HashSet<>();
     }
 
-    abstract Set<Identifier.Variable.Retrievable> filter();
+    public void filter(Modifiers.Filter filter) {
+        modifiers.filter(filter);
+    }
 
-    public abstract void filter(Set<? extends Identifier.Variable.Retrievable> filter);
+    public void sort(Modifiers.Sorting sorting) {
+        modifiers.sorting(sorting);
+    }
 
-    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Planner planner, boolean singleUse,
-                                                      Set<Identifier.Variable.Retrievable> filter) {
+    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Planner planner, boolean singleUse) {
         planner.tryOptimise(graphMgr, singleUse);
-        return planner.procedure().iterator(graphMgr, parameters, filter);
+        return planner.procedure().iterator(graphMgr, parameters, modifiers);
     }
 
     public void labels(Identifier.Variable type, Set<Label> labels) {
@@ -130,23 +131,12 @@ public abstract class GraphTraversal extends Traversal {
 
         @Override
         FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
-            return permutationIterator(graphMgr, Planner.create(structure), true, filter());
+            return permutationIterator(graphMgr, Planner.create(structure, modifiers), true);
         }
 
         public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
                 GraphManager graphMgr, Set<Identifier.Variable.Retrievable> concreteVarIds) {
-            return new CombinationFinder(graphMgr, CombinationProcedure.create(structure), filter(), concreteVarIds).combination();
-        }
-
-        @Override
-        public Set<Identifier.Variable.Retrievable> filter() {
-            return filter;
-        }
-
-        @Override
-        public void filter(Set<? extends Identifier.Variable.Retrievable> filter) {
-            assert iterate(filter).noneMatch(Identifier::isLabel);
-            this.filter.addAll(filter);
+            return new CombinationFinder(graphMgr, CombinationProcedure.create(structure), modifiers.filter(), concreteVarIds).combination();
         }
     }
 
@@ -154,24 +144,22 @@ public abstract class GraphTraversal extends Traversal {
 
         private Planner planner;
         private TraversalCache cache;
-        private boolean modifiable;
 
         public Thing() {
             super();
-            modifiable = true;
         }
 
         public void initialise(TraversalCache cache) {
             assert planner == null;
             this.cache = cache;
-            planner = this.cache.getPlanner(structure, Planner::create);
+            planner = this.cache.getPlanner(structure, modifiers, sm -> Planner.create(sm.first(), sm.second()));
         }
 
         @Override
         FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
             assert planner != null && cache != null;
-            FunctionalIterator<VertexMap> iter = permutationIterator(graphMgr, planner, false, filter());
-            cache.mayUpdatePlanner(structure, planner);
+            FunctionalIterator<VertexMap> iter = permutationIterator(graphMgr, planner, false);
+            cache.mayUpdatePlanner(structure, modifiers, planner);
             return iter;
         }
 
@@ -179,83 +167,53 @@ public abstract class GraphTraversal extends Traversal {
                                                           int parallelisation) {
             assert planner != null && cache != null;
             planner.tryOptimise(graphMgr, false);
-            FunctionalProducer<VertexMap> producer = planner.procedure().producer(graphMgr, parameters, filter(), parallelisation);
-            cache.mayUpdatePlanner(structure, planner);
+            FunctionalProducer<VertexMap> producer = planner.procedure().producer(graphMgr, parameters, modifiers, parallelisation);
+            cache.mayUpdatePlanner(structure, modifiers, planner);
             return producer;
         }
 
-        // TODO: We should not dynamically calculate properties like this, and then guard against 'modifiable'.
-        //       We should introduce a "builder pattern" to Traversal, such that users of this library will build
-        //       traversals with Traversal.Builder, and call .build() in the end to produce a final Object.
-        @Override
-        Set<Identifier.Variable.Retrievable> filter() {
-            if (filter.isEmpty()) {
-                modifiable = false;
-                iterate(structure.vertices()).filter(v -> v.id().isRetrievable()).map(v -> v.id().asVariable().asRetrievable())
-                        .toSet(filter);
-            }
-            return filter;
-        }
-
-        @Override
-        public void filter(Set<? extends Identifier.Variable.Retrievable> filter) {
-            assert modifiable && iterate(filter).noneMatch(Identifier::isLabel);
-            this.filter.addAll(filter);
-        }
-
         public void equalThings(Identifier.Variable thing1, Identifier.Variable thing2) {
-            assert modifiable;
             structure.equalEdge(structure.thingVertex(thing1), structure.thingVertex(thing2));
         }
 
         public void iid(Identifier.Variable thing, ByteArray iid) {
-            assert modifiable;
             parameters.putIID(thing, VertexIID.Thing.of(iid));
             structure.thingVertex(thing).props().hasIID(true);
         }
 
         public void types(Identifier thing, Set<Label> labels) {
-            assert modifiable;
             structure.thingVertex(thing).props().types(labels);
         }
 
         public void has(Identifier.Variable thing, Identifier.Variable attribute) {
-            assert modifiable;
             structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(attribute), HAS);
         }
 
         public void isa(Identifier thing, Identifier.Variable type) {
-            assert modifiable;
             isa(thing, type, true);
         }
 
         public void isa(Identifier thing, Identifier.Variable type, boolean isTransitive) {
-            assert modifiable;
             structure.nativeEdge(structure.thingVertex(thing), structure.typeVertex(type), ISA, isTransitive);
         }
 
         public void relating(Identifier.Variable relation, Identifier.Scoped role) {
-            assert modifiable;
             structure.nativeEdge(structure.thingVertex(relation), structure.thingVertex(role), RELATING);
         }
 
         public void playing(Identifier.Variable thing, Identifier.Scoped role) {
-            assert modifiable;
             structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(role), PLAYING);
         }
 
         public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> roleTypes, int repetition) {
-            assert modifiable;
             structure.rolePlayer(structure.thingVertex(relation), structure.thingVertex(player), roleTypes, repetition);
         }
 
         public void clearLabels(Identifier.Variable type) {
-            assert modifiable;
             structure.typeVertex(type).props().clearLabels();
         }
 
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate token, String value) {
-            assert modifiable;
             Predicate.Value.String predicate = Predicate.Value.String.of(token);
             structure.thingVertex(attribute).props().predicate(predicate);
             if (token == LIKE) parameters.pushValue(attribute, predicate, new Parameters.Value(Pattern.compile(value)));
@@ -263,21 +221,18 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, Boolean value) {
-            assert modifiable;
             Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.BOOLEAN);
             parameters.pushValue(attribute, predicate, new Parameters.Value(value));
             structure.thingVertex(attribute).props().predicate(predicate);
         }
 
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, Long value) {
-            assert modifiable;
             Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.LONG);
             parameters.pushValue(attribute, predicate, new Parameters.Value(value));
             structure.thingVertex(attribute).props().predicate(predicate);
         }
 
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, Double value) {
-            assert modifiable;
             long longValue = Math.round(value);
             if (Predicate.compareDoubles(value, longValue) == 0) {
                 predicate(attribute, token, longValue);
@@ -289,34 +244,14 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, LocalDateTime value) {
-            assert modifiable;
             Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.DATETIME);
             parameters.pushValue(attribute, predicate, new Parameters.Value(value));
             structure.thingVertex(attribute).props().predicate(predicate);
         }
 
         public void predicate(Identifier.Variable att1, TypeQLToken.Predicate.Equality token, Identifier.Variable att2) {
-            assert modifiable;
             Predicate.Variable predicate = Predicate.Variable.of(token);
             structure.predicateEdge(structure.thingVertex(att1), structure.thingVertex(att2), predicate);
         }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Thing that = (Thing) o;
-
-            // We compare this.filter() instead of this.filter, as the property is dynamically calculated
-            return (this.structure.equals(that.structure) &&
-                    this.parameters.equals(that.parameters) &&
-                    this.filter().equals(that.filter()));
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(this.structure, this.parameters, this.filter);
-        }
-
     }
 }

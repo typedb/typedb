@@ -128,7 +128,7 @@ public class QueryService {
     private void match(String queryStr, Options.Query options, UUID reqID) {
         TypeQLMatch query = TypeQL.parseQuery(queryStr).asMatch();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
-        FunctionalIterator<ConceptMap> answers = queryMgr.match(query, context);
+        FunctionalIterator<? extends ConceptMap> answers = queryMgr.match(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> matchResPart(reqID, a));
     }
 

@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER extends Order, ITER extends SortedIterator<U, ORDER>>
+public class MergeMappedSortedIterator<T, U extends Comparable<? super U>, ORDER extends Order, ITER extends SortedIterator<U, ORDER>>
         extends AbstractSortedIterator<U, ORDER> {
 
     private final Function<T, ITER> mappingFn;
@@ -44,7 +44,7 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
 
     private enum State {INIT, NOT_READY, FETCHED, COMPLETED}
 
-    public MergeMappedIterator(FunctionalIterator<T> iterator, Function<T, ITER> mappingFn, ORDER order) {
+    public MergeMappedSortedIterator(FunctionalIterator<T> iterator, Function<T, ITER> mappingFn, ORDER order) {
         super(order);
         this.iterator = iterator;
         this.mappingFn = mappingFn;
@@ -140,7 +140,7 @@ public class MergeMappedIterator<T, U extends Comparable<? super U>, ORDER exten
     }
 
     public static class Forwardable<T, U extends Comparable<? super U>, ORDER extends Order>
-            extends MergeMappedIterator<T, U, ORDER, SortedIterator.Forwardable<U, ORDER>>
+            extends MergeMappedSortedIterator<T, U, ORDER, SortedIterator.Forwardable<U, ORDER>>
             implements SortedIterator.Forwardable<U, ORDER> {
 
         private U initialForward;

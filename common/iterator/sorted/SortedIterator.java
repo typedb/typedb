@@ -49,6 +49,10 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
             return orderer().compare(last, next) <= 0;
         }
 
+        public boolean isAscending() { return false; }
+
+        public boolean isDescending() { return false; }
+
         public static class Asc extends Order {
 
             private static final Orderer orderer = new Orderer() {
@@ -71,6 +75,11 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
             @Override
             Orderer orderer() {
                 return orderer;
+            }
+
+            @Override
+            public boolean isAscending() {
+                return true;
             }
         }
 
@@ -98,14 +107,17 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
             Orderer orderer() {
                 return orderer;
             }
+
+            @Override
+            public boolean isDescending() {
+                return true;
+            }
         }
     }
 
     ORDER order();
 
     T peek();
-
-    SortedIterator<T, ORDER> merge(SortedIterator<T, ORDER> iterator);
 
     @Override
     SortedIterator<T, ORDER> distinct();
@@ -115,8 +127,6 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends S
 
     @Override
     SortedIterator<T, ORDER> limit(long limit);
-
-    <U extends Comparable<? super U>, ORD extends Order> SortedIterator<U, ORD> mapSorted(Function<T, U> mappingFn, ORD order);
 
     NavigableSet<T> toNavigableSet();
 

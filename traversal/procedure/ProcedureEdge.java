@@ -240,8 +240,8 @@ public abstract class ProcedureEdge<
             assert fromVertex.isThing() && fromVertex.asThing().isAttribute();
 
             Forwardable<? extends ThingVertex, Order.Asc> toIter;
-            if (to.props().hasIID()) toIter = to.iterateAndFilterFromIID(graphMgr, params);
-            else toIter = to.iterateAndFilterFromTypes(graphMgr, params);
+            if (to.props().hasIID()) toIter = to.iterateAndFilterFromIID(graphMgr, params, ASC);
+            else toIter = to.iterateAndFilterFromTypes(graphMgr, params, ASC);
 
             return toIter.filter(toVertex -> predicate.apply(fromVertex.asThing().asAttribute(), toVertex.asAttribute()));
         }
@@ -367,11 +367,11 @@ public abstract class ProcedureEdge<
                     TypeVertex type = fromVertex.asType();
                     Set<TypeVertex> isaTypes = isTransitive ? graphMgr.schema().getSubtypes(type) : set(type);
                     if (to.props().hasIID()) {
-                        return to.iterateAndFilterFromIID(graphMgr, params).filter(vertex -> isaTypes.contains(vertex.type()));
+                        return to.iterateAndFilterFromIID(graphMgr, params, ASC).filter(vertex -> isaTypes.contains(vertex.type()));
                     } else {
                         FunctionalIterator<TypeVertex> toTypes = iterate(isaTypes).filter(v -> to.props().types().contains(v.properLabel()));
                         if (!toTypes.hasNext()) return emptySorted();
-                        else return to.iterateAndFilterFromTypes(graphMgr, params, toTypes);
+                        else return to.iterateAndFilterFromTypes(graphMgr, params, toTypes, ASC);
                     }
                 }
 
@@ -834,7 +834,7 @@ public abstract class ProcedureEdge<
                         graphMgr.schema().relatedRoleTypes(type) : graphMgr.schema().playedRoleTypes(type);
                 return iterate(roleTypes)
                         .filter(rt -> to.props().types().contains(rt.properLabel()))
-                        .mergeMap(t -> relationOrPlayer.outs().edge(encoding, PrefixIID.of(VERTEX_ROLE), t.iid()).to(), ASC);
+                        .mergeMapForwardable(t -> relationOrPlayer.outs().edge(encoding, PrefixIID.of(VERTEX_ROLE), t.iid()).to(), ASC);
             }
 
             static abstract class Has extends Thing {
@@ -872,13 +872,13 @@ public abstract class ProcedureEdge<
                         } else {
                             eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
                             if (eq != null) {
-                                iter = to.iteratorOfAttributesWithTypes(graphMgr, params, eq)
+                                iter = to.iteratorOfAttributesWithTypes(graphMgr, params, eq, ASC)
                                         .filter(a -> owner.outs().edge(HAS, a.asAttribute()) != null);
                             } else {
                                 Set<TypeVertex> attributes = graphMgr.schema().ownedAttributeTypes(owner.type());
                                 iter = iterate(attributes)
                                         .filter(attr -> to.props().types().contains(attr.properLabel()))
-                                        .mergeMap(
+                                        .mergeMapForwardable(
                                                 t -> owner.outs().edge(HAS, PrefixIID.of(VERTEX_ATTRIBUTE), t.iid()).to(), ASC
                                         ).mapSorted(ThingVertex::asAttribute, v -> v, ASC);
                             }
@@ -919,7 +919,7 @@ public abstract class ProcedureEdge<
                             Set<TypeVertex> owners = graphMgr.schema().ownersOfAttributeType(att.type());
                             iter = iterate(owners)
                                     .filter(owner -> to.props().types().contains(owner.properLabel()))
-                                    .mergeMap(t -> att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from(), ASC);
+                                    .mergeMapForwardable(t -> att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from(), ASC);
                         }
 
                         if (to.props().predicates().isEmpty()) return iter;
@@ -992,7 +992,7 @@ public abstract class ProcedureEdge<
                             Set<TypeVertex> players = graphMgr.schema().playersOfRoleType(role.type());
                             iter = iterate(players)
                                     .filter(player -> toTypes.contains(player.properLabel()))
-                                    .mergeMap(t -> role.ins().edge(PLAYING, PrefixIID.of(t.encoding().instance()), t.iid()).from(), ASC);
+                                    .mergeMapForwardable(t -> role.ins().edge(PLAYING, PrefixIID.of(t.encoding().instance()), t.iid()).from(), ASC);
                         }
 
                         if (to.props().predicates().isEmpty()) return iter;
@@ -1075,7 +1075,7 @@ public abstract class ProcedureEdge<
                             Set<TypeVertex> relations = graphMgr.schema().relationsOfRoleType(role.type());
                             iter = iterate(relations)
                                     .filter(rel -> toTypes.contains(rel.properLabel()))
-                                    .mergeMap(t -> role.ins().edge(RELATING, PrefixIID.of(RELATION), t.iid()).from(), ASC);
+                                    .mergeMapForwardable(t -> role.ins().edge(RELATING, PrefixIID.of(RELATION), t.iid()).from(), ASC);
                         }
                         return iter;
                     }
@@ -1187,7 +1187,7 @@ public abstract class ProcedureEdge<
                             assert to.id().isVariable();
                             ThingVertex player = graphMgr.data().getReadable(params.getIID(to.id().asVariable()));
                             if (player == null) return emptySorted();
-                            iter = instanceRoleTypes.mergeMap(
+                            iter = instanceRoleTypes.mergeMapForwardable(
                                     rt -> rel.outs()
                                             .edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type())
                                             .toAndOptimised(),
@@ -1195,15 +1195,14 @@ public abstract class ProcedureEdge<
                             ).filter(kv -> kv.key().equals(player));
                             iter.forward(KeyValue.of(player, null));
                         } else {
-                            iter = instanceRoleTypes.flatMap(
-                                    rt -> {
-                                        return iterate(to.props().types())
-                                                .map(l -> graphMgr.schema().getType(l))
-                                                .map(t -> rel.outs()
-                                                        .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
-                                                        .toAndOptimised()
-                                                );
-                                    }).mergeMap(Function.identity(), ASC);
+                            iter = instanceRoleTypes.flatMap(rt ->
+                                    iterate(to.props().types())
+                                            .map(l -> graphMgr.schema().getType(l))
+                                            .map(t -> rel.outs()
+                                                    .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
+                                                    .toAndOptimised()
+                                            )
+                            ).mergeMapForwardable(Function.identity(), ASC);
                         }
 
                         if (!to.props().predicates().isEmpty()) iter = to.filterPredicatesOnEdge(iter, params);
@@ -1218,7 +1217,7 @@ public abstract class ProcedureEdge<
                         Set<TypeVertex> roleTypesPlayed = graphMgr.schema().playedRoleTypes(player.type());
                         Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> closures = iterate(relationRoleTypes)
                                 .filter(rt -> roleTypes.contains(rt.properLabel()) && roleTypesPlayed.contains(rt))
-                                .mergeMap(
+                                .mergeMapForwardable(
                                         rt -> rel.outs()
                                                 .edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type())
                                                 .toAndOptimised(),
@@ -1262,7 +1261,7 @@ public abstract class ProcedureEdge<
                             assert to.id().isVariable();
                             ThingVertex relation = graphMgr.data().getReadable(params.getIID(to.id().asVariable()));
                             if (relation == null) return emptySorted();
-                            iter = roleTypeVertices.mergeMap(
+                            iter = roleTypeVertices.mergeMapForwardable(
                                     rt -> player.ins()
                                             .edge(ROLEPLAYER, rt, relation.iid().prefix(), relation.iid().type())
                                             .fromAndOptimised(),
@@ -1277,7 +1276,7 @@ public abstract class ProcedureEdge<
                                                         .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
                                                         .fromAndOptimised()
                                                 );
-                                    }).mergeMap(Function.identity(), ASC);
+                                    }).mergeMapForwardable(Function.identity(), ASC);
                         }
                         return iter;
                     }
@@ -1290,7 +1289,7 @@ public abstract class ProcedureEdge<
                         Set<TypeVertex> roleTypesPlayed = graphMgr.schema().playedRoleTypes(player.type());
                         Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> closures = iterate(relationRoleTypes)
                                 .filter(rt -> roleTypes.contains(rt.properLabel()) && roleTypesPlayed.contains(rt))
-                                .mergeMap(
+                                .mergeMapForwardable(
                                         rt -> player.ins().edge(ROLEPLAYER, rt, rel.iid().prefix(), rel.iid().type())
                                                 .fromAndOptimised(),
                                         ASC

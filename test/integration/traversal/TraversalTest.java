@@ -20,14 +20,18 @@ package com.vaticle.typedb.core.traversal;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
+import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
@@ -44,13 +48,19 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.map;
+import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TraversalTest {
 
@@ -74,6 +84,143 @@ public class TraversalTest {
     @After
     public void teardown() {
         databaseMgr.close();
+    }
+
+    @Test
+    public void sorting_longs() {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery("define person sub entity, owns age; age sub attribute, value long;");
+            transaction.query().define(query);
+            transaction.commit();
+        }
+        session.close();
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has age 10;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has age 11;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has age 12;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has age 13;").asInsert());
+            transaction.commit();
+        }
+        try (CoreTransaction transaction = session.transaction(READ)) {
+            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has age $a;")
+                    .asMatch().conjunction().normalise());
+            transaction.logic().typeInference().applyCombination(disjunction);
+            Identifier.Variable.Name var = Identifier.Variable.name("a");
+            Modifiers.Filter filter = Modifiers.Filter.create(set(var));
+            Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, false)));
+            SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
+
+            long lastValue = Long.MAX_VALUE;
+            while (answers.hasNext()) {
+                ConceptMap.Sortable answer = answers.next();
+                long nextValue = answer.get("a").asAttribute().asLong().getValue();
+                assertTrue(nextValue <= lastValue);
+                lastValue = nextValue;
+            }
+            ;
+        }
+    }
+
+    @Test
+    public void sorting_booleans() {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery("define person sub entity, owns is-married; is-married sub attribute, value boolean;");
+            transaction.query().define(query);
+            transaction.commit();
+        }
+        session.close();
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has is-married true;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has is-married false;").asInsert());
+            transaction.commit();
+        }
+        try (CoreTransaction transaction = session.transaction(READ)) {
+            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has is-married $a;")
+                    .asMatch().conjunction().normalise());
+            transaction.logic().typeInference().applyCombination(disjunction);
+            Identifier.Variable.Name var = Identifier.Variable.name("a");
+            Modifiers.Filter filter = Modifiers.Filter.create(set(var));
+            Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, false)));
+            List<ConceptMap.Sortable> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting).toList();
+            assertEquals(true, answers.get(0).get("a").asAttribute().asBoolean().getValue());
+            assertEquals(false, answers.get(1).get("a").asAttribute().asBoolean().getValue());
+        }
+    }
+
+    @Test
+    public void sorting_doubles() {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery("define person sub entity, owns money; money sub attribute, value double;");
+            transaction.query().define(query);
+            transaction.commit();
+        }
+        session.close();
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has money 10.3;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has money 11.5;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has money 12.1999;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has money 13.2000;").asInsert());
+            transaction.commit();
+        }
+        try (CoreTransaction transaction = session.transaction(READ)) {
+            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has money $a;")
+                    .asMatch().conjunction().normalise());
+            transaction.logic().typeInference().applyCombination(disjunction);
+            Identifier.Variable.Name var = Identifier.Variable.name("a");
+            Modifiers.Filter filter = Modifiers.Filter.create(set(var));
+            Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, true)));
+            SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
+
+            double lastValue = Double.MIN_VALUE;
+            while (answers.hasNext()) {
+                ConceptMap.Sortable answer = answers.next();
+                double nextValue = answer.get("a").asAttribute().asDouble().getValue();
+                assertTrue(nextValue >= lastValue);
+                lastValue = nextValue;
+            }
+            ;
+        }
+    }
+
+    @Test
+    public void sorting_dates() {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery("define person sub entity, owns birth-date; birth-date sub attribute, value datetime;");
+            transaction.query().define(query);
+            transaction.commit();
+        }
+        session.close();
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has birth-date 2000-01-01T00:00;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has birth-date 2001-01-01T00:00;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has birth-date 2000-02-03T00:00;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has birth-date 2000-01-04T00:00;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has birth-date 2000-01-04T01:00;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $x isa person, has birth-date 2000-01-04T00:01;").asInsert());
+            transaction.commit();
+        }
+        try (CoreTransaction transaction = session.transaction(READ)) {
+            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has birth-date $a;")
+                    .asMatch().conjunction().normalise());
+            transaction.logic().typeInference().applyCombination(disjunction);
+            Identifier.Variable.Name var = Identifier.Variable.name("a");
+            Modifiers.Filter filter = Modifiers.Filter.create(set(var));
+            Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, false)));
+            SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
+
+            LocalDateTime lastValue = LocalDateTime.MAX;
+            while (answers.hasNext()) {
+                ConceptMap.Sortable answer = answers.next();
+                LocalDateTime nextValue = answer.get("a").asAttribute().asDateTime().getValue();
+                assertTrue(nextValue.compareTo(lastValue) < 0);
+                lastValue = nextValue;
+            }
+            ;
+        }
     }
 
     @Test
@@ -111,14 +258,16 @@ public class TraversalTest {
             proc.backwardIsa(type, x, true);
 
             Traversal.Parameters params = new Traversal.Parameters();
+            Modifiers modifiers = new Modifiers();
 
             Set<Identifier.Variable.Retrievable> filter = set(
                     x.id().asVariable().asRetrievable(),
                     type.id().asVariable().asRetrievable()
             );
+            modifiers.filter(Modifiers.Filter.create(filter));
 
             GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, modifiers);
             assertEquals(3, vertices.count());
         }
     }
@@ -176,6 +325,7 @@ public class TraversalTest {
             proc.forwardRolePlayer(_1, r, 0, set(Label.of("reply", "reply-of")));
 
             Traversal.Parameters params = new Traversal.Parameters();
+            Modifiers modifiers = new Modifiers();
 
             Set<Identifier.Variable.Retrievable> filter = set(
                     r.id().asVariable().asRetrievable(),
@@ -183,9 +333,10 @@ public class TraversalTest {
                     d1.id().asVariable().asRetrievable(),
                     d2.id().asVariable().asRetrievable()
             );
+            modifiers.filter(Modifiers.Filter.create(filter));
 
             GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, modifiers);
             assertEquals(10, vertices.count());
         }
     }
@@ -243,6 +394,7 @@ public class TraversalTest {
             proc.forwardPredicate(d1, d2, Predicate.Variable.of(TypeQLToken.Predicate.Equality.LT));
 
             Traversal.Parameters params = new Traversal.Parameters();
+            Modifiers modifiers = new Modifiers();
 
             Set<Identifier.Variable.Retrievable> filter = set(
                     r.id().asVariable().asRetrievable(),
@@ -250,9 +402,10 @@ public class TraversalTest {
                     d1.id().asVariable().asRetrievable(),
                     d2.id().asVariable().asRetrievable()
             );
+            modifiers.filter(Modifiers.Filter.create(filter));
 
             GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, modifiers);
             assertEquals(10, vertices.count());
         }
     }
@@ -425,6 +578,7 @@ public class TraversalTest {
             proc.forwardHas(refl, r1);
             proc.forwardHas(f1, r2);
 
+            Modifiers modifiers = new Modifiers();
             Set<Identifier.Variable.Retrievable> filter = set(
                     n.id().asVariable().asRetrievable(),
                     x.id().asVariable().asRetrievable(),
@@ -436,9 +590,10 @@ public class TraversalTest {
                     _0.id().asVariable().asRetrievable(),
                     _1.id().asVariable().asRetrievable()
             );
+            modifiers.filter(Modifiers.Filter.create(filter));
 
             GraphProcedure procedure = proc.build();
-            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, filter);
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, modifiers);
             vertices.next();
         }
         session.close();

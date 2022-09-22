@@ -25,12 +25,11 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
-import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -170,10 +169,10 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         public static class Conjunction extends Match {
 
             private final com.vaticle.typedb.core.pattern.Conjunction conjunction;
-            private final Set<Identifier.Variable.Retrievable> filter;
+            private final Modifiers.Filter filter;
 
             public Conjunction(com.vaticle.typedb.core.pattern.Conjunction conjunction,
-                               Set<Identifier.Variable.Retrievable> filter, Options.Query options,
+                               Modifiers.Filter filter, Options.Query options,
                                ControllerRegistry controllerRegistry, ExplainablesManager explainablesManager) {
                 super(options, controllerRegistry, explainablesManager);
                 this.conjunction = conjunction;
@@ -189,10 +188,10 @@ public abstract class ReasonerProducer<ANSWER> implements Producer<ANSWER>, Reas
         public static class Disjunction extends Match {
 
             private final com.vaticle.typedb.core.pattern.Disjunction disjunction;
-            private final Set<Identifier.Variable.Retrievable> filter;
+            private final Modifiers.Filter filter;
 
             public Disjunction(com.vaticle.typedb.core.pattern.Disjunction disjunction,
-                               Set<Identifier.Variable.Retrievable> filter, Options.Query options,
+                               Modifiers.Filter filter, Options.Query options,
                                ControllerRegistry controllerRegistry, ExplainablesManager explainablesManager) {
                 super(options, controllerRegistry, explainablesManager);
                 this.disjunction = disjunction;

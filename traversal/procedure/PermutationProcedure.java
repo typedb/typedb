@@ -22,16 +22,14 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.Traversal;
-import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
-
-import java.util.Set;
 
 public interface PermutationProcedure {
 
     FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                           Set<Identifier.Variable.Retrievable> filter, int parallelisation);
+                                           Modifiers modifiers, int parallelisation);
 
     FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                           Set<Identifier.Variable.Retrievable> filter);
+                                           Modifiers modifiers);
 }

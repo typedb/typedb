@@ -25,10 +25,10 @@ import java.util.Objects;
 
 public class ConceptMapGroup implements Answer {
     private final Concept owner;
-    private final List<ConceptMap> conceptMaps;
+    private final List<? extends ConceptMap> conceptMaps;
     private final int hash;
 
-    public ConceptMapGroup(Concept owner, List<ConceptMap> conceptMaps) {
+    public ConceptMapGroup(Concept owner, List<? extends ConceptMap> conceptMaps) {
         this.owner = owner;
         this.conceptMaps = conceptMaps;
         this.hash = Objects.hash(this.owner, this.conceptMaps);
@@ -38,7 +38,7 @@ public class ConceptMapGroup implements Answer {
         return this.owner;
     }
 
-    public List<ConceptMap> conceptMaps() {
+    public List<? extends ConceptMap> conceptMaps() {
         return this.conceptMaps;
     }
 

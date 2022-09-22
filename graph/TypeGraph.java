@@ -221,8 +221,12 @@ public class TypeGraph {
         return getType(ROLE.label(), ROLE.scope());
     }
 
-    public Forwardable<TypeVertex, Order.Asc> thingTypes() {
-        return merge(iterateSorted(ASC, rootThingType()), entityTypes(), relationTypes(), attributeTypes());
+    public FunctionalIterator<TypeVertex> thingTypes() {
+        return thingTypes(ASC);
+    }
+
+    public <ORDER extends Order> Forwardable<TypeVertex, ORDER> thingTypes(ORDER order) {
+        return merge(iterateSorted(order, rootThingType()), entityTypes(order), relationTypes(order), attributeTypes(order));
     }
 
     public NavigableSet<TypeVertex> getSubtypes(TypeVertex type) {
@@ -235,25 +239,45 @@ public class TypeGraph {
         else return fn.get();
     }
 
-    public Forwardable<TypeVertex, Order.Asc> entityTypes() {
-        return iterateSorted(getSubtypes(rootEntityType()), ASC);
+    public FunctionalIterator<TypeVertex> entityTypes() {
+        return entityTypes(ASC);
     }
 
-    public Forwardable<TypeVertex, Order.Asc> attributeTypes() {
-        return iterateSorted(getSubtypes(rootAttributeType()), ASC);
+    public <ORDER extends Order> Forwardable<TypeVertex, ORDER> entityTypes(ORDER order) {
+        return iterateSorted(getSubtypes(rootEntityType()), order);
     }
 
-    public Forwardable<TypeVertex, Order.Asc> attributeTypes(Encoding.ValueType valueType) {
+    public FunctionalIterator<TypeVertex> attributeTypes() {
+        return attributeTypes(ASC);
+    }
+
+    public <ORDER extends Order> Forwardable<TypeVertex, ORDER> attributeTypes(ORDER order) {
+        return iterateSorted(getSubtypes(rootAttributeType()), order);
+    }
+
+    public FunctionalIterator<TypeVertex> attributeTypes(Encoding.ValueType valueType) {
+        return attributeTypes(valueType, ASC);
+    }
+
+    public <ORDER extends Order> Forwardable<TypeVertex, ORDER> attributeTypes(Encoding.ValueType valueType, ORDER order) {
         return iterateSorted(cache.valueAttributeTypes.computeIfAbsent(valueType,
-                vt -> attributeTypes().filter(at -> at.valueType().equals(valueType)).toNavigableSet()), ASC);
+                vt -> attributeTypes(order).filter(at -> at.valueType().equals(valueType)).toNavigableSet()), order);
     }
 
-    public Forwardable<TypeVertex, Order.Asc> relationTypes() {
-        return iterateSorted(getSubtypes(rootRelationType()), ASC);
+    public FunctionalIterator<TypeVertex> relationTypes() {
+        return relationTypes(ASC);
     }
 
-    public Forwardable<TypeVertex, Order.Asc> roleTypes() {
-        return iterateSorted(getSubtypes(rootRoleType()), ASC);
+    public <ORDER extends Order> Forwardable<TypeVertex, ORDER> relationTypes(ORDER order) {
+        return iterateSorted(getSubtypes(rootRelationType()), order);
+    }
+
+    public FunctionalIterator<TypeVertex> roleTypes() {
+        return roleTypes(ASC);
+    }
+
+    public <ORDER extends Order> Forwardable<TypeVertex, ORDER> roleTypes(ORDER order) {
+        return iterateSorted(getSubtypes(rootRoleType()), order);
     }
 
     private NavigableSet<TypeVertex> ownedAttributeTypes(TypeVertex owner, boolean isKey) {

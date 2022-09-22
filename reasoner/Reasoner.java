@@ -19,16 +19,18 @@
 package com.vaticle.typedb.core.reasoner;
 
 import com.vaticle.typedb.common.collection.Either;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.concurrent.producer.Producers;
@@ -42,19 +44,26 @@ import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
-import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typedb.core.traversal.common.Modifiers.Filter;
+import com.vaticle.typedb.core.traversal.common.Modifiers.Sorting;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_SUB_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.cartesian;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.actor;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
@@ -73,9 +82,7 @@ public class Reasoner {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
-        Context.Query defaultContext = new Context.Query(context, new Options.Query());
-        defaultContext.producer(Either.first(EXHAUSTIVE));
-        this.controllerRegistry = new ControllerRegistry(actor(), traversalEng, conceptMgr, logicMgr, defaultContext);
+        this.controllerRegistry = new ControllerRegistry(actor(), traversalEng, conceptMgr, logicMgr, context);
         this.explainablesManager = new ExplainablesManager();
     }
 
@@ -83,31 +90,25 @@ public class Reasoner {
         return controllerRegistry;
     }
 
-    private boolean mayReason(Disjunction disjunction, Context.Query context) {
-        if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
-            return false;
-        }
-        return mayReason(disjunction);
-    }
-
-    private boolean mayReason(Disjunction disjunction) {
-        for (Conjunction conj : disjunction.conjunctions()) {
-            Set<Variable> vars = conj.variables();
-            List<Negation> negs = conj.negations();
-            if (iterate(vars).flatMap(v -> iterate(v.inferredTypes())).distinct().anyMatch(this::hasRule)) return true;
-            if (!negs.isEmpty() && iterate(negs).anyMatch(n -> mayReason(n.disjunction()))) return true;
-        }
-        return false;
-    }
-
-    private boolean hasRule(Label type) {
-        return logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext();
-    }
-
-    public FunctionalIterator<ConceptMap> execute(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Context.Query context) {
+    public FunctionalIterator<? extends ConceptMap> execute(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Context.Query context) {
         inferAndValidateTypes(disjunction);
-        if (mayReason(disjunction, context)) return executeReasoner(disjunction, filter(modifiers.filter()), context);
-        else return executeTraversal(disjunction, context, filter(modifiers.filter()));
+        FunctionalIterator<? extends ConceptMap> answers;
+        Filter filter = Filter.create(modifiers.filter());
+        Optional<Sorting> sorting = modifiers.sort().map(Sorting::create);
+        sorting.ifPresent(value -> validateSorting(disjunction, value));
+        if (mayReason(disjunction, context)) {
+            answers = executeReasoner(disjunction, filter, context);
+            if (sorting.isPresent()) answers = eagerSort(answers, sorting.get());
+        } else if (sorting.isPresent() && isNativelySortable(disjunction, sorting.get())) {
+            answers = executeTraversalSorted(disjunction, filter, sorting.get());
+        } else {
+            answers = executeTraversal(disjunction, context, filter);
+            if (sorting.isPresent()) answers = eagerSort(answers, sorting.get());
+        }
+
+        if (modifiers.offset().isPresent()) answers = answers.offset(modifiers.offset().get());
+        if (modifiers.limit().isPresent()) answers = answers.limit(modifiers.limit().get());
+        return answers;
     }
 
     private void inferAndValidateTypes(Disjunction disjunction) {
@@ -122,12 +123,6 @@ public class Reasoner {
         }
     }
 
-    private Set<Identifier.Variable.Retrievable> filter(List<UnboundVariable> typeQLVars) {
-        Set<Identifier.Variable.Retrievable> names = new HashSet<>();
-        iterate(typeQLVars).map(v -> v.reference().asName()).map(Identifier.Variable::of).forEachRemaining(names::add);
-        return names;
-    }
-
     private Set<Conjunction> incoherentConjunctions(Disjunction disjunction) {
         assert !disjunction.isCoherent();
         Set<Conjunction> causes = new HashSet<>();
@@ -140,16 +135,74 @@ public class Reasoner {
         return causes;
     }
 
-    public FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, Set<Identifier.Variable.Retrievable> filter,
-                                                          Context.Query context) {
+    private void validateSorting(Disjunction disjunction, Sorting sorting) {
+        Map<Identifier.Variable.Retrievable, HashSet<AttributeType>> sortAttrTypes = new HashMap<>();
+        sorting.variables().forEach(id -> disjunction.conjunctions().forEach(conjunction -> {
+            Variable variable = conjunction.variable(id);
+            HashSet<AttributeType> types = sortAttrTypes.computeIfAbsent(id, (i) -> new HashSet<>());
+            variable.inferredTypes().forEach(label -> {
+                ThingType type = conceptMgr.getThingType(label.name());
+                if (type != null && type.isAttributeType()) types.add(type.asAttributeType());
+            });
+        }));
+        sortAttrTypes.forEach((var, attrTypes) -> {
+            Optional<List<AttributeType>> incomparable = cartesian(list(iterate(attrTypes), iterate(attrTypes)))
+                    .filter(list -> !list.get(0).getValueType().comparables().contains(list.get(1).getValueType())).first();
+            if (incomparable.isPresent()) {
+                throw TypeDBException.of(SORT_ATTRIBUTE_NOT_COMPARABLE, var, incomparable.get().get(0).getLabel(), incomparable.get().get(1).getLabel());
+            }
+        });
+    }
+
+    private boolean mayReason(Disjunction disjunction, Context.Query context) {
+        if (!context.options().infer() || context.transactionType().isWrite() || !logicMgr.rules().hasNext()) {
+            return false;
+        }
+        return mayReason(disjunction);
+    }
+
+    private boolean mayReason(Disjunction disjunction) {
+        for (Conjunction conj : disjunction.conjunctions()) {
+            Set<Variable> vars = conj.variables();
+            List<Negation> negs = conj.negations();
+            if (iterate(vars).flatMap(v -> iterate(v.inferredTypes())).distinct().anyMatch(this::ruleConcludes)) {
+                return true;
+            }
+            if (!negs.isEmpty() && iterate(negs).anyMatch(n -> mayReason(n.disjunction()))) return true;
+        }
+        return false;
+    }
+
+    private boolean ruleConcludes(Label type) {
+        return logicMgr.rulesConcluding(type).hasNext() || logicMgr.rulesConcludingHas(type).hasNext();
+    }
+
+    private boolean isNativelySortable(Disjunction disjunction, Sorting sorting) {
+        for (Conjunction conjunction : disjunction.conjunctions()) {
+            for (Identifier.Variable.Retrievable id : sorting.variables()) {
+                Variable variable = conjunction.variable(id);
+                if (variable.isThing() && iterate(variable.inferredTypes()).map(traversalEng.graph().schema()::getType)
+                        .anyMatch(type -> type.isAttributeType() && !type.asType().valueType().isNativelySorted())) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private FunctionalIterator<? extends ConceptMap> eagerSort(FunctionalIterator<? extends ConceptMap> answers, Sorting sorting) {
+        Comparator<ConceptMap> comparator = ConceptMap.Comparator.create(sorting);
+        return iterate(answers.stream().sorted(comparator).iterator());
+    }
+
+    public FunctionalIterator<ConceptMap> executeReasoner(Disjunction disjunction, Filter filter, Context.Query context) {
         ReasonerProducer.Match producer = disjunction.conjunctions().size() == 1
                 ? new ReasonerProducer.Match.Conjunction(disjunction.conjunctions().get(0), filter, context.options(), controllerRegistry, explainablesManager)
                 : new ReasonerProducer.Match.Disjunction(disjunction, filter, context.options(), controllerRegistry, explainablesManager);
         return produce(producer, context.producer(), async1());
     }
 
-    public FunctionalIterator<ConceptMap> executeTraversal(Disjunction disjunction, Context.Query context,
-                                                           Set<Identifier.Variable.Retrievable> filter) {
+    public FunctionalIterator<ConceptMap> executeTraversal(Disjunction disjunction, Context.Query context, Filter filter) {
         FunctionalIterator<ConceptMap> answers;
         FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
         if (!context.options().parallel()) answers = conjs.flatMap(conj -> iterator(conj, filter));
@@ -158,16 +211,28 @@ public class Reasoner {
         return answers;
     }
 
-    private Producer<ConceptMap> producer(Conjunction conjunction, Set<Identifier.Variable.Retrievable> filter) {
+    public SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> executeTraversalSorted(Disjunction disjunction, Filter filter,
+                                                                                                Sorting sorting) {
+        // TODO: parallelised sorted queries
+        FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
+        SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> answers = conjs.mergeMap(conj -> iteratorSorted(conj, filter, sorting), ASC);
+        if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
+        return answers;
+    }
+
+    private Producer<ConceptMap> producer(Conjunction conjunction, Filter filter) {
         if (conjunction.negations().isEmpty()) {
             return traversalEng.producer(conjunction.traversal(filter), PARALLELISATION_FACTOR)
                     .map(conceptMgr::conceptMap);
         } else {
             return traversalEng.producer(conjunction.traversal(), PARALLELISATION_FACTOR)
-                    .map(conceptMgr::conceptMap).filter(answer -> !iterate(conjunction.negations()).flatMap(
-                            negation -> iterator(negation.disjunction(), answer)).hasNext()
-                    ).map(answer -> answer.filter(filter)).distinct();
+                    .map(conceptMgr::conceptMap).filter(answer -> !isNegated(answer, conjunction.negations()))
+                    .map(answer -> answer.filter(filter)).distinct();
         }
+    }
+
+    private boolean isNegated(ConceptMap answer, List<Negation> negations) {
+        return iterate(negations).flatMap(n -> iterator(n.disjunction(), answer)).first().isPresent();
     }
 
     private FunctionalIterator<ConceptMap> iterator(Disjunction disjunction, ConceptMap bounds) {
@@ -175,25 +240,41 @@ public class Reasoner {
     }
 
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
-        return iterator(bound(conjunction, bounds), set());
+        return iterator(bound(conjunction, bounds), Filter.create(list()));
     }
 
-    private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction,
-                                                    Set<Identifier.Variable.Retrievable> filter) {
+    private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, Filter filter) {
         if (!conjunction.isCoherent()) return Iterators.empty();
-        if (conjunction.negations().isEmpty()) {
-            return traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
-        } else {
-            return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap).filter(
-                    ans -> !iterate(conjunction.negations()).flatMap(n -> iterator(n.disjunction(), ans)).hasNext()
-            ).map(conceptMap -> conceptMap.filter(filter)).distinct();
+        FunctionalIterator<ConceptMap> answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
+        if (conjunction.negations().isEmpty()) return answers;
+        else {
+            return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap)
+                    .filter(ans -> !isNegated(ans, conjunction.negations()))
+                    .map(conceptMap -> conceptMap.filter(filter)).distinct();
+        }
+    }
+
+    private SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> iteratorSorted(Conjunction conjunction,
+                                                                                         Filter filter, Sorting sorting) {
+        ConceptMap.Sortable.Comparator comparator = ConceptMap.Comparator.create(sorting);
+        SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> answers = traversalEng.iterator(conjunction.traversal(filter, sorting))
+                .mapSorted(vertexMap -> conceptMgr.conceptMapOrdered(vertexMap, comparator), ASC);
+        if (conjunction.negations().isEmpty()) return answers;
+        else {
+            return answers.filter(ans -> !isNegated(ans, conjunction.negations()))
+                    .mapSorted(conceptMap -> conceptMap.filter(filter), ASC).distinct();
         }
     }
 
     private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
-        Conjunction newClone = conjunction.clone();
-        newClone.bound(bounds.toMap(Type::getLabel, Thing::getIID));
-        return newClone;
+        Conjunction clone = conjunction.clone();
+        Map<Identifier.Variable.Retrievable, Either<Label, ByteArray>> converted = new HashMap<>();
+        iterate(bounds.concepts().entrySet()).forEachRemaining(e -> converted.put(
+                e.getKey(),
+                e.getValue().isType() ? Either.first(e.getValue().asType().getLabel()) : Either.second(e.getValue().asThing().getIID())
+        ));
+        clone.bound(converted);
+        return clone;
     }
 
     public FunctionalIterator<Explanation> explain(long explainableId, Context.Query defaultContext) {

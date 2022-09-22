@@ -86,22 +86,22 @@ public class Updater {
     }
 
     private FunctionalIterator<ConceptMap> executeParallel() {
-        List<List<ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+        List<? extends List<? extends ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         List<ConceptMap> updates;
         Function<ConceptMap, ConceptMap> updateFn = (matched) -> {
             new Deleter.Operation(matched, deleteVariables).execute();
             return new Inserter.Operation(conceptMgr, matched, insertVariables).execute();
         };
-        if (lists.size() == 1) updates = iterate(lists.get(0)).map(updateFn).toList();
+        if (lists.size() == 1) updates = iterate(lists.get(0)).map(updateFn::apply).toList();
         else updates = produce(async(
-                iterate(lists).map(list -> iterate(list).map(updateFn)), PARALLELISATION_FACTOR
+                iterate(lists).map(list -> iterate(list).map(updateFn::apply)), PARALLELISATION_FACTOR
         ), Either.first(EXHAUSTIVE), async1()).toList();
         return iterate(updates);
     }
 
     private FunctionalIterator<ConceptMap> executeSerial() {
-        List<ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
+        List<? extends ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
         List<ConceptMap> answers = iterate(matches).map(matched -> {
             new Deleter.Operation(matched, deleteVariables).execute();
             return new Inserter.Operation(conceptMgr, matched, insertVariables).execute();

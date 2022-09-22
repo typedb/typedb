@@ -25,9 +25,10 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
-import com.vaticle.typedb.core.traversal.planner.ConnectedPlanner;
+import com.vaticle.typedb.core.traversal.planner.ComponentPlanner;
 import com.vaticle.typedb.core.traversal.planner.GraphPlanner;
 import com.vaticle.typedb.core.traversal.planner.PlannerEdge;
 import com.vaticle.typedb.core.traversal.planner.PlannerVertex;
@@ -48,6 +49,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.DESC;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 import static java.util.Comparator.comparing;
 
@@ -63,7 +66,7 @@ public class GraphProcedure implements PermutationProcedure {
         this.vertices = vertices;
     }
 
-    public static GraphProcedure create(List<ConnectedPlanner> planners) {
+    public static GraphProcedure create(List<ComponentPlanner> planners) {
         Builder builder = new Builder();
         planners.forEach(p -> {
             if (p.isGraph()) builder.register(p.asGraph(), builder.vertices.size());
@@ -106,50 +109,42 @@ public class GraphProcedure implements PermutationProcedure {
         return vertices.length;
     }
 
-    private void assertWithinFilterBounds(Set<Identifier.Variable.Retrievable> filter) {
-        assert iterate(vertices).anyMatch(vertex ->
-                vertex.id().isRetrievable() && filter.contains(vertex.id().asVariable().asRetrievable())
-        );
-    }
-
     @Override
     public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                                  Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
+                                                  Modifiers modifiers, int parallelisation) {
         if (LOG.isTraceEnabled()) {
             LOG.trace(params.toString());
             LOG.trace(this.toString());
         }
-        assertWithinFilterBounds(filter);
-        if (initialVertex().id().isRetrievable() && filter.contains(initialVertex().id().asVariable().asRetrievable())) {
-            return async(initialVertex().iterator(graphMgr, params).map(v ->
-                    new GraphIterator(graphMgr, v, this, params, filter).distinct()
-            ), parallelisation);
+        if (initialVertex().id().isRetrievable() && modifiers.filter().variables().contains(initialVertex().id().asVariable().asRetrievable())) {
+            return async(initialVertex().iterator(graphMgr, params, modifiers.sorting().isAscending(initialVertex().id()) ? ASC : DESC)
+                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
+                    .map(v -> new GraphIterator(graphMgr, v, this, params, modifiers).distinct()), parallelisation);
         } else {
-            // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-            return async(initialVertex().iterator(graphMgr, params).map(v ->
-                    new GraphIterator(graphMgr, v, this, params, filter)
-            ), parallelisation).distinct();
+            return async(initialVertex().iterator(graphMgr, params, modifiers.sorting().isAscending(initialVertex().id()) ? ASC : DESC)
+                    .map(v -> new GraphIterator(graphMgr, v, this, params, modifiers)), parallelisation)
+                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
+                    .distinct();
         }
     }
 
     @Override
     public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                  Set<Identifier.Variable.Retrievable> filter) {
+                                                  Modifiers modifiers) {
         if (LOG.isTraceEnabled()) {
             LOG.trace(params.toString());
             LOG.trace(this.toString());
         }
-        assertWithinFilterBounds(filter);
-        if (initialVertex().id().isRetrievable() && filter.contains(initialVertex().id().asVariable().asRetrievable())) {
-            return initialVertex().iterator(graphMgr, params).flatMap(
+        if (initialVertex().id().isRetrievable() && modifiers.filter().variables().contains(initialVertex().id().asVariable().asRetrievable())) {
+            return initialVertex().iterator(graphMgr, params, modifiers.sorting().isAscending(initialVertex().id()) ? ASC : DESC)
                     // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                    sv -> new GraphIterator(graphMgr, sv, this, params, filter).distinct()
-            );
+                    .flatMap(v -> new GraphIterator(graphMgr, v, this, params, modifiers).distinct());
         } else {
             // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-            return initialVertex().iterator(graphMgr, params).flatMap(
-                    sv -> new GraphIterator(graphMgr, sv, this, params, filter)
-            ).distinct();
+            return initialVertex().iterator(graphMgr, params, modifiers.sorting().isAscending(initialVertex().id()) ? ASC : DESC)
+                    .flatMap(v -> new GraphIterator(graphMgr, v, this, params, modifiers))
+                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
+                    .distinct();
         }
     }
 
@@ -196,8 +191,8 @@ public class GraphProcedure implements PermutationProcedure {
 
         private void register(GraphPlanner planner, int startOrder) {
             assert iterate(vertices.values()).allMatch(v -> v.order() < startOrder);
-            planner.vertices().forEach(v -> registerVertex(v, startOrder + v.getOrder()));
-            planner.vertices().forEach(this::registerEdges);
+            planner.vertices().forEach(id -> registerVertex(planner.vertex(id), startOrder + planner.vertex(id).getOrder()));
+            planner.vertices().forEach(id -> registerEdges(planner.vertex(id)));
         }
 
         private void registerEdges(PlannerVertex<?> plannerVertex) {

@@ -39,12 +39,14 @@ import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import javax.annotation.Nullable;
+
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
@@ -213,12 +215,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     <THING extends ThingImpl> Forwardable<THING, Order.Asc> instances(Function<ThingVertex, THING> thingConstructor) {
         return getSubtypes().filter(t -> !t.isAbstract())
-                .mergeMap(t -> graphMgr.data().getReadable(t.vertex), ASC)
+                .mergeMapForwardable(t -> graphMgr.data().getReadable(t.vertex, ASC), ASC)
                 .mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
     }
 
     <THING extends ThingImpl> Forwardable<THING, Order.Asc> instancesExplicit(Function<ThingVertex, THING> thingConstructor) {
-        return graphMgr.data().getReadable(vertex).mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
+        return graphMgr.data().getReadable(vertex, ASC).mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
     }
 
     @Override
@@ -321,7 +323,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private void ownsAttribute(AttributeTypeImpl attributeType) {
-        Forwardable<AttributeType, Order.Asc> owns = getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getOwns, ASC);
+        Forwardable<AttributeType, Order.Asc> owns = getSupertypes().filter(t -> !t.equals(this)).mergeMapForwardable(ThingType::getOwns, ASC);
         if (attributeType.isRoot()) {
             throw exception(TypeDBException.of(ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED));
         } else if (owns.findFirst(attributeType).isPresent()) {
@@ -434,7 +436,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         if (roleType.isRoot()) {
             throw exception(TypeDBException.of(ROOT_ROLE_TYPE_CANNOT_BE_PLAYED));
-        } else if (getSupertypes().filter(t -> !t.equals(this)).mergeMap(ThingType::getPlays, ASC).findFirst(roleType).isPresent()) {
+        } else if (getSupertypes().filter(t -> !t.equals(this)).mergeMapForwardable(ThingType::getPlays, ASC).findFirst(roleType).isPresent()) {
             throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, getLabel(), roleType.getLabel()));
         }
         vertex.outs().put(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);

@@ -30,7 +30,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
 public class MappedSortedIterator<
-        T extends Comparable<? super T>, U extends Comparable<? super U>,
+        T, U extends Comparable<? super U>,
         ORDER extends Order, ITER extends FunctionalIterator<T>
         > extends AbstractSortedIterator<U, ORDER> {
 

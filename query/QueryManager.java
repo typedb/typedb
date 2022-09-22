@@ -63,11 +63,11 @@ public class QueryManager {
         this.defaultContext = new Context.Query(context, new Options.Query());
     }
 
-    public FunctionalIterator<ConceptMap> match(TypeQLMatch query) {
+    public FunctionalIterator<? extends ConceptMap> match(TypeQLMatch query) {
         return match(query, defaultContext);
     }
 
-    public FunctionalIterator<ConceptMap> match(TypeQLMatch query, Context.Query context) {
+    public FunctionalIterator<? extends ConceptMap> match(TypeQLMatch query, Context.Query context) {
         try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
             return Matcher.create(reasoner, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
