@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.server.concept;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -333,7 +334,7 @@ public class TypeService {
         } else getOwnsStream(reqID, thingType.getOwns(getOwnsReq.getKeysOnly()));
     }
 
-    private void getOwnsStream(UUID reqID, SortedIterator.Forwardable<AttributeType, SortedIterator.Order.Asc> atts) {
+    private void getOwnsStream(UUID reqID, SortedIterator.Forwardable<AttributeType, Order.Asc> atts) {
         transactionSvc.stream(atts, reqID, attributeTypes -> getOwnsResPart(reqID, attributeTypes));
     }
 
@@ -347,7 +348,7 @@ public class TypeService {
         } else getOwnsExplicitStream(reqID, thingType.getOwnsExplicit(getOwnsExplicitReq.getKeysOnly()));
     }
 
-    private void getOwnsExplicitStream(UUID reqID, SortedIterator.Forwardable<AttributeType, SortedIterator.Order.Asc> atts) {
+    private void getOwnsExplicitStream(UUID reqID, SortedIterator.Forwardable<AttributeType, Order.Asc> atts) {
         transactionSvc.stream(atts, reqID, attributeTypes -> getOwnsExplicitResPart(reqID, attributeTypes));
     }
 

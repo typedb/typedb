@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.common.iterator.sorted;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Order;
 
 import java.util.NoSuchElementException;
 import java.util.function.Function;
@@ -26,7 +27,7 @@ import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
-public class LimitedSortedIterator<T extends Comparable<? super T>, ORDER extends SortedIterator.Order, ITER extends SortedIterator<T, ORDER>>
+public class LimitedSortedIterator<T extends Comparable<? super T>, ORDER extends Order, ITER extends SortedIterator<T, ORDER>>
         extends AbstractSortedIterator<T, ORDER> {
 
     private final long limit;
