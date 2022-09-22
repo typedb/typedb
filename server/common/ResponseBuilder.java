@@ -183,7 +183,7 @@ public class ResponseBuilder {
             ));
         }
 
-        public static TransactionProto.Transaction.ResPart matchResPart(UUID reqID, List<ConceptMap> answers) {
+        public static TransactionProto.Transaction.ResPart matchResPart(UUID reqID, List<? extends ConceptMap> answers) {
             return queryMgrResPart(reqID, QueryProto.QueryManager.ResPart.newBuilder().setMatchResPart(
                     QueryProto.QueryManager.Match.ResPart.newBuilder().addAllAnswers(
                             iterate(answers).map(Answer::conceptMap).toList()

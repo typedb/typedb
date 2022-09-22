@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.Traversal;
-import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
@@ -32,10 +32,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.DESC;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 
 public class VertexProcedure implements PermutationProcedure {
@@ -61,6 +62,28 @@ public class VertexProcedure implements PermutationProcedure {
     }
 
     @Override
+    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
+                                                  Modifiers modifiers, int parallelisation) {
+        LOG.trace(params.toString());
+        LOG.trace(this.toString());
+        return async(iterator(graphMgr, params, modifiers));
+    }
+
+    @Override
+    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
+                                                  Modifiers modifiers) {
+        LOG.trace(params.toString());
+        LOG.trace(this.toString());
+        assert vertex.id().isRetrievable() && modifiers.filter().variables().contains(vertex.id().asVariable().asRetrievable());
+        FunctionalIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params, modifiers.sorting().isAscending(vertex.id()) ? ASC : DESC);
+        for (ProcedureEdge<?, ?> e : vertex.loops()) {
+            iterator = iterator.filter(v -> e.isClosure(graphMgr, v, v, params));
+        }
+
+        return iterator.map(v -> VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v))));
+    }
+
+    @Override
     public String toString() {
         StringBuilder str = new StringBuilder();
         str.append("Vertex Procedure: {");
@@ -74,28 +97,6 @@ public class VertexProcedure implements PermutationProcedure {
         }
         str.append("\n}");
         return str.toString();
-    }
-
-    @Override
-    public FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
-                                                  Set<Identifier.Variable.Retrievable> filter, int parallelisation) {
-        LOG.trace(params.toString());
-        LOG.trace(this.toString());
-        return async(iterator(graphMgr, params, filter));
-    }
-
-    @Override
-    public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                  Set<Identifier.Variable.Retrievable> filter) {
-        LOG.trace(params.toString());
-        LOG.trace(this.toString());
-        assert vertex.id().isRetrievable() && filter.contains(vertex.id().asVariable().asRetrievable());
-        FunctionalIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params);
-        for (ProcedureEdge<?, ?> e : vertex.loops()) {
-            iterator = iterator.filter(v -> e.isClosure(graphMgr, v, v, params));
-        }
-
-        return iterator.map(v -> VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v))));
     }
 
 }

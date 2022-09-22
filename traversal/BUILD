@@ -42,6 +42,7 @@ native_java_libraries(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java/common:common",
         "@vaticle_typeql//java/pattern:pattern",
+        "@vaticle_typeql//java/query:query",
 
         # External dependencies from Vaticle
 

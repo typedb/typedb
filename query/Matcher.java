@@ -30,19 +30,15 @@ import com.vaticle.typedb.core.concept.answer.NumericGroup;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.Reasoner;
-import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.common.TypeQLToken;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
-import com.vaticle.typeql.lang.query.builder.Sortable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -51,16 +47,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
-import java.util.stream.IntStream;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.AGGREGATE_ATTRIBUTE_NOT_NUMBER;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_VARIABLE_NOT_ATTRIBUTE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
@@ -118,71 +109,13 @@ public class Matcher {
         return new Group.Aggregator(group, query);
     }
 
-    public FunctionalIterator<ConceptMap> execute() {
+    public FunctionalIterator<? extends ConceptMap> execute() {
         assert context != null;
         return execute(context);
     }
 
-    FunctionalIterator<ConceptMap> execute(Context.Query context) {
-        FunctionalIterator<ConceptMap> answers = reasoner.execute(disjunction, query.modifiers(), context);
-        // TODO: we should remove these and handle them in the traversal engine or reasoner ONLY. Currently in reasoner already
-        if (query.modifiers().sort().isPresent()) answers = sort(answers, query.modifiers().sort().get());
-        if (query.modifiers().offset().isPresent()) answers = answers.offset(query.modifiers().offset().get());
-        if (query.modifiers().limit().isPresent()) answers = answers.limit(query.modifiers().limit().get());
-        return answers;
-    }
-
-    private FunctionalIterator<ConceptMap> sort(FunctionalIterator<ConceptMap> answers, Sortable.Sorting sorting) {
-        // TODO: Replace this temporary implementation of TypeQL Match Sort query with a native sorting traversal
-        List<Reference.Name> sortVars = iterate(sorting.vars()).map(var -> var.reference().asName()).toList();
-        Comparator<List<Attribute>> multiComparator = multiComparator(sortVars.size());
-        Comparator<ConceptMap> comparator = (answer1, answer2) -> {
-            List<Attribute> attributes1 = new ArrayList<>(sortVars.size());
-            List<Attribute> attributes2 = new ArrayList<>(sortVars.size());
-            for (Reference.Name var : sortVars) {
-                try {
-                    Attribute att1 = answer1.get(var).asAttribute();
-                    Attribute att2 = answer2.get(var).asAttribute();
-                    if (!att1.getType().getValueType().comparables().contains(att2.getType().getValueType())) {
-                        throw TypeDBException.of(SORT_ATTRIBUTE_NOT_COMPARABLE, var);
-                    }
-                    attributes1.add(att1);
-                    attributes2.add(att2);
-                } catch (TypeDBException e) {
-                    if (e.code().isPresent() || e.code().get().equals(INVALID_THING_CASTING.code())) {
-                        throw TypeDBException.of(SORT_VARIABLE_NOT_ATTRIBUTE, var);
-                    } else {
-                        throw e;
-                    }
-                }
-            }
-            return multiComparator.compare(attributes1, attributes2);
-        };
-        comparator = (sorting.order() == TypeQLArg.Order.DESC) ? comparator.reversed() : comparator;
-        return iterate(answers.stream().sorted(comparator).iterator());
-    }
-
-    private Comparator<List<Attribute>> multiComparator(int n) {
-        Optional<Comparator<List<Attribute>>> multiComparator = IntStream.range(0, n)
-                .mapToObj(i -> Comparator.comparing((List<Attribute> attrs) -> attrs.get(i), (att1, att2) -> {
-                    if (att1.isString()) {
-                        return att1.asString().getValue().compareToIgnoreCase(att2.asString().getValue());
-                    } else if (att1.isBoolean()) {
-                        return att1.asBoolean().getValue().compareTo(att2.asBoolean().getValue());
-                    } else if (att1.isLong() && att2.isLong()) {
-                        return att1.asLong().getValue().compareTo(att2.asLong().getValue());
-                    } else if (att1.isDouble() || att2.isDouble()) {
-                        Double double1 = att1.isLong() ? att1.asLong().getValue() : att1.asDouble().getValue();
-                        Double double2 = att2.isLong() ? att2.asLong().getValue() : att2.asDouble().getValue();
-                        return double1.compareTo(double2);
-                    } else if (att1.isDateTime()) {
-                        return (att1.asDateTime().getValue()).compareTo(att2.asDateTime().getValue());
-                    } else {
-                        throw TypeDBException.of(ILLEGAL_STATE);
-                    }
-                })).reduce(Comparator::thenComparing);
-        assert multiComparator.isPresent();
-        return multiComparator.get();
+    FunctionalIterator<? extends ConceptMap> execute(Context.Query context) {
+        return reasoner.execute(disjunction, query.modifiers(), context);
     }
 
     public static class Aggregator {
@@ -199,13 +132,13 @@ public class Matcher {
         }
 
         public Numeric execute() {
-            FunctionalIterator<ConceptMap> answers = matcher.execute(context);
+            FunctionalIterator<? extends ConceptMap> answers = matcher.execute(context);
             TypeQLToken.Aggregate.Method method = query.method();
             UnboundVariable var = query.var();
             return aggregate(answers, method, var);
         }
 
-        static Numeric aggregate(FunctionalIterator<ConceptMap> answers,
+        static Numeric aggregate(FunctionalIterator<? extends ConceptMap> answers,
                                  TypeQLToken.Aggregate.Method method, UnboundVariable var) {
             return answers.stream().collect(aggregator(method, var));
         }

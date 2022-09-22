@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.VertexIID;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.structure.Structure;
@@ -47,12 +48,14 @@ import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 
 public abstract class Traversal {
 
-    final Parameters parameters;
     final Structure structure;
+    final Parameters parameters;
+    final Modifiers modifiers;
 
     Traversal() {
         structure = new Structure();
         parameters = new Parameters();
+        modifiers = new Modifiers();
     }
 
     public Structure structure() {
@@ -63,6 +66,10 @@ public abstract class Traversal {
         return parameters;
     }
 
+    public Modifiers modifiers() {
+        return modifiers;
+    }
+
     abstract FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr);
 
     @Override
@@ -70,12 +77,12 @@ public abstract class Traversal {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Traversal that = (Traversal) o;
-        return this.structure.equals(that.structure) && this.parameters.equals(that.parameters);
+        return this.structure.equals(that.structure) && this.parameters.equals(that.parameters) && this.modifiers.equals(that.modifiers);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.structure, this.parameters);
+        return Objects.hash(this.structure, this.parameters, this.modifiers);
     }
 
     public static class Parameters {

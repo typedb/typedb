@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.procedure.CombinationProcedure;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureEdge;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
@@ -40,6 +41,7 @@ import java.util.Queue;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 
 public class CombinationFinder {
 
@@ -48,15 +50,15 @@ public class CombinationFinder {
     private final GraphManager graphMgr;
     private final CombinationProcedure procedure;
     private final Traversal.Parameters params;
-    private final Set<Retrievable> filter;
+    private final Modifiers.Filter filter;
     private final Set<Retrievable> concreteVarIds;
     private final Map<Identifier, Set<TypeVertex>> combination;
 
     private enum State {CHANGED, UNCHANGED, EMPTY}
 
-    public CombinationFinder(GraphManager graphMgr, CombinationProcedure procedure, Set<Retrievable> filter,
+    public CombinationFinder(GraphManager graphMgr, CombinationProcedure procedure, Modifiers.Filter filter,
                              Set<Retrievable> concreteVarIds) {
-        assert filter.containsAll(concreteVarIds);
+        assert filter.variables().containsAll(concreteVarIds);
         this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.filter = filter;
@@ -150,7 +152,7 @@ public class CombinationFinder {
     }
 
     private FunctionalIterator<? extends TypeVertex> vertexIter(ProcedureVertex.Type vertex) {
-        FunctionalIterator<? extends TypeVertex> iterator = vertex.iterator(graphMgr, params);
+        FunctionalIterator<? extends TypeVertex> iterator = vertex.iterator(graphMgr, params, ASC);
         if (vertex.id().isRetrievable() && concreteVarIds.contains(vertex.id().asVariable().asRetrievable())) {
             iterator = iterator.filter(type -> !type.isAbstract());
         }
@@ -168,7 +170,7 @@ public class CombinationFinder {
     private Map<Retrievable, Set<TypeVertex>> filtered(Map<Identifier, Set<TypeVertex>> answer) {
         Map<Retrievable, Set<TypeVertex>> filtered = new HashMap<>();
         answer.forEach((id, vertices) -> {
-            if (id.isRetrievable() && filter.contains(id.asVariable().asRetrievable())) {
+            if (id.isRetrievable() && filter.variables().contains(id.asVariable().asRetrievable())) {
                 filtered.put(id.asVariable().asRetrievable(), vertices);
             }
         });

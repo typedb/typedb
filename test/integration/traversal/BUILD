@@ -28,9 +28,10 @@ host_compatible_java_test(
         # Internal dependencies
         "//:typedb",
         "//common:common",
+        "//concept:concept",
         "//database:database",
         "//traversal:traversal",
-        "//concept:concept",
+        "//pattern:pattern",
     ],
     deps = [
         "//test/integration/util:util",

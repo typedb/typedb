@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
 
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -42,9 +41,15 @@ public interface FunctionalIterator<T> extends Iterator<T> {
 
     <U> FunctionalIterator<U> map(Function<T, U> mappingFn);
 
+    <U extends Comparable<? super U>, ORDER extends Order> SortedIterator<U, ORDER> mapSorted(Function<T, U> mappingFn, ORDER order);
+
     <U> FunctionalIterator<U> flatMap(Function<T, FunctionalIterator<U>> mappingFn);
 
-    <U extends Comparable<? super U>, ORDER extends Order> SortedIterator.Forwardable<U, ORDER> mergeMap(
+    <U extends Comparable<? super U>, ORDER extends Order> SortedIterator<U, ORDER> mergeMap(
+            Function<T, SortedIterator<U, ORDER>> mappingFn, ORDER order
+    );
+
+    <U extends Comparable<? super U>, ORDER extends Order> SortedIterator.Forwardable<U, ORDER> mergeMapForwardable(
             Function<T, SortedIterator.Forwardable<U, ORDER>> mappingFn, ORDER order
     );
 

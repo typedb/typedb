@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConjunction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.CompletenessException;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers.Filter;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.Collections;
@@ -94,9 +95,9 @@ class CompletenessVerifier {
             if (concept.isThing() && concept.asThing().isInferred()) {
                 throw new UnsupportedOperationException(
                         String.format("Completeness testing does not yet support more than one inferred concept " +
-                                              "in a query tested against the reasoner. It becomes too " +
-                                              "computationally expensive to verify the history of all inferences." +
-                                              " Encountered when querying:\n%s", boundConjunction.conjunction()));
+                                "in a query tested against the reasoner. It becomes too " +
+                                "computationally expensive to verify the history of all inferences." +
+                                " Encountered when querying:\n%s", boundConjunction.conjunction()));
             }
         }
     }
@@ -104,10 +105,10 @@ class CompletenessVerifier {
     private void validateNumConcludableAnswers(BoundConjunction boundConjunction, Concludable concludable) {
         if (numReasonedAnswers(boundConjunction, concludable.retrieves()) == 0) {
             throw new CompletenessException(String.format("Completeness testing found a missing answer.\nExpected " +
-                                                                  "one or more answers for the concludable (bound " +
-                                                                  "with IIDs):\n%s\noriginal:\n%s",
-                                                          boundConjunction.toString(),
-                                                          concludable.pattern().toString()));
+                            "one or more answers for the concludable (bound " +
+                            "with IIDs):\n%s\noriginal:\n%s",
+                    boundConjunction.toString(),
+                    concludable.pattern().toString()));
         }
     }
 
@@ -115,9 +116,10 @@ class CompletenessVerifier {
         int numAnswers = numReasonedAnswers(boundConjunction, conclusion.retrievableIds());
         if (numAnswers == 0) {
             throw new CompletenessException(String.format("Completeness testing found a missing answer.\nExpected " +
-                                                                  "exactly one answer for the rule conclusion (bound " +
-                                                                  "with IIDs):\n%s\n for rule \"%s\"",
-                                                          boundConjunction.toString(), conclusion.rule().getLabel()));
+                            "exactly one answer for the rule conclusion (bound " +
+                            "with IIDs):\n%s\n for rule \"%s\"",
+                    boundConjunction.toString(), conclusion.rule().getLabel()
+            ));
         } else if (numAnswers > 1) {
             // TODO: We would like to differentiate between the valid case vs failure case. We can do so by analysing
             //  whether the answers are relations with the exact same roleplayers. If not then this is permissable.
@@ -131,12 +133,11 @@ class CompletenessVerifier {
     }
 
     private int numReasonedAnswers(BoundConjunction boundConjunction, Set<Identifier.Variable.Retrievable> filter) {
-        try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.READ,
-                                                       new Options.Transaction().infer(true))) {
+        try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
             Disjunction disjunction = new Disjunction(Collections.singletonList(boundConjunction.conjunction()));
             tx.logic().typeInference().applyCombination(disjunction);
             return tx.reasoner().executeReasoner(
-                    disjunction, filter, new Context.Query(tx.context(), new Options.Query())
+                    disjunction, Filter.create(filter), new Context.Query(tx.context(), new Options.Query())
             ).toList().size();
         }
     }

@@ -29,6 +29,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 
 public class SortedIterators {
 
@@ -58,11 +59,11 @@ public class SortedIterators {
 
     @SafeVarargs
     public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator<T, ORDER> merge(SortedIterator<T, ORDER> iterator, SortedIterator<T, ORDER>... iterators) {
-        return new MergeMappedIterator<>(Iterators.iterate(list(list(iterators), iterator)), e -> e, iterator.order());
+        return new MergeMappedSortedIterator<>(Iterators.iterate(list(list(iterators), iterator)), e -> e, iterator.order());
     }
 
     public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator<T, ORDER> merge(ORDER order, FunctionalIterator<SortedIterator<T, ORDER>> iterators) {
-        return new MergeMappedIterator<>(iterators, e -> e, order);
+        return new MergeMappedSortedIterator<>(iterators, e -> e, order);
     }
 
     public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator<T, ORDER> onConsume(SortedIterator<T, ORDER> iterator, Runnable onConsume) {
@@ -77,7 +78,11 @@ public class SortedIterators {
     public static class Forwardable {
 
         public static <T extends Comparable<? super T>> SortedIterator.Forwardable<T, SortedIterator.Order.Asc> emptySorted() {
-            return iterateSorted(new TreeSet<T>(), SortedIterator.ASC);
+            return emptySorted(ASC);
+        }
+
+        public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> emptySorted(ORDER order) {
+            return iterateSorted(new TreeSet<T>(), order);
         }
 
         public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> iterateSorted(Collection<T> elements, ORDER order) {
@@ -109,11 +114,11 @@ public class SortedIterators {
 
         @SafeVarargs
         public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> merge(SortedIterator.Forwardable<T, ORDER> iterator, SortedIterator.Forwardable<T, ORDER>... iterators) {
-            return new MergeMappedIterator.Forwardable<>(Iterators.iterate(list(list(iterators), iterator)), e -> e, iterator.order());
+            return new MergeMappedSortedIterator.Forwardable<>(Iterators.iterate(list(list(iterators), iterator)), e -> e, iterator.order());
         }
 
         public static <T extends Comparable<? super T>, ORDER extends SortedIterator.Order> SortedIterator.Forwardable<T, ORDER> merge(FunctionalIterator<SortedIterator.Forwardable<T, ORDER>> iterators, ORDER order) {
-            return new MergeMappedIterator.Forwardable<>(iterators, e -> e, order);
+            return new MergeMappedSortedIterator.Forwardable<>(iterators, e -> e, order);
         }
 
         @SafeVarargs

@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.optimiser.Optimiser;
 import com.vaticle.typedb.core.common.optimiser.OptimiserConstraint;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
@@ -33,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,7 +54,7 @@ import static java.time.Duration.between;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class GraphPlanner implements ConnectedPlanner {
+public class GraphPlanner implements ComponentPlanner {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphPlanner.class);
 
@@ -78,8 +78,10 @@ public class GraphPlanner implements ConnectedPlanner {
 
     private volatile double totalCostLastRecorded;
     private double totalCost;
+    private final Modifiers modifiers;
 
-    private GraphPlanner() {
+    private GraphPlanner(Modifiers modifiers) {
+        this.modifiers = modifiers;
         optimiser = new Optimiser();
         vertices = new HashMap<>();
         edges = new HashSet<>();
@@ -91,8 +93,8 @@ public class GraphPlanner implements ConnectedPlanner {
         snapshot = -1L;
     }
 
-    static GraphPlanner create(Structure structure) {
-        GraphPlanner planner = new GraphPlanner();
+    static GraphPlanner create(Structure structure, Modifiers modifiers) {
+        GraphPlanner planner = new GraphPlanner(modifiers);
         Set<StructureVertex<?>> registeredVertices = new HashSet<>();
         Set<StructureEdge<?, ?>> registeredEdges = new HashSet<>();
         structure.vertices().forEach(vertex -> planner.registerVertex(vertex, registeredVertices, registeredEdges));
@@ -144,6 +146,10 @@ public class GraphPlanner implements ConnectedPlanner {
         }
     }
 
+    public PlannerVertex<?> vertex(Identifier id) {
+        return vertices.get(id);
+    }
+
     private PlannerVertex<?> vertex(StructureVertex<?> structureVertex) {
         if (structureVertex.isThing()) return thingVertex(structureVertex.asThing());
         else return typeVertex(structureVertex.asType());
@@ -179,6 +185,13 @@ public class GraphPlanner implements ConnectedPlanner {
                 conOneVertexAtOrderI.setCoefficient(vertex.varOrderAssignment[i], 1);
             }
         }
+        for (int i = 0; i < modifiers.sorting().variables().size(); i++) {
+            Identifier.Variable.Retrievable sortVariable = modifiers.sorting().variables().get(i);
+            PlannerVertex<?> vertex = vertices.get(sortVariable);
+            assert vertex != null;
+            OptimiserConstraint conSetVertexAtOrderI = optimiser.constraint(1, 1, conPrefix + "set_vertex_at_order_" + i);
+            conSetVertexAtOrderI.setCoefficient(vertex.varOrderAssignment[i], 1);
+        }
         vertices.values().forEach(PlannerVertex::createOptimiserConstraints);
         edges.forEach(PlannerEdge::createOptimiserConstraints);
     }
@@ -199,8 +212,8 @@ public class GraphPlanner implements ConnectedPlanner {
         return this;
     }
 
-    public Collection<PlannerVertex<?>> vertices() {
-        return vertices.values();
+    public Set<Identifier> vertices() {
+        return vertices.keySet();
     }
 
     public Set<PlannerEdge<?, ?>> edges() {
@@ -402,7 +415,12 @@ public class GraphPlanner implements ConnectedPlanner {
 
     private void initialiseVertexOrderGreedy() {
         Set<PlannerVertex<?>> unorderedVertices = new HashSet<>(vertices.values());
-        int vertexOrder = 0;
+        int vertexOrder;
+        for (vertexOrder = 0; vertexOrder < modifiers.sorting().variables().size(); vertexOrder++) {
+            PlannerVertex<?> vertex = vertices.get(modifiers.sorting().variables().get(vertexOrder));
+            vertex.setOrder(vertexOrder);
+            unorderedVertices.remove(vertex);
+        }
         while (!unorderedVertices.isEmpty()) {
             PlannerVertex<?> vertex = unorderedVertices.stream().min(comparing(
                     v -> v.ins().stream().filter(e -> !unorderedVertices.contains(e.from()))

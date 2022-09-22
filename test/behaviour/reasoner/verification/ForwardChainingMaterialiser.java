@@ -40,6 +40,7 @@ import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import java.util.HashMap;
@@ -91,7 +92,7 @@ public class ForwardChainingMaterialiser {
     private FunctionalIterator<ConceptMap> traverse(Conjunction conjunction) {
         return tx.reasoner().executeTraversal(new Disjunction(singletonList(conjunction)),
                 new Context.Query(tx.context(), new Options.Query()),
-                conjunction.retrieves());
+                Modifiers.Filter.create(conjunction.retrieves()));
     }
 
     void close() {

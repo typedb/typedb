@@ -35,6 +35,8 @@ import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
+import com.vaticle.typedb.core.traversal.common.Modifiers.Filter;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
 import org.junit.Before;
@@ -135,7 +137,7 @@ public class ControllerTest {
                 ControllerRegistry registry = transaction.reasoner().controllerRegistry();
                 AnswerProducer answerProducer = new AnswerProducer();
                 try {
-                    registry.createRootConjunction(conjunctionPattern, new HashSet<>(), options.explain(), answerProducer);
+                    registry.createRootConjunction(conjunctionPattern, Filter.create(new HashSet<>()), options.explain(), answerProducer);
                 } catch (TypeDBException e) {
                     fail();
                 }
@@ -169,8 +171,8 @@ public class ControllerTest {
         try (CoreSession session = dataSession()) {
             try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Set<Identifier.Variable.Retrievable> filter = set(Identifier.Variable.name("t"),
-                                                           Identifier.Variable.name("p1"),
-                                                           Identifier.Variable.name("p2"));
+                        Identifier.Variable.name("p1"),
+                        Identifier.Variable.name("p2"));
                 Disjunction disjunction = resolvedDisjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; { $p1 has age 24; } or { $p1 has age 26; }; }", transaction.logic());
                 createRootAndAssertResponses(transaction, disjunction, filter, 2L, 0L);
             }
@@ -199,7 +201,7 @@ public class ControllerTest {
         try (CoreSession session = dataSession()) {
             try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
                 Conjunction conjunctionPattern = resolvedConjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; " +
-                                                                             "$p1 has age $a; }", transaction.logic());
+                        "$p1 has age $a; }", transaction.logic());
                 createRootAndAssertResponses(transaction, conjunctionPattern, 0L, 0L);
             }
         }
@@ -541,7 +543,7 @@ public class ControllerTest {
         AnswerProducer answerProducer = new AnswerProducer();
         answerProducer.getNextAnswer();
         try {
-             registry.createRootDisjunction(disjunction, filter, options.explain(), answerProducer);
+            registry.createRootDisjunction(disjunction, Filter.create(filter), options.explain(), answerProducer);
         } catch (TypeDBException e) {
             fail();
             return;
@@ -558,7 +560,7 @@ public class ControllerTest {
         AnswerProducer answerProducer = new AnswerProducer();
         answerProducer.getNextAnswer();
         try {
-            registry.createRootConjunction(conjunction, filter, options.explain(), answerProducer);
+            registry.createRootConjunction(conjunction, Filter.create(filter), options.explain(), answerProducer);
         } catch (TypeDBException e) {
             fail();
             return;
@@ -576,8 +578,9 @@ public class ControllerTest {
         int explainableAnswersFound = 0;
         for (int i = 0; i < n - 1; i++) {
             ConceptMap answer;
-            if (PREVENT_HANGING) answer = responses.poll(500, TimeUnit.MILLISECONDS);  // polling prevents the test hanging
-            else answer = responses.take();
+            if (PREVENT_HANGING) {
+                answer = responses.poll(500, TimeUnit.MILLISECONDS);  // polling prevents the test hanging
+            } else answer = responses.take();
 
             if (answer != null) {
                 answersFound += 1;

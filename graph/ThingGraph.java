@@ -215,15 +215,19 @@ public class ThingGraph {
         else return vertex;
     }
 
-    public Forwardable<ThingVertex, Order.Asc> getReadable(TypeVertex typeVertex) {
-        Forwardable<ThingVertex, Order.Asc> vertices = storage.iterate(
+    public FunctionalIterator<ThingVertex> getReadable(TypeVertex typeVertex) {
+        return getReadable(typeVertex, ASC);
+    }
+
+    public <ORDER extends Order> Forwardable<ThingVertex, ORDER> getReadable(TypeVertex typeVertex, ORDER order) {
+        Forwardable<ThingVertex, ORDER> vertices = storage.iterate(
                 VertexIID.Thing.prefix(typeVertex.iid()),
-                ASC
-        ).mapSorted(kv -> convertToReadable(kv.key()), vertex -> KeyValue.of(vertex.iid(), empty()), ASC);
+                order
+        ).mapSorted(kv -> convertToReadable(kv.key()), vertex -> KeyValue.of(vertex.iid(), empty()), order);
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return vertices;
         else {
-            Forwardable<ThingVertex, Order.Asc> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid()), ASC)
-                    .mapSorted(e -> e, ThingVertex::toWrite, ASC);
+            Forwardable<ThingVertex, ORDER> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid()), order)
+                    .mapSorted(e -> e, ThingVertex::toWrite, order);
             return vertices.merge(buffered).distinct();
         }
     }

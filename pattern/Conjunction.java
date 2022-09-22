@@ -34,6 +34,7 @@ import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
 import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
 
@@ -41,7 +42,6 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -169,16 +169,28 @@ public class Conjunction implements Pattern, Cloneable {
         return negations;
     }
 
-    public GraphTraversal.Thing traversal(Set<? extends Retrievable> filter) {
-        GraphTraversal.Thing traversal = new GraphTraversal.Thing();
-        variableSet.forEach(variable -> variable.addTo(traversal));
-        assert iterate(filter).allMatch(variableMap::containsKey);
-        traversal.filter(filter);
-        return traversal;
+    public GraphTraversal.Thing traversal() {
+        return traversal(Modifiers.Filter.create(list()));
     }
 
-    public GraphTraversal.Thing traversal() {
-        return traversal(new HashSet<>());
+    public GraphTraversal.Thing traversal(Modifiers.Filter filter) {
+        return traversal(filter, Modifiers.Sorting.EMPTY);
+    }
+
+    public GraphTraversal.Thing traversal(Modifiers.Filter filter, Modifiers.Sorting sorting) {
+        GraphTraversal.Thing traversal = new GraphTraversal.Thing();
+        variableSet.forEach(variable -> variable.addTo(traversal));
+        Modifiers.Filter traversalFilter;
+        if (filter.variables().isEmpty()) {
+            traversalFilter = Modifiers.Filter.create(iterate(variableSet).filter(v -> v.id().isRetrievable()).map(v -> v.id().asRetrievable()).toSet());
+        } else {
+            assert iterate(filter.variables()).allMatch(variableMap::containsKey);
+            traversalFilter = filter;
+        }
+        traversal.filter(traversalFilter);
+        assert iterate(sorting.variables()).allMatch(variableMap::containsKey);
+        traversal.sort(sorting);
+        return traversal;
     }
 
     public void setCoherent(boolean isCoherent) {
@@ -189,14 +201,10 @@ public class Conjunction implements Pattern, Cloneable {
         return isCoherent && iterate(negations).allMatch(Negation::isCoherent);
     }
 
-    public boolean isBounded() {
-        return isBounded;
-    }
-
     @Override
     public Conjunction clone() {
         return new Conjunction(VariableCloner.cloneFromConjunction(this).variables(),
-                               iterate(this.negations).map(Negation::clone).toList());
+                iterate(this.negations).map(Negation::clone).toList());
     }
 
     @Override
@@ -209,8 +217,8 @@ public class Conjunction implements Pattern, Cloneable {
                         .collect(Collectors.joining("" + SEMICOLON + SPACE)))
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.joining("; " + NEW_LINE,
-                                            "" + CURLY_OPEN + SPACE,
-                                            "" + SEMICOLON + SPACE + negationsToString + CURLY_CLOSE));
+                        "" + CURLY_OPEN + SPACE,
+                        "" + SEMICOLON + SPACE + negationsToString + CURLY_CLOSE));
 
     }
 

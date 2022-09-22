@@ -1169,8 +1169,8 @@ public class UnifyRelationConcludableTest {
 
     private void verifyUnificationSucceeds(String parent, Rule rule) {
         Unifier unifier = uniqueUnifier(parent, rule);
-        List<ConceptMap> childAnswers = transaction.query().match(TypeQL.match(rule.getThenPreNormalised())).toList();
-        List<ConceptMap> parentAnswers = transaction.query().match(TypeQL.match(TypeQL.parsePattern(parent))).toList();
+        List<? extends ConceptMap> childAnswers = transaction.query().match(TypeQL.match(rule.getThenPreNormalised())).toList();
+        List<? extends ConceptMap> parentAnswers = transaction.query().match(TypeQL.match(TypeQL.parsePattern(parent))).toList();
         assertFalse(childAnswers.isEmpty());
         assertFalse(parentAnswers.isEmpty());
 
