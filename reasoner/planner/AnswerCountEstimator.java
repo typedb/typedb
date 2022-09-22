@@ -57,16 +57,14 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class AnswerCountEstimator {
     private final LogicManager logicMgr;
-    private final Map<ResolvableConjunction, ConjunctionModelBuilder> conjunctionModelBuilders;
+    private final ConjunctionModelFactory conjunctionModelFactory;
 
-    private final ConstraintModelFactory constraintModelFactory;
     private final Map<ResolvableConjunction, ConjunctionModel> conjunctionModels;
     private final Map<ResolvableConjunction, Set<Concludable>> cyclicConcludables;
 
     public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph) {
         this.logicMgr = logicMgr;
-        this.constraintModelFactory = new ConstraintModelFactory(this, graph);
-        this.conjunctionModelBuilders = new HashMap<>();
+        this.conjunctionModelFactory = new ConjunctionModelFactory(this, new ConstraintModelFactory(this, graph));
         this.conjunctionModels = new HashMap<>();
         this.cyclicConcludables = new HashMap<>();
     }
@@ -123,10 +121,9 @@ public class AnswerCountEstimator {
     }
 
     private void buildConjunctionModel(ResolvableConjunction conjunction) {
-        if (!conjunctionModelBuilders.containsKey(conjunction)) {
+        if (!conjunctionModels.containsKey(conjunction)) {
+            conjunctionModels.put(conjunction, null); // guard; Fail loudly
             ConjunctionContext conjunctionContext = new ConjunctionContext(conjunction, logicMgr.compile(conjunction), cyclicConcludables.get(conjunction));
-            ConjunctionModelBuilder conjunctionModelBuilder = new ConjunctionModelBuilder(this, conjunctionContext);
-            conjunctionModelBuilders.put(conjunction, conjunctionModelBuilder);
 
             // Acyclic estimates
             Set<Resolvable<?>> resolvables = logicMgr.compile(conjunction);
@@ -139,14 +136,14 @@ public class AnswerCountEstimator {
                     .flatMap(concludable -> iterate(dependencies(concludable)))
                     .forEachRemaining(this::buildConjunctionModel);
 
-            ConjunctionModel acyclicModel = conjunctionModelBuilder.buildAcyclicModel();
+            ConjunctionModel acyclicModel = conjunctionModelFactory.buildAcyclicModel(conjunctionContext);
             conjunctionModels.put(conjunction, acyclicModel);
                     // cyclic calls to this model will answer based on the acyclic model.
             iterate(conjunctionContext.cyclicConcludables)
                     .flatMap(concludable -> iterate(dependencies(concludable)))
                     .forEachRemaining(this::buildConjunctionModel);
 
-            conjunctionModels.put(conjunction, conjunctionModelBuilder.buildCyclicModel(acyclicModel));
+            conjunctionModels.put(conjunction, conjunctionModelFactory.buildCyclicModel(conjunctionContext, acyclicModel));
         }
 
     }
@@ -223,25 +220,17 @@ public class AnswerCountEstimator {
         }
     }
 
-    private static class ConjunctionModelBuilder {
+    private static class ConjunctionModelFactory {
 
-        private final ConjunctionContext conjunctionContext;
         private final AnswerCountEstimator answerCountEstimator;
         private final ConstraintModelFactory constraintModelFactory;
 
-        // TODO: these maps should contain VariableModel and ConstraintModel
-        private enum ModelStatus {NOT_STARTED, ACYCLIC_MODEL, COMPLETE}
-
-        private ModelStatus modelStatus;
-
-        private ConjunctionModelBuilder(AnswerCountEstimator answerCountEstimator, ConjunctionContext conjunctionContext) {
+        private ConjunctionModelFactory(AnswerCountEstimator answerCountEstimator, ConstraintModelFactory constraintModelFactory) {
             this.answerCountEstimator = answerCountEstimator;
-            this.constraintModelFactory = answerCountEstimator.constraintModelFactory;
-            this.conjunctionContext = conjunctionContext;
-            this.modelStatus = ModelStatus.NOT_STARTED;
+            this.constraintModelFactory = constraintModelFactory;
         }
 
-        private ConjunctionModel buildAcyclicModel() {
+        private ConjunctionModel buildAcyclicModel(ConjunctionContext conjunctionContext) {
             Map<Resolvable<?>, List<LocalModel>> constraintModels = new HashMap<>();
             iterate(conjunctionContext.resolvables).filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable)
                     .forEachRemaining(retrievable -> constraintModels.put(retrievable, buildModelsForRetrievable(retrievable)));
@@ -263,15 +252,15 @@ public class AnswerCountEstimator {
             iterate(conjunctionContext.cyclicConcludables)
                     .forEachRemaining(concludable -> constraintModels.put(concludable, list()));
 
-            Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> variableModels = computeBaselineVariableCover(generatedVariableModels);
+            Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> variableModels = computeBaselineVariableCover(conjunctionContext.consideredVariables, generatedVariableModels);
 
             assert !iterate(conjunctionContext.consideredVariables).filter(variable -> !variableModels.containsKey(variable)).hasNext();
             assert !iterate(conjunctionContext.resolvables).filter(resolvable -> !constraintModels.containsKey(resolvable)).hasNext();
-            modelStatus = ModelStatus.ACYCLIC_MODEL;
             return new ConjunctionModel(conjunctionContext, variableModels, constraintModels, answerCountEstimator, false);
         }
 
-        private ConjunctionModel buildCyclicModel(ConjunctionModel acyclicModel) {
+        private ConjunctionModel buildCyclicModel(ConjunctionContext conjunctionContext, ConjunctionModel acyclicModel) {
+            assert acyclicModel.conjunctionContext == conjunctionContext;
             assert !acyclicModel.isCyclic;
             Map<Resolvable<?>, List<LocalModel>> constraintModels = new HashMap<>(acyclicModel.constraintModels);
             List<LocalModel.VariableModel> generatedVariableModels = new ArrayList<>(iterate(acyclicModel.variableModels.values()).flatMap(l->iterate(l)).toList());
@@ -285,11 +274,10 @@ public class AnswerCountEstimator {
                         constraintModels.put(concludable, combinedModels);
                     });
 
-            Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> variableModels = computeBaselineVariableCover(generatedVariableModels);
+            Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> variableModels = computeBaselineVariableCover(conjunctionContext.consideredVariables, generatedVariableModels);
 
             assert !iterate(conjunctionContext.consideredVariables).filter(variable -> !variableModels.containsKey(variable)).hasNext();
             assert !iterate(conjunctionContext.resolvables).filter(resolvable -> !constraintModels.containsKey(resolvable)).hasNext();
-            modelStatus = ModelStatus.COMPLETE;
             return new ConjunctionModel(conjunctionContext, variableModels, constraintModels, answerCountEstimator, true);
         }
 
@@ -316,9 +304,9 @@ public class AnswerCountEstimator {
             return list(new LocalModel.VariableModel(list(v), persistedAnswerCount + inferredAnswerCount));
         }
 
-        private Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> computeBaselineVariableCover(List<LocalModel.VariableModel> generatedVariableModels) {
+        private Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> computeBaselineVariableCover(Set<Variable> consideredVariables, List<LocalModel.VariableModel> generatedVariableModels) {
             Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> newVariableCover = new HashMap<>();
-            iterate(conjunctionContext.consideredVariables).map(Variable::asThing).forEachRemaining(v -> { // baseline
+            iterate(consideredVariables).map(Variable::asThing).forEachRemaining(v -> { // baseline
                 newVariableCover.put(v, new LocalModel.VariableModel(list(v), constraintModelFactory.countPersistedThingsMatchingType(v)));
             });
 
@@ -332,7 +320,7 @@ public class AnswerCountEstimator {
                         }
                     });
 
-            assert conjunctionContext.consideredVariables.stream().allMatch(newVariableCover::containsKey);
+            assert consideredVariables.stream().allMatch(newVariableCover::containsKey);
             return newVariableCover;
         }
 
