@@ -54,7 +54,7 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.SubString.LIKE;
 
-// TODO: We should not this object as a builder, as the hash and equality functions would change
+// TODO: We should not use this object as a builder, as the hash and equality functions would change
 //       We should introduce a separate "builder pattern" to Traversal, such that users of this library will build
 //       traversals with Traversal.Builder, and call .build() in the end to produce a final Object.
 public abstract class GraphTraversal extends Traversal {

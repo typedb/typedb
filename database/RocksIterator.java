@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.AbstractSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.graph.common.Storage.Key;
 
@@ -194,7 +194,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     static class Ascending<T extends Key> extends RocksIterator<T, Order.Asc> {
 
         Ascending(RocksStorage storage, Key.Prefix<T> prefix) {
-            super(storage, prefix, ASC);
+            super(storage, prefix, Order.Asc.ASC);
         }
 
         synchronized void seekToFirst() {
@@ -215,7 +215,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
         @Override
         public synchronized void forward(KeyValue<T, ByteArray> target) {
-            if (state == State.COMPLETED || !ASC.isValidNext(prefix.bytes(), target.key().bytes())) return;
+            if (state == State.COMPLETED || !Order.Asc.ASC.isValidNext(prefix.bytes(), target.key().bytes())) return;
             if (state == State.INIT) initialiseInternalIterator();
             internalRocksIterator.seek(target.key().bytes().getBytes());
             state = State.FORWARDED;
@@ -225,7 +225,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     static class Descending<T extends Key> extends RocksIterator<T, Order.Desc> {
 
         Descending(RocksStorage storage, Key.Prefix<T> prefix) {
-            super(storage, prefix, DESC);
+            super(storage, prefix, Order.Desc.DESC);
         }
 
         synchronized void seekToFirst() {
@@ -247,7 +247,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
         @Override
         public synchronized void forward(KeyValue<T, ByteArray> target) {
-            if (state == State.COMPLETED || !DESC.isValidNext(prefix.bytes(), target.key().bytes())) return;
+            if (state == State.COMPLETED || !Order.Desc.DESC.isValidNext(prefix.bytes(), target.key().bytes())) return;
             if (state == State.INIT) initialiseInternalIterator();
             internalRocksIterator.seekForPrev(target.key().bytes().getBytes());
             state = State.FORWARDED;

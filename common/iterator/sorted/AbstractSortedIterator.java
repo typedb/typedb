@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.LinkedIterators;
 import com.vaticle.typedb.core.common.iterator.MappedIterator;
 import com.vaticle.typedb.core.common.iterator.OffsetIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.parameters.Order;
 
 import java.util.ArrayList;
 import java.util.HashSet;

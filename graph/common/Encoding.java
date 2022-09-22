@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
@@ -47,7 +46,6 @@ import static com.vaticle.typedb.core.common.collection.Bytes.signedByte;
 import static com.vaticle.typedb.core.common.collection.Bytes.unsignedByte;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Encoding {

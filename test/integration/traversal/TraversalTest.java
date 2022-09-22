@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreSession;
@@ -58,6 +59,8 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -108,8 +111,8 @@ public class TraversalTest {
             transaction.logic().typeInference().applyCombination(disjunction);
             Identifier.Variable.Name var = Identifier.Variable.name("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
-            Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, false)));
-            SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
+            Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, DESC)));
+            SortedIterator<ConceptMap.Sortable, Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
 
             long lastValue = Long.MAX_VALUE;
             while (answers.hasNext()) {
@@ -142,7 +145,7 @@ public class TraversalTest {
             transaction.logic().typeInference().applyCombination(disjunction);
             Identifier.Variable.Name var = Identifier.Variable.name("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
-            Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, false)));
+            Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, DESC)));
             List<ConceptMap.Sortable> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting).toList();
             assertEquals(true, answers.get(0).get("a").asAttribute().asBoolean().getValue());
             assertEquals(false, answers.get(1).get("a").asAttribute().asBoolean().getValue());
@@ -171,8 +174,8 @@ public class TraversalTest {
             transaction.logic().typeInference().applyCombination(disjunction);
             Identifier.Variable.Name var = Identifier.Variable.name("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
-            Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, true)));
-            SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
+            Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, ASC)));
+            SortedIterator<ConceptMap.Sortable, Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
 
             double lastValue = Double.MIN_VALUE;
             while (answers.hasNext()) {
@@ -209,8 +212,8 @@ public class TraversalTest {
             transaction.logic().typeInference().applyCombination(disjunction);
             Identifier.Variable.Name var = Identifier.Variable.name("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
-            Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, false)));
-            SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
+            Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, DESC)));
+            SortedIterator<ConceptMap.Sortable, Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
 
             LocalDateTime lastValue = LocalDateTime.MAX;
             while (answers.hasNext()) {

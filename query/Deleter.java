@@ -54,6 +54,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.I
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING_DIRECT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static com.vaticle.typedb.core.query.common.Util.getRoleType;
 
 public class Deleter {

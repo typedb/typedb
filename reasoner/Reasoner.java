@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -63,7 +64,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSA
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.cartesian;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.actor;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
@@ -211,11 +212,11 @@ public class Reasoner {
         return answers;
     }
 
-    public SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> executeTraversalSorted(Disjunction disjunction, Filter filter,
-                                                                                                Sorting sorting) {
+    public SortedIterator<ConceptMap.Sortable, Order.Asc> executeTraversalSorted(Disjunction disjunction, Filter filter,
+                                                                                 Sorting sorting) {
         // TODO: parallelised sorted queries
         FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
-        SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> answers = conjs.mergeMap(conj -> iteratorSorted(conj, filter, sorting), ASC);
+        SortedIterator<ConceptMap.Sortable, Order.Asc> answers = conjs.mergeMap(conj -> iteratorSorted(conj, filter, sorting), ASC);
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
     }
@@ -254,10 +255,10 @@ public class Reasoner {
         }
     }
 
-    private SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> iteratorSorted(Conjunction conjunction,
-                                                                                         Filter filter, Sorting sorting) {
+    private SortedIterator<ConceptMap.Sortable, Order.Asc> iteratorSorted(Conjunction conjunction,
+                                                                          Filter filter, Sorting sorting) {
         ConceptMap.Sortable.Comparator comparator = ConceptMap.Comparator.create(sorting);
-        SortedIterator<ConceptMap.Sortable, SortedIterator.Order.Asc> answers = traversalEng.iterator(conjunction.traversal(filter, sorting))
+        SortedIterator<ConceptMap.Sortable, Order.Asc> answers = traversalEng.iterator(conjunction.traversal(filter, sorting))
                 .mapSorted(vertexMap -> conceptMgr.conceptMapOrdered(vertexMap, comparator), ASC);
         if (conjunction.negations().isEmpty()) return answers;
         else {

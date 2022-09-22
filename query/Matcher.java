@@ -55,6 +55,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.AG
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 import static com.vaticle.typedb.core.query.Matcher.Aggregator.aggregator;
 import static java.lang.Math.sqrt;
 import static java.util.stream.Collectors.groupingBy;
@@ -78,8 +80,7 @@ public class Matcher {
         if (context != null) {
             Either<Arguments.Query.Producer, Long> prodCtx;
             TypeQLMatch.Modifiers mods = query.modifiers();
-            if (mods.sort().isPresent()) prodCtx = Either.first(EXHAUSTIVE); // TODO: remove this once sort is optimised
-            else if (mods.limit().isPresent()) prodCtx = Either.second(mods.offset().orElse(0L) + mods.limit().get());
+            if (mods.limit().isPresent()) prodCtx = Either.second(mods.offset().orElse(0L) + mods.limit().get());
             else prodCtx = Either.first(INCREMENTAL);
             this.context.producer(prodCtx);
         }
