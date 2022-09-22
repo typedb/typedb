@@ -321,7 +321,7 @@ public class AnswerCountEstimatorTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (who:$x, whom:$y) isa jealous; }", transaction.logic()));
             answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x")));
-            assertEquals(5L, answers);
+            assertEquals(5L, answers); // The type of x must dominate.
         }
 
         {   // Is not inferred.
