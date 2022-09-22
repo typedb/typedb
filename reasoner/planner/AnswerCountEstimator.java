@@ -168,12 +168,12 @@ public class AnswerCountEstimator {
 
     private static class ConjunctionModel {
         private final ConjunctionContext conjunctionContext;
-        private final Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> variableModels;
-        private final Map<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> constraintModels;
+        private final Map<Variable, LocalModel.VariableModel> variableModels;
+        private final Map<Resolvable<?>, List<LocalModel>> constraintModels;
         private final boolean isCyclic;
 
         private ConjunctionModel(ConjunctionContext conjunctionContext,
-                                 Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> variableModels, Map<Resolvable<?>, List<LocalModel>> constraintModels,
+                                 Map<Variable, LocalModel.VariableModel> variableModels, Map<Resolvable<?>, List<LocalModel>> constraintModels,
                                  AnswerCountEstimator answerCountEstimator, boolean isCyclic) {
             this.conjunctionContext = conjunctionContext;
             this.variableModels = variableModels;
@@ -182,26 +182,26 @@ public class AnswerCountEstimator {
         }
 
         private long estimateAnswers(Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
-            List<AnswerCountEstimator.LocalModel> includedConstraintModels = iterate(includedResolvables)
+            List<LocalModel> includedConstraintModels = iterate(includedResolvables)
                     .flatMap(resolvable -> iterate(constraintModels.get(resolvable)))
                     .toList();
 
             assert variableFilter.stream().allMatch(v -> conjunctionContext.consideredVariables.contains(v)); // TODO: Remove assert
             Set<Variable> validVariableFilter = iterate(variableFilter).filter(conjunctionContext.consideredVariables::contains).toSet();
 
-            Map<Variable, AnswerCountEstimator.LocalModel> costCover = computeGreedyResolvableCoverForVariables(validVariableFilter, includedConstraintModels);
+            Map<Variable, LocalModel> costCover = computeGreedyResolvableCoverForVariables(validVariableFilter, includedConstraintModels);
             long ret = costOfVariableCover(validVariableFilter, costCover);
             assert ret > 0;             // Flag in tests if it happens.
             return Math.max(ret, 1);    // Don't do stupid stuff in prod when it happens.
         }
 
-        private Map<Variable, AnswerCountEstimator.LocalModel> computeGreedyResolvableCoverForVariables(Set<Variable> variableFilter, List<AnswerCountEstimator.LocalModel> includedConstraintModels) {
+        private Map<Variable, LocalModel> computeGreedyResolvableCoverForVariables(Set<Variable> variableFilter, List<LocalModel> includedConstraintModels) {
             // Does a greedy set cover
-            Map<Variable, AnswerCountEstimator.LocalModel> currentCover = new HashMap<>();
+            Map<Variable, LocalModel> currentCover = new HashMap<>();
             iterate(variableFilter).forEachRemaining(v -> currentCover.put(v, variableModels.get(v)));
 
             includedConstraintModels.sort(Comparator.comparing(x -> x.estimateAnswers(variableFilter)));
-            for (AnswerCountEstimator.LocalModel model : includedConstraintModels) {
+            for (LocalModel model : includedConstraintModels) {
                 Set<Variable> filteredVariablesInResolvable = model.variables.stream()
                         .filter(variableFilter::contains).collect(Collectors.toSet());
 
@@ -213,8 +213,8 @@ public class AnswerCountEstimator {
             return currentCover;
         }
 
-        private static long costOfVariableCover(Set<Variable> variablesToConsider, Map<Variable, AnswerCountEstimator.LocalModel> coverMap) {
-            Set<AnswerCountEstimator.LocalModel> subsetCoveredBy = coverMap.keySet().stream().filter(variablesToConsider::contains)
+        private static long costOfVariableCover(Set<Variable> variablesToConsider, Map<Variable, LocalModel> coverMap) {
+            Set<LocalModel> subsetCoveredBy = coverMap.keySet().stream().filter(variablesToConsider::contains)
                     .map(coverMap::get).collect(Collectors.toSet());
             return subsetCoveredBy.stream().map(model -> model.estimateAnswers(variablesToConsider)).reduce(1L, (x, y) -> x * y);
         }
@@ -252,7 +252,7 @@ public class AnswerCountEstimator {
             iterate(conjunctionContext.cyclicConcludables)
                     .forEachRemaining(concludable -> constraintModels.put(concludable, list()));
 
-            Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> variableModels = computeBaselineVariableCover(conjunctionContext.consideredVariables, generatedVariableModels);
+            Map<Variable, LocalModel.VariableModel> variableModels = computeBaselineVariableCover(conjunctionContext.consideredVariables, generatedVariableModels);
 
             assert !iterate(conjunctionContext.consideredVariables).filter(variable -> !variableModels.containsKey(variable)).hasNext();
             assert !iterate(conjunctionContext.resolvables).filter(resolvable -> !constraintModels.containsKey(resolvable)).hasNext();
@@ -274,33 +274,33 @@ public class AnswerCountEstimator {
                         constraintModels.put(concludable, combinedModels);
                     });
 
-            Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> variableModels = computeBaselineVariableCover(conjunctionContext.consideredVariables, generatedVariableModels);
+            Map<Variable, LocalModel.VariableModel> variableModels = computeBaselineVariableCover(conjunctionContext.consideredVariables, generatedVariableModels);
 
             assert !iterate(conjunctionContext.consideredVariables).filter(variable -> !variableModels.containsKey(variable)).hasNext();
             assert !iterate(conjunctionContext.resolvables).filter(resolvable -> !constraintModels.containsKey(resolvable)).hasNext();
             return new ConjunctionModel(conjunctionContext, variableModels, constraintModels, answerCountEstimator, true);
         }
 
-        private List<AnswerCountEstimator.LocalModel> buildModelsForRetrievable(Retrievable retrievable) {
+        private List<LocalModel> buildModelsForRetrievable(Retrievable retrievable) {
             return iterate(extractConstraintsToModel(retrievable))
                     .map(constraint -> buildConstraintModel(constraint, Optional.empty()))
                     .toList();
         }
 
-        private List<AnswerCountEstimator.LocalModel> buildModelsForNegated(Negated negated) {
+        private List<LocalModel> buildModelsForNegated(Negated negated) {
             return list();
         }
 
-        private List<AnswerCountEstimator.LocalModel> buildModelsForConcludable(Concludable concludable) {
+        private List<LocalModel> buildModelsForConcludable(Concludable concludable) {
             return list(buildConstraintModel(extractConstraintToModel(concludable), Optional.of(concludable)));
         }
 
-        private List<AnswerCountEstimator.LocalModel.VariableModel> constraintModelsForGeneratedVariable(Concludable concludable) {
+        private List<LocalModel.VariableModel> constraintModelsForGeneratedVariable(Concludable concludable) {
             return list(localModelFactory.modelForVariable(concludable.generating().get(), Optional.of(concludable)));
         }
 
-        private Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> computeBaselineVariableCover(Set<Variable> consideredVariables, List<LocalModel.VariableModel> generatedVariableModels) {
-            Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> newVariableCover = new HashMap<>();
+        private Map<Variable, LocalModel.VariableModel> computeBaselineVariableCover(Set<Variable> consideredVariables, List<LocalModel.VariableModel> generatedVariableModels) {
+            Map<Variable, LocalModel.VariableModel> newVariableCover = new HashMap<>();
             iterate(consideredVariables).map(Variable::asThing).forEachRemaining(v -> { // baseline
                 newVariableCover.put(v, new LocalModel.VariableModel(list(v), localModelFactory.countPersistedThingsMatchingType(v)));
             });
@@ -319,7 +319,7 @@ public class AnswerCountEstimator {
             return newVariableCover;
         }
 
-        private AnswerCountEstimator.LocalModel buildConstraintModel(Constraint constraint, Optional<Concludable> correspondingConcludable) {
+        private LocalModel buildConstraintModel(Constraint constraint, Optional<Concludable> correspondingConcludable) {
             if (constraint.isThing()) {
                 ThingConstraint asThingConstraint = constraint.asThing();
                 if (asThingConstraint.isHas()) {
