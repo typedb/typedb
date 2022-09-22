@@ -99,7 +99,7 @@ public class Reasoner {
         Filter filter = Filter.create(modifiers.filter());
         Optional<Sorting> sorting = modifiers.sort().map(Sorting::create);
         sorting.ifPresent(value -> validateSorting(disjunction, value));
-        if (mayReason(disjunction, context)) {
+        if (mayReason(disjunction, context)){
             answers = executeReasoner(disjunction, filter, context);
             if (sorting.isPresent()) answers = eagerSort(answers, sorting.get());
         } else if (sorting.isPresent() && isNativelySortable(disjunction, sorting.get())) {
@@ -109,7 +109,7 @@ public class Reasoner {
                 answers = executeTraversal(disjunction, context.producer(Either.first(EXHAUSTIVE)), filter);
                 answers = eagerSort(answers, sorting.get());
             } else if (modifiers.limit().isPresent()) {
-                answers = executeTraversal(disjunction, context.producer(Either.second(modifiers.limit().get())), filter);
+                answers = executeTraversal(disjunction, context.producer(Either.second(modifiers.offset().orElse(0L) + modifiers.limit().get())), filter);
             } else {
                 answers = executeTraversal(disjunction, context.producer(Either.first(INCREMENTAL)), filter);
             }
