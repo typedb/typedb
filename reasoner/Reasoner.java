@@ -29,6 +29,9 @@ import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.concurrent.producer.Producers;
 import com.vaticle.typedb.core.logic.LogicManager;
@@ -57,6 +60,8 @@ import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_SUB_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.cartesian;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
@@ -90,6 +95,7 @@ public class Reasoner {
         FunctionalIterator<? extends ConceptMap> answers;
         Filter filter = Filter.create(modifiers.filter());
         Optional<Sorting> sorting = modifiers.sort().map(Sorting::create);
+        sorting.ifPresent(value -> validateSorting(disjunction, value));
         if (mayReason(disjunction, context)) {
             answers = executeReasoner(disjunction, filter, context);
             if (sorting.isPresent()) answers = eagerSort(answers, sorting.get());
@@ -127,6 +133,25 @@ public class Reasoner {
             else incoherentNegs.forEachRemaining(n -> causes.addAll(incoherentConjunctions(n.disjunction())));
         }
         return causes;
+    }
+
+    private void validateSorting(Disjunction disjunction, Sorting sorting) {
+        Map<Identifier.Variable.Retrievable, HashSet<AttributeType>> sortAttrTypes = new HashMap<>();
+        sorting.variables().forEach(id -> disjunction.conjunctions().forEach(conjunction -> {
+            Variable variable = conjunction.variable(id);
+            HashSet<AttributeType> types = sortAttrTypes.computeIfAbsent(id, (i) -> new HashSet<>());
+            variable.inferredTypes().forEach(label -> {
+                ThingType type = conceptMgr.getThingType(label.name());
+                if (type != null && type.isAttributeType()) types.add(type.asAttributeType());
+            });
+        }));
+        sortAttrTypes.forEach((var, attrTypes) -> {
+            Optional<List<AttributeType>> incomparable = cartesian(list(iterate(attrTypes), iterate(attrTypes)))
+                    .filter(list -> !list.get(0).getValueType().comparables().contains(list.get(1).getValueType())).first();
+            if (incomparable.isPresent()) {
+                throw TypeDBException.of(SORT_ATTRIBUTE_NOT_COMPARABLE, var, incomparable.get().get(0).getLabel(), incomparable.get().get(1).getLabel());
+            }
+        });
     }
 
     private boolean mayReason(Disjunction disjunction, Context.Query context) {

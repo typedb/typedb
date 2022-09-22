@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.concept.answer;
 
 import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
@@ -205,7 +206,7 @@ public class ConceptMap implements Answer {
             this.comparator = comparator;
         }
 
-        public static Comparator create(Modifiers.Sorting sorting){
+        public static Comparator create(Modifiers.Sorting sorting) {
             assert !sorting.variables().isEmpty();
             Optional<java.util.Comparator<ConceptMap>> comparator = sorting.variables().stream()
                     .map(var -> {
@@ -241,7 +242,7 @@ public class ConceptMap implements Answer {
                         } else if (concept1.isType() && concept2.isType()) {
                             return concept1.asType().compareTo(concept2.asType());
                         } else {
-                            throw TypeDBException.of(ILLEGAL_STATE); // TODO: better exception
+                            throw TypeDBException.of(ILLEGAL_STATE);
                         }
                     });
         }
