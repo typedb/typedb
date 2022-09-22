@@ -69,7 +69,21 @@ public class AnswerCountEstimator {
         this.conjunctionModels = new HashMap<>();
     }
 
-    public void registerConjunctionAndBuildModel(ResolvableConjunction conjunction) {
+    public long estimateAllAnswers(ResolvableConjunction conjunction) {
+        // TODO: make API foolproof by registering and building here if required.
+        return conjunctionModels.get(conjunction).estimateAllAnswers();
+    }
+
+    public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variableFilter) {
+        return estimateAnswers(conjunction, variableFilter, logicMgr.compile(conjunction));
+    }
+
+    public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
+        return conjunctionModels.get(conjunction).estimateAnswers(variableFilter, includedResolvables);
+    }
+
+    // TODO: private and shorten name
+    void registerConjunctionAndBuildModel(ResolvableConjunction conjunction) {
         registerConjunction(conjunction, new HashSet<>());
         buildConjunctionModel(conjunction);
     }
@@ -92,18 +106,6 @@ public class AnswerCountEstimator {
         conjunctionModels.get(conjunction).buildModel();
     }
 
-    public long estimateAllAnswers(ResolvableConjunction conjunction) {
-        return conjunctionModels.get(conjunction).estimateAllAnswers();
-    }
-
-    public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variableFilter) {
-        return estimateAnswers(conjunction, variableFilter, logicMgr.compile(conjunction));
-    }
-
-    public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
-        return conjunctionModels.get(conjunction).estimateAnswers(variableFilter, includedResolvables);
-    }
-
     private static class ConjunctionModel {
 
         private final ResolvableConjunction conjunction;
@@ -111,7 +113,8 @@ public class AnswerCountEstimator {
         private final LogicManager logicMgr;
         private final ConstraintModelFactory constraintModelFactory;
 
-        private Map<Variable, ConstraintModel> baselineCover;
+        // TODO: these maps should contain VariableModel and ConstraintModel
+        private Map<Variable, ConstraintModel> variableModels;
         private final HashMap<Resolvable<?>, List<ConstraintModel>> constraintModels;
         private long fullAnswerCount;
         private long negatedsCost;
@@ -163,7 +166,7 @@ public class AnswerCountEstimator {
 
         private Map<Variable, ConstraintModel> computeGreedyResolvableCoverForVariables(Set<Variable> variableFilter, List<ConstraintModel> includedConstraintModels) {
             // Does a greedy set cover
-            Map<Variable, ConstraintModel> currentCover = new HashMap<>(baselineCover);
+            Map<Variable, ConstraintModel> currentCover = new HashMap<>(variableModels);
             includedConstraintModels.sort(Comparator.comparing(x -> x.estimateAnswers(variableFilter)));
             for (ConstraintModel model : includedConstraintModels) {
                 Set<Variable> filteredVariablesInResolvable = model.variables.stream()
@@ -244,17 +247,17 @@ public class AnswerCountEstimator {
             this.constraintModels.putAll(buildModelsForNegateds());
             this.constraintModels.putAll(buildModelsForAcyclicConcludables());
             iterate(cyclicConcludables).forEachRemaining(concludable -> this.constraintModels.put(concludable, list()));
-            this.baselineCover = computeBaselineVariableCover(new HashMap<>());
+            this.variableModels = computeBaselineVariableCover(new HashMap<>());
         }
 
         private void buildCyclicModel() {
             assert this.modelStatus == ModelStatus.ACYCLIC_MODEL;
-            this.constraintModels.putAll(buildModelsForCyclicConcludables());
             Map<Resolvable<?>, List<ConstraintModel>> generatedVariableModels = constraintModelsForGeneratedVariables();
+            this.variableModels = computeBaselineVariableCover(generatedVariableModels); // recompute with inferred
+            this.constraintModels.putAll(buildModelsForCyclicConcludables());
             iterate(generatedVariableModels.keySet()).forEachRemaining(resolvable -> {
                 this.constraintModels.put(resolvable, list(this.constraintModels.get(resolvable), generatedVariableModels.get(resolvable)));
             });
-            this.baselineCover = computeBaselineVariableCover(generatedVariableModels); // recompute with inferred
         }
 
         private Map<Resolvable<?>, List<ConstraintModel>> buildModelsForRetrievables() {
@@ -418,6 +421,24 @@ public class AnswerCountEstimator {
                 }
             }
         }
+
+
+        private static class VariableModel  {
+
+        }
+
+        private static class ConsModel {
+
+            static ConsModel createHasModel() {
+
+            }
+
+            static ConsModel createRelationModel() {
+
+            }
+
+        }
+
     }
 
     private static class ConstraintModelFactory {
