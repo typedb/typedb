@@ -64,7 +64,7 @@ public class AnswerCountEstimator {
 
     public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph) {
         this.logicMgr = logicMgr;
-        this.conjunctionModelFactory = new ConjunctionModelFactory(this, new ConstraintModelFactory(this, graph));
+        this.conjunctionModelFactory = new ConjunctionModelFactory(this, new LocalModelFactory(this, graph));
         this.conjunctionModels = new HashMap<>();
         this.cyclicConcludables = new HashMap<>();
     }
@@ -223,11 +223,11 @@ public class AnswerCountEstimator {
     private static class ConjunctionModelFactory {
 
         private final AnswerCountEstimator answerCountEstimator;
-        private final ConstraintModelFactory constraintModelFactory;
+        private final LocalModelFactory localModelFactory;
 
-        private ConjunctionModelFactory(AnswerCountEstimator answerCountEstimator, ConstraintModelFactory constraintModelFactory) {
+        private ConjunctionModelFactory(AnswerCountEstimator answerCountEstimator, LocalModelFactory localModelFactory) {
             this.answerCountEstimator = answerCountEstimator;
-            this.constraintModelFactory = constraintModelFactory;
+            this.localModelFactory = localModelFactory;
         }
 
         private ConjunctionModel buildAcyclicModel(ConjunctionContext conjunctionContext) {
@@ -296,18 +296,13 @@ public class AnswerCountEstimator {
         }
 
         private List<AnswerCountEstimator.LocalModel.VariableModel> constraintModelsForGeneratedVariable(Concludable concludable) {
-            ThingVariable v = concludable.generating().get();
-            long persistedAnswerCount = constraintModelFactory.countPersistedThingsMatchingType(v.asThing());
-            long inferredAnswerCount = (concludable.isHas() || concludable.isAttribute()) ?
-                    constraintModelFactory.attributesCreatedByExplicitHas(concludable) :
-                    constraintModelFactory.estimateInferredAnswerCount(concludable, set(v));
-            return list(new LocalModel.VariableModel(list(v), persistedAnswerCount + inferredAnswerCount));
+            return list(localModelFactory.modelForVariable(concludable.generating().get(), Optional.of(concludable)));
         }
 
         private Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> computeBaselineVariableCover(Set<Variable> consideredVariables, List<LocalModel.VariableModel> generatedVariableModels) {
             Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> newVariableCover = new HashMap<>();
             iterate(consideredVariables).map(Variable::asThing).forEachRemaining(v -> { // baseline
-                newVariableCover.put(v, new LocalModel.VariableModel(list(v), constraintModelFactory.countPersistedThingsMatchingType(v)));
+                newVariableCover.put(v, new LocalModel.VariableModel(list(v), localModelFactory.countPersistedThingsMatchingType(v)));
             });
 
             iterate(generatedVariableModels).flatMap(Iterators::iterate)
@@ -328,11 +323,11 @@ public class AnswerCountEstimator {
             if (constraint.isThing()) {
                 ThingConstraint asThingConstraint = constraint.asThing();
                 if (asThingConstraint.isHas()) {
-                    return constraintModelFactory.modelForHas(asThingConstraint.asHas(), correspondingConcludable);
+                    return localModelFactory.modelForHas(asThingConstraint.asHas(), correspondingConcludable);
                 } else if (asThingConstraint.isRelation()) {
-                    return constraintModelFactory.modelForRelation(asThingConstraint.asRelation(), correspondingConcludable);
+                    return localModelFactory.modelForRelation(asThingConstraint.asRelation(), correspondingConcludable);
                 } else if (asThingConstraint.isIsa()) {
-                    return constraintModelFactory.modelForIsa(asThingConstraint.asIsa(), correspondingConcludable);
+                    return localModelFactory.modelForIsa(asThingConstraint.asIsa(), correspondingConcludable);
                 } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
             } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
         }
@@ -356,111 +351,6 @@ public class AnswerCountEstimator {
         private boolean isModellable(Constraint constraint) {
             return constraint.isThing() &&
                     (constraint.asThing().isRelation() || constraint.asThing().isHas() || constraint.asThing().isIsa());
-        }
-    }
-
-    private static class ConstraintModelFactory {
-        private final AnswerCountEstimator answerCountEstimator;
-        private final GraphManager graphMgr;
-
-        private ConstraintModelFactory(AnswerCountEstimator answerCountEstimator, GraphManager graphMgr) {
-            this.answerCountEstimator = answerCountEstimator;
-            this.graphMgr = graphMgr;
-        }
-
-        private LocalModel modelForRelation(RelationConstraint relationConstraint, Optional<Concludable> correspondingConcludable) {
-            // Assumes role-players are evenly distributed.
-            // Small inaccuracy: We double count duplicate roles (r:$a, r:$b)
-            // counts the case where r:$a=r:$b, which TypeDB wouldn't return
-            Set<RelationConstraint.RolePlayer> rolePlayers = relationConstraint.players();
-            List<Variable> constrainedVars = new ArrayList<>();
-            Map<TypeVariable, Long> rolePlayerEstimates = new HashMap<>();
-            Map<TypeVariable, Integer> rolePlayerCounts = new HashMap<>();
-
-            double relationTypeEstimate = countPersistedThingsMatchingType(relationConstraint.owner());
-
-            for (RelationConstraint.RolePlayer rp : rolePlayers) {
-                constrainedVars.add(rp.player());
-                TypeVariable key = rp.roleType().orElse(null);
-                rolePlayerCounts.put(key, rolePlayerCounts.getOrDefault(key, 0) + 1);
-                if (!rolePlayerEstimates.containsKey(key)) {
-                    rolePlayerEstimates.put(key, countPersistedRolePlayers(rp));
-                }
-            }
-
-            // TODO: Can improve estimate by collecting List<List<LocalModel>> from the triggered rules and doing sum(costCover).
-            // Consider owner in the inferred estimate call only if it's not anonymous
-            if (relationConstraint.owner().id().isName()) {
-                constrainedVars.add(relationConstraint.owner());
-            }
-            long inferredRelationsEstimate = correspondingConcludable.isPresent() ?
-                    estimateInferredAnswerCount(correspondingConcludable.get(), new HashSet<>(constrainedVars)) :
-                    0L;
-            constrainedVars.add(relationConstraint.owner());
-
-            return new LocalModel.RelationModel(relationConstraint, constrainedVars, relationTypeEstimate, rolePlayerEstimates, inferredRelationsEstimate);
-        }
-
-        private LocalModel modelForHas(HasConstraint hasConstraint, Optional<Concludable> correspondingConcludable) {
-            long hasEdgeEstimate = countPersistedHasEdges(hasConstraint.owner().inferredTypes(), hasConstraint.attribute().inferredTypes());
-            if (correspondingConcludable.isPresent()) {
-                hasEdgeEstimate += estimateInferredAnswerCount(correspondingConcludable.get(), set(hasConstraint.owner(), hasConstraint.attribute()));
-            }
-            return new LocalModel.HasModel(hasConstraint, hasEdgeEstimate);
-        }
-
-        private LocalModel modelForIsa(IsaConstraint isaConstraint, Optional<Concludable> correspondingConcludable) {
-            ThingVariable v = isaConstraint.owner();
-            long estimate = countPersistedThingsMatchingType(v);
-            if (correspondingConcludable.isPresent()) {
-                estimate += estimateInferredAnswerCount(correspondingConcludable.get(), set(v));
-            }
-            return new LocalModel.IsaModel(isaConstraint, estimate);
-        }
-
-        private long estimateInferredAnswerCount(Concludable concludable, Set<Variable> variableFilter) {
-            Map<Rule, Set<Unifier>> unifiers = answerCountEstimator.logicMgr.applicableRules(concludable);
-            long inferredEstimate = 0;
-            for (Rule rule : unifiers.keySet()) {
-                for (Unifier unifier : unifiers.get(rule)) {
-                    Set<Identifier.Variable> ruleSideIds = iterate(variableFilter)
-                            .flatMap(v -> iterate(unifier.mapping().get(v.id()))).toSet();
-                    Set<Variable> ruleSideVariables;
-                    if (rule.conclusion().generating().isPresent() && ruleSideIds.contains(rule.conclusion().generating().get().id())) {
-                        // There is one generated variable per combination of ALL variables in the conclusion
-                        ruleSideVariables = iterate(rule.conclusion().pattern().variables())
-                                .filter(v -> v.isThing() && v != rule.conclusion().generating().get())
-                                .toSet();
-                    } else {
-                        ruleSideVariables = iterate(ruleSideIds).map(id -> rule.conclusion().conjunction().pattern().variable(id)).toSet();
-                    }
-                    inferredEstimate += answerCountEstimator.estimateAnswers(rule.condition().conjunction(), ruleSideVariables);
-                }
-            }
-            return inferredEstimate;
-        }
-
-        private long attributesCreatedByExplicitHas(Concludable concludable) {
-            return iterate(answerCountEstimator.logicMgr.applicableRules(concludable).keySet())
-                    .filter(rule -> rule.conclusion().isExplicitHas())
-                    .map(rule -> rule.conclusion().asExplicitHas().value().value())
-                    .toSet().size();
-        }
-
-        private long countPersistedRolePlayers(RelationConstraint.RolePlayer rolePlayer) {
-            return graphMgr.data().stats().thingVertexSum(rolePlayer.inferredRoleTypes());
-        }
-
-        private long countPersistedThingsMatchingType(ThingVariable thingVar) {
-            return graphMgr.data().stats().thingVertexSum(thingVar.inferredTypes());
-        }
-
-        private long countPersistedHasEdges(Set<Label> ownerTypes, Set<Label> attributeTypes) {
-            return ownerTypes.stream().map(ownerType ->
-                    attributeTypes.stream()
-                            .map(attrType -> graphMgr.data().stats().hasEdgeCount(ownerType, attrType))
-                            .reduce(0L, Long::sum)
-            ).reduce(0L, Long::sum);
         }
     }
 
@@ -564,4 +454,122 @@ public class AnswerCountEstimator {
             }
         }
     }
+
+    private static class LocalModelFactory {
+        private final AnswerCountEstimator answerCountEstimator;
+        private final GraphManager graphMgr;
+
+        private LocalModelFactory(AnswerCountEstimator answerCountEstimator, GraphManager graphMgr) {
+            this.answerCountEstimator = answerCountEstimator;
+            this.graphMgr = graphMgr;
+        }
+
+        private LocalModel.RelationModel modelForRelation(RelationConstraint relationConstraint, Optional<Concludable> correspondingConcludable) {
+            // Assumes role-players are evenly distributed.
+            // Small inaccuracy: We double count duplicate roles (r:$a, r:$b)
+            // counts the case where r:$a=r:$b, which TypeDB wouldn't return
+            Set<RelationConstraint.RolePlayer> rolePlayers = relationConstraint.players();
+            List<Variable> constrainedVars = new ArrayList<>();
+            Map<TypeVariable, Long> rolePlayerEstimates = new HashMap<>();
+            Map<TypeVariable, Integer> rolePlayerCounts = new HashMap<>();
+
+            double relationTypeEstimate = countPersistedThingsMatchingType(relationConstraint.owner());
+
+            for (RelationConstraint.RolePlayer rp : rolePlayers) {
+                constrainedVars.add(rp.player());
+                TypeVariable key = rp.roleType().orElse(null);
+                rolePlayerCounts.put(key, rolePlayerCounts.getOrDefault(key, 0) + 1);
+                if (!rolePlayerEstimates.containsKey(key)) {
+                    rolePlayerEstimates.put(key, countPersistedRolePlayers(rp));
+                }
+            }
+
+            // TODO: Can improve estimate by collecting List<List<LocalModel>> from the triggered rules and doing sum(costCover).
+            // Consider owner in the inferred estimate call only if it's not anonymous
+            if (relationConstraint.owner().id().isName()) {
+                constrainedVars.add(relationConstraint.owner());
+            }
+            long inferredRelationsEstimate = correspondingConcludable.isPresent() ?
+                    estimateInferredAnswerCount(correspondingConcludable.get(), new HashSet<>(constrainedVars)) :
+                    0L;
+            constrainedVars.add(relationConstraint.owner());
+
+            return new LocalModel.RelationModel(relationConstraint, constrainedVars, relationTypeEstimate, rolePlayerEstimates, inferredRelationsEstimate);
+        }
+
+        private LocalModel.HasModel modelForHas(HasConstraint hasConstraint, Optional<Concludable> correspondingConcludable) {
+            long hasEdgeEstimate = countPersistedHasEdges(hasConstraint.owner().inferredTypes(), hasConstraint.attribute().inferredTypes());
+            if (correspondingConcludable.isPresent()) {
+                hasEdgeEstimate += estimateInferredAnswerCount(correspondingConcludable.get(), set(hasConstraint.owner(), hasConstraint.attribute()));
+            }
+            return new LocalModel.HasModel(hasConstraint, hasEdgeEstimate);
+        }
+
+        private LocalModel.IsaModel modelForIsa(IsaConstraint isaConstraint, Optional<Concludable> correspondingConcludable) {
+            ThingVariable v = isaConstraint.owner();
+            long estimate = countPersistedThingsMatchingType(v);
+            if (correspondingConcludable.isPresent()) {
+                estimate += estimateInferredAnswerCount(correspondingConcludable.get(), set(v));
+            }
+            return new LocalModel.IsaModel(isaConstraint, estimate);
+        }
+
+        private LocalModel.VariableModel modelForVariable(Variable v, Optional<Concludable> correspondingConcludable) {
+            long persistedAnswerCount = countPersistedThingsMatchingType(v.asThing());
+            long inferredAnswerCount = 0;
+            if (correspondingConcludable.isPresent() && v == correspondingConcludable.get().generating().get()) {
+                Concludable concludable = correspondingConcludable.get();
+                inferredAnswerCount = (concludable.isHas() || concludable.isAttribute()) ?
+                        attributesCreatedByExplicitHas(concludable) :
+                        estimateInferredAnswerCount(concludable, set(v));
+            }
+            return new LocalModel.VariableModel(list(v), persistedAnswerCount + inferredAnswerCount);
+        }
+
+        private long estimateInferredAnswerCount(Concludable concludable, Set<Variable> variableFilter) {
+            Map<Rule, Set<Unifier>> unifiers = answerCountEstimator.logicMgr.applicableRules(concludable);
+            long inferredEstimate = 0;
+            for (Rule rule : unifiers.keySet()) {
+                for (Unifier unifier : unifiers.get(rule)) {
+                    Set<Identifier.Variable> ruleSideIds = iterate(variableFilter)
+                            .flatMap(v -> iterate(unifier.mapping().get(v.id()))).toSet();
+                    Set<Variable> ruleSideVariables;
+                    if (rule.conclusion().generating().isPresent() && ruleSideIds.contains(rule.conclusion().generating().get().id())) {
+                        // There is one generated variable per combination of ALL variables in the conclusion
+                        ruleSideVariables = iterate(rule.conclusion().pattern().variables())
+                                .filter(v -> v.isThing() && v != rule.conclusion().generating().get())
+                                .toSet();
+                    } else {
+                        ruleSideVariables = iterate(ruleSideIds).map(id -> rule.conclusion().conjunction().pattern().variable(id)).toSet();
+                    }
+                    inferredEstimate += answerCountEstimator.estimateAnswers(rule.condition().conjunction(), ruleSideVariables);
+                }
+            }
+            return inferredEstimate;
+        }
+
+        private long attributesCreatedByExplicitHas(Concludable concludable) {
+            return iterate(answerCountEstimator.logicMgr.applicableRules(concludable).keySet())
+                    .filter(rule -> rule.conclusion().isExplicitHas())
+                    .map(rule -> rule.conclusion().asExplicitHas().value().value())
+                    .toSet().size();
+        }
+
+        private long countPersistedRolePlayers(RelationConstraint.RolePlayer rolePlayer) {
+            return graphMgr.data().stats().thingVertexSum(rolePlayer.inferredRoleTypes());
+        }
+
+        private long countPersistedThingsMatchingType(ThingVariable thingVar) {
+            return graphMgr.data().stats().thingVertexSum(thingVar.inferredTypes());
+        }
+
+        private long countPersistedHasEdges(Set<Label> ownerTypes, Set<Label> attributeTypes) {
+            return ownerTypes.stream().map(ownerType ->
+                    attributeTypes.stream()
+                            .map(attrType -> graphMgr.data().stats().hasEdgeCount(ownerType, attrType))
+                            .reduce(0L, Long::sum)
+            ).reduce(0L, Long::sum);
+        }
+    }
+
 }
