@@ -210,7 +210,6 @@ public class ConceptMap implements Answer {
             Optional<java.util.Comparator<ConceptMap>> comparator = sorting.variables().stream()
                     .map(var -> {
                         java.util.Comparator<ConceptMap> variableComparator = variableComparator(var.asRetrievable());
-                        // TODO: sort order per-variable
                         return sorting.isAscending(var) ? variableComparator : variableComparator.reversed();
                     }).reduce(java.util.Comparator::thenComparing);
             return new Comparator(sorting, comparator.get());
