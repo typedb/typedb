@@ -155,9 +155,9 @@ public class AnswerCountEstimator {
         private final ResolvableConjunction conjunction;
         private final Set<Resolvable<?>> resolvables;
         private final Set<Variable> consideredVariables;
-        private Set<Concludable> cyclicConcludables;
-        private Set<Concludable> acyclicConcludables;
-        
+        private final Set<Concludable> cyclicConcludables;
+        private final Set<Concludable> acyclicConcludables;
+
         private ConjunctionContext(ResolvableConjunction conjunction, Set<Resolvable<?>> resolvables, Set<Concludable> cyclicConcludables) {
             this.conjunction = conjunction;
             this.resolvables = resolvables;
@@ -169,7 +169,7 @@ public class AnswerCountEstimator {
         }
     }
 
-        private static class ConjunctionModel {
+    private static class ConjunctionModel {
         private final ConjunctionContext conjunctionContext;
         private final Map<Variable, AnswerCountEstimator.LocalModel> variableModels;
         private final HashMap<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> constraintModels;
@@ -221,7 +221,6 @@ public class AnswerCountEstimator {
                     .map(coverMap::get).collect(Collectors.toSet());
             return subsetCoveredBy.stream().map(model -> model.estimateAnswers(variablesToConsider)).reduce(1L, (x, y) -> x * y);
         }
-
     }
 
     private static class ConjunctionModelBuilder {
