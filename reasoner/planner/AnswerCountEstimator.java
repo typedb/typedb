@@ -139,14 +139,14 @@ public class AnswerCountEstimator {
                     .flatMap(concludable -> iterate(dependencies(concludable)))
                     .forEachRemaining(this::buildConjunctionModel);
 
-            conjunctionModels.put(conjunction, conjunctionModelBuilder.buildAcyclicModel());
-
-            // cyclic calls to this model will answer based on the acyclic model.
+            ConjunctionModel acyclicModel = conjunctionModelBuilder.buildAcyclicModel();
+            conjunctionModels.put(conjunction, acyclicModel);
+                    // cyclic calls to this model will answer based on the acyclic model.
             iterate(conjunctionContext.cyclicConcludables)
                     .flatMap(concludable -> iterate(dependencies(concludable)))
                     .forEachRemaining(this::buildConjunctionModel);
 
-            conjunctionModels.put(conjunction, conjunctionModelBuilder.buildCyclicModel());
+            conjunctionModels.put(conjunction, conjunctionModelBuilder.buildCyclicModel(acyclicModel));
         }
 
     }
@@ -171,12 +171,12 @@ public class AnswerCountEstimator {
 
     private static class ConjunctionModel {
         private final ConjunctionContext conjunctionContext;
-        private final Map<Variable, AnswerCountEstimator.LocalModel> variableModels;
-        private final HashMap<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> constraintModels;
+        private final Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> variableModels;
+        private final Map<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> constraintModels;
         private final boolean isCyclic;
 
         private ConjunctionModel(ConjunctionContext conjunctionContext,
-                                 Map<Variable, LocalModel> variableModels, HashMap<Resolvable<?>, List<LocalModel>> constraintModels,
+                                 Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> variableModels, Map<Resolvable<?>, List<LocalModel>> constraintModels,
                                  AnswerCountEstimator answerCountEstimator, boolean isCyclic) {
             this.conjunctionContext = conjunctionContext;
             this.variableModels = variableModels;
@@ -230,9 +230,6 @@ public class AnswerCountEstimator {
         private final ConstraintModelFactory constraintModelFactory;
 
         // TODO: these maps should contain VariableModel and ConstraintModel
-        private Map<Variable, AnswerCountEstimator.LocalModel> variableModels;
-        private final HashMap<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> constraintModels;
-
         private enum ModelStatus {NOT_STARTED, ACYCLIC_MODEL, COMPLETE}
 
         private ModelStatus modelStatus;
@@ -241,96 +238,91 @@ public class AnswerCountEstimator {
             this.answerCountEstimator = answerCountEstimator;
             this.constraintModelFactory = answerCountEstimator.constraintModelFactory;
             this.conjunctionContext = conjunctionContext;
-
-            this.constraintModels = new HashMap<>();
             this.modelStatus = ModelStatus.NOT_STARTED;
         }
 
         private ConjunctionModel buildAcyclicModel() {
-            this.constraintModels.putAll(buildModelsForRetrievables());
-            this.constraintModels.putAll(buildModelsForNegateds());
-            this.constraintModels.putAll(buildModelsForAcyclicConcludables());
-            iterate(conjunctionContext.cyclicConcludables).forEachRemaining(concludable -> this.constraintModels.put(concludable, list()));
-            this.variableModels = computeBaselineVariableCover(new HashMap<>());
+            Map<Resolvable<?>, List<LocalModel>> constraintModels = new HashMap<>();
+            iterate(conjunctionContext.resolvables).filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable)
+                    .forEachRemaining(retrievable -> constraintModels.put(retrievable, buildModelsForRetrievable(retrievable)));
 
-            // Compute costs
+            iterate(conjunctionContext.resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated)
+                    .forEachRemaining(negated -> constraintModels.put(negated, buildModelsForNegated(negated)));
+
+            List<LocalModel.VariableModel> generatedVariableModels = new ArrayList<>();
+            iterate(conjunctionContext.acyclicConcludables)
+                    .forEachRemaining(concludable -> {
+                        List<LocalModel.VariableModel> generatedVariableModelsForConcludable = constraintModelsForGeneratedVariable(concludable);
+                        generatedVariableModels.addAll(generatedVariableModelsForConcludable);
+                        ArrayList<LocalModel> combinedModels = new ArrayList<>();
+                        combinedModels.addAll(generatedVariableModelsForConcludable);
+                        combinedModels.addAll(buildModelsForConcludable(concludable));
+                        constraintModels.put(concludable, combinedModels);
+                    });
+
+            iterate(conjunctionContext.cyclicConcludables)
+                    .forEachRemaining(concludable -> constraintModels.put(concludable, list()));
+
+            Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> variableModels = computeBaselineVariableCover(generatedVariableModels);
+
+            assert !iterate(conjunctionContext.consideredVariables).filter(variable -> !variableModels.containsKey(variable)).hasNext();
             assert !iterate(conjunctionContext.resolvables).filter(resolvable -> !constraintModels.containsKey(resolvable)).hasNext();
             modelStatus = ModelStatus.ACYCLIC_MODEL;
             return new ConjunctionModel(conjunctionContext, variableModels, constraintModels, answerCountEstimator, false);
         }
 
-        private ConjunctionModel buildCyclicModel() {
-            assert this.modelStatus == ModelStatus.ACYCLIC_MODEL;
-            Map<Resolvable<?>, List<LocalModel>> modelsForCyclicConcludables = buildModelsForCyclicConcludables();
-            Map<Resolvable<?>, List<LocalModel.VariableModel>> generatedVariableModels = constraintModelsForGeneratedVariables();
-            iterate(conjunctionContext.cyclicConcludables).forEachRemaining(concludable -> {
-                List<LocalModel> combinedModels = new ArrayList<>(modelsForCyclicConcludables.get(concludable));
-                if (generatedVariableModels.containsKey(concludable)) {
-                    combinedModels.addAll(generatedVariableModels.get(concludable));
-                }
-                this.constraintModels.put(concludable, combinedModels);
-            });
-            this.variableModels = computeBaselineVariableCover(generatedVariableModels); // recompute with inferred
+        private ConjunctionModel buildCyclicModel(ConjunctionModel acyclicModel) {
+            assert !acyclicModel.isCyclic;
+            Map<Resolvable<?>, List<LocalModel>> constraintModels = new HashMap<>(acyclicModel.constraintModels);
+            List<LocalModel.VariableModel> generatedVariableModels = new ArrayList<>(iterate(acyclicModel.variableModels.values()).flatMap(l->iterate(l)).toList());
+            iterate(conjunctionContext.cyclicConcludables)
+                    .forEachRemaining(concludable -> {
+                        List<LocalModel.VariableModel> generatedVariableModelsForConcludable = constraintModelsForGeneratedVariable(concludable);
+                        generatedVariableModels.addAll(generatedVariableModelsForConcludable);
+                        ArrayList<LocalModel> combinedModels = new ArrayList<>();
+                        combinedModels.addAll(generatedVariableModelsForConcludable);
+                        combinedModels.addAll(buildModelsForConcludable(concludable));
+                        constraintModels.put(concludable, combinedModels);
+                    });
 
+            Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> variableModels = computeBaselineVariableCover(generatedVariableModels);
+
+            assert !iterate(conjunctionContext.consideredVariables).filter(variable -> !variableModels.containsKey(variable)).hasNext();
+            assert !iterate(conjunctionContext.resolvables).filter(resolvable -> !constraintModels.containsKey(resolvable)).hasNext();
             modelStatus = ModelStatus.COMPLETE;
             return new ConjunctionModel(conjunctionContext, variableModels, constraintModels, answerCountEstimator, true);
         }
 
-        private Map<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> buildModelsForRetrievables() {
-            Map<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> modelsForRetrievables = new HashMap<>();
-            iterate(conjunctionContext.resolvables).filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(retrievable -> {
-                List<AnswerCountEstimator.LocalModel> constraintModels = iterate(extractConstraintsToModel(retrievable))
-                        .map(constraint -> buildConstraintModel(constraint, Optional.empty()))
-                        .toList();
-                modelsForRetrievables.put(retrievable, constraintModels);
-            });
-            return modelsForRetrievables;
+        private List<AnswerCountEstimator.LocalModel> buildModelsForRetrievable(Retrievable retrievable) {
+            return iterate(extractConstraintsToModel(retrievable))
+                    .map(constraint -> buildConstraintModel(constraint, Optional.empty()))
+                    .toList();
         }
 
-        private Map<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> buildModelsForNegateds() {
-            Map<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> modelsForNegateds = new HashMap<>();
-            Set<Negated> negateds = iterate(conjunctionContext.resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated).toSet();
-            iterate(negateds).forEachRemaining(negated -> modelsForNegateds.put(negated, list()));
-            return modelsForNegateds;
+        private List<AnswerCountEstimator.LocalModel> buildModelsForNegated(Negated negated) {
+            return list();
         }
 
-        private Map<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> buildModelsForAcyclicConcludables() {
-            Map<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> modelsForAcyclicConcludables = new HashMap<>();
-            iterate(conjunctionContext.acyclicConcludables).forEachRemaining(concludable -> {
-                modelsForAcyclicConcludables.put(concludable, list(buildConstraintModel(extractConstraintToModel(concludable), Optional.of(concludable))));
-            });
-            return modelsForAcyclicConcludables;
+        private List<AnswerCountEstimator.LocalModel> buildModelsForConcludable(Concludable concludable) {
+            return list(buildConstraintModel(extractConstraintToModel(concludable), Optional.of(concludable)));
         }
 
-        private Map<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> buildModelsForCyclicConcludables() {
-            Map<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> modelsForCyclicConcludables = new HashMap<>();
-            iterate(conjunctionContext.cyclicConcludables).forEachRemaining(concludable -> {
-                modelsForCyclicConcludables.put(concludable, list(buildConstraintModel(extractConstraintToModel(concludable), Optional.of(concludable))));
-            });
-            return modelsForCyclicConcludables;
+        private List<AnswerCountEstimator.LocalModel.VariableModel> constraintModelsForGeneratedVariable(Concludable concludable) {
+            ThingVariable v = concludable.generating().get();
+            long persistedAnswerCount = constraintModelFactory.countPersistedThingsMatchingType(v.asThing());
+            long inferredAnswerCount = (concludable.isHas() || concludable.isAttribute()) ?
+                    constraintModelFactory.attributesCreatedByExplicitHas(concludable) :
+                    constraintModelFactory.estimateInferredAnswerCount(concludable, set(v));
+            return list(new LocalModel.VariableModel(list(v), persistedAnswerCount + inferredAnswerCount));
         }
 
-        private Map<Resolvable<?>, List<LocalModel.VariableModel>> constraintModelsForGeneratedVariables() {
-            Map<Resolvable<?>, List<LocalModel.VariableModel>> generatedVariableModels = new HashMap<>();
-            iterate(conjunctionContext.resolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
-                    .forEachRemaining(concludable -> {
-                        ThingVariable v = concludable.generating().get();
-                        long persistedAnswerCount = constraintModelFactory.countPersistedThingsMatchingType(v.asThing());
-                        long inferredAnswerCount = (concludable.isHas() || concludable.isAttribute()) ?
-                                constraintModelFactory.attributesCreatedByExplicitHas(concludable) :
-                                constraintModelFactory.estimateInferredAnswerCount(concludable, set(v));
-                        generatedVariableModels.put(concludable, list(new LocalModel.VariableModel(list(v), persistedAnswerCount + inferredAnswerCount)));
-                    });
-            return generatedVariableModels;
-        }
-
-        private Map<Variable, AnswerCountEstimator.LocalModel> computeBaselineVariableCover(Map<Resolvable<?>, List<LocalModel.VariableModel>> generatedVariableModels) {
-            Map<Variable, AnswerCountEstimator.LocalModel> newVariableCover = new HashMap<>();
+        private Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> computeBaselineVariableCover(List<LocalModel.VariableModel> generatedVariableModels) {
+            Map<Variable, AnswerCountEstimator.LocalModel.VariableModel> newVariableCover = new HashMap<>();
             iterate(conjunctionContext.consideredVariables).map(Variable::asThing).forEachRemaining(v -> { // baseline
                 newVariableCover.put(v, new LocalModel.VariableModel(list(v), constraintModelFactory.countPersistedThingsMatchingType(v)));
             });
 
-            iterate(generatedVariableModels.values()).flatMap(Iterators::iterate)
+            iterate(generatedVariableModels).flatMap(Iterators::iterate)
                     .forEachRemaining(model -> {
                         Variable v = model.variables.get(0);
                         long existingEstimate = newVariableCover.get(v).estimateAnswers(set(v));
