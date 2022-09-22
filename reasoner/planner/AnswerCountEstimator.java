@@ -61,11 +61,11 @@ public class AnswerCountEstimator {
     private final Map<ResolvableConjunction, ConjunctionModel> conjunctionModels;
 
     // Cycle handling
-    private final ConstraintModelBuilder constraintModelBuilder;
+    private final ConstraintModelFactory constraintModelFactory;
 
     public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph) {
         this.logicMgr = logicMgr;
-        this.constraintModelBuilder = new ConstraintModelBuilder(this, graph);
+        this.constraintModelFactory = new ConstraintModelFactory(this, graph);
         this.conjunctionModels = new HashMap<>();
     }
 
@@ -109,23 +109,23 @@ public class AnswerCountEstimator {
         private final ResolvableConjunction conjunction;
         private final AnswerCountEstimator answerCountEstimator;
         private final LogicManager logicMgr;
-        private final ConstraintModelBuilder constraintModelBuilder;
+        private final ConstraintModelFactory constraintModelFactory;
 
         private Map<Variable, ConstraintModel> baselineCover;
+        private final HashMap<Resolvable<?>, List<ConstraintModel>> constraintModels;
         private long fullAnswerCount;
         private long negatedsCost;
 
         private Set<Concludable> cyclicConcludables;
         private Set<Concludable> acyclicConcludables;
-        private final HashMap<Resolvable<?>, List<ConstraintModel>> constraintModels;
 
-        private enum ModelStatus {NOT_STARTED, REGISTERED, ACYCLIC_ESTIMATE, COMPLETE}
+        private enum ModelStatus {NOT_STARTED, REGISTERED, ACYCLIC_MODEL, COMPLETE}
 
         private ModelStatus modelStatus;
 
         private ConjunctionModel(AnswerCountEstimator answerCountEstimator, ResolvableConjunction conjunction) {
             this.answerCountEstimator = answerCountEstimator;
-            this.constraintModelBuilder = answerCountEstimator.constraintModelBuilder;
+            this.constraintModelFactory = answerCountEstimator.constraintModelFactory;
             this.logicMgr = answerCountEstimator.logicMgr;
             this.conjunction = conjunction;
 
@@ -151,35 +151,14 @@ public class AnswerCountEstimator {
         }
 
         private long estimateAnswers(Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
-            assert this.modelStatus == ModelStatus.ACYCLIC_ESTIMATE || this.modelStatus == ModelStatus.COMPLETE;
+            assert this.modelStatus == ModelStatus.ACYCLIC_MODEL || this.modelStatus == ModelStatus.COMPLETE;
             List<ConstraintModel> includedConstraintModels = iterate(includedResolvables)
                     .flatMap(resolvable -> iterate(constraintModels.get(resolvable)))
                     .toList();
             Map<Variable, ConstraintModel> costCover = computeGreedyResolvableCoverForVariables(variableFilter, includedConstraintModels);
-            long ret = costOfResolvableCover(variableFilter, costCover);
+            long ret = costOfVariableCover(variableFilter, costCover);
             assert ret > 0;             // Flag in tests if it happens.
             return Math.max(ret, 1);    // Don't do stupid stuff in prod when it happens.
-        }
-
-        public Set<Constraint> extractConstraintsToModel(Retrievable retrievable) {
-            Set<Constraint> constraints = new HashSet<>();
-            iterate(retrievable.pattern().variables()).flatMap(v -> iterate(v.constraints())).filter(this::isModellable).forEachRemaining(constraints::add);
-            return constraints;
-        }
-
-        public Constraint extractConstraintToModel(Concludable concludable) {
-            if (concludable.isHas()) {
-                return concludable.asHas().has();
-            } else if (concludable.isRelation()) {
-                return concludable.asRelation().relation();
-            } else if (concludable.isIsa()) {
-                return concludable.asIsa().isa();
-            } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
-        }
-
-        private boolean isModellable(Constraint constraint) {
-            return constraint.isThing() &&
-                    (constraint.asThing().isRelation() || constraint.asThing().isHas() || constraint.asThing().isIsa());
         }
 
         private Map<Variable, ConstraintModel> computeGreedyResolvableCoverForVariables(Set<Variable> variableFilter, List<ConstraintModel> includedConstraintModels) {
@@ -190,7 +169,7 @@ public class AnswerCountEstimator {
                 Set<Variable> filteredVariablesInResolvable = model.variables.stream()
                         .filter(variableFilter::contains).collect(Collectors.toSet());
 
-                long currentCostToCover = costOfResolvableCover(filteredVariablesInResolvable, currentCover);
+                long currentCostToCover = costOfVariableCover(filteredVariablesInResolvable, currentCover);
                 if (currentCostToCover > model.estimateAnswers(filteredVariablesInResolvable)) {
                     filteredVariablesInResolvable.forEach(v -> currentCover.put(v, model));
                 }
@@ -198,7 +177,7 @@ public class AnswerCountEstimator {
             return currentCover;
         }
 
-        private static long costOfResolvableCover(Set<Variable> variablesToConsider, Map<Variable, ConstraintModel> coverMap) {
+        private static long costOfVariableCover(Set<Variable> variablesToConsider, Map<Variable, ConstraintModel> coverMap) {
             Set<ConstraintModel> subsetCoveredBy = coverMap.keySet().stream().filter(variablesToConsider::contains)
                     .map(coverMap::get).collect(Collectors.toSet());
             return subsetCoveredBy.stream().map(model -> model.estimateAnswers(variablesToConsider)).reduce(1L, (x, y) -> x * y);
@@ -243,7 +222,7 @@ public class AnswerCountEstimator {
                         .forEachRemaining(answerCountEstimator::buildConjunctionModel);
                 iterate(acyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::buildConjunctionModel);
                 buildAcyclicModel();
-                modelStatus = ModelStatus.ACYCLIC_ESTIMATE;
+                modelStatus = ModelStatus.ACYCLIC_MODEL;
 
                 // cyclic calls to this model will answer based on the acyclic model.
                 iterate(cyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::buildConjunctionModel);
@@ -269,6 +248,7 @@ public class AnswerCountEstimator {
         }
 
         private void buildCyclicModel() {
+            assert this.modelStatus == ModelStatus.ACYCLIC_MODEL;
             this.constraintModels.putAll(buildModelsForCyclicConcludables());
             Map<Resolvable<?>, List<ConstraintModel>> generatedVariableModels = constraintModelsForGeneratedVariables();
             iterate(generatedVariableModels.keySet()).forEachRemaining(resolvable -> {
@@ -316,10 +296,10 @@ public class AnswerCountEstimator {
             resolvables().filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
                     .forEachRemaining(concludable -> {
                         ThingVariable v = concludable.generating().get();
-                        long persistedAnswerCount = constraintModelBuilder.countPersistedThingsMatchingType(v.asThing());
+                        long persistedAnswerCount = constraintModelFactory.countPersistedThingsMatchingType(v.asThing());
                         long inferredAnswerCount = (concludable.isHas() || concludable.isAttribute()) ?
-                                constraintModelBuilder.attributesCreatedByExplicitHas(concludable) :
-                                constraintModelBuilder.estimateInferredAnswerCount(concludable, set(v));
+                                constraintModelFactory.attributesCreatedByExplicitHas(concludable) :
+                                constraintModelFactory.estimateInferredAnswerCount(concludable, set(v));
                         generatedVariableModels.put(concludable, list(new ConstraintModel.StaticModel(list(v), persistedAnswerCount + inferredAnswerCount)));
                     });
             return generatedVariableModels;
@@ -328,7 +308,7 @@ public class AnswerCountEstimator {
         private Map<Variable, ConstraintModel> computeBaselineVariableCover(Map<Resolvable<?>, List<ConstraintModel>> generatedVariableModels) {
             Map<Variable, ConstraintModel> newVariableCover = new HashMap<>();
             iterate(allVariables()).map(Variable::asThing).forEachRemaining(v -> { // baseline
-                newVariableCover.put(v, new ConstraintModel.StaticModel(list(v), constraintModelBuilder.countPersistedThingsMatchingType(v)));
+                newVariableCover.put(v, new ConstraintModel.StaticModel(list(v), constraintModelFactory.countPersistedThingsMatchingType(v)));
             });
 
             iterate(generatedVariableModels.values()).flatMap(Iterators::iterate)
@@ -348,13 +328,34 @@ public class AnswerCountEstimator {
             if (constraint.isThing()) {
                 ThingConstraint asThingConstraint = constraint.asThing();
                 if (asThingConstraint.isHas()) {
-                    return constraintModelBuilder.modelForHas(asThingConstraint.asHas(), correspondingConcludable);
+                    return constraintModelFactory.modelForHas(asThingConstraint.asHas(), correspondingConcludable);
                 } else if (asThingConstraint.isRelation()) {
-                    return constraintModelBuilder.modelForRelation(asThingConstraint.asRelation(), correspondingConcludable);
+                    return constraintModelFactory.modelForRelation(asThingConstraint.asRelation(), correspondingConcludable);
                 } else if (asThingConstraint.isIsa()) {
-                    return constraintModelBuilder.modelForIsa(asThingConstraint.asIsa(), correspondingConcludable);
+                    return constraintModelFactory.modelForIsa(asThingConstraint.asIsa(), correspondingConcludable);
                 } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
             } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
+        }
+
+        private Set<Constraint> extractConstraintsToModel(Retrievable retrievable) {
+            Set<Constraint> constraints = new HashSet<>();
+            iterate(retrievable.pattern().variables()).flatMap(v -> iterate(v.constraints())).filter(this::isModellable).forEachRemaining(constraints::add);
+            return constraints;
+        }
+
+        private Constraint extractConstraintToModel(Concludable concludable) {
+            if (concludable.isHas()) {
+                return concludable.asHas().has();
+            } else if (concludable.isRelation()) {
+                return concludable.asRelation().relation();
+            } else if (concludable.isIsa()) {
+                return concludable.asIsa().isa();
+            } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
+        }
+
+        private boolean isModellable(Constraint constraint) {
+            return constraint.isThing() &&
+                    (constraint.asThing().isRelation() || constraint.asThing().isHas() || constraint.asThing().isIsa());
         }
 
         private static abstract class ConstraintModel {
@@ -419,11 +420,11 @@ public class AnswerCountEstimator {
         }
     }
 
-    private static class ConstraintModelBuilder {
+    private static class ConstraintModelFactory {
         private final AnswerCountEstimator answerCountEstimator;
         private final GraphManager graphMgr;
 
-        private ConstraintModelBuilder(AnswerCountEstimator answerCountEstimator, GraphManager graphMgr) {
+        private ConstraintModelFactory(AnswerCountEstimator answerCountEstimator, GraphManager graphMgr) {
             this.answerCountEstimator = answerCountEstimator;
             this.graphMgr = graphMgr;
         }
