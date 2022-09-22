@@ -41,8 +41,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.DESC;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static org.junit.Assert.assertEquals;

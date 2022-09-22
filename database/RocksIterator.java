@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.AbstractSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.graph.common.Storage.Key;
 
@@ -32,6 +32,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
 
 public abstract class RocksIterator<T extends Key, ORDER extends Order>
         extends AbstractSortedIterator<KeyValue<T, ByteArray>, ORDER>

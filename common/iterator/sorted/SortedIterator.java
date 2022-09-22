@@ -19,101 +19,15 @@
 package com.vaticle.typedb.core.common.iterator.sorted;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Order;
 
-import java.util.Iterator;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public interface SortedIterator<T extends Comparable<? super T>, ORDER extends SortedIterator.Order>
+public interface SortedIterator<T extends Comparable<? super T>, ORDER extends Order>
         extends FunctionalIterator<T> {
-
-    Order.Asc ASC = new Order.Asc();
-    Order.Desc DESC = new Order.Desc();
-
-    interface Orderer {
-
-        <T extends Comparable<? super T>> int compare(T last, T next);
-
-        <T extends Comparable<? super T>> Iterator<T> iterate(NavigableSet<T> source);
-
-        <T extends Comparable<? super T>> Iterator<T> iterate(NavigableSet<T> source, T from);
-    }
-
-    abstract class Order {
-
-        abstract Orderer orderer();
-
-        public <T extends Comparable<? super T>> boolean isValidNext(T last, T next) {
-            return orderer().compare(last, next) <= 0;
-        }
-
-        public boolean isAscending() { return false; }
-
-        public boolean isDescending() { return false; }
-
-        public static class Asc extends Order {
-
-            private static final Orderer orderer = new Orderer() {
-                @Override
-                public <T extends Comparable<? super T>> int compare(T last, T next) {
-                    return last.compareTo(next);
-                }
-
-                @Override
-                public <T extends Comparable<? super T>> Iterator<T> iterate(NavigableSet<T> source) {
-                    return source.iterator();
-                }
-
-                @Override
-                public <T extends Comparable<? super T>> Iterator<T> iterate(NavigableSet<T> source, T from) {
-                    return source.tailSet(from, true).iterator();
-                }
-            };
-
-            @Override
-            Orderer orderer() {
-                return orderer;
-            }
-
-            @Override
-            public boolean isAscending() {
-                return true;
-            }
-        }
-
-        public static class Desc extends Order {
-
-            private static final Orderer orderer = new Orderer() {
-
-                @Override
-                public <T extends Comparable<? super T>> int compare(T last, T next) {
-                    return -1 * last.compareTo(next);
-                }
-
-                @Override
-                public <T extends Comparable<? super T>> Iterator<T> iterate(NavigableSet<T> source) {
-                    return source.descendingIterator();
-                }
-
-                @Override
-                public <T extends Comparable<? super T>> Iterator<T> iterate(NavigableSet<T> source, T from) {
-                    return source.headSet(from, true).descendingIterator();
-                }
-            };
-
-            @Override
-            Orderer orderer() {
-                return orderer;
-            }
-
-            @Override
-            public boolean isDescending() {
-                return true;
-            }
-        }
-    }
 
     ORDER order();
 

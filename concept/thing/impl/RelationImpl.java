@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.concept.thing.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RoleType;
@@ -42,7 +42,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.R
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_ROLE_UNPLAYED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.RELATING;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;

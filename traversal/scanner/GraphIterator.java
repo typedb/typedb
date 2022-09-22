@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.AbstractFunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
@@ -51,8 +51,8 @@ import java.util.TreeSet;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.DESC;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.intersect;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 
@@ -275,7 +275,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             this.implicitDependees = new HashSet<>();
             this.anyAnswerFound = false;
             this.lastDependee = procedureVertex.ins().stream().map(ProcedureEdge::from).max(Comparator.comparing(ProcedureVertex::order)).orElse(null);
-            this.order = modifiers.sorting().isAscending(procedureVertex.id()) ? ASC : DESC;
+            this.order = modifiers.sorting().order(procedureVertex.id());
         }
 
         public void addImplicitDependee(ProcedureVertex<?, ?> from) {

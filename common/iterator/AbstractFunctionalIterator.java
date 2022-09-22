@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.iterator.sorted.MappedSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.MergeMappedSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.parameters.Order;
 
 import java.util.ArrayList;
 import java.util.HashSet;

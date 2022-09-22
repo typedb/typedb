@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.common.iterator.sorted;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.parameters.Order;
 
 import java.util.ArrayList;
 import java.util.List;

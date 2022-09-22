@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.traversal.common;
 
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 import com.vaticle.typeql.lang.query.builder.Sortable;
@@ -34,6 +35,8 @@ import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
 
 public class Modifiers {
 
@@ -117,25 +120,25 @@ public class Modifiers {
         public static Sorting EMPTY = new Sorting(list(), map());
 
         List<Identifier.Variable.Retrievable> variables;
-        Map<Identifier.Variable.Retrievable, Boolean> ascending;
+        Map<Identifier.Variable.Retrievable, Order> ascending;
 
-        private Sorting(List<Identifier.Variable.Retrievable> variables, Map<Identifier.Variable.Retrievable, Boolean> ascending) {
+        private Sorting(List<Identifier.Variable.Retrievable> variables, Map<Identifier.Variable.Retrievable, Order> ascending) {
             assert variables.size() == ascending.size() && variables.containsAll(ascending.keySet());
             this.variables = variables;
             this.ascending = ascending;
         }
 
-        public static Sorting create(List<Identifier.Variable.Retrievable> variables, Map<Identifier.Variable.Retrievable, Boolean> ascending) {
+        public static Sorting create(List<Identifier.Variable.Retrievable> variables, Map<Identifier.Variable.Retrievable, Order> ascending) {
             return new Sorting(variables, ascending);
         }
 
         public static Sorting create(Sortable.Sorting sort) {
             List<Identifier.Variable.Retrievable> variables = new ArrayList<>();
-            Map<Identifier.Variable.Retrievable, Boolean> ascending = new HashMap<>();
+            Map<Identifier.Variable.Retrievable, Order> ascending = new HashMap<>();
             sort.variables().forEach(typeQLVar -> {
                 Identifier.Variable.Retrievable var = Identifier.Variable.of(typeQLVar.reference().asReferable()).asRetrievable();
                 variables.add(var);
-                ascending.put(var, sort.getOrder(typeQLVar) == TypeQLArg.Order.ASC);
+                ascending.put(var, sort.getOrder(typeQLVar) == TypeQLArg.Order.ASC ? ASC : DESC);
             });
             return new Sorting(variables, ascending);
         }
@@ -144,9 +147,12 @@ public class Modifiers {
             return variables;
         }
 
-        public boolean isAscending(Identifier id) {
-            if (!id.isRetrievable() || !ascending.containsKey(id.asVariable().asRetrievable())) return true;
-            return ascending.get(id.asVariable().asRetrievable());
+        /**
+         * Note: everything that is not explicitly provided with a sort order, is defaulted to Ascending
+         */
+        public Order order(Identifier id) {
+            if (!id.isRetrievable() || !ascending.containsKey(id.asVariable().asRetrievable())) return ASC;
+            else return ascending.get(id.asVariable().asRetrievable());
         }
 
         @Override

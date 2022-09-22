@@ -20,9 +20,9 @@ package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.ConceptImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
@@ -49,7 +49,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.INV
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_BEEN_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
 
 public abstract class TypeImpl extends ConceptImpl implements Type {

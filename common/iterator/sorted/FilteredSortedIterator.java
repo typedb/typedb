@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.common.iterator.sorted;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
+import com.vaticle.typedb.core.common.parameters.Order;
 
 import java.util.NoSuchElementException;
 import java.util.function.Function;

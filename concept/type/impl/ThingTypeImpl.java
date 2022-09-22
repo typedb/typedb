@@ -22,8 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Order;
-import com.vaticle.typedb.core.common.util.StringBuilders;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
@@ -75,7 +74,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TY
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.util.StringBuilders.COMMA_NEWLINE_INDENT;
@@ -83,7 +82,6 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
-import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA_SPACE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static java.util.Comparator.comparing;
 

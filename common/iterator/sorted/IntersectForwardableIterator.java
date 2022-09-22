@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.common.iterator.sorted;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Order;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -38,7 +39,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
  * The intersection of iterators with multiple values that are comparably == 0 is defined as the distinct
  * union of all of these elements.
  */
-public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER extends SortedIterator.Order>
+public class IntersectForwardableIterator<T extends Comparable<? super T>, ORDER extends Order>
         extends AbstractSortedIterator<T, ORDER>
         implements SortedIterator.Forwardable<T, ORDER> {
 

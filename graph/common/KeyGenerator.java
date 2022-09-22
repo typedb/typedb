@@ -43,7 +43,7 @@ import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.MAX_RULE_REACHED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.MAX_INSTANCE_REACHED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.MAX_SUBTYPE_REACHED;
-import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.ASC;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.graph.common.Encoding.Key.BUFFERED;
 import static com.vaticle.typedb.core.graph.common.Encoding.Key.PERSISTED;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ENTITY;
