@@ -87,7 +87,7 @@ public class TraversalTest {
     }
 
     @Test
-    public void native_sorting_longs() {
+    public void sorting_longs() {
         try (CoreTransaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery("define person sub entity, owns age; age sub attribute, value long;");
             transaction.query().define(query);
@@ -123,7 +123,7 @@ public class TraversalTest {
     }
 
     @Test
-    public void native_sorting_booleans() {
+    public void sorting_booleans() {
         try (CoreTransaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery("define person sub entity, owns is-married; is-married sub attribute, value boolean;");
             transaction.query().define(query);
@@ -150,7 +150,7 @@ public class TraversalTest {
     }
 
     @Test
-    public void native_sorting_doubles() {
+    public void sorting_doubles() {
         try (CoreTransaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery("define person sub entity, owns money; money sub attribute, value double;");
             transaction.query().define(query);
@@ -186,7 +186,7 @@ public class TraversalTest {
     }
 
     @Test
-    public void native_sorting_dates() {
+    public void sorting_dates() {
         try (CoreTransaction transaction = session.transaction(WRITE)) {
             TypeQLDefine query = TypeQL.parseQuery("define person sub entity, owns birth-date; birth-date sub attribute, value datetime;");
             transaction.query().define(query);

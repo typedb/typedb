@@ -110,28 +110,28 @@ public class Structure {
         }
     }
 
-    public List<Structure> splitConnected() {
-        return splitConnected(emptyList());
+    public List<Structure> splitDisjoint() {
+        return splitDisjoint(emptyList());
     }
 
-    public List<Structure> splitConnected(List<? extends Identifier> forceConnect) {
+    public List<Structure> splitDisjoint(List<? extends Identifier> forceConnect) {
         List<Structure> structures = new ArrayList<>();
-        Set<? extends StructureVertex<?>> verticesToConnect = iterate(forceConnect).map(vertices::get).toSet();
-        Set<StructureVertex<?>> verticesToVisit = new HashSet<>(this.vertices.values());
-        Set<StructureEdge<?, ?>> edgesToVisit = new HashSet<>(this.edges);
+        Set<StructureVertex<?>> unvisitedVertices = new HashSet<>(this.vertices.values());
+        Set<StructureEdge<?, ?>> unvitedEdges = new HashSet<>(this.edges);
         Structure structure;
         if (!forceConnect.isEmpty()) {
             structure = new Structure();
-            while (!verticesToConnect.isEmpty()) {
-                StructureVertex<?> vertex = verticesToConnect.iterator().next();
-                splitConnectedTo(vertex, structure, verticesToVisit, edgesToVisit);
-                verticesToConnect.remove(vertex);
+            Set<? extends StructureVertex<?>> forceConnectVertices = iterate(forceConnect).map(vertices::get).toSet();
+            while (!forceConnectVertices.isEmpty()) {
+                StructureVertex<?> vertex = forceConnectVertices.iterator().next();
+                splitConnectedTo(vertex, structure, unvisitedVertices, unvitedEdges);
+                forceConnectVertices.remove(vertex);
             }
             structures.add(structure);
         }
-        while (!verticesToVisit.isEmpty()) {
+        while (!unvisitedVertices.isEmpty()) {
             structure = new Structure();
-            splitConnectedTo(verticesToVisit.iterator().next(), structure, verticesToVisit, edgesToVisit);
+            splitConnectedTo(unvisitedVertices.iterator().next(), structure, unvisitedVertices, unvitedEdges);
             structures.add(structure);
         }
         return structures;

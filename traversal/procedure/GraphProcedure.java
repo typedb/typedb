@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
-import com.vaticle.typedb.core.traversal.planner.ConnectedPlanner;
+import com.vaticle.typedb.core.traversal.planner.ComponentPlanner;
 import com.vaticle.typedb.core.traversal.planner.GraphPlanner;
 import com.vaticle.typedb.core.traversal.planner.PlannerEdge;
 import com.vaticle.typedb.core.traversal.planner.PlannerVertex;
@@ -66,7 +66,7 @@ public class GraphProcedure implements PermutationProcedure {
         this.vertices = vertices;
     }
 
-    public static GraphProcedure create(List<ConnectedPlanner> planners) {
+    public static GraphProcedure create(List<ComponentPlanner> planners) {
         Builder builder = new Builder();
         planners.forEach(p -> {
             if (p.isGraph()) builder.register(p.asGraph(), builder.vertices.size());

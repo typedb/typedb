@@ -27,7 +27,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public class VertexPlanner implements ConnectedPlanner {
+public class VertexPlanner implements ComponentPlanner {
 
     private final StructureVertex<?> structureVertex;
     private final VertexProcedure procedure;

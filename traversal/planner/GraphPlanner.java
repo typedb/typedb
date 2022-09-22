@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,7 +54,7 @@ import static java.time.Duration.between;
 import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class GraphPlanner implements ConnectedPlanner {
+public class GraphPlanner implements ComponentPlanner {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphPlanner.class);
 

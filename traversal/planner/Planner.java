@@ -30,9 +30,9 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public interface Planner {
 
     static Planner create(Structure structure, Modifiers modifiers) {
-        List<Structure> retrievedStructures = splitStructure(structure, modifiers);
-        if (retrievedStructures.size() == 1) return ConnectedPlanner.create(retrievedStructures.get(0), modifiers);
-        else return MultiPlanner.create(retrievedStructures, modifiers);
+        List<Structure> structures = splitStructure(structure, modifiers);
+        if (structures.size() == 1) return ComponentPlanner.create(structures.get(0), modifiers);
+        else return MultiPlanner.create(structures, modifiers);
     }
 
     /**
@@ -40,7 +40,7 @@ public interface Planner {
      * Additionally, optimise away subgraphs that are not included in the filter
      */
     static List<Structure> splitStructure(Structure structure, Modifiers modifiers) {
-        return iterate(structure.splitConnected(modifiers.sorting().variables())).filter(s ->
+        return iterate(structure.splitDisjoint(modifiers.sorting().variables())).filter(s ->
                 iterate(s.vertices()).anyMatch(v -> v.id().isRetrievable() && modifiers.filter().variables().contains(v.id().asVariable().asRetrievable()))
         ).toList();
     }

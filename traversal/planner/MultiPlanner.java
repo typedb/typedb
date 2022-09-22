@@ -38,12 +38,12 @@ import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
 
 public class MultiPlanner implements Planner {
 
-    private final List<ConnectedPlanner> planners;
-    private Modifiers modifiers;
+    private final List<ComponentPlanner> planners;
+    private final Modifiers modifiers;
     private final Semaphore optimisationLock;
     private GraphProcedure procedure;
 
-    private MultiPlanner(List<ConnectedPlanner> planners, Modifiers modifiers) {
+    private MultiPlanner(List<ComponentPlanner> planners, Modifiers modifiers) {
         this.planners = planners;
         this.modifiers = modifiers;
         this.optimisationLock = new Semaphore(1);
@@ -51,7 +51,7 @@ public class MultiPlanner implements Planner {
     }
 
     static MultiPlanner create(List<Structure> structures, Modifiers modifiers) {
-        return new MultiPlanner(iterate(structures).map(structure -> ConnectedPlanner.create(structure, modifiers)).toList(), modifiers);
+        return new MultiPlanner(iterate(structures).map(structure -> ComponentPlanner.create(structure, modifiers)).toList(), modifiers);
     }
 
     @Override
@@ -81,11 +81,11 @@ public class MultiPlanner implements Planner {
     private void createProcedure() {
         // create procedure based on optimal ordering of all the planners
         // rather than solving the optimisation, we estimate the most expensive traversals are the largest ones
-        Comparator<ConnectedPlanner> comparator = Comparator.<ConnectedPlanner, Integer>comparing(planner -> {
+        Comparator<ComponentPlanner> comparator = Comparator.<ComponentPlanner, Integer>comparing(planner -> {
             if (iterate(modifiers.sorting().variables()).anyMatch(planner.vertices()::contains)) return -1;
             else return planner.isVertex() ? 1 : planner.asGraph().vertices().size();
         }).reversed();
-        List<ConnectedPlanner> orderedPlanners = planners.stream().sorted(comparator).collect(Collectors.toList());
+        List<ComponentPlanner> orderedPlanners = planners.stream().sorted(comparator).collect(Collectors.toList());
         assert orderedPlanners.get(0).vertices().containsAll(modifiers.sorting().variables());
         procedure = GraphProcedure.create(orderedPlanners);
     }
