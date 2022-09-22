@@ -58,14 +58,18 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class AnswerCountEstimator {
     private final LogicManager logicMgr;
-    private final Map<ResolvableConjunction, ConjunctionModel> conjunctionModels;
+    private final Map<ResolvableConjunction, ConjunctionModelBuilder> conjunctionModelBuilders;
 
     private final ConstraintModelFactory constraintModelFactory;
+    private final HashMap<ResolvableConjunction, Set<Concludable>> cyclicConcludables;
+    private final Map<ResolvableConjunction, ConjunctionModel> conjunctionModels;
 
     public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph) {
         this.logicMgr = logicMgr;
         this.constraintModelFactory = new ConstraintModelFactory(this, graph);
+        this.conjunctionModelBuilders = new HashMap<>();
         this.conjunctionModels = new HashMap<>();
+        this.cyclicConcludables = new HashMap<>();
     }
 
     public long estimateAllAnswers(ResolvableConjunction conjunction) {
@@ -84,85 +88,118 @@ public class AnswerCountEstimator {
     }
 
     public void registerConjunctionAndBuildModel(ResolvableConjunction conjunction) {
-        registerConjunction(conjunction, new HashSet<>());
+        registerConjunction(conjunction, new ArrayList<>(), new HashMap<>());
         buildConjunctionModel(conjunction);
     }
 
-    private boolean registerConjunction(ResolvableConjunction conjunction, Set<ResolvableConjunction> dependencyPath) {
-        if (!conjunctionModels.containsKey(conjunction)) {
-            conjunctionModels.put(conjunction, new ConjunctionModel(this, conjunction));
+    private void registerConjunction(ResolvableConjunction conjunction, ArrayList<ResolvableConjunction> registrationStack, Map<ResolvableConjunction, Concludable> concludableBeingProcessed) {
+        if (!cyclicConcludables.containsKey(conjunction)) {
+            cyclicConcludables.put(conjunction, new HashSet<>());
         }
 
-        // TODO: FIX! THIS DETECTS LASSOS AS CYCLES!
-        if (dependencyPath.contains(conjunction)) return true;
+        if (concludableBeingProcessed.containsKey(conjunction)) {
+            cyclicConcludables.get(conjunction).add(concludableBeingProcessed.get(conjunction));
+            for (int i = registrationStack.size() - 1; registrationStack.get(i) != conjunction; i--) {
+                cyclicConcludables.get(conjunction).add(concludableBeingProcessed.get(conjunction));
+            }
+        } else {
+            registrationStack.add(conjunction);
+            // TODO: FIX! THIS DETECTS LASSOS AS CYCLES!
+            Set<Resolvable<?>> resolvables = logicMgr.compile(conjunction);
 
-        dependencyPath.add(conjunction);
-        boolean onCycle = conjunctionModels.get(conjunction).registerDependencies(dependencyPath);
-        dependencyPath.remove(conjunction);
-        return onCycle;
+            iterate(resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated)
+                    .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+                    .forEachRemaining(dependency -> registerConjunction(dependency, new ArrayList<>(), new HashMap<>())); // Stratified negation -> Fresh set
+
+
+            iterate(resolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
+                    .forEachRemaining(concludable -> {
+                        iterate(dependencies(concludable)).forEachRemaining(dependency -> {
+                            concludableBeingProcessed.put(conjunction, concludable);
+                            registerConjunction(dependency, registrationStack, concludableBeingProcessed);
+                            concludableBeingProcessed.remove(conjunction);
+                        });
+                    });
+            assert registrationStack.get(registrationStack.size() - 1) == conjunction;
+            registrationStack.remove(registrationStack.size() - 1);
+        }
+    }
+
+    private Set<ResolvableConjunction> dependencies(Concludable concludable) {
+        return iterate(logicMgr.applicableRules(concludable).keySet()).map(rule -> rule.condition().conjunction()).toSet();
     }
 
     private void buildConjunctionModel(ResolvableConjunction conjunction) {
-        conjunctionModels.get(conjunction).buildModel();
+        if (!conjunctionModelBuilders.containsKey(conjunction)) {
+            assert cyclicConcludables.containsKey(conjunction);
+            ConjunctionModelBuilder conjunctionModelBuilder = new ConjunctionModelBuilder(this, conjunction, cyclicConcludables.get(conjunction));
+            conjunctionModelBuilders.put(conjunction, conjunctionModelBuilder);
+
+            // Acyclic estimates
+            Set<Resolvable<?>> resolvables = logicMgr.compile(conjunction);
+            iterate(resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated)
+                    .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+                    .forEachRemaining(this::buildConjunctionModel);
+
+            iterate(resolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
+                    .filter(concludable -> !cyclicConcludables.get(conjunction).contains(concludable))
+                    .flatMap(concludable -> iterate(dependencies(concludable)))
+                    .forEachRemaining(this::buildConjunctionModel);
+
+            conjunctionModels.put(conjunction, conjunctionModelBuilder.buildAcyclicModel());
+
+            // cyclic calls to this model will answer based on the acyclic model.
+            iterate(cyclicConcludables.get(conjunction))
+                    .flatMap(concludable -> iterate(dependencies(concludable)))
+                    .forEachRemaining(this::buildConjunctionModel);
+
+            conjunctionModels.put(conjunction, conjunctionModelBuilder.buildCyclicModel());
+        }
+
     }
 
     private static class ConjunctionModel {
-
         private final ResolvableConjunction conjunction;
-        private final Set<Resolvable<?>> resolvables;
-        private final Set<Variable> consideredVariables;
-        private final AnswerCountEstimator answerCountEstimator;
-        private final LogicManager logicMgr;
-        private final ConstraintModelFactory constraintModelFactory;
-
-
-        // TODO: these maps should contain VariableModel and ConstraintModel
-        private Map<Variable, AnswerCountEstimator.LocalModel> variableModels;
+        private final Map<Variable, AnswerCountEstimator.LocalModel> variableModels;
         private final HashMap<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> constraintModels;
-        private long fullAnswerCount;
-        private long negatedsCost;
+        private final long fullAnswerCount;
 
-        private Set<Concludable> cyclicConcludables;
-        private Set<Concludable> acyclicConcludables;
+        private final boolean isCyclic;
+        private final Set<Variable> consideredVariables;
 
-        private enum ModelStatus {NOT_STARTED, REGISTERED, ACYCLIC_MODEL, COMPLETE}
 
-        private ModelStatus modelStatus;
-
-        private ConjunctionModel(AnswerCountEstimator answerCountEstimator, ResolvableConjunction conjunction) {
-            this.answerCountEstimator = answerCountEstimator;
-            this.constraintModelFactory = answerCountEstimator.constraintModelFactory;
-            this.logicMgr = answerCountEstimator.logicMgr;
+        private ConjunctionModel(ResolvableConjunction conjunction, Set<Variable> consideredVariables,
+                                 Map<Variable, LocalModel> variableModels, HashMap<Resolvable<?>, List<LocalModel>> constraintModels,
+                                 AnswerCountEstimator answerCountEstimator, boolean isCyclic) {
             this.conjunction = conjunction;
-            this.resolvables = logicMgr.compile(conjunction);
-            this.consideredVariables = iterate(conjunction.pattern().variables()).filter(Variable::isThing).toSet();
+            this.consideredVariables = consideredVariables;
+            this.variableModels = variableModels;
+            this.constraintModels = constraintModels;
+            this.isCyclic = isCyclic;
+            // Compute costs
+            if (isCyclic) {
+                Set<Resolvable<?>> resolvables = answerCountEstimator.logicMgr.compile(conjunction);
+                long negatedsCost = iterate(resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated)
+                        .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+                        .map(answerCountEstimator::estimateAllAnswers).reduce(0L, Long::sum);
 
-            this.constraintModels = new HashMap<>();
-            this.fullAnswerCount = -1;
-            this.negatedsCost = -1;
-            this.modelStatus = ModelStatus.NOT_STARTED;
+                this.fullAnswerCount = estimateAnswers(consideredVariables, resolvables) + negatedsCost;
+            } else this.fullAnswerCount = -1;
         }
-
-        private FunctionalIterator<Resolvable<?>> resolvables() {
-            return iterate(this.resolvables);
-        }
-
-        private Set<Variable> consideredVariables() { return this.consideredVariables; }
 
         private long estimateCost() {
-            assert this.modelStatus == ModelStatus.COMPLETE && this.fullAnswerCount >= 0;
+            if (!isCyclic) throw TypeDBException.of(UNSUPPORTED_OPERATION);
+            assert this.fullAnswerCount >= 0; // TODO: FIX
             return this.fullAnswerCount;
         }
 
         private long estimateAnswers(Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
-            assert this.modelStatus == ModelStatus.ACYCLIC_MODEL || this.modelStatus == ModelStatus.COMPLETE;
             List<AnswerCountEstimator.LocalModel> includedConstraintModels = iterate(includedResolvables)
                     .flatMap(resolvable -> iterate(constraintModels.get(resolvable)))
                     .toList();
 
-            assert variableFilter.stream().allMatch(v -> consideredVariables().contains(v)); // TODO: Remove assert
-            Set<Variable> allVars = consideredVariables();
-            Set<Variable> validVariableFilter = iterate(variableFilter).filter(allVars::contains).toSet();
+            assert variableFilter.stream().allMatch(v -> consideredVariables.contains(v)); // TODO: Remove assert
+            Set<Variable> validVariableFilter = iterate(variableFilter).filter(consideredVariables::contains).toSet();
 
             Map<Variable, AnswerCountEstimator.LocalModel> costCover = computeGreedyResolvableCoverForVariables(validVariableFilter, includedConstraintModels);
             long ret = costOfVariableCover(validVariableFilter, costCover);
@@ -194,71 +231,67 @@ public class AnswerCountEstimator {
             return subsetCoveredBy.stream().map(model -> model.estimateAnswers(variablesToConsider)).reduce(1L, (x, y) -> x * y);
         }
 
-        private FunctionalIterator<ResolvableConjunction> dependencies(Concludable concludable) {
-            return iterate(logicMgr.applicableRules(concludable).keySet())
-                    .map(rule -> rule.condition().conjunction());
+    }
+
+    private static class ConjunctionModelBuilder {
+
+        private final ResolvableConjunction conjunction;
+        private final Set<Resolvable<?>> resolvables;
+        private final Set<Variable> consideredVariables;
+        private final AnswerCountEstimator answerCountEstimator;
+        private final LogicManager logicMgr;
+        private final ConstraintModelFactory constraintModelFactory;
+
+
+        // TODO: these maps should contain VariableModel and ConstraintModel
+        private Map<Variable, AnswerCountEstimator.LocalModel> variableModels;
+        private final HashMap<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> constraintModels;
+
+        private final Set<Concludable> cyclicConcludables;
+        private final Set<Concludable> acyclicConcludables;
+
+        private enum ModelStatus {NOT_STARTED, ACYCLIC_MODEL, COMPLETE}
+
+        private ModelStatus modelStatus;
+
+        private ConjunctionModelBuilder(AnswerCountEstimator answerCountEstimator, ResolvableConjunction conjunction, Set<Concludable> cyclicConcludables) {
+            this.answerCountEstimator = answerCountEstimator;
+            this.constraintModelFactory = answerCountEstimator.constraintModelFactory;
+            this.logicMgr = answerCountEstimator.logicMgr;
+            this.conjunction = conjunction;
+            this.resolvables = logicMgr.compile(conjunction);
+            this.consideredVariables = iterate(conjunction.pattern().variables()).filter(Variable::isThing).toSet();
+            this.cyclicConcludables = cyclicConcludables;
+            this.acyclicConcludables = iterate(resolvables)
+                    .filter(resolvable -> resolvable.isConcludable() && !cyclicConcludables.contains(resolvable))
+                    .map(Resolvable::asConcludable).toSet();
+
+            this.constraintModels = new HashMap<>();
+            this.modelStatus = ModelStatus.NOT_STARTED;
         }
 
-        private boolean registerDependencies(Set<ResolvableConjunction> dependencyPath) {
-            if (modelStatus == ModelStatus.NOT_STARTED) {
-                cyclicConcludables = new HashSet<>();
-                acyclicConcludables = new HashSet<>();
-                resolvables().filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
-                        .forEachRemaining(concludable -> {
-                            dependencies(concludable).forEachRemaining(dependency -> {
-                                if (answerCountEstimator.registerConjunction(dependency, dependencyPath)) {
-                                    cyclicConcludables.add(concludable);
-                                }
-                            });
-                            if (!cyclicConcludables.contains(concludable)) {
-                                acyclicConcludables.add(concludable);
-                            }
-                        });
-
-                resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
-                        .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                        .forEachRemaining(dependency -> answerCountEstimator.registerConjunction(dependency, dependencyPath));
-
-                modelStatus = ModelStatus.REGISTERED;
-            }
-            return !cyclicConcludables.isEmpty();
+        private FunctionalIterator<Resolvable<?>> resolvables() {
+            return iterate(this.resolvables);
         }
 
-        private void buildModel() {
-            assert modelStatus != ModelStatus.NOT_STARTED;
-            if (modelStatus == ModelStatus.REGISTERED) {
-                // Acyclic estimates
-                resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
-                        .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                        .forEachRemaining(answerCountEstimator::buildConjunctionModel);
-                iterate(acyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::buildConjunctionModel);
-                buildAcyclicModel();
-                modelStatus = ModelStatus.ACYCLIC_MODEL;
-
-                // cyclic calls to this model will answer based on the acyclic model.
-                iterate(cyclicConcludables).flatMap(this::dependencies).forEachRemaining(answerCountEstimator::buildConjunctionModel);
-                buildCyclicModel();
-
-                // Compute costs
-                this.negatedsCost = resolvables().filter(Resolvable::isNegated).map(Resolvable::asNegated)
-                        .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                        .map(answerCountEstimator::estimateAllAnswers).reduce(0L, Long::sum);
-
-                this.fullAnswerCount = estimateAnswers(consideredVariables(), resolvables().toSet()) + this.negatedsCost;
-
-                modelStatus = ModelStatus.COMPLETE;
-            }
+        private Set<Variable> consideredVariables() {
+            return this.consideredVariables;
         }
 
-        private void buildAcyclicModel() {
+        private ConjunctionModel buildAcyclicModel() {
             this.constraintModels.putAll(buildModelsForRetrievables());
             this.constraintModels.putAll(buildModelsForNegateds());
             this.constraintModels.putAll(buildModelsForAcyclicConcludables());
             iterate(cyclicConcludables).forEachRemaining(concludable -> this.constraintModels.put(concludable, list()));
             this.variableModels = computeBaselineVariableCover(new HashMap<>());
+
+            // Compute costs
+            assert !resolvables().filter(resolvable -> !constraintModels.containsKey(resolvable)).hasNext();
+            modelStatus = ModelStatus.ACYCLIC_MODEL;
+            return new ConjunctionModel(conjunction, consideredVariables, variableModels, constraintModels, answerCountEstimator, false);
         }
 
-        private void buildCyclicModel() {
+        private ConjunctionModel buildCyclicModel() {
             assert this.modelStatus == ModelStatus.ACYCLIC_MODEL;
             Map<Resolvable<?>, List<LocalModel>> modelsForCyclicConcludables = buildModelsForCyclicConcludables();
             Map<Resolvable<?>, List<LocalModel.VariableModel>> generatedVariableModels = constraintModelsForGeneratedVariables();
@@ -270,6 +303,9 @@ public class AnswerCountEstimator {
                 this.constraintModels.put(resolvable, combinedModels);
             });
             this.variableModels = computeBaselineVariableCover(generatedVariableModels); // recompute with inferred
+
+            modelStatus = ModelStatus.COMPLETE;
+            return new ConjunctionModel(conjunction, consideredVariables, variableModels, constraintModels, answerCountEstimator, true);
         }
 
         private Map<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> buildModelsForRetrievables() {
