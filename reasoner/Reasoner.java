@@ -64,6 +64,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSA
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.cartesian;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.actor;
@@ -103,8 +105,14 @@ public class Reasoner {
         } else if (sorting.isPresent() && isNativelySortable(disjunction, sorting.get())) {
             answers = executeTraversalSorted(disjunction, filter, sorting.get());
         } else {
-            answers = executeTraversal(disjunction, context, filter);
-            if (sorting.isPresent()) answers = eagerSort(answers, sorting.get());
+            if (sorting.isPresent()) {
+                answers = executeTraversal(disjunction, context.producer(Either.first(EXHAUSTIVE)), filter);
+                answers = eagerSort(answers, sorting.get());
+            } else if (modifiers.limit().isPresent()) {
+                answers = executeTraversal(disjunction, context.producer(Either.second(modifiers.limit().get())), filter);
+            } else {
+                answers = executeTraversal(disjunction, context.producer(Either.first(INCREMENTAL)), filter);
+            }
         }
 
         if (modifiers.offset().isPresent()) answers = answers.offset(modifiers.offset().get());
@@ -281,7 +289,7 @@ public class Reasoner {
     public FunctionalIterator<Explanation> explain(long explainableId, Context.Query defaultContext) {
         Concludable explainableConcludable = explainablesManager.getConcludable(explainableId);
         ConceptMap explainableBounds = explainablesManager.getBounds(explainableId);
-        return Producers.produce(
+        return produce(
                 list(new ReasonerProducer.Explain(explainableConcludable, explainableBounds, defaultContext.options(),
                         controllerRegistry, explainablesManager)),
                 Either.first(Arguments.Query.Producer.INCREMENTAL),

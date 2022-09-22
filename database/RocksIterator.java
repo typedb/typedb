@@ -32,6 +32,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
 
 public abstract class RocksIterator<T extends Key, ORDER extends Order>
         extends AbstractSortedIterator<KeyValue<T, ByteArray>, ORDER>
@@ -194,7 +196,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     static class Ascending<T extends Key> extends RocksIterator<T, Order.Asc> {
 
         Ascending(RocksStorage storage, Key.Prefix<T> prefix) {
-            super(storage, prefix, Order.Asc.ASC);
+            super(storage, prefix, ASC);
         }
 
         synchronized void seekToFirst() {
@@ -215,7 +217,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
         @Override
         public synchronized void forward(KeyValue<T, ByteArray> target) {
-            if (state == State.COMPLETED || !Order.Asc.ASC.isValidNext(prefix.bytes(), target.key().bytes())) return;
+            if (state == State.COMPLETED || !ASC.isValidNext(prefix.bytes(), target.key().bytes())) return;
             if (state == State.INIT) initialiseInternalIterator();
             internalRocksIterator.seek(target.key().bytes().getBytes());
             state = State.FORWARDED;
@@ -225,7 +227,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     static class Descending<T extends Key> extends RocksIterator<T, Order.Desc> {
 
         Descending(RocksStorage storage, Key.Prefix<T> prefix) {
-            super(storage, prefix, Order.Desc.DESC);
+            super(storage, prefix, DESC);
         }
 
         synchronized void seekToFirst() {
@@ -247,7 +249,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
         @Override
         public synchronized void forward(KeyValue<T, ByteArray> target) {
-            if (state == State.COMPLETED || !Order.Desc.DESC.isValidNext(prefix.bytes(), target.key().bytes())) return;
+            if (state == State.COMPLETED || !DESC.isValidNext(prefix.bytes(), target.key().bytes())) return;
             if (state == State.INIT) initialiseInternalIterator();
             internalRocksIterator.seekForPrev(target.key().bytes().getBytes());
             state = State.FORWARDED;

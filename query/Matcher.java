@@ -77,13 +77,6 @@ public class Matcher {
         this.query = query;
         this.disjunction = Disjunction.create(query.conjunction().normalise());
         this.context = context;
-        if (context != null) {
-            Either<Arguments.Query.Producer, Long> prodCtx;
-            TypeQLMatch.Modifiers mods = query.modifiers();
-            if (mods.limit().isPresent()) prodCtx = Either.second(mods.offset().orElse(0L) + mods.limit().get());
-            else prodCtx = Either.first(INCREMENTAL);
-            this.context.producer(prodCtx);
-        }
     }
 
     public static Matcher create(Reasoner reasoner, TypeQLMatch query) {
