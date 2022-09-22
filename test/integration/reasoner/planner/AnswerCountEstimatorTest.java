@@ -449,8 +449,6 @@ public class AnswerCountEstimatorTest {
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("host", "guest")));
             answerCountEstimator.registerConjunctionAndBuildModel(conjunction);
             assertEquals(9L, answers);
-            long allAnswers = answerCountEstimator.estimateAllAnswers(conjunction);
-            assertEquals(12L, allAnswers);
         }
     }
 

@@ -72,12 +72,6 @@ public class AnswerCountEstimator {
         this.cyclicConcludables = new HashMap<>();
     }
 
-    public long estimateAllAnswers(ResolvableConjunction conjunction) {
-        // TODO: Consider removing this method
-        if (!conjunctionModels.containsKey(conjunction)) registerConjunctionAndBuildModel(conjunction);
-        return conjunctionModels.get(conjunction).estimateCost();
-    }
-
     public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variableFilter) {
         return estimateAnswers(conjunction, variableFilter, logicMgr.compile(conjunction));
     }
@@ -162,7 +156,6 @@ public class AnswerCountEstimator {
         private final ResolvableConjunction conjunction;
         private final Map<Variable, AnswerCountEstimator.LocalModel> variableModels;
         private final HashMap<Resolvable<?>, List<AnswerCountEstimator.LocalModel>> constraintModels;
-        private final long fullAnswerCount;
 
         private final boolean isCyclic;
         private final Set<Variable> consideredVariables;
@@ -176,21 +169,6 @@ public class AnswerCountEstimator {
             this.variableModels = variableModels;
             this.constraintModels = constraintModels;
             this.isCyclic = isCyclic;
-            // Compute costs
-            if (isCyclic) {
-                Set<Resolvable<?>> resolvables = answerCountEstimator.logicMgr.compile(conjunction);
-                long negatedsCost = iterate(resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated)
-                        .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                        .map(answerCountEstimator::estimateAllAnswers).reduce(0L, Long::sum);
-
-                this.fullAnswerCount = estimateAnswers(consideredVariables, resolvables) + negatedsCost;
-            } else this.fullAnswerCount = -1;
-        }
-
-        private long estimateCost() {
-            if (!isCyclic) throw TypeDBException.of(UNSUPPORTED_OPERATION);
-            assert this.fullAnswerCount >= 0; // TODO: FIX
-            return this.fullAnswerCount;
         }
 
         private long estimateAnswers(Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
