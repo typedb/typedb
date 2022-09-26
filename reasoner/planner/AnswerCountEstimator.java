@@ -101,7 +101,6 @@ public class AnswerCountEstimator {
                     .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                     .forEachRemaining(dependency -> registerConjunction(dependency, new ArrayList<>(), new HashMap<>())); // Stratified negation -> Fresh set
 
-
             iterate(resolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
                     .forEachRemaining(concludable -> {
                         iterate(dependencies(concludable)).forEachRemaining(dependency -> {
@@ -136,7 +135,6 @@ public class AnswerCountEstimator {
                     .forEachRemaining(this::buildConjunctionModel);
             conjunctionModels.put(conjunction, conjunctionModelFactory.buildCyclicModel(conjunctionContext, acyclicModel));
         }
-
     }
 
     private Set<ResolvableConjunction> dependencies(Concludable concludable) {
@@ -304,7 +302,7 @@ public class AnswerCountEstimator {
         }
 
         private List<LocalModel> buildModelsForRetrievable(Retrievable retrievable) {
-            return iterate(extractConstraintsToModel(retrievable))
+            return iterate(extractConstraints(retrievable))
                     .map(constraint -> buildConstraintModel(constraint, Optional.empty()))
                     .toList();
         }
@@ -354,7 +352,7 @@ public class AnswerCountEstimator {
             } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
         }
 
-        private Set<Constraint> extractConstraintsToModel(Retrievable retrievable) {
+        private Set<Constraint> extractConstraints(Retrievable retrievable) {
             Set<Constraint> constraints = new HashSet<>();
             iterate(retrievable.pattern().variables()).flatMap(v -> iterate(v.constraints())).filter(this::isModellable).forEachRemaining(constraints::add);
             return constraints;
