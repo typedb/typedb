@@ -408,7 +408,7 @@ public class AnswerCountEstimator {
 
             private RelationModel(RelationConstraint relation, double relationTypeEstimate,
                                   Map<TypeVariable, Long> rolePlayerEstimates, long inferredRelationEstimate) {
-                super(RelationModel.constrainedVariables(relation));
+                super(iterate(relation.variables()).filter(Variable::isThing).toSet());
                 this.relation = relation;
                 this.relationTypeEstimate = relationTypeEstimate;
                 this.rolePlayerEstimates = rolePlayerEstimates;
@@ -419,13 +419,6 @@ public class AnswerCountEstimator {
                     TypeVariable roleType = player.roleType().isPresent() ? player.roleType().get() : null;
                     this.rolePlayerTypes.put(player.player(), roleType);
                 });
-            }
-
-            private static Set<Variable> constrainedVariables(RelationConstraint relation) {
-                Set<Variable> variables = new HashSet<>();
-                iterate(relation.players()).map(RelationConstraint.RolePlayer::player).forEachRemaining(variables::add);
-                variables.add(relation.owner());
-                return variables;
             }
 
             @Override
