@@ -360,7 +360,7 @@ public class Unifier {
                 if (value.isLong()) {
                     predicateFn = (a) -> {
                         if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                .comparableTo(Encoding.ValueType.LONG)) return false;
+                                .instanceComparableTo(Encoding.ValueType.LONG)) return false;
 
                         assert a.getType().isDouble() || a.getType().isLong();
                         if (a.getType().isLong())
@@ -372,7 +372,7 @@ public class Unifier {
                 } else if (value.isDouble()) {
                     predicateFn = (a) -> {
                         if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                .comparableTo(Encoding.ValueType.DOUBLE)) return false;
+                                .instanceComparableTo(Encoding.ValueType.DOUBLE)) return false;
 
                         assert a.getType().isDouble() || a.getType().isLong();
                         if (a.getType().isLong())
@@ -384,21 +384,21 @@ public class Unifier {
                 } else if (value.isBoolean()) {
                     predicateFn = (a) -> {
                         if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                .comparableTo(Encoding.ValueType.BOOLEAN)) return false;
+                                .instanceComparableTo(Encoding.ValueType.BOOLEAN)) return false;
                         assert a.getType().isBoolean();
                         return predicateOperator.apply(Predicate.compareBooleans(a.asBoolean().getValue(), value.asBoolean().value()));
                     };
                 } else if (value.isString()) {
                     predicateFn = (a) -> {
                         if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                .comparableTo(Encoding.ValueType.STRING)) return false;
+                                .instanceComparableTo(Encoding.ValueType.STRING)) return false;
                         assert a.getType().isString();
                         return predicateOperator.apply(Predicate.compareStrings(a.asString().getValue(), value.asString().value()));
                     };
                 } else if (value.isDateTime()) {
                     predicateFn = (a) -> {
                         if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                .comparableTo(Encoding.ValueType.DATETIME)) return false;
+                                .instanceComparableTo(Encoding.ValueType.DATETIME)) return false;
                         assert a.getType().isDateTime();
                         return predicateOperator.apply(Predicate.compareDateTimes(a.asDateTime().getValue(), value.asDateTime().value()));
                     };
@@ -409,7 +409,7 @@ public class Unifier {
                 if (value.isString()) {
                     predicateFn = (a) -> {
                         if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                .comparableTo(Encoding.ValueType.STRING)) return false;
+                                .instanceComparableTo(Encoding.ValueType.STRING)) return false;
                         assert a.getType().isString();
                         if (predicateOperator == PredicateOperator.SubString.CONTAINS) {
                             return PredicateOperator.SubString.CONTAINS.apply(a.asString().getValue(), value.asString().value());

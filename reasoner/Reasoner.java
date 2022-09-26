@@ -32,9 +32,7 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.ThingType;
-import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
-import com.vaticle.typedb.core.concurrent.producer.Producers;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
@@ -191,7 +189,7 @@ public class Reasoner {
             for (Identifier.Variable.Retrievable id : sorting.variables()) {
                 Variable variable = conjunction.variable(id);
                 if (variable.isThing() && iterate(variable.inferredTypes()).map(traversalEng.graph().schema()::getType)
-                        .anyMatch(type -> type.isAttributeType() && !type.asType().valueType().isNativelySorted())) {
+                        .anyMatch(type -> type.isAttributeType() && !type.asType().valueType().isInstanceSorted())) {
                     return false;
                 }
             }

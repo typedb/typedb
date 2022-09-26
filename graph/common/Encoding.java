@@ -32,6 +32,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -366,20 +367,36 @@ public class Encoding {
     /**
      * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
      */
-    public enum ValueType {
-        OBJECT(0, Object.class, false, false, false, null),
-        BOOLEAN(10, Boolean.class, true, false, true, TypeQLArg.ValueType.BOOLEAN),
-        LONG(20, Long.class, true, true, true, TypeQLArg.ValueType.LONG),
-        DOUBLE(30, Double.class, true, false, true, TypeQLArg.ValueType.DOUBLE),
-        STRING(40, String.class, true, true, false, TypeQLArg.ValueType.STRING),
-        DATETIME(50, LocalDateTime.class, true, true, true, TypeQLArg.ValueType.DATETIME);
+
+    public static class ValueType<T> {
+
         public static final ZoneId TIME_ZONE_ID = ZoneOffset.UTC;
         public static final Charset STRING_ENCODING = UTF_8;
         public static final int STRING_SIZE_ENCODING = SHORT_SIZE;
         public static final int STRING_MAX_SIZE = SHORT_UNSIGNED_MAX_VALUE;
-        public static final double DOUBLE_PRECISION = 0.0000000000000001;
+        public static final double DOUBLE_PRECISION = 0.000001d;
 
-        private static final ByteMap<ValueType> valueTypeByKey = ByteMap.create(
+        public static ValueType<Object> OBJECT = new ValueType<>(
+                0, Object.class, false, false, false, null, null
+        );
+        public static ValueType<Boolean> BOOLEAN = new ValueType<>(
+                10, Boolean.class, true, false, true, TypeQLArg.ValueType.BOOLEAN, java.lang.Boolean::compare
+        );
+        public static ValueType<Long> LONG = new ValueType<>(
+                20, Long.class, true, true, true, TypeQLArg.ValueType.LONG, java.lang.Long::compare
+        );
+        public static ValueType<Double> DOUBLE = new ValueType<>(
+                30, Double.class, true, false, true, TypeQLArg.ValueType.DOUBLE, (a, b) -> {
+            int res = Double.compare(a, b);
+            if (res == 0 || Math.abs(a - b) < DOUBLE_PRECISION) return 0;
+            else return res;
+        }
+        );
+        public static ValueType<String> STRING = new ValueType<>(40, String.class, true, true, false, TypeQLArg.ValueType.STRING, null);
+        public static ValueType<LocalDateTime> DATETIME = new ValueType<>(50, LocalDateTime.class, true, true, true, TypeQLArg.ValueType.DATETIME, null);
+
+
+        private static final ByteMap<ValueType<?>> valueTypeByKey = ByteMap.create(
                 pair(OBJECT.key, OBJECT),
                 pair(BOOLEAN.key, BOOLEAN),
                 pair(LONG.key, LONG),
@@ -388,7 +405,7 @@ public class Encoding {
                 pair(DATETIME.key, DATETIME)
         );
 
-        private static final Map<ValueType, Set<ValueType>> ASSIGNABLES = map(
+        private static final Map<ValueType<?>, Set<ValueType<?>>> INSTANCE_ASSIGNABLES = map(
                 pair(OBJECT, set(OBJECT)),
                 pair(BOOLEAN, set(BOOLEAN)),
                 pair(LONG, set(LONG, DOUBLE)),
@@ -397,7 +414,7 @@ public class Encoding {
                 pair(DATETIME, set(DATETIME))
         );
 
-        private static final Map<ValueType, Set<ValueType>> COMPARABLES = map(
+        private static final Map<ValueType<?>, Set<ValueType<?>>> INSTANCE_COMPARABLES = map(
                 pair(OBJECT, set(OBJECT)),
                 pair(BOOLEAN, set(BOOLEAN)),
                 pair(LONG, set(LONG, DOUBLE)),
@@ -407,32 +424,34 @@ public class Encoding {
         );
 
         private final byte key;
-        private final Class<?> valueClass;
+        private final ByteArray bytes;
         private final boolean isKeyable;
         private final boolean isWritable;
-        private final boolean isNativelySorted;
+        private final boolean isInstanceSorted;
 
+        private final Class<T> valueClass;
         private final TypeQLArg.ValueType typeQLValueType;
-        private final ByteArray bytes;
+        private final Comparator<T> instanceComparator;
 
-        ValueType(int key, Class<?> valueClass, boolean isWritable, boolean isKeyable, boolean isNativelySorted,
-                  @Nullable TypeQLArg.ValueType typeQLValueType) {
+        ValueType(int key, Class<T> valueClass, boolean isWritable, boolean isKeyable, boolean isInstanceSorted,
+                  @Nullable TypeQLArg.ValueType typeQLValueType, @Nullable Comparator<T> instanceComparator) {
             this.key = unsignedByte(key);
+            this.instanceComparator = instanceComparator;
             this.bytes = ByteArray.of(new byte[]{this.key});
             this.valueClass = valueClass;
             this.isWritable = isWritable;
             this.isKeyable = isKeyable;
-            this.isNativelySorted = isNativelySorted;
+            this.isInstanceSorted = isInstanceSorted;
             this.typeQLValueType = typeQLValueType;
         }
 
-        public static ValueType of(byte value) {
-            ValueType valueType = valueTypeByKey.get(value);
+        public static ValueType<?> of(byte value) {
+            ValueType<?> valueType = valueTypeByKey.get(value);
             if (valueType == null) throw TypeDBException.of(UNRECOGNISED_VALUE);
             else return valueType;
         }
 
-        public static ValueType of(Class<?> valueClass) {
+        public static ValueType<?> of(Class<?> valueClass) {
             if (valueClass == OBJECT.valueClass) return OBJECT;
             else if (valueClass == BOOLEAN.valueClass) return BOOLEAN;
             else if (valueClass == LONG.valueClass) return LONG;
@@ -442,7 +461,7 @@ public class Encoding {
             else throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
 
-        public static ValueType of(TypeQLArg.ValueType typeQLValueType) {
+        public static ValueType<?> of(TypeQLArg.ValueType typeQLValueType) {
             if (typeQLValueType == OBJECT.typeQLValueType) return OBJECT;
             else if (typeQLValueType == BOOLEAN.typeQLValueType) return BOOLEAN;
             else if (typeQLValueType == LONG.typeQLValueType) return LONG;
@@ -456,7 +475,7 @@ public class Encoding {
             return bytes;
         }
 
-        public Class<?> valueClass() {
+        public Class<T> valueClass() {
             return valueClass;
         }
 
@@ -468,26 +487,29 @@ public class Encoding {
             return isKeyable;
         }
 
-        public boolean isNativelySorted() {
-            return isNativelySorted;
+        public boolean isInstanceSorted() {
+            return isInstanceSorted;
         }
 
-        public Set<ValueType> assignables() {
-            return ASSIGNABLES.get(this);
+        public Set<ValueType<?>> instanceAssignables() {
+            return INSTANCE_ASSIGNABLES.get(this);
         }
 
-        public Set<ValueType> comparables() {
-            return COMPARABLES.get(this);
+        public Set<ValueType<?>> instanceComparables() {
+            return INSTANCE_COMPARABLES.get(this);
         }
 
-        public boolean comparableTo(ValueType valueType) {
-            return COMPARABLES.get(this).contains(valueType);
+        public boolean instanceComparableTo(ValueType<?> valueType) {
+            return INSTANCE_COMPARABLES.get(this).contains(valueType);
         }
 
         public TypeQLArg.ValueType typeQLValueType() {
             return typeQLValueType;
         }
 
+        public Comparator<T> instanceComparator() {
+            return instanceComparator;
+        }
     }
 
     public interface Structure {

@@ -80,7 +80,7 @@ public abstract class PredicateArgument {
 
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Boolean value) {
-                if (!vertex.valueType().comparableTo(Encoding.ValueType.BOOLEAN)) return false;
+                if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.BOOLEAN)) return false;
                 assert vertex.isBoolean();
                 return operator.apply(Predicate.compareBooleans(vertex.asBoolean().value(), value));
             }
@@ -95,7 +95,7 @@ public abstract class PredicateArgument {
 
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Long value) {
-                if (!vertex.valueType().comparableTo(Encoding.ValueType.LONG)) return false;
+                if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.LONG)) return false;
                 assert (vertex.isLong() || vertex.isDouble());
 
                 if (vertex.isLong()) {
@@ -117,7 +117,7 @@ public abstract class PredicateArgument {
 
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Double value) {
-                if (!vertex.valueType().comparableTo(Encoding.ValueType.DOUBLE)) return false;
+                if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.DOUBLE)) return false;
                 assert (vertex.isLong() || vertex.isDouble());
 
                 if (vertex.isLong()){
@@ -139,7 +139,7 @@ public abstract class PredicateArgument {
 
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, LocalDateTime value) {
-                if (!vertex.valueType().comparableTo(Encoding.ValueType.DATETIME)) return false;
+                if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.DATETIME)) return false;
                 assert vertex.isDateTime();
 
                 return operator.apply(Predicate.compareDateTimes(vertex.asDateTime().value(), value));
@@ -149,7 +149,7 @@ public abstract class PredicateArgument {
         public static Value<PredicateOperator, String> STRING = new Value<PredicateOperator, String>(Encoding.ValueType.STRING) {
             @Override
             public boolean apply(PredicateOperator operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-                if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
+                if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.STRING)) return false;
                 assert value.isString() || value.isRegex();
                 if (operator.isSubString()) return operator.asSubString().apply(vertex.asString().value(), value);
                 else return apply(operator, vertex, value.getString());
@@ -157,7 +157,7 @@ public abstract class PredicateArgument {
 
             @Override
             public boolean apply(PredicateOperator operator, AttributeVertex<?> vertex, String value) {
-                if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
+                if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.STRING)) return false;
                 assert vertex.isString() && operator.isEquality();
                 return operator.asEquality().apply(Predicate.compareStrings(vertex.asString().value(), value));
             }
@@ -173,7 +173,7 @@ public abstract class PredicateArgument {
         }
 
         public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> from, AttributeVertex<?> to) {
-            if (!from.valueType().comparableTo(to.valueType())) return false;
+            if (!from.valueType().instanceComparableTo(to.valueType())) return false;
 
             switch (to.valueType()) {
                 case BOOLEAN:

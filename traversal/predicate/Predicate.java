@@ -52,8 +52,7 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
 
     public static int compareDoubles(double first, double second) {
         int res = Double.compare(first, second);
-        if (res == 0) return 0;
-        else if (Math.abs(first - second) < DOUBLE_PRECISION) return 0;
+        if (res == 0 || Math.abs(first - second) < DOUBLE_PRECISION) return 0;
         else return res;
     }
 
