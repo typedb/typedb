@@ -195,13 +195,13 @@ public class AnswerCountEstimator {
         }
 
         private long estimateAnswers(Set<Variable> variableFilter, Set<Resolvable<?>> includedResolvables) {
-            List<LocalModel> includedConstraintModels = iterate(includedResolvables)
+            List<LocalModel> includedLocalModels = iterate(includedResolvables)
                     .flatMap(resolvable -> iterate(constraintModels.get(resolvable)))
                     .toList();
 
             Set<Variable> validVariableFilter = iterate(variableFilter).filter(conjunctionContext.consideredVariables::contains).toSet();
 
-            Map<Variable, LocalModel> costCover = greedyCover(validVariableFilter, variableModels, includedConstraintModels);
+            Map<Variable, LocalModel> costCover = greedyCover(validVariableFilter, variableModels, includedLocalModels);
             long ret = answerEstimateFromCover(validVariableFilter, costCover);
             assert ret > 0;             // Flag in tests if it happens.
             return Math.max(ret, 1);    // Don't do stupid stuff in prod when it happens.
@@ -260,7 +260,7 @@ public class AnswerCountEstimator {
             iterate(conjunctionContext.cyclicConcludables())
                     .forEachRemaining(concludable -> constraintModels.put(concludable, list()));
 
-            Map<Variable, LocalModel.VariableModel> variableModels = computeBaselineVariableCover(conjunctionContext.consideredVariables, generatedVariableModels);
+            Map<Variable, LocalModel.VariableModel> variableModels = computeBaselineCover(conjunctionContext.consideredVariables, generatedVariableModels);
 
             // EdgeCase: Efficiently handle inferred `$x has $a` when $x is inferred in the body of the rule.
             iterate(conjunctionContext.acyclicConcludables()).filter(Concludable::isHas).map(Concludable::asHas)
@@ -294,7 +294,7 @@ public class AnswerCountEstimator {
                         constraintModels.put(concludable, combinedModels);
                     });
 
-            Map<Variable, LocalModel.VariableModel> variableModels = computeBaselineVariableCover(conjunctionContext.consideredVariables, generatedVariableModels);
+            Map<Variable, LocalModel.VariableModel> variableModels = computeBaselineCover(conjunctionContext.consideredVariables, generatedVariableModels);
 
             assert !iterate(conjunctionContext.consideredVariables).filter(variable -> !variableModels.containsKey(variable)).hasNext();
             assert !iterate(conjunctionContext.resolvables()).filter(resolvable -> !constraintModels.containsKey(resolvable)).hasNext();
@@ -319,9 +319,9 @@ public class AnswerCountEstimator {
             return list(localModelFactory.modelForVariable(concludable.generating().get(), Optional.of(concludable)));
         }
 
-        private Map<Variable, LocalModel.VariableModel> computeBaselineVariableCover(Set<Variable> consideredVariables, List<LocalModel.VariableModel> generatedVariableModels) {
+        private Map<Variable, LocalModel.VariableModel> computeBaselineCover(Set<Variable> variablesToCover, List<LocalModel.VariableModel> generatedVariableModels) {
             Map<Variable, LocalModel.VariableModel> newVariableCover = new HashMap<>();
-            iterate(consideredVariables).map(Variable::asThing).forEachRemaining(v -> { // baseline
+            iterate(variablesToCover).map(Variable::asThing).forEachRemaining(v -> { // baseline
                 newVariableCover.put(v, new LocalModel.VariableModel(set(v), localModelFactory.countPersistedThingsMatchingType(v)));
             });
 
@@ -335,7 +335,7 @@ public class AnswerCountEstimator {
                         }
                     });
 
-            assert consideredVariables.stream().allMatch(newVariableCover::containsKey);
+            assert variablesToCover.stream().allMatch(newVariableCover::containsKey);
             return newVariableCover;
         }
 
