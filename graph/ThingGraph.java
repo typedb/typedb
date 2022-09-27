@@ -64,6 +64,11 @@ import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.graph.common.Encoding.Status.BUFFERED;
 import static com.vaticle.typedb.core.graph.common.Encoding.Status.PERSISTED;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_MAX_SIZE;
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
 import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.generate;
@@ -141,31 +146,30 @@ public class ThingGraph {
 
     public AttributeVertex<?> convertToReadable(VertexIID.Attribute<?> attIID) {
         AttributeVertex<?> vertex;
-        switch (attIID.valueType()) {
-            case BOOLEAN:
-                vertex = attributesByIID.booleans.get(attIID.asBoolean());
-                if (vertex == null) return new AttributeVertexImpl.Read.Boolean(this, attIID.asBoolean());
-                else return vertex;
-            case LONG:
-                vertex = attributesByIID.longs.get(attIID.asLong());
-                if (vertex == null) return new AttributeVertexImpl.Read.Long(this, attIID.asLong());
-                else return vertex;
-            case DOUBLE:
-                vertex = attributesByIID.doubles.get(attIID.asDouble());
-                if (vertex == null) return new AttributeVertexImpl.Read.Double(this, attIID.asDouble());
-                else return vertex;
-            case STRING:
-                vertex = attributesByIID.strings.get(attIID.asString());
-                if (vertex == null) return new AttributeVertexImpl.Read.String(this, attIID.asString());
-                else return vertex;
-            case DATETIME:
-                vertex = attributesByIID.dateTimes.get(attIID.asDateTime());
-                if (vertex == null) return new AttributeVertexImpl.Read.DateTime(this, attIID.asDateTime());
-                else return vertex;
-            default:
-                assert false;
-                return null;
+        Encoding.ValueType<?> valueType = attIID.valueType();
+        if (valueType == BOOLEAN) {
+            vertex = attributesByIID.booleans.get(attIID.asBoolean());
+            if (vertex == null) return new AttributeVertexImpl.Read.Boolean(this, attIID.asBoolean());
+            else return vertex;
+        } else if (valueType == LONG) {
+            vertex = attributesByIID.longs.get(attIID.asLong());
+            if (vertex == null) return new AttributeVertexImpl.Read.Long(this, attIID.asLong());
+            else return vertex;
+        } else if (valueType == DOUBLE) {
+            vertex = attributesByIID.doubles.get(attIID.asDouble());
+            if (vertex == null) return new AttributeVertexImpl.Read.Double(this, attIID.asDouble());
+            else return vertex;
+        } else if (valueType == STRING) {
+            vertex = attributesByIID.strings.get(attIID.asString());
+            if (vertex == null) return new AttributeVertexImpl.Read.String(this, attIID.asString());
+            else return vertex;
+        } else if (valueType == DATETIME) {
+            vertex = attributesByIID.dateTimes.get(attIID.asDateTime());
+            if (vertex == null) return new AttributeVertexImpl.Read.DateTime(this, attIID.asDateTime());
+            else return vertex;
         }
+        assert false;
+        return null;
     }
 
     public ThingVertex.Write convertToWritable(VertexIID.Thing iid) {
@@ -175,26 +179,25 @@ public class ThingGraph {
     }
 
     public AttributeVertex.Write<?> convertToWritable(VertexIID.Attribute<?> attIID) {
-        switch (attIID.valueType()) {
-            case BOOLEAN:
-                return attributesByIID.booleans.computeIfAbsent(attIID.asBoolean(),
-                        i -> new AttributeVertexImpl.Write.Boolean(this, attIID.asBoolean()));
-            case LONG:
-                return attributesByIID.longs.computeIfAbsent(attIID.asLong(),
-                        i -> new AttributeVertexImpl.Write.Long(this, attIID.asLong()));
-            case DOUBLE:
-                return attributesByIID.doubles.computeIfAbsent(attIID.asDouble(),
-                        i -> new AttributeVertexImpl.Write.Double(this, attIID.asDouble()));
-            case STRING:
-                return attributesByIID.strings.computeIfAbsent(attIID.asString(),
-                        i -> new AttributeVertexImpl.Write.String(this, attIID.asString()));
-            case DATETIME:
-                return attributesByIID.dateTimes.computeIfAbsent(attIID.asDateTime(),
-                        i -> new AttributeVertexImpl.Write.DateTime(this, attIID.asDateTime()));
-            default:
-                assert false;
-                return null;
+        Encoding.ValueType<?> valueType = attIID.valueType();
+        if (valueType == BOOLEAN) {
+            return attributesByIID.booleans.computeIfAbsent(attIID.asBoolean(),
+                    i -> new AttributeVertexImpl.Write.Boolean(this, attIID.asBoolean()));
+        } else if (valueType == LONG) {
+            return attributesByIID.longs.computeIfAbsent(attIID.asLong(),
+                    i -> new AttributeVertexImpl.Write.Long(this, attIID.asLong()));
+        } else if (valueType == DOUBLE) {
+            return attributesByIID.doubles.computeIfAbsent(attIID.asDouble(),
+                    i -> new AttributeVertexImpl.Write.Double(this, attIID.asDouble()));
+        } else if (valueType == STRING) {
+            return attributesByIID.strings.computeIfAbsent(attIID.asString(),
+                    i -> new AttributeVertexImpl.Write.String(this, attIID.asString()));
+        } else if (valueType == DATETIME) {
+            return attributesByIID.dateTimes.computeIfAbsent(attIID.asDateTime(),
+                    i -> new AttributeVertexImpl.Write.DateTime(this, attIID.asDateTime()));
         }
+        assert false;
+        return null;
     }
 
     public ThingVertex.Write create(TypeVertex typeVertex, boolean isInferred) {
@@ -575,41 +578,22 @@ public class ThingGraph {
         }
 
         void remove(VertexIID.Attribute<?> iid) {
-            switch (iid.valueType()) {
-                case BOOLEAN:
-                    booleans.remove(iid.asBoolean());
-                    break;
-                case LONG:
-                    longs.remove(iid.asLong());
-                    break;
-                case DOUBLE:
-                    doubles.remove(iid.asDouble());
-                    break;
-                case STRING:
-                    strings.remove(iid.asString());
-                    break;
-                case DATETIME:
-                    dateTimes.remove(iid.asDateTime());
-                    break;
-            }
+            Encoding.ValueType<?> valueType = iid.valueType();
+            if (BOOLEAN == valueType) booleans.remove(iid.asBoolean());
+            else if (LONG == valueType) longs.remove(iid.asLong());
+            else if (DOUBLE == valueType) doubles.remove(iid.asDouble());
+            else if (STRING == valueType) strings.remove(iid.asString());
+            else if (DATETIME == valueType) dateTimes.remove(iid.asDateTime());
         }
 
-        ConcurrentMap<? extends VertexIID.Attribute<?>, ? extends AttributeVertex<?>> forValueType(Encoding.ValueType valueType) {
-            switch (valueType) {
-                case BOOLEAN:
-                    return booleans;
-                case LONG:
-                    return longs;
-                case DOUBLE:
-                    return doubles;
-                case STRING:
-                    return strings;
-                case DATETIME:
-                    return dateTimes;
-                default:
-                    assert false;
-                    return null;
-            }
+        ConcurrentMap<? extends VertexIID.Attribute<?>, ? extends AttributeVertex<?>> forValueType(Encoding.ValueType<?> valueType) {
+            if (BOOLEAN == valueType) return booleans;
+            else if (LONG == valueType) return longs;
+            else if (DOUBLE == valueType) return doubles;
+            else if (STRING == valueType) return strings;
+            else if (DATETIME == valueType) return dateTimes;
+            assert false;
+            return null;
         }
     }
 

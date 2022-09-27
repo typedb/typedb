@@ -57,7 +57,7 @@ public abstract class PredicateOperator {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Equality.class));
     }
 
-    SubString asSubString() {
+    SubString<?> asSubString() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(SubString.class));
     }
 
@@ -206,11 +206,11 @@ public abstract class PredicateOperator {
         }
 
         @Override
-        SubString asSubString() {
+        SubString<?> asSubString() {
             return this;
         }
 
-        public static final SubString CONTAINS = new SubString<String>(TypeQLToken.Predicate.SubString.CONTAINS) {
+        public static final SubString<String> CONTAINS = new SubString<>(TypeQLToken.Predicate.SubString.CONTAINS) {
             @Override
             public boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
                 assert predicateValue.isString();
@@ -223,7 +223,7 @@ public abstract class PredicateOperator {
             }
         };
 
-        public static final SubString LIKE = new SubString<Pattern>(TypeQLToken.Predicate.SubString.LIKE) {
+        public static final SubString<Pattern> LIKE = new SubString<>(TypeQLToken.Predicate.SubString.LIKE) {
             @Override
             public boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
                 assert predicateValue.isRegex();
@@ -236,7 +236,7 @@ public abstract class PredicateOperator {
             }
         };
 
-        private static final Map<TypeQLToken.Predicate.SubString, SubString> operators = map(
+        private static final Map<TypeQLToken.Predicate.SubString, SubString<?>> operators = map(
                 pair(TypeQLToken.Predicate.SubString.CONTAINS, SubString.CONTAINS),
                 pair(TypeQLToken.Predicate.SubString.LIKE, SubString.LIKE)
         );

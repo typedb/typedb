@@ -235,7 +235,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
                 cost = graphMgr.schema().stats().abstractTypeCount();
             } else if (!props().valueTypes().isEmpty()) {
                 int count = 0;
-                for (Encoding.ValueType valueType : props().valueTypes()) {
+                for (Encoding.ValueType<?> valueType : props().valueTypes()) {
                     count += graphMgr.schema().stats().attTypesWithValueType(valueType);
                 }
                 cost = count;

@@ -66,7 +66,6 @@ import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUT
 import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ATTRIBUTE;
 import static com.vaticle.typeql.lang.common.util.Strings.escapeRegex;
 import static com.vaticle.typeql.lang.common.util.Strings.quoteString;
-import static java.util.Comparator.comparing;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
@@ -85,22 +84,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     public static AttributeTypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
-        switch (vertex.valueType()) {
-            case OBJECT:
-                return new AttributeTypeImpl.Root(graphMgr, vertex);
-            case BOOLEAN:
-                return AttributeTypeImpl.Boolean.of(graphMgr, vertex);
-            case LONG:
-                return AttributeTypeImpl.Long.of(graphMgr, vertex);
-            case DOUBLE:
-                return AttributeTypeImpl.Double.of(graphMgr, vertex);
-            case STRING:
-                return AttributeTypeImpl.String.of(graphMgr, vertex);
-            case DATETIME:
-                return AttributeTypeImpl.DateTime.of(graphMgr, vertex);
-            default:
-                throw graphMgr.exception(TypeDBException.of(UNRECOGNISED_VALUE));
-        }
+        Encoding.ValueType<?> valueType = vertex.valueType();
+        if (valueType == OBJECT) return new Root(graphMgr, vertex);
+        else if (valueType == BOOLEAN) return Boolean.of(graphMgr, vertex);
+        else if (valueType == LONG) return Long.of(graphMgr, vertex);
+        else if (valueType == DOUBLE) return Double.of(graphMgr, vertex);
+        else if (valueType == STRING) return String.of(graphMgr, vertex);
+        else if (valueType == DATETIME) return DateTime.of(graphMgr, vertex);
+        throw graphMgr.exception(TypeDBException.of(UNRECOGNISED_VALUE));
     }
 
     @Override
@@ -120,12 +111,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public abstract Forwardable<? extends AttributeImpl<?>, Order.Asc> getInstances();
 
-    Forwardable<TypeVertex, Order.Asc> getSubtypeVertices(Encoding.ValueType valueType) {
+    Forwardable<TypeVertex, Order.Asc> getSubtypeVertices(Encoding.ValueType<?> valueType) {
         return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                 .filter(sv -> sv.valueType().equals(valueType));
     }
 
-    Forwardable<TypeVertex, Order.Asc> getSubtypeVerticesDirect(Encoding.ValueType valueType) {
+    Forwardable<TypeVertex, Order.Asc> getSubtypeVerticesDirect(Encoding.ValueType<?> valueType) {
         return vertex.ins().edge(SUB).from().filter(sv -> sv.valueType().equals(valueType));
     }
 
@@ -350,43 +341,29 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Forwardable<AttributeTypeImpl, Order.Asc> getSubtypes() {
             return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC).mapSorted(v -> {
-                switch (v.valueType()) {
-                    case OBJECT:
-                        assert vertex == v;
-                        return this;
-                    case BOOLEAN:
-                        return AttributeTypeImpl.Boolean.of(graphMgr, v);
-                    case LONG:
-                        return AttributeTypeImpl.Long.of(graphMgr, v);
-                    case DOUBLE:
-                        return AttributeTypeImpl.Double.of(graphMgr, v);
-                    case STRING:
-                        return AttributeTypeImpl.String.of(graphMgr, v);
-                    case DATETIME:
-                        return AttributeTypeImpl.DateTime.of(graphMgr, v);
-                    default:
-                        throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
-                }
+                Encoding.ValueType<?> valueType = v.valueType();
+                if (OBJECT == valueType) {
+                    assert vertex == v;
+                    return this;
+                } else if (BOOLEAN == valueType) return AttributeTypeImpl.Boolean.of(graphMgr, v);
+                else if (LONG == valueType) return AttributeTypeImpl.Long.of(graphMgr, v);
+                else if (DOUBLE == valueType) return AttributeTypeImpl.Double.of(graphMgr, v);
+                else if (STRING == valueType) return AttributeTypeImpl.String.of(graphMgr, v);
+                else if (DATETIME == valueType) return AttributeTypeImpl.DateTime.of(graphMgr, v);
+                throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
             }, attrType -> attrType.vertex, ASC);
         }
 
         @Override
         public Forwardable<AttributeTypeImpl, Order.Asc> getSubtypesExplicit() {
             return getSubtypesExplicit(v -> {
-                switch (v.valueType()) {
-                    case BOOLEAN:
-                        return AttributeTypeImpl.Boolean.of(graphMgr, v);
-                    case LONG:
-                        return AttributeTypeImpl.Long.of(graphMgr, v);
-                    case DOUBLE:
-                        return AttributeTypeImpl.Double.of(graphMgr, v);
-                    case STRING:
-                        return AttributeTypeImpl.String.of(graphMgr, v);
-                    case DATETIME:
-                        return AttributeTypeImpl.DateTime.of(graphMgr, v);
-                    default:
-                        throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
-                }
+                Encoding.ValueType<?> valueType = v.valueType();
+                if (BOOLEAN.equals(valueType)) return AttributeTypeImpl.Boolean.of(graphMgr, v);
+                else if (LONG.equals(valueType)) return AttributeTypeImpl.Long.of(graphMgr, v);
+                else if (DOUBLE.equals(valueType)) return AttributeTypeImpl.Double.of(graphMgr, v);
+                else if (STRING.equals(valueType)) return AttributeTypeImpl.String.of(graphMgr, v);
+                else if (DATETIME.equals(valueType)) return AttributeTypeImpl.DateTime.of(graphMgr, v);
+                throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
             });
         }
 

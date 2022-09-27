@@ -68,7 +68,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     String scope;
     Label properLabel;
     Boolean isAbstract; // needs to be declared as the Boolean class
-    Encoding.ValueType valueType;
+    Encoding.ValueType<?> valueType;
     Pattern regex;
 
     private volatile int outOwnsCount;
@@ -474,7 +474,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public Encoding.ValueType valueType() {
+        public Encoding.ValueType<?> valueType() {
             if (valueType != null) return valueType;
             ByteArray val = graph.storage().get(PropertyIID.Type.of(iid, VALUE_TYPE));
             if (val != null) valueType = Encoding.ValueType.of(val.get(0));
@@ -482,7 +482,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public TypeVertexImpl valueType(Encoding.ValueType valueType) {
+        public TypeVertexImpl valueType(Encoding.ValueType<?> valueType) {
             assert !isDeleted();
             graph.storage().putUntracked(PropertyIID.Type.of(iid, VALUE_TYPE), valueType.bytes());
             this.valueType = valueType;

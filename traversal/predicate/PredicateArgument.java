@@ -26,6 +26,11 @@ import com.vaticle.typedb.core.traversal.Traversal;
 import java.time.LocalDateTime;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 
 public abstract class PredicateArgument {
 
@@ -56,20 +61,22 @@ public abstract class PredicateArgument {
 
     public static abstract class Value<ARG_VAL_OP extends PredicateOperator, ARG_VAL_TYPE> extends PredicateArgument {
 
-        private final Encoding.ValueType valueType;
+        private final Encoding.ValueType<ARG_VAL_TYPE> valueType;
 
-        public Value(Encoding.ValueType valueType) {
+        public Value(Encoding.ValueType<ARG_VAL_TYPE> valueType) {
             super(valueType.name());
             this.valueType = valueType;
         }
 
-        public Encoding.ValueType valueType() {
+        public Encoding.ValueType<ARG_VAL_TYPE> valueType() {
             return valueType;
         }
 
         public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value);
 
         public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, ARG_VAL_TYPE value);
+
+        public abstract boolean apply(ARG_VAL_OP operator, ARG_VAL_TYPE lhs, ARG_VAL_TYPE rhs);
 
         public static Value<PredicateOperator.Equality, Boolean> BOOLEAN = new Value<PredicateOperator.Equality, Boolean>(Encoding.ValueType.BOOLEAN) {
             @Override
@@ -82,7 +89,12 @@ public abstract class PredicateArgument {
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Boolean value) {
                 if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.BOOLEAN)) return false;
                 assert vertex.isBoolean();
-                return operator.apply(Predicate.compareBooleans(vertex.asBoolean().value(), value));
+                return apply(operator, vertex.asBoolean().value(), value);
+            }
+
+            @Override
+            public boolean apply(PredicateOperator.Equality operator, Boolean lhs, Boolean rhs) {
+                return operator.apply(valueType().instanceComparator().compare(lhs, rhs));
             }
         };
 
@@ -98,13 +110,15 @@ public abstract class PredicateArgument {
                 if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.LONG)) return false;
                 assert (vertex.isLong() || vertex.isDouble());
 
-                if (vertex.isLong()) {
-                    return operator.apply(Predicate.compareLongs(vertex.asLong().value(), value));
-                }
-                else if (vertex.isDouble()){
-                    return operator.apply(Predicate.compareDoubleToLong(vertex.asDouble().value(), value));
-                }
+                if (vertex.isLong()) return apply(operator, vertex.asLong().value(), value);
+                else if (vertex.isDouble())
+                    return DOUBLE.apply(operator, vertex.asDouble().value(), value.doubleValue());
                 else throw TypeDBException.of(ILLEGAL_STATE);
+            }
+
+            @Override
+            public boolean apply(PredicateOperator.Equality operator, Long lhs, Long rhs) {
+                return operator.apply(valueType().instanceComparator().compare(lhs, rhs));
             }
         };
 
@@ -120,13 +134,14 @@ public abstract class PredicateArgument {
                 if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.DOUBLE)) return false;
                 assert (vertex.isLong() || vertex.isDouble());
 
-                if (vertex.isLong()){
-                    return operator.apply(Predicate.compareLongToDouble(vertex.asLong().value(), value));
-                }
-                else if (vertex.isDouble()) {
-                    return operator.apply(Predicate.compareDoubles(vertex.asDouble().value(), value));
-                }
+                if (vertex.isLong()) return apply(operator, vertex.asLong().value().doubleValue(), value);
+                else if (vertex.isDouble()) return apply(operator, vertex.asDouble().value(), value);
                 else throw TypeDBException.of(ILLEGAL_STATE);
+            }
+
+            @Override
+            public boolean apply(PredicateOperator.Equality operator, Double lhs, Double rhs) {
+                return operator.apply(valueType().instanceComparator().compare(lhs, rhs));
             }
         };
 
@@ -141,8 +156,12 @@ public abstract class PredicateArgument {
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, LocalDateTime value) {
                 if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.DATETIME)) return false;
                 assert vertex.isDateTime();
+                return apply(operator, vertex.asDateTime().value(), value);
+            }
 
-                return operator.apply(Predicate.compareDateTimes(vertex.asDateTime().value(), value));
+            @Override
+            public boolean apply(PredicateOperator.Equality operator, LocalDateTime lhs, LocalDateTime rhs) {
+                return operator.apply(valueType().instanceComparator().compare(lhs, rhs));
             }
         };
 
@@ -159,7 +178,13 @@ public abstract class PredicateArgument {
             public boolean apply(PredicateOperator operator, AttributeVertex<?> vertex, String value) {
                 if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.STRING)) return false;
                 assert vertex.isString() && operator.isEquality();
-                return operator.asEquality().apply(Predicate.compareStrings(vertex.asString().value(), value));
+                return operator.asEquality().apply(Encoding.ValueType.STRING.instanceComparator().compare(vertex.asString().value(), value));
+            }
+
+            @Override
+            public boolean apply(PredicateOperator operator, String lhs, String rhs) {
+                assert operator.isEquality();
+                return operator.asEquality().apply(valueType().instanceComparator().compare(lhs, rhs));
             }
         };
     }
@@ -174,21 +199,13 @@ public abstract class PredicateArgument {
 
         public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> from, AttributeVertex<?> to) {
             if (!from.valueType().instanceComparableTo(to.valueType())) return false;
-
-            switch (to.valueType()) {
-                case BOOLEAN:
-                    return Value.BOOLEAN.apply(operator, from, to.asBoolean().value());
-                case LONG:
-                    return Value.LONG.apply(operator, from, to.asLong().value());
-                case DOUBLE:
-                    return Value.DOUBLE.apply(operator, from, to.asDouble().value());
-                case STRING:
-                    return Value.STRING.apply(operator, from, to.asString().value());
-                case DATETIME:
-                    return Value.DATETIME.apply(operator, from, to.asDateTime().value());
-                default:
-                    throw TypeDBException.of(ILLEGAL_STATE);
-            }
+            Encoding.ValueType<?> valueType = to.valueType();
+            if (valueType == BOOLEAN) return Value.BOOLEAN.apply(operator, from, to.asBoolean().value());
+            else if (valueType == LONG) return Value.LONG.apply(operator, from, to.asLong().value());
+            else if (valueType == DOUBLE) return Value.DOUBLE.apply(operator, from, to.asDouble().value());
+            else if (valueType == STRING) return Value.STRING.apply(operator, from, to.asString().value());
+            else if (valueType == DATETIME) return Value.DATETIME.apply(operator, from, to.asDateTime().value());
+            throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 }

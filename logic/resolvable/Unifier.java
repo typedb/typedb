@@ -57,6 +57,11 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICATION_MISSING_CONCEPT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 
 public class Unifier {
@@ -129,7 +134,8 @@ public class Unifier {
             }
         }
 
-        if (instanceRequirements.satisfiedBy(reversedConcepts)) return cartesianUnrestrictedNamedTypes(reversedConcepts, instanceRequirements);
+        if (instanceRequirements.satisfiedBy(reversedConcepts))
+            return cartesianUnrestrictedNamedTypes(reversedConcepts, instanceRequirements);
         else return Iterators.empty();
     }
 
@@ -145,8 +151,8 @@ public class Unifier {
                     namedTypeSupers.add(concept.asType().getSupertypes().map(t -> t));
                 } else {
                     namedTypeSupers.add(concept.asType().getSupertypes()
-                                                .filter(t -> t.equals(instanceRequirements.restriction(id)))
-                                                .map(t -> t));
+                            .filter(t -> t.equals(instanceRequirements.restriction(id)))
+                            .map(t -> t));
                 }
             } else fixedConcepts.put(id, concept);
         });
@@ -167,12 +173,18 @@ public class Unifier {
     public Map<Retrievable, Set<Variable>> mapping() {
         return unifier;
     }
-    public Map<Variable, Set<Retrievable>> reverseUnifier(){ return reverseUnifier; }
+
+    public Map<Variable, Set<Retrievable>> reverseUnifier() {
+        return reverseUnifier;
+    }
 
     public Requirements.Constraint requirements() {
         return requirements;
     }
-    public Requirements.Constraint unifiedRequirements(){ return unifiedRequirements;}
+
+    public Requirements.Constraint unifiedRequirements() {
+        return unifiedRequirements;
+    }
 
     private Map<Variable, Set<Retrievable>> reverse(Map<Retrievable, Set<Variable>> unifier) {
         Map<Variable, Set<Retrievable>> reverse = new HashMap<>();
@@ -249,7 +261,7 @@ public class Unifier {
         }
 
         void addConstantValueRequirements(Set<ValueConstraint<?>> values, Retrievable id, Retrievable unifiedId) {
-            for(ValueConstraint<?> value: constantValueConstraints(values)){
+            for (ValueConstraint<?> value : constantValueConstraints(values)) {
                 unifiedRequirements().predicates(unifiedId, valuePredicate(value));
                 requirements().predicates(id, valuePredicate(value));
             }
@@ -359,57 +371,56 @@ public class Unifier {
 
                 if (value.isLong()) {
                     predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                .instanceComparableTo(Encoding.ValueType.LONG)) return false;
-
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(LONG))
+                            return false;
                         assert a.getType().isDouble() || a.getType().isLong();
                         if (a.getType().isLong())
-                            return predicateOperator.apply(Predicate.compareLongs(a.asLong().getValue(), value.asLong().value()));
+                            return predicateOperator.apply(LONG.instanceComparator().compare(a.asLong().getValue(), value.asLong().value()));
                         else if (a.getType().isDouble())
-                            return predicateOperator.apply(Predicate.compareDoubleToLong(a.asDouble().getValue(), value.asLong().value()));
+                            return predicateOperator.apply(DOUBLE.instanceComparator().compare(a.asDouble().getValue(), value.asLong().value().doubleValue()));
                         else throw TypeDBException.of(ILLEGAL_STATE);
                     };
                 } else if (value.isDouble()) {
                     predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                .instanceComparableTo(Encoding.ValueType.DOUBLE)) return false;
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(DOUBLE))
+                            return false;
 
                         assert a.getType().isDouble() || a.getType().isLong();
                         if (a.getType().isLong())
-                            return predicateOperator.apply(Predicate.compareLongToDouble(a.asLong().getValue(), value.asDouble().value()));
+                            return predicateOperator.apply(DOUBLE.instanceComparator().compare(a.asLong().getValue().doubleValue(), value.asDouble().value()));
                         else if (a.getType().isDouble())
-                            return predicateOperator.apply(Predicate.compareDoubles(a.asDouble().getValue(), value.asDouble().value()));
+                            return predicateOperator.apply(DOUBLE.instanceComparator().compare(a.asDouble().getValue(), value.asDouble().value()));
                         else throw TypeDBException.of(ILLEGAL_STATE);
                     };
                 } else if (value.isBoolean()) {
                     predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                .instanceComparableTo(Encoding.ValueType.BOOLEAN)) return false;
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(BOOLEAN))
+                            return false;
                         assert a.getType().isBoolean();
-                        return predicateOperator.apply(Predicate.compareBooleans(a.asBoolean().getValue(), value.asBoolean().value()));
+                        return predicateOperator.apply(BOOLEAN.instanceComparator().compare(a.asBoolean().getValue(), value.asBoolean().value()));
                     };
                 } else if (value.isString()) {
                     predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                .instanceComparableTo(Encoding.ValueType.STRING)) return false;
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(STRING))
+                            return false;
                         assert a.getType().isString();
-                        return predicateOperator.apply(Predicate.compareStrings(a.asString().getValue(), value.asString().value()));
+                        return predicateOperator.apply(STRING.instanceComparator().compare(a.asString().getValue(), value.asString().value()));
                     };
                 } else if (value.isDateTime()) {
                     predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                .instanceComparableTo(Encoding.ValueType.DATETIME)) return false;
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(DATETIME))
+                            return false;
                         assert a.getType().isDateTime();
-                        return predicateOperator.apply(Predicate.compareDateTimes(a.asDateTime().getValue(), value.asDateTime().value()));
+                        return predicateOperator.apply(DATETIME.instanceComparator().compare(a.asDateTime().getValue(), value.asDateTime().value()));
                     };
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             } else if (value.predicate().isSubString()) {
-                PredicateOperator.SubString predicateOperator = PredicateOperator.SubString.of(value.predicate().asSubString());
+                PredicateOperator.SubString<?> predicateOperator = PredicateOperator.SubString.of(value.predicate().asSubString());
 
                 if (value.isString()) {
                     predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass())
-                                .instanceComparableTo(Encoding.ValueType.STRING)) return false;
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(STRING))
+                            return false;
                         assert a.getType().isString();
                         if (predicateOperator == PredicateOperator.SubString.CONTAINS) {
                             return PredicateOperator.SubString.CONTAINS.apply(a.asString().getValue(), value.asString().value());
@@ -536,11 +547,17 @@ public class Unifier {
                 predicates.put(id, predicateFn);
             }
 
-            public Map<Variable, Set<Label>> types() { return types; }
+            public Map<Variable, Set<Label>> types() {
+                return types;
+            }
 
-            public Map<Retrievable, Set<Label>> isaExplicit() { return isaExplicit; }
+            public Map<Retrievable, Set<Label>> isaExplicit() {
+                return isaExplicit;
+            }
 
-            public Map<Retrievable, Function<Attribute, Boolean>> predicates() { return predicates; }
+            public Map<Retrievable, Function<Attribute, Boolean>> predicates() {
+                return predicates;
+            }
 
             private Constraint duplicate() {
                 Map<Variable, Set<Label>> typesCopy = new HashMap<>();

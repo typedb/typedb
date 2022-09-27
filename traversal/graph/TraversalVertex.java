@@ -221,7 +221,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
             private boolean isAbstract;
             private final Set<Label> labels;
-            private final Set<Encoding.ValueType> valueTypes;
+            private final Set<Encoding.ValueType<?>> valueTypes;
             private String regex;
 
             public Type() {
@@ -254,7 +254,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 this.isAbstract = true;
             }
 
-            public Set<Encoding.ValueType> valueTypes() {
+            public Set<Encoding.ValueType<?>> valueTypes() {
                 return valueTypes;
             }
 
@@ -262,11 +262,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 this.valueTypes.clear();
             }
 
-            public void valueType(Encoding.ValueType valueType) {
+            public void valueType(Encoding.ValueType<?> valueType) {
                 this.valueTypes.add(valueType);
             }
 
-            public void valueTypes(Set<Encoding.ValueType> valueTypes) {
+            public void valueTypes(Set<Encoding.ValueType<?>> valueTypes) {
                 this.valueTypes.addAll(valueTypes);
             }
 

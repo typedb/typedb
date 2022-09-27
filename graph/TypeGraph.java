@@ -1065,14 +1065,14 @@ public class TypeGraph {
             }
         }
 
-        public long attTypesWithValueType(Encoding.ValueType valueType) {
+        public long attTypesWithValueType(Encoding.ValueType<?> valueType) {
             Supplier<Long> fn = () -> attributeTypes(valueType).stream().count();
             if (isReadOnly) return attTypesWithValueType.computeIfAbsent(valueType, vt -> fn.get());
             else return fn.get();
         }
 
         public long attTypesWithValTypeComparableTo(Set<Label> labels) {
-            Set<Encoding.ValueType> valueTypes = iterate(labels)
+            Set<Encoding.ValueType<?>> valueTypes = iterate(labels)
                     .map(l -> getType(l).valueType()).noNulls()
                     .flatMap(vt -> iterate(vt.instanceComparables())).toSet();
             return valueTypes.stream().mapToLong(this::attTypesWithValueType).sum();

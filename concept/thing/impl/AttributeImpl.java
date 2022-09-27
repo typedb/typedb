@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
+import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.graph.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 
@@ -49,21 +50,14 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     public static AttributeImpl<?> of(AttributeVertex<?> vertex) {
-        switch (vertex.valueType()) {
-            case BOOLEAN:
-                return new AttributeImpl.Boolean(vertex.asBoolean());
-            case LONG:
-                return new AttributeImpl.Long(vertex.asLong());
-            case DOUBLE:
-                return new AttributeImpl.Double(vertex.asDouble());
-            case STRING:
-                return new AttributeImpl.String(vertex.asString());
-            case DATETIME:
-                return new AttributeImpl.DateTime(vertex.asDateTime());
-            default:
-                assert false;
-                return null;
-        }
+        Encoding.ValueType<?> valueType = vertex.valueType();
+        if (valueType == BOOLEAN) return new Boolean(vertex.asBoolean());
+        else if (valueType == LONG) return new Long(vertex.asLong());
+        else if (valueType == DOUBLE) return new Double(vertex.asDouble());
+        else if (valueType == STRING) return new String(vertex.asString());
+        else if (valueType == DATETIME) return new DateTime(vertex.asDateTime());
+        assert false;
+        return null;
     }
 
     public abstract VALUE getValue();
@@ -76,7 +70,9 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public AttributeTypeImpl getType() {
-        if (attributeType == null) attributeType = AttributeTypeImpl.of(readableVertex().graphs(), readableVertex().type());
+        if (attributeType == null) {
+            attributeType = AttributeTypeImpl.of(readableVertex().graphs(), readableVertex().type());
+        }
         return attributeType;
     }
 

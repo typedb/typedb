@@ -138,7 +138,7 @@ public abstract class Traversal {
 
         public static class Value {
 
-            private final Encoding.ValueType valueType;
+            private final Encoding.ValueType<?> valueType;
             private final Boolean booleanVal;
             private final Long longVal;
             private final Double doubleVal;
@@ -171,7 +171,7 @@ public abstract class Traversal {
                 this(STRING, null, null, null, null, null, regex);
             }
 
-            private Value(Encoding.ValueType valueType, Boolean booleanVal, Long longVal, Double doubleVal,
+            private Value(Encoding.ValueType<?> valueType, Boolean booleanVal, Long longVal, Double doubleVal,
                           LocalDateTime dateTimeVal, String stringVal, Pattern regexPattern) {
                 this.valueType = valueType;
                 this.booleanVal = booleanVal;
@@ -183,7 +183,7 @@ public abstract class Traversal {
                 this.hash = Objects.hash(valueType, booleanVal, longVal, doubleVal, dateTimeVal, stringVal, regexPattern);
             }
 
-            public Encoding.ValueType valueType() {
+            public Encoding.ValueType<?> valueType() {
                 return valueType;
             }
 

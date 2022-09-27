@@ -19,11 +19,11 @@
 package com.vaticle.typedb.core.concept.answer;
 
 import com.vaticle.typedb.common.collection.Pair;
-import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.graph.common.Encoding;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
@@ -223,17 +223,17 @@ public class ConceptMap implements Answer {
                             Attribute att1 = concept1.asAttribute();
                             Attribute att2 = concept2.asAttribute();
                             if (att1.isString()) {
-                                return att1.asString().getValue().compareToIgnoreCase(att2.asString().getValue());
+                                return Encoding.ValueType.STRING.instanceComparator().compare(att1.asString().getValue(), att2.asString().getValue());
                             } else if (att1.isBoolean()) {
-                                return att1.asBoolean().getValue().compareTo(att2.asBoolean().getValue());
+                                return Encoding.ValueType.BOOLEAN.instanceComparator().compare(att1.asBoolean().getValue(), att2.asBoolean().getValue());
                             } else if (att1.isLong() && att2.isLong()) {
-                                return att1.asLong().getValue().compareTo(att2.asLong().getValue());
+                                return Encoding.ValueType.LONG.instanceComparator().compare(att1.asLong().getValue(), att2.asLong().getValue());
                             } else if (att1.isDouble() || att2.isDouble()) {
                                 Double double1 = att1.isLong() ? att1.asLong().getValue() : att1.asDouble().getValue();
                                 Double double2 = att2.isLong() ? att2.asLong().getValue() : att2.asDouble().getValue();
-                                return double1.compareTo(double2);
+                                return Encoding.ValueType.DOUBLE.instanceComparator().compare(double1, double2);
                             } else if (att1.isDateTime()) {
-                                return (att1.asDateTime().getValue()).compareTo(att2.asDateTime().getValue());
+                                return Encoding.ValueType.DATETIME.instanceComparator().compare(att1.asDateTime().getValue(), att2.asDateTime().getValue());
                             } else {
                                 throw TypeDBException.of(ILLEGAL_STATE);
                             }

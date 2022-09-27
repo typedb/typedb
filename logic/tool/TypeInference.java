@@ -319,7 +319,7 @@ public class TypeInference {
         }
 
         private void registerValue(TypeVariable inferenceVar, ValueConstraint<?> constraint) {
-            Set<Encoding.ValueType> predicateValueTypes;
+            Set<Encoding.ValueType<?>> predicateValueTypes;
             if (constraint.isVariable()) {
                 TypeVariable var = register(constraint.asVariable().value());
                 registerSubAttribute(var);
@@ -328,7 +328,7 @@ public class TypeInference {
                 predicateValueTypes = set(Encoding.ValueType.of(constraint.value().getClass()));
             }
 
-            Set<Encoding.ValueType> valueTypes = iterate(predicateValueTypes)
+            Set<Encoding.ValueType<?>> valueTypes = iterate(predicateValueTypes)
                     .flatMap(valueType -> iterate(valueType.instanceComparables())).toSet();
             if (!valueTypes.isEmpty()) restrictValueTypes(inferenceVar.id(), iterate(valueTypes));
             else registerSubAttribute(inferenceVar);
@@ -423,11 +423,11 @@ public class TypeInference {
             }
         }
 
-        private void restrictValueTypes(Identifier.Variable id, FunctionalIterator<Encoding.ValueType> valueTypes) {
+        private void restrictValueTypes(Identifier.Variable id, FunctionalIterator<Encoding.ValueType<?>> valueTypes) {
             TraversalVertex.Properties.Type props = traversal.structure().typeVertex(id).props();
             if (props.valueTypes().isEmpty()) valueTypes.forEachRemaining(props.valueTypes()::add);
             else {
-                Set<Encoding.ValueType> intersection = valueTypes.filter(props.valueTypes()::contains).toSet();
+                Set<Encoding.ValueType<?>> intersection = valueTypes.filter(props.valueTypes()::contains).toSet();
                 props.clearValueTypes();
                 props.valueTypes(intersection);
             }

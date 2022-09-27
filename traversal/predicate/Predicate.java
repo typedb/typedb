@@ -41,37 +41,6 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
         this.hash = Objects.hash(operator, argument);
     }
 
-    // TODO: Move this where it belongs - Encoding?
-    public static int compareBooleans(boolean first, boolean second) {
-        return Boolean.compare(first, second);
-    }
-
-    public static int compareLongs(long first, long second) {
-        return Long.compare(first, second);
-    }
-
-    public static int compareDoubles(double first, double second) {
-        int res = Double.compare(first, second);
-        if (res == 0 || Math.abs(first - second) < DOUBLE_PRECISION) return 0;
-        else return res;
-    }
-
-    public static int compareLongToDouble(long first, double second) {
-        return compareDoubles(first, second);
-    }
-
-    public static int compareDoubleToLong(double first, long second) {
-        return compareDoubles(first, second);
-    }
-
-    public static int compareDateTimes(LocalDateTime first, LocalDateTime second) {
-        return first.compareTo(second);
-    }
-
-    public static int compareStrings(String first, String second) {
-        return first.compareTo(second);
-    }
-
     public static boolean stringContains(String superString, String subString) {
         int len2 = subString.length();
         if (len2 == 0) return true; // Empty string is contained
@@ -121,7 +90,7 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
             super(operator, argument);
         }
 
-        public Encoding.ValueType valueType() {
+        public Encoding.ValueType<?> valueType() {
             return argument.valueType();
         }
 
@@ -153,7 +122,6 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
     }
 
     public static class Variable extends Predicate<PredicateOperator.Equality, PredicateArgument.Variable> {
-
 
         private Variable(PredicateOperator.Equality operator) {
             super(operator, PredicateArgument.Variable.VARIABLE);

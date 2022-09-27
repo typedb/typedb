@@ -39,6 +39,11 @@ import static com.vaticle.typedb.core.common.collection.Bytes.booleanToByte;
 import static com.vaticle.typedb.core.common.collection.Bytes.byteToBoolean;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_IID_CASTING;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_MAX_SIZE;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_SIZE_ENCODING;
@@ -215,14 +220,15 @@ public abstract class VertexIID extends PartitionedIID {
         public static final int VALUE_TYPE_LENGTH = 1;
         static final int VALUE_TYPE_INDEX = PrefixIID.LENGTH + VertexIID.Type.LENGTH;
         static final int VALUE_INDEX = VALUE_TYPE_INDEX + VALUE_TYPE_LENGTH;
-        private final Encoding.ValueType valueType;
+        private final Encoding.ValueType<VALUE> valueType;
 
-        private Attribute(ByteArray bytes) {
+        private Attribute(ByteArray bytes, Encoding.ValueType<VALUE> valueType) {
             super(bytes);
-            valueType = Encoding.ValueType.of(bytes.get(PREFIX_W_TYPE_LENGTH));
+            assert bytes.get(PREFIX_W_TYPE_LENGTH) == valueType.key();
+            this.valueType = valueType;
         }
 
-        Attribute(Encoding.ValueType valueType, Type typeIID, ByteArray valueBytes) {
+        Attribute(Encoding.ValueType<VALUE> valueType, Type typeIID, ByteArray valueBytes) {
             super(join(
                     ATTRIBUTE.prefix().bytes(),
                     typeIID.bytes,
@@ -233,44 +239,30 @@ public abstract class VertexIID extends PartitionedIID {
         }
 
         public static VertexIID.Attribute<?> of(ByteArray bytes) {
-            switch (Encoding.ValueType.of(bytes.get(PREFIX_W_TYPE_LENGTH))) {
-                case BOOLEAN:
-                    return new Attribute.Boolean(bytes);
-                case LONG:
-                    return new Attribute.Long(bytes);
-                case DOUBLE:
-                    return new Attribute.Double(bytes);
-                case STRING:
-                    return new Attribute.String(bytes);
-                case DATETIME:
-                    return new Attribute.DateTime(bytes);
-                default:
-                    assert false;
-                    throw TypeDBException.of(UNRECOGNISED_VALUE);
-            }
+            Encoding.ValueType<?> valueType = Encoding.ValueType.of(bytes.get(PREFIX_W_TYPE_LENGTH));
+            if (valueType == BOOLEAN) return new Boolean(bytes);
+            else if (valueType == LONG) return new Long(bytes);
+            else if (valueType == DOUBLE) return new Double(bytes);
+            else if (valueType == STRING) return new String(bytes);
+            else if (valueType == DATETIME) return new DateTime(bytes);
+            assert false;
+            throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
 
         public static VertexIID.Attribute<?> extract(ByteArray bytes, int from) {
-            switch (Encoding.ValueType.of(bytes.get(from + VALUE_TYPE_INDEX))) {
-                case BOOLEAN:
-                    return VertexIID.Attribute.Boolean.extract(bytes, from);
-                case LONG:
-                    return VertexIID.Attribute.Long.extract(bytes, from);
-                case DOUBLE:
-                    return VertexIID.Attribute.Double.extract(bytes, from);
-                case STRING:
-                    return VertexIID.Attribute.String.extract(bytes, from);
-                case DATETIME:
-                    return VertexIID.Attribute.DateTime.extract(bytes, from);
-                default:
-                    assert false;
-                    throw TypeDBException.of(UNRECOGNISED_VALUE);
-            }
+            Encoding.ValueType<?> valueType = Encoding.ValueType.of(bytes.get(from + VALUE_TYPE_INDEX));
+            if (valueType == BOOLEAN) return Boolean.extract(bytes, from);
+            else if (valueType == LONG) return Long.extract(bytes, from);
+            else if (valueType == DOUBLE) return Double.extract(bytes, from);
+            else if (valueType == STRING) return String.extract(bytes, from);
+            else if (valueType == DATETIME) return DateTime.extract(bytes, from);
+            assert false;
+            throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
 
         public abstract VALUE value();
 
-        public Encoding.ValueType valueType() {
+        public Encoding.ValueType<VALUE> valueType() {
             return valueType;
         }
 
@@ -318,11 +310,11 @@ public abstract class VertexIID extends PartitionedIID {
         public static class Boolean extends Attribute<java.lang.Boolean> {
 
             private Boolean(ByteArray bytes) {
-                super(bytes);
+                super(bytes, BOOLEAN);
             }
 
             public Boolean(VertexIID.Type typeIID, boolean value) {
-                super(Encoding.ValueType.BOOLEAN, typeIID, ByteArray.of(new byte[]{booleanToByte(value)}));
+                super(BOOLEAN, typeIID, ByteArray.of(new byte[]{booleanToByte(value)}));
             }
 
             public static VertexIID.Attribute.Boolean extract(ByteArray bytes, int from) {
@@ -343,11 +335,11 @@ public abstract class VertexIID extends PartitionedIID {
         public static class Long extends Attribute<java.lang.Long> {
 
             private Long(ByteArray bytes) {
-                super(bytes);
+                super(bytes, LONG);
             }
 
             public Long(VertexIID.Type typeIID, long value) {
-                super(Encoding.ValueType.LONG, typeIID, encodeLongAsSorted(value));
+                super(LONG, typeIID, encodeLongAsSorted(value));
             }
 
             public static VertexIID.Attribute.Long extract(ByteArray bytes, int from) {
@@ -368,11 +360,11 @@ public abstract class VertexIID extends PartitionedIID {
         public static class Double extends Attribute<java.lang.Double> {
 
             private Double(ByteArray bytes) {
-                super(bytes);
+                super(bytes, DOUBLE);
             }
 
             public Double(VertexIID.Type typeIID, double value) {
-                super(Encoding.ValueType.DOUBLE, typeIID, encodeDoubleAsSorted(value));
+                super(DOUBLE, typeIID, encodeDoubleAsSorted(value));
             }
 
             public static VertexIID.Attribute.Double extract(ByteArray bytes, int from) {
@@ -393,11 +385,11 @@ public abstract class VertexIID extends PartitionedIID {
         public static class String extends Attribute<java.lang.String> {
 
             private String(ByteArray bytes) {
-                super(bytes);
+                super(bytes, STRING);
             }
 
             public String(VertexIID.Type typeIID, java.lang.String value) throws TypeDBCheckedException {
-                super(Encoding.ValueType.STRING, typeIID, encodeStringAsSorted(value, STRING_ENCODING));
+                super(STRING, typeIID, encodeStringAsSorted(value, STRING_ENCODING));
                 assert bytes.length() <= STRING_MAX_SIZE + STRING_SIZE_ENCODING;
             }
 
@@ -422,11 +414,11 @@ public abstract class VertexIID extends PartitionedIID {
         public static class DateTime extends Attribute<java.time.LocalDateTime> {
 
             private DateTime(ByteArray bytes) {
-                super(bytes);
+                super(bytes, DATETIME);
             }
 
             public DateTime(VertexIID.Type typeIID, java.time.LocalDateTime value) {
-                super(Encoding.ValueType.DATETIME, typeIID, encodeDateTimeAsSorted(value, TIME_ZONE_ID));
+                super(DATETIME, typeIID, encodeDateTimeAsSorted(value, TIME_ZONE_ID));
             }
 
             public static VertexIID.Attribute.DateTime extract(ByteArray bytes, int from) {

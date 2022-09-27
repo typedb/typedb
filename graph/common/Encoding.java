@@ -377,24 +377,27 @@ public class Encoding {
         public static final double DOUBLE_PRECISION = 0.000001d;
 
         public static ValueType<Object> OBJECT = new ValueType<>(
-                0, Object.class, false, false, false, null, null
+                0, "Object", Object.class, false, false, false, null, null
         );
         public static ValueType<Boolean> BOOLEAN = new ValueType<>(
-                10, Boolean.class, true, false, true, TypeQLArg.ValueType.BOOLEAN, java.lang.Boolean::compare
+                10, "Boolean", Boolean.class, true, false, true, TypeQLArg.ValueType.BOOLEAN, Boolean::compareTo
         );
         public static ValueType<Long> LONG = new ValueType<>(
-                20, Long.class, true, true, true, TypeQLArg.ValueType.LONG, java.lang.Long::compare
+                20, "Long", Long.class, true, true, true, TypeQLArg.ValueType.LONG, Long::compareTo
         );
         public static ValueType<Double> DOUBLE = new ValueType<>(
-                30, Double.class, true, false, true, TypeQLArg.ValueType.DOUBLE, (a, b) -> {
+                30, "Double", Double.class, true, false, true, TypeQLArg.ValueType.DOUBLE, (a, b) -> {
             int res = Double.compare(a, b);
             if (res == 0 || Math.abs(a - b) < DOUBLE_PRECISION) return 0;
             else return res;
         }
         );
-        public static ValueType<String> STRING = new ValueType<>(40, String.class, true, true, false, TypeQLArg.ValueType.STRING, null);
-        public static ValueType<LocalDateTime> DATETIME = new ValueType<>(50, LocalDateTime.class, true, true, true, TypeQLArg.ValueType.DATETIME, null);
-
+        public static ValueType<String> STRING = new ValueType<>(
+                40, "String", String.class, true, true, false, TypeQLArg.ValueType.STRING, String::compareTo
+        );
+        public static ValueType<LocalDateTime> DATETIME = new ValueType<>(
+                50, "DateTime", LocalDateTime.class, true, true, true, TypeQLArg.ValueType.DATETIME, LocalDateTime::compareTo
+        );
 
         private static final ByteMap<ValueType<?>> valueTypeByKey = ByteMap.create(
                 pair(OBJECT.key, OBJECT),
@@ -423,6 +426,7 @@ public class Encoding {
                 pair(DATETIME, set(DATETIME))
         );
 
+        private final String name;
         private final byte key;
         private final ByteArray bytes;
         private final boolean isKeyable;
@@ -433,9 +437,10 @@ public class Encoding {
         private final TypeQLArg.ValueType typeQLValueType;
         private final Comparator<T> instanceComparator;
 
-        ValueType(int key, Class<T> valueClass, boolean isWritable, boolean isKeyable, boolean isInstanceSorted,
+        ValueType(int key, String name, Class<T> valueClass, boolean isWritable, boolean isKeyable, boolean isInstanceSorted,
                   @Nullable TypeQLArg.ValueType typeQLValueType, @Nullable Comparator<T> instanceComparator) {
             this.key = unsignedByte(key);
+            this.name = name;
             this.instanceComparator = instanceComparator;
             this.bytes = ByteArray.of(new byte[]{this.key});
             this.valueClass = valueClass;
@@ -469,6 +474,14 @@ public class Encoding {
             else if (typeQLValueType == STRING.typeQLValueType) return STRING;
             else if (typeQLValueType == DATETIME.typeQLValueType) return DATETIME;
             else throw TypeDBException.of(UNRECOGNISED_VALUE);
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public byte key() {
+            return key;
         }
 
         public ByteArray bytes() {

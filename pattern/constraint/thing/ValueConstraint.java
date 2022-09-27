@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
-import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
@@ -236,11 +236,9 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
-            return conclusionValueConstraint.isVariable() ||
-                    (conclusionValueConstraint.isLong() &&
-                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongs(conclusionValueConstraint.asLong().value(), value))) ||
-                    (conclusionValueConstraint.isDouble() &&
-                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareDoubleToLong(conclusionValueConstraint.asDouble().value(), value)));
+            return conclusionValueConstraint.isVariable()
+                    || (conclusionValueConstraint.isLong() && PredicateArgument.Value.LONG.apply(PredicateOperator.Equality.of(predicate()), conclusionValueConstraint.asLong().value(), value))
+                    || (conclusionValueConstraint.isDouble() && PredicateArgument.Value.DOUBLE.apply(PredicateOperator.Equality.of(predicate()), conclusionValueConstraint.asDouble().value(), value.doubleValue()));
         }
 
         @Override
@@ -288,10 +286,8 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             return conclusionValueConstraint.isVariable() ||
-                    (conclusionValueConstraint.isLong() &&
-                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongToDouble(conclusionValueConstraint.asLong().value(), value))) ||
-                    (conclusionValueConstraint.isDouble() &&
-                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareDoubles(conclusionValueConstraint.asDouble().value(), value)));
+                    (conclusionValueConstraint.isLong() && PredicateArgument.Value.DOUBLE.apply(PredicateOperator.Equality.of(predicate()), conclusionValueConstraint.asLong().value().doubleValue(), value))
+                    || (conclusionValueConstraint.isDouble() && PredicateArgument.Value.DOUBLE.apply(PredicateOperator.Equality.of(predicate()), conclusionValueConstraint.asDouble().value(), value));
         }
     }
 
@@ -328,8 +324,8 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
-            return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isBoolean() &&
-                    PredicateOperator.Equality.of(predicate()).apply(Predicate.compareBooleans(conclusionValueConstraint.asBoolean().value(), value)));
+            return conclusionValueConstraint.isVariable() ||
+                    (conclusionValueConstraint.isBoolean() && PredicateArgument.Value.BOOLEAN.apply(PredicateOperator.Equality.of(predicate()), conclusionValueConstraint.asBoolean().value(), value));
         }
     }
 
@@ -368,14 +364,15 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
             if (conclusionValueConstraint.isVariable()) return true;
             if (!conclusionValueConstraint.isString()) return false;
+            java.lang.String constraintValue = conclusionValueConstraint.asString().value();
             if (predicate.isEquality()) {
-                return PredicateOperator.Equality.of(predicate.asEquality()).apply(Predicate.compareStrings(conclusionValueConstraint.asString().value(), value));
+                return PredicateArgument.Value.STRING.apply(PredicateOperator.Equality.of(predicate.asEquality()), constraintValue, value);
             } else if (predicate.isSubString()) {
-                PredicateOperator.SubString operator = PredicateOperator.SubString.of(predicate.asSubString());
+                PredicateOperator.SubString<?> operator = PredicateOperator.SubString.of(predicate.asSubString());
                 if (operator == PredicateOperator.SubString.CONTAINS) {
-                    return PredicateOperator.SubString.CONTAINS.apply(conclusionValueConstraint.asString().value(), value);
+                    return PredicateOperator.SubString.CONTAINS.apply(constraintValue, value);
                 } else if (operator == PredicateOperator.SubString.LIKE) {
-                    return PredicateOperator.SubString.LIKE.apply(conclusionValueConstraint.asString().value(), Pattern.compile(value));
+                    return PredicateOperator.SubString.LIKE.apply(constraintValue, Pattern.compile(value));
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             } else throw TypeDBException.of(ILLEGAL_STATE);
         }
@@ -414,8 +411,8 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
         @Override
         public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
-            return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isDateTime() &&
-                    PredicateOperator.Equality.of(predicate.asEquality()).apply(Predicate.compareDateTimes(conclusionValueConstraint.asDateTime().value(), value)));
+            return conclusionValueConstraint.isVariable()
+                    || (conclusionValueConstraint.isDateTime() && PredicateArgument.Value.DATETIME.apply(PredicateOperator.Equality.of(predicate.asEquality()), conclusionValueConstraint.asDateTime().value(), value));
         }
     }
 

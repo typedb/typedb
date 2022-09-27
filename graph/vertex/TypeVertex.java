@@ -61,9 +61,9 @@ public interface TypeVertex extends Vertex<VertexIID.Type, Encoding.Vertex.Type>
 
     TypeVertex isAbstract(boolean isAbstract);
 
-    Encoding.ValueType valueType();
+    Encoding.ValueType<?> valueType();
 
-    TypeVertex valueType(Encoding.ValueType valueType);
+    TypeVertex valueType(Encoding.ValueType<?> valueType);
 
     Pattern regex();
 

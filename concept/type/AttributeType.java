@@ -88,11 +88,11 @@ public interface AttributeType extends ThingType {
         STRING(Encoding.ValueType.STRING),
         DATETIME(Encoding.ValueType.DATETIME);
 
-        private final Encoding.ValueType encoding;
+        private final Encoding.ValueType<?> encoding;
         private Set<ValueType> comparables;
         private Set<ValueType> assignables;
 
-        ValueType(Encoding.ValueType encoding) {
+        ValueType(Encoding.ValueType<?> encoding) {
             this.encoding = encoding;
         }
 
@@ -114,7 +114,7 @@ public interface AttributeType extends ThingType {
             return null;
         }
 
-        public static ValueType of(Encoding.ValueType encoding) {
+        public static ValueType of(Encoding.ValueType<?> encoding) {
             for (ValueType vt : ValueType.values()) {
                 if (vt.encoding.equals(encoding)) {
                     return vt;
@@ -135,12 +135,6 @@ public interface AttributeType extends ThingType {
             return encoding.isKeyable();
         }
 
-        @Nullable
-        public java.lang.String syntax() {
-            if (encoding.typeQLValueType() != null) return encoding.typeQLValueType().toString();
-            else return null;
-        }
-
         public Set<ValueType> comparables() {
             if (comparables == null) comparables = iterate(encoding.instanceComparables()).map(ValueType::of).toSet();
             return comparables;
@@ -151,6 +145,11 @@ public interface AttributeType extends ThingType {
             return assignables;
         }
 
+        @Nullable
+        public java.lang.String syntax() {
+            if (encoding.typeQLValueType() != null) return encoding.typeQLValueType().toString();
+            else return null;
+        }
     }
 
     interface Boolean extends AttributeType {
