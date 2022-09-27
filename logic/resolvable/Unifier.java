@@ -34,6 +34,7 @@ import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
@@ -367,6 +368,7 @@ public class Unifier {
             assert !value.isVariable();
 
             if (value.predicate().isEquality()) {
+                Traversal.Parameters.Value();
                 PredicateOperator.Equality predicateOperator = PredicateOperator.Equality.of(value.predicate().asEquality());
 
                 if (value.isLong()) {

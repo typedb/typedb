@@ -163,8 +163,7 @@ public abstract class GraphTraversal extends Traversal {
             return iter;
         }
 
-        FunctionalProducer<VertexMap> permutationProducer(GraphManager graphMgr,
-                                                          int parallelisation) {
+        FunctionalProducer<VertexMap> permutationProducer(GraphManager graphMgr, int parallelisation) {
             assert planner != null && cache != null;
             planner.tryOptimise(graphMgr, false);
             FunctionalProducer<VertexMap> producer = planner.procedure().producer(graphMgr, parameters, modifiers, parallelisation);

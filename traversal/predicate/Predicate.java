@@ -84,13 +84,14 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
         return hash;
     }
 
-    public static abstract class Value<VAL_OP extends PredicateOperator> extends Predicate<VAL_OP, PredicateArgument.Value<VAL_OP, ?>> {
+    // TODO: now we can use this class to create a predicate and evaluate it against lhs/rhs pairs
+    public static abstract class Value<VAL_OP extends PredicateOperator, ARG_TYPE> extends Predicate<VAL_OP, PredicateArgument.Value<VAL_OP, ARG_TYPE>> {
 
-        public Value(VAL_OP operator, PredicateArgument.Value<VAL_OP, ?> argument) {
+        public Value(VAL_OP operator, PredicateArgument.Value<VAL_OP, ARG_TYPE> argument) {
             super(operator, argument);
         }
 
-        public Encoding.ValueType<?> valueType() {
+        public Encoding.ValueType<ARG_TYPE> valueType() {
             return argument.valueType();
         }
 
@@ -98,18 +99,22 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
             return argument.apply(operator, vertex, value);
         }
 
-        public static class Numerical extends Value<PredicateOperator.Equality> {
+        public boolean apply(ARG_TYPE lhs, ARG_TYPE rhs) {
+            return argument.apply(operator, lhs, rhs);
+        }
 
-            public Numerical(PredicateOperator.Equality operator, PredicateArgument.Value<PredicateOperator.Equality, ?> argument) {
+        public static class Numerical<ARG_TYPE> extends Value<PredicateOperator.Equality, ARG_TYPE> {
+
+            public Numerical(PredicateOperator.Equality operator, PredicateArgument.Value<PredicateOperator.Equality, ARG_TYPE> argument) {
                 super(operator, argument);
             }
 
-            public static Numerical of(TypeQLToken.Predicate.Equality token, PredicateArgument.Value<PredicateOperator.Equality, ?> argument) {
-                return new Numerical(PredicateOperator.Equality.of(token), argument);
+            public static <AT> Numerical<AT> of(TypeQLToken.Predicate.Equality token, PredicateArgument.Value<PredicateOperator.Equality, AT> argument) {
+                return new Numerical<>(PredicateOperator.Equality.of(token), argument);
             }
         }
 
-        public static class String extends Value<PredicateOperator> {
+        public static class String extends Value<PredicateOperator, java.lang.String> {
 
             public String(PredicateOperator operator, PredicateArgument.Value<PredicateOperator, java.lang.String> argument) {
                 super(operator, argument);
