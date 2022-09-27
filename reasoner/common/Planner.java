@@ -116,7 +116,6 @@ public class Planner {
                     }
                 }
 
-
                 // Retrievable where:
                 // it can be disconnected
                 // all of it's dependencies are already satisfied (should be moot),
