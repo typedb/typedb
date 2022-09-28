@@ -76,7 +76,8 @@ public class AnswerCountEstimator {
 
     public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variables, Set<Resolvable<?>> resolvables) {
         if (!conjunctionModels.containsKey(conjunction)) registerAndBuildModel(conjunction);
-        // TODO: missing validation that the variables and resolvables are actually in the conjunction? This could be in `estimateAnswer`
+        assert conjunction.pattern().variables().containsAll(variables);
+        assert logicMgr.compile(conjunction).containsAll(resolvables);
         return conjunctionModels.get(conjunction).estimateAnswers(variables, resolvables);
     }
 
@@ -87,7 +88,7 @@ public class AnswerCountEstimator {
 
     private void registerCycles(ResolvableConjunction conjunction, ConjunctionConcludableStack stack) {
         if (stack.contains(conjunction)) {
-            stack.conjunctionRange(conjunction, stack.last()).forEach(conj ->
+            stack.peekUntil(conjunction).forEach(conj ->
                     cyclicConcludables.computeIfAbsent(conj, c -> new HashSet<>()).add(stack.getConcludable(conj))
             );
         } else {
@@ -104,6 +105,31 @@ public class AnswerCountEstimator {
             assert stack.last() == conjunction;
             stack.pop();
         }
+    }
+
+    private void buildConjunctionModel(ResolvableConjunction conjunction) {
+        if (!conjunctionModels.containsKey(conjunction)) {
+            ConjunctionContext conjunctionContext = new ConjunctionContext(conjunction, logicMgr.compile(conjunction), cyclicConcludables.getOrDefault(conjunction, new HashSet<>()));
+
+            // Acyclic estimates
+            iterate(conjunctionContext.negateds()).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+                    .forEachRemaining(this::buildConjunctionModel);
+            iterate(conjunctionContext.acyclicConcludables()).flatMap(concludable -> iterate(dependencies(concludable)))
+                    .forEachRemaining(this::buildConjunctionModel);
+
+            ConjunctionModel acyclicModel = conjunctionModelFactory.buildAcyclicModel(conjunctionContext);
+            conjunctionModels.put(conjunction, acyclicModel);
+
+            // cyclic calls to this model will answer based on the acyclic model.
+            iterate(conjunctionContext.cyclicConcludables()).flatMap(concludable -> iterate(dependencies(concludable)))
+                    .forEachRemaining(this::buildConjunctionModel);
+            ConjunctionModel cyclicModel = conjunctionModelFactory.buildCyclicModel(conjunctionContext, acyclicModel);
+            conjunctionModels.put(conjunction, cyclicModel);
+        }
+    }
+
+    private Set<ResolvableConjunction> dependencies(Concludable concludable) {
+        return iterate(logicMgr.applicableRules(concludable).keySet()).map(rule -> rule.condition().conjunction()).toSet();
     }
 
     private static class ConjunctionConcludableStack {
@@ -143,35 +169,15 @@ public class AnswerCountEstimator {
             return concludables.get(conjunction);
         }
 
-        public List<ResolvableConjunction> conjunctionRange(ResolvableConjunction fromInclusive, ResolvableConjunction toInclusive) {
-            assert stack.contains(fromInclusive) && stack.contains(toInclusive);
-            return stack.subList(stack.indexOf(fromInclusive), stack.indexOf(toInclusive) + 1);
+        public List<ResolvableConjunction> peekUntil(ResolvableConjunction untilInclusive) {
+            assert stack.contains(untilInclusive);
+            List<ResolvableConjunction> subList = new ArrayList<>();
+            for (int i = stack.size() - 1; stack.get(i) != untilInclusive; i--) {
+                subList.add(stack.get(i));
+            }
+            subList.add(untilInclusive);
+            return subList;
         }
-    }
-
-    private void buildConjunctionModel(ResolvableConjunction conjunction) {
-        if (!conjunctionModels.containsKey(conjunction)) {
-            ConjunctionContext conjunctionContext = new ConjunctionContext(conjunction, logicMgr.compile(conjunction), cyclicConcludables.get(conjunction));
-
-            // Acyclic estimates
-            iterate(conjunctionContext.negateds()).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                    .forEachRemaining(this::buildConjunctionModel);
-            iterate(conjunctionContext.acyclicConcludables()).flatMap(concludable -> iterate(dependencies(concludable)))
-                    .forEachRemaining(this::buildConjunctionModel);
-
-            ConjunctionModel acyclicModel = conjunctionModelFactory.buildAcyclicModel(conjunctionContext);
-            conjunctionModels.put(conjunction, acyclicModel);
-
-            // cyclic calls to this model will answer based on the acyclic model.
-            iterate(conjunctionContext.cyclicConcludables()).flatMap(concludable -> iterate(dependencies(concludable)))
-                    .forEachRemaining(this::buildConjunctionModel);
-            ConjunctionModel cyclicModel = conjunctionModelFactory.buildCyclicModel(conjunctionContext, acyclicModel);
-            conjunctionModels.put(conjunction, cyclicModel);
-        }
-    }
-
-    private Set<ResolvableConjunction> dependencies(Concludable concludable) {
-        return iterate(logicMgr.applicableRules(concludable).keySet()).map(rule -> rule.condition().conjunction()).toSet();
     }
 
     private static class ConjunctionContext {
@@ -580,12 +586,19 @@ public class AnswerCountEstimator {
                     if ((concludable.isRelation() || concludable.isIsa())
                             && rule.conclusion().generating().isPresent() && ruleSideIds.contains(rule.conclusion().generating().get().id())) {
                         // There is one generated variable per combination of ALL variables in the conclusion
-                        ruleSideVariables = iterate(rule.conclusion().pattern().variables())
-                                .filter(v -> v.isThing() && v != rule.conclusion().generating().get())
-                                .toSet();
-                    } else {
-                        ruleSideVariables = iterate(ruleSideIds).map(id -> rule.conclusion().conjunction().pattern().variable(id)).toSet();
+                        ruleSideIds = new HashSet<>(rule.conclusion().pattern().retrieves());
                     }
+//                        ruleSideVariables = iterate(rule.conclusion().pattern().variables())
+//                                .filter(v -> v.isThing() && v != rule.conclusion().generating().get())
+//                                .toSet();
+//                    } else {
+//                        ruleSideVariables = iterate(ruleSideIds)
+//                                .filter(id -> rule.condition().conjunction().pattern().variables().contains(id)) // avoids constant has
+//                                .map(id -> rule.conclusion().conjunction().pattern().variable(id)).toSet();
+//                    }
+                    ruleSideVariables = iterate(ruleSideIds)
+                            .filter(id -> rule.condition().conjunction().pattern().retrieves().contains(id)) // avoids constant has
+                            .map(id -> rule.condition().conjunction().pattern().variable(id)).toSet();
                     inferredEstimate += answerCountEstimator.estimateAnswers(rule.condition().conjunction(), ruleSideVariables);
                 }
             }
