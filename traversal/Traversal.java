@@ -88,7 +88,7 @@ public abstract class Traversal {
     public static class Parameters {
 
         private final Map<Identifier.Variable, VertexIID.Thing> iids;
-        private final Map<Pair<Identifier.Variable, Predicate.Value<?>>, Set<Value>> values;
+        private final Map<Pair<Identifier.Variable, Predicate.Value<?, ?>>, Set<Value>> values;
 
         public Parameters() {
             iids = new HashMap<>();
@@ -100,7 +100,7 @@ public abstract class Traversal {
             this.iids.put(identifier, iid);
         }
 
-        public void pushValue(Identifier.Variable identifier, Predicate.Value<?> predicate, Value value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.Value<?, ?> predicate, Value value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(value);
         }
 
@@ -108,7 +108,7 @@ public abstract class Traversal {
             return iids.get(identifier);
         }
 
-        public Set<Value> getValues(Identifier.Variable identifier, Predicate.Value<?> predicate) {
+        public Set<Value> getValues(Identifier.Variable identifier, Predicate.Value<?, ?> predicate) {
             return values.get(pair(identifier, predicate));
         }
 

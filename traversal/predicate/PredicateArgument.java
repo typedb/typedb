@@ -78,7 +78,7 @@ public abstract class PredicateArgument {
 
         public abstract boolean apply(ARG_VAL_OP operator, ARG_VAL_TYPE lhs, ARG_VAL_TYPE rhs);
 
-        public static Value<PredicateOperator.Equality, Boolean> BOOLEAN = new Value<PredicateOperator.Equality, Boolean>(Encoding.ValueType.BOOLEAN) {
+        public static Value<PredicateOperator.Equality, Boolean> BOOLEAN = new Value<>(Encoding.ValueType.BOOLEAN) {
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                 assert value.isBoolean();
@@ -98,7 +98,7 @@ public abstract class PredicateArgument {
             }
         };
 
-        public static Value<PredicateOperator.Equality, Long> LONG = new Value<PredicateOperator.Equality, Long>(Encoding.ValueType.LONG) {
+        public static Value<PredicateOperator.Equality, Long> LONG = new Value<>(Encoding.ValueType.LONG) {
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                 assert value.isLong();
@@ -122,7 +122,7 @@ public abstract class PredicateArgument {
             }
         };
 
-        public static Value<PredicateOperator.Equality, Double> DOUBLE = new Value<PredicateOperator.Equality, Double>(Encoding.ValueType.DOUBLE) {
+        public static Value<PredicateOperator.Equality, Double> DOUBLE = new Value<>(Encoding.ValueType.DOUBLE) {
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                 assert value.isDouble();
@@ -145,7 +145,7 @@ public abstract class PredicateArgument {
             }
         };
 
-        public static Value<PredicateOperator.Equality, LocalDateTime> DATETIME = new Value<PredicateOperator.Equality, LocalDateTime>(Encoding.ValueType.DATETIME) {
+        public static Value<PredicateOperator.Equality, LocalDateTime> DATETIME = new Value<>(Encoding.ValueType.DATETIME) {
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                 assert value.isDateTime();
@@ -165,7 +165,7 @@ public abstract class PredicateArgument {
             }
         };
 
-        public static Value<PredicateOperator, String> STRING = new Value<PredicateOperator, String>(Encoding.ValueType.STRING) {
+        public static Value<PredicateOperator, String> STRING = new Value<>(Encoding.ValueType.STRING) {
             @Override
             public boolean apply(PredicateOperator operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                 if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.STRING)) return false;

@@ -152,7 +152,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
             private boolean hasIID;
             private final Set<Label> types;
-            private final Set<Predicate.Value<?>> predicates;
+            private final Set<Predicate.Value<?, ?>> predicates;
 
             public Thing() {
                 hasIID = false;
@@ -176,11 +176,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 this.types.addAll(types);
             }
 
-            public Set<Predicate.Value<?>> predicates() {
+            public Set<Predicate.Value<?, ?>> predicates() {
                 return predicates;
             }
 
-            public void predicate(Predicate.Value<?> predicate) {
+            public void predicate(Predicate.Value<?, ?> predicate) {
                 predicates.add(predicate);
             }
 

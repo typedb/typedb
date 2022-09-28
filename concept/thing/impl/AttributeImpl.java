@@ -63,6 +63,11 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     public abstract VALUE getValue();
 
     @Override
+    public AttributeVertex<VALUE> readableVertex() {
+        return attributeVertex;
+    }
+
+    @Override
     protected AttributeVertex.Write<VALUE> writableVertex() {
         if (!attributeVertex.isWrite()) attributeVertex = attributeVertex.toWrite();
         return attributeVertex.asWrite();

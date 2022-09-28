@@ -855,7 +855,7 @@ public abstract class ProcedureEdge<
                                                                                 Traversal.Parameters params) {
                         assert fromVertex.isThing();
                         Forwardable<? extends AttributeVertex<?>, Order.Asc> iter;
-                        com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?> eq = null;
+                        com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?, ?> eq = null;
                         ThingVertex owner = fromVertex.asThing();
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();

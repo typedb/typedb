@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
@@ -39,6 +40,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 
 import java.util.ArrayList;
@@ -363,62 +365,28 @@ public class Unifier {
         }
 
         static Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valuePredicate(ValueConstraint<?> value) {
-            // TODO: Leverage more of traversal.Predicate
             Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> predicateFn;
             assert !value.isVariable();
-
             if (value.predicate().isEquality()) {
-                Traversal.Parameters.Value();
-                PredicateOperator.Equality predicateOperator = PredicateOperator.Equality.of(value.predicate().asEquality());
-
+                PredicateOperator.Equality operator = PredicateOperator.Equality.of(value.predicate().asEquality());
                 if (value.isLong()) {
-                    predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(LONG))
-                            return false;
-                        assert a.getType().isDouble() || a.getType().isLong();
-                        if (a.getType().isLong())
-                            return predicateOperator.apply(LONG.instanceComparator().compare(a.asLong().getValue(), value.asLong().value()));
-                        else if (a.getType().isDouble())
-                            return predicateOperator.apply(DOUBLE.instanceComparator().compare(a.asDouble().getValue(), value.asLong().value().doubleValue()));
-                        else throw TypeDBException.of(ILLEGAL_STATE);
-                    };
+                    predicateFn = (a) ->
+                            PredicateArgument.Value.LONG.apply(operator, ((AttributeImpl<?>) a).readableVertex(), value.asLong().value());
                 } else if (value.isDouble()) {
-                    predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(DOUBLE))
-                            return false;
-
-                        assert a.getType().isDouble() || a.getType().isLong();
-                        if (a.getType().isLong())
-                            return predicateOperator.apply(DOUBLE.instanceComparator().compare(a.asLong().getValue().doubleValue(), value.asDouble().value()));
-                        else if (a.getType().isDouble())
-                            return predicateOperator.apply(DOUBLE.instanceComparator().compare(a.asDouble().getValue(), value.asDouble().value()));
-                        else throw TypeDBException.of(ILLEGAL_STATE);
-                    };
+                    predicateFn = (a) ->
+                            PredicateArgument.Value.DOUBLE.apply(operator, ((AttributeImpl<?>) a).readableVertex(), value.asDouble().value());
                 } else if (value.isBoolean()) {
-                    predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(BOOLEAN))
-                            return false;
-                        assert a.getType().isBoolean();
-                        return predicateOperator.apply(BOOLEAN.instanceComparator().compare(a.asBoolean().getValue(), value.asBoolean().value()));
-                    };
+                    predicateFn = (a) ->
+                            PredicateArgument.Value.BOOLEAN.apply(operator, ((AttributeImpl<?>) a).readableVertex(), value.asBoolean().value());
                 } else if (value.isString()) {
-                    predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(STRING))
-                            return false;
-                        assert a.getType().isString();
-                        return predicateOperator.apply(STRING.instanceComparator().compare(a.asString().getValue(), value.asString().value()));
-                    };
+                    predicateFn = (a) ->
+                            PredicateArgument.Value.STRING.apply(operator, ((AttributeImpl<?>) a).readableVertex(), value.asString().value());
                 } else if (value.isDateTime()) {
-                    predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(DATETIME))
-                            return false;
-                        assert a.getType().isDateTime();
-                        return predicateOperator.apply(DATETIME.instanceComparator().compare(a.asDateTime().getValue(), value.asDateTime().value()));
-                    };
+                    predicateFn = (a) ->
+                            PredicateArgument.Value.DATETIME.apply(operator, ((AttributeImpl<?>) a).readableVertex(), value.asDateTime().value());
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             } else if (value.predicate().isSubString()) {
                 PredicateOperator.SubString<?> predicateOperator = PredicateOperator.SubString.of(value.predicate().asSubString());
-
                 if (value.isString()) {
                     predicateFn = (a) -> {
                         if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(STRING))

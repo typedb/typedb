@@ -199,7 +199,7 @@ public abstract class ProcedureVertex<
                                                                                                   ORDER order) {
             assert types.hasNext();
             Forwardable<? extends ThingVertex, ORDER> iter;
-            Optional<Predicate.Value<?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
+            Optional<Predicate.Value<?, ?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
             if (eq.isPresent()) iter = iteratorOfAttributesWithTypes(graphMgr, parameters, eq.get(), order);
             else {
                 if (id().isVariable()) types = types.filter(t -> !t.encoding().equals(ROLE_TYPE));
@@ -227,10 +227,10 @@ public abstract class ProcedureVertex<
 
         <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> filterPredicates(Forwardable<? extends AttributeVertex<?>, ORDER> iterator,
                                                                                                 Traversal.Parameters parameters,
-                                                                                                @Nullable Predicate.Value<?> exclude) {
+                                                                                                @Nullable Predicate.Value<?, ?> exclude) {
             // TODO we should be using forward() to optimise filtering for >, <, and =
             assert id().isVariable();
-            for (Predicate.Value<?> predicate : props().predicates()) {
+            for (Predicate.Value<?, ?> predicate : props().predicates()) {
                 if (Objects.equals(predicate, exclude)) continue;
                 for (Traversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
                     iterator = iterator.filter(a -> predicate.apply(a.asAttribute(), value));
@@ -243,7 +243,7 @@ public abstract class ProcedureVertex<
                                                                                           Traversal.Parameters parameters) {
             assert id().isVariable();
             iterator = iterator.filter(kv -> kv.key().isAttribute());
-            for (Predicate.Value<?> predicate : props().predicates()) {
+            for (Predicate.Value<?, ?> predicate : props().predicates()) {
                 for (Traversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
                     iterator = iterator.filter(kv -> predicate.apply(kv.key().asAttribute(), value));
                 }
@@ -253,7 +253,7 @@ public abstract class ProcedureVertex<
 
         <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> iteratorOfAttributesWithTypes(GraphManager graphMgr,
                                                                                                              Traversal.Parameters params,
-                                                                                                             Predicate.Value<?> eq,
+                                                                                                             Predicate.Value<?, ?> eq,
                                                                                                              ORDER order) {
             FunctionalIterator<TypeVertex> attributeTypes = iterate(props().types().iterator())
                     .map(l -> graphMgr.schema().getType(l))
@@ -266,7 +266,7 @@ public abstract class ProcedureVertex<
 
         <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> iteratorOfAttributes(
                 GraphManager graphMgr, FunctionalIterator<TypeVertex> attributeTypes,
-                Traversal.Parameters parameters, Predicate.Value<?> eqPredicate, ORDER order
+                Traversal.Parameters parameters, Predicate.Value<?, ?> eqPredicate, ORDER order
         ) {
             assert id().isVariable();
             Set<Traversal.Parameters.Value> values = parameters.getValues(id().asVariable(), eqPredicate);
