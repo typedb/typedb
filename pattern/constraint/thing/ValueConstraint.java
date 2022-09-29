@@ -396,7 +396,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
             @Override
             public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
-                if (predicate != EQ || !predicate.isSubString()) return true;
+                if (!(predicate == EQ || predicate.isSubString())) return true;
                 if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
                 assert other.isString();
                 if (predicate().isEquality()) {
