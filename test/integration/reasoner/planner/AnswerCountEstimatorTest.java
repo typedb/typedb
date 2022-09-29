@@ -161,6 +161,18 @@ public class AnswerCountEstimatorTest {
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
             assertEquals(5L, answers);
         }
+
+        {   // Value constraint
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person, has name $n; $n \"Steve\"; }", transaction.logic()));
+            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
+            assertEquals(1L, answers);
+        }
+
+        {   // Value constraint
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person, has name $n; $n \"Steve\"; }", transaction.logic()));
+            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
+            assertEquals(5L, answers);
+        }
     }
 
     @Test
@@ -269,6 +281,25 @@ public class AnswerCountEstimatorTest {
             
             long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
             assertEquals(6L, answers);
+        }
+
+        {
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; }", transaction.logic()));
+
+            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
+            assertEquals(10L, answers); // 5 persisted + 5 inferred
+        }
+
+        {   // Value constraint
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; $n \"Steve\"; }", transaction.logic()));
+            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
+            assertEquals(1L, answers);
+        }
+
+        {   // Value constraint
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; $n \"Steve\"; }", transaction.logic()));
+            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
+            assertEquals(5L, answers);
         }
     }
 

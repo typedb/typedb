@@ -36,6 +36,7 @@ import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
@@ -343,7 +344,9 @@ public class AnswerCountEstimator {
         }
 
         private List<LocalModel> buildModelsForConcludable(Concludable concludable) {
-            return list(buildConstraintModel(extractConstraintToModel(concludable), Optional.of(concludable)));
+            return iterate(concludable.concludableConstraints()).filter(this::isModellable)
+                    .map(constraint -> buildConstraintModel(constraint, Optional.of(concludable)))
+                    .toList();
         }
 
         private List<LocalModel.VariableModel> modelsForGeneratedVariable(Concludable concludable) {
@@ -379,6 +382,8 @@ public class AnswerCountEstimator {
                     return localModelFactory.modelForRelation(asThingConstraint.asRelation(), correspondingConcludable);
                 } else if (asThingConstraint.isIsa()) {
                     return localModelFactory.modelForIsa(asThingConstraint.asIsa(), correspondingConcludable);
+                } else if (asThingConstraint.isValue() && asThingConstraint.asValue().isValueIdentity()) {
+                    return localModelFactory.modelForValue(asThingConstraint.asValue(), correspondingConcludable);
                 } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
             } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
         }
@@ -389,19 +394,10 @@ public class AnswerCountEstimator {
             return constraints;
         }
 
-        private Constraint extractConstraintToModel(Concludable concludable) {
-            if (concludable.isHas()) {
-                return concludable.asHas().has();
-            } else if (concludable.isRelation()) {
-                return concludable.asRelation().relation();
-            } else if (concludable.isIsa()) {
-                return concludable.asIsa().isa();
-            } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
-        }
-
         private boolean isModellable(Constraint constraint) {
             return constraint.isThing() &&
-                    (constraint.asThing().isRelation() || constraint.asThing().isHas() || constraint.asThing().isIsa());
+                    (constraint.asThing().isRelation() || constraint.asThing().isHas() || constraint.asThing().isIsa() ||
+                            (constraint.asThing().isValue() && constraint.asThing().asValue().isValueIdentity()));
         }
     }
 
@@ -562,6 +558,12 @@ public class AnswerCountEstimator {
                 estimate += estimateInferredAnswerCount(correspondingConcludable.get(), set(owner));
             }
             return new LocalModel.IsaModel(isaConstraint, estimate);
+        }
+
+        public LocalModel modelForValue(ValueConstraint<?> asValue, Optional<Concludable> correspondingConcludable) {
+            if (asValue.isValueIdentity()) {
+                return new LocalModel.VariableModel(set(asValue.owner()), 1L);
+            } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
         }
 
         private LocalModel.VariableModel modelForVariable(Variable v, Concludable sourceConcludable) {
