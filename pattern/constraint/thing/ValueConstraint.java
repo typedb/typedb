@@ -260,14 +260,14 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
             @Override
             public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
-                if (predicate != EQ) return true;
+                if (other.predicate() != EQ) return true;
                 if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
                 if (other.isDouble()) {
                     return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DOUBLE)
-                            .apply(value.doubleValue(), other.asDouble().value());
+                            .apply(other.asDouble().value(), value.doubleValue());
                 } else {
                     return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.LONG)
-                            .apply(value, other.asLong().value);
+                            .apply(other.asLong().value, value);
                 }
             }
 
@@ -315,10 +315,10 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
             @Override
             public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
-                if (predicate != EQ) return true;
+                if (other.predicate() != EQ) return true;
                 if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
                 return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DOUBLE)
-                        .apply(value, other.asDouble().value());
+                        .apply(other.asDouble().value(), value);
             }
         }
 
@@ -355,11 +355,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
             @Override
             public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
-                if (predicate != EQ) return true;
+                if (other.predicate() != EQ) return true;
                 if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
                 assert other.isBoolean();
                 return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.BOOLEAN)
-                        .apply(value, other.asBoolean().value);
+                        .apply(other.asBoolean().value, value);
             }
         }
 
@@ -396,11 +396,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
             @Override
             public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
-                if (!(predicate == EQ || predicate.isSubString())) return true;
+                if (other.predicate() != EQ) return true;
                 if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
                 assert other.isString();
                 if (predicate().isEquality()) {
-                    return Predicate.Value.String.of(predicate).apply(value, other.asString().value);
+                    return Predicate.Value.String.of(predicate).apply(other.asString().value, value);
                 } else if (predicate.isSubString()) {
                     PredicateOperator.SubString<?> operator = PredicateOperator.SubString.of(predicate.asSubString());
                     if (operator == PredicateOperator.SubString.CONTAINS) {
@@ -445,11 +445,11 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
             @Override
             public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
-                if (predicate != EQ) return true;
+                if (other.predicate() != EQ) return true;
                 if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
                 assert other.isDateTime();
                 return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DATETIME)
-                        .apply(value, other.asDateTime().value);
+                        .apply(other.asDateTime().value, value);
             }
         }
     }
