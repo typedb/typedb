@@ -16,40 +16,32 @@
  *
  */
 
-package com.vaticle.typedb.core.graph.iid;
+package com.vaticle.typedb.core.encoding.iid;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.encoding.key.Key;
 
-public abstract class IID {
+import java.util.Objects;
 
-    String readableString; // for debugging
-    final ByteArray bytes;
+public abstract class PartitionedIID extends IID implements Key {
 
-    IID(ByteArray bytes) {
-        this.bytes = bytes;
-    }
+    private int hash =  0;
 
-    public ByteArray bytes() {
-        return bytes;
-    }
-
-    public boolean isEmpty() {
-        return bytes.isEmpty();
+    PartitionedIID(ByteArray bytes) {
+        super(bytes);
     }
 
     @Override
-    public abstract String toString(); // for debugging
-
-    @Override
-    public boolean equals(Object object) {
+    public final boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        IID that = (IID) object;
-        return this.bytes.equals(that.bytes);
+        PartitionedIID that = (PartitionedIID) object;
+        return this.partition().equals(that.partition()) && this.bytes.equals(that.bytes);
     }
 
     @Override
-    public int hashCode() {
-        return bytes.hashCode();
+    public final int hashCode() {
+        if (hash == 0) hash = Objects.hash(bytes, partition());
+        return hash;
     }
 }

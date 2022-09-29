@@ -13,20 +13,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
-package com.vaticle.typedb.core.graph.common;
+package com.vaticle.typedb.core.encoding.key;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.Bytes;
-import com.vaticle.typedb.core.graph.common.Encoding.Metadata.Statistics;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding.Metadata.Statistics;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 
-public class StatisticsKey implements Storage.Key {
+public class StatisticsKey implements Key {
 
     private static final Partition PARTITION = Partition.METADATA;
 

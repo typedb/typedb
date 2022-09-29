@@ -26,13 +26,13 @@ import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.TypeEdgeIterator.InEdgeIteratorImpl;
 import com.vaticle.typedb.core.graph.adjacency.impl.TypeEdgeIterator.OutEdgeIteratorImpl;
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.common.Storage.Key;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.key.Key;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.edge.impl.TypeEdgeImpl;
-import com.vaticle.typedb.core.graph.iid.EdgeViewIID;
-import com.vaticle.typedb.core.graph.iid.InfixIID;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
+import com.vaticle.typedb.core.encoding.iid.InfixIID;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import java.util.Optional;

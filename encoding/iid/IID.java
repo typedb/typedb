@@ -16,23 +16,40 @@
  *
  */
 
-package com.vaticle.typedb.core.graph.iid;
+package com.vaticle.typedb.core.encoding.iid;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
 
-public class SuffixIID extends IID {
+public abstract class IID {
 
-    private SuffixIID(ByteArray bytes) {
-        super(bytes);
+    String readableString; // for debugging
+    final ByteArray bytes;
+
+    IID(ByteArray bytes) {
+        this.bytes = bytes;
     }
 
-    public static SuffixIID of(ByteArray bytes) {
-        return new SuffixIID(bytes);
+    public ByteArray bytes() {
+        return bytes;
+    }
+
+    public boolean isEmpty() {
+        return bytes.isEmpty();
     }
 
     @Override
-    public String toString() {
-        if (readableString == null) readableString = "Suffix: " + bytes.toString();
-        return readableString;
+    public abstract String toString(); // for debugging
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        IID that = (IID) object;
+        return this.bytes.equals(that.bytes);
+    }
+
+    @Override
+    public int hashCode() {
+        return bytes.hashCode();
     }
 }

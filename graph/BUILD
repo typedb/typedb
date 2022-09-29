@@ -44,6 +44,7 @@ native_java_libraries(
     native_libraries_deps = [
         # Internal dependencies
         "//common:common",
+        "//encoding:encoding",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-graph:{pom_version}"],
     visibility = ["//visibility:public"],

@@ -19,18 +19,18 @@
 package com.vaticle.typedb.core.traversal.predicate;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 
 import java.time.LocalDateTime;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
 
 public abstract class PredicateArgument {
 

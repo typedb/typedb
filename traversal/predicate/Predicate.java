@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.traversal.predicate;
 
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typeql.lang.common.TypeQLToken;
@@ -81,7 +81,6 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
         return hash;
     }
 
-    // TODO: now we can use this class to create a predicate and evaluate it against lhs/rhs pairs
     public static abstract class Value<VAL_OP extends PredicateOperator, ARG_TYPE> extends Predicate<VAL_OP, PredicateArgument.Value<VAL_OP, ARG_TYPE>> {
 
         public Value(VAL_OP operator, PredicateArgument.Value<VAL_OP, ARG_TYPE> argument) {

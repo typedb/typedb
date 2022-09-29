@@ -30,7 +30,7 @@ import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.TypeQL;
@@ -50,7 +50,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.CY
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_BEEN_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
 
 public abstract class TypeImpl extends ConceptImpl implements Type {
 

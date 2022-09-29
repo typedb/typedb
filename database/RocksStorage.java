@@ -25,9 +25,9 @@ import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.graph.common.KeyGenerator;
-import com.vaticle.typedb.core.graph.common.Storage;
-import com.vaticle.typedb.core.graph.common.Storage.Key.Partition;
+import com.vaticle.typedb.core.encoding.key.KeyGenerator;
+import com.vaticle.typedb.core.encoding.Storage;
+import com.vaticle.typedb.core.encoding.key.Key.Partition;
 import org.rocksdb.AbstractImmutableNativeReference;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.OptimisticTransactionOptions;
@@ -57,7 +57,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
-import static com.vaticle.typedb.core.graph.common.Encoding.System.TRANSACTION_DUMMY_WRITE;
+import static com.vaticle.typedb.core.encoding.Encoding.System.TRANSACTION_DUMMY_WRITE;
 
 public abstract class RocksStorage implements Storage {
 

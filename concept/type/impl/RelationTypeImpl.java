@@ -46,10 +46,10 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RO
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.RELATION;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ROLE;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.RELATES;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.RELATION_TYPE;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.RELATION;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ROLE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static java.util.Comparator.comparing;
 

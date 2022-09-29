@@ -16,15 +16,15 @@
  *
  */
 
-package com.vaticle.typedb.core.graph.iid;
+package com.vaticle.typedb.core.encoding.iid;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.common.KeyGenerator;
-import com.vaticle.typedb.core.graph.common.Storage.Key;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.key.KeyGenerator;
+import com.vaticle.typedb.core.encoding.key.Key;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeDateTimeAsSorted;
@@ -39,17 +39,17 @@ import static com.vaticle.typedb.core.common.collection.Bytes.booleanToByte;
 import static com.vaticle.typedb.core.common.collection.Bytes.byteToBoolean;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_IID_CASTING;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_MAX_SIZE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_SIZE_ENCODING;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.TIME_ZONE_ID;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING_ENCODING;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING_MAX_SIZE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING_SIZE_ENCODING;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.TIME_ZONE_ID;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ATTRIBUTE;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 
 public abstract class VertexIID extends PartitionedIID {
 

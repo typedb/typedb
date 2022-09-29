@@ -21,12 +21,12 @@ package com.vaticle.typedb.core.graph.edge.impl;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.ThingGraph;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
-import com.vaticle.typedb.core.graph.iid.EdgeViewIID;
-import com.vaticle.typedb.core.graph.iid.InfixIID;
-import com.vaticle.typedb.core.graph.iid.SuffixIID;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
+import com.vaticle.typedb.core.encoding.iid.InfixIID;
+import com.vaticle.typedb.core.encoding.iid.SuffixIID;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
@@ -37,8 +37,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
-import static com.vaticle.typedb.core.graph.common.Encoding.Prefix.VERTEX_ROLE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Status.PERSISTED;
+import static com.vaticle.typedb.core.encoding.Encoding.Prefix.VERTEX_ROLE;
+import static com.vaticle.typedb.core.encoding.Encoding.Status.PERSISTED;
 import static java.util.Objects.hash;
 
 public abstract class ThingEdgeImpl implements ThingEdge {

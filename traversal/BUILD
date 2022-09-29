@@ -36,6 +36,7 @@ native_java_libraries(
         "//common:common",
         "//concurrent:concurrent",
         "//graph:graph",
+        "//encoding:encoding",
     ],
     deps = [
         # Vaticle Dependencies

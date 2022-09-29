@@ -23,8 +23,8 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
@@ -43,15 +43,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.ISA;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.RELATING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.ISA;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.HAS;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.PLAYING;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.RELATING;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.PLAYS;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.RELATES;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.SubString.LIKE;
 
 // TODO: We should not use this object as a builder, as the hash and equality functions would change
@@ -220,13 +220,13 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, Boolean value) {
-            Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.BOOLEAN);
+            Predicate.Value.Numerical<Boolean> predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.BOOLEAN);
             parameters.pushValue(attribute, predicate, new Parameters.Value(value));
             structure.thingVertex(attribute).props().predicate(predicate);
         }
 
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, Long value) {
-            Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.LONG);
+            Predicate.Value.Numerical<Long> predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.LONG);
             parameters.pushValue(attribute, predicate, new Parameters.Value(value));
             structure.thingVertex(attribute).props().predicate(predicate);
         }
@@ -236,14 +236,14 @@ public abstract class GraphTraversal extends Traversal {
             if (Encoding.ValueType.DOUBLE.comparator().compare(value, (double) longValue) == 0) {
                 predicate(attribute, token, longValue);
             } else {
-                Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.DOUBLE);
+                Predicate.Value.Numerical<Double> predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.DOUBLE);
                 parameters.pushValue(attribute, predicate, new Parameters.Value(value));
                 structure.thingVertex(attribute).props().predicate(predicate);
             }
         }
 
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, LocalDateTime value) {
-            Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.DATETIME);
+            Predicate.Value.Numerical<LocalDateTime> predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.DATETIME);
             parameters.pushValue(attribute, predicate, new Parameters.Value(value));
             structure.thingVertex(attribute).props().predicate(predicate);
         }

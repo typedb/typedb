@@ -18,8 +18,8 @@
 
 package com.vaticle.typedb.core.graph.vertex;
 
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 
 import java.time.LocalDateTime;
 

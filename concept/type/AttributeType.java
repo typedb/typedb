@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.concept.type;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.thing.Attribute;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
 import javax.annotation.Nullable;

@@ -13,10 +13,9 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
-package com.vaticle.typedb.core.graph.common;
+package com.vaticle.typedb.core.encoding;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
@@ -431,7 +430,7 @@ public class Encoding {
         private final ByteArray bytes;
         private final boolean isKeyable;
         private final boolean isWritable;
-        private final boolean isSorted; // TODO: once strings reflect desired order, we can remove this
+        private final boolean isSorted; // TODO: once strings are encoded in the correct order, we can remove this
 
         private final Class<T> valueClass;
         private final TypeQLArg.ValueType typeQLValueType;
@@ -958,7 +957,7 @@ public class Encoding {
                 MISCOUNTABLE(50),
                 TXN_COMMITTED_ID(60);
 
-                static final int LENGTH = 2;
+                public static final int LENGTH = 2;
 
                 private final ByteArray bytes;
 

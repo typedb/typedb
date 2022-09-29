@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.type.impl.EntityTypeImpl;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ENTITY;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ENTITY;
 
 public class EntityImpl extends ThingImpl implements Entity {
 

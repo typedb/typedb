@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.traversal.structure;
 
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;

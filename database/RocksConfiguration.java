@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.database;
 
-import com.vaticle.typedb.core.graph.common.Storage.Key;
+import com.vaticle.typedb.core.encoding.key.Key;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.BloomFilter;
 import org.rocksdb.ColumnFamilyOptions;
@@ -202,7 +202,7 @@ public class RocksConfiguration {
             writeOptimisedWriteBuffers(options);
             configureSST(options);
             configureCompression(options);
-            configurePrefixExtractor(options, Key.Partition.FIXED_START_EDGE.fixedStartBytes().get());
+            configurePrefixExtractor(options, Key.Key.Partition.FIXED_START_EDGE.fixedStartBytes().get());
             options.setTableFormatConfig(tableOptions(true, false));
             return options;
         }
@@ -212,7 +212,7 @@ public class RocksConfiguration {
             readOptimisedWriteBuffers(options);
             configureSST(options);
             configureCompression(options);
-            configurePrefixExtractor(options, Key.Partition.OPTIMISATION_EDGE.fixedStartBytes().get());
+            configurePrefixExtractor(options, Key.Key.Partition.OPTIMISATION_EDGE.fixedStartBytes().get());
             options.setTableFormatConfig(tableOptions(true, false));
             return options;
         }
