@@ -74,6 +74,7 @@ public class Planner {
         }
 
         private void computePlan() {
+            boolean boundsExtended = false;
             while (!unplanned.isEmpty()) {
                 Optional<Concludable> concludable;
                 Optional<com.vaticle.typedb.core.logic.resolvable.Retrievable> retrievable;
@@ -96,6 +97,23 @@ public class Planner {
                 if (concludable.isPresent()) {
                     add(concludable.get());
                     continue;
+                }
+
+                // If nothing is connected, see if a variable is bound to an IID or to a value. If yes, add it to the bounds.
+                if (!boundsExtended) {
+                    boundsExtended = true;
+                    Set<Retrievable> extendedBounds = iterate(unplanned).filter(Resolvable::isRetrievable).flatMap(resolvable -> iterate(resolvable.asRetrievable().pattern().variables()))
+                            .flatMap(variable -> iterate(variable.constraints()))
+                            .filter(constraint -> constraint.isThing()).map(constraint -> constraint.asThing())
+                            .filter(thingConstraint -> (thingConstraint.isIID() || (thingConstraint.isValue() && thingConstraint.asValue().isValueIdentity())))
+                            .map(thingConstraint -> thingConstraint.owner().id())
+                            .filter(var -> !boundVariables.contains(var))
+                            .toSet();
+
+                    if (!extendedBounds.isEmpty()) {
+                        boundVariables.addAll(extendedBounds);
+                        continue;
+                    }
                 }
 
                 // Retrievable where:
