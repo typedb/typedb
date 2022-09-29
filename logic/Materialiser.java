@@ -80,20 +80,20 @@ public class Materialiser {
     }
 
     private static Optional<Attribute> getAttribute(AttributeType attrType, ValueConstraint<?> value) {
-        if (attrType.isDateTime()) return Optional.ofNullable(attrType.asDateTime().get(value.asDateTime().value()));
-        else if (attrType.isBoolean()) return Optional.ofNullable(attrType.asBoolean().get(value.asBoolean().value()));
-        else if (attrType.isDouble()) return Optional.ofNullable(attrType.asDouble().get(value.asDouble().value()));
-        else if (attrType.isLong()) return Optional.ofNullable(attrType.asLong().get(value.asLong().value()));
-        else if (attrType.isString()) return Optional.ofNullable(attrType.asString().get(value.asString().value()));
+        if (attrType.isDateTime()) return Optional.ofNullable(attrType.asDateTime().get(value.asConstant().asDateTime().value()));
+        else if (attrType.isBoolean()) return Optional.ofNullable(attrType.asBoolean().get(value.asConstant().asBoolean().value()));
+        else if (attrType.isDouble()) return Optional.ofNullable(attrType.asDouble().get(value.asConstant().asDouble().value()));
+        else if (attrType.isLong()) return Optional.ofNullable(attrType.asLong().get(value.asConstant().asLong().value()));
+        else if (attrType.isString()) return Optional.ofNullable(attrType.asString().get(value.asConstant().asString().value()));
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     private static Attribute putAttribute(AttributeType attrType, ValueConstraint<?> value) {
-        if (attrType.isDateTime()) return attrType.asDateTime().put(value.asDateTime().value(), true);
-        else if (attrType.isBoolean()) return attrType.asBoolean().put(value.asBoolean().value(), true);
-        else if (attrType.isDouble()) return attrType.asDouble().put(value.asDouble().value(), true);
-        else if (attrType.isLong()) return attrType.asLong().put(value.asLong().value(), true);
-        else if (attrType.isString()) return attrType.asString().put(value.asString().value(), true);
+        if (attrType.isDateTime()) return attrType.asDateTime().put(value.asConstant().asDateTime().value(), true);
+        else if (attrType.isBoolean()) return attrType.asBoolean().put(value.asConstant().asBoolean().value(), true);
+        else if (attrType.isDouble()) return attrType.asDouble().put(value.asConstant().asDouble().value(), true);
+        else if (attrType.isLong()) return attrType.asLong().put(value.asConstant().asLong().value(), true);
+        else if (attrType.isString()) return attrType.asString().put(value.asConstant().asString().value(), true);
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 

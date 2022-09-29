@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.pattern.constraint.thing;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
@@ -163,9 +164,12 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
 
     public static abstract class Constant<VALUE_TYPE> extends ValueConstraint<VALUE_TYPE> {
 
+        final Encoding.ValueType<VALUE_TYPE> valueEncoding;
+
         private Constant(ThingVariable owner, TypeQLToken.Predicate predicate, VALUE_TYPE value,
-                         Set<com.vaticle.typedb.core.pattern.variable.Variable> additionalVariables) {
+                         Set<com.vaticle.typedb.core.pattern.variable.Variable> additionalVariables, Encoding.ValueType<VALUE_TYPE> valueEncoding) {
             super(owner, predicate, value, additionalVariables);
+            this.valueEncoding = valueEncoding;
         }
 
         @Override
@@ -231,7 +235,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         public static class Long extends Constant<java.lang.Long> {
 
             public Long(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, long value) {
-                super(owner, predicate, value, set());
+                super(owner, predicate, value, set(), Encoding.ValueType.LONG);
             }
 
             @Override
@@ -257,11 +261,14 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             @Override
             public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
                 if (predicate != EQ) return true;
-
-
-
-                        || (equalityValueConstraint.isLong() && PredicateArgument.Value.LONG.apply(PredicateOperator.Equality.of(predicate()), equalityValueConstraint.asLong().value(), value))
-                        || (equalityValueConstraint.isDouble() && PredicateArgument.Value.DOUBLE.apply(PredicateOperator.Equality.of(predicate()), equalityValueConstraint.asDouble().value(), value.doubleValue()));
+                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
+                if (other.isDouble()) {
+                    return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DOUBLE)
+                            .apply(value.doubleValue(), other.asDouble().value());
+                } else {
+                    return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.LONG)
+                            .apply(value, other.asLong().value);
+                }
             }
 
             @Override
@@ -278,7 +285,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         public static class Double extends Constant<java.lang.Double> {
 
             public Double(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, double value) {
-                super(owner, predicate, value, set());
+                super(owner, predicate, value, set(), Encoding.ValueType.DOUBLE);
             }
 
             @Override
@@ -307,17 +314,18 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             }
 
             @Override
-            public boolean isConsistentWithEquality(ValueConstraint<?> equalityValueConstraint) {
-                return equalityValueConstraint.isVariable() ||
-                        (equalityValueConstraint.isLong() && PredicateArgument.Value.DOUBLE.apply(PredicateOperator.Equality.of(predicate()), equalityValueConstraint.asLong().value().doubleValue(), value))
-                        || (equalityValueConstraint.isDouble() && PredicateArgument.Value.DOUBLE.apply(PredicateOperator.Equality.of(predicate()), equalityValueConstraint.asDouble().value(), value));
+            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+                if (predicate != EQ) return true;
+                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
+                return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DOUBLE)
+                        .apply(value, other.asDouble().value());
             }
         }
 
         public static class Boolean extends Constant<java.lang.Boolean> {
 
             public Boolean(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, boolean value) {
-                super(owner, predicate, value, set());
+                super(owner, predicate, value, set(), Encoding.ValueType.BOOLEAN);
             }
 
             @Override
@@ -346,16 +354,19 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             }
 
             @Override
-            public boolean isConsistentWithEquality(ValueConstraint<?> equalityValueConstraint) {
-                return equalityValueConstraint.isVariable() ||
-                        (equalityValueConstraint.isBoolean() && Predicate.Value.Numerical.of(predicate(), PredicateArgument.Value.BOOLEAN).apply(equalityValueConstraint.asBoolean().value(), value));
+            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+                if (predicate != EQ) return true;
+                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
+                assert other.isBoolean();
+                return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.BOOLEAN)
+                        .apply(value, other.asBoolean().value);
             }
         }
 
         public static class String extends Constant<java.lang.String> {
 
             public String(ThingVariable owner, TypeQLToken.Predicate predicate, java.lang.String value) {
-                super(owner, predicate, value, set());
+                super(owner, predicate, value, set(), Encoding.ValueType.STRING);
             }
 
             @Override
@@ -384,18 +395,18 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             }
 
             @Override
-            public boolean isConsistentWithEquality(ValueConstraint<?> equalityValueConstraint) {
-                if (equalityValueConstraint.isVariable()) return true;
-                if (!equalityValueConstraint.isString()) return false;
-                java.lang.String constraintValue = equalityValueConstraint.asString().value();
-                if (predicate.isEquality()) {
-                    return PredicateArgument.Value.STRING.apply(PredicateOperator.Equality.of(predicate.asEquality()), constraintValue, value);
+            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+                if (predicate != EQ || !predicate.isSubString()) return true;
+                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
+                assert other.isString();
+                if (predicate().isEquality()) {
+                    return Predicate.Value.String.of(predicate).apply(value, other.asString().value);
                 } else if (predicate.isSubString()) {
                     PredicateOperator.SubString<?> operator = PredicateOperator.SubString.of(predicate.asSubString());
                     if (operator == PredicateOperator.SubString.CONTAINS) {
-                        return PredicateOperator.SubString.CONTAINS.apply(constraintValue, value);
+                        return PredicateOperator.SubString.CONTAINS.apply(other.asString().value, value);
                     } else if (operator == PredicateOperator.SubString.LIKE) {
-                        return PredicateOperator.SubString.LIKE.apply(constraintValue, Pattern.compile(value));
+                        return PredicateOperator.SubString.LIKE.apply(other.asString().value, Pattern.compile(value));
                     } else throw TypeDBException.of(ILLEGAL_STATE);
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             }
@@ -404,7 +415,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         public static class DateTime extends Constant<LocalDateTime> {
 
             public DateTime(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, LocalDateTime value) {
-                super(owner, predicate, value, set());
+                super(owner, predicate, value, set(), Encoding.ValueType.DATETIME);
             }
 
             @Override
@@ -433,9 +444,12 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             }
 
             @Override
-            public boolean isConsistentWithEquality(ValueConstraint<?> equalityValueConstraint) {
-                return equalityValueConstraint.isVariable()
-                        || (equalityValueConstraint.isDateTime() && PredicateArgument.Value.DATETIME.apply(PredicateOperator.Equality.of(predicate.asEquality()), equalityValueConstraint.asDateTime().value(), value));
+            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+                if (predicate != EQ) return true;
+                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
+                assert other.isDateTime();
+                return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DATETIME)
+                        .apply(value, other.asDateTime().value);
             }
         }
     }
@@ -479,51 +493,6 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public Variable clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueVariable(predicate(), cloner.cloneVariable(value));
-        }
-
-        @Override
-        public boolean isConsistentWithEquality(ValueConstraint<?> equalityValueConstraint) {
-            return true;
-        }
-
-        public boolean isLong() {
-            return false;
-        }
-
-        public boolean isDouble() {
-            return false;
-        }
-
-        public boolean isBoolean() {
-            return false;
-        }
-
-        public boolean isString() {
-            return false;
-        }
-
-        public boolean isDateTime() {
-            return false;
-        }
-
-        public Constant.Long asLong() {
-            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Constant.Long.class));
-        }
-
-        public Constant.Double asDouble() {
-            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Constant.Double.class));
-        }
-
-        public Constant.Boolean asBoolean() {
-            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Constant.Boolean.class));
-        }
-
-        public Constant.String asString() {
-            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Constant.String.class));
-        }
-
-        public Constant.DateTime asDateTime() {
-            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Constant.DateTime.class));
         }
     }
 }

@@ -13,10 +13,9 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
-package com.vaticle.typedb.core.graph;
+package com.vaticle.typedb.core.encoding;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
@@ -33,6 +32,8 @@ import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.database.Factory;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.Storage;
+import com.vaticle.typedb.core.encoding.key.Key;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
@@ -112,21 +113,21 @@ public class EncodingTest {
     }
 
     private List<KeyValue<RawKey, ByteArray>> vertexElements(Storage.Data storage) {
-        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Key.Key.Partition.DEFAULT))
+        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Key.Partition.DEFAULT))
                 .filter(kv -> !kv.key().bytes().hasPrefix(Encoding.Prefix.SYSTEM.bytes()))
                 .toList();
     }
 
     private List<KeyValue<RawKey, ByteArray>> variableStartEdgeElements(Storage.Data storage) {
-        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Key.Key.Partition.VARIABLE_START_EDGE)).toList();
+        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Key.Partition.VARIABLE_START_EDGE)).toList();
     }
 
     private List<KeyValue<RawKey, ByteArray>> fixedStartEdgeElements(Storage.Data storage) {
-        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Key.Key.Partition.FIXED_START_EDGE)).toList();
+        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Key.Partition.FIXED_START_EDGE)).toList();
     }
 
     private List<KeyValue<RawKey, ByteArray>> optimisationEdgeElements(Storage.Data storage) {
-        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Key.Key.Partition.OPTIMISATION_EDGE)).toList();
+        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Key.Partition.OPTIMISATION_EDGE)).toList();
     }
 
     private ByteArray expectedIID(GraphManager graphMgr, Label typeLabel, long instanceNumber) {

@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
 import com.vaticle.typedb.core.encoding.Storage;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.key.Key;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import org.junit.After;
 import org.junit.AfterClass;

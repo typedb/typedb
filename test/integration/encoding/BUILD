@@ -22,13 +22,14 @@ host_compatible_java_test(
     name = "test-encoding",
     size = "small",
     srcs = ["EncodingTest.java"],
-    test_class = "com.vaticle.typedb.core.graph.EncodingTest",
+    test_class = "com.vaticle.typedb.core.encoding.EncodingTest",
     data = glob(["data/**"]),
     native_libraries_deps = [
         "//:typedb",
         "//common:common",
-        "//graph:graph",
         "//database:database",
+        "//encoding:encoding",
+        "//graph:graph",
 
         "//common/test:util",
     ],

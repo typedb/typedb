@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
+import com.vaticle.typedb.core.encoding.key.Key;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.key.KeyGenerator;
@@ -273,7 +274,7 @@ public class CoreDatabase implements TypeDB.Database {
     protected void initialiseEncodingVersion() {
         try {
             rocksSchema.put(
-                    rocksSchemaPartitionMgr.get(Key.Key.Partition.DEFAULT),
+                    rocksSchemaPartitionMgr.get(Key.Partition.DEFAULT),
                     ENCODING_VERSION_KEY.bytes().getBytes(),
                     ByteArray.encodeInt(ENCODING_VERSION).getBytes()
             );
@@ -285,7 +286,7 @@ public class CoreDatabase implements TypeDB.Database {
     protected void validateEncodingVersion() {
         try {
             byte[] encodingBytes = rocksSchema.get(
-                    rocksSchemaPartitionMgr.get(Key.Key.Partition.DEFAULT),
+                    rocksSchemaPartitionMgr.get(Key.Partition.DEFAULT),
                     ENCODING_VERSION_KEY.bytes().getBytes()
             );
             int encoding = encodingBytes == null || encodingBytes.length == 0 ? 0 : ByteArray.of(encodingBytes).decodeInt();
