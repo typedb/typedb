@@ -46,6 +46,7 @@ native_java_libraries(
         "//common:common",
         "//concurrent:concurrent",
         "//concept:concept",
+        "//graph:graph",
         "//logic:logic",
         "//pattern:pattern",
         "//traversal:traversal",
