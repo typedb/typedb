@@ -172,10 +172,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             return direction;
         }
 
-        public boolean isInitialised() {
-            return isInitialised;
-        }
-
         void createOptimiserVariables() {
             varIsSelected = planner.optimiser().booleanVar(varPrefix + "is_selected");
             varIsMinimal = planner.optimiser().booleanVar(varPrefix + "is_minimal");

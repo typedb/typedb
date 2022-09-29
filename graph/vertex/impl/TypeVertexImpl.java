@@ -79,7 +79,6 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     TypeVertexImpl(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
         super(iid);
-        assert iid.isType();
         this.graph = graph;
         this.label = label;
         this.scope = scope;

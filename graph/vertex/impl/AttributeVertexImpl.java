@@ -291,7 +291,7 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public Encoding.ValueType valueType() {
+        public Encoding.ValueType<VALUE> valueType() {
             return attributeIID.valueType();
         }
 

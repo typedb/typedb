@@ -17,7 +17,6 @@
 
 package com.vaticle.typedb.core.reasoner.answer;
 
-import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;

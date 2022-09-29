@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.query;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
@@ -54,9 +53,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNR
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.AGGREGATE_ATTRIBUTE_NOT_NUMBER;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
-import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
 import static com.vaticle.typedb.core.query.Matcher.Aggregator.aggregator;
 import static java.lang.Math.sqrt;
 import static java.util.stream.Collectors.groupingBy;

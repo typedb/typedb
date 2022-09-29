@@ -579,19 +579,19 @@ public class ThingGraph {
 
         void remove(VertexIID.Attribute<?> iid) {
             Encoding.ValueType<?> valueType = iid.valueType();
-            if (BOOLEAN == valueType) booleans.remove(iid.asBoolean());
-            else if (LONG == valueType) longs.remove(iid.asLong());
-            else if (DOUBLE == valueType) doubles.remove(iid.asDouble());
-            else if (STRING == valueType) strings.remove(iid.asString());
-            else if (DATETIME == valueType) dateTimes.remove(iid.asDateTime());
+            if (valueType == BOOLEAN) booleans.remove(iid.asBoolean());
+            else if (valueType == LONG) longs.remove(iid.asLong());
+            else if (valueType == DOUBLE) doubles.remove(iid.asDouble());
+            else if (valueType == STRING) strings.remove(iid.asString());
+            else if (valueType == DATETIME) dateTimes.remove(iid.asDateTime());
         }
 
         ConcurrentMap<? extends VertexIID.Attribute<?>, ? extends AttributeVertex<?>> forValueType(Encoding.ValueType<?> valueType) {
-            if (BOOLEAN == valueType) return booleans;
-            else if (LONG == valueType) return longs;
-            else if (DOUBLE == valueType) return doubles;
-            else if (STRING == valueType) return strings;
-            else if (DATETIME == valueType) return dateTimes;
+            if (valueType == BOOLEAN) return booleans;
+            else if (valueType == LONG) return longs;
+            else if (valueType == DOUBLE) return doubles;
+            else if (valueType == STRING) return strings;
+            else if (valueType == DATETIME) return dateTimes;
             assert false;
             return null;
         }

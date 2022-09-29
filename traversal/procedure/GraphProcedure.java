@@ -49,8 +49,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
-import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 import static java.util.Comparator.comparing;
 

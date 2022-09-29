@@ -85,10 +85,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         return varOrderNumber.value();
     }
 
-    public boolean isInitialised() {
-        return isInitialised;
-    }
-
     void out(PlannerEdge<?, ?> edge) {
         assert edge.forward().from().equals(this);
         assert edge.backward().to().equals(this);

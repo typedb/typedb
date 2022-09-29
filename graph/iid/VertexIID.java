@@ -102,14 +102,6 @@ public abstract class VertexIID extends PartitionedIID {
             return new Key.Prefix<>(encoding.prefix().bytes(), PARTITION, (bytes) -> extract(bytes, 0));
         }
 
-        public boolean isType() {
-            return true;
-        }
-
-        public VertexIID.Type asType() {
-            return this;
-        }
-
         /**
          * Generate an IID for a {@code TypeVertex} for a given {@code Encoding}
          *

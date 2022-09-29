@@ -138,7 +138,7 @@ public class Encoding {
         METADATA,
         TYPE,
         THING,
-        RULE;
+        RULE
     }
 
     /**
@@ -376,26 +376,26 @@ public class Encoding {
         public static final int STRING_MAX_SIZE = SHORT_UNSIGNED_MAX_VALUE;
         public static final double DOUBLE_PRECISION = 0.000001d;
 
-        public static ValueType<Object> OBJECT = new ValueType<>(
+        public static final ValueType<Object> OBJECT = new ValueType<>(
                 0, "Object", Object.class, false, false, false, null, null
         );
-        public static ValueType<Boolean> BOOLEAN = new ValueType<>(
+        public static final ValueType<Boolean> BOOLEAN = new ValueType<>(
                 10, "Boolean", Boolean.class, true, false, true, TypeQLArg.ValueType.BOOLEAN, Boolean::compareTo
         );
-        public static ValueType<Long> LONG = new ValueType<>(
+        public static final ValueType<Long> LONG = new ValueType<>(
                 20, "Long", Long.class, true, true, true, TypeQLArg.ValueType.LONG, Long::compareTo
         );
-        public static ValueType<Double> DOUBLE = new ValueType<>(
+        public static final ValueType<Double> DOUBLE = new ValueType<>(
                 30, "Double", Double.class, true, false, true, TypeQLArg.ValueType.DOUBLE, (a, b) -> {
             int res = Double.compare(a, b);
             if (res == 0 || Math.abs(a - b) < DOUBLE_PRECISION) return 0;
             else return res;
         }
         );
-        public static ValueType<String> STRING = new ValueType<>(
+        public static final ValueType<String> STRING = new ValueType<>(
                 40, "String", String.class, true, true, false, TypeQLArg.ValueType.STRING, String::compareTo
         );
-        public static ValueType<LocalDateTime> DATETIME = new ValueType<>(
+        public static final ValueType<LocalDateTime> DATETIME = new ValueType<>(
                 50, "DateTime", LocalDateTime.class, true, true, true, TypeQLArg.ValueType.DATETIME, LocalDateTime::compareTo
         );
 

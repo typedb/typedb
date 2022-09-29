@@ -23,11 +23,8 @@ import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
-import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.regex.Pattern;
-
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE_PRECISION;
 
 public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG extends PredicateArgument> {
 

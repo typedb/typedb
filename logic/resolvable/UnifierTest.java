@@ -27,9 +27,6 @@ import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 import org.junit.Test;
 
-import java.util.Optional;
-
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 

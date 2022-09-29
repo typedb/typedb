@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -153,7 +154,7 @@ public class Tracer {
                 if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
                     throw TypeDBException.of(REASONER_TRACING_DIRECTORY_COULD_NOT_BE_FOUND);
                 }
-                writer = new PrintWriter(file, "UTF-8");
+                writer = new PrintWriter(file, StandardCharsets.UTF_8);
                 write(String.format(
                         "digraph request_%s {\n" +
                                 "graph [fontsize=10 fontname=arial width=0.5 clusterrank=global]\n" +

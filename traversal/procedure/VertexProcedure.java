@@ -35,8 +35,6 @@ import java.util.List;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
-import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 
 public class VertexProcedure implements PermutationProcedure {

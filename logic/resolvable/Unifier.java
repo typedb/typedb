@@ -35,11 +35,9 @@ import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
-import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
-import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 
@@ -60,10 +58,6 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REVERSE_UNIFICATION_MISSING_CONCEPT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
 import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 
@@ -557,7 +551,7 @@ public class Unifier {
 
         public static class Instance {
 
-            Map<Retrievable, ? extends Concept> requireCompatible;
+            private final Map<Retrievable, ? extends Concept> requireCompatible;
             private final int hash;
 
             public Instance(Map<Retrievable, ? extends Concept> concepts) {

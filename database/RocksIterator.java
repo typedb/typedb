@@ -46,7 +46,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     private boolean isClosed;
     org.rocksdb.RocksIterator internalRocksIterator;
 
-    private enum State {INIT, OPENED, UNFETCHED, FORWARDED, FETCHED, COMPLETED;}
+    private enum State {INIT, OPENED, UNFETCHED, FORWARDED, FETCHED, COMPLETED}
 
     private RocksIterator(RocksStorage storage, Key.Prefix<T> prefix, ORDER order) {
         super(order);

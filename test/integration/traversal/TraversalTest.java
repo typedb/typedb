@@ -121,7 +121,7 @@ public class TraversalTest {
                 assertTrue(nextValue <= lastValue);
                 lastValue = nextValue;
             }
-            ;
+
         }
     }
 
@@ -184,7 +184,7 @@ public class TraversalTest {
                 assertTrue(nextValue >= lastValue);
                 lastValue = nextValue;
             }
-            ;
+
         }
     }
 
@@ -222,7 +222,7 @@ public class TraversalTest {
                 assertTrue(nextValue.compareTo(lastValue) < 0);
                 lastValue = nextValue;
             }
-            ;
+
         }
     }
 
