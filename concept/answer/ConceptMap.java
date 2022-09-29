@@ -223,17 +223,17 @@ public class ConceptMap implements Answer {
                             Attribute att1 = concept1.asAttribute();
                             Attribute att2 = concept2.asAttribute();
                             if (att1.isString()) {
-                                return Encoding.ValueType.STRING.instanceComparator().compare(att1.asString().getValue(), att2.asString().getValue());
+                                return Encoding.ValueType.STRING.comparator().compare(att1.asString().getValue(), att2.asString().getValue());
                             } else if (att1.isBoolean()) {
-                                return Encoding.ValueType.BOOLEAN.instanceComparator().compare(att1.asBoolean().getValue(), att2.asBoolean().getValue());
+                                return Encoding.ValueType.BOOLEAN.comparator().compare(att1.asBoolean().getValue(), att2.asBoolean().getValue());
                             } else if (att1.isLong() && att2.isLong()) {
-                                return Encoding.ValueType.LONG.instanceComparator().compare(att1.asLong().getValue(), att2.asLong().getValue());
+                                return Encoding.ValueType.LONG.comparator().compare(att1.asLong().getValue(), att2.asLong().getValue());
                             } else if (att1.isDouble() || att2.isDouble()) {
                                 Double double1 = att1.isLong() ? att1.asLong().getValue() : att1.asDouble().getValue();
                                 Double double2 = att2.isLong() ? att2.asLong().getValue() : att2.asDouble().getValue();
-                                return Encoding.ValueType.DOUBLE.instanceComparator().compare(double1, double2);
+                                return Encoding.ValueType.DOUBLE.comparator().compare(double1, double2);
                             } else if (att1.isDateTime()) {
-                                return Encoding.ValueType.DATETIME.instanceComparator().compare(att1.asDateTime().getValue(), att2.asDateTime().getValue());
+                                return Encoding.ValueType.DATETIME.comparator().compare(att1.asDateTime().getValue(), att2.asDateTime().getValue());
                             } else {
                                 throw TypeDBException.of(ILLEGAL_STATE);
                             }

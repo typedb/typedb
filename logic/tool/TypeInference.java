@@ -329,7 +329,7 @@ public class TypeInference {
             }
 
             Set<Encoding.ValueType<?>> valueTypes = iterate(predicateValueTypes)
-                    .flatMap(valueType -> iterate(valueType.instanceComparables())).toSet();
+                    .flatMap(valueType -> iterate(valueType.comparables())).toSet();
             if (!valueTypes.isEmpty()) restrictValueTypes(inferenceVar.id(), iterate(valueTypes));
             else registerSubAttribute(inferenceVar);
         }

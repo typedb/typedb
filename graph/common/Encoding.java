@@ -408,7 +408,7 @@ public class Encoding {
                 pair(DATETIME.key, DATETIME)
         );
 
-        private static final Map<ValueType<?>, Set<ValueType<?>>> INSTANCE_ASSIGNABLES = map(
+        private static final Map<ValueType<?>, Set<ValueType<?>>> ASSIGNABLES = map(
                 pair(OBJECT, set(OBJECT)),
                 pair(BOOLEAN, set(BOOLEAN)),
                 pair(LONG, set(LONG, DOUBLE)),
@@ -417,7 +417,7 @@ public class Encoding {
                 pair(DATETIME, set(DATETIME))
         );
 
-        private static final Map<ValueType<?>, Set<ValueType<?>>> INSTANCE_COMPARABLES = map(
+        private static final Map<ValueType<?>, Set<ValueType<?>>> COMPARABLES = map(
                 pair(OBJECT, set(OBJECT)),
                 pair(BOOLEAN, set(BOOLEAN)),
                 pair(LONG, set(LONG, DOUBLE)),
@@ -431,22 +431,22 @@ public class Encoding {
         private final ByteArray bytes;
         private final boolean isKeyable;
         private final boolean isWritable;
-        private final boolean isInstanceSorted;
+        private final boolean isSorted; // TODO: once strings reflect desired order, we can remove this
 
         private final Class<T> valueClass;
         private final TypeQLArg.ValueType typeQLValueType;
-        private final Comparator<T> instanceComparator;
+        private final Comparator<T> comparator;
 
-        ValueType(int key, String name, Class<T> valueClass, boolean isWritable, boolean isKeyable, boolean isInstanceSorted,
-                  @Nullable TypeQLArg.ValueType typeQLValueType, @Nullable Comparator<T> instanceComparator) {
+        ValueType(int key, String name, Class<T> valueClass, boolean isWritable, boolean isKeyable, boolean isSorted,
+                  @Nullable TypeQLArg.ValueType typeQLValueType, @Nullable Comparator<T> comparator) {
             this.key = unsignedByte(key);
             this.name = name;
-            this.instanceComparator = instanceComparator;
+            this.comparator = comparator;
             this.bytes = ByteArray.of(new byte[]{this.key});
             this.valueClass = valueClass;
             this.isWritable = isWritable;
             this.isKeyable = isKeyable;
-            this.isInstanceSorted = isInstanceSorted;
+            this.isSorted = isSorted;
             this.typeQLValueType = typeQLValueType;
         }
 
@@ -500,28 +500,28 @@ public class Encoding {
             return isKeyable;
         }
 
-        public boolean isInstanceSorted() {
-            return isInstanceSorted;
+        public boolean isSorted() {
+            return isSorted;
         }
 
-        public Set<ValueType<?>> instanceAssignables() {
-            return INSTANCE_ASSIGNABLES.get(this);
+        public Set<ValueType<?>> assignables() {
+            return ASSIGNABLES.get(this);
         }
 
-        public Set<ValueType<?>> instanceComparables() {
-            return INSTANCE_COMPARABLES.get(this);
+        public Set<ValueType<?>> comparables() {
+            return COMPARABLES.get(this);
         }
 
-        public boolean instanceComparableTo(ValueType<?> valueType) {
-            return INSTANCE_COMPARABLES.get(this).contains(valueType);
+        public boolean comparableTo(ValueType<?> valueType) {
+            return COMPARABLES.get(this).contains(valueType);
         }
 
         public TypeQLArg.ValueType typeQLValueType() {
             return typeQLValueType;
         }
 
-        public Comparator<T> instanceComparator() {
-            return instanceComparator;
+        public Comparator<T> comparator() {
+            return comparator;
         }
     }
 

@@ -87,14 +87,14 @@ public abstract class PredicateArgument {
 
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Boolean value) {
-                if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.BOOLEAN)) return false;
+                if (!vertex.valueType().comparableTo(Encoding.ValueType.BOOLEAN)) return false;
                 assert vertex.isBoolean();
                 return apply(operator, vertex.asBoolean().value(), value);
             }
 
             @Override
             public boolean apply(PredicateOperator.Equality operator, Boolean lhs, Boolean rhs) {
-                return operator.apply(valueType().instanceComparator().compare(lhs, rhs));
+                return operator.apply(valueType().comparator().compare(lhs, rhs));
             }
         };
 
@@ -107,7 +107,7 @@ public abstract class PredicateArgument {
 
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Long value) {
-                if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.LONG)) return false;
+                if (!vertex.valueType().comparableTo(Encoding.ValueType.LONG)) return false;
                 assert (vertex.isLong() || vertex.isDouble());
 
                 if (vertex.isLong()) return apply(operator, vertex.asLong().value(), value);
@@ -118,7 +118,7 @@ public abstract class PredicateArgument {
 
             @Override
             public boolean apply(PredicateOperator.Equality operator, Long lhs, Long rhs) {
-                return operator.apply(valueType().instanceComparator().compare(lhs, rhs));
+                return operator.apply(valueType().comparator().compare(lhs, rhs));
             }
         };
 
@@ -131,7 +131,7 @@ public abstract class PredicateArgument {
 
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Double value) {
-                if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.DOUBLE)) return false;
+                if (!vertex.valueType().comparableTo(Encoding.ValueType.DOUBLE)) return false;
                 assert (vertex.isLong() || vertex.isDouble());
 
                 if (vertex.isLong()) return apply(operator, vertex.asLong().value().doubleValue(), value);
@@ -141,7 +141,7 @@ public abstract class PredicateArgument {
 
             @Override
             public boolean apply(PredicateOperator.Equality operator, Double lhs, Double rhs) {
-                return operator.apply(valueType().instanceComparator().compare(lhs, rhs));
+                return operator.apply(valueType().comparator().compare(lhs, rhs));
             }
         };
 
@@ -154,21 +154,21 @@ public abstract class PredicateArgument {
 
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, LocalDateTime value) {
-                if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.DATETIME)) return false;
+                if (!vertex.valueType().comparableTo(Encoding.ValueType.DATETIME)) return false;
                 assert vertex.isDateTime();
                 return apply(operator, vertex.asDateTime().value(), value);
             }
 
             @Override
             public boolean apply(PredicateOperator.Equality operator, LocalDateTime lhs, LocalDateTime rhs) {
-                return operator.apply(valueType().instanceComparator().compare(lhs, rhs));
+                return operator.apply(valueType().comparator().compare(lhs, rhs));
             }
         };
 
         public static final Value<PredicateOperator, String> STRING = new Value<>(Encoding.ValueType.STRING) {
             @Override
             public boolean apply(PredicateOperator operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
-                if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.STRING)) return false;
+                if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
                 assert value.isString() || value.isRegex();
                 if (operator.isSubString()) return operator.asSubString().apply(vertex.asString().value(), value);
                 else return apply(operator, vertex, value.getString());
@@ -176,15 +176,15 @@ public abstract class PredicateArgument {
 
             @Override
             public boolean apply(PredicateOperator operator, AttributeVertex<?> vertex, String value) {
-                if (!vertex.valueType().instanceComparableTo(Encoding.ValueType.STRING)) return false;
+                if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
                 assert vertex.isString() && operator.isEquality();
-                return operator.asEquality().apply(Encoding.ValueType.STRING.instanceComparator().compare(vertex.asString().value(), value));
+                return operator.asEquality().apply(Encoding.ValueType.STRING.comparator().compare(vertex.asString().value(), value));
             }
 
             @Override
             public boolean apply(PredicateOperator operator, String lhs, String rhs) {
                 assert operator.isEquality();
-                return operator.asEquality().apply(valueType().instanceComparator().compare(lhs, rhs));
+                return operator.asEquality().apply(valueType().comparator().compare(lhs, rhs));
             }
         };
     }
@@ -198,7 +198,7 @@ public abstract class PredicateArgument {
         }
 
         public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> from, AttributeVertex<?> to) {
-            if (!from.valueType().instanceComparableTo(to.valueType())) return false;
+            if (!from.valueType().comparableTo(to.valueType())) return false;
             Encoding.ValueType<?> valueType = to.valueType();
             if (valueType == BOOLEAN) return Value.BOOLEAN.apply(operator, from, to.asBoolean().value());
             else if (valueType == LONG) return Value.LONG.apply(operator, from, to.asLong().value());

@@ -189,7 +189,7 @@ public class Reasoner {
             for (Identifier.Variable.Retrievable id : sorting.variables()) {
                 Variable variable = conjunction.variable(id);
                 if (variable.isThing() && iterate(variable.inferredTypes()).map(traversalEng.graph().schema()::getType)
-                        .anyMatch(type -> type.isAttributeType() && !type.asType().valueType().isInstanceSorted())) {
+                        .anyMatch(type -> type.isAttributeType() && !type.asType().valueType().isSorted())) {
                     return false;
                 }
             }

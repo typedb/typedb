@@ -1074,7 +1074,7 @@ public class TypeGraph {
         public long attTypesWithValTypeComparableTo(Set<Label> labels) {
             Set<Encoding.ValueType<?>> valueTypes = iterate(labels)
                     .map(l -> getType(l).valueType()).noNulls()
-                    .flatMap(vt -> iterate(vt.instanceComparables())).toSet();
+                    .flatMap(vt -> iterate(vt.comparables())).toSet();
             return valueTypes.stream().mapToLong(this::attTypesWithValueType).sum();
         }
 

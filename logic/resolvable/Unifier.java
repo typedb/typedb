@@ -383,7 +383,7 @@ public class Unifier {
                 PredicateOperator.SubString<?> predicateOperator = PredicateOperator.SubString.of(value.predicate().asSubString());
                 if (value.isString()) {
                     predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).instanceComparableTo(STRING))
+                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).comparableTo(STRING))
                             return false;
                         assert a.getType().isString();
                         if (predicateOperator == PredicateOperator.SubString.CONTAINS) {

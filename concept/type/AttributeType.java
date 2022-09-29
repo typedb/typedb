@@ -136,12 +136,12 @@ public interface AttributeType extends ThingType {
         }
 
         public Set<ValueType> comparables() {
-            if (comparables == null) comparables = iterate(encoding.instanceComparables()).map(ValueType::of).toSet();
+            if (comparables == null) comparables = iterate(encoding.comparables()).map(ValueType::of).toSet();
             return comparables;
         }
 
         public Set<ValueType> assignables() {
-            if (assignables == null) assignables = iterate(encoding.instanceAssignables()).map(ValueType::of).toSet();
+            if (assignables == null) assignables = iterate(encoding.assignables()).map(ValueType::of).toSet();
             return assignables;
         }
 

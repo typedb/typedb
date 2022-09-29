@@ -250,7 +250,7 @@ public abstract class ProcedureVertex<
                     .map(t -> {
                         assert t.isAttributeType();
                         return t;
-                    }).filter(t -> eq.valueType().instanceAssignables().contains(t.valueType()));
+                    }).filter(t -> eq.valueType().assignables().contains(t.valueType()));
             return iteratorOfAttributes(graphMgr, attributeTypes, params, eq, order);
         }
 

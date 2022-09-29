@@ -233,7 +233,7 @@ public abstract class GraphTraversal extends Traversal {
 
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, Double value) {
             long longValue = Math.round(value);
-            if (Encoding.ValueType.DOUBLE.instanceComparator().compare(value, (double) longValue) == 0) {
+            if (Encoding.ValueType.DOUBLE.comparator().compare(value, (double) longValue) == 0) {
                 predicate(attribute, token, longValue);
             } else {
                 Predicate.Value.Numerical predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.DOUBLE);
