@@ -23,7 +23,7 @@ package(
         "//database:__pkg__",
         "//graph:__pkg__",
         "//traversal:__pkg__",
-        "//reasoner:__pkg__"
+        "//logic:__pkg__"
     ]
 )
 
