@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import org.junit.Test;
 
 import java.io.IOException;

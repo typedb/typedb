@@ -26,17 +26,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_DIRECTORY_COULD_NOT_BE_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_FILE_COULD_NOT_BE_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_WRITE_FAILED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONER_TRACING_DIRECTORY_COULD_NOT_BE_FOUND;
 
 public class Tracer {
 
@@ -153,14 +153,14 @@ public class Tracer {
                 if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
                     throw TypeDBException.of(REASONER_TRACING_DIRECTORY_COULD_NOT_BE_FOUND);
                 }
-                writer = new PrintWriter(file, "UTF-8");
+                writer = new PrintWriter(file, StandardCharsets.UTF_8);
                 write(String.format(
                         "digraph request_%s {\n" +
                                 "graph [fontsize=10 fontname=arial width=0.5 clusterrank=global]\n" +
                                 "node [fontsize=12 fontname=arial width=0.5 shape=box style=filled]\n" +
                                 "edge [fontsize=10 fontname=arial width=0.5]", id
                 ));
-            } catch (FileNotFoundException | UnsupportedEncodingException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
                 LOG.trace("Resolution tracing failed to start writing");
             }

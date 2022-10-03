@@ -81,7 +81,7 @@ public class Modifiers {
 
     public static class Filter {
 
-        Set<Identifier.Variable.Retrievable> variables;
+        private final Set<Identifier.Variable.Retrievable> variables;
 
         private Filter(Set<Identifier.Variable.Retrievable> variables) {
             this.variables = variables;
@@ -117,7 +117,7 @@ public class Modifiers {
 
     public static class Sorting {
 
-        public static Sorting EMPTY = new Sorting(list(), map());
+        public static final Sorting EMPTY = new Sorting(list(), map());
 
         List<Identifier.Variable.Retrievable> variables;
         Map<Identifier.Variable.Retrievable, Order> ascending;

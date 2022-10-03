@@ -27,15 +27,15 @@ import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingEdgeIterator.InEdgeIteratorImpl;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingEdgeIterator.OutEdgeIteratorImpl;
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.common.Storage.Key;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.key.Key;
 import com.vaticle.typedb.core.graph.edge.Edge;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.edge.impl.ThingEdgeImpl;
-import com.vaticle.typedb.core.graph.iid.EdgeViewIID;
-import com.vaticle.typedb.core.graph.iid.IID;
-import com.vaticle.typedb.core.graph.iid.InfixIID;
-import com.vaticle.typedb.core.graph.iid.SuffixIID;
+import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
+import com.vaticle.typedb.core.encoding.iid.IID;
+import com.vaticle.typedb.core.encoding.iid.InfixIID;
+import com.vaticle.typedb.core.encoding.iid.SuffixIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
@@ -52,7 +52,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 import static java.util.Arrays.copyOfRange;
 
 /**

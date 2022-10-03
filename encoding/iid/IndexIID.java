@@ -16,18 +16,18 @@
  *
  */
 
-package com.vaticle.typedb.core.graph.iid;
+package com.vaticle.typedb.core.encoding.iid;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.common.Encoding.Index;
-import com.vaticle.typedb.core.graph.common.Storage.Key;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding.Index;
+import com.vaticle.typedb.core.encoding.key.Key;
 
 import javax.annotation.Nullable;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING_ENCODING;
 
 public abstract class IndexIID extends PartitionedIID {
 

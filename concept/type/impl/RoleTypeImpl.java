@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.concept.thing.impl.RoleImpl;
 import com.vaticle.typedb.core.concept.thing.impl.ThingImpl;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import java.util.Collections;
@@ -42,9 +42,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RO
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.SUB;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ROLE;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ROLE_TYPE;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ROLE;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 

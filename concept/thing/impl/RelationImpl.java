@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.impl.RelationTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
-import com.vaticle.typedb.core.graph.iid.PrefixIID;
+import com.vaticle.typedb.core.encoding.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
@@ -43,10 +43,10 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.T
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.RELATING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ROLE;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.PLAYING;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.RELATING;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ROLE;
 
 public class RelationImpl extends ThingImpl implements Relation {
 

@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
-import com.vaticle.typedb.core.graph.iid.PrefixIID;
+import com.vaticle.typedb.core.encoding.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
@@ -52,9 +52,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.T
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.HAS;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.PLAYING;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 
 public abstract class ThingImpl extends ConceptImpl implements Thing {
 

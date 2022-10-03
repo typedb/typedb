@@ -22,8 +22,8 @@ import java.util.Objects;
 
 public class KeyValue<T extends Comparable<? super T>, U> implements Comparable<KeyValue<T, U>> {
 
-    T key;
-    U value;
+    private final T key;
+    private final U value;
 
     public KeyValue(T key, U value) {
         this.key = key;

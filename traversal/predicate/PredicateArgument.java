@@ -19,13 +19,18 @@
 package com.vaticle.typedb.core.traversal.predicate;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 
 import java.time.LocalDateTime;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
 
 public abstract class PredicateArgument {
 
@@ -56,14 +61,14 @@ public abstract class PredicateArgument {
 
     public static abstract class Value<ARG_VAL_OP extends PredicateOperator, ARG_VAL_TYPE> extends PredicateArgument {
 
-        private final Encoding.ValueType valueType;
+        private final Encoding.ValueType<ARG_VAL_TYPE> valueType;
 
-        public Value(Encoding.ValueType valueType) {
+        public Value(Encoding.ValueType<ARG_VAL_TYPE> valueType) {
             super(valueType.name());
             this.valueType = valueType;
         }
 
-        public Encoding.ValueType valueType() {
+        public Encoding.ValueType<ARG_VAL_TYPE> valueType() {
             return valueType;
         }
 
@@ -71,7 +76,9 @@ public abstract class PredicateArgument {
 
         public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, ARG_VAL_TYPE value);
 
-        public static Value<PredicateOperator.Equality, Boolean> BOOLEAN = new Value<PredicateOperator.Equality, Boolean>(Encoding.ValueType.BOOLEAN) {
+        public abstract boolean apply(ARG_VAL_OP operator, ARG_VAL_TYPE lhs, ARG_VAL_TYPE rhs);
+
+        public static final Value<PredicateOperator.Equality, Boolean> BOOLEAN = new Value<>(Encoding.ValueType.BOOLEAN) {
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                 assert value.isBoolean();
@@ -82,11 +89,16 @@ public abstract class PredicateArgument {
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Boolean value) {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.BOOLEAN)) return false;
                 assert vertex.isBoolean();
-                return operator.apply(Predicate.compareBooleans(vertex.asBoolean().value(), value));
+                return apply(operator, vertex.asBoolean().value(), value);
+            }
+
+            @Override
+            public boolean apply(PredicateOperator.Equality operator, Boolean lhs, Boolean rhs) {
+                return operator.apply(valueType().comparator().compare(lhs, rhs));
             }
         };
 
-        public static Value<PredicateOperator.Equality, Long> LONG = new Value<PredicateOperator.Equality, Long>(Encoding.ValueType.LONG) {
+        public static final Value<PredicateOperator.Equality, Long> LONG = new Value<>(Encoding.ValueType.LONG) {
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                 assert value.isLong();
@@ -98,17 +110,19 @@ public abstract class PredicateArgument {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.LONG)) return false;
                 assert (vertex.isLong() || vertex.isDouble());
 
-                if (vertex.isLong()) {
-                    return operator.apply(Predicate.compareLongs(vertex.asLong().value(), value));
-                }
-                else if (vertex.isDouble()){
-                    return operator.apply(Predicate.compareDoubleToLong(vertex.asDouble().value(), value));
-                }
+                if (vertex.isLong()) return apply(operator, vertex.asLong().value(), value);
+                else if (vertex.isDouble())
+                    return DOUBLE.apply(operator, vertex.asDouble().value(), value.doubleValue());
                 else throw TypeDBException.of(ILLEGAL_STATE);
+            }
+
+            @Override
+            public boolean apply(PredicateOperator.Equality operator, Long lhs, Long rhs) {
+                return operator.apply(valueType().comparator().compare(lhs, rhs));
             }
         };
 
-        public static Value<PredicateOperator.Equality, Double> DOUBLE = new Value<PredicateOperator.Equality, Double>(Encoding.ValueType.DOUBLE) {
+        public static final Value<PredicateOperator.Equality, Double> DOUBLE = new Value<>(Encoding.ValueType.DOUBLE) {
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                 assert value.isDouble();
@@ -120,17 +134,18 @@ public abstract class PredicateArgument {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.DOUBLE)) return false;
                 assert (vertex.isLong() || vertex.isDouble());
 
-                if (vertex.isLong()){
-                    return operator.apply(Predicate.compareLongToDouble(vertex.asLong().value(), value));
-                }
-                else if (vertex.isDouble()) {
-                    return operator.apply(Predicate.compareDoubles(vertex.asDouble().value(), value));
-                }
+                if (vertex.isLong()) return apply(operator, vertex.asLong().value().doubleValue(), value);
+                else if (vertex.isDouble()) return apply(operator, vertex.asDouble().value(), value);
                 else throw TypeDBException.of(ILLEGAL_STATE);
+            }
+
+            @Override
+            public boolean apply(PredicateOperator.Equality operator, Double lhs, Double rhs) {
+                return operator.apply(valueType().comparator().compare(lhs, rhs));
             }
         };
 
-        public static Value<PredicateOperator.Equality, LocalDateTime> DATETIME = new Value<PredicateOperator.Equality, LocalDateTime>(Encoding.ValueType.DATETIME) {
+        public static final Value<PredicateOperator.Equality, LocalDateTime> DATETIME = new Value<>(Encoding.ValueType.DATETIME) {
             @Override
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                 assert value.isDateTime();
@@ -141,12 +156,16 @@ public abstract class PredicateArgument {
             public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, LocalDateTime value) {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.DATETIME)) return false;
                 assert vertex.isDateTime();
+                return apply(operator, vertex.asDateTime().value(), value);
+            }
 
-                return operator.apply(Predicate.compareDateTimes(vertex.asDateTime().value(), value));
+            @Override
+            public boolean apply(PredicateOperator.Equality operator, LocalDateTime lhs, LocalDateTime rhs) {
+                return operator.apply(valueType().comparator().compare(lhs, rhs));
             }
         };
 
-        public static Value<PredicateOperator, String> STRING = new Value<PredicateOperator, String>(Encoding.ValueType.STRING) {
+        public static final Value<PredicateOperator, String> STRING = new Value<>(Encoding.ValueType.STRING) {
             @Override
             public boolean apply(PredicateOperator operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
@@ -159,14 +178,20 @@ public abstract class PredicateArgument {
             public boolean apply(PredicateOperator operator, AttributeVertex<?> vertex, String value) {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
                 assert vertex.isString() && operator.isEquality();
-                return operator.asEquality().apply(Predicate.compareStrings(vertex.asString().value(), value));
+                return operator.asEquality().apply(Encoding.ValueType.STRING.comparator().compare(vertex.asString().value(), value));
+            }
+
+            @Override
+            public boolean apply(PredicateOperator operator, String lhs, String rhs) {
+                assert operator.isEquality();
+                return operator.asEquality().apply(valueType().comparator().compare(lhs, rhs));
             }
         };
     }
 
     public static class Variable extends PredicateArgument {
 
-        public static Variable VARIABLE = new Variable();
+        public static final Variable VARIABLE = new Variable();
 
         public Variable() {
             super("var");
@@ -174,21 +199,13 @@ public abstract class PredicateArgument {
 
         public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> from, AttributeVertex<?> to) {
             if (!from.valueType().comparableTo(to.valueType())) return false;
-
-            switch (to.valueType()) {
-                case BOOLEAN:
-                    return Value.BOOLEAN.apply(operator, from, to.asBoolean().value());
-                case LONG:
-                    return Value.LONG.apply(operator, from, to.asLong().value());
-                case DOUBLE:
-                    return Value.DOUBLE.apply(operator, from, to.asDouble().value());
-                case STRING:
-                    return Value.STRING.apply(operator, from, to.asString().value());
-                case DATETIME:
-                    return Value.DATETIME.apply(operator, from, to.asDateTime().value());
-                default:
-                    throw TypeDBException.of(ILLEGAL_STATE);
-            }
+            Encoding.ValueType<?> valueType = to.valueType();
+            if (valueType == BOOLEAN) return Value.BOOLEAN.apply(operator, from, to.asBoolean().value());
+            else if (valueType == LONG) return Value.LONG.apply(operator, from, to.asLong().value());
+            else if (valueType == DOUBLE) return Value.DOUBLE.apply(operator, from, to.asDouble().value());
+            else if (valueType == STRING) return Value.STRING.apply(operator, from, to.asString().value());
+            else if (valueType == DATETIME) return Value.DATETIME.apply(operator, from, to.asDateTime().value());
+            throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 }

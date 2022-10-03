@@ -22,8 +22,8 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
@@ -40,11 +40,11 @@ import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
 
 public abstract class Traversal {
 
@@ -88,7 +88,7 @@ public abstract class Traversal {
     public static class Parameters {
 
         private final Map<Identifier.Variable, VertexIID.Thing> iids;
-        private final Map<Pair<Identifier.Variable, Predicate.Value<?>>, Set<Value>> values;
+        private final Map<Pair<Identifier.Variable, Predicate.Value<?, ?>>, Set<Value>> values;
 
         public Parameters() {
             iids = new HashMap<>();
@@ -100,7 +100,7 @@ public abstract class Traversal {
             this.iids.put(identifier, iid);
         }
 
-        public void pushValue(Identifier.Variable identifier, Predicate.Value<?> predicate, Value value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.Value<?, ?> predicate, Value value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(value);
         }
 
@@ -108,7 +108,7 @@ public abstract class Traversal {
             return iids.get(identifier);
         }
 
-        public Set<Value> getValues(Identifier.Variable identifier, Predicate.Value<?> predicate) {
+        public Set<Value> getValues(Identifier.Variable identifier, Predicate.Value<?, ?> predicate) {
             return values.get(pair(identifier, predicate));
         }
 
@@ -138,7 +138,7 @@ public abstract class Traversal {
 
         public static class Value {
 
-            private final Encoding.ValueType valueType;
+            private final Encoding.ValueType<?> valueType;
             private final Boolean booleanVal;
             private final Long longVal;
             private final Double doubleVal;
@@ -171,7 +171,7 @@ public abstract class Traversal {
                 this(STRING, null, null, null, null, null, regex);
             }
 
-            private Value(Encoding.ValueType valueType, Boolean booleanVal, Long longVal, Double doubleVal,
+            private Value(Encoding.ValueType<?> valueType, Boolean booleanVal, Long longVal, Double doubleVal,
                           LocalDateTime dateTimeVal, String stringVal, Pattern regexPattern) {
                 this.valueType = valueType;
                 this.booleanVal = booleanVal;
@@ -183,7 +183,7 @@ public abstract class Traversal {
                 this.hash = Objects.hash(valueType, booleanVal, longVal, doubleVal, dateTimeVal, stringVal, regexPattern);
             }
 
-            public Encoding.ValueType valueType() {
+            public Encoding.ValueType<?> valueType() {
                 return valueType;
             }
 

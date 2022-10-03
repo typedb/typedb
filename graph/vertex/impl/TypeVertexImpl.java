@@ -25,11 +25,11 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.adjacency.TypeAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.TypeAdjacencyImpl;
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.common.Storage.Key;
-import com.vaticle.typedb.core.graph.iid.IndexIID;
-import com.vaticle.typedb.core.graph.iid.PropertyIID;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.key.Key;
+import com.vaticle.typedb.core.encoding.iid.IndexIID;
+import com.vaticle.typedb.core.encoding.iid.PropertyIID;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -39,20 +39,20 @@ import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.OWNS_KEY;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.PLAYS;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Type.RELATES;
-import static com.vaticle.typedb.core.graph.common.Encoding.Property.ABSTRACT;
-import static com.vaticle.typedb.core.graph.common.Encoding.Property.LABEL;
-import static com.vaticle.typedb.core.graph.common.Encoding.Property.REGEX;
-import static com.vaticle.typedb.core.graph.common.Encoding.Property.SCOPE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Property.VALUE_TYPE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.RELATION_TYPE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.PLAYS;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.RELATES;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.ABSTRACT;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.LABEL;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.REGEX;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.SCOPE;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.VALUE_TYPE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING_ENCODING;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ENTITY_TYPE;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.RELATION_TYPE;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ROLE_TYPE;
 import static java.lang.Math.toIntExact;
 
 public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implements TypeVertex {
@@ -68,7 +68,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
     String scope;
     Label properLabel;
     Boolean isAbstract; // needs to be declared as the Boolean class
-    Encoding.ValueType valueType;
+    Encoding.ValueType<?> valueType;
     Pattern regex;
 
     private volatile int outOwnsCount;
@@ -79,7 +79,6 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
 
     TypeVertexImpl(TypeGraph graph, VertexIID.Type iid, String label, @Nullable String scope) {
         super(iid);
-        assert iid.isType();
         this.graph = graph;
         this.label = label;
         this.scope = scope;
@@ -474,7 +473,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public Encoding.ValueType valueType() {
+        public Encoding.ValueType<?> valueType() {
             if (valueType != null) return valueType;
             ByteArray val = graph.storage().get(PropertyIID.Type.of(iid, VALUE_TYPE));
             if (val != null) valueType = Encoding.ValueType.of(val.get(0));
@@ -482,7 +481,7 @@ public abstract class TypeVertexImpl extends VertexImpl<VertexIID.Type> implemen
         }
 
         @Override
-        public TypeVertexImpl valueType(Encoding.ValueType valueType) {
+        public TypeVertexImpl valueType(Encoding.ValueType<?> valueType) {
             assert !isDeleted();
             graph.storage().putUntracked(PropertyIID.Type.of(iid, VALUE_TYPE), valueType.bytes());
             this.valueType = valueType;

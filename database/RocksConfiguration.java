@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.database;
 
-import com.vaticle.typedb.core.graph.common.Storage.Key;
+import com.vaticle.typedb.core.encoding.key.Key;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.BloomFilter;
 import org.rocksdb.ColumnFamilyOptions;

@@ -33,9 +33,10 @@ native_java_libraries(
         # Internal dependencies
         "//:typedb",
         "//common:common",
+        "//concept:concept",
         "//concurrent:concurrent",
         "//graph:graph",
-        "//concept:concept",
+        "//encoding:encoding",
         "//logic:logic",
         "//query:query",
         "//reasoner:reasoner",

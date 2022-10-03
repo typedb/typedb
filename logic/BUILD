@@ -34,8 +34,9 @@ native_java_libraries(
     native_libraries_deps = [
         # Internal dependencies
         "//common:common",
-        "//graph:graph",
         "//concept:concept",
+        "//graph:graph",
+        "//encoding:encoding",
         "//pattern:pattern",
         "//traversal:traversal",
     ],

@@ -16,13 +16,13 @@
  *
  */
 
-package com.vaticle.typedb.core.graph.iid;
+package com.vaticle.typedb.core.encoding.iid;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 
 public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID {
 

@@ -21,11 +21,11 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.TypeGraph;
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.common.Storage.Key;
-import com.vaticle.typedb.core.graph.iid.IndexIID;
-import com.vaticle.typedb.core.graph.iid.PropertyIID;
-import com.vaticle.typedb.core.graph.iid.StructureIID;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.key.Key;
+import com.vaticle.typedb.core.encoding.iid.IndexIID;
+import com.vaticle.typedb.core.encoding.iid.PropertyIID;
+import com.vaticle.typedb.core.encoding.iid.StructureIID;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.TypeQL;
@@ -46,10 +46,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
-import static com.vaticle.typedb.core.graph.common.Encoding.Property.LABEL;
-import static com.vaticle.typedb.core.graph.common.Encoding.Property.THEN;
-import static com.vaticle.typedb.core.graph.common.Encoding.Property.WHEN;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.LABEL;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.THEN;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.WHEN;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING_ENCODING;
 
 public abstract class RuleStructureImpl implements RuleStructure {
 

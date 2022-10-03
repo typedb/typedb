@@ -36,7 +36,7 @@ import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
 import com.vaticle.typedb.core.concurrent.producer.ProducerIterator;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
@@ -56,7 +56,7 @@ import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISAT
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ROLE;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ROLE;
 import static java.util.Comparator.comparing;
 
 public final class ConceptManager {

@@ -52,9 +52,9 @@ native_java_libraries(
         # Internal dependencies
         "//:typedb",
         "//common:common",
-        "//concurrent:concurrent",
-        "//graph:graph",
         "//concept:concept",
+        "//concurrent:concurrent",
+        "//encoding:encoding",
         "//logic:logic",
     ],
     deps = [

@@ -71,7 +71,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.PLA
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.ROLE_TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING_ENCODING;
 import static com.vaticle.typedb.core.migrator.data.DataProto.Item.ItemCase.HEADER;
 import static java.util.Comparator.reverseOrder;
 

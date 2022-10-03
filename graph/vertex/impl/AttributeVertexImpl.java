@@ -22,16 +22,21 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingAdjacencyImpl;
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Status.BUFFERED;
-import static com.vaticle.typedb.core.graph.common.Encoding.Status.PERSISTED;
+import static com.vaticle.typedb.core.encoding.Encoding.Status.BUFFERED;
+import static com.vaticle.typedb.core.encoding.Encoding.Status.PERSISTED;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
 
 public abstract class AttributeVertexImpl {
 
@@ -47,21 +52,14 @@ public abstract class AttributeVertexImpl {
         }
 
         public static AttributeVertexImpl.Read<?> of(ThingGraph graph, VertexIID.Attribute<?> iid) {
-            switch (iid.valueType()) {
-                case BOOLEAN:
-                    return new AttributeVertexImpl.Read.Boolean(graph, iid.asBoolean());
-                case LONG:
-                    return new AttributeVertexImpl.Read.Long(graph, iid.asLong());
-                case DOUBLE:
-                    return new AttributeVertexImpl.Read.Double(graph, iid.asDouble());
-                case STRING:
-                    return new AttributeVertexImpl.Read.String(graph, iid.asString());
-                case DATETIME:
-                    return new AttributeVertexImpl.Read.DateTime(graph, iid.asDateTime());
-                default:
-                    assert false;
-                    return null;
-            }
+            Encoding.ValueType<?> valueType = iid.valueType();
+            if (BOOLEAN == valueType) return new Boolean(graph, iid.asBoolean());
+            else if (LONG == valueType) return new Long(graph, iid.asLong());
+            else if (DOUBLE == valueType) return new Double(graph, iid.asDouble());
+            else if (STRING == valueType) return new String(graph, iid.asString());
+            else if (DATETIME == valueType) return new DateTime(graph, iid.asDateTime());
+            assert false;
+            return null;
         }
 
         @Override
@@ -70,7 +68,7 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public Encoding.ValueType valueType() {
+        public Encoding.ValueType<VALUE> valueType() {
             return attributeIID.valueType();
         }
 
@@ -267,21 +265,14 @@ public abstract class AttributeVertexImpl {
         }
 
         public static AttributeVertexImpl.Write<?> of(ThingGraph graph, VertexIID.Attribute<?> iid) {
-            switch (iid.valueType()) {
-                case BOOLEAN:
-                    return new AttributeVertexImpl.Write.Boolean(graph, iid.asBoolean());
-                case LONG:
-                    return new AttributeVertexImpl.Write.Long(graph, iid.asLong());
-                case DOUBLE:
-                    return new AttributeVertexImpl.Write.Double(graph, iid.asDouble());
-                case STRING:
-                    return new AttributeVertexImpl.Write.String(graph, iid.asString());
-                case DATETIME:
-                    return new AttributeVertexImpl.Write.DateTime(graph, iid.asDateTime());
-                default:
-                    assert false;
-                    return null;
-            }
+            Encoding.ValueType<?> valueType = iid.valueType();
+            if (BOOLEAN == valueType) return new Boolean(graph, iid.asBoolean());
+            else if (LONG == valueType) return new Long(graph, iid.asLong());
+            else if (DOUBLE == valueType) return new Double(graph, iid.asDouble());
+            else if (STRING == valueType) return new String(graph, iid.asString());
+            else if (DATETIME == valueType) return new DateTime(graph, iid.asDateTime());
+            assert false;
+            return null;
         }
 
         @Override
@@ -300,7 +291,7 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public Encoding.ValueType valueType() {
+        public Encoding.ValueType<VALUE> valueType() {
             return attributeIID.valueType();
         }
 

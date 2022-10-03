@@ -16,32 +16,31 @@
  *
  */
 
-package com.vaticle.typedb.core.graph.iid;
+package com.vaticle.typedb.core.encoding.iid;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
-import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.encoding.Encoding;
 
-import java.util.Objects;
+public class PrefixIID extends IID {
 
-public abstract class PartitionedIID extends IID implements Storage.Key {
+    public static final int LENGTH = 1;
 
-    private int hash =  0;
-
-    PartitionedIID(ByteArray bytes) {
+    private PrefixIID(ByteArray bytes) {
         super(bytes);
+        assert bytes.length() == LENGTH;
+    }
+
+    public static PrefixIID of(Encoding.Prefix prefix) {
+        return new PrefixIID(prefix.bytes());
+    }
+
+    public static PrefixIID of(Encoding.Vertex encoding) {
+        return new PrefixIID(encoding.prefix().bytes());
     }
 
     @Override
-    public final boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
-        PartitionedIID that = (PartitionedIID) object;
-        return this.partition().equals(that.partition()) && this.bytes.equals(that.bytes);
-    }
-
-    @Override
-    public final int hashCode() {
-        if (hash == 0) hash = Objects.hash(bytes, partition());
-        return hash;
+    public String toString() {
+        if (readableString == null) readableString = "[" + Encoding.Prefix.of(bytes.get(0)).toString() + "]";
+        return readableString;
     }
 }

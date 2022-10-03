@@ -13,10 +13,9 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
-package com.vaticle.typedb.core.graph;
+package com.vaticle.typedb.core.encoding;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
@@ -31,8 +30,10 @@ import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.database.Factory;
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.Storage;
+import com.vaticle.typedb.core.encoding.key.Key;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
@@ -54,15 +55,15 @@ import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.PLAYING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.RELATING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING_ENCODING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ENTITY;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.RELATION;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ROLE;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.HAS;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.PLAYING;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.RELATING;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING_ENCODING;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ATTRIBUTE;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ENTITY;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.RELATION;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ROLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -112,21 +113,21 @@ public class EncodingTest {
     }
 
     private List<KeyValue<RawKey, ByteArray>> vertexElements(Storage.Data storage) {
-        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Storage.Key.Partition.DEFAULT))
+        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Key.Partition.DEFAULT))
                 .filter(kv -> !kv.key().bytes().hasPrefix(Encoding.Prefix.SYSTEM.bytes()))
                 .toList();
     }
 
     private List<KeyValue<RawKey, ByteArray>> variableStartEdgeElements(Storage.Data storage) {
-        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Storage.Key.Partition.VARIABLE_START_EDGE)).toList();
+        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Key.Partition.VARIABLE_START_EDGE)).toList();
     }
 
     private List<KeyValue<RawKey, ByteArray>> fixedStartEdgeElements(Storage.Data storage) {
-        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Storage.Key.Partition.FIXED_START_EDGE)).toList();
+        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Key.Partition.FIXED_START_EDGE)).toList();
     }
 
     private List<KeyValue<RawKey, ByteArray>> optimisationEdgeElements(Storage.Data storage) {
-        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Storage.Key.Partition.OPTIMISATION_EDGE)).toList();
+        return storage.iterate(new RawKeyPrefix(ByteArray.empty(), Key.Partition.OPTIMISATION_EDGE)).toList();
     }
 
     private ByteArray expectedIID(GraphManager graphMgr, Label typeLabel, long instanceNumber) {
@@ -233,7 +234,7 @@ public class EncodingTest {
         }
     }
 
-    private static class RawKey implements Storage.Key {
+    private static class RawKey implements Key {
 
         private final ByteArray bytes;
         private final Partition partition;
@@ -254,7 +255,7 @@ public class EncodingTest {
         }
     }
 
-    private static class RawKeyPrefix extends Storage.Key.Prefix<RawKey> {
+    private static class RawKeyPrefix extends Key.Prefix<RawKey> {
         private RawKeyPrefix(ByteArray prefix, Partition partition) {
             super(prefix, partition, (key) -> new RawKey(key, partition));
         }

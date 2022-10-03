@@ -16,31 +16,23 @@
  *
  */
 
-package com.vaticle.typedb.core.graph.iid;
+package com.vaticle.typedb.core.encoding.iid;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
-import com.vaticle.typedb.core.graph.common.Encoding;
 
-public class PrefixIID extends IID {
+public class SuffixIID extends IID {
 
-    public static final int LENGTH = 1;
-
-    private PrefixIID(ByteArray bytes) {
+    private SuffixIID(ByteArray bytes) {
         super(bytes);
-        assert bytes.length() == LENGTH;
     }
 
-    public static PrefixIID of(Encoding.Prefix prefix) {
-        return new PrefixIID(prefix.bytes());
-    }
-
-    public static PrefixIID of(Encoding.Vertex encoding) {
-        return new PrefixIID(encoding.prefix().bytes());
+    public static SuffixIID of(ByteArray bytes) {
+        return new SuffixIID(bytes);
     }
 
     @Override
     public String toString() {
-        if (readableString == null) readableString = "[" + Encoding.Prefix.of(bytes.get(0)).toString() + "]";
+        if (readableString == null) readableString = "Suffix: " + bytes.toString();
         return readableString;
     }
 }
