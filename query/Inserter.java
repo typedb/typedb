@@ -252,15 +252,15 @@ public class Inserter {
                         (valueConstraint = var.value().iterator().next()).isValueIdentity()) {
                     switch (attributeType.getValueType()) {
                         case LONG:
-                            return attributeType.asLong().put(valueConstraint.asLong().value());
+                            return attributeType.asLong().put(valueConstraint.asConstant().asLong().value());
                         case DOUBLE:
-                            return attributeType.asDouble().put(valueConstraint.asDouble().value());
+                            return attributeType.asDouble().put(valueConstraint.asConstant().asDouble().value());
                         case BOOLEAN:
-                            return attributeType.asBoolean().put(valueConstraint.asBoolean().value());
+                            return attributeType.asBoolean().put(valueConstraint.asConstant().asBoolean().value());
                         case STRING:
-                            return attributeType.asString().put(valueConstraint.asString().value());
+                            return attributeType.asString().put(valueConstraint.asConstant().asString().value());
                         case DATETIME:
-                            return attributeType.asDateTime().put(valueConstraint.asDateTime().value());
+                            return attributeType.asDateTime().put(valueConstraint.asConstant().asDateTime().value());
                         default:
                             assert false;
                             return null;

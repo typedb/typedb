@@ -28,13 +28,13 @@ import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
+import com.vaticle.typedb.core.encoding.key.Key;
 import com.vaticle.typedb.core.graph.TypeGraph;
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.common.KeyGenerator;
-import com.vaticle.typedb.core.graph.common.StatisticsKey;
-import com.vaticle.typedb.core.graph.common.Storage;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.key.KeyGenerator;
+import com.vaticle.typedb.core.encoding.key.StatisticsKey;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -96,8 +96,8 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.S
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.serial;
-import static com.vaticle.typedb.core.graph.common.Encoding.ENCODING_VERSION;
-import static com.vaticle.typedb.core.graph.common.Encoding.System.ENCODING_VERSION_KEY;
+import static com.vaticle.typedb.core.encoding.Encoding.ENCODING_VERSION;
+import static com.vaticle.typedb.core.encoding.Encoding.System.ENCODING_VERSION_KEY;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -274,7 +274,7 @@ public class CoreDatabase implements TypeDB.Database {
     protected void initialiseEncodingVersion() {
         try {
             rocksSchema.put(
-                    rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
+                    rocksSchemaPartitionMgr.get(Key.Partition.DEFAULT),
                     ENCODING_VERSION_KEY.bytes().getBytes(),
                     ByteArray.encodeInt(ENCODING_VERSION).getBytes()
             );
@@ -286,7 +286,7 @@ public class CoreDatabase implements TypeDB.Database {
     protected void validateEncodingVersion() {
         try {
             byte[] encodingBytes = rocksSchema.get(
-                    rocksSchemaPartitionMgr.get(Storage.Key.Partition.DEFAULT),
+                    rocksSchemaPartitionMgr.get(Key.Partition.DEFAULT),
                     ENCODING_VERSION_KEY.bytes().getBytes()
             );
             int encoding = encodingBytes == null || encodingBytes.length == 0 ? 0 : ByteArray.of(encodingBytes).decodeInt();

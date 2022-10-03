@@ -18,16 +18,13 @@
 
 package com.vaticle.typedb.core.traversal.predicate;
 
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
-import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.regex.Pattern;
-
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE_PRECISION;
 
 public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG extends PredicateArgument> {
 
@@ -39,38 +36,6 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
         this.operator = operator;
         this.argument = argument;
         this.hash = Objects.hash(operator, argument);
-    }
-
-    // TODO: Move this where it belongs - Encoding?
-    public static int compareBooleans(boolean first, boolean second) {
-        return Boolean.compare(first, second);
-    }
-
-    public static int compareLongs(long first, long second) {
-        return Long.compare(first, second);
-    }
-
-    public static int compareDoubles(double first, double second) {
-        int res = Double.compare(first, second);
-        if (res == 0) return 0;
-        else if (Math.abs(first - second) < DOUBLE_PRECISION) return 0;
-        else return res;
-    }
-
-    public static int compareLongToDouble(long first, double second) {
-        return compareDoubles(first, second);
-    }
-
-    public static int compareDoubleToLong(double first, long second) {
-        return compareDoubles(first, second);
-    }
-
-    public static int compareDateTimes(LocalDateTime first, LocalDateTime second) {
-        return first.compareTo(second);
-    }
-
-    public static int compareStrings(String first, String second) {
-        return first.compareTo(second);
     }
 
     public static boolean stringContains(String superString, String subString) {
@@ -116,13 +81,13 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
         return hash;
     }
 
-    public static abstract class Value<VAL_OP extends PredicateOperator> extends Predicate<VAL_OP, PredicateArgument.Value<VAL_OP, ?>> {
+    public static abstract class Value<VAL_OP extends PredicateOperator, ARG_TYPE> extends Predicate<VAL_OP, PredicateArgument.Value<VAL_OP, ARG_TYPE>> {
 
-        public Value(VAL_OP operator, PredicateArgument.Value<VAL_OP, ?> argument) {
+        public Value(VAL_OP operator, PredicateArgument.Value<VAL_OP, ARG_TYPE> argument) {
             super(operator, argument);
         }
 
-        public Encoding.ValueType valueType() {
+        public Encoding.ValueType<ARG_TYPE> valueType() {
             return argument.valueType();
         }
 
@@ -130,18 +95,22 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
             return argument.apply(operator, vertex, value);
         }
 
-        public static class Numerical extends Value<PredicateOperator.Equality> {
+        public boolean apply(ARG_TYPE lhs, ARG_TYPE rhs) {
+            return argument.apply(operator, lhs, rhs);
+        }
 
-            public Numerical(PredicateOperator.Equality operator, PredicateArgument.Value<PredicateOperator.Equality, ?> argument) {
+        public static class Numerical<ARG_TYPE> extends Value<PredicateOperator.Equality, ARG_TYPE> {
+
+            public Numerical(PredicateOperator.Equality operator, PredicateArgument.Value<PredicateOperator.Equality, ARG_TYPE> argument) {
                 super(operator, argument);
             }
 
-            public static Numerical of(TypeQLToken.Predicate.Equality token, PredicateArgument.Value<PredicateOperator.Equality, ?> argument) {
-                return new Numerical(PredicateOperator.Equality.of(token), argument);
+            public static <ARG> Numerical<ARG> of(TypeQLToken.Predicate.Equality token, PredicateArgument.Value<PredicateOperator.Equality, ARG> argument) {
+                return new Numerical<>(PredicateOperator.Equality.of(token), argument);
             }
         }
 
-        public static class String extends Value<PredicateOperator> {
+        public static class String extends Value<PredicateOperator, java.lang.String> {
 
             public String(PredicateOperator operator, PredicateArgument.Value<PredicateOperator, java.lang.String> argument) {
                 super(operator, argument);
@@ -154,7 +123,6 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
     }
 
     public static class Variable extends Predicate<PredicateOperator.Equality, PredicateArgument.Variable> {
-
 
         private Variable(PredicateOperator.Equality operator) {
             super(operator, PredicateArgument.Variable.VARIABLE);

@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.pattern.constraint.thing;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
@@ -27,6 +28,7 @@ import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
@@ -65,31 +67,33 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
                                  com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.Value<?> valueConstraint,
                                  VariableRegistry register) {
         if (valueConstraint.isLong()) {
-            return new Long(owner, valueConstraint.predicate().asEquality(), valueConstraint.asLong().value());
+            return new Constant.Long(owner, valueConstraint.predicate().asEquality(), valueConstraint.asLong().value());
         } else if (valueConstraint.isDouble()) {
-            return new Double(owner, valueConstraint.predicate().asEquality(), valueConstraint.asDouble().value());
+            return new Constant.Double(owner, valueConstraint.predicate().asEquality(), valueConstraint.asDouble().value());
         } else if (valueConstraint.isBoolean()) {
-            return new Boolean(owner, valueConstraint.predicate().asEquality(), valueConstraint.asBoolean().value());
+            return new Constant.Boolean(owner, valueConstraint.predicate().asEquality(), valueConstraint.asBoolean().value());
         } else if (valueConstraint.isString()) {
-            return new String(owner, valueConstraint.predicate(), valueConstraint.asString().value());
+            return new Constant.String(owner, valueConstraint.predicate(), valueConstraint.asString().value());
         } else if (valueConstraint.isDateTime()) {
-            return new DateTime(owner, valueConstraint.predicate().asEquality(), valueConstraint.asDateTime().value());
+            return new Constant.DateTime(owner, valueConstraint.predicate().asEquality(), valueConstraint.asDateTime().value());
         } else if (valueConstraint.isVariable()) {
             return new Variable(owner, valueConstraint.predicate().asEquality(), register.register(valueConstraint.asVariable().value()));
         } else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     static ValueConstraint<?> of(ThingVariable owner, ValueConstraint<?> clone, VariableCloner cloner) {
-        if (clone.isLong()) {
-            return new Long(owner, clone.predicate().asEquality(), clone.asLong().value());
-        } else if (clone.isDouble()) {
-            return new Double(owner, clone.predicate().asEquality(), clone.asDouble().value());
-        } else if (clone.isBoolean()) {
-            return new Boolean(owner, clone.predicate().asEquality(), clone.asBoolean().value());
-        } else if (clone.isString()) {
-            return new String(owner, clone.predicate(), clone.asString().value());
-        } else if (clone.isDateTime()) {
-            return new DateTime(owner, clone.predicate().asEquality(), clone.asDateTime().value());
+        if (clone.isConstant()) {
+            if (clone.asConstant().isLong()) {
+                return new Constant.Long(owner, clone.predicate().asEquality(), clone.asConstant().asLong().value());
+            } else if (clone.asConstant().isDouble()) {
+                return new Constant.Double(owner, clone.predicate().asEquality(), clone.asConstant().asDouble().value());
+            } else if (clone.asConstant().isBoolean()) {
+                return new Constant.Boolean(owner, clone.predicate().asEquality(), clone.asConstant().asBoolean().value());
+            } else if (clone.asConstant().isString()) {
+                return new Constant.String(owner, clone.predicate(), clone.asConstant().asString().value());
+            } else if (clone.asConstant().isDateTime()) {
+                return new Constant.DateTime(owner, clone.predicate().asEquality(), clone.asConstant().asDateTime().value());
+            } else throw TypeDBException.of(ILLEGAL_STATE);
         } else if (clone.isVariable()) {
             return new Variable(owner, clone.predicate().asEquality(), cloner.clone(clone.asVariable().value()));
         } else throw TypeDBException.of(ILLEGAL_STATE);
@@ -114,51 +118,19 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
     }
 
     public boolean isValueIdentity() {
-        return predicate.equals(EQ) && !isVariable();
-    }
-
-    public boolean isLong() {
-        return false;
-    }
-
-    public boolean isDouble() {
-        return false;
-    }
-
-    public boolean isBoolean() {
-        return false;
-    }
-
-    public boolean isString() {
-        return false;
-    }
-
-    public boolean isDateTime() {
-        return false;
+        return predicate.equals(EQ) && isConstant();
     }
 
     public boolean isVariable() {
         return false;
     }
 
-    public Long asLong() {
-        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Long.class));
+    public boolean isConstant() {
+        return false;
     }
 
-    public Double asDouble() {
-        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Double.class));
-    }
-
-    public Boolean asBoolean() {
-        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Boolean.class));
-    }
-
-    public String asString() {
-        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(String.class));
-    }
-
-    public DateTime asDateTime() {
-        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(DateTime.class));
+    public Constant<T> asConstant() {
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Constant.class));
     }
 
     public Variable asVariable() {
@@ -185,237 +157,300 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         return owner.toString() + SPACE + predicate.toString() + SPACE + value.toString();
     }
 
-    @Override
-    public FunctionalIterator<AlphaEquivalence> alphaEquals(ValueConstraint<?> that) {
-        return owner.alphaEquals(that.owner)
-                .flatMap(a -> a.alphaEqualIf(isLong() == that.isLong()))
-                .flatMap(a -> a.alphaEqualIf(isDouble() == that.isDouble()))
-                .flatMap(a -> a.alphaEqualIf(isBoolean() == that.isBoolean()))
-                .flatMap(a -> a.alphaEqualIf(isString() == that.isString()))
-                .flatMap(a -> a.alphaEqualIf(isDateTime() == that.isDateTime()))
-                .flatMap(a -> a.alphaEqualIf(!isVariable() && !that.isVariable()))
-                .flatMap(a -> a.alphaEqualIf(this.predicate.equals(that.predicate)))
-                .flatMap(a -> a.alphaEqualIf(this.value.equals(that.value)));
-    }
-
     public boolean inconsistentWith(ValueConstraint<?> valueConstraint) {
-        if (valueConstraint.predicate == EQ) {
-            return !isConsistentWithEquality(valueConstraint);
-        } else { // TODO: implement inequality compatibility when useful
-            return true;
-        }
+        if (isVariable() || valueConstraint.isVariable()) return false;
+        return !asConstant().isConsistentWith(valueConstraint.asConstant());
     }
 
-    abstract boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint);
+    public static abstract class Constant<VALUE_TYPE> extends ValueConstraint<VALUE_TYPE> {
 
-    public static class Long extends ValueConstraint<java.lang.Long> {
+        final Encoding.ValueType<VALUE_TYPE> valueEncoding;
 
-        public Long(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, long value) {
-            super(owner, predicate, value, set());
+        private Constant(ThingVariable owner, TypeQLToken.Predicate predicate, VALUE_TYPE value,
+                         Set<com.vaticle.typedb.core.pattern.variable.Variable> additionalVariables, Encoding.ValueType<VALUE_TYPE> valueEncoding) {
+            super(owner, predicate, value, additionalVariables);
+            this.valueEncoding = valueEncoding;
         }
 
         @Override
-        public TypeQLToken.Predicate.Equality predicate() {
-            return super.predicate().asEquality();
+        public boolean isConstant() {
+            return true;
         }
 
         @Override
+        public Constant<VALUE_TYPE> asConstant() {
+            return this;
+        }
+
         public boolean isLong() {
-            return true;
+            return false;
         }
 
-        @Override
-        public Long asLong() {
-            return this;
-        }
-
-        @Override
-        public Double asDouble() {
-            return new Double(owner, predicate.asEquality(), value);
-        }
-
-        @Override
-        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
-            return conclusionValueConstraint.isVariable() ||
-                    (conclusionValueConstraint.isLong() &&
-                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongs(conclusionValueConstraint.asLong().value(), value))) ||
-                    (conclusionValueConstraint.isDouble() &&
-                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareDoubleToLong(conclusionValueConstraint.asDouble().value(), value)));
-        }
-
-        @Override
-        public void addTo(GraphTraversal.Thing traversal) {
-            traversal.predicate(owner.id(), predicate.asEquality(), value);
-        }
-
-        @Override
-        public Long clone(Conjunction.ConstraintCloner cloner) {
-            return cloner.cloneVariable(owner).valueLong(predicate(), value);
-        }
-    }
-
-    public static class Double extends ValueConstraint<java.lang.Double> {
-
-        public Double(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, double value) {
-            super(owner, predicate, value, set());
-        }
-
-        @Override
-        public TypeQLToken.Predicate.Equality predicate() {
-            return super.predicate().asEquality();
-        }
-
-        @Override
         public boolean isDouble() {
-            return true;
+            return false;
         }
 
-        @Override
-        public Double asDouble() {
-            return this;
-        }
-
-        @Override
-        public void addTo(GraphTraversal.Thing traversal) {
-            traversal.predicate(owner.id(), predicate.asEquality(), value);
-        }
-
-        @Override
-        public Double clone(Conjunction.ConstraintCloner cloner) {
-            return cloner.cloneVariable(owner).valueDouble(predicate(), value);
-        }
-
-        @Override
-        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
-            return conclusionValueConstraint.isVariable() ||
-                    (conclusionValueConstraint.isLong() &&
-                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareLongToDouble(conclusionValueConstraint.asLong().value(), value))) ||
-                    (conclusionValueConstraint.isDouble() &&
-                            PredicateOperator.Equality.of(predicate()).apply(Predicate.compareDoubles(conclusionValueConstraint.asDouble().value(), value)));
-        }
-    }
-
-    public static class Boolean extends ValueConstraint<java.lang.Boolean> {
-
-        public Boolean(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, boolean value) {
-            super(owner, predicate, value, set());
-        }
-
-        @Override
-        public TypeQLToken.Predicate.Equality predicate() {
-            return super.predicate().asEquality();
-        }
-
-        @Override
         public boolean isBoolean() {
-            return true;
+            return false;
         }
 
-        @Override
-        public Boolean asBoolean() {
-            return this;
-        }
-
-        @Override
-        public void addTo(GraphTraversal.Thing traversal) {
-            traversal.predicate(owner.id(), predicate.asEquality(), value);
-        }
-
-        @Override
-        public Boolean clone(Conjunction.ConstraintCloner cloner) {
-            return cloner.cloneVariable(owner).valueBoolean(predicate(), value);
-        }
-
-        @Override
-        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
-            return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isBoolean() &&
-                    PredicateOperator.Equality.of(predicate()).apply(Predicate.compareBooleans(conclusionValueConstraint.asBoolean().value(), value)));
-        }
-    }
-
-    public static class String extends ValueConstraint<java.lang.String> {
-
-        public String(ThingVariable owner, TypeQLToken.Predicate predicate, java.lang.String value) {
-            super(owner, predicate, value, set());
-        }
-
-        @Override
         public boolean isString() {
-            return true;
+            return false;
         }
 
-        @Override
-        public String asString() {
-            return this;
-        }
-
-        @Override
-        public void addTo(GraphTraversal.Thing traversal) {
-            traversal.predicate(owner.id(), predicate, value);
-        }
-
-        @Override
-        public java.lang.String toString() {
-            return owner.toString() + SPACE + predicate.toString() + SPACE + QUOTE_DOUBLE + value + QUOTE_DOUBLE;
-        }
-
-        @Override
-        public String clone(Conjunction.ConstraintCloner cloner) {
-            return cloner.cloneVariable(owner).valueString(predicate(), value);
-        }
-
-        @Override
-        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
-            if (conclusionValueConstraint.isVariable()) return true;
-            if (!conclusionValueConstraint.isString()) return false;
-            if (predicate.isEquality()) {
-                return PredicateOperator.Equality.of(predicate.asEquality()).apply(Predicate.compareStrings(conclusionValueConstraint.asString().value(), value));
-            } else if (predicate.isSubString()) {
-                PredicateOperator.SubString operator = PredicateOperator.SubString.of(predicate.asSubString());
-                if (operator == PredicateOperator.SubString.CONTAINS) {
-                    return PredicateOperator.SubString.CONTAINS.apply(conclusionValueConstraint.asString().value(), value);
-                } else if (operator == PredicateOperator.SubString.LIKE) {
-                    return PredicateOperator.SubString.LIKE.apply(conclusionValueConstraint.asString().value(), Pattern.compile(value));
-                } else throw TypeDBException.of(ILLEGAL_STATE);
-            } else throw TypeDBException.of(ILLEGAL_STATE);
-        }
-    }
-
-    public static class DateTime extends ValueConstraint<LocalDateTime> {
-
-        public DateTime(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, LocalDateTime value) {
-            super(owner, predicate, value, set());
-        }
-
-        @Override
-        public TypeQLToken.Predicate.Equality predicate() {
-            return super.predicate().asEquality();
-        }
-
-        @Override
         public boolean isDateTime() {
-            return true;
+            return false;
         }
 
-        @Override
+        public Long asLong() {
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Long.class));
+        }
+
+        public Double asDouble() {
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Double.class));
+        }
+
+        public Boolean asBoolean() {
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Boolean.class));
+        }
+
+        public String asString() {
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(String.class));
+        }
+
         public DateTime asDateTime() {
-            return this;
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(DateTime.class));
         }
 
-        @Override
-        public void addTo(GraphTraversal.Thing traversal) {
-            traversal.predicate(owner.id(), predicate.asEquality(), value);
-        }
+        abstract boolean isConsistentWith(ValueConstraint.Constant<?> other);
 
         @Override
-        public DateTime clone(Conjunction.ConstraintCloner cloner) {
-            return cloner.cloneVariable(owner).valueDateTime(predicate(), value);
+        public FunctionalIterator<AlphaEquivalence> alphaEquals(ValueConstraint<?> that) {
+            return owner.alphaEquals(that.owner)
+                    .flatMap(a -> a.alphaEqualIf(isConstant() && that.isConstant()))
+                    .flatMap(a -> a.alphaEqualIf(this.predicate.equals(that.predicate)))
+                    .flatMap(a -> a.alphaEqualIf(this.value.equals(that.value)));
         }
 
-        @Override
-        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
-            return conclusionValueConstraint.isVariable() || (conclusionValueConstraint.isDateTime() &&
-                    PredicateOperator.Equality.of(predicate.asEquality()).apply(Predicate.compareDateTimes(conclusionValueConstraint.asDateTime().value(), value)));
+        public static class Long extends Constant<java.lang.Long> {
+
+            public Long(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, long value) {
+                super(owner, predicate, value, set(), Encoding.ValueType.LONG);
+            }
+
+            @Override
+            public TypeQLToken.Predicate.Equality predicate() {
+                return super.predicate().asEquality();
+            }
+
+            @Override
+            public boolean isLong() {
+                return true;
+            }
+
+            @Override
+            public Long asLong() {
+                return this;
+            }
+
+            @Override
+            public Double asDouble() {
+                return new Double(owner, predicate.asEquality(), value);
+            }
+
+            @Override
+            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+                if (other.predicate() != EQ) return true;
+                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
+                if (other.isDouble()) {
+                    return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DOUBLE)
+                            .apply(other.asDouble().value(), value.doubleValue());
+                } else {
+                    return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.LONG)
+                            .apply(other.asLong().value, value);
+                }
+            }
+
+            @Override
+            public void addTo(GraphTraversal.Thing traversal) {
+                traversal.predicate(owner.id(), predicate.asEquality(), value);
+            }
+
+            @Override
+            public Long clone(Conjunction.ConstraintCloner cloner) {
+                return cloner.cloneVariable(owner).valueLong(predicate(), value);
+            }
+        }
+
+        public static class Double extends Constant<java.lang.Double> {
+
+            public Double(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, double value) {
+                super(owner, predicate, value, set(), Encoding.ValueType.DOUBLE);
+            }
+
+            @Override
+            public TypeQLToken.Predicate.Equality predicate() {
+                return super.predicate().asEquality();
+            }
+
+            @Override
+            public boolean isDouble() {
+                return true;
+            }
+
+            @Override
+            public Double asDouble() {
+                return this;
+            }
+
+            @Override
+            public void addTo(GraphTraversal.Thing traversal) {
+                traversal.predicate(owner.id(), predicate.asEquality(), value);
+            }
+
+            @Override
+            public Double clone(Conjunction.ConstraintCloner cloner) {
+                return cloner.cloneVariable(owner).valueDouble(predicate(), value);
+            }
+
+            @Override
+            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+                if (other.predicate() != EQ) return true;
+                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
+                return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DOUBLE)
+                        .apply(other.asDouble().value(), value);
+            }
+        }
+
+        public static class Boolean extends Constant<java.lang.Boolean> {
+
+            public Boolean(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, boolean value) {
+                super(owner, predicate, value, set(), Encoding.ValueType.BOOLEAN);
+            }
+
+            @Override
+            public TypeQLToken.Predicate.Equality predicate() {
+                return super.predicate().asEquality();
+            }
+
+            @Override
+            public boolean isBoolean() {
+                return true;
+            }
+
+            @Override
+            public Boolean asBoolean() {
+                return this;
+            }
+
+            @Override
+            public void addTo(GraphTraversal.Thing traversal) {
+                traversal.predicate(owner.id(), predicate.asEquality(), value);
+            }
+
+            @Override
+            public Boolean clone(Conjunction.ConstraintCloner cloner) {
+                return cloner.cloneVariable(owner).valueBoolean(predicate(), value);
+            }
+
+            @Override
+            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+                if (other.predicate() != EQ) return true;
+                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
+                assert other.isBoolean();
+                return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.BOOLEAN)
+                        .apply(other.asBoolean().value, value);
+            }
+        }
+
+        public static class String extends Constant<java.lang.String> {
+
+            public String(ThingVariable owner, TypeQLToken.Predicate predicate, java.lang.String value) {
+                super(owner, predicate, value, set(), Encoding.ValueType.STRING);
+            }
+
+            @Override
+            public boolean isString() {
+                return true;
+            }
+
+            @Override
+            public String asString() {
+                return this;
+            }
+
+            @Override
+            public void addTo(GraphTraversal.Thing traversal) {
+                traversal.predicate(owner.id(), predicate, value);
+            }
+
+            @Override
+            public java.lang.String toString() {
+                return owner.toString() + SPACE + predicate.toString() + SPACE + QUOTE_DOUBLE + value + QUOTE_DOUBLE;
+            }
+
+            @Override
+            public String clone(Conjunction.ConstraintCloner cloner) {
+                return cloner.cloneVariable(owner).valueString(predicate(), value);
+            }
+
+            @Override
+            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+                if (other.predicate() != EQ) return true;
+                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
+                assert other.isString();
+                if (predicate().isEquality()) {
+                    return Predicate.Value.String.of(predicate).apply(other.asString().value, value);
+                } else if (predicate.isSubString()) {
+                    PredicateOperator.SubString<?> operator = PredicateOperator.SubString.of(predicate.asSubString());
+                    if (operator == PredicateOperator.SubString.CONTAINS) {
+                        return PredicateOperator.SubString.CONTAINS.apply(other.asString().value, value);
+                    } else if (operator == PredicateOperator.SubString.LIKE) {
+                        return PredicateOperator.SubString.LIKE.apply(other.asString().value, Pattern.compile(value));
+                    } else throw TypeDBException.of(ILLEGAL_STATE);
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            }
+        }
+
+        public static class DateTime extends Constant<LocalDateTime> {
+
+            public DateTime(ThingVariable owner, TypeQLToken.Predicate.Equality predicate, LocalDateTime value) {
+                super(owner, predicate, value, set(), Encoding.ValueType.DATETIME);
+            }
+
+            @Override
+            public TypeQLToken.Predicate.Equality predicate() {
+                return super.predicate().asEquality();
+            }
+
+            @Override
+            public boolean isDateTime() {
+                return true;
+            }
+
+            @Override
+            public DateTime asDateTime() {
+                return this;
+            }
+
+            @Override
+            public void addTo(GraphTraversal.Thing traversal) {
+                traversal.predicate(owner.id(), predicate.asEquality(), value);
+            }
+
+            @Override
+            public DateTime clone(Conjunction.ConstraintCloner cloner) {
+                return cloner.cloneVariable(owner).valueDateTime(predicate(), value);
+            }
+
+            @Override
+            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+                if (other.predicate() != EQ) return true;
+                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
+                assert other.isDateTime();
+                return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DATETIME)
+                        .apply(other.asDateTime().value, value);
+            }
         }
     }
 
@@ -458,11 +493,6 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         @Override
         public Variable clone(Conjunction.ConstraintCloner cloner) {
             return cloner.cloneVariable(owner).valueVariable(predicate(), cloner.cloneVariable(value));
-        }
-
-        @Override
-        public boolean isConsistentWithEquality(ValueConstraint<?> conclusionValueConstraint) {
-            return true;
         }
     }
 }

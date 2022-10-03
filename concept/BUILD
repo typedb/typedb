@@ -25,7 +25,6 @@ package(
         "//test:__subpackages__",
         "//query:__subpackages__",
         "//reasoner:__subpackages__",
-        "//traversal:__pkg__",
         "//logic:__pkg__"
     ]
 )
@@ -40,6 +39,7 @@ native_java_libraries(
         "//common:common",
         "//concurrent:concurrent",
         "//graph:graph",
+        "//encoding:encoding",
         "//pattern:pattern",
         "//traversal:traversal",
     ],

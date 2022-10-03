@@ -16,42 +16,33 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
-package(
-    default_visibility = [
-        "//concept:__pkg__",
-        "//database:__pkg__",
-        "//traversal:__pkg__",
-        "//reasoner:__pkg__"
-    ]
-)
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-native_java_libraries(
-    name = "graph",
-    srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
+host_compatible_java_test(
+    name = "test-encoding",
+    size = "small",
+    srcs = ["EncodingTest.java"],
+    test_class = "com.vaticle.typedb.core.encoding.EncodingTest",
+    data = glob(["data/**"]),
+    native_libraries_deps = [
+        "//:typedb",
+        "//common:common",
+        "//database:database",
+        "//encoding:encoding",
+        "//graph:graph",
+
+        "//common/test:util",
+    ],
     deps = [
-        # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
+        "//test/integration/util:util",
 
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
-        "@vaticle_typeql//java/common:common",
-        "@vaticle_typeql//java/pattern:pattern",
-
-        # External Maven Dependencies
-        "@maven//:com_google_code_findbugs_jsr305",
-    ],
-    native_libraries_deps = [
-        # Internal dependencies
-        "//common:common",
-        "//encoding:encoding",
-    ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-graph:{pom_version}"],
-    visibility = ["//visibility:public"],
+    ]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*"]),
+    include = glob(["*"]),
     license_type = "agpl-header",
 )

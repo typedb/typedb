@@ -23,10 +23,10 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.edge.Edge;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
-import com.vaticle.typedb.core.graph.iid.IID;
+import com.vaticle.typedb.core.encoding.iid.IID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 

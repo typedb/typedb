@@ -23,8 +23,9 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
-import com.vaticle.typedb.core.graph.common.Storage;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.Storage;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.key.Key;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -108,7 +109,7 @@ public class RocksIteratorTest {
             Storage.Data storage = transaction.graphMgr.data().storage();
             AttributeType.String stringValueType = transaction.concepts().getAttributeType("string-value").asString();
             VertexIID.Type iid = ((AttributeTypeImpl) stringValueType).vertex.iid();
-            Storage.Key.Prefix<VertexIID.Thing> iteratePrefix = VertexIID.Thing.Attribute.String.prefix(iid);
+            Key.Prefix<VertexIID.Thing> iteratePrefix = VertexIID.Thing.Attribute.String.prefix(iid);
             List<String> values = storage.iterate(iteratePrefix, ASC)
                     .map(kv -> kv.key().asAttribute().asString().value()).toList();
             assertEquals(strings, values);
@@ -120,7 +121,7 @@ public class RocksIteratorTest {
             Storage.Data storage = transaction.graphMgr.data().storage();
             AttributeType.String stringValueType = transaction.concepts().getAttributeType("string-value").asString();
             VertexIID.Type iid = ((AttributeTypeImpl) stringValueType).vertex.iid();
-            Storage.Key.Prefix<VertexIID.Thing> iteratePrefix = VertexIID.Thing.Attribute.String.prefix(iid);
+            Key.Prefix<VertexIID.Thing> iteratePrefix = VertexIID.Thing.Attribute.String.prefix(iid);
             List<String> values = storage.iterate(iteratePrefix, DESC)
                     .map(kv -> kv.key().asAttribute().asString().value()).toList();
             assertEquals(strings, values);

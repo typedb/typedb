@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.graph.common.Storage.Key;
+import com.vaticle.typedb.core.encoding.key.Key;
 import org.rocksdb.AbstractImmutableNativeReference;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -34,11 +34,11 @@ import java.util.stream.IntStream;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.DEFAULT;
-import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.FIXED_START_EDGE;
-import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.METADATA;
-import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.OPTIMISATION_EDGE;
-import static com.vaticle.typedb.core.graph.common.Storage.Key.Partition.VARIABLE_START_EDGE;
+import static com.vaticle.typedb.core.encoding.key.Key.Partition.DEFAULT;
+import static com.vaticle.typedb.core.encoding.key.Key.Partition.FIXED_START_EDGE;
+import static com.vaticle.typedb.core.encoding.key.Key.Partition.METADATA;
+import static com.vaticle.typedb.core.encoding.key.Key.Partition.OPTIMISATION_EDGE;
+import static com.vaticle.typedb.core.encoding.key.Key.Partition.VARIABLE_START_EDGE;
 
 public abstract class CorePartitionManager {
 

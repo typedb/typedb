@@ -23,8 +23,8 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingAdjacencyImpl;
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ATTRIBUTE;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ATTRIBUTE;
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
 

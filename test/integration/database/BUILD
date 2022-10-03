@@ -28,6 +28,7 @@ host_compatible_java_test(
         "//:typedb",
         "//common:common",
         "//graph:graph",
+        "//encoding:encoding",
         "//database:database",
         "//common/test:util",
     ],
@@ -40,9 +41,10 @@ host_compatible_java_test(
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
-        "//database:database",
         "//common:common",
         "//concept:concept",
+        "//database:database",
+        "//encoding:encoding",
         "//graph:graph",
     ],
     deps = [
@@ -81,9 +83,10 @@ host_compatible_java_test(
     native_libraries_deps = [
         "//:typedb",
         "//common:common",
-        "//graph:graph",
         "//concept:concept",
         "//database:database",
+        "//encoding:encoding",
+        "//graph:graph",
 
         "//common/test:util",
     ],

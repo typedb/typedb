@@ -24,19 +24,20 @@ import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
-import com.vaticle.typedb.core.graph.iid.PrefixIID;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 
 import java.time.LocalDateTime;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Edge.Thing.Base.HAS;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.BOOLEAN;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DATETIME;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.DOUBLE;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.LONG;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.HAS;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
 
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 
@@ -49,24 +50,22 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     public static AttributeImpl<?> of(AttributeVertex<?> vertex) {
-        switch (vertex.valueType()) {
-            case BOOLEAN:
-                return new AttributeImpl.Boolean(vertex.asBoolean());
-            case LONG:
-                return new AttributeImpl.Long(vertex.asLong());
-            case DOUBLE:
-                return new AttributeImpl.Double(vertex.asDouble());
-            case STRING:
-                return new AttributeImpl.String(vertex.asString());
-            case DATETIME:
-                return new AttributeImpl.DateTime(vertex.asDateTime());
-            default:
-                assert false;
-                return null;
-        }
+        Encoding.ValueType<?> valueType = vertex.valueType();
+        if (valueType == BOOLEAN) return new Boolean(vertex.asBoolean());
+        else if (valueType == LONG) return new Long(vertex.asLong());
+        else if (valueType == DOUBLE) return new Double(vertex.asDouble());
+        else if (valueType == STRING) return new String(vertex.asString());
+        else if (valueType == DATETIME) return new DateTime(vertex.asDateTime());
+        assert false;
+        return null;
     }
 
     public abstract VALUE getValue();
+
+    @Override
+    public AttributeVertex<VALUE> readableVertex() {
+        return attributeVertex;
+    }
 
     @Override
     protected AttributeVertex.Write<VALUE> writableVertex() {
@@ -76,7 +75,9 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public AttributeTypeImpl getType() {
-        if (attributeType == null) attributeType = AttributeTypeImpl.of(readableVertex().graphs(), readableVertex().type());
+        if (attributeType == null) {
+            attributeType = AttributeTypeImpl.of(readableVertex().graphs(), readableVertex().type());
+        }
         return attributeType;
     }
 

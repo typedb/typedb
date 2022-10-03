@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
@@ -49,8 +49,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
-import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 import static java.util.Comparator.comparing;
 

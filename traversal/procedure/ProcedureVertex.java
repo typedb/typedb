@@ -22,10 +22,10 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
-import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -51,8 +51,12 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
-import static com.vaticle.typedb.core.graph.common.Encoding.ValueType.STRING;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ROLE_TYPE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
 
 public abstract class ProcedureVertex<
@@ -61,7 +65,6 @@ public abstract class ProcedureVertex<
         > extends TraversalVertex<ProcedureEdge<?, ?>, PROPERTIES> {
 
     private int order;
-    private Set<ProcedureVertex<?, ?>> dependents;
     private Set<ProcedureVertex<?, ?>> dependees;
 
     ProcedureVertex(Identifier identifier) {
@@ -89,15 +92,6 @@ public abstract class ProcedureVertex<
 
     void setOrder(int order) {
         this.order = order;
-    }
-
-    public Set<ProcedureVertex<?, ?>> dependents() {
-        if (dependents == null) {
-            Set<ProcedureVertex<?, ?>> vertices = new HashSet<>();
-            outs().forEach(e -> vertices.add(e.to()));
-            dependents = vertices;
-        }
-        return dependents;
     }
 
     public Set<ProcedureVertex<?, ?>> dependees() {
@@ -195,7 +189,7 @@ public abstract class ProcedureVertex<
                                                                                                   ORDER order) {
             assert types.hasNext();
             Forwardable<? extends ThingVertex, ORDER> iter;
-            Optional<Predicate.Value<?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
+            Optional<Predicate.Value<?, ?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
             if (eq.isPresent()) iter = iteratorOfAttributesWithTypes(graphMgr, parameters, eq.get(), order);
             else {
                 if (id().isVariable()) types = types.filter(t -> !t.encoding().equals(ROLE_TYPE));
@@ -223,10 +217,10 @@ public abstract class ProcedureVertex<
 
         <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> filterPredicates(Forwardable<? extends AttributeVertex<?>, ORDER> iterator,
                                                                                                 Traversal.Parameters parameters,
-                                                                                                @Nullable Predicate.Value<?> exclude) {
+                                                                                                @Nullable Predicate.Value<?, ?> exclude) {
             // TODO we should be using forward() to optimise filtering for >, <, and =
             assert id().isVariable();
-            for (Predicate.Value<?> predicate : props().predicates()) {
+            for (Predicate.Value<?, ?> predicate : props().predicates()) {
                 if (Objects.equals(predicate, exclude)) continue;
                 for (Traversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
                     iterator = iterator.filter(a -> predicate.apply(a.asAttribute(), value));
@@ -239,7 +233,7 @@ public abstract class ProcedureVertex<
                                                                                           Traversal.Parameters parameters) {
             assert id().isVariable();
             iterator = iterator.filter(kv -> kv.key().isAttribute());
-            for (Predicate.Value<?> predicate : props().predicates()) {
+            for (Predicate.Value<?, ?> predicate : props().predicates()) {
                 for (Traversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
                     iterator = iterator.filter(kv -> predicate.apply(kv.key().asAttribute(), value));
                 }
@@ -249,7 +243,7 @@ public abstract class ProcedureVertex<
 
         <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> iteratorOfAttributesWithTypes(GraphManager graphMgr,
                                                                                                              Traversal.Parameters params,
-                                                                                                             Predicate.Value<?> eq,
+                                                                                                             Predicate.Value<?, ?> eq,
                                                                                                              ORDER order) {
             FunctionalIterator<TypeVertex> attributeTypes = iterate(props().types().iterator())
                     .map(l -> graphMgr.schema().getType(l))
@@ -262,7 +256,7 @@ public abstract class ProcedureVertex<
 
         <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> iteratorOfAttributes(
                 GraphManager graphMgr, FunctionalIterator<TypeVertex> attributeTypes,
-                Traversal.Parameters parameters, Predicate.Value<?> eqPredicate, ORDER order
+                Traversal.Parameters parameters, Predicate.Value<?, ?> eqPredicate, ORDER order
         ) {
             assert id().isVariable();
             Set<Traversal.Parameters.Value> values = parameters.getValues(id().asVariable(), eqPredicate);
@@ -277,20 +271,13 @@ public abstract class ProcedureVertex<
         private AttributeVertex<?> attributeVertex(GraphManager graphMgr, TypeVertex type,
                                                    Traversal.Parameters.Value value) {
             assert type.isAttributeType();
-            switch (type.valueType()) {
-                case BOOLEAN:
-                    return graphMgr.data().getReadable(type, value.getBoolean());
-                case LONG:
-                    return graphMgr.data().getReadable(type, value.getLong());
-                case DOUBLE:
-                    return graphMgr.data().getReadable(type, value.getDouble());
-                case STRING:
-                    return graphMgr.data().getReadable(type, value.getString());
-                case DATETIME:
-                    return graphMgr.data().getReadable(type, value.getDateTime());
-                default:
-                    throw TypeDBException.of(ILLEGAL_STATE);
-            }
+            Encoding.ValueType<?> valueType = type.valueType();
+            if (valueType == BOOLEAN) return graphMgr.data().getReadable(type, value.getBoolean());
+            else if (valueType == LONG) return graphMgr.data().getReadable(type, value.getLong());
+            else if (valueType == DOUBLE) return graphMgr.data().getReadable(type, value.getDouble());
+            else if (valueType == STRING) return graphMgr.data().getReadable(type, value.getString());
+            else if (valueType == DATETIME) return graphMgr.data().getReadable(type, value.getDateTime());
+            throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         static <ORDER extends Order> Forwardable<AttributeVertex<?>, ORDER> filterAttributes(Forwardable<? extends ThingVertex, ORDER> iterator) {
@@ -373,7 +360,7 @@ public abstract class ProcedureVertex<
             assert !props().valueTypes().isEmpty();
             if (iterator == null) {
                 List<Forwardable<TypeVertex, ORDER>> iterators = new ArrayList<>();
-                for (Encoding.ValueType valueType : props().valueTypes()) {
+                for (Encoding.ValueType<?> valueType : props().valueTypes()) {
                     iterators.add(graphMgr.schema().attributeTypes(valueType, order));
                 }
                 return SortedIterators.Forwardable.merge(iterate(iterators), order);

@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.traversal.graph;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 
@@ -152,7 +152,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
             private boolean hasIID;
             private final Set<Label> types;
-            private final Set<Predicate.Value<?>> predicates;
+            private final Set<Predicate.Value<?, ?>> predicates;
 
             public Thing() {
                 hasIID = false;
@@ -176,11 +176,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 this.types.addAll(types);
             }
 
-            public Set<Predicate.Value<?>> predicates() {
+            public Set<Predicate.Value<?, ?>> predicates() {
                 return predicates;
             }
 
-            public void predicate(Predicate.Value<?> predicate) {
+            public void predicate(Predicate.Value<?, ?> predicate) {
                 predicates.add(predicate);
             }
 
@@ -221,7 +221,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
 
             private boolean isAbstract;
             private final Set<Label> labels;
-            private final Set<Encoding.ValueType> valueTypes;
+            private final Set<Encoding.ValueType<?>> valueTypes;
             private String regex;
 
             public Type() {
@@ -254,7 +254,7 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 this.isAbstract = true;
             }
 
-            public Set<Encoding.ValueType> valueTypes() {
+            public Set<Encoding.ValueType<?>> valueTypes() {
                 return valueTypes;
             }
 
@@ -262,11 +262,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                 this.valueTypes.clear();
             }
 
-            public void valueType(Encoding.ValueType valueType) {
+            public void valueType(Encoding.ValueType<?> valueType) {
                 this.valueTypes.add(valueType);
             }
 
-            public void valueTypes(Set<Encoding.ValueType> valueTypes) {
+            public void valueTypes(Set<Encoding.ValueType<?>> valueTypes) {
                 this.valueTypes.addAll(valueTypes);
             }
 

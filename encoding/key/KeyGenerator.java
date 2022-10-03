@@ -16,16 +16,18 @@
  *
  */
 
-package com.vaticle.typedb.core.graph.common;
+package com.vaticle.typedb.core.encoding.key;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.graph.iid.PrefixIID;
-import com.vaticle.typedb.core.graph.iid.StructureIID;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.Storage;
+import com.vaticle.typedb.core.encoding.iid.PrefixIID;
+import com.vaticle.typedb.core.encoding.iid.StructureIID;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Map;
@@ -44,13 +46,13 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.MA
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.MAX_INSTANCE_REACHED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.MAX_SUBTYPE_REACHED;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
-import static com.vaticle.typedb.core.graph.common.Encoding.Key.BUFFERED;
-import static com.vaticle.typedb.core.graph.common.Encoding.Key.PERSISTED;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ENTITY;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.RELATION;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Thing.ROLE;
-import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.DEFAULT_LENGTH;
-import static com.vaticle.typedb.core.graph.iid.VertexIID.Thing.PREFIX_W_TYPE_LENGTH;
+import static com.vaticle.typedb.core.encoding.Encoding.Key.BUFFERED;
+import static com.vaticle.typedb.core.encoding.Encoding.Key.PERSISTED;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ENTITY;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.RELATION;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ROLE;
+import static com.vaticle.typedb.core.encoding.iid.VertexIID.Thing.DEFAULT_LENGTH;
+import static com.vaticle.typedb.core.encoding.iid.VertexIID.Thing.PREFIX_W_TYPE_LENGTH;
 
 public class KeyGenerator {
 

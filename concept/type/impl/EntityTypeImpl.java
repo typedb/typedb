@@ -35,11 +35,10 @@ import java.util.List;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.ENTITY_TYPE;
-import static com.vaticle.typedb.core.graph.common.Encoding.Vertex.Type.Root.ENTITY;
-import static java.util.Comparator.comparing;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ENTITY_TYPE;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ENTITY;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 

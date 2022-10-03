@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
 import com.vaticle.typedb.core.graph.ThingGraph;
-import com.vaticle.typedb.core.graph.common.StatisticsKey;
+import com.vaticle.typedb.core.encoding.key.StatisticsKey;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;

@@ -18,8 +18,8 @@
 
 package com.vaticle.typedb.core.graph.vertex;
 
-import com.vaticle.typedb.core.graph.common.Encoding;
-import com.vaticle.typedb.core.graph.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 
 import java.time.LocalDateTime;
 
@@ -37,7 +37,7 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
      *
      * @return the {@code ValueType} of this {@code Attribute}
      */
-    Encoding.ValueType valueType();
+    Encoding.ValueType<VALUE> valueType();
 
     /**
      * Returns the literal value stored in the vertex, if it represents an attribute.

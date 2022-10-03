@@ -177,32 +177,32 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return valueConstraints;
     }
 
-    public ValueConstraint.Long valueLong(TypeQLToken.Predicate.Equality comparator, long value) {
-        ValueConstraint.Long valueLongConstraint = new ValueConstraint.Long(this, comparator, value);
+    public ValueConstraint.Constant.Long valueLong(TypeQLToken.Predicate.Equality comparator, long value) {
+        ValueConstraint.Constant.Long valueLongConstraint = new ValueConstraint.Constant.Long(this, comparator, value);
         constrain(valueLongConstraint);
         return valueLongConstraint;
     }
 
-    public ValueConstraint.Double valueDouble(TypeQLToken.Predicate.Equality comparator, double value) {
-        ValueConstraint.Double valueDoubleConstraint = new ValueConstraint.Double(this, comparator, value);
+    public ValueConstraint.Constant.Double valueDouble(TypeQLToken.Predicate.Equality comparator, double value) {
+        ValueConstraint.Constant.Double valueDoubleConstraint = new ValueConstraint.Constant.Double(this, comparator, value);
         constrain(valueDoubleConstraint);
         return valueDoubleConstraint;
     }
 
-    public ValueConstraint.Boolean valueBoolean(TypeQLToken.Predicate.Equality comparator, boolean value) {
-        ValueConstraint.Boolean valueBooleanConstraint = new ValueConstraint.Boolean(this, comparator, value);
+    public ValueConstraint.Constant.Boolean valueBoolean(TypeQLToken.Predicate.Equality comparator, boolean value) {
+        ValueConstraint.Constant.Boolean valueBooleanConstraint = new ValueConstraint.Constant.Boolean(this, comparator, value);
         constrain(valueBooleanConstraint);
         return valueBooleanConstraint;
     }
 
-    public ValueConstraint.String valueString(TypeQLToken.Predicate comparator, String value) {
-        ValueConstraint.String valueStringConstraint = new ValueConstraint.String(this, comparator, value);
+    public ValueConstraint.Constant.String valueString(TypeQLToken.Predicate comparator, String value) {
+        ValueConstraint.Constant.String valueStringConstraint = new ValueConstraint.Constant.String(this, comparator, value);
         constrain(valueStringConstraint);
         return valueStringConstraint;
     }
 
-    public ValueConstraint.DateTime valueDateTime(TypeQLToken.Predicate.Equality comparator, LocalDateTime value) {
-        ValueConstraint.DateTime valueDateTimeConstraint = new ValueConstraint.DateTime(this, comparator, value);
+    public ValueConstraint.Constant.DateTime valueDateTime(TypeQLToken.Predicate.Equality comparator, LocalDateTime value) {
+        ValueConstraint.Constant.DateTime valueDateTimeConstraint = new ValueConstraint.Constant.DateTime(this, comparator, value);
         constrain(valueDateTimeConstraint);
         return valueDateTimeConstraint;
     }

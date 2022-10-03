@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.optimiser.OptimiserConstraint;
 import com.vaticle.typedb.core.common.optimiser.OptimiserVariable;
 import com.vaticle.typedb.core.graph.GraphManager;
-import com.vaticle.typedb.core.graph.common.Encoding;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 
@@ -83,10 +83,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     public int getOrder() {
         return varOrderNumber.value();
-    }
-
-    public boolean isInitialised() {
-        return isInitialised;
     }
 
     void out(PlannerEdge<?, ?> edge) {
@@ -235,7 +231,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
                 cost = graphMgr.schema().stats().abstractTypeCount();
             } else if (!props().valueTypes().isEmpty()) {
                 int count = 0;
-                for (Encoding.ValueType valueType : props().valueTypes()) {
+                for (Encoding.ValueType<?> valueType : props().valueTypes()) {
                     count += graphMgr.schema().stats().attTypesWithValueType(valueType);
                 }
                 cost = count;
