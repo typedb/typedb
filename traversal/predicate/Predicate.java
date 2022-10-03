@@ -105,7 +105,7 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
                 super(operator, argument);
             }
 
-            public static <AT> Numerical<AT> of(TypeQLToken.Predicate.Equality token, PredicateArgument.Value<PredicateOperator.Equality, AT> argument) {
+            public static <ARG> Numerical<ARG> of(TypeQLToken.Predicate.Equality token, PredicateArgument.Value<PredicateOperator.Equality, ARG> argument) {
                 return new Numerical<>(PredicateOperator.Equality.of(token), argument);
             }
         }
