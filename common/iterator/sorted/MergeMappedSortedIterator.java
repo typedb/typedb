@@ -158,11 +158,11 @@ public class MergeMappedSortedIterator<T, U extends Comparable<? super U>, ORDER
 
         @Override
         public void forward(U target) {
-            if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            if (last != null && !order.inOrder(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
             if (state == State.INIT) {
                 initialForward = target;
             } else if (state == State.FETCHED) {
-                if (order.isValidNext(target, peek())) return;
+                if (order.inOrder(target, peek())) return;
                 forwardFetched(target);
                 state = State.NOT_READY;
             } else if (state == State.NOT_READY) {

@@ -217,7 +217,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
         @Override
         public synchronized void forward(KeyValue<T, ByteArray> target) {
-            if (state == State.COMPLETED || !ASC.isValidNext(prefix.bytes(), target.key().bytes())) return;
+            if (state == State.COMPLETED || !ASC.inOrder(prefix.bytes(), target.key().bytes())) return;
             if (state == State.INIT) initialiseInternalIterator();
             internalRocksIterator.seek(target.key().bytes().getBytes());
             state = State.FORWARDED;
@@ -249,7 +249,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
         @Override
         public synchronized void forward(KeyValue<T, ByteArray> target) {
-            if (state == State.COMPLETED || !DESC.isValidNext(prefix.bytes(), target.key().bytes())) return;
+            if (state == State.COMPLETED || !DESC.inOrder(prefix.bytes(), target.key().bytes())) return;
             if (state == State.INIT) initialiseInternalIterator();
             internalRocksIterator.seekForPrev(target.key().bytes().getBytes());
             state = State.FORWARDED;
