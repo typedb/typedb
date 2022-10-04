@@ -38,6 +38,7 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
+import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 
@@ -358,9 +359,16 @@ public class Unifier {
             return iterate(values).filter(ValueConstraint::isConstant).map(ValueConstraint::asConstant).toSet();
         }
 
-        static Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valuePredicate(ValueConstraint.Constant<?> value) {
+        static <T> Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valuePredicate(ValueConstraint.Constant<T> value) {
             Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> predicateFn;
             assert !value.isVariable();
+
+            if (value.isString()) {
+                return (a) -> Predicate.Value.String.of(value.predicate()).apply(Encoding.ValueType.STRING, a.asString().getValue(), value.asString().value());
+            } else if (value.isLong()) {
+                return (a) -> Predicate.Value.Numerical.of(value.predicate().asEquality(), PredicateArgument.Value.LONG).apply((AttributeImpl<?>)
+            }
+
             if (value.predicate().isEquality()) {
                 PredicateOperator.Equality operator = PredicateOperator.Equality.of(value.predicate().asEquality());
                 if (value.isLong()) {

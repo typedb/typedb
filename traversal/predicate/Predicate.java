@@ -95,8 +95,8 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
             return argument.apply(operator, vertex, value);
         }
 
-        public boolean apply(ARG_TYPE lhs, ARG_TYPE rhs) {
-            return argument.apply(operator, lhs, rhs);
+        public <T> boolean apply(Encoding.ValueType<T> lhsType, T lhs, ARG_TYPE rhs) {
+            return argument.apply(operator, lhsType, lhs, rhs);
         }
 
         public static class Numerical<ARG_TYPE> extends Value<PredicateOperator.Equality, ARG_TYPE> {

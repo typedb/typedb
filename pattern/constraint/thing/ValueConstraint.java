@@ -157,7 +157,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
         return owner.toString() + SPACE + predicate.toString() + SPACE + value.toString();
     }
 
-    public boolean inconsistentWith(ValueConstraint<?> valueConstraint) {
+    public <TYPE> boolean inconsistentWith(ValueConstraint<TYPE> valueConstraint) {
         if (isVariable() || valueConstraint.isVariable()) return false;
         return !asConstant().isConsistentWith(valueConstraint.asConstant());
     }
@@ -222,7 +222,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(DateTime.class));
         }
 
-        abstract boolean isConsistentWith(ValueConstraint.Constant<?> other);
+        abstract <TYPE> boolean isConsistentWith(ValueConstraint.Constant<TYPE> other);
 
         @Override
         public FunctionalIterator<AlphaEquivalence> alphaEquals(ValueConstraint<?> that) {
@@ -259,9 +259,10 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             }
 
             @Override
-            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+            public <TYPE> boolean isConsistentWith(ValueConstraint.Constant<TYPE> other) {
                 if (other.predicate() != EQ) return true;
                 if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
+                return Encoding.ValueType.compare(valueEncoding, value, other.valueEncoding, other.value) == 0;
                 if (other.isDouble()) {
                     return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DOUBLE)
                             .apply(other.asDouble().value(), value.doubleValue());
@@ -314,7 +315,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             }
 
             @Override
-            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+            public <TYPE> boolean isConsistentWith(ValueConstraint.Constant<TYPE> other) {
                 if (other.predicate() != EQ) return true;
                 if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
                 return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DOUBLE)
@@ -354,7 +355,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             }
 
             @Override
-            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+            public <TYPE> boolean isConsistentWith(ValueConstraint.Constant<TYPE> other) {
                 if (other.predicate() != EQ) return true;
                 if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
                 assert other.isBoolean();
@@ -395,7 +396,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             }
 
             @Override
-            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+            public <TYPE> boolean isConsistentWith(ValueConstraint.Constant<TYPE> other) {
                 if (other.predicate() != EQ) return true;
                 if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
                 assert other.isString();
@@ -444,7 +445,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             }
 
             @Override
-            public boolean isConsistentWith(ValueConstraint.Constant<?> other) {
+            public <TYPE> boolean isConsistentWith(ValueConstraint.Constant<TYPE> other) {
                 if (other.predicate() != EQ) return true;
                 if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
                 assert other.isDateTime();
