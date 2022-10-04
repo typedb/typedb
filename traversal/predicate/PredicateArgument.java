@@ -72,15 +72,15 @@ public abstract class PredicateArgument {
             return valueType;
         }
 
-        public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value);
+        public abstract <T> boolean apply(ARG_VAL_OP operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value);
 
-        public abstract boolean apply(ARG_VAL_OP operator, AttributeVertex<?> vertex, ARG_VAL_TYPE value);
+        public abstract <T> boolean apply(ARG_VAL_OP operator, AttributeVertex<T> vertex, ARG_VAL_TYPE value);
 
         public abstract boolean apply(ARG_VAL_OP operator, ARG_VAL_TYPE lhs, ARG_VAL_TYPE rhs);
 
         public static final Value<PredicateOperator.Equality, Boolean> BOOLEAN = new Value<>(Encoding.ValueType.BOOLEAN) {
             @Override
-            public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+            public <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
                 assert value.isBoolean();
                 return apply(operator, vertex, value.getBoolean());
             }
@@ -106,14 +106,22 @@ public abstract class PredicateArgument {
             }
 
             @Override
-            public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> vertex, Long value) {
+            public <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Long value) {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.LONG)) return false;
                 assert (vertex.isLong() || vertex.isDouble());
 
+                Encoding.ValueType<T> tValueType = vertex.valueType();
+                T val = vertex.value();
+                compare(tValueType, val);
+
                 if (vertex.isLong()) return apply(operator, vertex.asLong().value(), value);
-                else if (vertex.isDouble())
+                else if (vertex.isDouble()) {
                     return DOUBLE.apply(operator, vertex.asDouble().value(), value.doubleValue());
-                else throw TypeDBException.of(ILLEGAL_STATE);
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            }
+
+            private <T> boolean compare(Encoding.ValueType<T> valueType, T value) {
+                return false;
             }
 
             @Override

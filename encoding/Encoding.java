@@ -47,6 +47,7 @@ import static com.vaticle.typedb.core.common.collection.Bytes.signedByte;
 import static com.vaticle.typedb.core.common.collection.Bytes.unsignedByte;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.VALUES_NOT_COMPARABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Encoding {
@@ -367,7 +368,6 @@ public class Encoding {
     /**
      * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
      */
-
     public static class ValueType<T> {
 
         public static final ZoneId TIME_ZONE_ID = ZoneOffset.UTC;
@@ -474,6 +474,14 @@ public class Encoding {
             else if (typeQLValueType == STRING.typeQLValueType) return STRING;
             else if (typeQLValueType == DATETIME.typeQLValueType) return DATETIME;
             else throw TypeDBException.of(UNRECOGNISED_VALUE);
+        }
+
+        public static <T, U> int compare(ValueType<T> firstType, T firstValue, ValueType<U> secondType, U secondValue) {
+            if (!firstType.comparableTo(secondType)) {
+                throw TypeDBException.of(VALUES_NOT_COMPARABLE, firstValue, firstType, secondValue, secondType);
+            }
+
+
         }
 
         public String name() {
