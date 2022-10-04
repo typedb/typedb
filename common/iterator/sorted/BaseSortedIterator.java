@@ -41,7 +41,7 @@ public class BaseSortedIterator<T extends Comparable<? super T>, ORDER extends O
         T last = source.get(0);
         for (int i = 1; i < source.size(); i++) {
             T next = source.get(i);
-            if (!order.isValidNext(last, next)) return false;
+            if (!order.inOrder(last, next)) return false;
             last = next;
         }
         return true;

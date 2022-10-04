@@ -25,8 +25,8 @@ public abstract class Order {
 
     public abstract Orderer orderer();
 
-    public <T extends Comparable<? super T>> boolean isValidNext(T last, T next) {
-        return orderer().compare(last, next) <= 0;
+    public <T extends Comparable<? super T>> boolean inOrder(T first, T second) {
+        return orderer().compare(first, second) <= 0;
     }
 
     public boolean isAscending() {

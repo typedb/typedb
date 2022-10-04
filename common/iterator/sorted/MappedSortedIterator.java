@@ -88,7 +88,7 @@ public class MappedSortedIterator<
     @Override
     public U next() {
         if (!hasNext()) throw new NoSuchElementException();
-        assert last == null || order.isValidNext(last, next) : "Sorted mapped iterator produces out of order values";
+        assert last == null || order.inOrder(last, next) : "Sorted mapped iterator produces out of order values";
         last = next;
         next = null;
         state = State.EMPTY;
@@ -123,12 +123,12 @@ public class MappedSortedIterator<
 
         @Override
         public void forward(U target) {
-            if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            if (last != null && !order.inOrder(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
             T reverseMapped = reverseMappingFn.apply(target);
             if (state == State.EMPTY) {
                 source.forward(reverseMapped);
             } else if (state == State.FETCHED) {
-                if (order.isValidNext(target, next)) return;
+                if (order.inOrder(target, next)) return;
                 source.forward(reverseMapped);
                 last = next;
                 state = State.EMPTY;
