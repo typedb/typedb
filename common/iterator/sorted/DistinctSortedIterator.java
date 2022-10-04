@@ -127,7 +127,7 @@ public class DistinctSortedIterator<T extends Comparable<? super T>, ORDER exten
 
         @Override
         public void forward(T target) {
-            if (last != null && !order.isValidNext(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            if (last != null && !order.inOrder(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
             iterator.forward(target);
             if (last == null) state = State.INIT;
             else if (state == State.FETCHED) state = State.EMPTY;

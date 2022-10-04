@@ -67,7 +67,7 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends O
         Forwardable<T, ORDER> limit(long limit);
 
         default Optional<T> findFirst(T value) {
-            if (!hasNext() || !order().isValidNext(peek(), value)) return Optional.empty();
+            if (!hasNext() || !order().inOrder(peek(), value)) return Optional.empty();
             forward(value);
             Optional<T> found;
             if (hasNext() && peek().equals(value)) found = Optional.of(next());
