@@ -72,9 +72,9 @@ public abstract class PredicateArgument {
             return valueType;
         }
 
-        public abstract <T> boolean apply(ARG_VAL_OP operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value);
+        abstract <T> boolean apply(ARG_VAL_OP operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value);
 
-        public <T> boolean apply(ARG_VAL_OP operator, AttributeVertex<T> vertex, ARG_VAL_TYPE value) {
+        <T> boolean apply(ARG_VAL_OP operator, AttributeVertex<T> vertex, ARG_VAL_TYPE value) {
             return apply(operator, vertex.valueType(), vertex.value(), value);
         }
 

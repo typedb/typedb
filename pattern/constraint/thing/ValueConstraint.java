@@ -172,6 +172,10 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             this.valueEncoding = valueEncoding;
         }
 
+        public Encoding.ValueType<VALUE_TYPE> valueEncoding() {
+            return valueEncoding;
+        }
+
         @Override
         public boolean isConstant() {
             return true;
@@ -261,15 +265,8 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             @Override
             public <TYPE> boolean isConsistentWith(ValueConstraint.Constant<TYPE> other) {
                 if (other.predicate() != EQ) return true;
-                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
-                return Encoding.ValueType.compare(valueEncoding, value, other.valueEncoding, other.value) == 0;
-                if (other.isDouble()) {
-                    return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DOUBLE)
-                            .apply(other.asDouble().value(), value.doubleValue());
-                } else {
-                    return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.LONG)
-                            .apply(other.asLong().value, value);
-                }
+                return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.LONG)
+                        .apply(other.valueEncoding(), other.value(), value);
             }
 
             @Override
@@ -317,9 +314,8 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             @Override
             public <TYPE> boolean isConsistentWith(ValueConstraint.Constant<TYPE> other) {
                 if (other.predicate() != EQ) return true;
-                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
                 return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DOUBLE)
-                        .apply(other.asDouble().value(), value);
+                        .apply(other.valueEncoding(), other.value(), value);
             }
         }
 
@@ -357,10 +353,8 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             @Override
             public <TYPE> boolean isConsistentWith(ValueConstraint.Constant<TYPE> other) {
                 if (other.predicate() != EQ) return true;
-                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
-                assert other.isBoolean();
                 return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.BOOLEAN)
-                        .apply(other.asBoolean().value, value);
+                        .apply(other.valueEncoding(), other.value(), value);
             }
         }
 
@@ -401,7 +395,7 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
                 if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
                 assert other.isString();
                 if (predicate().isEquality()) {
-                    return Predicate.Value.String.of(predicate).apply(other.asString().value, value);
+                    return Predicate.Value.String.of(predicate).apply(other.valueEncoding(), other.value(), value);
                 } else if (predicate.isSubString()) {
                     PredicateOperator.SubString<?> operator = PredicateOperator.SubString.of(predicate.asSubString());
                     if (operator == PredicateOperator.SubString.CONTAINS) {
@@ -447,10 +441,8 @@ public abstract class ValueConstraint<T> extends ThingConstraint implements Alph
             @Override
             public <TYPE> boolean isConsistentWith(ValueConstraint.Constant<TYPE> other) {
                 if (other.predicate() != EQ) return true;
-                if (!valueEncoding.comparableTo(other.valueEncoding)) return false;
-                assert other.isDateTime();
                 return Predicate.Value.Numerical.of(predicate.asEquality(), PredicateArgument.Value.DATETIME)
-                        .apply(other.asDateTime().value, value);
+                        .apply(other.valueEncoding(), other.value(), value);
             }
         }
     }

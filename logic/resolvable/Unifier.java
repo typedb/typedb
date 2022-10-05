@@ -360,54 +360,19 @@ public class Unifier {
         }
 
         static <T> Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valuePredicate(ValueConstraint.Constant<T> value) {
-            Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> predicateFn;
             assert !value.isVariable();
-
             if (value.isString()) {
-                return (a) -> Predicate.Value.String.of(value.predicate()).apply(Encoding.ValueType.STRING, a.asString().getValue(), value.asString().value());
+                return (a) -> Predicate.Value.String.of(value.predicate()).apply(((AttributeImpl<?>) a).readableVertex(), value.asString().value());
             } else if (value.isLong()) {
-                return (a) -> Predicate.Value.Numerical.of(value.predicate().asEquality(), PredicateArgument.Value.LONG).apply((AttributeImpl<?>)
-            }
-
-            if (value.predicate().isEquality()) {
-                PredicateOperator.Equality operator = PredicateOperator.Equality.of(value.predicate().asEquality());
-                if (value.isLong()) {
-                    predicateFn = (a) ->
-                            PredicateArgument.Value.LONG.apply(operator, ((AttributeImpl<?>) a).readableVertex(), value.asLong().value());
-                } else if (value.isDouble()) {
-                    predicateFn = (a) ->
-                            PredicateArgument.Value.DOUBLE.apply(operator, ((AttributeImpl<?>) a).readableVertex(), value.asDouble().value());
-                } else if (value.isBoolean()) {
-                    predicateFn = (a) ->
-                            PredicateArgument.Value.BOOLEAN.apply(operator, ((AttributeImpl<?>) a).readableVertex(), value.asBoolean().value());
-                } else if (value.isString()) {
-                    predicateFn = (a) ->
-                            PredicateArgument.Value.STRING.apply(operator, ((AttributeImpl<?>) a).readableVertex(), value.asString().value());
-                } else if (value.isDateTime()) {
-                    predicateFn = (a) ->
-                            PredicateArgument.Value.DATETIME.apply(operator, ((AttributeImpl<?>) a).readableVertex(), value.asDateTime().value());
-                } else throw TypeDBException.of(ILLEGAL_STATE);
-            } else if (value.predicate().isSubString()) {
-                PredicateOperator.SubString<?> predicateOperator = PredicateOperator.SubString.of(value.predicate().asSubString());
-                if (value.isString()) {
-                    predicateFn = (a) -> {
-                        if (!Encoding.ValueType.of(a.getType().getValueType().getValueClass()).comparableTo(STRING))
-                            return false;
-                        assert a.getType().isString();
-                        if (predicateOperator == PredicateOperator.SubString.CONTAINS) {
-                            return PredicateOperator.SubString.CONTAINS.apply(a.asString().getValue(), value.asString().value());
-                        } else if (predicateOperator == PredicateOperator.SubString.LIKE) {
-                            return PredicateOperator.SubString.LIKE.apply(a.asString().getValue(), Pattern.compile(value.asString().value()));
-                        } else throw TypeDBException.of(ILLEGAL_STATE);
-                    };
-                } else throw TypeDBException.of(ILLEGAL_STATE);
-            } else {
-                throw TypeDBException.of(ILLEGAL_STATE);
-            }
-
-            return predicateFn;
+                return (a) -> Predicate.Value.Numerical.of(value.predicate().asEquality(), PredicateArgument.Value.LONG).apply(((AttributeImpl<?>) a).readableVertex(), value.asLong().value());
+            } else if (value.isDouble()) {
+                return (a) -> Predicate.Value.Numerical.of(value.predicate().asEquality(), PredicateArgument.Value.DOUBLE).apply(((AttributeImpl<?>) a).readableVertex(), value.asDouble().value());
+            } else if (value.isBoolean()) {
+                return (a) -> Predicate.Value.Numerical.of(value.predicate().asEquality(), PredicateArgument.Value.BOOLEAN).apply(((AttributeImpl<?>) a).readableVertex(), value.asBoolean().value());
+            } else if (value.isDateTime()) {
+                return (a) -> Predicate.Value.Numerical.of(value.predicate().asEquality(), PredicateArgument.Value.DATETIME).apply(((AttributeImpl<?>) a).readableVertex(), value.asDateTime().value());
+            } else throw TypeDBException.of(ILLEGAL_STATE);
         }
-
     }
 
     public static abstract class Requirements {

@@ -26,17 +26,17 @@ public interface ValueVertex<VALUE> extends ThingVertex {
 
     AttributeVertex<VALUE> attributeVertex();
 
-    @Override
-    default int compareTo(Vertex<?, ?> o) {
-        if (o instanceof ValueVertex) {
-            ValueVertex<?> other = (ValueVertex<?>) o;
-            if (attributeVertex().valueType().comparableTo(other.attributeVertex().valueType())) {
-                return attributeVertex().valueType().
-            } else {
-                throw TypeDBException.of(VALUES_NOT_COMPARABLE, attributeVertex().value(), attributeVertex().valueType(),
-                        other.attributeVertex().value(), other.attributeVertex().valueType());
-            }
-        } else return iid().compareTo(o.iid());
-
-    }
+//    @Override
+//    default int compareTo(Vertex<?, ?> o) {
+//        if (o instanceof ValueVertex) {
+//            ValueVertex<?> other = (ValueVertex<?>) o;
+//            if (attributeVertex().valueType().comparableTo(other.attributeVertex().valueType())) {
+//                return attributeVertex().valueType().
+//            } else {
+//                throw TypeDBException.of(VALUES_NOT_COMPARABLE, attributeVertex().value(), attributeVertex().valueType(),
+//                        other.attributeVertex().value(), other.attributeVertex().valueType());
+//            }
+//        } else return iid().compareTo(o.iid());
+//
+//    }
 }

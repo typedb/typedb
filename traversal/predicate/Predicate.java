@@ -95,6 +95,10 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
             return argument.apply(operator, vertex, value);
         }
 
+        public <T> boolean apply(AttributeVertex<T> vertex, ARG_TYPE rhs) {
+            return apply(vertex.valueType(), vertex.value(), rhs);
+        }
+
         public <T> boolean apply(Encoding.ValueType<T> lhsType, T lhs, ARG_TYPE rhs) {
             return argument.apply(operator, lhsType, lhs, rhs);
         }
