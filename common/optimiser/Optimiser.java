@@ -54,6 +54,7 @@ public class Optimiser {
     private MPSolverParameters parameters;
     private Status status;
     private boolean isConstraintsUpToDate;
+    private long lastTimeLimit;
     private Double objectiveValue;
 
     public Optimiser() {
@@ -63,6 +64,7 @@ public class Optimiser {
         status = Status.NOT_SOLVED;
         objectiveValue = null;
         isConstraintsUpToDate = true;
+        lastTimeLimit = 0;
     }
 
     public synchronized Status optimise(long timeLimitMillis) {
@@ -70,7 +72,8 @@ public class Optimiser {
         assert solutionSatisfiesModel();
         maySetSolver();
         setSolutionAsHints();
-        solver.setTimeLimit(timeLimitMillis);
+        lastTimeLimit += timeLimitMillis;
+        solver.setTimeLimit(lastTimeLimit);
         status = Status.of(solver.solve(parameters));
         recordSolverValues();
         if (isOptimal()) releaseSolver();
@@ -79,10 +82,13 @@ public class Optimiser {
     }
 
     private void maySetSolver() {
-        if (solver == null) createSolver();
-        else if (!isConstraintsUpToDate) {
+        if (solver == null) {
+            createSolver();
+            lastTimeLimit = 0;
+        } else if (!isConstraintsUpToDate) {
             solver.reset();
             setConstraintCoefficients();
+            lastTimeLimit = 0;
         }
     }
 
