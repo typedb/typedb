@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -55,6 +56,7 @@ import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.traversal.planner.GraphPlanner.INIT_ZERO;
 import static java.lang.Math.log;
 import static java.lang.Math.max;
+import static java.lang.Math.pow;
 
 public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_TO extends PlannerVertex<?>>
         extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
@@ -137,6 +139,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         OptimiserVariable.Boolean varIsSelected;
         OptimiserVariable.Boolean varIsMinimal;
         OptimiserConstraint conIsMinimal;
+        OptimiserVariable.Boolean[] varIsMinimalWithMultiplicity;
 
         private final String varPrefix;
         private final String conPrefix;
@@ -175,6 +178,11 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         void createOptimiserVariables() {
             varIsSelected = planner.optimiser().booleanVar(varPrefix + "is_selected");
             varIsMinimal = planner.optimiser().booleanVar(varPrefix + "is_minimal");
+            int numAdjacent = to.ins().size();
+            varIsMinimalWithMultiplicity = new OptimiserVariable.Boolean[numAdjacent];
+            for (int i = 0; i < numAdjacent; i++) {
+                varIsMinimalWithMultiplicity[i] = planner.optimiser().booleanVar(varPrefix + "minimal_with_multiplicity[" + i + "]");
+            }
         }
 
         void createOptimiserConstraints() {
@@ -186,6 +194,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             conIsSelected.setCoefficient(to.varOrderNumber, -1);
 
             int numAdjacent = to.ins().size();
+
+            for (int i = 0; i < numAdjacent; i++) {
+                OptimiserConstraint conMinimalWithMultiplicity = planner.optimiser().constraint(0, 1, conPrefix + "minimal_with_multiplicity[" + i + "]");
+                conMinimalWithMultiplicity.setCoefficient(varIsMinimal, 1);
+                conMinimalWithMultiplicity.setCoefficient(to.varNumInsEncoding[i + 1], 1);
+                conMinimalWithMultiplicity.setCoefficient(varIsMinimalWithMultiplicity[i], -2);
+            }
+
             conIsMinimal = planner.optimiser().constraint(0, numAdjacent, conPrefix + "is_minimal");
             conIsMinimal.setCoefficient(varIsMinimal, numAdjacent + 1);
             conIsMinimal.setCoefficient(varIsSelected, -1);
@@ -231,7 +247,14 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         protected void updateOptimiserCoefficients() {
             assert costLastRecorded == safeCost();
-            planner.optimiser().setObjectiveCoefficient(varIsMinimal, log(1 + safeCost()));
+            
+            double[] filters = to.ins().stream().filter(e -> !e.equals(this)).filter(this::cheaperThan).mapToDouble(e -> e.safeCost() / to.safeCost()).toArray();
+            double averageFilter = 1.0;
+            if (filters.length > 0) averageFilter = pow(Arrays.stream(filters).reduce(1.0, (a,b) -> a*b), 1.0 / filters.length);
+            
+            for (int i = 0; i < to.ins().size(); i++) {
+                planner.optimiser().setObjectiveCoefficient(varIsMinimalWithMultiplicity[i], log(1 + safeCost() * pow(averageFilter, i)));
+            }
         }
 
         protected void updateOptimiserConstraints() {
@@ -241,6 +264,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         public void setOptimiserValues() {
             setSelected();
             setMinimal();
+            for (int i = 0; i < to.ins().size(); i++) {
+                varIsMinimalWithMultiplicity[i].setValue(varIsMinimal.value() && to.varNumIns.value() == i+1);
+            }
             isInitialised = true;
         }
 

@@ -51,6 +51,8 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     OptimiserVariable.Boolean varIsStartingVertex;
     OptimiserVariable.Boolean[] varOrderAssignment;
     OptimiserVariable.Integer varOrderNumber;
+    OptimiserVariable.Integer varNumIns;
+    OptimiserVariable.Boolean[] varNumInsEncoding;
 
     PlannerVertex(Identifier identifier, @Nullable GraphPlanner planner) {
         super(identifier);
@@ -114,6 +116,9 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         for (int i = 0; i < planner.vertices().size(); i++) {
             varOrderAssignment[i] = planner.optimiser().booleanVar(varPrefix + "order_assignment[" + i + "]");
         }
+        varNumIns = planner.optimiser().intVar(0, ins().size(), varPrefix + "num_ins");
+        varNumInsEncoding = new OptimiserVariable.Boolean[ins().size() + 1];
+        for (int i = 0; i < ins().size() + 1; i++) varNumInsEncoding[i] = planner.optimiser().booleanVar(varPrefix + "num_ins[" + i + "]");
     }
 
     void createOptimiserConstraints() {
@@ -129,6 +134,18 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         OptimiserConstraint conIsStartingVertex = planner.optimiser().constraint(1, numIns + 1, conPrefix + "is_starting_vertex");
         conIsStartingVertex.setCoefficient(varIsStartingVertex, numIns + 1);
         for (PlannerEdge.Directional<?, ?> edge : ins()) conIsStartingVertex.setCoefficient(edge.varIsSelected, 1);
+
+        OptimiserConstraint conNumIns = planner.optimiser().constraint(0, 0, conPrefix + "num_ins");
+        conNumIns.setCoefficient(varNumIns, -1);
+        for (PlannerEdge.Directional<?, ?> edge : ins()) conNumIns.setCoefficient(edge.varIsSelected, 1);
+
+        OptimiserConstraint conMultiplicity = planner.optimiser().constraint(0, 0, conPrefix + "multiplicity");
+        OptimiserConstraint conMultiplicityValid = planner.optimiser().constraint(0, 1, conPrefix + "multiplicity");
+        conMultiplicity.setCoefficient(varNumIns, -1);
+        for (int i = 0; i < ins().size() + 1; i++) {
+            conMultiplicity.setCoefficient(varNumInsEncoding[i], i);
+            conMultiplicityValid.setCoefficient(varNumInsEncoding[i], 1);
+        }
     }
 
     protected void updateOptimiserCoefficients() {
@@ -152,6 +169,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     void setOptimiserValues() {
         assert varOrderNumber.hasValue();
         varIsStartingVertex.setValue(iterate(outs()).allMatch(e -> e.to().getOrder() > getOrder()));
+        varNumIns.setValue(ins().stream().map(e -> e.from().getOrder() < getOrder() ? 1 : 0).reduce(0, Integer::sum));
+        for (int i = 0; i < ins().size() + 1; i++) {
+            varNumInsEncoding[i].setValue(varNumIns.value() == i);
+        }
         isInitialised = true;
     }
 
