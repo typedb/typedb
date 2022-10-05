@@ -480,7 +480,7 @@ public class Encoding {
 
         public static <T, U> int compare(ValueType<T> firstType, T firstValue, ValueType<U> secondType, U secondValue) {
             if (!firstType.comparableTo(secondType)) {
-                throw TypeDBException.of(VALUES_NOT_COMPARABLE, firstValue, firstType, secondValue, secondType);
+                throw TypeDBException.of(VALUES_NOT_COMPARABLE, firstType, firstValue, secondType, secondValue);
             }
 
             if (firstType == BOOLEAN) {
@@ -488,12 +488,15 @@ public class Encoding {
                 return BOOLEAN.comparator().compare((Boolean) firstValue, (Boolean) secondValue);
             } else if (firstType == LONG) {
                 if (secondType == LONG) return LONG.comparator().compare((Long) firstValue, (Long) secondValue);
-                else if (secondType == DOUBLE) return DOUBLE.comparator().compare(((Long)firstValue).doubleValue(), (Double) secondValue);
-                else throw TypeDBException.of(ILLEGAL_STATE);
+                else if (secondType == DOUBLE) {
+                    return DOUBLE.comparator().compare(((Long) firstValue).doubleValue(), (Double) secondValue);
+                } else throw TypeDBException.of(ILLEGAL_STATE);
             } else if (firstType == DOUBLE) {
-                if (secondType == LONG) return DOUBLE.comparator().compare((Double) firstValue, ((Long) secondValue).doubleValue());
-                else if (secondType == DOUBLE) return DOUBLE.comparator().compare((Double) firstValue, (Double) secondValue);
-                else throw TypeDBException.of(ILLEGAL_STATE);
+                if (secondType == LONG) {
+                    return DOUBLE.comparator().compare((Double) firstValue, ((Long) secondValue).doubleValue());
+                } else if (secondType == DOUBLE) {
+                    return DOUBLE.comparator().compare((Double) firstValue, (Double) secondValue);
+                } else throw TypeDBException.of(ILLEGAL_STATE);
             } else if (firstType == STRING) {
                 assert secondType == STRING;
                 return STRING.comparator().compare((String) firstValue, (String) secondValue);

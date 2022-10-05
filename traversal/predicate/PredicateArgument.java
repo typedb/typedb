@@ -36,7 +36,7 @@ public abstract class PredicateArgument {
 
     private final String symbol;
 
-    protected PredicateArgument(String symbol) {
+    PredicateArgument(String symbol) {
         this.symbol = symbol;
     }
 
@@ -63,12 +63,12 @@ public abstract class PredicateArgument {
 
         private final Encoding.ValueType<ARG_VAL_TYPE> valueType;
 
-        public Value(Encoding.ValueType<ARG_VAL_TYPE> valueType) {
+        Value(Encoding.ValueType<ARG_VAL_TYPE> valueType) {
             super(valueType.name());
             this.valueType = valueType;
         }
 
-        public Encoding.ValueType<ARG_VAL_TYPE> valueType() {
+        Encoding.ValueType<ARG_VAL_TYPE> valueType() {
             return valueType;
         }
 
@@ -78,17 +78,17 @@ public abstract class PredicateArgument {
             return apply(operator, vertex.valueType(), vertex.value(), value);
         }
 
-        public abstract <T> boolean apply(ARG_VAL_OP operator, Encoding.ValueType<T> lhsType, T lhs, ARG_VAL_TYPE rhs);
+        abstract <T> boolean apply(ARG_VAL_OP operator, Encoding.ValueType<T> lhsType, T lhs, ARG_VAL_TYPE rhs);
 
         public static final Value<PredicateOperator.Equality, Boolean> BOOLEAN = new Value<>(Encoding.ValueType.BOOLEAN) {
             @Override
-            public <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
+            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
                 assert value.isBoolean();
                 return apply(operator, vertex, value.getBoolean());
             }
 
             @Override
-            public <T> boolean apply(PredicateOperator.Equality operator, Encoding.ValueType<T> lhsType, T lhs, Boolean rhs) {
+            <T> boolean apply(PredicateOperator.Equality operator, Encoding.ValueType<T> lhsType, T lhs, Boolean rhs) {
                 if (!lhsType.comparableTo(Encoding.ValueType.BOOLEAN)) return false;
                 return operator.apply(Encoding.ValueType.compare(lhsType, lhs, Encoding.ValueType.BOOLEAN, rhs));
             }
@@ -96,13 +96,13 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator.Equality, Long> LONG = new Value<>(Encoding.ValueType.LONG) {
             @Override
-            public <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
+            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
                 assert value.isLong();
                 return apply(operator, vertex, value.getLong());
             }
 
             @Override
-            public <T> boolean apply(PredicateOperator.Equality operator, Encoding.ValueType<T> lhsType, T lhs, Long rhs) {
+            <T> boolean apply(PredicateOperator.Equality operator, Encoding.ValueType<T> lhsType, T lhs, Long rhs) {
                 if (!lhsType.comparableTo(Encoding.ValueType.LONG)) return false;
                 return operator.apply(Encoding.ValueType.compare(lhsType, lhs, Encoding.ValueType.LONG, rhs));
             }
@@ -110,13 +110,13 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator.Equality, Double> DOUBLE = new Value<>(Encoding.ValueType.DOUBLE) {
             @Override
-            public <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
+            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
                 assert value.isDouble();
                 return apply(operator, vertex, value.getDouble());
             }
 
             @Override
-            public <T> boolean apply(PredicateOperator.Equality operator, Encoding.ValueType<T> lhsType, T lhs, Double rhs) {
+            <T> boolean apply(PredicateOperator.Equality operator, Encoding.ValueType<T> lhsType, T lhs, Double rhs) {
                 if (!lhsType.comparableTo(Encoding.ValueType.DOUBLE)) return false;
                 return operator.apply(Encoding.ValueType.compare(lhsType, lhs, Encoding.ValueType.DOUBLE, rhs));
             }
@@ -124,13 +124,13 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator.Equality, LocalDateTime> DATETIME = new Value<>(Encoding.ValueType.DATETIME) {
             @Override
-            public <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
+            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
                 assert value.isDateTime();
                 return apply(operator, vertex, value.getDateTime());
             }
 
             @Override
-            public <T> boolean apply(PredicateOperator.Equality operator, Encoding.ValueType<T> lhsType, T lhs, LocalDateTime rhs) {
+            <T> boolean apply(PredicateOperator.Equality operator, Encoding.ValueType<T> lhsType, T lhs, LocalDateTime rhs) {
                 if (!lhsType.comparableTo(Encoding.ValueType.DATETIME)) return false;
                 return operator.apply(Encoding.ValueType.compare(lhsType, lhs, Encoding.ValueType.DATETIME, rhs));
             }
@@ -138,7 +138,7 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator, String> STRING = new Value<>(Encoding.ValueType.STRING) {
             @Override
-            public <T> boolean apply(PredicateOperator operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
+            <T> boolean apply(PredicateOperator operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
                 assert value.isString() || value.isRegex();
                 if (operator.isSubString()) return operator.asSubString().apply(vertex.asString().value(), value);
@@ -146,7 +146,7 @@ public abstract class PredicateArgument {
             }
 
             @Override
-            public <T> boolean apply(PredicateOperator operator, Encoding.ValueType<T> lhsType, T lhs, String rhs) {
+            <T> boolean apply(PredicateOperator operator, Encoding.ValueType<T> lhsType, T lhs, String rhs) {
                 assert operator.isEquality();
                 if (!lhsType.comparableTo(Encoding.ValueType.STRING)) return false;
                 return operator.asEquality().apply(Encoding.ValueType.compare(lhsType, lhs, Encoding.ValueType.STRING, rhs));
@@ -158,11 +158,11 @@ public abstract class PredicateArgument {
 
         public static final Variable VARIABLE = new Variable();
 
-        public Variable() {
+        private Variable() {
             super("var");
         }
 
-        public boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> from, AttributeVertex<?> to) {
+        boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> from, AttributeVertex<?> to) {
             if (!from.valueType().comparableTo(to.valueType())) return false;
             Encoding.ValueType<?> valueType = to.valueType();
             if (valueType == BOOLEAN) return Value.BOOLEAN.apply(operator, from, to.asBoolean().value());

@@ -310,7 +310,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final ThingRead SORT_ATTRIBUTE_NOT_COMPARABLE =
                 new ThingRead(7, "The variable '%s' cannot be used to sort, as it may represent incomparable types '%s' and '%s'.");
         public static final ThingRead VALUES_NOT_COMPARABLE =
-                new ThingRead(8, "The value '%s' of value type: '%s' cannot be compared to '%s' of value type '%s'.");
+                new ThingRead(8, "The '%s' value '%s' cannot be compared to the '%s' value '%s'.");
         public static final ThingRead AGGREGATE_ATTRIBUTE_NOT_NUMBER =
                 new ThingRead(9, "The variable '%s' cannot be used to calculate aggregate functions, as it contains non-numeric values.");
         public static final ThingRead NUMERIC_IS_NOT_NUMBER =
