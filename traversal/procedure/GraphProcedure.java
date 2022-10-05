@@ -42,11 +42,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
@@ -183,8 +186,28 @@ public class GraphProcedure implements PermutationProcedure {
         }
 
         public GraphProcedure build() {
+            linearise();
             return new GraphProcedure(vertices.values().stream().sorted(comparing(ProcedureVertex::order))
                     .toArray(ProcedureVertex[]::new));
+        }
+
+        private void linearise() {
+            List<ProcedureVertex<?, ?>> ordering = new ArrayList<>();
+            Set<ProcedureVertex<?, ?>> orderedSet = new HashSet<>();
+            List<ProcedureVertex<?, ?>> stack =  vertices.values().stream().filter(ProcedureVertex::isStartVertex).collect(Collectors.toList());
+            while (!stack.isEmpty()) {
+                ProcedureVertex<?, ?> vertex = stack.remove(stack.size() - 1);
+                if (orderedSet.contains(vertex)) continue;
+                ordering.add(vertex);
+                orderedSet.add(vertex);
+                for (ProcedureVertex<?, ?> v : vertex.outs().stream().map(ProcedureEdge::to).toArray(ProcedureVertex[]::new)) {
+                    if (!orderedSet.contains(v) && orderedSet.containsAll(v.ins().stream().map(ProcedureEdge::from).collect(Collectors.toSet()))) {
+                        stack.add(v);
+                    }
+                }
+            }
+            assert ordering.size() == vertices.size();
+            for (int i = 0; i < ordering.size(); i++) ordering.get(i).setOrder(i);
         }
 
         private void register(GraphPlanner planner, int startOrder) {
