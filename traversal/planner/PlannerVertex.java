@@ -151,6 +151,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     protected void updateOptimiserCoefficients() {
         assert costLastRecorded == safeCost();
         planner.optimiser().setObjectiveCoefficient(varIsStartingVertex, log(1 + safeCost()));
+        for (int i = 1; i < ins().size() + 1; i++) planner.optimiser().setObjectiveCoefficient(varNumInsEncoding[i], log(i));
     }
 
     void recordCost() {
