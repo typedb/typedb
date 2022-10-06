@@ -71,8 +71,9 @@ public abstract class ProcedureVertex<
         super(identifier);
     }
 
-    public abstract <ORDER extends Order> Forwardable<? extends VERTEX, ORDER> iterator(GraphManager graphMgr, Traversal.Parameters parameters,
-                                                                                        ORDER order);
+    public abstract <ORDER extends Order> Forwardable<? extends VERTEX, ORDER> iterator(
+            GraphManager graphMgr, Traversal.Parameters parameters, ORDER order
+    );
 
     public boolean isStartVertex() {
         return ins().isEmpty();
@@ -151,22 +152,25 @@ public abstract class ProcedureVertex<
         }
 
         @Override
-        public <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterator(GraphManager graphMgr, Traversal.Parameters parameters,
-                                                                                        ORDER order) {
+        public <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterator(
+                GraphManager graphMgr, Traversal.Parameters parameters, ORDER order
+        ) {
             if (props().hasIID()) return iterateAndFilterFromIID(graphMgr, parameters, order);
             else return iterateAndFilterFromTypes(graphMgr, parameters, order);
         }
 
-        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> filter(Forwardable<? extends ThingVertex, ORDER> iterator,
-                                                                               Traversal.Parameters params) {
+        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> filter(
+                Forwardable<? extends ThingVertex, ORDER> iterator, Traversal.Parameters params
+        ) {
             iterator = filterTypes(iterator);
             if (props().hasIID()) iterator = filterIID(iterator, params);
             if (!props().predicates().isEmpty()) iterator = filterPredicates(filterAttributes(iterator), params);
             return iterator;
         }
 
-        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromIID(GraphManager graphMgr, Traversal.Parameters parameters,
-                                                                                                ORDER order) {
+        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromIID(
+                GraphManager graphMgr, Traversal.Parameters parameters, ORDER order
+        ) {
             assert props().hasIID() && id().isVariable() && !props().types().isEmpty();
             Identifier.Variable id = id().asVariable();
             ThingVertex vertex = graphMgr.data().getReadable(parameters.getIID(id));
@@ -176,17 +180,16 @@ public abstract class ProcedureVertex<
             return iter;
         }
 
-        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromTypes(GraphManager graphMgr,
-                                                                                                  Traversal.Parameters parameters,
-                                                                                                  ORDER order) {
+        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromTypes(
+                GraphManager graphMgr, Traversal.Parameters parameters, ORDER order
+        ) {
             assert !props().types().isEmpty();
             return iterateAndFilterFromTypes(graphMgr, parameters, iterate(props().types()).map(graphMgr.schema()::getType), order);
         }
 
-        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromTypes(GraphManager graphMgr,
-                                                                                                  Traversal.Parameters parameters,
-                                                                                                  FunctionalIterator<TypeVertex> types,
-                                                                                                  ORDER order) {
+        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromTypes(
+                GraphManager graphMgr, Traversal.Parameters parameters, FunctionalIterator<TypeVertex> types, ORDER order
+        ) {
             assert types.hasNext();
             Forwardable<? extends ThingVertex, ORDER> iter;
             Optional<Predicate.Value<?, ?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
@@ -200,8 +203,9 @@ public abstract class ProcedureVertex<
             else return filterPredicates(mapToAttributes(iter), parameters, eq.orElse(null));
         }
 
-        private <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> filterIID(Forwardable<? extends ThingVertex, ORDER> iterator,
-                                                                                          Traversal.Parameters parameters) {
+        private <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> filterIID(
+                Forwardable<? extends ThingVertex, ORDER> iterator, Traversal.Parameters parameters
+        ) {
             assert parameters.getIID(id().asVariable()) != null;
             return iterator.filter(v -> v.iid().equals(parameters.getIID(id().asVariable())));
         }
@@ -210,14 +214,16 @@ public abstract class ProcedureVertex<
             return iterator.filter(v -> props().types().contains(v.type().properLabel()));
         }
 
-        <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> filterPredicates(Forwardable<? extends AttributeVertex<?>, ORDER> iterator,
-                                                                                                Traversal.Parameters parameters) {
+        <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> filterPredicates(
+                Forwardable<? extends AttributeVertex<?>, ORDER> iterator, Traversal.Parameters parameters
+        ) {
             return filterPredicates(iterator, parameters, null);
         }
 
-        <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> filterPredicates(Forwardable<? extends AttributeVertex<?>, ORDER> iterator,
-                                                                                                Traversal.Parameters parameters,
-                                                                                                @Nullable Predicate.Value<?, ?> exclude) {
+        <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> filterPredicates(
+                Forwardable<? extends AttributeVertex<?>, ORDER> iterator, Traversal.Parameters parameters,
+                @Nullable Predicate.Value<?, ?> exclude
+        ) {
             // TODO we should be using forward() to optimise filtering for >, <, and =
             assert id().isVariable();
             for (Predicate.Value<?, ?> predicate : props().predicates()) {
@@ -229,8 +235,9 @@ public abstract class ProcedureVertex<
             return iterator;
         }
 
-        Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> filterPredicatesOnEdge(Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iterator,
-                                                                                          Traversal.Parameters parameters) {
+        Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> filterPredicatesOnEdge(
+                Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iterator, Traversal.Parameters parameters
+        ) {
             assert id().isVariable();
             iterator = iterator.filter(kv -> kv.key().isAttribute());
             for (Predicate.Value<?, ?> predicate : props().predicates()) {
@@ -241,10 +248,9 @@ public abstract class ProcedureVertex<
             return iterator;
         }
 
-        <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> iteratorOfAttributesWithTypes(GraphManager graphMgr,
-                                                                                                             Traversal.Parameters params,
-                                                                                                             Predicate.Value<?, ?> eq,
-                                                                                                             ORDER order) {
+        <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> iteratorOfAttributesWithTypes(
+                GraphManager graphMgr, Traversal.Parameters params, Predicate.Value<?, ?> eq, ORDER order
+        ) {
             FunctionalIterator<TypeVertex> attributeTypes = iterate(props().types().iterator())
                     .map(l -> graphMgr.schema().getType(l))
                     .map(t -> {
@@ -268,8 +274,7 @@ public abstract class ProcedureVertex<
             return iterateSorted(attributes, order);
         }
 
-        private AttributeVertex<?> attributeVertex(GraphManager graphMgr, TypeVertex type,
-                                                   Traversal.Parameters.Value value) {
+        private AttributeVertex<?> attributeVertex(GraphManager graphMgr, TypeVertex type, Traversal.Parameters.Value value) {
             assert type.isAttributeType();
             Encoding.ValueType<?> valueType = type.valueType();
             if (valueType == BOOLEAN) return graphMgr.data().getReadable(type, value.getBoolean());
@@ -302,8 +307,9 @@ public abstract class ProcedureVertex<
         }
 
         @Override
-        public <ORDER extends Order> Forwardable<? extends TypeVertex, ORDER> iterator(GraphManager graphMgr, Traversal.Parameters parameters,
-                                                                                       ORDER order) {
+        public <ORDER extends Order> Forwardable<? extends TypeVertex, ORDER> iterator(
+                GraphManager graphMgr, Traversal.Parameters parameters, ORDER order
+        ) {
             assert id().isVariable();
             Forwardable<TypeVertex, ORDER> iterator = null;
 
@@ -354,9 +360,9 @@ public abstract class ProcedureVertex<
             return iterator.filter(t -> props().labels().contains(t.properLabel()));
         }
 
-        private <ORDER extends Order> Forwardable<TypeVertex, ORDER> iterateOrFilterValueTypes(GraphManager graphMgr,
-                                                                                               Forwardable<TypeVertex, ORDER> iterator,
-                                                                                               ORDER order) {
+        private <ORDER extends Order> Forwardable<TypeVertex, ORDER> iterateOrFilterValueTypes(
+                GraphManager graphMgr, Forwardable<TypeVertex, ORDER> iterator, ORDER order
+        ) {
             assert !props().valueTypes().isEmpty();
             if (iterator == null) {
                 List<Forwardable<TypeVertex, ORDER>> iterators = new ArrayList<>();
@@ -372,9 +378,9 @@ public abstract class ProcedureVertex<
             return iterator.filter(t -> props().valueTypes().contains(t.valueType()));
         }
 
-        private <ORDER extends Order> Forwardable<TypeVertex, ORDER> iterateOrFilterAbstract(GraphManager graphMgr,
-                                                                                             Forwardable<TypeVertex, ORDER> iterator,
-                                                                                             ORDER order) {
+        private <ORDER extends Order> Forwardable<TypeVertex, ORDER> iterateOrFilterAbstract(
+                GraphManager graphMgr, Forwardable<TypeVertex, ORDER> iterator, ORDER order
+        ) {
             if (iterator == null) return graphMgr.schema().thingTypes(order).filter(TypeVertex::isAbstract);
             else return filterAbstract(iterator);
         }
@@ -383,9 +389,9 @@ public abstract class ProcedureVertex<
             return iterator.filter(TypeVertex::isAbstract);
         }
 
-        private <ORDER extends Order> Forwardable<TypeVertex, ORDER> iterateAndFilterRegex(GraphManager graphMgr,
-                                                                                           Forwardable<TypeVertex, ORDER> iterator,
-                                                                                           ORDER order) {
+        private <ORDER extends Order> Forwardable<TypeVertex, ORDER> iterateAndFilterRegex(
+                GraphManager graphMgr, Forwardable<TypeVertex, ORDER> iterator, ORDER order
+        ) {
             if (iterator == null) iterator = graphMgr.schema().attributeTypes(STRING, order);
             return filterRegex(iterator);
         }
