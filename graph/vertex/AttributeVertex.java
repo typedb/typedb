@@ -50,6 +50,10 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
 
     AttributeVertex.Write<VALUE> asWrite();
 
+    boolean isValue();
+
+    AttributeVertex.Value<VALUE> toValue();
+
     boolean isBoolean();
 
     boolean isLong();
@@ -84,6 +88,14 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
 
         AttributeVertex.Write<LocalDateTime> asDateTime();
 
+    }
+
+    interface Value<VALUE> extends AttributeVertex<VALUE> {
+
+        AttributeVertex<VALUE> toAttribute();
+
+        @Override
+        int compareTo(Vertex<?, ?> other);
     }
 
 }

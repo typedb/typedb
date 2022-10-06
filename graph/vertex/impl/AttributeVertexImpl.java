@@ -19,12 +19,13 @@
 package com.vaticle.typedb.core.graph.vertex.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingAdjacencyImpl;
-import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
 
 import java.time.LocalDateTime;
 
@@ -100,6 +101,16 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
+        public boolean isValue() {
+            return false;
+        }
+
+        @Override
+        public Value<VALUE> toValue() {
+            return new AttributeVertexImpl.Value<>(this);
+        }
+
+        @Override
         public boolean isAttribute() {
             return true;
         }
@@ -140,7 +151,7 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public AttributeVertexImpl.Read.Boolean asBoolean() {
+        public AttributeVertexImpl.Read<java.lang.Boolean> asBoolean() {
             throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Boolean.class));
         }
 
@@ -323,6 +334,16 @@ public abstract class AttributeVertexImpl {
         @Override
         public AttributeVertex.Write<VALUE> toWrite() {
             return this;
+        }
+
+        @Override
+        public boolean isValue() {
+            return false;
+        }
+
+        @Override
+        public Value<VALUE> toValue() {
+            return new AttributeVertexImpl.Value<>(this);
         }
 
         @Override
@@ -522,6 +543,36 @@ public abstract class AttributeVertexImpl {
             public DateTime asDateTime() {
                 return this;
             }
+        }
+    }
+
+    static class Value<VALUE> extends AttributeVertexImpl.Read<VALUE> implements AttributeVertex.Value<VALUE> {
+
+        private final AttributeVertex<VALUE> attributeVertex;
+
+        Value(AttributeVertex<VALUE> attributeVertex) {
+            super(attributeVertex.graph(), attributeVertex.iid());
+            this.attributeVertex = attributeVertex;
+        }
+
+        @Override
+        public AttributeVertex<VALUE> toAttribute() {
+            return attributeVertex;
+        }
+
+        @Override
+        public boolean isValue() {
+            return true;
+        }
+
+        @Override
+        public Value<VALUE> toValue() {
+            return this;
+        }
+
+        @Override
+        public int compareTo(Vertex<?, ?> other) {
+            return 0;
         }
     }
 }
