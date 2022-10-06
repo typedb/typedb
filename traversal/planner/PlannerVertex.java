@@ -48,7 +48,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     double cost;
     double costLastRecorded;
 
-    OptimiserVariable.Boolean varIsStartingVertex;
     OptimiserVariable.Boolean[] varOrderAssignment;
     OptimiserVariable.Integer varOrderNumber;
     OptimiserVariable.Integer varNumIns;
@@ -68,7 +67,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     public boolean isStartingVertex() {
-        return varIsStartingVertex.value();
+        return varNumInsEncoding[0].value();
     }
 
     public boolean isEndingVertex() {
@@ -110,7 +109,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     void createOptimiserVariables() {
         assert planner != null;
-        varIsStartingVertex = planner.optimiser().booleanVar(varPrefix + "is_starting_vertex");
         varOrderNumber = planner.optimiser().intVar(0, planner.vertices().size() - 1, varPrefix + "order_number");
         varOrderAssignment = new OptimiserVariable.Boolean[planner.vertices().size()];
         for (int i = 0; i < planner.vertices().size(); i++) {
@@ -130,27 +128,22 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
             conAssignOrderNumber.setCoefficient(varOrderAssignment[i], i);
         }
 
-        int numIns = ins().size();
-        OptimiserConstraint conIsStartingVertex = planner.optimiser().constraint(1, numIns + 1, conPrefix + "is_starting_vertex");
-        conIsStartingVertex.setCoefficient(varIsStartingVertex, numIns + 1);
-        for (PlannerEdge.Directional<?, ?> edge : ins()) conIsStartingVertex.setCoefficient(edge.varIsSelected, 1);
-
         OptimiserConstraint conNumIns = planner.optimiser().constraint(0, 0, conPrefix + "num_ins");
         conNumIns.setCoefficient(varNumIns, -1);
         for (PlannerEdge.Directional<?, ?> edge : ins()) conNumIns.setCoefficient(edge.varIsSelected, 1);
 
-        OptimiserConstraint conMultiplicity = planner.optimiser().constraint(0, 0, conPrefix + "multiplicity");
-        OptimiserConstraint conMultiplicityValid = planner.optimiser().constraint(0, 1, conPrefix + "multiplicity");
-        conMultiplicity.setCoefficient(varNumIns, -1);
+        OptimiserConstraint conNumInsEncoding = planner.optimiser().constraint(0, 0, conPrefix + "num_ins_encoding");
+        OptimiserConstraint conNumInsEncodingValid = planner.optimiser().constraint(1, 1, conPrefix + "num_ins_encoding_valid");
+        conNumInsEncoding.setCoefficient(varNumIns, -1);
         for (int i = 0; i < ins().size() + 1; i++) {
-            conMultiplicity.setCoefficient(varNumInsEncoding[i], i);
-            conMultiplicityValid.setCoefficient(varNumInsEncoding[i], 1);
+            conNumInsEncoding.setCoefficient(varNumInsEncoding[i], i);
+            conNumInsEncodingValid.setCoefficient(varNumInsEncoding[i], 1);
         }
     }
 
     protected void updateOptimiserCoefficients() {
         assert costLastRecorded == safeCost();
-        planner.optimiser().setObjectiveCoefficient(varIsStartingVertex, log(1 + safeCost()));
+        planner.optimiser().setObjectiveCoefficient(varNumInsEncoding[0], log(1 + safeCost()));
         for (int i = 1; i < ins().size() + 1; i++) planner.optimiser().setObjectiveCoefficient(varNumInsEncoding[i], log(i));
     }
 
@@ -169,7 +162,6 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     void setOptimiserValues() {
         assert varOrderNumber.hasValue();
-        varIsStartingVertex.setValue(iterate(outs()).allMatch(e -> e.to().getOrder() > getOrder()));
         varNumIns.setValue(ins().stream().map(e -> e.from().getOrder() < getOrder() ? 1 : 0).reduce(0, Integer::sum));
         for (int i = 0; i < ins().size() + 1; i++) {
             varNumInsEncoding[i].setValue(varNumIns.value() == i);
