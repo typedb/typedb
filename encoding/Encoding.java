@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
 import javax.annotation.Nullable;
+import javax.print.attribute.standard.DateTimeAtCompleted;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -46,7 +47,9 @@ import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_UNSIGNED_MAX
 import static com.vaticle.typedb.core.common.collection.Bytes.signedByte;
 import static com.vaticle.typedb.core.common.collection.Bytes.unsignedByte;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.VALUES_NOT_COMPARABLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class Encoding {
@@ -367,7 +370,6 @@ public class Encoding {
     /**
      * The size of a prefix is 1 unsigned byte; i.e. min-value = 0 and max-value = 255.
      */
-
     public static class ValueType<T> {
 
         public static final ZoneId TIME_ZONE_ID = ZoneOffset.UTC;
@@ -409,7 +411,7 @@ public class Encoding {
         );
 
         private static final Map<ValueType<?>, Set<ValueType<?>>> ASSIGNABLES = map(
-                pair(OBJECT, set(OBJECT)),
+                pair(OBJECT, set()),
                 pair(BOOLEAN, set(BOOLEAN)),
                 pair(LONG, set(LONG, DOUBLE)),
                 pair(DOUBLE, set(DOUBLE)),
@@ -418,7 +420,7 @@ public class Encoding {
         );
 
         private static final Map<ValueType<?>, Set<ValueType<?>>> COMPARABLES = map(
-                pair(OBJECT, set(OBJECT)),
+                pair(OBJECT, set()),
                 pair(BOOLEAN, set(BOOLEAN)),
                 pair(LONG, set(LONG, DOUBLE)),
                 pair(DOUBLE, set(LONG, DOUBLE)),
@@ -474,6 +476,34 @@ public class Encoding {
             else if (typeQLValueType == STRING.typeQLValueType) return STRING;
             else if (typeQLValueType == DATETIME.typeQLValueType) return DATETIME;
             else throw TypeDBException.of(UNRECOGNISED_VALUE);
+        }
+
+        public static <T, U> int compare(ValueType<T> firstType, T firstValue, ValueType<U> secondType, U secondValue) {
+            if (!firstType.comparableTo(secondType)) {
+                throw TypeDBException.of(VALUES_NOT_COMPARABLE, firstType, firstValue, secondType, secondValue);
+            }
+
+            if (firstType == BOOLEAN) {
+                assert secondType == BOOLEAN;
+                return BOOLEAN.comparator().compare((Boolean) firstValue, (Boolean) secondValue);
+            } else if (firstType == LONG) {
+                if (secondType == LONG) return LONG.comparator().compare((Long) firstValue, (Long) secondValue);
+                else if (secondType == DOUBLE) {
+                    return DOUBLE.comparator().compare(((Long) firstValue).doubleValue(), (Double) secondValue);
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            } else if (firstType == DOUBLE) {
+                if (secondType == LONG) {
+                    return DOUBLE.comparator().compare((Double) firstValue, ((Long) secondValue).doubleValue());
+                } else if (secondType == DOUBLE) {
+                    return DOUBLE.comparator().compare((Double) firstValue, (Double) secondValue);
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            } else if (firstType == STRING) {
+                assert secondType == STRING;
+                return STRING.comparator().compare((String) firstValue, (String) secondValue);
+            } else if (firstType == DATETIME) {
+                assert secondType == DATETIME;
+                return DATETIME.comparator().compare((LocalDateTime) firstValue, (LocalDateTime) secondValue);
+            } else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         public String name() {
