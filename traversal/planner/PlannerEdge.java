@@ -264,9 +264,6 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         public void setOptimiserValues() {
             setSelected();
             setMinimal();
-            for (int i = 0; i < to.ins().size(); i++) {
-                varIsMinimalWithMultiplicity[i].setValue(varIsMinimal.value() && to.varNumIns.value() == i+1);
-            }
             isInitialised = true;
         }
 
@@ -283,6 +280,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                                     filter(e -> e.from().getOrder() < e.to().getOrder()).
                                     noneMatch(e -> e.cheaperThan(this))
             );
+            for (int i = 0; i < to.ins().size(); i++) {
+                varIsMinimalWithMultiplicity[i].setValue(varIsMinimal.value() && to.varNumIns.value() == i+1);
+            }
         }
 
         public boolean isEqual() {
