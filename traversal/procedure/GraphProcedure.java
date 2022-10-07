@@ -196,10 +196,9 @@ public class GraphProcedure implements PermutationProcedure {
             int vertexOrder = 0;
             while (!stack.isEmpty()) {
                 ProcedureVertex<?, ?> vertex = stack.remove(stack.size() - 1);
-                if (orderedSet.contains(vertex)) continue;
                 vertex.setOrder(vertexOrder++);
                 orderedSet.add(vertex);
-                for (ProcedureVertex<?, ?> v : vertex.outs().stream().map(ProcedureEdge::to).toArray(ProcedureVertex[]::new)) {
+                for (ProcedureVertex<?, ?> v : vertex.outs().stream().map(ProcedureEdge::to).collect(Collectors.toSet())) {
                     if (!orderedSet.contains(v) && orderedSet.containsAll(v.ins().stream().map(ProcedureEdge::from).collect(Collectors.toSet()))) {
                         stack.add(v);
                     }
