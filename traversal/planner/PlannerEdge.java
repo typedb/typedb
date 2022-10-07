@@ -198,7 +198,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             for (int i = 0; i < numAdjacent; i++) {
                 OptimiserConstraint conMinimalWithMultiplicity = planner.optimiser().constraint(0, 1, conPrefix + "minimal_with_multiplicity[" + i + "]");
                 conMinimalWithMultiplicity.setCoefficient(varIsMinimal, 1);
-                conMinimalWithMultiplicity.setCoefficient(to.varNumInsEncoding[i + 1], 1);
+                conMinimalWithMultiplicity.setCoefficient(to.varNumInsSelectedOneHot[i + 1], 1);
                 conMinimalWithMultiplicity.setCoefficient(varIsMinimalWithMultiplicity[i], -2);
             }
 
@@ -281,7 +281,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                                     noneMatch(e -> e.cheaperThan(this))
             );
             for (int i = 0; i < to.ins().size(); i++) {
-                varIsMinimalWithMultiplicity[i].setValue(varIsMinimal.value() && to.varNumIns.value() == i+1);
+                varIsMinimalWithMultiplicity[i].setValue(varIsMinimal.value() && to.varNumInsSelected.value() == i+1);
             }
         }
 

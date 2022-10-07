@@ -50,8 +50,8 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     OptimiserVariable.Boolean[] varOrderAssignment;
     OptimiserVariable.Integer varOrderNumber;
-    OptimiserVariable.Integer varNumIns;
-    OptimiserVariable.Boolean[] varNumInsEncoding;
+    OptimiserVariable.Integer varNumInsSelected;
+    OptimiserVariable.Boolean[] varNumInsSelectedOneHot;
 
     PlannerVertex(Identifier identifier, @Nullable GraphPlanner planner) {
         super(identifier);
@@ -67,7 +67,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     public boolean isStartingVertex() {
-        return varNumInsEncoding[0].value();
+        return varNumInsSelectedOneHot[0].value();
     }
 
     public boolean isEndingVertex() {
@@ -114,9 +114,9 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         for (int i = 0; i < planner.vertices().size(); i++) {
             varOrderAssignment[i] = planner.optimiser().booleanVar(varPrefix + "order_assignment[" + i + "]");
         }
-        varNumIns = planner.optimiser().intVar(0, ins().size(), varPrefix + "num_ins");
-        varNumInsEncoding = new OptimiserVariable.Boolean[ins().size() + 1];
-        for (int i = 0; i < ins().size() + 1; i++) varNumInsEncoding[i] = planner.optimiser().booleanVar(varPrefix + "num_ins[" + i + "]");
+        varNumInsSelected = planner.optimiser().intVar(0, ins().size(), varPrefix + "num_ins_selected");
+        varNumInsSelectedOneHot = new OptimiserVariable.Boolean[ins().size() + 1];
+        for (int i = 0; i < ins().size() + 1; i++) varNumInsSelectedOneHot[i] = planner.optimiser().booleanVar(varPrefix + "num_ins_selected_one_hot[" + i + "]");
     }
 
     void createOptimiserConstraints() {
@@ -128,23 +128,23 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
             conAssignOrderNumber.setCoefficient(varOrderAssignment[i], i);
         }
 
-        OptimiserConstraint conNumIns = planner.optimiser().constraint(0, 0, conPrefix + "num_ins");
-        conNumIns.setCoefficient(varNumIns, -1);
-        for (PlannerEdge.Directional<?, ?> edge : ins()) conNumIns.setCoefficient(edge.varIsSelected, 1);
+        OptimiserConstraint conNumInsSelected = planner.optimiser().constraint(0, 0, conPrefix + "num_ins_selected");
+        conNumInsSelected.setCoefficient(varNumInsSelected, -1);
+        for (PlannerEdge.Directional<?, ?> edge : ins()) conNumInsSelected.setCoefficient(edge.varIsSelected, 1);
 
-        OptimiserConstraint conNumInsEncoding = planner.optimiser().constraint(0, 0, conPrefix + "num_ins_encoding");
-        OptimiserConstraint conNumInsEncodingValid = planner.optimiser().constraint(1, 1, conPrefix + "num_ins_encoding_valid");
-        conNumInsEncoding.setCoefficient(varNumIns, -1);
+        OptimiserConstraint conNumInsSelectedOneHot = planner.optimiser().constraint(0, 0, conPrefix + "num_ins_selected_one_hot");
+        OptimiserConstraint conNumInsSelectedOneHotValid = planner.optimiser().constraint(1, 1, conPrefix + "num_ins_selected_one_hot_valid");
+        conNumInsSelectedOneHot.setCoefficient(varNumInsSelected, -1);
         for (int i = 0; i < ins().size() + 1; i++) {
-            conNumInsEncoding.setCoefficient(varNumInsEncoding[i], i);
-            conNumInsEncodingValid.setCoefficient(varNumInsEncoding[i], 1);
+            conNumInsSelectedOneHot.setCoefficient(varNumInsSelectedOneHot[i], i);
+            conNumInsSelectedOneHotValid.setCoefficient(varNumInsSelectedOneHot[i], 1);
         }
     }
 
     protected void updateOptimiserCoefficients() {
         assert costLastRecorded == safeCost();
-        planner.optimiser().setObjectiveCoefficient(varNumInsEncoding[0], log(1 + safeCost()));
-        for (int i = 1; i < ins().size() + 1; i++) planner.optimiser().setObjectiveCoefficient(varNumInsEncoding[i], log(i));
+        planner.optimiser().setObjectiveCoefficient(varNumInsSelectedOneHot[0], log(1 + safeCost()));
+        for (int i = 1; i < ins().size() + 1; i++) planner.optimiser().setObjectiveCoefficient(varNumInsSelectedOneHot[i], log(i));
     }
 
     void recordCost() {
@@ -162,9 +162,9 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     void setOptimiserValues() {
         assert varOrderNumber.hasValue();
-        varNumIns.setValue(ins().stream().map(e -> e.from().getOrder() < getOrder() ? 1 : 0).reduce(0, Integer::sum));
+        varNumInsSelected.setValue(ins().stream().map(e -> e.from().getOrder() < getOrder() ? 1 : 0).reduce(0, Integer::sum));
         for (int i = 0; i < ins().size() + 1; i++) {
-            varNumInsEncoding[i].setValue(varNumIns.value() == i);
+            varNumInsSelectedOneHot[i].setValue(varNumInsSelected.value() == i);
         }
         isInitialised = true;
     }
