@@ -101,7 +101,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void setSupertype(RelationType superType) {
         validateIsNotDeleted();
-        super.setSuperTypeVertex(((RelationTypeImpl) superType).vertex);
+        setSuperTypeVertex(((RelationTypeImpl) superType).vertex);
     }
 
     @Override
@@ -157,7 +157,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
                 ).isPresent()
         ) { throw exception(TypeDBException.of(RELATION_RELATES_ROLE_NOT_AVAILABLE, roleLabel, overriddenLabel)); }
 
-        roleType.sup(inherited.get());
+        roleType.setSupertype(inherited.get());
         vertex.outs().edge(RELATES, roleType.vertex).overridden(inherited.get().vertex);
     }
 

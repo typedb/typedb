@@ -78,8 +78,8 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         vertex.isAbstract(false);
     }
 
-    void sup(RoleType superType) {
-        super.setSuperTypeVertex(((RoleTypeImpl) superType).vertex);
+    void setSupertype(RoleType superType) {
+        setSuperTypeVertex(((RoleTypeImpl) superType).vertex);
     }
 
     @Nullable
@@ -229,7 +229,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         }
 
         @Override
-        void sup(RoleType superType) {
+        void setSupertype(RoleType superType) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
     }

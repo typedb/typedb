@@ -68,7 +68,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public void setSupertype(EntityType superType) {
         validateIsNotDeleted();
-        super.setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
+        setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
     }
 
     @Override
