@@ -192,13 +192,13 @@ public class GraphProcedure implements PermutationProcedure {
         }
 
         private void linearise() {
-            List<ProcedureVertex<?, ?>> ordering = new ArrayList<>();
             Set<ProcedureVertex<?, ?>> orderedSet = new HashSet<>();
             List<ProcedureVertex<?, ?>> stack =  vertices.values().stream().filter(ProcedureVertex::isStartVertex).collect(Collectors.toList());
+            int vertexOrder = 0;
             while (!stack.isEmpty()) {
                 ProcedureVertex<?, ?> vertex = stack.remove(stack.size() - 1);
                 if (orderedSet.contains(vertex)) continue;
-                ordering.add(vertex);
+                vertex.setOrder(vertexOrder++);
                 orderedSet.add(vertex);
                 for (ProcedureVertex<?, ?> v : vertex.outs().stream().map(ProcedureEdge::to).toArray(ProcedureVertex[]::new)) {
                     if (!orderedSet.contains(v) && orderedSet.containsAll(v.ins().stream().map(ProcedureEdge::from).collect(Collectors.toSet()))) {
@@ -206,8 +206,8 @@ public class GraphProcedure implements PermutationProcedure {
                     }
                 }
             }
-            assert ordering.size() == vertices.size();
-            for (int i = 0; i < ordering.size(); i++) ordering.get(i).setOrder(i);
+            assert orderedSet.size() == vertices.size();
+            assert vertexOrder == vertices.size();
         }
 
         private void register(GraphPlanner planner, int startOrder) {
