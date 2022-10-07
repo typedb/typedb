@@ -44,6 +44,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
@@ -283,6 +284,8 @@ public class GraphPlanner implements ComponentPlanner {
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
 
+        linearise();
+
         createProcedure();
         end = Instant.now();
 
@@ -291,11 +294,31 @@ public class GraphPlanner implements ComponentPlanner {
         isOptimising.set(false);
     }
 
+    private void linearise() {
+        Set<PlannerVertex<?>> orderedSet = new HashSet<>();
+        List<PlannerVertex<?>> stack = vertices.values().stream().filter(PlannerVertex::isStartingVertex).collect(Collectors.toList());
+        int vertexOrder = 0;
+        while (!stack.isEmpty()) {
+            PlannerVertex<?> vertex = stack.remove(stack.size() - 1);
+            vertex.setOrder(vertexOrder++);
+            orderedSet.add(vertex);
+            for (PlannerVertex<?> v : vertex.outs().stream().filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::to).collect(Collectors.toSet())) {
+                if (!orderedSet.contains(v) && orderedSet.containsAll(v.ins().stream().filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::from).collect(Collectors.toSet()))) {
+                    stack.add(v);
+                }
+            }
+        }
+        assert orderedSet.size() == vertices.size();
+        assert vertexOrder == vertices.size();
+    }
+
+
     private void updateOptimiser() {
         updateOptimiserCoefficients();
         updateOptimiserConstraints();
         if (!isVertexOrderInitialised) initialiseVertexOrderGreedy();
         setOptimiserValues();
+        linearise();
         if (LOG.isTraceEnabled()) LOG.trace(optimiser.toString());
     }
 
