@@ -292,7 +292,7 @@ public class GraphPlanner implements ComponentPlanner {
     }
 
     private void updateOptimiser() {
-        updateOptimiserCoefficents();
+        updateOptimiserCoefficients();
         updateOptimiserConstraints();
         if (!isVertexOrderInitialised) initialiseVertexOrderGreedy();
         setOptimiserValues();
@@ -308,7 +308,7 @@ public class GraphPlanner implements ComponentPlanner {
         edges.forEach(PlannerEdge::updateOptimiserConstraints);
     }
 
-    private void updateOptimiserCoefficents() {
+    private void updateOptimiserCoefficients() {
         vertices.values().forEach(PlannerVertex::updateOptimiserCoefficients);
         edges.forEach(PlannerEdge::updateOptimiserCoefficients);
     }

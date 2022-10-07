@@ -48,9 +48,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     double cost;
     double costLastRecorded;
 
-    OptimiserVariable.Boolean varIsStartingVertex;
     OptimiserVariable.Boolean[] varOrderAssignment;
     OptimiserVariable.Integer varOrderNumber;
+    OptimiserVariable.Integer varNumInsSelected;
+    OptimiserVariable.Boolean[] varNumInsSelectedOneHot;
 
     PlannerVertex(Identifier identifier, @Nullable GraphPlanner planner) {
         super(identifier);
@@ -66,7 +67,7 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
     }
 
     public boolean isStartingVertex() {
-        return varIsStartingVertex.value();
+        return varNumInsSelectedOneHot[0].value();
     }
 
     public boolean isEndingVertex() {
@@ -108,12 +109,14 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     void createOptimiserVariables() {
         assert planner != null;
-        varIsStartingVertex = planner.optimiser().booleanVar(varPrefix + "is_starting_vertex");
         varOrderNumber = planner.optimiser().intVar(0, planner.vertices().size() - 1, varPrefix + "order_number");
         varOrderAssignment = new OptimiserVariable.Boolean[planner.vertices().size()];
         for (int i = 0; i < planner.vertices().size(); i++) {
             varOrderAssignment[i] = planner.optimiser().booleanVar(varPrefix + "order_assignment[" + i + "]");
         }
+        varNumInsSelected = planner.optimiser().intVar(0, ins().size(), varPrefix + "num_ins_selected");
+        varNumInsSelectedOneHot = new OptimiserVariable.Boolean[ins().size() + 1];
+        for (int i = 0; i < ins().size() + 1; i++) varNumInsSelectedOneHot[i] = planner.optimiser().booleanVar(varPrefix + "num_ins_selected_one_hot[" + i + "]");
     }
 
     void createOptimiserConstraints() {
@@ -125,15 +128,23 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
             conAssignOrderNumber.setCoefficient(varOrderAssignment[i], i);
         }
 
-        int numIns = ins().size();
-        OptimiserConstraint conIsStartingVertex = planner.optimiser().constraint(1, numIns + 1, conPrefix + "is_starting_vertex");
-        conIsStartingVertex.setCoefficient(varIsStartingVertex, numIns + 1);
-        for (PlannerEdge.Directional<?, ?> edge : ins()) conIsStartingVertex.setCoefficient(edge.varIsSelected, 1);
+        OptimiserConstraint conNumInsSelected = planner.optimiser().constraint(0, 0, conPrefix + "num_ins_selected");
+        conNumInsSelected.setCoefficient(varNumInsSelected, -1);
+        for (PlannerEdge.Directional<?, ?> edge : ins()) conNumInsSelected.setCoefficient(edge.varIsSelected, 1);
+
+        OptimiserConstraint conNumInsSelectedOneHot = planner.optimiser().constraint(0, 0, conPrefix + "num_ins_selected_one_hot");
+        OptimiserConstraint conNumInsSelectedOneHotValid = planner.optimiser().constraint(1, 1, conPrefix + "num_ins_selected_one_hot_valid");
+        conNumInsSelectedOneHot.setCoefficient(varNumInsSelected, -1);
+        for (int i = 0; i < ins().size() + 1; i++) {
+            conNumInsSelectedOneHot.setCoefficient(varNumInsSelectedOneHot[i], i);
+            conNumInsSelectedOneHotValid.setCoefficient(varNumInsSelectedOneHot[i], 1);
+        }
     }
 
     protected void updateOptimiserCoefficients() {
         assert costLastRecorded == safeCost();
-        planner.optimiser().setObjectiveCoefficient(varIsStartingVertex, log(1 + safeCost()));
+        planner.optimiser().setObjectiveCoefficient(varNumInsSelectedOneHot[0], log(1 + safeCost()));
+        for (int i = 1; i < ins().size() + 1; i++) planner.optimiser().setObjectiveCoefficient(varNumInsSelectedOneHot[i], log(i));
     }
 
     void recordCost() {
@@ -151,7 +162,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     void setOptimiserValues() {
         assert varOrderNumber.hasValue();
-        varIsStartingVertex.setValue(iterate(outs()).allMatch(e -> e.to().getOrder() > getOrder()));
+        varNumInsSelected.setValue(ins().stream().map(e -> e.from().getOrder() < getOrder() ? 1 : 0).reduce(0, Integer::sum));
+        for (int i = 0; i < ins().size() + 1; i++) {
+            varNumInsSelectedOneHot[i].setValue(varNumInsSelected.value() == i);
+        }
         isInitialised = true;
     }
 
