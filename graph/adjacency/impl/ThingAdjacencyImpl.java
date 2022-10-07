@@ -21,9 +21,11 @@ package com.vaticle.typedb.core.graph.adjacency.impl;
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingEdgeIterator.InEdgeIteratorImpl;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingEdgeIterator.OutEdgeIteratorImpl;
@@ -35,10 +37,10 @@ import com.vaticle.typedb.core.graph.edge.impl.ThingEdgeImpl;
 import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
 import com.vaticle.typedb.core.encoding.iid.IID;
 import com.vaticle.typedb.core.encoding.iid.InfixIID;
-import com.vaticle.typedb.core.encoding.iid.SuffixIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,6 +49,8 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Predicate;
 
+import static com.vaticle.typedb.core.common.collection.ByteArray.empty;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
@@ -68,10 +72,26 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
     abstract EDGE_VIEW getView(ThingEdge edge);
 
-    InfixIID.Thing infixIID(Encoding.Edge.Thing encoding, IID... lookAhead) {
+    InfixIID.Thing infixIID(Encoding.Edge.Thing encoding) {
         return isOut() ?
-                InfixIID.Thing.of(encoding.forward(), lookAhead) :
-                InfixIID.Thing.of(encoding.backward(), lookAhead);
+                InfixIID.Thing.of(encoding.forward()) :
+                InfixIID.Thing.of(encoding.backward());
+    }
+
+    InfixIID.Thing infixIID(Encoding.Edge.Thing encoding, IID lookahead) {
+        if (!(lookahead instanceof VertexIID.Type)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+        return infixIID(encoding, (VertexIID.Type) lookahead);
+    }
+
+    InfixIID.Thing infixIID(Encoding.Edge.Thing encoding, VertexIID.Type lookahead) {
+        return isOut() ?
+                InfixIID.Thing.of(encoding.forward(), lookahead) :
+                InfixIID.Thing.of(encoding.backward(), lookahead);
+    }
+
+    InfixIID.Thing extractInfixIID(Encoding.Edge.Thing encoding, IID... lookahead) {
+        if (lookahead.length == 0) return infixIID(encoding);
+        else return infixIID(encoding, lookahead[0]);
     }
 
     EdgeViewIID.Thing viewIID(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
@@ -81,12 +101,19 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
     EdgeViewIID.Thing viewIID(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
         return EdgeViewIID.Thing.of(
                 owner().iid(), infixIID(encoding, optimised.iid().type()),
-                adjacent.iid(), SuffixIID.of(optimised.iid().key())
+                adjacent.iid(), optimised.iid().key()
         );
     }
 
     Key.Prefix<EdgeViewIID.Thing> viewIIDPrefix(Encoding.Edge.Thing encoding, IID... lookahead) {
-        return EdgeViewIID.Thing.prefix(owner().iid(), infixIID(encoding, lookahead));
+        assert lookahead.length < 3;
+        if (lookahead.length == 2) {
+            if (!(lookahead[1] instanceof VertexIID.Thing)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            InfixIID.Thing infixIID = infixIID(encoding, lookahead[0]);
+            return EdgeViewIID.Thing.prefix(owner().iid(), infixIID, (VertexIID.Thing) lookahead[1]);
+        } else {
+            return EdgeViewIID.Thing.prefix(owner().iid(), extractInfixIID(encoding, lookahead));
+        }
     }
 
     ThingEdgeImpl.Persisted newPersistedEdge(EdgeViewIID.Thing iid) {
@@ -98,7 +125,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         Key.Prefix<EdgeViewIID.Thing> prefix = viewIIDPrefix(encoding, lookahead);
         return owner().graph().storage().iterate(prefix, ASC).mapSorted(
                 kv -> getView(newPersistedEdge(EdgeViewIID.Thing.of(kv.key().bytes()))),
-                edgeView -> KeyValue.of(edgeView.iid(), ByteArray.empty()),
+                edgeView -> KeyValue.of(edgeView.iid(), empty()),
                 ASC
         );
     }
@@ -222,7 +249,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
         Forwardable<EDGE_VIEW, Order.Asc> iterateBufferedViews(Encoding.Edge.Thing encoding, IID[] lookahead) {
             ConcurrentNavigableMap<EDGE_VIEW, ThingEdgeImpl.Buffered> result;
-            InfixIID.Thing infixIID = infixIID(encoding, lookahead);
+            InfixIID.Thing infixIID = extractInfixIID(encoding, lookahead);
             if (lookahead.length == encoding.lookAhead()) {
                 return (result = edges.get(infixIID)) != null ? iterateSorted(result.keySet(), ASC) : emptySorted();
             }
@@ -249,8 +276,8 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         public ThingEdge edge(Encoding.Edge.Thing encoding, ThingVertex adjacent, ThingVertex optimised) {
             assert encoding.isOptimisation();
             Predicate<ThingEdge> predicate = isOut()
-                    ? e -> e.to().equals(adjacent) && e.forwardView().iid().suffix().equals(SuffixIID.of(optimised.iid().key()))
-                    : e -> e.from().equals(adjacent) && e.backwardView().iid().suffix().equals(SuffixIID.of(optimised.iid().key()));
+                    ? e -> e.to().equals(adjacent) && e.forwardView().iid().suffix().equals(optimised.iid().key())
+                    : e -> e.from().equals(adjacent) && e.backwardView().iid().suffix().equals(optimised.iid().key());
             Forwardable<EDGE_VIEW, Order.Asc> iterator = iterateBufferedViews(
                     encoding, new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()}
             );
@@ -293,7 +320,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             InfixIID.Thing infixIID = infixIID(encoding);
             for (int i = 0; i < encoding.lookAhead(); i++) {
                 this.infixes.computeIfAbsent(infixIID, x -> new ConcurrentSet<>()).add(
-                        infixIID = infixIID(encoding, copyOfRange(infixes, 0, i + 1))
+                        infixIID = extractInfixIID(encoding, copyOfRange(infixes, 0, i + 1))
                 );
             }
 
@@ -350,7 +377,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
         @Override
         public void remove(ThingEdge edge) {
-            InfixIID.Thing infixIID = infixIID(edge.encoding(), infixTails(edge));
+            InfixIID.Thing infixIID = extractInfixIID(edge.encoding(), infixTails(edge));
             if (edges.containsKey(infixIID)) {
                 edges.get(infixIID).remove(getView(edge));
                 owner.setModified();

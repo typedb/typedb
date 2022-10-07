@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 
 import javax.annotation.Nullable;
-import javax.print.attribute.standard.DateTimeAtCompleted;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneId;

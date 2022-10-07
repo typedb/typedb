@@ -18,14 +18,15 @@
 
 package com.vaticle.typedb.core.traversal.procedure;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -35,7 +36,6 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,12 +45,14 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import static com.vaticle.typedb.common.collection.Collections.intersection;
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.merge;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
@@ -159,13 +161,114 @@ public abstract class ProcedureVertex<
             else return iterateAndFilterFromTypes(graphMgr, parameters, order);
         }
 
-        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> filter(
-                Forwardable<? extends ThingVertex, ORDER> iterator, Traversal.Parameters params
+        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilter(
+                ThingVertex vertex, Traversal.Parameters params, ORDER order
         ) {
-            iterator = filterTypes(iterator);
-            if (props().hasIID()) iterator = filterIID(iterator, params);
-            if (!props().predicates().isEmpty()) iterator = filterPredicates(filterAttributes(iterator), params);
+            if (!checkTypes(vertex) || props().hasIID() && !checkIID(vertex, params) ||
+                    !props().predicates().isEmpty() && !checkPredicates(vertex, params)) {
+                return emptySorted(order);
+            } else {
+                return iterateSorted(order, vertex);
+            }
+        }
+
+        private boolean checkPredicates(ThingVertex vertex, Traversal.Parameters params) {
+            assert !props().predicates().isEmpty() && id().isVariable();
+            if (!vertex.isAttribute()) return false;
+            for (Predicate.Value<?, ?> predicate : props().predicates()) {
+                for (Traversal.Parameters.Value value : params.getValues(id().asVariable(), predicate)) {
+                    if (!predicate.apply(vertex.asAttribute(), value)) return false;
+                }
+            }
+            return true;
+        }
+
+        private boolean checkIID(ThingVertex vertex, Traversal.Parameters parameters) {
+            assert parameters.getIID(id().asVariable()) != null;
+            return vertex.iid().equals(parameters.getIID(id().asVariable()));
+        }
+
+        private boolean checkTypes(ThingVertex vertex) {
+            return props().types().contains(vertex.type().properLabel());
+        }
+
+        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterPredicates(
+                ThingVertex vertex, Traversal.Parameters params, ORDER order
+        ) {
+            if (!checkPredicates(vertex, params)) return emptySorted(order);
+            else return iterateSorted(order, vertex);
+        }
+
+        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterPredicates(
+                List<? extends ThingVertex> vertices, Traversal.Parameters params, ORDER order
+        ) {
+            if (props().predicates().isEmpty()) return iterateSorted(vertices, order);
+            else {
+                TreeSet<AttributeVertex.Value<?>> filtered = new TreeSet<>();
+                vertices.forEach(v -> {
+                    if (checkPredicates(v, params)) filtered.add(v.asAttribute().toValue());
+                });
+                return iterateSorted(filtered, order);
+            }
+        }
+
+        <ORDER extends Order> Forwardable<KeyValue<ThingVertex, ThingVertex>, ORDER> iterateAndFilterPredicatesOnEdges(
+                List<KeyValue<ThingVertex, ThingVertex>> edges, Traversal.Parameters params, ORDER order
+        ) {
+            if (props().predicates().isEmpty()) return iterateSorted(edges, order);
+            else {
+                TreeSet<KeyValue<ThingVertex, ThingVertex>> filtered = new TreeSet<>();
+                edges.forEach(kv -> {
+                    if (checkPredicates(kv.key(), params)) {
+                        filtered.add(new KeyValue<>(kv.key().asAttribute().toValue(), kv.value()));
+                    }
+                });
+                return iterateSorted(filtered, order);
+            }
+        }
+
+        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> mergeAndFilterPredicates(
+                List<Pair<TypeVertex, Forwardable<ThingVertex, ORDER>>> vertexIters, Traversal.Parameters params, ORDER order
+        ) {
+            if (props().predicates().isEmpty()) return merge(iterate(vertexIters).map(Pair::second), order);
+            else {
+                return merge(iterate(vertexIters).map(Pair::second)
+                        .map(iter -> iter.filter(a -> checkPredicates(a, params)).map(a -> a.asAttribute().toValue())
+                        , order);
+                );
+            }
+
+            // TODO we should be using forward() to optimise filtering for >, <, and =
+            assert id().isVariable();
+            for (Predicate.Value<?, ?> predicate : props().predicates()) {
+                if (Objects.equals(predicate, exclude)) continue;
+                for (Traversal.Parameters.Value value : params.getValues(id().asVariable(), predicate)) {
+                    iterator = iterator.filter(a -> predicate.apply(a.asAttribute(), value));
+                }
+            }
             return iterator;
+
+
+            if (props().predicates().isEmpty()) return iter;
+            else return filterPredicates(mapToAttributes(iter), params, eq.orElse(null));
+        }
+
+        <ORDER extends Order> Forwardable<KeyValue<ThingVertex, ThingVertex>, ORDER> mergeAndFilterPredicatesOnEdges(
+                List<Pair<TypeVertex, Forwardable<KeyValue<ThingVertex, ThingVertex>, ORDER>>> edgeIters, Traversal.Parameters params, ORDER order
+        ) {
+
+            // TODO we should be using forward() to optimise filtering for >, <, and =
+            assert id().isVariable();
+            iterator = iterator.filter(kv -> kv.key().isAttribute());
+            for (Predicate.Value<?, ?> predicate : props().predicates()) {
+                for (Traversal.Parameters.Value value : params.getValues(id().asVariable(), predicate)) {
+                    iterator = iterator.filter(kv -> predicate.apply(kv.key().asAttribute(), value));
+                }
+            }
+            return iterator;
+
+            if (props().predicates().isEmpty()) return iter;
+            else return filterPredicates(mapToAttributes(iter), params, eq.orElse(null));
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromIID(
@@ -175,15 +278,12 @@ public abstract class ProcedureVertex<
             Identifier.Variable id = id().asVariable();
             ThingVertex vertex = graphMgr.data().getReadable(parameters.getIID(id));
             if (vertex == null) return emptySorted(order);
-            Forwardable<? extends ThingVertex, ORDER> iter = filterTypes(iterateSorted(order, vertex));
-            if (!props().predicates().isEmpty()) iter = filterPredicates(filterAttributes(iter), parameters);
-            return iter;
+            return iterateAndFilter(vertex, parameters, order); // TODO: re-applies IID filter
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromTypes(
                 GraphManager graphMgr, Traversal.Parameters parameters, ORDER order
         ) {
-            assert !props().types().isEmpty();
             return iterateAndFilterFromTypes(graphMgr, parameters, iterate(props().types()).map(graphMgr.schema()::getType), order);
         }
 
@@ -191,16 +291,13 @@ public abstract class ProcedureVertex<
                 GraphManager graphMgr, Traversal.Parameters parameters, FunctionalIterator<TypeVertex> types, ORDER order
         ) {
             assert types.hasNext();
-            Forwardable<? extends ThingVertex, ORDER> iter;
             Optional<Predicate.Value<?, ?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
-            if (eq.isPresent()) iter = iteratorOfAttributesWithTypes(graphMgr, parameters, eq.get(), order);
+            if (eq.isPresent())
+                return iterateAndFilterPredicates(attributesEqual(graphMgr, parameters, eq.get()), parameters, order);
             else {
                 if (id().isVariable()) types = types.filter(t -> !t.encoding().equals(ROLE_TYPE));
-                iter = types.mergeMapForwardable(t -> graphMgr.data().getReadable(t, order), order);
+                return mergeAndFilterPredicates(types.map(t -> new Pair<>(t, graphMgr.data().getReadable(t, order))).toList(), parameters, order);
             }
-
-            if (props().predicates().isEmpty()) return iter;
-            else return filterPredicates(mapToAttributes(iter), parameters, eq.orElse(null));
         }
 
         private <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> filterIID(
@@ -214,64 +311,27 @@ public abstract class ProcedureVertex<
             return iterator.filter(v -> props().types().contains(v.type().properLabel()));
         }
 
-        <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> filterPredicates(
-                Forwardable<? extends AttributeVertex<?>, ORDER> iterator, Traversal.Parameters parameters
-        ) {
-            return filterPredicates(iterator, parameters, null);
-        }
-
-        <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> filterPredicates(
-                Forwardable<? extends AttributeVertex<?>, ORDER> iterator, Traversal.Parameters parameters,
-                @Nullable Predicate.Value<?, ?> exclude
-        ) {
-            // TODO we should be using forward() to optimise filtering for >, <, and =
-            assert id().isVariable();
-            for (Predicate.Value<?, ?> predicate : props().predicates()) {
-                if (Objects.equals(predicate, exclude)) continue;
-                for (Traversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
-                    iterator = iterator.filter(a -> predicate.apply(a.asAttribute(), value));
-                }
-            }
-            return iterator;
-        }
-
-        Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> filterPredicatesOnEdge(
-                Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iterator, Traversal.Parameters parameters
-        ) {
-            assert id().isVariable();
-            iterator = iterator.filter(kv -> kv.key().isAttribute());
-            for (Predicate.Value<?, ?> predicate : props().predicates()) {
-                for (Traversal.Parameters.Value value : parameters.getValues(id().asVariable(), predicate)) {
-                    iterator = iterator.filter(kv -> predicate.apply(kv.key().asAttribute(), value));
-                }
-            }
-            return iterator;
-        }
-
-        <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> iteratorOfAttributesWithTypes(
-                GraphManager graphMgr, Traversal.Parameters params, Predicate.Value<?, ?> eq, ORDER order
+        List<AttributeVertex<?>> attributesEqual(
+                GraphManager graphMgr, Traversal.Parameters params, Predicate.Value<?, ?> eq
         ) {
             FunctionalIterator<TypeVertex> attributeTypes = iterate(props().types().iterator())
                     .map(l -> graphMgr.schema().getType(l))
-                    .map(t -> {
-                        assert t.isAttributeType();
-                        return t;
-                    }).filter(t -> eq.valueType().assignables().contains(t.valueType()));
-            return iteratorOfAttributes(graphMgr, attributeTypes, params, eq, order);
+                    .filter(t -> eq.valueType().assignables().contains(t.valueType()));
+            return attributesEqual(graphMgr, attributeTypes, params, eq);
         }
 
-        <ORDER extends Order> Forwardable<? extends AttributeVertex<?>, ORDER> iteratorOfAttributes(
+        List<AttributeVertex<?>> attributesEqual(
                 GraphManager graphMgr, FunctionalIterator<TypeVertex> attributeTypes,
-                Traversal.Parameters parameters, Predicate.Value<?, ?> eqPredicate, ORDER order
+                Traversal.Parameters parameters, Predicate.Value<?, ?> eqPredicate
         ) {
             assert id().isVariable();
             Set<Traversal.Parameters.Value> values = parameters.getValues(id().asVariable(), eqPredicate);
-            if (values.size() > 1) return emptySorted(order);
+            if (values.size() > 1) return list();
             Traversal.Parameters.Value value = values.iterator().next();
-            TreeSet<AttributeVertex<?>> attributes = new TreeSet<>();
+            List<AttributeVertex<?>> attributes = new ArrayList<>();
             attributeTypes.map(t -> attributeVertex(graphMgr, t, value))
                     .filter(Objects::nonNull).forEachRemaining(attributes::add);
-            return iterateSorted(attributes, order);
+            return attributes;
         }
 
         private AttributeVertex<?> attributeVertex(GraphManager graphMgr, TypeVertex type, Traversal.Parameters.Value value) {
@@ -369,7 +429,7 @@ public abstract class ProcedureVertex<
                 for (Encoding.ValueType<?> valueType : props().valueTypes()) {
                     iterators.add(graphMgr.schema().attributeTypes(valueType, order));
                 }
-                return SortedIterators.Forwardable.merge(iterate(iterators), order);
+                return merge(iterate(iterators), order);
             } else return filterValueTypes(iterator);
         }
 

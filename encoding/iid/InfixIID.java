@@ -19,9 +19,13 @@
 package com.vaticle.typedb.core.encoding.iid;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.encoding.Encoding;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 
 public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID {
@@ -81,8 +85,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         static InfixIID.Thing extract(ByteArray bytes, int from) {
-            Encoding.Edge.Thing encoding = Encoding.Edge.Thing.of(bytes.get(from));
-            if ((encoding.equals(ROLEPLAYER))) {
+            if ((Encoding.Edge.Thing.of(bytes.get(from)).equals(ROLEPLAYER))) {
                 return RolePlayer.extract(bytes, from);
             } else {
                 return new InfixIID.Thing(bytes.view(from, from + 1));
@@ -91,23 +94,17 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         public static InfixIID.Thing of(Encoding.Infix infix) {
             if (Encoding.Edge.Thing.of(infix).equals(ROLEPLAYER)) {
-                return new InfixIID.RolePlayer(infix.bytes());
+                throw TypeDBException.of(ILLEGAL_ARGUMENT);
             } else {
                 return new InfixIID.Thing(infix.bytes());
             }
         }
 
-        public static InfixIID.Thing of(Encoding.Infix infix, IID... tail) {
-            ByteArray[] iidBytes = new ByteArray[tail.length + 1];
-            iidBytes[0] = infix.bytes();
-            for (int i = 0; i < tail.length; i++) {
-                iidBytes[i + 1] = tail[i].bytes();
-            }
-
+        public static InfixIID.Thing of(Encoding.Infix infix, VertexIID.Type type) {
             if (Encoding.Edge.Thing.of(infix).equals(ROLEPLAYER)) {
-                return new InfixIID.RolePlayer(join(iidBytes));
+                return RolePlayer.of(infix, type);
             } else {
-                return new InfixIID.Thing(join(iidBytes));
+                throw TypeDBException.of(ILLEGAL_ARGUMENT);
             }
         }
 
@@ -147,14 +144,16 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         private RolePlayer(ByteArray bytes) {
             super(bytes);
+            assert bytes.length() == LENGTH;
         }
 
         public static RolePlayer of(Encoding.Infix infix, VertexIID.Type type) {
-            assert type != null && Encoding.Edge.Thing.of(infix).equals(ROLEPLAYER);
+            assert Encoding.Edge.Thing.of(infix).equals(ROLEPLAYER) && type != null;
             return new RolePlayer(join(infix.bytes(), type.bytes()));
         }
 
         static RolePlayer extract(ByteArray bytes, int from) {
+            assert Encoding.Edge.Thing.of(bytes.get(from)).equals(ROLEPLAYER);
             return new RolePlayer(join(bytes.view(from, from + DEFAULT_LENGTH), VertexIID.Type.extract(bytes, from + DEFAULT_LENGTH).bytes));
         }
 
