@@ -295,20 +295,20 @@ public class GraphPlanner implements ComponentPlanner {
     }
 
     private void linearise() {
-        Set<PlannerVertex<?>> orderedVertices = new HashSet<>();
+        Set<PlannerVertex<?>> visited = new HashSet<>();
         List<PlannerVertex<?>> stack = vertices.values().stream().filter(PlannerVertex::isStartingVertex).collect(Collectors.toList());
         int vertexOrder = 0;
         while (!stack.isEmpty()) {
             PlannerVertex<?> vertex = stack.remove(stack.size() - 1);
             vertex.setOrder(vertexOrder++);
-            orderedVertices.add(vertex);
+            visited.add(vertex);
             for (PlannerVertex<?> v : vertex.outs().stream().filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::to).collect(Collectors.toSet())) {
-                if (!orderedVertices.contains(v) && orderedVertices.containsAll(v.ins().stream().filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::from).collect(Collectors.toSet()))) {
+                if (!visited.contains(v) && visited.containsAll(v.ins().stream().filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::from).collect(Collectors.toSet()))) {
                     stack.add(v);
                 }
             }
         }
-        assert orderedVertices.size() == vertices.size();
+        assert visited.size() == vertices.size();
         assert vertexOrder == vertices.size();
     }
 
