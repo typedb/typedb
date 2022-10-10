@@ -271,22 +271,22 @@ You can download TypeDB from the [Download Centre](https://vaticle.com/download)
 > Note: You DO NOT NEED to compile TypeDB from the source if you just want to use TypeDB. See the _"Download and Run TypeDB"_ section above.
 
 1. Make sure you have the following dependencies installed on your machine:
-    - Java JDK 11 or higher
-    - Python 3 and Pip 18.1 or higher
-    - [Bazel 5 or higher](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage Bazel versions which runs the build with the Bazel version specified in [`.bazelversion`](https://github.com/vaticle/typedb/blob/master/.bazelversion). In order to install it, follow the platform-specific guide:
-        - MacOS: `brew install bazelbuild/tap/bazelisk`
-        - Linux: `wget https://github.com/bazelbuild/bazelisk/releases/download/v1.4.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel`
+   - Java JDK 11 or higher
+   - Python 3 and Pip 18.1 or higher
+   - [Bazel 5 or higher](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage multiple Bazel versions transparently. Bazelisk runs the appropriate Bazel version for any `bazel` command as specified in [`.bazelversion`](https://github.com/vaticle/typedb/blob/master/.bazelversion) file. In order to install it, follow the platform-specific guide:
+     - MacOS: `brew install bazelbuild/tap/bazelisk`
+     - Linux: `wget https://github.com/bazelbuild/bazelisk/releases/download/v1.4.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel`
 
 2. Depending on your Operating System, you can build TypeDB with either one of the following commands: 
-   ```
+   ```sh
    $ bazel build //:assemble-linux-targz
    ```
    Outputs to: `bazel-bin/typedb-all-linux.tar.gz`
-   ```
+   ```sh
    $ bazel build //:assemble-mac-zip
    ```
    Outputs to: `bazel-bin/typedb-all-mac.zip`
-   ```
+   ```sh
    $ bazel build //:assemble-windows-zip
    ```
    Outputs to: `bazel-bin/typedb-all-windows.zip`
