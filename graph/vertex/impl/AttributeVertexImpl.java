@@ -147,32 +147,32 @@ public abstract class AttributeVertexImpl {
 
         @Override
         public AttributeVertexImpl.Write<VALUE> asWrite() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.Write.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(AttributeVertex.Write.class));
         }
 
         @Override
         public AttributeVertexImpl.Read<java.lang.Boolean> asBoolean() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Boolean.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(Boolean.class));
         }
 
         @Override
         public AttributeVertexImpl.Read.Long asLong() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Long.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(Long.class));
         }
 
         @Override
         public AttributeVertexImpl.Read.Double asDouble() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Double.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(Double.class));
         }
 
         @Override
         public AttributeVertexImpl.Read.String asString() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(String.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(String.class));
         }
 
         @Override
         public AttributeVertexImpl.Read.DateTime asDateTime() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(DateTime.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(DateTime.class));
         }
 
         public static class Boolean extends AttributeVertexImpl.Read<java.lang.Boolean> {
@@ -417,27 +417,27 @@ public abstract class AttributeVertexImpl {
 
         @Override
         public AttributeVertexImpl.Write.Boolean asBoolean() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Boolean.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(Boolean.class));
         }
 
         @Override
         public AttributeVertexImpl.Write.Long asLong() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Long.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(Long.class));
         }
 
         @Override
         public AttributeVertexImpl.Write.Double asDouble() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Double.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(Double.class));
         }
 
         @Override
         public AttributeVertexImpl.Write.String asString() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(String.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(String.class));
         }
 
         @Override
         public AttributeVertexImpl.Write.DateTime asDateTime() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(DateTime.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(DateTime.class));
         }
 
         public static class Boolean extends AttributeVertexImpl.Write<java.lang.Boolean> {
@@ -572,7 +572,15 @@ public abstract class AttributeVertexImpl {
 
         @Override
         public int compareTo(Vertex<?, ?> other) {
-            return 0;
+            if (other.isThing() && other.asThing().isAttribute() && other.asThing().asAttribute().isValue()) {
+                Value<?> value = other.asThing().asAttribute().toValue();
+                int comp = compareValue(value);
+                return comp == 0 ? type().compareTo(value.type()) : comp;
+            } else return super.compareTo(other);
+        }
+
+        private <T> int compareValue(Value<T> valueVertex) {
+            return Encoding.ValueType.compare(valueType(), value(), valueVertex.valueType(), valueVertex.value());
         }
     }
 }

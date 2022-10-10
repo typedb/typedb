@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.graph.vertex.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.encoding.iid.KeyIID;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
@@ -94,7 +95,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
     @Override
     public ThingVertex.Write asWrite() {
-        throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(ThingVertex.Write.class));
+        throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(ThingVertex.Write.class));
     }
 
     public static class Read extends ThingVertexImpl {
@@ -143,7 +144,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public AttributeVertex<?> asAttribute() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(AttributeVertex.class));
         }
     }
 
@@ -231,7 +232,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public AttributeVertexImpl.Write<?> asAttribute() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.Write.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(AttributeVertex.Write.class));
         }
 
         public static class Buffered extends ThingVertexImpl.Write {
@@ -327,6 +328,47 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
                     graph.setModified(iid);
                 }
             }
+        }
+    }
+
+    public static class Target extends ThingVertexImpl {
+
+        private Target(ThingGraph graph, VertexIID.Thing iid) {
+            super(graph, iid);
+        }
+
+        public static Target of(ThingGraph graph, VertexIID.Thing iid) {
+            return new Target(graph, iid);
+        }
+
+        @Override
+        public ThingAdjacency.Out outs() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public ThingAdjacency.In ins() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public AttributeVertex<?> asAttribute() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public ThingVertex.Write toWrite() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public Encoding.Status status() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public boolean isModified() {
+            return false;
         }
     }
 }

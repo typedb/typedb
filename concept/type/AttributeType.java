@@ -80,6 +80,7 @@ public interface AttributeType extends ThingType {
 
     AttributeType.DateTime asDateTime();
 
+    // TODO: delete
     enum ValueType {
         OBJECT(Encoding.ValueType.OBJECT),
         BOOLEAN(Encoding.ValueType.BOOLEAN),

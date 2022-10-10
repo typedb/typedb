@@ -78,7 +78,13 @@ public class VertexProcedure implements PermutationProcedure {
             iterator = iterator.filter(v -> e.isClosure(graphMgr, v, v, params));
         }
 
-        return iterator.map(v -> VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v))));
+        return iterator.map(v -> {
+            if (v.isThing() && v.asThing().isAttribute() && v.asThing().asAttribute().isValue()) {
+                return VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v.asThing().asAttribute().toValue().toAttribute())));
+            } else {
+                return VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v)));
+            }
+        });
     }
 
     @Override

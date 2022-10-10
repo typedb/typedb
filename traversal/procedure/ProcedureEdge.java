@@ -43,7 +43,6 @@ import com.vaticle.typedb.core.traversal.scanner.GraphIterator;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NavigableSet;
@@ -882,7 +881,7 @@ public abstract class ProcedureEdge<
                             if (eq.isPresent()) {
                                 return to.iterateAndFilterPredicates(branchToEq(graphMgr, params, owner, eq.get()), params, ASC);
                             } else {
-                                return to.mergeAndFilterPredicates(branchToTypes(graphMgr, owner), params, ASC);
+                                return to.mergeAndFilterPredicates(graphMgr, branchToTypes(graphMgr, owner), params, ASC);
                             }
                         }
                     }
@@ -937,7 +936,6 @@ public abstract class ProcedureEdge<
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isThing() && fromVertex.asThing().isAttribute();
-                        Forwardable<ThingVertex, Order.Asc> iter;
                         AttributeVertex<?> att = fromVertex.asThing().asAttribute();
 
                         if (to.props().hasIID()) {
@@ -947,6 +945,7 @@ public abstract class ProcedureEdge<
                         } else {
                             Set<TypeVertex> owners = graphMgr.schema().ownersOfAttributeType(att.type());
                             return to.mergeAndFilterPredicates(
+                                    graphMgr,
                                     iterate(owners).filter(owner -> to.props().types().contains(owner.properLabel()))
                                             .map(t -> new Pair<>(t, att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from()))
                                             .toList(),
@@ -1024,6 +1023,7 @@ public abstract class ProcedureEdge<
                         } else {
                             Set<TypeVertex> players = graphMgr.schema().playersOfRoleType(role.type());
                             return to.mergeAndFilterPredicates(
+                                    graphMgr,
                                     iterate(players).filter(player -> toTypes.contains(player.properLabel()))
                                             .map(t -> new Pair<>(t, role.ins().edge(PLAYING, PrefixIID.of(t.encoding().instance()), t.iid()).from()))
                                             .toList(),
@@ -1228,7 +1228,7 @@ public abstract class ProcedureEdge<
                         if (to.props().hasIID()) {
                             return to.iterateAndFilterPredicatesOnEdges(branchToIID(graphMgr, params, rel, instanceRoleTypes), params, ASC);
                         } else {
-                            return to.mergeAndFilterPredicatesOnEdges(branchToTypes(graphMgr, rel, instanceRoleTypes), params, ASC);
+                            return to.mergeAndFilterPredicatesOnEdges(graphMgr, branchToTypes(graphMgr, rel, instanceRoleTypes), params, ASC);
                         }
                     }
 

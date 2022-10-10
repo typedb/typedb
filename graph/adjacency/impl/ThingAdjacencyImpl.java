@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.graph.adjacency.impl;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
-import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -40,7 +39,6 @@ import com.vaticle.typedb.core.encoding.iid.InfixIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,6 +55,7 @@ import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
+import static java.util.Arrays.copyOf;
 import static java.util.Arrays.copyOfRange;
 
 /**
@@ -89,11 +88,6 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 InfixIID.Thing.of(encoding.backward(), lookahead);
     }
 
-    InfixIID.Thing extractInfixIID(Encoding.Edge.Thing encoding, IID... lookahead) {
-        if (lookahead.length == 0) return infixIID(encoding);
-        else return infixIID(encoding, lookahead[0]);
-    }
-
     EdgeViewIID.Thing viewIID(Encoding.Edge.Thing encoding, ThingVertex adjacent) {
         return EdgeViewIID.Thing.of(owner().iid(), infixIID(encoding), adjacent.iid());
     }
@@ -106,14 +100,23 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
     }
 
     Key.Prefix<EdgeViewIID.Thing> viewIIDPrefix(Encoding.Edge.Thing encoding, IID... lookahead) {
-        assert lookahead.length < 3;
-        if (lookahead.length == 2) {
-            if (!(lookahead[1] instanceof VertexIID.Thing)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            InfixIID.Thing infixIID = infixIID(encoding, lookahead[0]);
-            return EdgeViewIID.Thing.prefix(owner().iid(), infixIID, (VertexIID.Thing) lookahead[1]);
+        IID.Array iids = lookaheadWithEncoding(encoding, new IID.Array(lookahead));
+        return EdgeViewIID.Thing.prefix(owner().iid(), iids);
+    }
+
+    IID.Array lookaheadWithEncoding(Encoding.Edge.Thing encoding, IID.Array lookahead) {
+        if (lookahead.length() == 0) return new IID.Array(new IID[]{infixIID(encoding)});
+        IID[] withEncoding;
+        if (encoding.isOptimisation()) {
+            InfixIID.Thing infixIID = infixIID(encoding, lookahead.get(0));
+            withEncoding = copyOf(lookahead.array(), lookahead.length());
+            withEncoding[0] = infixIID;
         } else {
-            return EdgeViewIID.Thing.prefix(owner().iid(), extractInfixIID(encoding, lookahead));
+            withEncoding = new IID[1 + lookahead.length()];
+            withEncoding[0] = infixIID(encoding);
+            System.arraycopy(lookahead.array(), 0, withEncoding, 1, lookahead.length());
         }
+        return new IID.Array(withEncoding);
     }
 
     ThingEdgeImpl.Persisted newPersistedEdge(EdgeViewIID.Thing iid) {
@@ -219,9 +222,9 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             extends ThingAdjacencyImpl<EDGE_VIEW> implements ThingAdjacency.Write {
 
         final ThingVertex.Write owner;
-        final ConcurrentMap<InfixIID.Thing, ConcurrentSet<InfixIID.Thing>> infixes;
+        final ConcurrentMap<IID.Array, ConcurrentSet<IID.Array>> infixes;
         // TODO: we can simplify this to ignore the idea of reasoning in write transactions
-        final ConcurrentMap<InfixIID.Thing, ConcurrentNavigableMap<EDGE_VIEW, ThingEdgeImpl.Buffered>> edges;
+        final ConcurrentMap<IID.Array, ConcurrentNavigableMap<EDGE_VIEW, ThingEdgeImpl.Buffered>> edges;
 
         Write(ThingVertex.Write owner) {
             this.owner = owner;
@@ -234,39 +237,39 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             return owner;
         }
 
-        IID[] infixTails(ThingEdge edge) {
+        IID.Array infixTails(ThingEdge edge) {
             if (edge.encoding().isOptimisation()) {
                 if (isOut()) {
-                    return new IID[]{edge.forwardView().iid().infix().asRolePlayer().tail(), edge.toIID().prefix(), edge.toIID().type()};
+                    return new IID.Array(new IID[]{edge.forwardView().iid().infix().asRolePlayer().tail().get(), edge.toIID().prefix(), edge.toIID().type()});
                 } else {
-                    return new IID[]{edge.backwardView().iid().infix().asRolePlayer().tail(), edge.fromIID().prefix(), edge.fromIID().type()};
+                    return new IID.Array(new IID[]{edge.backwardView().iid().infix().asRolePlayer().tail().get(), edge.fromIID().prefix(), edge.fromIID().type()});
                 }
             } else {
-                if (isOut()) return new IID[]{edge.toIID().prefix(), edge.toIID().type()};
-                else return new IID[]{edge.fromIID().prefix(), edge.fromIID().type()};
+                if (isOut()) return new IID.Array(new IID[]{edge.toIID().prefix(), edge.toIID().type()});
+                else return new IID.Array(new IID[]{edge.fromIID().prefix(), edge.fromIID().type()});
             }
         }
 
-        Forwardable<EDGE_VIEW, Order.Asc> iterateBufferedViews(Encoding.Edge.Thing encoding, IID[] lookahead) {
+        Forwardable<EDGE_VIEW, Order.Asc> iterateBufferedViews(Encoding.Edge.Thing encoding, IID.Array lookahead) {
             ConcurrentNavigableMap<EDGE_VIEW, ThingEdgeImpl.Buffered> result;
-            InfixIID.Thing infixIID = extractInfixIID(encoding, lookahead);
-            if (lookahead.length == encoding.lookAhead()) {
-                return (result = edges.get(infixIID)) != null ? iterateSorted(result.keySet(), ASC) : emptySorted();
+            IID.Array iidsWithEncoding = lookaheadWithEncoding(encoding, lookahead);
+            if (lookahead.length() == encoding.lookAhead()) {
+                return (result = edges.get(iidsWithEncoding)) != null ? iterateSorted(result.keySet(), ASC) : emptySorted();
             }
 
-            assert lookahead.length < encoding.lookAhead();
-            Set<InfixIID.Thing> iids = new HashSet<>();
-            iids.add(infixIID);
-            for (int i = lookahead.length; i < encoding.lookAhead() && !iids.isEmpty(); i++) {
-                Set<InfixIID.Thing> newIIDs = new HashSet<>();
-                for (InfixIID.Thing iid : iids) {
-                    Set<InfixIID.Thing> someNewIIDs = infixes.get(iid);
+            assert lookahead.length() < encoding.lookAhead();
+            Set<IID.Array> extendedIIDs = new HashSet<>();
+            extendedIIDs.add(iidsWithEncoding);
+            for (int i = lookahead.length(); i < encoding.lookAhead() && !extendedIIDs.isEmpty(); i++) {
+                Set<IID.Array> newIIDs = new HashSet<>();
+                for (IID.Array iids : extendedIIDs) {
+                    Set<IID.Array> someNewIIDs = infixes.get(iids);
                     if (someNewIIDs != null) newIIDs.addAll(someNewIIDs);
                 }
-                iids = newIIDs;
+                extendedIIDs = newIIDs;
             }
 
-            return iterate(iids).mergeMapForwardable(iid -> {
+            return iterate(extendedIIDs).mergeMapForwardable(iid -> {
                 ConcurrentNavigableMap<EDGE_VIEW, ThingEdgeImpl.Buffered> res;
                 return (res = edges.get(iid)) != null ? iterateSorted(res.keySet(), ASC) : emptySorted();
             }, ASC);
@@ -279,7 +282,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                     ? e -> e.to().equals(adjacent) && e.forwardView().iid().suffix().equals(optimised.iid().key())
                     : e -> e.from().equals(adjacent) && e.backwardView().iid().suffix().equals(optimised.iid().key());
             Forwardable<EDGE_VIEW, Order.Asc> iterator = iterateBufferedViews(
-                    encoding, new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()}
+                    encoding, new IID.Array(new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()})
             );
             iterator.forward(isOut() ?
                     getView(new ThingEdgeImpl.Target(encoding, owner, adjacent, optimised.type())) :
@@ -299,7 +302,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             assert !encoding.isOptimisation();
             Predicate<ThingEdge> predicate = isOut() ? e -> e.to().equals(adjacent) : e -> e.from().equals(adjacent);
             Forwardable<EDGE_VIEW, Order.Asc> iterator = iterateBufferedViews(
-                    encoding, new IID[]{adjacent.iid().prefix(), adjacent.iid().type()}
+                    encoding, new IID.Array(new IID[]{adjacent.iid().prefix(), adjacent.iid().type()})
             );
             iterator.forward(isOut() ?
                     getView(new ThingEdgeImpl.Target(encoding, owner, adjacent, null)) :
@@ -314,13 +317,13 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             return edge;
         }
 
-        private void put(Encoding.Edge.Thing encoding, ThingEdgeImpl.Buffered edge, IID[] infixes,
+        private void put(Encoding.Edge.Thing encoding, ThingEdgeImpl.Buffered edge, IID.Array infixes,
                          boolean isReflexive) {
-            assert encoding.lookAhead() == infixes.length;
-            InfixIID.Thing infixIID = infixIID(encoding);
+            assert encoding.lookAhead() == infixes.length();
+            IID.Array infixIID = new IID.Array(new IID[]{infixIID(encoding)});
             for (int i = 0; i < encoding.lookAhead(); i++) {
                 this.infixes.computeIfAbsent(infixIID, x -> new ConcurrentSet<>()).add(
-                        infixIID = extractInfixIID(encoding, copyOfRange(infixes, 0, i + 1))
+                        infixIID = lookaheadWithEncoding(encoding, new IID.Array(copyOfRange(infixes.array(), 0, i + 1)))
                 );
             }
 
@@ -357,7 +360,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             ThingEdgeImpl.Buffered edge = isOut()
                     ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, isInferred)
                     : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, isInferred);
-            IID[] infixes = new IID[]{adjacent.iid().prefix(), adjacent.iid().type()};
+            IID.Array infixes = new IID.Array(new IID[]{adjacent.iid().prefix(), adjacent.iid().type()});
             put(encoding, edge, infixes, true);
 
             return edge;
@@ -370,16 +373,16 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             ThingEdgeImpl.Buffered edge = isOut()
                     ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, optimised, isInferred)
                     : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, optimised, isInferred);
-            IID[] infixes = new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()};
+            IID.Array infixes = new IID.Array(new IID[]{optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type()});
             put(encoding, edge, infixes, true);
             return edge;
         }
 
         @Override
         public void remove(ThingEdge edge) {
-            InfixIID.Thing infixIID = extractInfixIID(edge.encoding(), infixTails(edge));
-            if (edges.containsKey(infixIID)) {
-                edges.get(infixIID).remove(getView(edge));
+            IID.Array iids = lookaheadWithEncoding(edge.encoding(), infixTails(edge));
+            if (edges.containsKey(iids)) {
+                edges.get(iids).remove(getView(edge));
                 owner.setModified();
             }
         }
@@ -405,17 +408,17 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
             @Override
             public UnsortedEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding) {
-                return new UnsortedEdgeIterator(iterateBufferedViews(encoding, new IID[]{}).map(ThingEdge.View::edge));
+                return new UnsortedEdgeIterator(iterateBufferedViews(encoding, new IID.Array(new IID[]{})).map(ThingEdge.View::edge));
             }
 
             @Override
             public void delete(Encoding.Edge.Thing encoding) {
-                iterateBufferedViews(encoding, new IID[0]).forEachRemaining(comparableEdge -> comparableEdge.edge().delete());
+                iterateBufferedViews(encoding, new IID.Array(new IID[0])).forEachRemaining(comparableEdge -> comparableEdge.edge().delete());
             }
 
             @Override
             public void delete(Encoding.Edge.Thing encoding, IID... lookAhead) {
-                iterateBufferedViews(encoding, lookAhead).forEachRemaining(comparableEdge -> comparableEdge.edge().delete());
+                iterateBufferedViews(encoding, new IID.Array(lookAhead)).forEachRemaining(comparableEdge -> comparableEdge.edge().delete());
             }
 
             public static class In extends Buffered<ThingEdge.View.Backward> implements ThingAdjacency.Write.In {
@@ -431,7 +434,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
                 @Override
                 public InEdgeIterator edge(Encoding.Edge.Thing.Base encoding, IID... lookahead) {
-                    return new InEdgeIteratorImpl(iterateBufferedViews(encoding, lookahead), owner, encoding);
+                    return new InEdgeIteratorImpl(iterateBufferedViews(encoding, new IID.Array(lookahead)), owner, encoding);
                 }
 
                 @Override
@@ -440,7 +443,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                     IID[] mergedLookahead = new IID[1 + lookahead.length];
                     mergedLookahead[0] = roleType.iid();
                     System.arraycopy(lookahead, 0, mergedLookahead, 1, lookahead.length);
-                    return new InEdgeIteratorImpl(iterateBufferedViews(ROLEPLAYER, mergedLookahead), owner, encoding, roleType);
+                    return new InEdgeIteratorImpl(iterateBufferedViews(ROLEPLAYER, new IID.Array(mergedLookahead)), owner, encoding, roleType);
                 }
             }
 
@@ -457,7 +460,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
                 @Override
                 public OutEdgeIterator edge(Encoding.Edge.Thing.Base encoding, IID... lookahead) {
-                    return new OutEdgeIteratorImpl(iterateBufferedViews(encoding, lookahead), owner, encoding);
+                    return new OutEdgeIteratorImpl(iterateBufferedViews(encoding, new IID.Array(lookahead)), owner, encoding);
                 }
 
                 @Override
@@ -466,7 +469,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                     IID[] mergedLookahead = new IID[1 + lookahead.length];
                     mergedLookahead[0] = roleType.iid();
                     System.arraycopy(lookahead, 0, mergedLookahead, 1, lookahead.length);
-                    return new OutEdgeIteratorImpl(iterateBufferedViews(ROLEPLAYER, mergedLookahead), owner, encoding, roleType);
+                    return new OutEdgeIteratorImpl(iterateBufferedViews(ROLEPLAYER, new IID.Array(mergedLookahead)), owner, encoding, roleType);
                 }
 
             }
@@ -488,7 +491,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 Key.Prefix<EdgeViewIID.Thing> prefix = viewIIDPrefix(encoding, lookahead);
                 FunctionalIterator<ThingEdge> storageIterator = owner.graph().storage().iterate(prefix, ASC)
                         .map(keyValue -> newPersistedEdge(EdgeViewIID.Thing.of(keyValue.key().bytes())));
-                FunctionalIterator<ThingEdge> bufferedIterator = iterateBufferedViews(encoding, lookahead)
+                FunctionalIterator<ThingEdge> bufferedIterator = iterateBufferedViews(encoding, new IID.Array(lookahead))
                         .map(ThingEdge.View::edge);
                 return link(bufferedIterator, storageIterator).distinct(); // note: has edges can be persisted and buffered
             }
@@ -496,7 +499,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             Forwardable<EDGE_VIEW, Order.Asc> edgeIterator(Encoding.Edge.Thing encoding, IID... lookahead) {
                 assert encoding != ROLEPLAYER || lookahead.length >= 1;
                 Forwardable<EDGE_VIEW, Order.Asc> storageIter = iteratePersistedViews(encoding, lookahead);
-                Forwardable<EDGE_VIEW, Order.Asc> bufferedIter = iterateBufferedViews(encoding, lookahead);
+                Forwardable<EDGE_VIEW, Order.Asc> bufferedIter = iterateBufferedViews(encoding, new IID.Array(lookahead));
                 return bufferedIter.merge(storageIter).distinct(); // note: has edges can be persisted and buffered
             }
 

@@ -20,17 +20,20 @@ package com.vaticle.typedb.core.traversal.procedure;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.KeyValue;
+import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
+import com.vaticle.typedb.core.graph.vertex.impl.ThingVertexImpl;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
@@ -228,47 +231,98 @@ public abstract class ProcedureVertex<
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> mergeAndFilterPredicates(
-                List<Pair<TypeVertex, Forwardable<ThingVertex, ORDER>>> vertexIters, Traversal.Parameters params, ORDER order
+                GraphManager graphMgr, List<Pair<TypeVertex, Forwardable<ThingVertex, ORDER>>> vertexIters,
+                Traversal.Parameters params, ORDER order
         ) {
             if (props().predicates().isEmpty()) return merge(iterate(vertexIters).map(Pair::second), order);
             else {
-                return merge(iterate(vertexIters).map(Pair::second)
-                        .map(iter -> iter.filter(a -> checkPredicates(a, params)).map(a -> a.asAttribute().toValue())
-                        , order);
-                );
+                FunctionalIterator<Forwardable<AttributeVertex.Value<?>, ORDER>> asValues =
+                        iterate(vertexIters)
+                                // TODO: what if it contains non-attributes?
+                                // TODO: what about optimising with forward()?
+                                .map(pair -> {
+                                    return pair.second().filter(a1 -> checkPredicates(a1, params))
+                                            .mapSorted(a -> a.asAttribute().toValue(), v -> {
+                                                assert v.isValue() && pair.first().valueType().comparables().contains(v.valueType());
+                                                if (v.isBoolean()) {
+                                                    return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Boolean(pair.first().iid(), v.asBoolean().value()));
+                                                } else if (v.isString()) {
+                                                    try {
+                                                        return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.String(pair.first().iid(), v.asString().value()));
+                                                    } catch (TypeDBCheckedException e) {
+                                                        throw TypeDBException.of(e);
+                                                    }
+                                                } else if (v.isDateTime()) {
+                                                    return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.DateTime(pair.first().iid(), v.asDateTime().value()));
+                                                } else if (v.isLong()) {
+                                                    if (pair.first().valueType().equals(LONG)) {
+                                                        return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(pair.first().iid(), v.asLong().value()));
+                                                    } else if (pair.first().valueType().equals(DOUBLE)) {
+                                                        return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(pair.first().iid(), v.asLong().value()));
+                                                    } else throw TypeDBException.of(ILLEGAL_STATE);
+                                                } else if (v.isDouble()) {
+                                                    if (pair.first().valueType().equals(LONG)) {
+                                                        long rounded = order.isAscending() ? v.asDouble().value().longValue() : (long) (v.asDouble().value() + 1);
+                                                        return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(pair.first().iid(), rounded));
+                                                    } else if (pair.first().valueType().equals(DOUBLE)) {
+                                                        return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(pair.first().iid(), v.asDouble().value()));
+                                                    } else throw TypeDBException.of(ILLEGAL_STATE);
+                                                } else throw TypeDBException.of(ILLEGAL_STATE);
+                                            }, order);
+                                });
+                return merge(asValues, order);
             }
-
-            // TODO we should be using forward() to optimise filtering for >, <, and =
-            assert id().isVariable();
-            for (Predicate.Value<?, ?> predicate : props().predicates()) {
-                if (Objects.equals(predicate, exclude)) continue;
-                for (Traversal.Parameters.Value value : params.getValues(id().asVariable(), predicate)) {
-                    iterator = iterator.filter(a -> predicate.apply(a.asAttribute(), value));
-                }
-            }
-            return iterator;
-
-
-            if (props().predicates().isEmpty()) return iter;
-            else return filterPredicates(mapToAttributes(iter), params, eq.orElse(null));
         }
 
         <ORDER extends Order> Forwardable<KeyValue<ThingVertex, ThingVertex>, ORDER> mergeAndFilterPredicatesOnEdges(
-                List<Pair<TypeVertex, Forwardable<KeyValue<ThingVertex, ThingVertex>, ORDER>>> edgeIters, Traversal.Parameters params, ORDER order
+                GraphManager graphMgr, List<Pair<TypeVertex, Forwardable<KeyValue<ThingVertex, ThingVertex>, ORDER>>> edgeIters,
+                Traversal.Parameters params, ORDER order
         ) {
-
-            // TODO we should be using forward() to optimise filtering for >, <, and =
-            assert id().isVariable();
-            iterator = iterator.filter(kv -> kv.key().isAttribute());
-            for (Predicate.Value<?, ?> predicate : props().predicates()) {
-                for (Traversal.Parameters.Value value : params.getValues(id().asVariable(), predicate)) {
-                    iterator = iterator.filter(kv -> predicate.apply(kv.key().asAttribute(), value));
-                }
+            if (props().predicates().isEmpty()) return merge(iterate(edgeIters).map(Pair::second), order);
+            else {
+                // TODO: we can't apply this for strings, since they aren't sorted by value
+                FunctionalIterator<Forwardable<KeyValue<ThingVertex, ThingVertex>, ORDER>> asValues =
+                        iterate(edgeIters)
+                                // TODO: what if it contains non-attributes?
+                                // TODO: what about optimising with forward()?
+                                .map(pair -> {
+                                    return pair.second()
+                                            .filter(a1 -> checkPredicates(a1.key(), params))
+                                            .mapSorted(
+                                                    a -> new KeyValue<>(a.key().asAttribute().toValue(), a.value()),
+                                                    v -> {
+                                                        AttributeVertex.Value<?> value = v.key().asAttribute().toValue();
+                                                        assert value.isValue() && pair.first().valueType().comparables().contains(value.valueType());
+                                                        ThingVertex target;
+                                                        if (value.isBoolean()) {
+                                                            target = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Boolean(pair.first().iid(), value.asBoolean().value()));
+                                                        } else if (value.isString()) {
+                                                            try {
+                                                                target = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.String(pair.first().iid(), value.asString().value()));
+                                                            } catch (TypeDBCheckedException e) {
+                                                                throw TypeDBException.of(e);
+                                                            }
+                                                        } else if (value.isDateTime()) {
+                                                            target = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.DateTime(pair.first().iid(), value.asDateTime().value()));
+                                                        } else if (value.isLong()) {
+                                                            if (pair.first().valueType().equals(LONG)) {
+                                                                target = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(pair.first().iid(), value.asLong().value()));
+                                                            } else if (pair.first().valueType().equals(DOUBLE)) {
+                                                                target = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(pair.first().iid(), value.asLong().value()));
+                                                            } else throw TypeDBException.of(ILLEGAL_STATE);
+                                                        } else if (value.isDouble()) {
+                                                            if (pair.first().valueType().equals(LONG)) {
+                                                                long rounded = order.isAscending() ? value.asDouble().value().longValue() : (long) (value.asDouble().value() + 1);
+                                                                target = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(pair.first().iid(), rounded));
+                                                            } else if (pair.first().valueType().equals(DOUBLE)) {
+                                                                target = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(pair.first().iid(), value.asDouble().value()));
+                                                            } else throw TypeDBException.of(ILLEGAL_STATE);
+                                                        } else throw TypeDBException.of(ILLEGAL_STATE);
+                                                        return new KeyValue<>(target, v.value());
+                                                    }, order);
+                                });
+                return merge(asValues, order);
             }
-            return iterator;
-
-            if (props().predicates().isEmpty()) return iter;
-            else return filterPredicates(mapToAttributes(iter), params, eq.orElse(null));
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromIID(
@@ -292,11 +346,11 @@ public abstract class ProcedureVertex<
         ) {
             assert types.hasNext();
             Optional<Predicate.Value<?, ?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
-            if (eq.isPresent())
+            if (eq.isPresent()) {
                 return iterateAndFilterPredicates(attributesEqual(graphMgr, parameters, eq.get()), parameters, order);
-            else {
+            } else {
                 if (id().isVariable()) types = types.filter(t -> !t.encoding().equals(ROLE_TYPE));
-                return mergeAndFilterPredicates(types.map(t -> new Pair<>(t, graphMgr.data().getReadable(t, order))).toList(), parameters, order);
+                return mergeAndFilterPredicates(graphMgr, types.map(t -> new Pair<>(t, graphMgr.data().getReadable(t, order))).toList(), parameters, order);
             }
         }
 

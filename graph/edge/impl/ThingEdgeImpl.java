@@ -430,7 +430,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             }
             if (!iid.suffix().isEmpty()) {
                 optimisedIID = VertexIID.Thing.of(join(
-                        VERTEX_ROLE.bytes(), iid.infix().asRolePlayer().tail().bytes(), iid.suffix().bytes()
+                        VERTEX_ROLE.bytes(), iid.infix().asRolePlayer().tail().get().bytes(), iid.suffix().bytes()
                 ));
             } else {
                 optimisedIID = null;

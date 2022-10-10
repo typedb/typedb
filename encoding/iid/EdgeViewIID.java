@@ -150,8 +150,14 @@ public abstract class EdgeViewIID<
             return new Key.Prefix<>(join(start.bytes, infix.bytes), computePartition(start, infix), Thing::of);
         }
 
-        public static Key.Prefix<Thing> prefix(VertexIID.Thing start, InfixIID.Thing infix, VertexIID.Thing end) {
-            return new Key.Prefix<>(join(start.bytes, infix.bytes, end.bytes), computePartition(start, infix), Thing::of);
+        public static Key.Prefix<Thing> prefix(VertexIID.Thing start, IID.Array iids) {
+            assert iids.get(0) instanceof InfixIID.Thing;
+            ByteArray[] bytes = new ByteArray[1 + iids.length()];
+            bytes[0] = start.bytes;
+            for (int i = 0; i < iids.length(); i++) {
+                bytes[i + 1] = iids.get(i).bytes;
+            }
+            return new Key.Prefix<>(join(bytes), computePartition(start, (InfixIID.Thing) iids.get(0)), Thing::of);
         }
 
         @Override

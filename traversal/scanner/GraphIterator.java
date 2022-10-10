@@ -151,7 +151,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         Map<Identifier.Variable.Retrievable, Vertex<?, ?>> answer = new HashMap<>();
         for (ProcedureVertex<?, ?> procedureVertex : procedure.vertices()) {
             if (procedureVertex.id().isRetrievable() && modifiers.filter().variables().contains(procedureVertex.id().asVariable().asRetrievable())) {
-                answer.put(procedureVertex.id().asVariable().asRetrievable(), vertexTraversers.get(procedureVertex).vertex());
+                Vertex<?, ?> vertex = vertexTraversers.get(procedureVertex).vertex();
+                if (vertex.isThing() && vertex.asThing().isAttribute() && vertex.asThing().asAttribute().isValue()) {
+                    answer.put(procedureVertex.id().asVariable().asRetrievable(), vertex.asThing().asAttribute().toValue().toAttribute());
+                } else {
+                    answer.put(procedureVertex.id().asVariable().asRetrievable(), vertex);
+                }
             }
         }
 

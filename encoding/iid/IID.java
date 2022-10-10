@@ -20,6 +20,8 @@ package com.vaticle.typedb.core.encoding.iid;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
 
+import java.util.Arrays;
+
 public abstract class IID {
 
     String readableString; // for debugging
@@ -51,5 +53,39 @@ public abstract class IID {
     @Override
     public int hashCode() {
         return bytes.hashCode();
+    }
+
+    public static class Array {
+
+        private final IID[] array;
+
+        public Array(IID[] array) {
+            this.array = array;
+        }
+
+        public IID get(int i) {
+            return array[i];
+        }
+
+        public int length() {
+            return array.length;
+        }
+
+        public IID[] array() {
+            return array;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Array other = (Array) o;
+            return Arrays.equals(array, other.array);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(array);
+        }
     }
 }

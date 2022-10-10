@@ -23,6 +23,8 @@ import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.encoding.Encoding;
 
+import java.util.Optional;
+
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -94,7 +96,7 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         public static InfixIID.Thing of(Encoding.Infix infix) {
             if (Encoding.Edge.Thing.of(infix).equals(ROLEPLAYER)) {
-                throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                return new InfixIID.RolePlayer(infix.bytes());
             } else {
                 return new InfixIID.Thing(infix.bytes());
             }
@@ -144,7 +146,6 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
 
         private RolePlayer(ByteArray bytes) {
             super(bytes);
-            assert bytes.length() == LENGTH;
         }
 
         public static RolePlayer of(Encoding.Infix infix, VertexIID.Type type) {
@@ -157,8 +158,9 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
             return new RolePlayer(join(bytes.view(from, from + DEFAULT_LENGTH), VertexIID.Type.extract(bytes, from + DEFAULT_LENGTH).bytes));
         }
 
-        public VertexIID.Type tail() {
-            return VertexIID.Type.extract(bytes, DEFAULT_LENGTH);
+        public Optional<VertexIID.Type> tail() {
+            if (bytes.length() == LENGTH) return Optional.of(VertexIID.Type.extract(bytes, DEFAULT_LENGTH));
+            else return Optional.empty();
         }
 
         @Override

@@ -386,7 +386,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
-        void copyTo(byte[] destination, int destinationPos) {
+        public void copyTo(byte[] destination, int destinationPos) {
             assert destinationPos + array.length <= destination.length;
             System.arraycopy(array, 0, destination, destinationPos, array.length);
         }
@@ -499,7 +499,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
         }
 
         @Override
-        void copyTo(byte[] destination, int destinationPos) {
+        public void copyTo(byte[] destination, int destinationPos) {
             assert destinationPos + length <= destination.length;
             System.arraycopy(array, start, destination, destinationPos, length);
         }

@@ -298,7 +298,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final ThingRead INVALID_THING_IID_CASTING =
                 new ThingRead(1, "Invalid Thing IID casting to '%s'.");
         public static final ThingRead INVALID_THING_VERTEX_CASTING =
-                new ThingRead(2, "Invalid ThingVertex casting to '%s'.");
+                new ThingRead(2, "Invalid ThingVertex ('%s') casting to '%s'.");
         public static final ThingRead INVALID_THING_CASTING =
                 new ThingRead(3, "Invalid concept conversion from '%s' to '%s'.");
         public static final ThingRead THING_NOT_FOUND =

@@ -214,19 +214,13 @@ public abstract class VertexIID extends PartitionedIID {
         static final int VALUE_INDEX = VALUE_TYPE_INDEX + VALUE_TYPE_LENGTH;
         private final Encoding.ValueType<VALUE> valueType;
 
+        Attribute(Encoding.ValueType<VALUE> valueType, Type typeIID, ByteArray valueBytes) {
+            this(join(ATTRIBUTE.prefix().bytes(), typeIID.bytes, valueType.bytes(), valueBytes), valueType);
+        }
+
         private Attribute(ByteArray bytes, Encoding.ValueType<VALUE> valueType) {
             super(bytes);
             assert bytes.get(PREFIX_W_TYPE_LENGTH) == valueType.key();
-            this.valueType = valueType;
-        }
-
-        Attribute(Encoding.ValueType<VALUE> valueType, Type typeIID, ByteArray valueBytes) {
-            super(join(
-                    ATTRIBUTE.prefix().bytes(),
-                    typeIID.bytes,
-                    valueType.bytes(),
-                    valueBytes
-            ));
             this.valueType = valueType;
         }
 
