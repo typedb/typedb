@@ -273,8 +273,8 @@ You can download TypeDB from the [Download Centre](https://vaticle.com/download)
 1. Make sure you have the following dependencies installed on your machine:
     - Java JDK 11 or higher
     - Python 3 and Pip 18.1 or higher
-    - [Bazel 4 or higher](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage Bazel versions which runs the build with the Bazel version specified in [`.bazelversion`](https://github.com/vaticle/typedb/blob/master/.bazelversion). In order to install it, follow the platform-specific guide:
-        - macOS (Darwin): `brew install bazelbuild/tap/bazelisk`
+    - [Bazel 5 or higher](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage Bazel versions which runs the build with the Bazel version specified in [`.bazelversion`](https://github.com/vaticle/typedb/blob/master/.bazelversion). In order to install it, follow the platform-specific guide:
+        - MacOS: `brew install bazelbuild/tap/bazelisk`
         - Linux: `wget https://github.com/bazelbuild/bazelisk/releases/download/v1.4.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel`
 
 2. Depending on your Operating System, you can build TypeDB with either one of the following commands: 
@@ -291,7 +291,7 @@ You can download TypeDB from the [Download Centre](https://vaticle.com/download)
    ```
    Outputs to: `bazel-bin/typedb-all-windows.zip`
 
-3. If you're on a mac and would like to run any `bazel test` commands, you will need to instal:
+3. If you're on a Mac and would like to run any `bazel test` commands, you will need to install:
    - snappy: `brew install snappy`
    - jemalloc: `brew install jemalloc`
 
