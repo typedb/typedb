@@ -36,6 +36,8 @@ import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
+import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -175,11 +177,68 @@ public abstract class ProcedureVertex<
             }
         }
 
-        private <ORDER extends Order> Forwardable<ThingVertex, ORDER> applyOptimisedPredicates(
-                TypeVertex type, Forwardable<ThingVertex, ORDER> vertexIterator
+        private <ORDER extends Order> Forwardable<ThingVertex, ORDER> applyPredicatesOnVertices(
+                GraphManager graphMgr, Traversal.Parameters params, TypeVertex type,
+                Forwardable<ThingVertex, ORDER> vertexIterator
         ) {
-            assert type.isAttributeType() && type.asType().valueType().isSorted();
+            assert type.isAttributeType() && type.asType().valueType().isSorted() && id().isVariable();
 
+            if (vertexIterator.order().isAscending()) {
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> largest = params.largestGTValue(id().asVariable());
+                if (largest.isPresent()) {
+                    ThingVertex target = typedTargetVertex(graphMgr, type, (Encoding.ValueType<Object>) largest.get().first().valueType(), largest.get().second().value(), true);
+                    vertexIterator.forward(target);
+                }
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> smallest = params.smallestLTValue(id().asVariable());
+                if (smallest.isPresent()) {
+                    vertexIterator = vertexIterator.stopWhen(v -> !smallest.get().first().apply(v.asAttribute(), smallest.get().second()));
+                }
+            } else {
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> smallest = params.smallestLTValue(id().asVariable());
+                if (smallest.isPresent()) {
+                    ThingVertex target = typedTargetVertex(graphMgr, type, (Encoding.ValueType<Object>) smallest.get().first().valueType(), smallest.get().second().value(), false);
+                    vertexIterator.forward(target);
+                }
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> largest = params.largestGTValue(id().asVariable());
+                if (largest.isPresent()) {
+                    vertexIterator = vertexIterator.stopWhen(v -> !largest.get().first().apply(v.asAttribute(), largest.get().second()));
+                }
+            }
+            return vertexIterator;
+//            return vertexIterator.filter(a -> checkPredicates(a, params));
+        }
+
+        private <ORDER extends Order> Forwardable<KeyValue<ThingVertex, ThingVertex>, ORDER> applyPredicatesOnEdges(
+                GraphManager graphMgr, Traversal.Parameters params, TypeVertex type,
+                Forwardable<KeyValue<ThingVertex, ThingVertex>, ORDER> edgeIterator
+        ) {
+            assert type.isAttributeType() && type.asType().valueType().isSorted() && id().isVariable();
+
+            if (edgeIterator.order().isAscending()) {
+                params.largestGTValue(id().asVariable()).ifPresent(largest ->
+                        edgeIterator.forward(
+                                KeyValue.of(
+                                        typedTargetVertex(graphMgr, type, (Encoding.ValueType<Object>) largest.first().valueType(), largest.second().value(), true),
+                                        null
+                                )
+                        )
+                );
+                params.smallestLTValue(id().asVariable()).ifPresent(smallest ->
+                        edgeIterator.stopWhen(kv -> smallest.first().apply(kv.key().asAttribute(), smallest.second()))
+                );
+            } else {
+                params.largestGTValue(id().asVariable()).ifPresent(largest ->
+                        edgeIterator.stopWhen(v -> largest.first().apply(v.key().asAttribute(), largest.second())));
+                params.smallestLTValue(id().asVariable()).ifPresent(smallest ->
+                        edgeIterator.forward(
+                                KeyValue.of(
+                                        typedTargetVertex(graphMgr, type, (Encoding.ValueType<Object>) smallest.first().valueType(), smallest.second().value(), false),
+                                        null
+                                )
+                        )
+                );
+            }
+            return edgeIterator.filter(kv -> checkPredicates(kv.key(), params));
         }
 
         private boolean checkPredicates(ThingVertex vertex, Traversal.Parameters params) {
@@ -270,9 +329,7 @@ public abstract class ProcedureVertex<
                     );
                 } else {
                     return merge(iterate(vertexIters)
-                                    // TODO: what if it contains non-attributes?
-                                    // TODO: what about optimising with forward()?
-                                    .map(pair -> applyOptimisedPredicates(pair.first(), pair.second()).mapSorted(
+                                    .map(pair -> applyPredicatesOnVertices(graphMgr, params, pair.first(), pair.second()).mapSorted(
                                             a -> a.asAttribute().toValue(),
                                             v -> {
                                                 assert v.isValue() && pair.first().valueType().comparables().contains(v.valueType());
@@ -299,9 +356,7 @@ public abstract class ProcedureVertex<
                     );
                 } else {
                     return merge(iterate(edgeIters)
-                                    // TODO: what if it contains non-attributes?
-                                    // TODO: what about optimising with forward()?
-                                    .map(pair -> pair.second().filter(a1 -> checkPredicates(a1.key(), params))
+                                    .map(pair -> applyPredicatesOnEdges(graphMgr, params, pair.first(), pair.second())
                                             .mapSorted(
                                                     a -> new KeyValue<>(a.key().asAttribute().toValue(), a.value()),
                                                     v -> {
@@ -320,32 +375,30 @@ public abstract class ProcedureVertex<
         }
 
         private <VALUE> ThingVertex typedTargetVertex(GraphManager graphMgr, TypeVertex type, Encoding.ValueType<VALUE> targetType, VALUE targetValue, boolean roundDown) {
-            ThingVertex typedTarget;
             if (type.valueType().equals(BOOLEAN)) {
                 assert targetType.equals(BOOLEAN) && targetValue instanceof Boolean;
-                typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Boolean(type.iid(), (Boolean) targetValue));
+                return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Boolean(type.iid(), (Boolean) targetValue));
             } else if (type.valueType().equals(DATETIME)) {
                 assert targetType.equals(DATETIME) && targetValue instanceof LocalDateTime;
-                typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.DateTime(type.iid(), (LocalDateTime) targetValue));
+                return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.DateTime(type.iid(), (LocalDateTime) targetValue));
             } else if (type.valueType().equals(LONG)) {
                 if (targetType.equals(LONG)) {
                     assert targetValue instanceof Long;
-                    typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(type.iid(), (Long) targetValue));
+                    return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(type.iid(), (Long) targetValue));
                 } else if (targetType.equals(DOUBLE)) {
                     assert targetValue instanceof Double;
                     long rounded = roundDown ? ((Double) targetValue).longValue() : (long) (((Double) targetValue) + 1);
-                    typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(type.iid(), rounded));
+                    return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(type.iid(), rounded));
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             } else if (type.valueType().equals(DOUBLE)) {
                 if (targetType.equals(LONG)) {
                     assert targetValue instanceof Long;
-                    typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(type.iid(), (Long) targetValue));
+                    return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(type.iid(), (Long) targetValue));
                 } else if (targetType.equals(DOUBLE)) {
                     assert targetValue instanceof Double;
-                    typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(type.iid(), (Double) targetValue));
+                    return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(type.iid(), (Double) targetValue));
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             } else throw TypeDBException.of(ILLEGAL_STATE);
-            return typedTarget;
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromIID(

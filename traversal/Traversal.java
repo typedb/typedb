@@ -35,16 +35,22 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.VALUES_NOT_COMPARABLE;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
+import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.GT;
+import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.GTE;
+import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.LT;
+import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.LTE;
 
 public abstract class Traversal {
 
@@ -89,10 +95,14 @@ public abstract class Traversal {
 
         private final Map<Identifier.Variable, VertexIID.Thing> iids;
         private final Map<Pair<Identifier.Variable, Predicate.Value<?, ?>>, Set<Value>> values;
+        private final Map<Identifier.Variable, Pair<Predicate.Value<?, ?>, Value>> largestGTPredicates;
+        private final Map<Identifier.Variable, Pair<Predicate.Value<?, ?>, Value>> smallestLTPredicates;
 
         public Parameters() {
             iids = new HashMap<>();
             values = new HashMap<>();
+            largestGTPredicates = new HashMap<>();
+            smallestLTPredicates = new HashMap<>();
         }
 
         public void putIID(Identifier.Variable identifier, VertexIID.Thing iid) {
@@ -102,6 +112,18 @@ public abstract class Traversal {
 
         public void pushValue(Identifier.Variable identifier, Predicate.Value<?, ?> predicate, Value value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(value);
+
+            if (predicate.operator() == GT || predicate.operator() == GTE) {
+                Pair<Predicate.Value<?, ?>, Value> previous = largestGTPredicates.get(identifier);
+                if (previous == null || previous.second().compareTo(value) < 0) {
+                    largestGTPredicates.put(identifier, new Pair<>(predicate, value));
+                }
+            } else if (predicate.operator() == LT || predicate.operator() == LTE) {
+                Pair<Predicate.Value<?, ?>, Value> previous = smallestLTPredicates.get(identifier);
+                if (previous == null || previous.second().compareTo(value) > 0) {
+                    smallestLTPredicates.put(identifier, new Pair<>(predicate, value));
+                }
+            }
         }
 
         public VertexIID.Thing getIID(Identifier.Variable identifier) {
@@ -110,6 +132,14 @@ public abstract class Traversal {
 
         public Set<Value> getValues(Identifier.Variable identifier, Predicate.Value<?, ?> predicate) {
             return values.get(pair(identifier, predicate));
+        }
+
+        public Optional<Pair<Predicate.Value<?, ?>, Value>> largestGTValue(Identifier.Variable id) {
+            return Optional.ofNullable(largestGTPredicates.get(id));
+        }
+
+        public Optional<Pair<Predicate.Value<?, ?>, Value>> smallestLTValue(Identifier.Variable id) {
+            return Optional.ofNullable(smallestLTPredicates.get(id));
         }
 
         @Override
@@ -136,7 +166,8 @@ public abstract class Traversal {
             return Objects.hash(iids, values);
         }
 
-        public static class Value {
+        // TODO: we could specialise this into a subtype per value and then parametrise it properly, improving comparison, value retrieval etc.
+        public static class Value implements Comparable<Value> {
 
             private final Encoding.ValueType<?> valueType;
             private final Boolean booleanVal;
@@ -266,6 +297,25 @@ public abstract class Traversal {
             @Override
             public int hashCode() {
                 return hash;
+            }
+
+            public Object value() {
+                if (isBoolean()) return booleanVal;
+                else if (isLong()) return longVal;
+                else if (isDouble()) return doubleVal;
+                else if (isString()) return stringVal;
+                else if (isDateTime()) return dateTimeVal;
+                else throw TypeDBException.of(ILLEGAL_STATE);
+            }
+
+            @Override
+            public int compareTo(Value other) {
+                if (!valueType.comparableTo(other.valueType)) {
+                    throw TypeDBException.of(VALUES_NOT_COMPARABLE, valueType, other.valueType);
+                }
+                //TODO: this is ugly as hell
+                return Encoding.ValueType.compare((Encoding.ValueType<Object>) valueType, value(),
+                        (Encoding.ValueType<Object>) other.valueType, other.value());
             }
         }
     }

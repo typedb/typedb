@@ -45,7 +45,7 @@ public abstract class PredicateOperator {
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    boolean isEquality() {
+    public boolean isEquality() {
         return false;
     }
 
@@ -95,7 +95,7 @@ public abstract class PredicateOperator {
         abstract Equality reflection();
 
         @Override
-        boolean isEquality() {
+        public boolean isEquality() {
             return true;
         }
 

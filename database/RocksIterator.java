@@ -23,8 +23,8 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.AbstractSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
-import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.encoding.key.Key;
 
 import java.util.NoSuchElementException;
@@ -184,6 +184,11 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     }
 
     @Override
+    public Forwardable<KeyValue<T, ByteArray>, ORDER> stopWhen(Function<KeyValue<T, ByteArray>, Boolean> stopCondition) {
+        return SortedIterators.Forwardable.stopWhen(this, stopCondition);
+    }
+
+    @Override
     public Forwardable<KeyValue<T, ByteArray>, ORDER> onConsumed(Runnable function) {
         return SortedIterators.Forwardable.onConsume(this, function);
     }
@@ -249,6 +254,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
         @Override
         public synchronized void forward(KeyValue<T, ByteArray> target) {
+            // TODO: this prefix is not the right one to compare to -- it is the last value of this prefix we want to check against?
             if (state == State.COMPLETED || !DESC.inOrder(prefix.bytes(), target.key().bytes())) return;
             if (state == State.INIT) initialiseInternalIterator();
             internalRocksIterator.seekForPrev(target.key().bytes().getBytes());

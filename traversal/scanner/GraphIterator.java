@@ -280,6 +280,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             this.anyAnswerFound = false;
             this.lastDependee = procedureVertex.ins().stream().map(ProcedureEdge::from).max(Comparator.comparing(ProcedureVertex::order)).orElse(null);
             this.order = modifiers.sorting().order(procedureVertex.id());
+            // TODO: sort by value if this is a sort variable
         }
 
         public void addImplicitDependee(ProcedureVertex<?, ?> from) {

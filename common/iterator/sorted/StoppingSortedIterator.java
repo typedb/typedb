@@ -33,7 +33,7 @@ public class StoppingSortedIterator<T extends Comparable<? super T>, ORDER exten
 
     final ITER source;
     private final Function<T, Boolean> stopCondition;
-    private State state;
+    State state;
     T last;
 
     private enum State {EMPTY, FETCHED, COMPLETED}
@@ -60,7 +60,7 @@ public class StoppingSortedIterator<T extends Comparable<? super T>, ORDER exten
     }
 
     private boolean fetchAndCheck() {
-        if (source.hasNext() && stopCondition.apply(source.peek())) {
+        if (!source.hasNext() || stopCondition.apply(source.peek())) {
             state = State.COMPLETED;
             recycle();
         } else {
@@ -101,7 +101,14 @@ public class StoppingSortedIterator<T extends Comparable<? super T>, ORDER exten
         @Override
         public void forward(T target) {
             if (last != null && !order.inOrder(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            source.forward(target);
+            if (state == State.EMPTY) {
+                source.forward(target);
+            } else if (state == State.FETCHED) {
+                if (order.inOrder(target, peek())) return;
+                last = peek();
+                source.forward(target);
+                state = State.EMPTY;
+            }
         }
 
         @Override
