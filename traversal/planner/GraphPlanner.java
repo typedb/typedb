@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,6 +45,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
@@ -283,6 +285,8 @@ public class GraphPlanner implements ComponentPlanner {
         endSolver = Instant.now();
         if (isError()) throwPlanningError();
 
+        linearise();
+
         createProcedure();
         end = Instant.now();
 
@@ -291,11 +295,31 @@ public class GraphPlanner implements ComponentPlanner {
         isOptimising.set(false);
     }
 
+    private void linearise() {
+        Set<PlannerVertex<?>> visited = new HashSet<>();
+        LinkedList<PlannerVertex<?>> toVisit = iterate(vertices.values()).filter(PlannerVertex::isStartingVertex).collect(LinkedList::new);
+        int vertexOrder = 0;
+        while (!toVisit.isEmpty()) {
+            PlannerVertex<?> vertex = toVisit.removeFirst();
+            vertex.setOrder(vertexOrder++);
+            visited.add(vertex);
+            for (PlannerVertex<?> v : iterate(vertex.outs()).filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::to).toSet()) {
+                if (iterate(v.ins()).filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::from).allMatch(visited::contains)) {
+                    assert !visited.contains(v);
+                    toVisit.addFirst(v);
+                }
+            }
+        }
+        assert visited.size() == vertices.size() && vertexOrder == vertices.size();
+    }
+
+
     private void updateOptimiser() {
         updateOptimiserCoefficients();
         updateOptimiserConstraints();
         if (!isVertexOrderInitialised) initialiseVertexOrderGreedy();
         setOptimiserValues();
+        linearise();
         if (LOG.isTraceEnabled()) LOG.trace(optimiser.toString());
     }
 

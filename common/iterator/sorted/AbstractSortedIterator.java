@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.common.iterator.OffsetIterator;
 import com.vaticle.typedb.core.common.parameters.Order;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +42,7 @@ import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -230,6 +232,13 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     public void toSet(Set<T> set) {
         this.forEachRemaining(set::add);
         recycle();
+    }
+
+    @Override
+    public <U extends Collection<? super T>> U collect(Supplier<U> constructor) {
+        U collection = constructor.get();
+        this.forEachRemaining(collection::add);
+        return collection;
     }
 
     @Override
