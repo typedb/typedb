@@ -303,8 +303,9 @@ public class GraphPlanner implements ComponentPlanner {
             PlannerVertex<?> vertex = toVisit.removeFirst();
             vertex.setOrder(vertexOrder++);
             visited.add(vertex);
-            for (PlannerVertex<?> v : vertex.outs().stream().filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::to).collect(Collectors.toSet())) {
-                if (!visited.contains(v) && visited.containsAll(v.ins().stream().filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::from).collect(Collectors.toSet()))) {
+            for (PlannerVertex<?> v : iterate(vertex.outs()).filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::to).toSet()) {
+                if (iterate(v.ins()).filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::from).allMatch(visited::contains)) {
+                    assert !visited.contains(v);
                     toVisit.addFirst(v);
                 }
             }
