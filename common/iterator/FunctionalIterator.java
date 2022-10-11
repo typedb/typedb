@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.parameters.Order;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -31,6 +32,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public interface FunctionalIterator<T> extends Iterator<T> {
@@ -88,6 +90,8 @@ public interface FunctionalIterator<T> extends Iterator<T> {
     Set<T> toSet();
 
     void toSet(Set<T> set);
+
+    <U extends Collection<? super T>> U collect(Supplier<U> constructor);
 
     long count();
 
