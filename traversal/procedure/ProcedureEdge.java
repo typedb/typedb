@@ -251,7 +251,11 @@ public abstract class ProcedureEdge<
             if (to.props().hasIID()) toIter = to.iterateAndFilterFromIID(graphMgr, params, ASC);
             else toIter = to.iterateAndFilterFromTypes(graphMgr, params, ASC);
 
-            return toIter.filter(toVertex -> predicate.apply(fromVertex.asThing().asAttribute(), toVertex.asAttribute()));
+            return toIter.filter(toVertex -> {
+                AttributeVertex<?> from = fromVertex.asThing().asAttribute();
+                AttributeVertex<?> to = toVertex.asAttribute();
+                return predicate.apply(from.isValue() ? from.toValue().toAttribute() : from, to.isValue() ? to.toValue().toAttribute() : to);
+            });
         }
 
         @Override
