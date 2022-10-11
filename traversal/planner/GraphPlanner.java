@@ -297,7 +297,7 @@ public class GraphPlanner implements ComponentPlanner {
 
     private void linearise() {
         Set<PlannerVertex<?>> visited = new HashSet<>();
-        LinkedList<PlannerVertex<?>> toVisit = vertices.values().stream().filter(PlannerVertex::isStartingVertex).collect(Collectors.toCollection(LinkedList::new));
+        LinkedList<PlannerVertex<?>> toVisit = iterate(vertices.values()).filter(PlannerVertex::isStartingVertex).collect(LinkedList::new);
         int vertexOrder = 0;
         while (!toVisit.isEmpty()) {
             PlannerVertex<?> vertex = toVisit.removeFirst();
