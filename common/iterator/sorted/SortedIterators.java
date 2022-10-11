@@ -113,6 +113,11 @@ public class SortedIterators {
             return new LimitedSortedIterator.Forwardable<>(iterator, limit);
         }
 
+        public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Forwardable<T, ORDER> stopWhen(SortedIterator.Forwardable<T, ORDER> iterator,
+                                                                                                                           Function<T, Boolean> stopCondition) {
+            return new StoppingSortedIterator.Forwardable<>(iterator, stopCondition);
+        }
+
         @SafeVarargs
         public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Forwardable<T, ORDER> merge(SortedIterator.Forwardable<T, ORDER> iterator, SortedIterator.Forwardable<T, ORDER>... iterators) {
             return new MergeMappedSortedIterator.Forwardable<>(Iterators.iterate(list(list(iterators), iterator)), e -> e, iterator.order());

@@ -112,6 +112,11 @@ public class BaseForwardableIterator<T extends Comparable<? super T>, ORDER exte
     }
 
     @Override
+    public SortedIterator.Forwardable<T, ORDER> stopWhen(Function<T, Boolean> stopCondition) {
+        return SortedIterators.Forwardable.stopWhen(this, stopCondition);
+    }
+
+    @Override
     public Forwardable<T, ORDER> onConsumed(Runnable function) {
         return SortedIterators.Forwardable.onConsume(this, function);
     }

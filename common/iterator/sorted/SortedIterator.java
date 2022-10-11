@@ -42,6 +42,8 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends O
     @Override
     SortedIterator<T, ORDER> limit(long limit);
 
+    SortedIterator<T, ORDER> stopWhen(Function<T, Boolean> stopCondition);
+
     NavigableSet<T> toNavigableSet();
 
     @Override
@@ -66,6 +68,16 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends O
 
         Forwardable<T, ORDER> limit(long limit);
 
+        Forwardable<T, ORDER> stopWhen(Function<T, Boolean> stopCondition);
+
+        <U extends Comparable<? super U>, ORD extends Order> Forwardable<U, ORD> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORD order);
+
+        @Override
+        Forwardable<T, ORDER> onConsumed(Runnable function);
+
+        @Override
+        Forwardable<T, ORDER> onFinalise(Runnable function);
+
         default Optional<T> findFirst(T value) {
             if (!hasNext() || !order().inOrder(peek(), value)) return Optional.empty();
             forward(value);
@@ -75,13 +87,5 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends O
             recycle();
             return found;
         }
-
-        <U extends Comparable<? super U>, ORD extends Order> Forwardable<U, ORD> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORD order);
-
-        @Override
-        Forwardable<T, ORDER> onConsumed(Runnable function);
-
-        @Override
-        Forwardable<T, ORDER> onFinalise(Runnable function);
     }
 }

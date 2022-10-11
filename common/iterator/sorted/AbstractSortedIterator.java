@@ -117,6 +117,11 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     }
 
     @Override
+    public SortedIterator<T, ORDER> stopWhen(Function<T, Boolean> stopCondition) {
+        return new StoppingSortedIterator<>(this, stopCondition);
+    }
+
+    @Override
     public FunctionalIterator<T> link(FunctionalIterator<T> iterator) {
         return new LinkedIterators<>(list(this, iterator));
     }

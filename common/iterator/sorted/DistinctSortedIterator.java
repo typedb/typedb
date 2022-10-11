@@ -165,6 +165,11 @@ public class DistinctSortedIterator<T extends Comparable<? super T>, ORDER exten
         }
 
         @Override
+        public SortedIterator.Forwardable<T, ORDER> stopWhen(Function<T, Boolean> stopCondition) {
+            return SortedIterators.Forwardable.stopWhen(this, stopCondition);
+        }
+
+        @Override
         public SortedIterator.Forwardable<T, ORDER> onConsumed(Runnable function) {
             return SortedIterators.Forwardable.onConsume(this, function);
         }

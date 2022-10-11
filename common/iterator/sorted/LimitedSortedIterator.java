@@ -71,7 +71,6 @@ public class LimitedSortedIterator<T extends Comparable<? super T>, ORDER extend
         iterator.recycle();
     }
 
-
     public static class Forwardable<T extends Comparable<? super T>, ORDER extends Order>
             extends LimitedSortedIterator<T, ORDER, SortedIterator.Forwardable<T, ORDER>>
             implements SortedIterator.Forwardable<T, ORDER> {
@@ -115,6 +114,11 @@ public class LimitedSortedIterator<T extends Comparable<? super T>, ORDER extend
         @Override
         public SortedIterator.Forwardable<T, ORDER> limit(long limit) {
             return SortedIterators.Forwardable.limit(this, limit);
+        }
+
+        @Override
+        public SortedIterator.Forwardable<T, ORDER> stopWhen(Function<T, Boolean> stopCondition) {
+            return SortedIterators.Forwardable.stopWhen(this, stopCondition);
         }
 
         @Override

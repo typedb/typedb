@@ -167,6 +167,11 @@ public class MappedSortedIterator<
         }
 
         @Override
+        public SortedIterator.Forwardable<U, ORDER> stopWhen(Function<U, Boolean> stopCondition) {
+            return SortedIterators.Forwardable.stopWhen(this, stopCondition);
+        }
+
+        @Override
         public SortedIterator.Forwardable<U, ORDER> onConsumed(Runnable function) {
             return SortedIterators.Forwardable.onConsume(this, function);
         }
