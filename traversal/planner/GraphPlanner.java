@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -296,15 +297,15 @@ public class GraphPlanner implements ComponentPlanner {
 
     private void linearise() {
         Set<PlannerVertex<?>> visited = new HashSet<>();
-        List<PlannerVertex<?>> stack = vertices.values().stream().filter(PlannerVertex::isStartingVertex).collect(Collectors.toList());
+        LinkedList<PlannerVertex<?>> toVisit = vertices.values().stream().filter(PlannerVertex::isStartingVertex).collect(Collectors.toCollection(LinkedList::new));
         int vertexOrder = 0;
-        while (!stack.isEmpty()) {
-            PlannerVertex<?> vertex = stack.remove(stack.size() - 1);
+        while (!toVisit.isEmpty()) {
+            PlannerVertex<?> vertex = toVisit.removeFirst();
             vertex.setOrder(vertexOrder++);
             visited.add(vertex);
             for (PlannerVertex<?> v : vertex.outs().stream().filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::to).collect(Collectors.toSet())) {
                 if (!visited.contains(v) && visited.containsAll(v.ins().stream().filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::from).collect(Collectors.toSet()))) {
-                    stack.add(v);
+                    toVisit.addFirst(v);
                 }
             }
         }
