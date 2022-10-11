@@ -310,8 +310,7 @@ public class GraphPlanner implements ComponentPlanner {
                 }
             }
         }
-        assert visited.size() == vertices.size();
-        assert vertexOrder == vertices.size();
+        assert visited.size() == vertices.size() && vertexOrder == vertices.size();
     }
 
 
