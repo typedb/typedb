@@ -175,9 +175,15 @@ public abstract class ProcedureVertex<
             }
         }
 
+        private <ORDER extends Order> Forwardable<ThingVertex, ORDER> applyOptimisedPredicates(
+                TypeVertex type, Forwardable<ThingVertex, ORDER> vertexIterator
+        ) {
+            assert type.isAttributeType() && type.asType().valueType().isSorted();
+
+        }
+
         private boolean checkPredicates(ThingVertex vertex, Traversal.Parameters params) {
-            assert !props().predicates().isEmpty() && id().isVariable();
-            if (!vertex.isAttribute()) return false;
+            assert id().isVariable();
             for (Predicate.Value<?, ?> predicate : props().predicates()) {
                 for (Traversal.Parameters.Value value : params.getValues(id().asVariable(), predicate)) {
                     if (!predicate.apply(vertex.asAttribute(), value)) return false;
@@ -221,9 +227,7 @@ public abstract class ProcedureVertex<
         ) {
             TreeSet<ThingVertex> filtered = new TreeSet<>();
             vertices.forEach(v -> {
-                if (checkPredicates(v, params)) {
-                    filtered.add(mapper.apply(v));
-                }
+                if (checkPredicates(v, params)) filtered.add(mapper.apply(v));
             });
             return filtered;
         }
@@ -247,9 +251,7 @@ public abstract class ProcedureVertex<
         ) {
             TreeSet<KeyValue<ThingVertex, ThingVertex>> filtered = new TreeSet<>();
             edges.forEach(kv -> {
-                if (checkPredicates(kv.key(), params)) {
-                    filtered.add(new KeyValue<>(mapper.apply(kv.key()), kv.value()));
-                }
+                if (checkPredicates(kv.key(), params)) filtered.add(new KeyValue<>(mapper.apply(kv.key()), kv.value()));
             });
             return filtered;
         }
@@ -261,6 +263,7 @@ public abstract class ProcedureVertex<
             if (props().predicates().isEmpty()) return merge(iterate(vertexIters).map(Pair::second), order);
             else {
                 if (iterate(vertexIters).anyMatch(pair -> pair.first().isAttributeType() && pair.first().asType().valueType().equals(STRING))) {
+                    // TODO: once strings are sortable by value, we can optimise the predicates
                     return merge(
                             iterate(vertexIters).map(pair -> pair.second().filter(a -> checkPredicates(a, params))),
                             order
@@ -269,7 +272,7 @@ public abstract class ProcedureVertex<
                     return merge(iterate(vertexIters)
                                     // TODO: what if it contains non-attributes?
                                     // TODO: what about optimising with forward()?
-                                    .map(pair -> pair.second().filter(a1 -> checkPredicates(a1, params)).mapSorted(
+                                    .map(pair -> applyOptimisedPredicates(pair.first(), pair.second()).mapSorted(
                                             a -> a.asAttribute().toValue(),
                                             v -> {
                                                 assert v.isValue() && pair.first().valueType().comparables().contains(v.valueType());
@@ -313,25 +316,33 @@ public abstract class ProcedureVertex<
         }
 
         private <VALUE> ThingVertex typedTargetVertex(GraphManager graphMgr, TypeVertex type, AttributeVertex<VALUE> target, boolean roundDown) {
+            return typedTargetVertex(graphMgr, type, target.valueType(), target.value(), roundDown);
+        }
+
+        private <VALUE> ThingVertex typedTargetVertex(GraphManager graphMgr, TypeVertex type, Encoding.ValueType<VALUE> targetType, VALUE targetValue, boolean roundDown) {
             ThingVertex typedTarget;
             if (type.valueType().equals(BOOLEAN)) {
-                assert target.valueType().equals(BOOLEAN);
-                typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Boolean(type.iid(), target.asBoolean().value()));
+                assert targetType.equals(BOOLEAN) && targetValue instanceof Boolean;
+                typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Boolean(type.iid(), (Boolean) targetValue));
             } else if (type.valueType().equals(DATETIME)) {
-                assert target.valueType().equals(DATETIME);
-                typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.DateTime(type.iid(), target.asDateTime().value()));
+                assert targetType.equals(DATETIME) && targetValue instanceof LocalDateTime;
+                typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.DateTime(type.iid(), (LocalDateTime) targetValue));
             } else if (type.valueType().equals(LONG)) {
-                if (target.valueType().equals(LONG)) {
-                    typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(type.iid(), target.asLong().value()));
-                } else if (target.valueType().equals(DOUBLE)) {
-                    long rounded = roundDown ? target.asDouble().value().longValue() : (long) (target.asDouble().value() + 1);
+                if (targetType.equals(LONG)) {
+                    assert targetValue instanceof Long;
+                    typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(type.iid(), (Long) targetValue));
+                } else if (targetType.equals(DOUBLE)) {
+                    assert targetValue instanceof Double;
+                    long rounded = roundDown ? ((Double) targetValue).longValue() : (long) (((Double) targetValue) + 1);
                     typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(type.iid(), rounded));
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             } else if (type.valueType().equals(DOUBLE)) {
-                if (target.valueType().equals(LONG)) {
-                    typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(type.iid(), target.asLong().value()));
-                } else if (target.valueType().equals(DOUBLE)) {
-                    typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(type.iid(), target.asDouble().value()));
+                if (targetType.equals(LONG)) {
+                    assert targetValue instanceof Long;
+                    typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(type.iid(), (Long) targetValue));
+                } else if (targetType.equals(DOUBLE)) {
+                    assert targetValue instanceof Double;
+                    typedTarget = ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(type.iid(), (Double) targetValue));
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             } else throw TypeDBException.of(ILLEGAL_STATE);
             return typedTarget;
