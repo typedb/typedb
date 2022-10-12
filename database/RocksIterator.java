@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.AbstractSortedIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.MappedSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.common.parameters.Order;
@@ -31,6 +32,8 @@ import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
@@ -42,7 +45,8 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     final Key.Prefix<T> prefix;
     final RocksStorage storage;
     State state;
-    private KeyValue<T, ByteArray> next;
+    KeyValue<T, ByteArray> next;
+    KeyValue<T, ByteArray> last;
     private boolean isClosed;
     org.rocksdb.RocksIterator internalRocksIterator;
 
@@ -71,8 +75,9 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
             if (isClosed) throw TypeDBException.of(RESOURCE_CLOSED);
             else throw new NoSuchElementException();
         }
+        last = next;
         state = State.UNFETCHED;
-        return next;
+        return last;
     }
 
     @Override
@@ -222,9 +227,20 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
         @Override
         public synchronized void forward(KeyValue<T, ByteArray> target) {
-            if (state == State.COMPLETED || !ASC.inOrder(prefix.bytes(), target.key().bytes())) return;
-            if (state == State.INIT) initialiseInternalIterator();
+            if (state == State.COMPLETED) return;
+            else if (state == State.INIT) {
+                if (order().inOrder(target.key(), prefix)) return;
+                else initialiseInternalIterator();
+            } else if (state == State.FETCHED) {
+                if (order().inOrder(target, next)) return;
+            } else if (state == State.UNFETCHED || state == State.FORWARDED) {
+                if (order().inOrder(target, last)) return;
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+
+            // at this point, the target has or exceeds the bound prefix
+            if (!target.key().bytes().hasPrefix(prefix.bytes())) close();
             internalRocksIterator.seek(target.key().bytes().getBytes());
+            last = target;
             state = State.FORWARDED;
         }
     }
@@ -254,10 +270,20 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
         @Override
         public synchronized void forward(KeyValue<T, ByteArray> target) {
-            // TODO: this prefix is not the right one to compare to -- it is the last value of this prefix we want to check against?
-            if (state == State.COMPLETED || !DESC.inOrder(prefix.bytes(), target.key().bytes())) return;
-            if (state == State.INIT) initialiseInternalIterator();
+            if (state == State.COMPLETED) return;
+            else if (state == State.INIT) {
+                if (order().inOrderNotEq(target.key().bytes().view(0, prefix.bytes().length()), prefix.bytes())) return;
+                else initialiseInternalIterator();
+            } else if (state == State.FETCHED) {
+                if (order().inOrder(target, next)) return;
+            } else if (state == State.UNFETCHED || state == State.FORWARDED) {
+                if (order().inOrder(target, last)) return;
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+
+            // at this point, the target has or exceeds the bound prefix
+            if (!target.key().bytes().hasPrefix(prefix.bytes())) close();
             internalRocksIterator.seekForPrev(target.key().bytes().getBytes());
+            last = target;
             state = State.FORWARDED;
         }
     }

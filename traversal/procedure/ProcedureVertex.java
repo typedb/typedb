@@ -36,8 +36,6 @@ import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
-import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
-import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -65,6 +63,8 @@ import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
+import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.GT;
+import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.LT;
 
 public abstract class ProcedureVertex<
         VERTEX extends Vertex<?, ?>,
@@ -170,7 +170,7 @@ public abstract class ProcedureVertex<
                 ThingVertex vertex, Traversal.Parameters params, ORDER order
         ) {
             if (!checkTypes(vertex) || props().hasIID() && !checkIID(vertex, params) ||
-                    !props().predicates().isEmpty() && !checkPredicates(vertex, params)) {
+                    !props().predicates().isEmpty() && !checkPredicates(vertex, iterate(props().predicates()), params)) {
                 return emptySorted(order);
             } else {
                 return iterateSorted(order, vertex);
@@ -204,8 +204,10 @@ public abstract class ProcedureVertex<
                     vertexIterator = vertexIterator.stopWhen(v -> !largest.get().first().apply(v.asAttribute(), largest.get().second()));
                 }
             }
-            return vertexIterator;
-//            return vertexIterator.filter(a -> checkPredicates(a, params));
+            FunctionalIterator<Predicate.Value<?, ?>> unappliedPredicates = iterate(props().predicates())
+                    // must still LTE and GTE to remove the equal vertices which are not skipped by forward()
+                    .filter(pred -> !(pred.operator() == LT || pred.operator() == GT));
+            return vertexIterator.filter(a -> checkPredicates(a, unappliedPredicates, params));
         }
 
         private <ORDER extends Order> Forwardable<KeyValue<ThingVertex, ThingVertex>, ORDER> applyPredicatesOnEdges(
@@ -215,35 +217,37 @@ public abstract class ProcedureVertex<
             assert type.isAttributeType() && type.asType().valueType().isSorted() && id().isVariable();
 
             if (edgeIterator.order().isAscending()) {
-                params.largestGTValue(id().asVariable()).ifPresent(largest ->
-                        edgeIterator.forward(
-                                KeyValue.of(
-                                        typedTargetVertex(graphMgr, type, (Encoding.ValueType<Object>) largest.first().valueType(), largest.second().value(), true),
-                                        null
-                                )
-                        )
-                );
-                params.smallestLTValue(id().asVariable()).ifPresent(smallest ->
-                        edgeIterator.stopWhen(kv -> smallest.first().apply(kv.key().asAttribute(), smallest.second()))
-                );
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> largest = params.largestGTValue(id().asVariable());
+                if (largest.isPresent()) {
+                    ThingVertex target = typedTargetVertex(graphMgr, type, (Encoding.ValueType<Object>) largest.get().first().valueType(), largest.get().second().value(), true);
+                    edgeIterator.forward(KeyValue.of(target, null));
+                }
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> smallest = params.smallestLTValue(id().asVariable());
+                if (smallest.isPresent()) {
+                    edgeIterator = edgeIterator.stopWhen(kv -> smallest.get().first().apply(kv.key().asAttribute(), smallest.get().second()));
+                }
             } else {
-                params.largestGTValue(id().asVariable()).ifPresent(largest ->
-                        edgeIterator.stopWhen(v -> largest.first().apply(v.key().asAttribute(), largest.second())));
-                params.smallestLTValue(id().asVariable()).ifPresent(smallest ->
-                        edgeIterator.forward(
-                                KeyValue.of(
-                                        typedTargetVertex(graphMgr, type, (Encoding.ValueType<Object>) smallest.first().valueType(), smallest.second().value(), false),
-                                        null
-                                )
-                        )
-                );
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> smallest = params.smallestLTValue(id().asVariable());
+                if (smallest.isPresent()) {
+                    ThingVertex target = typedTargetVertex(graphMgr, type, (Encoding.ValueType<Object>) smallest.get().first().valueType(), smallest.get().second().value(), false);
+                    edgeIterator.forward(KeyValue.of(target, null));
+                }
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> largest = params.largestGTValue(id().asVariable());
+                if (largest.isPresent()) {
+                    edgeIterator = edgeIterator.stopWhen(v -> largest.get().first().apply(v.key().asAttribute(), largest.get().second()));
+                }
             }
-            return edgeIterator.filter(kv -> checkPredicates(kv.key(), params));
+            FunctionalIterator<Predicate.Value<?, ?>> unappliedPredicates = iterate(props().predicates())
+                    // must still LTE and GTE to remove the equal vertices which are not skipped by forward()
+                    .filter(pred -> !(pred.operator() == LT || pred.operator() == GT));
+            return edgeIterator.filter(kv -> checkPredicates(kv.key(), unappliedPredicates, params));
         }
 
-        private boolean checkPredicates(ThingVertex vertex, Traversal.Parameters params) {
+        private boolean checkPredicates(ThingVertex vertex, FunctionalIterator<Predicate.Value<?, ?>> predicates, Traversal.Parameters params) {
             assert id().isVariable();
-            for (Predicate.Value<?, ?> predicate : props().predicates()) {
+            Predicate.Value<?, ?> predicate;
+            while (predicates.hasNext()) {
+                predicate = predicates.next();
                 for (Traversal.Parameters.Value value : params.getValues(id().asVariable(), predicate)) {
                     if (!predicate.apply(vertex.asAttribute(), value)) return false;
                 }
@@ -263,7 +267,7 @@ public abstract class ProcedureVertex<
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterPredicates(
                 ThingVertex vertex, Traversal.Parameters params, ORDER order
         ) {
-            if (!checkPredicates(vertex, params)) return emptySorted(order);
+            if (!checkPredicates(vertex, iterate(props().predicates()), params)) return emptySorted(order);
             else return iterateSorted(order, vertex);
         }
 
@@ -286,7 +290,7 @@ public abstract class ProcedureVertex<
         ) {
             TreeSet<ThingVertex> filtered = new TreeSet<>();
             vertices.forEach(v -> {
-                if (checkPredicates(v, params)) filtered.add(mapper.apply(v));
+                if (checkPredicates(v, iterate(props().predicates()), params)) filtered.add(mapper.apply(v));
             });
             return filtered;
         }
@@ -310,7 +314,8 @@ public abstract class ProcedureVertex<
         ) {
             TreeSet<KeyValue<ThingVertex, ThingVertex>> filtered = new TreeSet<>();
             edges.forEach(kv -> {
-                if (checkPredicates(kv.key(), params)) filtered.add(new KeyValue<>(mapper.apply(kv.key()), kv.value()));
+                if (checkPredicates(kv.key(), iterate(props().predicates()), params))
+                    filtered.add(new KeyValue<>(mapper.apply(kv.key()), kv.value()));
             });
             return filtered;
         }
@@ -324,7 +329,7 @@ public abstract class ProcedureVertex<
                 if (iterate(vertexIters).anyMatch(pair -> pair.first().isAttributeType() && pair.first().asType().valueType().equals(STRING))) {
                     // TODO: once strings are sortable by value, we can optimise the predicates
                     return merge(
-                            iterate(vertexIters).map(pair -> pair.second().filter(a -> checkPredicates(a, params))),
+                            iterate(vertexIters).map(pair -> pair.second().filter(a -> checkPredicates(a, iterate(props().predicates()), params))),
                             order
                     );
                 } else {
@@ -351,7 +356,7 @@ public abstract class ProcedureVertex<
             else {
                 if (iterate(edgeIters).anyMatch(pair -> pair.first().isAttributeType() && pair.first().asType().valueType().equals(STRING))) {
                     return merge(
-                            iterate(edgeIters).map(pair -> pair.second().filter(a -> checkPredicates(a.key(), params))),
+                            iterate(edgeIters).map(pair -> pair.second().filter(a -> checkPredicates(a.key(), iterate(props().predicates()), params))),
                             order
                     );
                 } else {
