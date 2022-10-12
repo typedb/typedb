@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
@@ -120,9 +121,13 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
         } else if (getType().getOwns(true).findFirst(attribute.getType()).isPresent()) {
             if (getHas(attribute.getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
-            } else if (attribute.getOwners(getType()).first().isPresent()) {
-                throw exception(TypeDBException.of(THING_KEY_TAKEN, ((AttributeImpl<?>) attribute).getValue(),
-                        attribute.getType().getLabel(), attribute.getOwners(getType()).first().get().getType().getLabel()));
+            } else {
+                ThingType topLevelOwnerType = getType();
+                while (topLevelOwnerType.getSupertype().getOwns(attribute.getType().getValueType()).hasNext()) topLevelOwnerType = topLevelOwnerType.getSupertype();
+                if (attribute.getOwners(getType()).first().isPresent()) {
+                    throw exception(TypeDBException.of(THING_KEY_TAKEN, ((AttributeImpl<?>) attribute).getValue(),
+                            attribute.getType().getLabel(), topLevelOwnerType.getLabel()));
+                }
             }
             vertex.graph().exclusiveOwnership(((TypeImpl) this.getType()).vertex, attrVertex);
         }

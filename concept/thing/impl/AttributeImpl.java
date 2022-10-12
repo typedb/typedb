@@ -88,9 +88,7 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     @Override
     public FunctionalIterator<ThingImpl> getOwners(ThingType ownerType) {
-        ThingType topLevelOwnerType = ownerType;
-        while (topLevelOwnerType.getSupertype().getOwns(getType().getValueType()).hasNext()) topLevelOwnerType = topLevelOwnerType.getSupertype();
-        return topLevelOwnerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(
+        return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(
                 v -> readableVertex().ins().edge(HAS, (PrefixIID.of(v.encoding().instance())), v.iid()).from()
         ).map(ThingImpl::of);
     }
