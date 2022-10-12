@@ -122,7 +122,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
                 throw exception(TypeDBException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
             } else if (attribute.getOwners(getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_TAKEN, ((AttributeImpl<?>) attribute).getValue(),
-                        attribute.getType().getLabel(), getType().getLabel()));
+                        attribute.getType().getLabel(), attribute.getOwners(getType()).first().get().getType().getLabel()));
             }
             vertex.graph().exclusiveOwnership(((TypeImpl) this.getType()).vertex, attrVertex);
         }
