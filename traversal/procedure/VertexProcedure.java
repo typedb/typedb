@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.traversal.procedure;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
@@ -32,9 +33,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 
 public class VertexProcedure implements PermutationProcedure {
@@ -73,7 +76,8 @@ public class VertexProcedure implements PermutationProcedure {
         LOG.trace(params.toString());
         LOG.trace(this.toString());
         assert vertex.id().isRetrievable() && modifiers.filter().variables().contains(vertex.id().asVariable().asRetrievable());
-        FunctionalIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params, modifiers.sorting().order(vertex.id()));
+        Optional<Order> order = modifiers.sorting().order(vertex.id());
+        FunctionalIterator<? extends Vertex<?, ?>> iterator = vertex.iterator(graphMgr, params, order.orElse(ASC), order.isPresent());
         for (ProcedureEdge<?, ?> e : vertex.loops()) {
             iterator = iterator.filter(v -> e.isClosure(graphMgr, v, v, params));
         }

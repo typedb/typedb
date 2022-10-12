@@ -269,6 +269,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private final Set<ProcedureVertex<?, ?>> implicitDependees;
         private ProcedureVertex<?, ?> lastDependee;
         private final Order order;
+        private final boolean sortByValue;
         private Forwardable<Vertex<?, ?>, ? extends Order> iterator;
         private Vertex<?, ?> vertex;
         private boolean anyAnswerFound;
@@ -279,8 +280,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             this.implicitDependees = new HashSet<>();
             this.anyAnswerFound = false;
             this.lastDependee = procedureVertex.ins().stream().map(ProcedureEdge::from).max(Comparator.comparing(ProcedureVertex::order)).orElse(null);
-            this.order = modifiers.sorting().order(procedureVertex.id());
-            // TODO: sort by value if this is a sort variable
+            Optional<Order> explicitOrder = modifiers.sorting().order(procedureVertex.id());
+            if (explicitOrder.isPresent()) {
+                order = explicitOrder.get();
+                sortByValue = true;
+            } else {
+                order = ASC;
+                sortByValue = false;
+            }
         }
 
         public void addImplicitDependee(ProcedureVertex<?, ?> from) {
@@ -369,9 +376,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private Forwardable<Vertex<?, ?>, ? extends Order> createIteratorFromStart() {
             assert procedureVertex.isStartVertex();
             if (procedureVertex.id().isScoped()) {
-                return applyLocalScope((Forwardable<Vertex<?, ?>, ? extends Order>) procedureVertex.iterator(graphMgr, params, order));
+                return applyLocalScope((Forwardable<Vertex<?, ?>, ? extends Order>) procedureVertex.iterator(graphMgr, params, order, sortByValue));
             } else {
-                return (Forwardable<Vertex<?, ?>, ? extends Order>) procedureVertex.iterator(graphMgr, params, order);
+                return (Forwardable<Vertex<?, ?>, ? extends Order>) procedureVertex.iterator(graphMgr, params, order, sortByValue);
             }
         }
 

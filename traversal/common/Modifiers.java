@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
@@ -147,12 +148,10 @@ public class Modifiers {
             return variables;
         }
 
-        /**
-         * Note: everything that is not explicitly provided with a sort order, is defaulted to Ascending
-         */
-        public Order order(Identifier id) {
-            if (!id.isRetrievable() || !ascending.containsKey(id.asVariable().asRetrievable())) return ASC;
-            else return ascending.get(id.asVariable().asRetrievable());
+
+        public Optional<Order> order(Identifier id) {
+            if (!id.isRetrievable()) return Optional.empty();
+            return Optional.ofNullable(ascending.get(id.asVariable().asRetrievable()));
         }
 
         @Override

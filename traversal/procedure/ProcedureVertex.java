@@ -78,8 +78,14 @@ public abstract class ProcedureVertex<
         super(identifier);
     }
 
-    public abstract <ORDER extends Order> Forwardable<? extends VERTEX, ORDER> iterator(
+    public <ORDER extends Order> Forwardable<? extends VERTEX, ORDER> iterator(
             GraphManager graphMgr, Traversal.Parameters parameters, ORDER order
+    ) {
+        return iterator(graphMgr, parameters, order, false);
+    }
+
+    public abstract <ORDER extends Order> Forwardable<? extends VERTEX, ORDER> iterator(
+            GraphManager graphMgr, Traversal.Parameters parameters, ORDER order, boolean forceValueSort
     );
 
     public boolean isStartVertex() {
@@ -160,10 +166,10 @@ public abstract class ProcedureVertex<
 
         @Override
         public <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterator(
-                GraphManager graphMgr, Traversal.Parameters parameters, ORDER order
+                GraphManager graphMgr, Traversal.Parameters parameters, ORDER order, boolean forceValueSort
         ) {
             if (props().hasIID()) return iterateAndFilterFromIID(graphMgr, parameters, order);
-            else return iterateAndFilterFromTypes(graphMgr, parameters, order);
+            else return iterateAndFilterFromTypes(graphMgr, parameters, order, forceValueSort);
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromIID(
@@ -177,21 +183,28 @@ public abstract class ProcedureVertex<
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromTypes(
-                GraphManager graphMgr, Traversal.Parameters parameters, ORDER order
+                GraphManager graphMgr, Traversal.Parameters parameters, ORDER order, boolean forceValueSort
         ) {
-            return iterateAndFilterFromTypes(graphMgr, parameters, iterate(props().types()).map(graphMgr.schema()::getType), order);
+            return iterateAndFilterFromTypes(graphMgr, parameters, iterate(props().types()).map(graphMgr.schema()::getType), order, forceValueSort);
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromTypes(
-                GraphManager graphMgr, Traversal.Parameters parameters, FunctionalIterator<TypeVertex> types, ORDER order
+                GraphManager graphMgr, Traversal.Parameters parameters, FunctionalIterator<TypeVertex> types,
+                ORDER order, boolean forceValueSort
         ) {
             assert types.hasNext();
             Optional<Predicate.Value<?, ?>> eq = iterate(props().predicates()).filter(p -> p.operator().equals(EQ)).first();
             if (eq.isPresent()) {
-                return iterateAndFilterPredicates(attributesEqual(graphMgr, parameters, eq.get()), parameters, order);
+                List<AttributeVertex<?>> attributes = attributesEqual(graphMgr, parameters, eq.get());
+                return iterateAndFilterPredicates(attributes, parameters, order, forceValueSort);
             } else {
                 if (id().isVariable()) types = types.filter(t -> !t.encoding().equals(ROLE_TYPE));
-                return mergeAndFilterPredicatesOnVertices(graphMgr, types.map(t -> new Pair<>(t, graphMgr.data().getReadable(t, order))).toList(), parameters, order);
+                List<Pair<TypeVertex, Forwardable<ThingVertex, ORDER>>> itersByType = types.map(t ->
+                        new Pair<>(t, graphMgr.data().getReadable(t, order))
+                ).toList();
+                return mergeAndFilterPredicatesOnVertices(
+                        graphMgr, itersByType, parameters, order, forceValueSort
+                );
             }
         }
 
@@ -214,9 +227,9 @@ public abstract class ProcedureVertex<
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterPredicates(
-                List<? extends ThingVertex> vertices, Traversal.Parameters params, ORDER order
+                List<? extends ThingVertex> vertices, Traversal.Parameters params, ORDER order, boolean forceValueSort
         ) {
-            if (props().predicates().isEmpty()) return iterateSorted(vertices, order);
+            if (props().predicates().isEmpty() && !forceValueSort) return iterateSorted(vertices, order);
             else {
                 if (iterate(vertices).anyMatch(v -> v.isAttribute() && v.asAttribute().valueType().equals(STRING))) {
                     return iterateSorted(filterPredicatesAndMapVertices(vertices, params, ThingVertex::asAttribute), order);
@@ -264,9 +277,10 @@ public abstract class ProcedureVertex<
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> mergeAndFilterPredicatesOnVertices(
                 GraphManager graphMgr, List<Pair<TypeVertex, Forwardable<ThingVertex, ORDER>>> vertexIters,
-                Traversal.Parameters params, ORDER order
+                Traversal.Parameters params, ORDER order, boolean forceValueSort
         ) {
-            if (props().predicates().isEmpty()) return merge(iterate(vertexIters).map(Pair::second), order);
+            if (props().predicates().isEmpty() && !forceValueSort)
+                return merge(iterate(vertexIters).map(Pair::second), order);
             else {
                 if (iterate(vertexIters).anyMatch(pair -> pair.first().isAttributeType() && pair.first().asType().valueType().equals(STRING))) {
                     // TODO: once strings are sortable by value, we can optimise the predicates
@@ -275,8 +289,8 @@ public abstract class ProcedureVertex<
                             order
                     );
                 } else {
-                    return merge(
-                            iterate(vertexIters).map(pair -> applyPredicatesOnVertices(graphMgr, params, pair.first(), pair.second())
+                    return merge(iterate(vertexIters)
+                            .map(pair -> applyPredicatesOnVertices(graphMgr, params, pair.first(), pair.second())
                                     .mapSorted(
                                             a -> a.asAttribute().toValue(),
                                             v -> {
@@ -309,9 +323,11 @@ public abstract class ProcedureVertex<
                                                     v -> {
                                                         AttributeVertex.Value<?> value = v.key().asAttribute().toValue();
                                                         assert pair.first().valueType().comparables().contains(value.valueType());
-                                                        return new KeyValue<>(typedTargetVertex(graphMgr, pair.first(), value, order.isAscending()), v.value());
+                                                        ThingVertex target = typedTargetVertex(graphMgr, pair.first(), value, order.isAscending());
+                                                        return new KeyValue<>(target, v.value());
                                                     },
-                                                    order)),
+                                                    order)
+                                    ),
                             order);
                 }
             }
@@ -491,7 +507,7 @@ public abstract class ProcedureVertex<
 
         @Override
         public <ORDER extends Order> Forwardable<? extends TypeVertex, ORDER> iterator(
-                GraphManager graphMgr, Traversal.Parameters parameters, ORDER order
+                GraphManager graphMgr, Traversal.Parameters parameters, ORDER order, boolean forceValueSort
         ) {
             assert id().isVariable();
             Forwardable<TypeVertex, ORDER> iterator = null;
