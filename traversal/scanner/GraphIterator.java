@@ -51,9 +51,9 @@ import java.util.TreeSet;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.intersect;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 
 /**
  * We have to include the optimisation to only find an answer if a connected predecessor or successor is retrieved

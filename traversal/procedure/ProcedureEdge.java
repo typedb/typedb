@@ -26,10 +26,10 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.PrefixIID;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -62,9 +62,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNR
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNSUPPORTED_OPERATION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Direction.Edge.BACKWARD;
 import static com.vaticle.typedb.core.encoding.Encoding.Direction.Edge.FORWARD;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.ISA;
@@ -80,7 +80,6 @@ import static com.vaticle.typedb.core.encoding.Encoding.Prefix.VERTEX_ATTRIBUTE;
 import static com.vaticle.typedb.core.encoding.Encoding.Prefix.VERTEX_ROLE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.RELATION;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
-import static com.vaticle.typedb.core.traversal.procedure.ProcedureVertex.Thing.mapToAttributes;
 
 public abstract class ProcedureEdge<
         VERTEX_FROM extends ProcedureVertex<?, ?>, VERTEX_TO extends ProcedureVertex<?, ?>
@@ -885,7 +884,7 @@ public abstract class ProcedureEdge<
                             if (eq.isPresent()) {
                                 return to.iterateAndFilterPredicates(branchToEq(graphMgr, params, owner, eq.get()), params, ASC);
                             } else {
-                                return to.mergeAndFilterPredicates(graphMgr, branchToTypes(graphMgr, owner), params, ASC);
+                                return to.mergeAndFilterPredicatesOnVertices(graphMgr, branchToTypes(graphMgr, owner), params, ASC);
                             }
                         }
                     }
@@ -948,7 +947,7 @@ public abstract class ProcedureEdge<
                             else return emptySorted();
                         } else {
                             Set<TypeVertex> owners = graphMgr.schema().ownersOfAttributeType(att.type());
-                            return to.mergeAndFilterPredicates(
+                            return to.mergeAndFilterPredicatesOnVertices(
                                     graphMgr,
                                     iterate(owners).filter(owner -> to.props().types().contains(owner.properLabel()))
                                             .map(t -> new Pair<>(t, att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from()))
@@ -1026,7 +1025,7 @@ public abstract class ProcedureEdge<
                             else return emptySorted();
                         } else {
                             Set<TypeVertex> players = graphMgr.schema().playersOfRoleType(role.type());
-                            return to.mergeAndFilterPredicates(
+                            return to.mergeAndFilterPredicatesOnVertices(
                                     graphMgr,
                                     iterate(players).filter(player -> toTypes.contains(player.properLabel()))
                                             .map(t -> new Pair<>(t, role.ins().edge(PLAYING, PrefixIID.of(t.encoding().instance()), t.iid()).from()))
