@@ -63,8 +63,8 @@ import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
-import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.GT;
-import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.LT;
+import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.GTE;
+import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.LTE;
 
 public abstract class ProcedureVertex<
         VERTEX extends Vertex<?, ?>,
@@ -361,8 +361,8 @@ public abstract class ProcedureVertex<
                 }
             }
             FunctionalIterator<Predicate.Value<?, ?>> unappliedPredicates = iterate(props().predicates())
-                    // must still LTE and GTE to remove the equal vertices which are not skipped by forward()
-                    .filter(pred -> !(pred.operator() == LT || pred.operator() == GT));
+                    // must still check LT and GT to remove the equal vertices which are not skipped by forward()
+                    .filter(pred -> !(pred.operator() == LTE || pred.operator() == GTE));
             return vertexIterator.filter(a -> checkPredicates(a, unappliedPredicates, params));
         }
 
@@ -394,8 +394,8 @@ public abstract class ProcedureVertex<
                 }
             }
             FunctionalIterator<Predicate.Value<?, ?>> unappliedPredicates = iterate(props().predicates())
-                    // must still LTE and GTE to remove the equal vertices which are not skipped by forward()
-                    .filter(pred -> !(pred.operator() == LT || pred.operator() == GT));
+                    // must still check LT and GT to remove the equal vertices which are not skipped by forward()
+                    .filter(pred -> !(pred.operator() == LTE || pred.operator() == GTE));
             return edgeIterator.filter(kv -> checkPredicates(kv.key(), unappliedPredicates, params));
         }
 
