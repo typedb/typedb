@@ -1223,7 +1223,6 @@ public abstract class ProcedureEdge<
                     ) {
                         assert fromVertex.isThing() && !roleTypes.isEmpty();
                         ThingVertex rel = fromVertex.asThing();
-                        Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iter;
 
                         Set<TypeVertex> relationRoleTypes = graphMgr.schema().relatedRoleTypes(rel.type());
                         FunctionalIterator<TypeVertex> instanceRoleTypes = iterate(relationRoleTypes)
@@ -1254,6 +1253,7 @@ public abstract class ProcedureEdge<
                     private List<Pair<TypeVertex, Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc>>> branchToTypes(
                             GraphManager graphMgr, ThingVertex rel, FunctionalIterator<TypeVertex> roleTypes
                     ) {
+                        // TODO: somehow this is nondeeterministic, or in the parent?
                         return roleTypes.flatMap(rt ->
                                 iterate(to.props().types())
                                         .map(l -> graphMgr.schema().getType(l))

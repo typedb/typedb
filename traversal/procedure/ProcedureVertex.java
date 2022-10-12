@@ -129,6 +129,7 @@ public abstract class ProcedureVertex<
 
     public static class Thing extends ProcedureVertex<ThingVertex, Properties.Thing> {
 
+        // TODO: add BDD test to that fails if we try to exclude LT and GT
         private static final Set<PredicateOperator> optimisablePredicates = set(LTE, GTE);
 
         private Boolean isScope;
