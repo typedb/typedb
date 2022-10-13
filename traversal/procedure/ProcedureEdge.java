@@ -1020,7 +1020,9 @@ public abstract class ProcedureEdge<
 
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();
-                            Optional<ThingVertex> toVertex = backwardBranchToIIDFiltered(graphMgr, role, PLAYING, params.getIID(to.id().asVariable()), toTypes);
+                            Optional<ThingVertex> toVertex = backwardBranchToIIDFiltered(
+                                    graphMgr, role, PLAYING, params.getIID(to.id().asVariable()), toTypes
+                            );
                             if (toVertex.isPresent()) return to.iterateAndFilter(toVertex.get(), params, ASC);
                             else return emptySorted();
                         } else {
@@ -1330,7 +1332,7 @@ public abstract class ProcedureEdge<
                         else {
                             Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iter = roleTypeVertices.mergeMapForwardable(
                                     rt -> player.ins()
-                                            .edge(ROLEPLAYER, rt, relation.iid().prefix(), relation.iid().type())
+                                            .edge(ROLEPLAYER, rt, relation.iid())
                                             .fromAndOptimised(),
                                     ASC
                             ).filter(kv -> kv.key().equals(relation));
@@ -1361,10 +1363,9 @@ public abstract class ProcedureEdge<
                         Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> closures = iterate(relationRoleTypes)
                                 .filter(rt -> roleTypes.contains(rt.properLabel()) && roleTypesPlayed.contains(rt))
                                 .mergeMapForwardable(
-                                        rt -> player.ins().edge(ROLEPLAYER, rt, rel.iid().prefix(), rel.iid().type())
-                                                .fromAndOptimised(),
+                                        rt -> player.ins().edge(ROLEPLAYER, rt, rel.iid()).fromAndOptimised(),
                                         ASC
-                                ).filter(kv -> kv.key().equals(rel) &&
+                                ).filter(kv ->
                                         scope.getRoleEdgeSource(kv.value()).map(source -> !source.equals(this)).orElse(true)
                                 );
                         closures.forward(KeyValue.of(rel, null));
