@@ -122,6 +122,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     abstract boolean fetchAndCheck();
 
     synchronized boolean hasValidNext() {
+        assert state != State.COMPLETED;
         ByteArray key;
         if (!internalRocksIterator.isValid() || !((key = ByteArray.of(internalRocksIterator.key())).hasPrefix(prefix.bytes()))) {
             recycle();
@@ -239,9 +240,11 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
             // at this point, the target has or exceeds the bound prefix
             if (!target.key().bytes().hasPrefix(prefix.bytes())) close();
-            internalRocksIterator.seek(target.key().bytes().getBytes());
-            last = target;
-            state = State.FORWARDED;
+            else {
+                internalRocksIterator.seek(target.key().bytes().getBytes());
+                last = target;
+                state = State.FORWARDED;
+            }
         }
     }
 
@@ -282,9 +285,11 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
             // at this point, the target has or exceeds the bound prefix
             if (!target.key().bytes().hasPrefix(prefix.bytes())) close();
-            internalRocksIterator.seekForPrev(target.key().bytes().getBytes());
-            last = target;
-            state = State.FORWARDED;
+            else {
+                internalRocksIterator.seekForPrev(target.key().bytes().getBytes());
+                last = target;
+                state = State.FORWARDED;
+            }
         }
     }
 }

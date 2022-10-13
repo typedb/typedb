@@ -1257,6 +1257,7 @@ public abstract class ProcedureEdge<
                         return roleTypes.flatMap(rt ->
                                 iterate(to.props().types())
                                         .map(l -> graphMgr.schema().getType(l))
+                                        .filter(t -> graphMgr.schema().playersOfRoleType(rt).contains(t))
                                         .map(t -> new Pair<>(t, rel.outs()
                                                 .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
                                                 .toAndOptimised())
