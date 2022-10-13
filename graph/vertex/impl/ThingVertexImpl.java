@@ -331,7 +331,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
     }
 
-    public static class Target extends ThingVertexImpl {
+    public static class Target extends ThingVertexImpl implements ThingVertex.Write {
 
         private Target(ThingGraph graph, VertexIID.Thing iid) {
             super(graph, iid);
@@ -342,22 +342,23 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
 
         @Override
-        public ThingAdjacency.Out outs() {
-            throw TypeDBException.of(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public ThingAdjacency.In ins() {
-            throw TypeDBException.of(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public AttributeVertex<?> asAttribute() {
-            throw TypeDBException.of(ILLEGAL_OPERATION);
-        }
-
-        @Override
         public ThingVertex.Write toWrite() {
+            return this;
+        }
+
+        @Override
+        public ThingAdjacency.Write.Out outs() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public ThingAdjacency.Write.In ins() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+
+        @Override
+        public AttributeVertex.Write<?> asAttribute() {
             throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
@@ -369,6 +370,27 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         @Override
         public boolean isModified() {
             return false;
+        }
+
+        @Override
+        public void setModified() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+
+        }
+
+        @Override
+        public void delete() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public boolean isDeleted() {
+            return false;
+        }
+
+        @Override
+        public void commit() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
         }
     }
 }
