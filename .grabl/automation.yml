@@ -108,7 +108,7 @@ build:
       image: vaticle-ubuntu-21.04
       filter:
         owner: vaticle
-        branch: master
+        branch: [master, development]
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable, test-behaviour-reasoner]
       command: |
         bazel test //test/assembly:assembly --test_output=streamed
@@ -116,7 +116,7 @@ build:
       image: vaticle-ubuntu-21.04
       filter:
         owner: vaticle
-        branch: master
+        branch: [master, development]
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable, test-behaviour-reasoner]
       command: |
         bazel test //test/assembly:docker --test_output=streamed
@@ -139,7 +139,7 @@ build:
       image: vaticle-ubuntu-21.04
       filter:
         owner: vaticle
-        branch: master
+        branch: [master, development]
       dependencies: [test-assembly-linux-targz]
       command: |
         export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
@@ -155,7 +155,7 @@ build:
       image: vaticle-ubuntu-20.04 # use LTS for apt tests
       filter:
         owner: vaticle
-        branch: master
+        branch: [master, development]
       dependencies: [deploy-apt-snapshot]
       command: |
         export TEST_DEPLOYMENT_APT_COMMIT=$GRABL_COMMIT
