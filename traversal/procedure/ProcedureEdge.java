@@ -1243,7 +1243,7 @@ public abstract class ProcedureEdge<
                         List<KeyValue<ThingVertex, ThingVertex>> toAndRole = new ArrayList<>();
                         if (player != null) {
                             roleTypes.forEachRemaining(rt ->
-                                    rel.outs().edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type(), player.iid().key())
+                                    rel.outs().edge(ROLEPLAYER, rt, player.iid())
                                             .toAndOptimised().forEachRemaining(toAndRole::add)
                             );
                         }
@@ -1253,7 +1253,6 @@ public abstract class ProcedureEdge<
                     private List<Pair<TypeVertex, Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc>>> branchToTypes(
                             GraphManager graphMgr, ThingVertex rel, FunctionalIterator<TypeVertex> roleTypes
                     ) {
-                        // TODO: somehow this is nondeeterministic, or in the parent?
                         return roleTypes.flatMap(rt ->
                                 iterate(to.props().types())
                                         .map(l -> graphMgr.schema().getType(l))
