@@ -188,9 +188,22 @@ public abstract class ProcedureVertex<
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromTypes(
+                GraphManager graphMgr, Traversal.Parameters parameters, ORDER order
+        ) {
+            return iterateAndFilterFromTypes(graphMgr, parameters, order, false);
+        }
+
+        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromTypes(
                 GraphManager graphMgr, Traversal.Parameters parameters, ORDER order, boolean forceValueSort
         ) {
             return iterateAndFilterFromTypes(graphMgr, parameters, iterate(props().types()).map(graphMgr.schema()::getType), order, forceValueSort);
+        }
+
+        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromTypes(
+                GraphManager graphMgr, Traversal.Parameters parameters, FunctionalIterator<TypeVertex> types,
+                ORDER order
+        ) {
+            return iterateAndFilterFromTypes(graphMgr, parameters, types, order, false);
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromTypes(
@@ -229,6 +242,12 @@ public abstract class ProcedureVertex<
         ) {
             if (!checkPredicates(vertex, params, set())) return emptySorted(order);
             else return iterateSorted(order, vertex);
+        }
+
+        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterPredicates(
+                List<? extends ThingVertex> vertices, Traversal.Parameters params, ORDER order
+        ) {
+            return iterateAndFilterPredicates(vertices, params, order, false);
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterPredicates(
@@ -279,6 +298,13 @@ public abstract class ProcedureVertex<
                 }
             });
             return filtered;
+        }
+
+        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> mergeAndFilterPredicatesOnVertices(
+                GraphManager graphMgr, List<Pair<TypeVertex, Forwardable<ThingVertex, ORDER>>> vertexIters,
+                Traversal.Parameters params, ORDER order
+        ) {
+            return mergeAndFilterPredicatesOnVertices(graphMgr, vertexIters, params, order, false);
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> mergeAndFilterPredicatesOnVertices(

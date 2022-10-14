@@ -80,9 +80,9 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                 InfixIID.Thing.of(encoding.backward());
     }
 
-    InfixIID.Thing infixIID(Encoding.Edge.Thing encoding, IID lookahead) {
-        if (!(lookahead instanceof VertexIID.Type)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-        return infixIID(encoding, (VertexIID.Type) lookahead);
+    InfixIID.Thing infixIID(Encoding.Edge.Thing encoding, IID roleTypeIID) {
+        if (!(roleTypeIID instanceof VertexIID.Type)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+        return infixIID(encoding, (VertexIID.Type) roleTypeIID);
     }
 
     InfixIID.Thing infixIID(Encoding.Edge.Thing encoding, VertexIID.Type lookahead) {

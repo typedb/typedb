@@ -151,7 +151,7 @@ public class Modifiers {
 
         public Optional<Order> order(Identifier id) {
             if (!id.isRetrievable()) return Optional.empty();
-            return Optional.ofNullable(ascending.get(id.asVariable().asRetrievable()));
+            else return Optional.ofNullable(ascending.get(id.asVariable().asRetrievable()));
         }
 
         @Override

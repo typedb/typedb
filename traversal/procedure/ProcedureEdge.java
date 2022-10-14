@@ -248,7 +248,7 @@ public abstract class ProcedureEdge<
 
             Forwardable<? extends ThingVertex, Order.Asc> toIter;
             if (to.props().hasIID()) toIter = to.iterateAndFilterFromIID(graphMgr, params, ASC);
-            else toIter = to.iterateAndFilterFromTypes(graphMgr, params, ASC, false);
+            else toIter = to.iterateAndFilterFromTypes(graphMgr, params, ASC);
 
             return toIter.filter(toVertex -> {
                 AttributeVertex<?> from = fromVertex.asThing().asAttribute();
@@ -377,7 +377,7 @@ public abstract class ProcedureEdge<
                     } else {
                         FunctionalIterator<TypeVertex> toTypes = iterate(isaTypes).filter(v -> to.props().types().contains(v.properLabel()));
                         if (!toTypes.hasNext()) return emptySorted();
-                        else return to.iterateAndFilterFromTypes(graphMgr, params, toTypes, ASC, false);
+                        else return to.iterateAndFilterFromTypes(graphMgr, params, toTypes, ASC);
                     }
                 }
 
@@ -882,9 +882,9 @@ public abstract class ProcedureEdge<
                         } else {
                             Optional<Value<?, ?>> eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).first();
                             if (eq.isPresent()) {
-                                return to.iterateAndFilterPredicates(branchToEq(graphMgr, params, owner, eq.get()), params, ASC, false);
+                                return to.iterateAndFilterPredicates(branchToEq(graphMgr, params, owner, eq.get()), params, ASC );
                             } else {
-                                return to.mergeAndFilterPredicatesOnVertices(graphMgr, branchToTypes(graphMgr, owner), params, ASC, false);
+                                return to.mergeAndFilterPredicatesOnVertices(graphMgr, branchToTypes(graphMgr, owner), params, ASC);
                             }
                         }
                     }
@@ -952,7 +952,7 @@ public abstract class ProcedureEdge<
                                     iterate(owners).filter(owner -> to.props().types().contains(owner.properLabel()))
                                             .map(t -> new Pair<>(t, att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from()))
                                             .toList(),
-                                    params, ASC, false
+                                    params, ASC
                             );
                         }
                     }
@@ -1032,7 +1032,7 @@ public abstract class ProcedureEdge<
                                     iterate(players).filter(player -> toTypes.contains(player.properLabel()))
                                             .map(t -> new Pair<>(t, role.ins().edge(PLAYING, PrefixIID.of(t.encoding().instance()), t.iid()).from()))
                                             .toList(),
-                                    params, ASC, false
+                                    params, ASC
                             );
                         }
                     }

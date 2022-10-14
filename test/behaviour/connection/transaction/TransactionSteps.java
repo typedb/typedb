@@ -60,7 +60,7 @@ public class TransactionSteps {
         for (TypeDB.Session session : sessions) {
             List<TypeDB.Transaction> transactions = new ArrayList<>();
             for (Arguments.Transaction.Type type : types) {
-                TypeDB.Transaction transaction = session.transaction(type, (new Options.Transaction()).infer(true).parallel(false));
+                TypeDB.Transaction transaction = session.transaction(type, (new Options.Transaction()).infer(true));
                 transactions.add(transaction);
             }
             sessionsToTransactions.put(session, transactions);

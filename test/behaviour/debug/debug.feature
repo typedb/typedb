@@ -17,10 +17,67 @@
 
 Feature: Debugging Space
 
-  Background:
-    Given connection has been opened
-    Given connection delete all databases
-    Given connection does not have any database
 
-  # Paste any scenarios below for debugging.
-  # Do not commit any changes to this file.
+  Background: Set up database
+    Given reasoning schema
+      """
+      define
+
+      person sub entity,
+          plays team:leader,
+          plays team:member,
+          owns string-attribute,
+          owns unrelated-attribute,
+          owns age,
+          owns is-old;
+
+      tortoise sub entity,
+          owns age,
+          owns is-old;
+
+      soft-drink sub entity,
+          owns retailer;
+
+      team sub relation,
+          relates leader,
+          relates member,
+          owns string-attribute;
+
+      string-attribute sub attribute, value string;
+      retailer sub attribute, value string;
+      age sub attribute, value long;
+      is-old sub attribute, value boolean;
+      unrelated-attribute sub attribute, value string;
+      """
+
+
+  Scenario: Querying for anonymous attributes with predicates finds the correct answers
+    Given reasoning schema
+      """
+      define
+      rule people-have-a-specific-age: when {
+        $x isa person;
+      } then {
+        $x has age 10;
+      };
+      """
+    Given reasoning data
+      """
+      insert
+      $geY isa person;
+      """
+    Given verifier is initialised
+    Given reasoning query
+      """
+      match $x has age > 20;
+      """
+    Then verify answer size is: 0
+    Then verify answers are sound
+    Then verify answers are complete
+    Given reasoning query
+      """
+      match $x has age > 5;
+      """
+    Then verify answer size is: 1
+    Then verify answers are sound
+    Then verify answers are complete
