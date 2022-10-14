@@ -38,7 +38,6 @@ import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -64,6 +63,11 @@ import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.convertToBoolean;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.convertToDateTime;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.convertToDouble;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.convertToLong;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.convertToString;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.GTE;
@@ -526,48 +530,6 @@ public abstract class ProcedureVertex<
             else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-        private <SOURCE_VALUE> Boolean convertToBoolean(
-                Encoding.ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue
-        ) {
-            assert BOOLEAN.comparableTo(sourceEncoding);
-            if (sourceEncoding.equals(BOOLEAN)) return (Boolean) sourceValue;
-            else throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        private <SOURCE_VALUE> Long convertToLong(
-                Encoding.ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue, boolean roundDown
-        ) {
-            assert LONG.comparableTo(sourceEncoding);
-            if (sourceEncoding.equals(LONG)) return (Long) sourceValue;
-            else if (sourceEncoding.equals(DOUBLE)) {
-                return roundDown ? ((Double) sourceValue).longValue() : (long) (((Double) sourceValue) + 1);
-            } else throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        private <SOURCE_VALUE> Double convertToDouble(
-                Encoding.ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue
-        ) {
-            assert DOUBLE.comparableTo(sourceEncoding);
-            if (sourceEncoding.equals(LONG)) return ((Long) sourceValue).doubleValue();
-            else if (sourceEncoding.equals(DOUBLE)) return (Double) sourceValue;
-            else throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        private <SOURCE_VALUE> String convertToString(
-                Encoding.ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue
-        ) {
-            assert STRING.comparableTo(sourceEncoding);
-            if (sourceEncoding.equals(STRING)) return (String) sourceValue;
-            else throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
-        private <SOURCE_VALUE> LocalDateTime convertToDateTime(
-                Encoding.ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue
-        ) {
-            assert DATETIME.comparableTo(sourceEncoding);
-            if (sourceEncoding.equals(DATETIME)) return (LocalDateTime) sourceValue;
-            else throw TypeDBException.of(ILLEGAL_STATE);
-        }
     }
 
     public static class Type extends ProcedureVertex<TypeVertex, Properties.Type> {

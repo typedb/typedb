@@ -477,34 +477,6 @@ public class Encoding {
             else throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
 
-        public static <T, U> int compare(ValueType<T> firstType, T firstValue, ValueType<U> secondType, U secondValue) {
-            if (!firstType.comparableTo(secondType)) {
-                throw TypeDBException.of(VALUES_NOT_COMPARABLE, firstType, firstValue, secondType, secondValue);
-            }
-
-            if (firstType == BOOLEAN) {
-                assert secondType == BOOLEAN;
-                return BOOLEAN.comparator().compare((Boolean) firstValue, (Boolean) secondValue);
-            } else if (firstType == LONG) {
-                if (secondType == LONG) return LONG.comparator().compare((Long) firstValue, (Long) secondValue);
-                else if (secondType == DOUBLE) {
-                    return DOUBLE.comparator().compare(((Long) firstValue).doubleValue(), (Double) secondValue);
-                } else throw TypeDBException.of(ILLEGAL_STATE);
-            } else if (firstType == DOUBLE) {
-                if (secondType == LONG) {
-                    return DOUBLE.comparator().compare((Double) firstValue, ((Long) secondValue).doubleValue());
-                } else if (secondType == DOUBLE) {
-                    return DOUBLE.comparator().compare((Double) firstValue, (Double) secondValue);
-                } else throw TypeDBException.of(ILLEGAL_STATE);
-            } else if (firstType == STRING) {
-                assert secondType == STRING;
-                return STRING.comparator().compare((String) firstValue, (String) secondValue);
-            } else if (firstType == DATETIME) {
-                assert secondType == DATETIME;
-                return DATETIME.comparator().compare((LocalDateTime) firstValue, (LocalDateTime) secondValue);
-            } else throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
         public String name() {
             return name;
         }
@@ -551,6 +523,77 @@ public class Encoding {
 
         public Comparator<T> comparator() {
             return comparator;
+        }
+
+        public static <T, U> int compare(ValueType<T> firstType, T firstValue, ValueType<U> secondType, U secondValue) {
+            if (!firstType.comparableTo(secondType)) {
+                throw TypeDBException.of(VALUES_NOT_COMPARABLE, firstType, firstValue, secondType, secondValue);
+            }
+
+            if (firstType == BOOLEAN) {
+                assert secondType == BOOLEAN;
+                return BOOLEAN.comparator().compare((Boolean) firstValue, (Boolean) secondValue);
+            } else if (firstType == LONG) {
+                if (secondType == LONG) return LONG.comparator().compare((Long) firstValue, (Long) secondValue);
+                else if (secondType == DOUBLE) {
+                    return DOUBLE.comparator().compare(((Long) firstValue).doubleValue(), (Double) secondValue);
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            } else if (firstType == DOUBLE) {
+                if (secondType == LONG) {
+                    return DOUBLE.comparator().compare((Double) firstValue, ((Long) secondValue).doubleValue());
+                } else if (secondType == DOUBLE) {
+                    return DOUBLE.comparator().compare((Double) firstValue, (Double) secondValue);
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            } else if (firstType == STRING) {
+                assert secondType == STRING;
+                return STRING.comparator().compare((String) firstValue, (String) secondValue);
+            } else if (firstType == DATETIME) {
+                assert secondType == DATETIME;
+                return DATETIME.comparator().compare((LocalDateTime) firstValue, (LocalDateTime) secondValue);
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        public static <SOURCE_VALUE> Boolean convertToBoolean(
+                ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue
+        ) {
+            assert BOOLEAN.comparableTo(sourceEncoding);
+            if (sourceEncoding.equals(BOOLEAN)) return (Boolean) sourceValue;
+            else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        public static <SOURCE_VALUE> Long convertToLong(
+                ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue, boolean roundDown
+        ) {
+            assert LONG.comparableTo(sourceEncoding);
+            if (sourceEncoding.equals(LONG)) return (Long) sourceValue;
+            else if (sourceEncoding.equals(DOUBLE)) {
+                return roundDown ? ((Double) sourceValue).longValue() : (long) (((Double) sourceValue) + 1);
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        public static <SOURCE_VALUE> Double convertToDouble(
+                ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue
+        ) {
+            assert DOUBLE.comparableTo(sourceEncoding);
+            if (sourceEncoding.equals(LONG)) return ((Long) sourceValue).doubleValue();
+            else if (sourceEncoding.equals(DOUBLE)) return (Double) sourceValue;
+            else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        public static <SOURCE_VALUE> String convertToString(
+                ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue
+        ) {
+            assert STRING.comparableTo(sourceEncoding);
+            if (sourceEncoding.equals(STRING)) return (String) sourceValue;
+            else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        public static <SOURCE_VALUE> LocalDateTime convertToDateTime(
+                ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue
+        ) {
+            assert DATETIME.comparableTo(sourceEncoding);
+            if (sourceEncoding.equals(DATETIME)) return (LocalDateTime) sourceValue;
+            else throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
