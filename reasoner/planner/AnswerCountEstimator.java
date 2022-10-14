@@ -61,12 +61,14 @@ public class AnswerCountEstimator {
     private final ConjunctionModelFactory conjunctionModelFactory;
     private final ConjunctionSummarizer conjunctionSummarizer;
     private final Map<ResolvableConjunction, ConjunctionModel> conjunctionModels;
+    private final Map<ResolvableConjunction, IncrementalEstimator> fullConjunctionEstimators;
 
     public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph, ConjunctionSummarizer conjunctionSummarizer) {
         this.logicMgr = logicMgr;
         this.conjunctionModelFactory = new ConjunctionModelFactory(new LocalModelFactory(this, graph));
         this.conjunctionSummarizer = conjunctionSummarizer;
         this.conjunctionModels = new HashMap<>();
+        this.fullConjunctionEstimators = new HashMap<>();
     }
 
     public void buildConjunctionModel(ResolvableConjunction conjunction) {
@@ -91,12 +93,15 @@ public class AnswerCountEstimator {
     }
 
     public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variables) {
-        // TODO: REMOVE!
         if (!conjunctionModels.containsKey(conjunction)) buildConjunctionModel(conjunction);
-        IncrementalEstimator incrementalEstimator = createIncrementalEstimator(conjunction);
+        if (!fullConjunctionEstimators.containsKey(conjunction)) {
+            IncrementalEstimator incrementalEstimator = createIncrementalEstimator(conjunction);
+            conjunctionModels.get(conjunction).conjunctionSummary.resolvables().forEach(incrementalEstimator::extend);
+            fullConjunctionEstimators.put(conjunction, incrementalEstimator);
+        }
+        IncrementalEstimator estimator = fullConjunctionEstimators.get(conjunction);
         Set<Variable> estimateableVariables = ReasonerPlanner.estimateableVariables(variables);
-        conjunctionModels.get(conjunction).conjunctionSummary.resolvables().forEach(incrementalEstimator::extend);
-        return incrementalEstimator.scaledEstimate(estimateableVariables);
+        return estimator.scaledEstimate(estimateableVariables);
     }
 
     public IncrementalEstimator createIncrementalEstimator(ResolvableConjunction conjunction) {
