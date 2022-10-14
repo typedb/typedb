@@ -131,6 +131,29 @@ public class AnswerCountEstimator {
             propagate(unaryUpdates);
         }
 
+        public long scaledEstimate(Set<Variable> variables) {
+            List<LocalModel> relevantModels = iterate(modelScale.keySet())
+                    .filter(model -> model.variables.stream().anyMatch(variables::contains))
+                    .toList();
+
+            Map<Variable, CoverElement> cover = new HashMap<>();
+            iterate(variables).forEachRemaining(v -> cover.put(v, new CoverElement(bestUnary.get(v))));
+
+            Map<LocalModel, Pair<Set<Variable>, Double>> scaledEstimates = new HashMap<>();
+            relevantModels.forEach(model -> {
+                Set<Variable> modelledVars = intersection(model.variables, variables);
+                scaledEstimates.put(model, new Pair<>(modelledVars, scaledEstimate(model, modelScale.get(model), variables)));
+            });
+            relevantModels.sort(Comparator.comparing(model -> scaledEstimates.get(model).second()));
+            for (LocalModel model : relevantModels) {
+                if (scaledEstimates.get(model).second() < answerEstimateFromCover(scaledEstimates.get(model).first(), cover)) {
+                    CoverElement coverElement = new CoverElement(scaledEstimates.get(model).second()); // Same instance for all keys
+                    scaledEstimates.get(model).first().forEach(v -> cover.put(v, coverElement));
+                }
+            }
+            return answerEstimateFromCover(variables, cover);
+        }
+
         private void addAndCollectUnaryUpdates(LocalModel model, Map<Variable, Double> unaryUpdates) {
 //            assert !modelScale.containsKey(model);
             Pair<Double, Optional<Variable>> scale = modelScale.computeIfAbsent(model, m -> new Pair<>(1.0, Optional.empty()));
@@ -183,37 +206,6 @@ public class AnswerCountEstimator {
             }
         }
 
-        public long scaledEstimate(Set<Variable> variables) {
-            List<LocalModel> relevantModels = iterate(modelScale.keySet())
-                    .filter(model -> model.variables.stream().anyMatch(variables::contains))
-                    .toList();
-
-            Map<Variable, CoverElement> cover = new HashMap<>();
-            iterate(variables).forEachRemaining(v -> cover.put(v, new CoverElement(bestUnary.get(v))));
-
-            Map<LocalModel, Pair<Set<Variable>, Double>> scaledEstimates = new HashMap<>();
-            relevantModels.forEach(model -> {
-                Set<Variable> modelledVars = intersection(model.variables, variables);
-                scaledEstimates.put(model, new Pair<>(modelledVars, scaledEstimate(model, modelScale.get(model), variables)));
-            });
-            relevantModels.sort(Comparator.comparing(model -> scaledEstimates.get(model).second()));
-            for (LocalModel model : relevantModels) {
-                if (scaledEstimates.get(model).second() < answerEstimateFromCover(scaledEstimates.get(model).first(), cover)) {
-                    CoverElement coverElement = new CoverElement(scaledEstimates.get(model).second()); // Same instance for all keys
-                    scaledEstimates.get(model).first().forEach(v -> cover.put(v, coverElement));
-                }
-            }
-            return answerEstimateFromCover(variables, cover);
-        }
-
-        private static class CoverElement {
-            private final double estimate;
-
-            private CoverElement(double estimate) {
-                this.estimate = estimate;
-            }
-        }
-
         private static double scaledEstimate(LocalModel model, Pair<Double, Optional<Variable>> scale, Set<Variable> estimateVariables) {
             assert scale.second().isPresent() || scale.first() == 1.0;
             Set<Variable> variables = new HashSet<>();
@@ -231,6 +223,14 @@ public class AnswerCountEstimator {
         private static long answerEstimateFromCover(Set<Variable> variables, Map<Variable, CoverElement> coverMap) {
             Set<CoverElement> coverSet = iterate(variables).map(coverMap::get).toSet();
             return Math.round(Math.ceil(iterate(coverSet).map(coverElement -> coverElement.estimate).reduce(1.0, (x, y) -> x * y)));
+        }
+
+        private static class CoverElement {
+            private final double estimate;
+
+            private CoverElement(double estimate) {
+                this.estimate = estimate;
+            }
         }
     }
 
