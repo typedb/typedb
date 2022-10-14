@@ -458,7 +458,7 @@ public class AnswerCountEstimatorTest {
             Set<Resolvable<?>> resolvables = transaction.logic().compile(conjunction);
             AnswerCountEstimator.IncrementalEstimator incrementalEstimator = answerCountEstimator.createIncrementalEstimator(conjunction);
             resolvables.forEach(incrementalEstimator::extend);
-            long answers = incrementalEstimator.scaledEstimate(getVariablesByName(conjunction.pattern(), set("p1", "p2")));
+            long answers = incrementalEstimator.answerEstimate(getVariablesByName(conjunction.pattern(), set("p1", "p2")));
             assertEquals(3L, answers);
         }
 
@@ -469,7 +469,7 @@ public class AnswerCountEstimatorTest {
             Set<Resolvable<?>> justJealous = resolvables.stream().filter(Resolvable::isConcludable).collect(Collectors.toSet());
             AnswerCountEstimator.IncrementalEstimator incrementalEstimator = answerCountEstimator.createIncrementalEstimator(conjunction);
             justJealous.forEach(incrementalEstimator::extend);
-            long answers = incrementalEstimator.scaledEstimate(getVariablesByName(conjunction.pattern(), set("p1", "p2")));
+            long answers = incrementalEstimator.answerEstimate(getVariablesByName(conjunction.pattern(), set("p1", "p2")));
             assertEquals(25L, answers);
         }
     }

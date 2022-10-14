@@ -101,7 +101,7 @@ public class AnswerCountEstimator {
         }
         IncrementalEstimator estimator = fullConjunctionEstimators.get(conjunction);
         Set<Variable> estimateableVariables = ReasonerPlanner.estimateableVariables(variables);
-        return estimator.scaledEstimate(estimateableVariables);
+        return estimator.answerEstimate(estimateableVariables);
     }
 
     public IncrementalEstimator createIncrementalEstimator(ResolvableConjunction conjunction) {
@@ -131,31 +131,17 @@ public class AnswerCountEstimator {
             propagate(unaryUpdates);
         }
 
-        public long scaledEstimate(Set<Variable> variables) {
-            List<LocalModel> relevantModels = iterate(modelScale.keySet())
-                    .filter(model -> model.variables.stream().anyMatch(variables::contains))
-                    .toList();
-
-            Map<Variable, CoverElement> cover = new HashMap<>();
-            iterate(variables).forEachRemaining(v -> cover.put(v, new CoverElement(bestUnary.get(v))));
-
-            Map<LocalModel, Pair<Set<Variable>, Double>> scaledEstimates = new HashMap<>();
-            relevantModels.forEach(model -> {
-                Set<Variable> modelledVars = intersection(model.variables, variables);
-                scaledEstimates.put(model, new Pair<>(modelledVars, scaledEstimate(model, modelScale.get(model), variables)));
-            });
-            relevantModels.sort(Comparator.comparing(model -> scaledEstimates.get(model).second()));
-            for (LocalModel model : relevantModels) {
-                if (scaledEstimates.get(model).second() < answerEstimateFromCover(scaledEstimates.get(model).first(), cover)) {
-                    CoverElement coverElement = new CoverElement(scaledEstimates.get(model).second()); // Same instance for all keys
-                    scaledEstimates.get(model).first().forEach(v -> cover.put(v, coverElement));
-                }
-            }
-            return answerEstimateFromCover(variables, cover);
-        }
-
         private void addAndCollectUnaryUpdates(LocalModel model, Map<Variable, Double> unaryUpdates) {
-//            assert !modelScale.containsKey(model);
+            if (model.isIsa()) {
+                Variable v = model.variables.stream().findFirst().get();
+                double newEstimate = model.estimateAnswers(model.variables);
+                if (!bestUnary.containsKey(v) || newEstimate < bestUnary.get(v)) {
+                    unaryUpdates.put(v, newEstimate);
+                }
+                modelsWithVar.computeIfAbsent(v, v1 -> new HashSet<>()); // Don't add to modelScale
+                return; // IsaModel's aren't scaled; We use bestVar as baseline anyway.
+            }
+
             Pair<Double, Optional<Variable>> scale = modelScale.computeIfAbsent(model, m -> new Pair<>(1.0, Optional.empty()));
             double bestScaler = scale.first();
             Variable bestScalingVar = scale.second().orElse(null);
@@ -195,7 +181,7 @@ public class AnswerCountEstimator {
 
         private void propagate(Map<Variable, Double> unaryUpdates) {
             // Ideally, we'd just remove and add each model again till unaryUpdates is empty.
-            int maxIters = 2 * modelScale.size(); // TODO: Consider pruning out small changes
+            int maxIters = Math.max(1, 2 * modelScale.size()); // TODO: Consider pruning out small changes
             while (!unaryUpdates.isEmpty() && maxIters > 0) {
                 Set<LocalModel> affectedModels = iterate(unaryUpdates.keySet()).flatMap(v -> iterate(modelsWithVar.get(v))).toSet();
                 assert iterate(unaryUpdates.entrySet()).allMatch(update -> update.getValue() < bestUnary.getOrDefault(update.getKey(), Double.MAX_VALUE));
@@ -204,6 +190,29 @@ public class AnswerCountEstimator {
                 affectedModels.forEach(model -> addAndCollectUnaryUpdates(model, unaryUpdates));
                 maxIters--;
             }
+        }
+
+        public long answerEstimate(Set<Variable> variables) {
+            List<LocalModel> relevantModels = iterate(modelScale.keySet())
+                    .filter(model -> model.variables.stream().anyMatch(variables::contains))
+                    .toList();
+
+            Map<Variable, CoverElement> cover = new HashMap<>();
+            iterate(variables).forEachRemaining(v -> cover.put(v, new CoverElement(bestUnary.get(v))));
+
+            Map<LocalModel, Pair<Set<Variable>, Double>> scaledEstimates = new HashMap<>();
+            relevantModels.forEach(model -> {
+                Set<Variable> modelledVars = intersection(model.variables, variables);
+                scaledEstimates.put(model, new Pair<>(modelledVars, scaledEstimate(model, modelScale.get(model), variables)));
+            });
+            relevantModels.sort(Comparator.comparing(model -> scaledEstimates.get(model).second()));
+            for (LocalModel model : relevantModels) {
+                if (scaledEstimates.get(model).second() < answerEstimateFromCover(scaledEstimates.get(model).first(), cover)) {
+                    CoverElement coverElement = new CoverElement(scaledEstimates.get(model).second()); // Same instance for all keys
+                    scaledEstimates.get(model).first().forEach(v -> cover.put(v, coverElement));
+                }
+            }
+            return answerEstimateFromCover(variables, cover);
         }
 
         private static double scaledEstimate(LocalModel model, Pair<Double, Optional<Variable>> scale, Set<Variable> estimateVariables) {
@@ -347,6 +356,11 @@ public class AnswerCountEstimator {
 
         abstract long estimateAnswers(Set<Variable> variableFilter);
 
+        public boolean isRelation() { return false; }
+        public boolean isHas() { return false; }
+        public boolean isIsa() { return false; }
+        public boolean isVariable() { return false; }
+
         private abstract static class StaticModel extends LocalModel {
             private final long staticEstimate;
 
@@ -383,6 +397,8 @@ public class AnswerCountEstimator {
                     this.rolePlayerTypes.put(player.player(), roleType);
                 });
             }
+
+            public boolean isRelation() { return true; }
 
             @Override
             long estimateAnswers(Set<Variable> variableFilter) {
@@ -440,6 +456,8 @@ public class AnswerCountEstimator {
                 this.attributeEstimate = attributeEstimate;
             }
 
+            public boolean isHas() { return true; }
+
             @Override
             long estimateAnswers(Set<Variable> variableFilter) {
                 long answerEstimate = 1;
@@ -462,6 +480,8 @@ public class AnswerCountEstimator {
                 this.isa = isa;
             }
 
+            public boolean isIsa() { return true; }
+
             @Override
             public String toString() {
                 return "IsaModel[" + isa.toString() + "]";
@@ -472,6 +492,8 @@ public class AnswerCountEstimator {
             private VariableModel(Set<Variable> variables, long estimate) {
                 super(variables, estimate);
             }
+
+            public boolean isVariable() { return true; }
 
             @Override
             public String toString() {
