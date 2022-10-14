@@ -22,6 +22,8 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.key.Key;
 
+import java.util.List;
+
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 
 /**
@@ -150,14 +152,14 @@ public abstract class EdgeViewIID<
             return new Key.Prefix<>(join(start.bytes, infix.bytes), computePartition(start, infix), Thing::of);
         }
 
-        public static Key.Prefix<Thing> prefix(VertexIID.Thing start, IID.Array iids) {
-            assert iids.get(0) instanceof InfixIID.Thing;
-            ByteArray[] bytes = new ByteArray[1 + iids.length()];
+        public static Key.Prefix<Thing> prefix(VertexIID.Thing start, InfixIID.Thing infix, List<IID> iids) {
+            ByteArray[] bytes = new ByteArray[2 + iids.size()];
             bytes[0] = start.bytes;
-            for (int i = 0; i < iids.length(); i++) {
-                bytes[i + 1] = iids.get(i).bytes;
+            bytes[1] = infix.bytes;
+            for (int i = 0; i < iids.size(); i++) {
+                bytes[i + 2] = iids.get(i).bytes;
             }
-            return new Key.Prefix<>(join(bytes), computePartition(start, (InfixIID.Thing) iids.get(0)), Thing::of);
+            return new Key.Prefix<>(join(bytes), computePartition(start, infix), Thing::of);
         }
 
         @Override
