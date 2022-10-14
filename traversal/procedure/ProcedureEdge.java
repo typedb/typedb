@@ -253,7 +253,7 @@ public abstract class ProcedureEdge<
             return toIter.filter(toVertex -> {
                 AttributeVertex<?> from = fromVertex.asThing().asAttribute();
                 AttributeVertex<?> to = toVertex.asAttribute();
-                return predicate.apply(from.isValue() ? from.toValue().toAttribute() : from, to.isValue() ? to.toValue().toAttribute() : to);
+                return predicate.apply(from.isValue() ? from.asValue().toAttribute() : from, to.isValue() ? to.asValue().toAttribute() : to);
             });
         }
 

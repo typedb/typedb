@@ -372,22 +372,22 @@ public abstract class ProcedureVertex<
             assert type.isAttributeType() && type.asType().valueType().isSorted() && id().isVariable();
 
             if (vertexIterator.order().isAscending()) {
-                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> largest = params.largestGTValue(id().asVariable());
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> largest = params.largestGTValue(id().asVariable());
                 if (largest.isPresent()) {
                     ThingVertex target = typedTargetVertex(graphMgr, type, (Encoding.ValueType<Object>) largest.get().first().valueType(), largest.get().second().value(), true);
                     vertexIterator.forward(target);
                 }
-                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> smallest = params.smallestLTValue(id().asVariable());
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> smallest = params.smallestLTValue(id().asVariable());
                 if (smallest.isPresent()) {
                     vertexIterator = vertexIterator.stopWhen(v -> !smallest.get().first().apply(v.asAttribute(), smallest.get().second()));
                 }
             } else {
-                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> smallest = params.smallestLTValue(id().asVariable());
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> smallest = params.smallestLTValue(id().asVariable());
                 if (smallest.isPresent()) {
                     ThingVertex target = typedTargetVertex(graphMgr, type, (Encoding.ValueType<Object>) smallest.get().first().valueType(), smallest.get().second().value(), false);
                     vertexIterator.forward(target);
                 }
-                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> largest = params.largestGTValue(id().asVariable());
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> largest = params.largestGTValue(id().asVariable());
                 if (largest.isPresent()) {
                     vertexIterator = vertexIterator.stopWhen(v -> !largest.get().first().apply(v.asAttribute(), largest.get().second()));
                 }
@@ -402,22 +402,22 @@ public abstract class ProcedureVertex<
             assert toType.isAttributeType() && toType.asType().valueType().isSorted() && id().isVariable();
 
             if (edgeIterator.order().isAscending()) {
-                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> largest = params.largestGTValue(id().asVariable());
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> largest = params.largestGTValue(id().asVariable());
                 if (largest.isPresent()) {
                     ThingVertex target = typedTargetVertex(graphMgr, toType, (Encoding.ValueType<Object>) largest.get().first().valueType(), largest.get().second().value(), true);
                     edgeIterator.forward(KeyValue.of(target, null));
                 }
-                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> smallest = params.smallestLTValue(id().asVariable());
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> smallest = params.smallestLTValue(id().asVariable());
                 if (smallest.isPresent()) {
                     edgeIterator = edgeIterator.stopWhen(kv -> smallest.get().first().apply(kv.key().asAttribute(), smallest.get().second()));
                 }
             } else {
-                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> smallest = params.smallestLTValue(id().asVariable());
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> smallest = params.smallestLTValue(id().asVariable());
                 if (smallest.isPresent()) {
                     ThingVertex target = typedTargetVertex(graphMgr, toType, (Encoding.ValueType<Object>) smallest.get().first().valueType(), smallest.get().second().value(), false);
                     edgeIterator.forward(KeyValue.of(target, null));
                 }
-                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value>> largest = params.largestGTValue(id().asVariable());
+                Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> largest = params.largestGTValue(id().asVariable());
                 if (largest.isPresent()) {
                     edgeIterator = edgeIterator.stopWhen(v -> largest.get().first().apply(v.key().asAttribute(), largest.get().second()));
                 }
@@ -431,7 +431,7 @@ public abstract class ProcedureVertex<
             assert id().isVariable();
             for (Predicate.Value<?, ?> predicate : props().predicates()) {
                 if (!excludeOperators.contains(predicate.operator())) {
-                    for (Traversal.Parameters.Value value : params.getValues(id().asVariable(), predicate)) {
+                    for (Traversal.Parameters.Value<?> value : params.getValues(id().asVariable(), predicate)) {
                         if (!predicate.apply(vertex.asAttribute(), value)) return false;
                     }
                 }
@@ -497,9 +497,9 @@ public abstract class ProcedureVertex<
                 Traversal.Parameters parameters, Predicate.Value<?, ?> eqPredicate
         ) {
             assert id().isVariable();
-            Set<Traversal.Parameters.Value> values = parameters.getValues(id().asVariable(), eqPredicate);
+            Set<Traversal.Parameters.Value<?>> values = parameters.getValues(id().asVariable(), eqPredicate);
             if (values.size() > 1) return list();
-            Traversal.Parameters.Value value = values.iterator().next();
+            Traversal.Parameters.Value<?> value = values.iterator().next();
             List<AttributeVertex<?>> attributes = new ArrayList<>();
             attributeTypes.map(t -> attributeVertex(graphMgr, t, value))
                     .filter(Objects::nonNull).forEachRemaining(attributes::add);
@@ -507,15 +507,15 @@ public abstract class ProcedureVertex<
         }
 
         private AttributeVertex<?> attributeVertex(
-                GraphManager graphMgr, TypeVertex type, Traversal.Parameters.Value value
+                GraphManager graphMgr, TypeVertex type, Traversal.Parameters.Value<?> value
         ) {
             assert type.isAttributeType();
             Encoding.ValueType<?> valueType = type.valueType();
-            if (valueType == BOOLEAN) return graphMgr.data().getReadable(type, value.getBoolean());
-            else if (valueType == LONG) return graphMgr.data().getReadable(type, value.getLong());
-            else if (valueType == DOUBLE) return graphMgr.data().getReadable(type, value.getDouble());
-            else if (valueType == STRING) return graphMgr.data().getReadable(type, value.getString());
-            else if (valueType == DATETIME) return graphMgr.data().getReadable(type, value.getDateTime());
+            if (valueType == BOOLEAN) return graphMgr.data().getReadable(type, value.asBoolean().value());
+            else if (valueType == LONG) return graphMgr.data().getReadable(type, value.asLong().value());
+            else if (valueType == DOUBLE) return graphMgr.data().getReadable(type, value.asDouble().value());
+            else if (valueType == STRING) return graphMgr.data().getReadable(type, value.asString().value());
+            else if (valueType == DATETIME) return graphMgr.data().getReadable(type, value.asDateTime().value());
             throw TypeDBException.of(ILLEGAL_STATE);
         }
     }

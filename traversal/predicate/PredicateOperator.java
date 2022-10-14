@@ -106,7 +106,7 @@ public abstract class PredicateOperator {
 
         public static final Equality EQ = new Equality(TypeQLToken.Predicate.Equality.EQ) {
             @Override
-             public boolean apply(int comparisonResult) {
+            public boolean apply(int comparisonResult) {
                 return comparisonResult == 0;
             }
 
@@ -196,7 +196,7 @@ public abstract class PredicateOperator {
             return operators.get(token);
         }
 
-        abstract public boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue);
+        abstract public boolean apply(String vertexValue, Traversal.Parameters.Value<?> predicateValue);
 
         abstract public boolean apply(String vertexValue, PRED_VALUE predicateValue);
 
@@ -212,9 +212,9 @@ public abstract class PredicateOperator {
 
         public static final SubString<String> CONTAINS = new SubString<>(TypeQLToken.Predicate.SubString.CONTAINS) {
             @Override
-            public boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
+            public boolean apply(String vertexValue, Traversal.Parameters.Value<?> predicateValue) {
                 assert predicateValue.isString();
-                return apply(vertexValue, predicateValue.getString());
+                return apply(vertexValue, predicateValue.asString().value());
             }
 
             @Override
@@ -225,9 +225,9 @@ public abstract class PredicateOperator {
 
         public static final SubString<Pattern> LIKE = new SubString<>(TypeQLToken.Predicate.SubString.LIKE) {
             @Override
-            public boolean apply(String vertexValue, Traversal.Parameters.Value predicateValue) {
+            public boolean apply(String vertexValue, Traversal.Parameters.Value<?> predicateValue) {
                 assert predicateValue.isRegex();
-                return apply(vertexValue, predicateValue.getRegex());
+                return apply(vertexValue, predicateValue.asRegex().pattern());
             }
 
             @Override

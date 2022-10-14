@@ -72,7 +72,7 @@ public abstract class PredicateArgument {
             return valueType;
         }
 
-        abstract <T> boolean apply(ARG_VAL_OP operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value);
+        abstract <T> boolean apply(ARG_VAL_OP operator, AttributeVertex<T> vertex, Traversal.Parameters.Value<?> value);
 
         <T> boolean apply(ARG_VAL_OP operator, AttributeVertex<T> vertex, ARG_VAL_TYPE value) {
             return apply(operator, vertex.valueType(), vertex.value(), value);
@@ -82,9 +82,9 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator.Equality, Boolean> BOOLEAN = new Value<>(Encoding.ValueType.BOOLEAN) {
             @Override
-            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
+            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value<?> value) {
                 assert value.isBoolean();
-                return apply(operator, vertex, value.getBoolean());
+                return apply(operator, vertex, value.asBoolean().value());
             }
 
             @Override
@@ -96,9 +96,9 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator.Equality, Long> LONG = new Value<>(Encoding.ValueType.LONG) {
             @Override
-            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
+            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value<?> value) {
                 assert value.isLong();
-                return apply(operator, vertex, value.getLong());
+                return apply(operator, vertex, value.asLong().value());
             }
 
             @Override
@@ -110,9 +110,9 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator.Equality, Double> DOUBLE = new Value<>(Encoding.ValueType.DOUBLE) {
             @Override
-            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
+            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value<?> value) {
                 assert value.isDouble();
-                return apply(operator, vertex, value.getDouble());
+                return apply(operator, vertex, value.asDouble().value());
             }
 
             @Override
@@ -124,9 +124,9 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator.Equality, LocalDateTime> DATETIME = new Value<>(Encoding.ValueType.DATETIME) {
             @Override
-            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
+            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value<?> value) {
                 assert value.isDateTime();
-                return apply(operator, vertex, value.getDateTime());
+                return apply(operator, vertex, value.asDateTime().value());
             }
 
             @Override
@@ -138,11 +138,11 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator, String> STRING = new Value<>(Encoding.ValueType.STRING) {
             @Override
-            <T> boolean apply(PredicateOperator operator, AttributeVertex<T> vertex, Traversal.Parameters.Value value) {
+            <T> boolean apply(PredicateOperator operator, AttributeVertex<T> vertex, Traversal.Parameters.Value<?> value) {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
                 assert value.isString() || value.isRegex();
                 if (operator.isSubString()) return operator.asSubString().apply(vertex.asString().value(), value);
-                else return apply(operator, vertex, value.getString());
+                else return apply(operator, vertex, value.asString().value());
             }
 
             @Override

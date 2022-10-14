@@ -559,16 +559,16 @@ public class TraversalTest {
             GraphTraversal.Thing.Parameters params = new GraphTraversal.Thing.Parameters();
             params.pushValue(_0.id().asVariable(),
                     Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ),
-                    new GraphTraversal.Thing.Parameters.Value("Alex"));
+                    new GraphTraversal.Thing.Parameters.Value.String("Alex"));
             params.pushValue(_1.id().asVariable(),
                     Predicate.Value.String.of(TypeQLToken.Predicate.Equality.EQ),
-                    new GraphTraversal.Thing.Parameters.Value("John"));
+                    new GraphTraversal.Thing.Parameters.Value.String("John"));
             params.pushValue(r1.id().asVariable(),
                     Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG),
-                    new GraphTraversal.Thing.Parameters.Value(3L));
+                    new GraphTraversal.Thing.Parameters.Value.Long(3L));
             params.pushValue(r2.id().asVariable(),
                     Predicate.Value.Numerical.of(TypeQLToken.Predicate.Equality.EQ, PredicateArgument.Value.LONG),
-                    new GraphTraversal.Thing.Parameters.Value(1L));
+                    new GraphTraversal.Thing.Parameters.Value.Long(1L));
 
             proc.backwardHas(n, x);
             proc.backwardHas(n, y);

@@ -80,7 +80,7 @@ public interface AttributeType extends ThingType {
 
     AttributeType.DateTime asDateTime();
 
-    // TODO: delete
+    // TODO: we should consider deleting this since it can be replaced 1-1 with Encoding.ValueType
     enum ValueType {
         OBJECT(Encoding.ValueType.OBJECT),
         BOOLEAN(Encoding.ValueType.BOOLEAN),

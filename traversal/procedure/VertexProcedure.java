@@ -84,7 +84,7 @@ public class VertexProcedure implements PermutationProcedure {
 
         return iterator.map(v -> {
             if (v.isThing() && v.asThing().isAttribute() && v.asThing().asAttribute().isValue()) {
-                return VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v.asThing().asAttribute().toValue().toAttribute())));
+                return VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v.asThing().asAttribute().asValue().toAttribute())));
             } else {
                 return VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v)));
             }

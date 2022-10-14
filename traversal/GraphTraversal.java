@@ -215,19 +215,19 @@ public abstract class GraphTraversal extends Traversal {
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate token, String value) {
             Predicate.Value.String predicate = Predicate.Value.String.of(token);
             structure.thingVertex(attribute).props().predicate(predicate);
-            if (token == LIKE) parameters.pushValue(attribute, predicate, new Parameters.Value(Pattern.compile(value)));
-            else parameters.pushValue(attribute, predicate, new Parameters.Value(value));
+            if (token == LIKE) parameters.pushValue(attribute, predicate, new Parameters.Value.Regex(value));
+            else parameters.pushValue(attribute, predicate, new Parameters.Value.String(value));
         }
 
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, Boolean value) {
             Predicate.Value.Numerical<Boolean> predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.BOOLEAN);
-            parameters.pushValue(attribute, predicate, new Parameters.Value(value));
+            parameters.pushValue(attribute, predicate, new Parameters.Value.Boolean(value));
             structure.thingVertex(attribute).props().predicate(predicate);
         }
 
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, Long value) {
             Predicate.Value.Numerical<Long> predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.LONG);
-            parameters.pushValue(attribute, predicate, new Parameters.Value(value));
+            parameters.pushValue(attribute, predicate, new Parameters.Value.Long(value));
             structure.thingVertex(attribute).props().predicate(predicate);
         }
 
@@ -237,14 +237,14 @@ public abstract class GraphTraversal extends Traversal {
                 predicate(attribute, token, longValue);
             } else {
                 Predicate.Value.Numerical<Double> predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.DOUBLE);
-                parameters.pushValue(attribute, predicate, new Parameters.Value(value));
+                parameters.pushValue(attribute, predicate, new Parameters.Value.Double(value));
                 structure.thingVertex(attribute).props().predicate(predicate);
             }
         }
 
         public void predicate(Identifier.Variable attribute, TypeQLToken.Predicate.Equality token, LocalDateTime value) {
             Predicate.Value.Numerical<LocalDateTime> predicate = Predicate.Value.Numerical.of(token, PredicateArgument.Value.DATETIME);
-            parameters.pushValue(attribute, predicate, new Parameters.Value(value));
+            parameters.pushValue(attribute, predicate, new Parameters.Value.DateTime(value));
             structure.thingVertex(attribute).props().predicate(predicate);
         }
 

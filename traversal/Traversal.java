@@ -40,7 +40,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.VALUES_NOT_COMPARABLE;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
@@ -94,9 +95,9 @@ public abstract class Traversal {
     public static class Parameters {
 
         private final Map<Identifier.Variable, VertexIID.Thing> iids;
-        private final Map<Pair<Identifier.Variable, Predicate.Value<?, ?>>, Set<Value>> values;
-        private final Map<Identifier.Variable, Pair<Predicate.Value<?, ?>, Value>> largestGTPredicates;
-        private final Map<Identifier.Variable, Pair<Predicate.Value<?, ?>, Value>> smallestLTPredicates;
+        private final Map<Pair<Identifier.Variable, Predicate.Value<?, ?>>, Set<Value<?>>> values;
+        private final Map<Identifier.Variable, Pair<Predicate.Value<?, ?>, Value<?>>> largestGTPredicates;
+        private final Map<Identifier.Variable, Pair<Predicate.Value<?, ?>, Value<?>>> smallestLTPredicates;
 
         public Parameters() {
             iids = new HashMap<>();
@@ -110,16 +111,16 @@ public abstract class Traversal {
             this.iids.put(identifier, iid);
         }
 
-        public void pushValue(Identifier.Variable identifier, Predicate.Value<?, ?> predicate, Value value) {
+        public void pushValue(Identifier.Variable identifier, Predicate.Value<?, ?> predicate, Value<?> value) {
             values.computeIfAbsent(pair(identifier, predicate), k -> new HashSet<>()).add(value);
 
             if (predicate.operator() == GT || predicate.operator() == GTE) {
-                Pair<Predicate.Value<?, ?>, Value> previous = largestGTPredicates.get(identifier);
+                Pair<Predicate.Value<?, ?>, Value<?>> previous = largestGTPredicates.get(identifier);
                 if (previous == null || previous.second().compareTo(value) < 0) {
                     largestGTPredicates.put(identifier, new Pair<>(predicate, value));
                 }
             } else if (predicate.operator() == LT || predicate.operator() == LTE) {
-                Pair<Predicate.Value<?, ?>, Value> previous = smallestLTPredicates.get(identifier);
+                Pair<Predicate.Value<?, ?>, Value<?>> previous = smallestLTPredicates.get(identifier);
                 if (previous == null || previous.second().compareTo(value) > 0) {
                     smallestLTPredicates.put(identifier, new Pair<>(predicate, value));
                 }
@@ -130,15 +131,15 @@ public abstract class Traversal {
             return iids.get(identifier);
         }
 
-        public Set<Value> getValues(Identifier.Variable identifier, Predicate.Value<?, ?> predicate) {
+        public Set<Value<?>> getValues(Identifier.Variable identifier, Predicate.Value<?, ?> predicate) {
             return values.get(pair(identifier, predicate));
         }
 
-        public Optional<Pair<Predicate.Value<?, ?>, Value>> largestGTValue(Identifier.Variable id) {
+        public Optional<Pair<Predicate.Value<?, ?>, Value<?>>> largestGTValue(Identifier.Variable id) {
             return Optional.ofNullable(largestGTPredicates.get(id));
         }
 
-        public Optional<Pair<Predicate.Value<?, ?>, Value>> smallestLTValue(Identifier.Variable id) {
+        public Optional<Pair<Predicate.Value<?, ?>, Value<?>>> smallestLTValue(Identifier.Variable id) {
             return Optional.ofNullable(smallestLTPredicates.get(id));
         }
 
@@ -166,117 +167,72 @@ public abstract class Traversal {
             return Objects.hash(iids, values);
         }
 
-        // TODO: we could specialise this into a subtype per value and then parametrise it properly, improving comparison, value retrieval etc.
-        public static class Value implements Comparable<Value> {
+        public static class Value<T> implements Comparable<Value<?>> {
 
-            private final Encoding.ValueType<?> valueType;
-            private final Boolean booleanVal;
-            private final Long longVal;
-            private final Double doubleVal;
-            private final String stringVal;
-            private final LocalDateTime dateTimeVal;
-            private final Pattern regexPattern;
+            private final Encoding.ValueType<T> valueType;
+            private final T value;
             private final int hash;
 
-            Value(boolean value) {
-                this(BOOLEAN, value, null, null, null, null, null);
-            }
-
-            Value(long value) {
-                this(LONG, null, value, null, null, null, null);
-            }
-
-            Value(double value) {
-                this(DOUBLE, null, null, value, null, null, null);
-            }
-
-            Value(LocalDateTime value) {
-                this(DATETIME, null, null, null, value, null, null);
-            }
-
-            Value(String value) {
-                this(STRING, null, null, null, null, value, null);
-            }
-
-            Value(Pattern regex) {
-                this(STRING, null, null, null, null, null, regex);
-            }
-
-            private Value(Encoding.ValueType<?> valueType, Boolean booleanVal, Long longVal, Double doubleVal,
-                          LocalDateTime dateTimeVal, String stringVal, Pattern regexPattern) {
+            private Value(Encoding.ValueType<T> valueType, T value) {
                 this.valueType = valueType;
-                this.booleanVal = booleanVal;
-                this.longVal = longVal;
-                this.doubleVal = doubleVal;
-                this.dateTimeVal = dateTimeVal;
-                this.stringVal = stringVal;
-                this.regexPattern = regexPattern;
-                this.hash = Objects.hash(valueType, booleanVal, longVal, doubleVal, dateTimeVal, stringVal, regexPattern);
+                this.value = value;
+                this.hash = Objects.hash(valueType, value);
             }
 
-            public Encoding.ValueType<?> valueType() {
+            public Encoding.ValueType<T> valueType() {
                 return valueType;
             }
 
+            public T value() {
+                return value;
+            }
+
             public boolean isBoolean() {
-                return booleanVal != null;
+                return false;
+            }
+
+            public Boolean asBoolean() {
+                throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Boolean.class));
             }
 
             public boolean isLong() {
-                return longVal != null;
+                return false;
+            }
+
+            public Long asLong() {
+                throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Long.class));
             }
 
             public boolean isDouble() {
-                return doubleVal != null;
+                return false;
+            }
+
+            public Double asDouble() {
+                throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Double.class));
             }
 
             public boolean isDateTime() {
-                return dateTimeVal != null;
+                return false;
+            }
+
+            public DateTime asDateTime() {
+                throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(DateTime.class));
             }
 
             public boolean isString() {
-                return stringVal != null;
+                return false;
+            }
+
+            public String asString() {
+                throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(String.class));
             }
 
             public boolean isRegex() {
-                return regexPattern != null;
+                return false;
             }
 
-            public Boolean getBoolean() {
-                return booleanVal;
-            }
-
-            public Long getLong() {
-                return longVal;
-            }
-
-            public Double getDouble() {
-                if (isDouble()) return doubleVal;
-                else if (isLong()) return longVal.doubleValue();
-                else return null;
-            }
-
-            public LocalDateTime getDateTime() {
-                return dateTimeVal;
-            }
-
-            public String getString() {
-                return stringVal;
-            }
-
-            public Pattern getRegex() {
-                return regexPattern;
-            }
-
-            @Override
-            public String toString() {
-                if (isBoolean()) return "boolean: " + booleanVal;
-                else if (isLong()) return "long: " + longVal;
-                else if (isDouble()) return "double: " + doubleVal;
-                else if (isDateTime()) return "datetime: " + dateTimeVal;
-                else if (isString()) return "string: " + stringVal;
-                else if (isRegex()) return "regex: " + regexPattern.pattern();
-                else throw TypeDBException.of(ILLEGAL_STATE);
+            public Regex asRegex() {
+                throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Regex.class));
             }
 
             @Override
@@ -284,14 +240,8 @@ public abstract class Traversal {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
 
-                Value that = (Value) o;
-                return (Objects.equals(this.valueType, that.valueType) &&
-                        Objects.equals(this.booleanVal, that.booleanVal) &&
-                        Objects.equals(this.longVal, that.longVal) &&
-                        Objects.equals(this.doubleVal, that.doubleVal) &&
-                        Objects.equals(this.dateTimeVal, that.dateTimeVal) &&
-                        Objects.equals(this.stringVal, that.stringVal) &&
-                        Objects.equals(this.regexPattern, that.regexPattern));
+                Value<T> that = (Value<T>) o;
+                return valueType.equals(that.valueType) && value.equals(that.value);
             }
 
             @Override
@@ -299,23 +249,126 @@ public abstract class Traversal {
                 return hash;
             }
 
-            public Object value() {
-                if (isBoolean()) return booleanVal;
-                else if (isLong()) return longVal;
-                else if (isDouble()) return doubleVal;
-                else if (isString()) return stringVal;
-                else if (isDateTime()) return dateTimeVal;
-                else throw TypeDBException.of(ILLEGAL_STATE);
-            }
-
             @Override
-            public int compareTo(Value other) {
+            public int compareTo(Value<?> other) {
                 if (!valueType.comparableTo(other.valueType)) {
                     throw TypeDBException.of(VALUES_NOT_COMPARABLE, valueType, other.valueType);
                 }
-                //TODO: this is ugly as hell
-                return Encoding.ValueType.compare((Encoding.ValueType<Object>) valueType, value(),
-                        (Encoding.ValueType<Object>) other.valueType, other.value());
+                return compareTyped(other);
+            }
+
+            private <U> int compareTyped(Value<U> other) {
+                return Encoding.ValueType.compare(valueType, value, other.valueType(), other.value());
+            }
+
+
+            public static class Boolean extends Value<java.lang.Boolean> {
+
+                Boolean(java.lang.Boolean value) {
+                    super(BOOLEAN, value);
+                }
+
+                @Override
+                public boolean isBoolean() {
+                    return true;
+                }
+
+                @Override
+                public Boolean asBoolean() {
+                    return this;
+                }
+            }
+
+            public static class Long extends Value<java.lang.Long> {
+
+                Long(java.lang.Long value) {
+                    super(LONG, value);
+                }
+
+                @Override
+                public boolean isLong() {
+                    return true;
+                }
+
+                @Override
+                public Long asLong() {
+                    return this;
+                }
+            }
+
+            public static class Double extends Value<java.lang.Double> {
+
+                Double(java.lang.Double value) {
+                    super(DOUBLE, value);
+                }
+
+                @Override
+                public boolean isDouble() {
+                    return true;
+                }
+
+                @Override
+                public Double asDouble() {
+                    return this;
+                }
+            }
+
+            public static class String extends Value<java.lang.String> {
+
+                String(java.lang.String value) {
+                    super(STRING, value);
+                }
+
+                @Override
+                public boolean isString() {
+                    return true;
+                }
+
+                @Override
+                public String asString() {
+                    return this;
+                }
+            }
+
+            public static class DateTime extends Value<LocalDateTime> {
+
+                DateTime(LocalDateTime value) {
+                    super(DATETIME, value);
+                }
+
+                @Override
+                public boolean isDateTime() {
+                    return true;
+                }
+
+                @Override
+                public DateTime asDateTime() {
+                    return this;
+                }
+            }
+
+            public static class Regex extends Value<java.lang.String> {
+
+                private final Pattern pattern;
+
+                Regex(java.lang.String value) {
+                    super(STRING, value);
+                    this.pattern = Pattern.compile(value);
+                }
+
+                public Pattern pattern() {
+                    return pattern;
+                }
+
+                @Override
+                public boolean isRegex() {
+                    return true;
+                }
+
+                @Override
+                public Regex asRegex() {
+                    return this;
+                }
             }
         }
     }

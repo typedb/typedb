@@ -87,27 +87,18 @@ public abstract class InfixIID<EDGE_ENCODING extends Encoding.Edge> extends IID 
         }
 
         static InfixIID.Thing extract(ByteArray bytes, int from) {
-            if ((Encoding.Edge.Thing.of(bytes.get(from)).equals(ROLEPLAYER))) {
-                return RolePlayer.extract(bytes, from);
-            } else {
-                return new InfixIID.Thing(bytes.view(from, from + 1));
-            }
+            if (Encoding.Edge.Thing.of(bytes.get(from)).equals(ROLEPLAYER)) return RolePlayer.extract(bytes, from);
+            else return new Thing(bytes.view(from, from + 1));
         }
 
         public static InfixIID.Thing of(Encoding.Infix infix) {
-            if (Encoding.Edge.Thing.of(infix).equals(ROLEPLAYER)) {
-                return new InfixIID.RolePlayer(infix.bytes());
-            } else {
-                return new InfixIID.Thing(infix.bytes());
-            }
+            if (Encoding.Edge.Thing.of(infix).equals(ROLEPLAYER)) return new RolePlayer(infix.bytes());
+            else return new Thing(infix.bytes());
         }
 
         public static InfixIID.Thing of(Encoding.Infix infix, VertexIID.Type type) {
-            if (Encoding.Edge.Thing.of(infix).equals(ROLEPLAYER)) {
-                return RolePlayer.of(infix, type);
-            } else {
-                throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            }
+            if (Encoding.Edge.Thing.of(infix).equals(ROLEPLAYER)) return RolePlayer.of(infix, type);
+            else throw TypeDBException.of(ILLEGAL_ARGUMENT);
         }
 
         @Override

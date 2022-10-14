@@ -111,6 +111,11 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
+        public Value<VALUE> asValue() {
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(AttributeVertex.Value.class));
+        }
+
+        @Override
         public boolean isAttribute() {
             return true;
         }
@@ -347,6 +352,11 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
+        public Value<VALUE> asValue() {
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(AttributeVertex.Value.class));
+        }
+
+        @Override
         public void setModified() {
             if (!isModified) {
                 isModified = true;
@@ -571,9 +581,14 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
+        public Value<VALUE> asValue() {
+            return this;
+        }
+
+        @Override
         public int compareTo(Vertex<?, ?> other) {
             if (other.isThing() && other.asThing().isAttribute() && other.asThing().asAttribute().isValue()) {
-                Value<?> value = other.asThing().asAttribute().toValue();
+                Value<?> value = other.asThing().asAttribute().asValue();
                 int comp = compareValue(value);
                 return comp == 0 ? type().compareTo(value.type()) : comp;
             } else return super.compareTo(other);

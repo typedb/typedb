@@ -153,7 +153,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             if (procedureVertex.id().isRetrievable() && modifiers.filter().variables().contains(procedureVertex.id().asVariable().asRetrievable())) {
                 Vertex<?, ?> vertex = vertexTraversers.get(procedureVertex).vertex();
                 if (vertex.isThing() && vertex.asThing().isAttribute() && vertex.asThing().asAttribute().isValue()) {
-                    answer.put(procedureVertex.id().asVariable().asRetrievable(), vertex.asThing().asAttribute().toValue().toAttribute());
+                    answer.put(procedureVertex.id().asVariable().asRetrievable(), vertex.asThing().asAttribute().asValue().toAttribute());
                 } else {
                     answer.put(procedureVertex.id().asVariable().asRetrievable(), vertex);
                 }

@@ -54,6 +54,8 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
 
     AttributeVertex.Value<VALUE> toValue();
 
+    AttributeVertex.Value<VALUE> asValue();
+
     boolean isBoolean();
 
     boolean isLong();
@@ -90,6 +92,9 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
 
     }
 
+    /**
+     * An vertex wrapper that sorts based on its value, then type -- as opposed to type, then value.
+     */
     interface Value<VALUE> extends AttributeVertex<VALUE> {
 
         AttributeVertex<VALUE> toAttribute();
