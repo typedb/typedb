@@ -33,8 +33,8 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.test.integration.util.Util;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
 import org.junit.Before;
@@ -53,7 +53,7 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static junit.framework.TestCase.assertEquals;
 
-public class PlannerTest {
+public class HeuristicPlannerTest {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("resolver-manager-test");
     private static final Path logDir = dataDir.resolve("logs");
@@ -100,8 +100,8 @@ public class PlannerTest {
         Retrievable retrievable = new Retrievable(resolvedConjunction("{ $c($b); }", logicMgr));
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
-        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .computeResolvableOrdering(resolvables, set()).plan();
+        List<Resolvable<?>> plan = new GreedyCostSearch.HeuristicPlannerEmulator(transaction.traversal(), transaction.concepts(), transaction.logic())
+                .computePlan(resolvables, set()).plan();
         assertEquals(list(concludable, retrievable), plan);
     }
 
@@ -112,8 +112,8 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, retrievable);
 
-        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .computeResolvableOrdering(resolvables, set()).plan();
+        List<Resolvable<?>> plan = new GreedyCostSearch.HeuristicPlannerEmulator(transaction.traversal(), transaction.concepts(), transaction.logic())
+                .computePlan(resolvables, set()).plan();
         assertEquals(list(retrievable, concludable), plan);
     }
 
@@ -124,8 +124,8 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
 
-        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .computeResolvableOrdering(resolvables, set()).plan();
+        List<Resolvable<?>> plan = new GreedyCostSearch.HeuristicPlannerEmulator(transaction.traversal(), transaction.concepts(), transaction.logic())
+                .computePlan(resolvables, set()).plan();
         assertEquals(list(concludable, concludable2), plan);
     }
 
@@ -136,10 +136,10 @@ public class PlannerTest {
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
 
-        Optional<Identifier.Variable.Retrievable> varA = concludable.retrieves().stream().filter(v -> v.isRetrievable() && v.asRetrievable().isName() && v.asRetrievable().asName().name().equals("a")).findFirst();
+        Optional<Variable> varA = concludable.variables().stream().filter(v -> v.id().isName() && v.id().asName().name().equals("a")).findFirst();
         assert varA.isPresent();
-        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .computeResolvableOrdering(resolvables, set(varA.get())).plan();
+        List<Resolvable<?>> plan = new GreedyCostSearch.HeuristicPlannerEmulator(transaction.traversal(), transaction.concepts(), transaction.logic())
+                .computePlan(resolvables, set(varA.get())).plan();
         assertEquals(list(concludable, concludable2), plan);
     }
 
@@ -165,8 +165,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $e($c, $p2) isa employment; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(retrievable, retrievable2, concludable, concludable2);
-        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .computeResolvableOrdering(resolvables, set()).plan();
+        List<Resolvable<?>> plan = new GreedyCostSearch.HeuristicPlannerEmulator(transaction.traversal(), transaction.concepts(), transaction.logic())
+                .computePlan(resolvables, set()).plan();
 
         assertEquals(list(retrievable, concludable, retrievable2, concludable2), plan);
     }
@@ -177,8 +177,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b has $a; }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .computeResolvableOrdering(resolvables, set()).plan();
+        List<Resolvable<?>> plan = new GreedyCostSearch.HeuristicPlannerEmulator(transaction.traversal(), transaction.concepts(), transaction.logic())
+                .computePlan(resolvables, set()).plan();
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -190,8 +190,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $b($a); }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .computeResolvableOrdering(resolvables, set()).plan();
+        List<Resolvable<?>> plan = new GreedyCostSearch.HeuristicPlannerEmulator(transaction.traversal(), transaction.concepts(), transaction.logic())
+                .computePlan(resolvables, set()).plan();
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -203,8 +203,8 @@ public class PlannerTest {
         Concludable concludable2 = Concludable.create(resolvedConjunction("{ $c($d); }", logicMgr)).iterator().next();
 
         Set<Resolvable<?>> resolvables = set(concludable, concludable2);
-        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .computeResolvableOrdering(resolvables, set()).plan();
+        List<Resolvable<?>> plan = new GreedyCostSearch.HeuristicPlannerEmulator(transaction.traversal(), transaction.concepts(), transaction.logic())
+                .computePlan(resolvables, set()).plan();
 
         assertEquals(2, plan.size());
         assertEquals(set(concludable, concludable2), set(plan));
@@ -234,8 +234,8 @@ public class PlannerTest {
         resolvables.add(negated);
         resolvables.addAll(concludables);
 
-        List<Resolvable<?>> plan = ReasonerPlanner.create(null, conceptMgr, logicMgr)
-                .computeResolvableOrdering(resolvables, set()).plan();
+        List<Resolvable<?>> plan = new GreedyCostSearch.HeuristicPlannerEmulator(transaction.traversal(), transaction.concepts(), transaction.logic())
+                .computePlan(resolvables, set()).plan();
 
         assertEquals(plan.size(), 2);
         assertEquals(plan.get(1), negated);

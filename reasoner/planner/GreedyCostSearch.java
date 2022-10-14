@@ -17,19 +17,20 @@
  */
 package com.vaticle.typedb.core.reasoner.planner;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
-import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.pattern.constraint.Constraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
-import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.pattern.variable.Variable;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -40,54 +41,69 @@ public abstract class GreedyCostSearch extends ReasonerPlanner {
         super(traversalEng, conceptMgr, logicMgr);
     }
 
-    /* TODO:
-     * AnswerSize -> For each resolvable: Add the number of calls + the answers produced
-     * AnswersProduced? TraversalEngine tells us this based on constraints in the rule-body
-     * #calls? Product of the cardinality of each variable in the bounds (This number reduces as you evaluate a new resolvable which further constrains the variable - but min or less?)ssssssss
-     * Effect? Schedule stronger constraints first.
-     */
     @Override
-    Plan computeResolvableOrdering(Set<Resolvable<?>> resolvables, Set<Identifier.Variable.Retrievable> inputBounds) {
+    Plan computePlan(CallKey callKey) {
+        return computePlan(logicMgr.compile(callKey.conjunction), callKey.bounds);
+    }
 
-        Set<Identifier.Variable.Retrievable> bounds = new HashSet<>(inputBounds);
+    Plan computePlan(Set<Resolvable<?>> resolvables, Set<Variable> inputBounds) {
+        Set<Variable> bounds = new HashSet<>(inputBounds);
         Set<Resolvable<?>> remaining = new HashSet<>(resolvables);
         long cost = 0;
         List<Resolvable<?>> orderedResolvables = new ArrayList<>();
-        Map<Resolvable<?>, Set<Identifier.Variable.Retrievable>> dependencies = dependencies(resolvables);
-
+        Map<Resolvable<?>, Set<Variable>> dependencies = dependencies(resolvables);
+        boolean boundsExtended = false;
         while (!remaining.isEmpty()) {
-            Optional<Resolvable<?>> nextResolvableOpt = remaining.stream()
+            Pair<? extends Resolvable<?>, Long> nextResolvableCost = remaining.stream()
                     .filter(r -> dependenciesSatisfied(r, bounds, dependencies))
-                    .min(Comparator.comparing(r -> estimateCost(r, bounds)));
+                    .map(r -> new Pair<>(r, estimateCost(r, bounds)))
+                    .min(Comparator.comparing(Pair::second))
+                    .orElse(null);
 
-            if (nextResolvableOpt.isEmpty()) {
-                nextResolvableOpt = remaining.stream()
-                        .filter(r -> !dependenciesSatisfied(r, bounds, dependencies) && !r.isNegated())
-                        .min(Comparator.comparing(r -> estimateCost(r, bounds)));
+            // If the choice is disconnected, try extending bounds from IID/valueIdentity constraints.
+            if (!boundsExtended && (nextResolvableCost == null || nextResolvableCost.second() > 10)) {
+                boundsExtended = true;
+                iterate(remaining).filter(Resolvable::isRetrievable).flatMap(resolvable -> iterate(retrievedVariables(resolvable)))
+                        .flatMap(variable -> iterate(variable.constraints()))
+                        .filter(Constraint::isThing).map(Constraint::asThing)
+                        .filter(thingConstraint -> (thingConstraint.isIID() || (thingConstraint.isValue() && thingConstraint.asValue().isValueIdentity())))
+                        .map(ThingConstraint::owner)
+                        .forEachRemaining(bounds::add);
+                continue;
             }
-            assert nextResolvableOpt.isPresent();
-            Resolvable<?> nextResolvable = nextResolvableOpt.get();
-            cost += estimateCost(nextResolvable, bounds); // TODO: Eliminate double work
+
+            if (nextResolvableCost == null) {
+                nextResolvableCost = remaining.stream()
+                        .filter(r -> !dependenciesSatisfied(r, bounds, dependencies) && !r.isNegated())
+                        .map(r -> new Pair<>(r, estimateCost(r, bounds)))
+                        .min(Comparator.comparing(Pair::second))
+                        .orElse(null);
+            }
+            assert nextResolvableCost != null;
+            Resolvable<?> nextResolvable = nextResolvableCost.first();
+            cost += nextResolvableCost.second();
             orderedResolvables.add(nextResolvable);
             remaining.remove(nextResolvable);
-            bounds.addAll(nextResolvable.retrieves());
+            if (!nextResolvable.isNegated()) {
+                bounds.addAll(retrievedVariables(nextResolvable));
+            }
         }
-        assert resolvables.size() == orderedResolvables.size() && iterate(orderedResolvables).allMatch(r -> resolvables.contains(r));
+        assert resolvables.size() == orderedResolvables.size() && iterate(orderedResolvables).allMatch(resolvables::contains);
         return new Plan(orderedResolvables, cost);
     }
 
-    abstract long estimateCost(Resolvable<?> resolvable, Set<Identifier.Variable.Retrievable> bounds);
+    abstract long estimateCost(Resolvable<?> resolvable, Set<Variable> bounds);
 
-    public static class OldPlannerEmulator extends GreedyCostSearch {
+    public static class HeuristicPlannerEmulator extends GreedyCostSearch {
 
-        public OldPlannerEmulator(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
+        public HeuristicPlannerEmulator(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
             super(traversalEng, conceptMgr, logicMgr);
         }
 
         @Override
-        long estimateCost(Resolvable<?> r, Set<Identifier.Variable.Retrievable> bounds) {
+        long estimateCost(Resolvable<?> r, Set<Variable> bounds) {
             long cost = 0;
-            cost += r.retrieves().stream().anyMatch(v -> bounds.contains(v)) ? 0 : 10; // Connected:disconnected
+            cost += r.variables().stream().anyMatch(bounds::contains) ? 0 : 10; // Connected:disconnected
             if (r.isRetrievable()) {
                 cost += 1;
             } else if (r.isConcludable()) {

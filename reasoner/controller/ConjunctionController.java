@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -99,11 +98,10 @@ public abstract class ConjunctionController<
         });
     }
 
-    abstract FunctionalIterator<Concludable> concludablesTriggeringRules();
-
-    List<Resolvable<?>> plan(Set<Variable.Retrievable> boundVariables) {
-        List<Resolvable<?>> plan = registry().planner().plan(conjunction, boundVariables).plan();
-        assert resolvables.size() == plan.size() && plan.stream().allMatch(r -> resolvables.contains(r));
+    List<Resolvable<?>> getPlan(Set<Variable.Retrievable> bounds) {
+        Set<com.vaticle.typedb.core.pattern.variable.Variable> boundVariables = iterate(bounds).map(id -> conjunction.pattern().variable(id)).toSet();
+        List<Resolvable<?>> plan = registry().planner().getPlan(conjunction, boundVariables).plan();
+        assert resolvables.size() == plan.size() && resolvables.containsAll(plan);
         return plan;
     }
 

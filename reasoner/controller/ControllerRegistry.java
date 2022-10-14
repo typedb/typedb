@@ -39,7 +39,6 @@ import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
-import com.vaticle.typedb.core.reasoner.planner.GreedyCostSearch;
 import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -153,6 +152,7 @@ public class ControllerRegistry {
 
     public void createRootConjunction(ResolvableConjunction conjunction, Set<Variable.Retrievable> filter,
                                       boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
+        planner().plan(conjunction, new HashSet<>());
         Function<Driver<RootConjunctionController>, RootConjunctionController> actorFn = driver ->
                 new RootConjunctionController(driver, conjunction, filter, explain, controllerContext, reasonerConsumer);
         LOG.debug("Create Root Conjunction for: '{}'", conjunction);
@@ -161,6 +161,7 @@ public class ControllerRegistry {
 
     public void createRootDisjunction(ResolvableDisjunction disjunction, Set<Variable.Retrievable> filter,
                                       boolean explain, ReasonerConsumer<ConceptMap> reasonerConsumer) {
+        disjunction.conjunctions().forEach(conjunction -> planner().plan(conjunction, new HashSet<>()));
         Function<Driver<RootDisjunctionController>, RootDisjunctionController> actorFn =
                 driver -> new RootDisjunctionController(driver, disjunction, filter, explain, controllerContext, reasonerConsumer);
         LOG.debug("Create Root Disjunction for: '{}'", disjunction);
@@ -168,6 +169,11 @@ public class ControllerRegistry {
     }
 
     public void createExplainableRoot(Concludable concludable, ConceptMap bounds, ReasonerConsumer<Explanation> reasonerConsumer) {
+        Set<com.vaticle.typedb.core.pattern.variable.Variable> boundVariables = bounds.concepts().keySet().stream()
+                .map(id -> concludable.pattern().variable(id))
+                .filter(v -> v != null).collect(Collectors.toSet());
+        planner().planAllDependencies(concludable, boundVariables);
+
         Function<Driver<ConcludableController.Explain>, ConcludableController.Explain> actorFn =
                 driver -> new ConcludableController.Explain(driver, concludable, bounds, controllerContext, reasonerConsumer);
         LOG.debug("Create Explainable Root for: '{}'", concludable);

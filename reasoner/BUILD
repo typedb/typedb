@@ -68,6 +68,27 @@ native_java_libraries(
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-reasoner:{pom_version}"],
 )
 
+host_compatible_java_test(
+    name = "test-partial-order-reduction",
+    srcs = [
+        "planner/PartialOrderReductionTest.java",
+    ],
+    native_libraries_deps = [
+        "//reasoner:reasoner",
+        "//common:common",
+        "//logic:logic",
+        "//pattern:pattern",
+    ],
+    test_class = "com.vaticle.typedb.core.reasoner.planner.PartialOrderReductionTest",
+    deps = [
+        # Internal dependencies
+
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql-lang",
+    ],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*", "*/*/*", "*/*/*/*"]),

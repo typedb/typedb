@@ -90,9 +90,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-planner",
-    srcs = ["planner/PlannerTest.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.planner.PlannerTest",
+    name = "test-heuristic-planner",
+    srcs = ["planner/HeuristicPlannerTest.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.planner.HeuristicPlannerTest",
     native_libraries_deps = [
         # Internal dependencies
         "//database:database",
@@ -114,7 +114,7 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-answercountestimator",
+    name = "test-answer-count-estimator",
     srcs = ["planner/AnswerCountEstimatorTest.java"],
     test_class = "com.vaticle.typedb.core.reasoner.planner.AnswerCountEstimatorTest",
     native_libraries_deps = [
@@ -135,6 +135,58 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/pattern:pattern",
+    ],
+)
+
+host_compatible_java_test(
+    name = "test-recursive-por-planner",
+    srcs = ["planner/RecursivePorPlannerTest.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.planner.RecursivePorPlannerTest",
+    native_libraries_deps = [
+        # Internal dependencies
+        "//database:database",
+        "//:typedb",
+        "//common:common",
+        "//concept:concept",
+        "//pattern:pattern",
+        "//logic:logic",
+        "//reasoner:reasoner",
+         "//traversal:traversal",
+    ],
+    deps = [
+        "//test/integration/util",
+
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/pattern:pattern",
+    ],
+)
+
+
+host_compatible_java_test(
+    name = "test-reasoner-planner",
+    srcs = ["planner/ReasonerPlannerTest.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.planner.ReasonerPlannerTest",
+    native_libraries_deps = [
+        # Internal dependencies
+        "//database:database",
+        "//:typedb",
+        "//common:common",
+        "//concept:concept",
+        "//pattern:pattern",
+        "//logic:logic",
+        "//reasoner:reasoner",
+         "//traversal:traversal",
+    ],
+    deps = [
+        "//test/integration/util",
+
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/pattern:pattern",
+        "@vaticle_typeql//java/query",
     ],
 )
 
