@@ -54,6 +54,7 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNSUPPORTED_OPERATION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
@@ -327,7 +328,7 @@ public abstract class ProcedureVertex<
                                             a -> a.asAttribute().toValue(),
                                             v -> {
                                                 assert v.isValue() && pair.first().valueType().comparables().contains(v.valueType());
-                                                return typedTargetVertex(graphMgr, pair.first(), v, order.isAscending());
+                                                return attributeVertexTarget(graphMgr, pair.first(), v, order.isAscending());
                                             },
                                             order
                                     )
@@ -355,7 +356,7 @@ public abstract class ProcedureVertex<
                                                     v -> {
                                                         AttributeVertex.Value<?> value = v.key().asAttribute().toValue();
                                                         assert pair.first().valueType().comparables().contains(value.valueType());
-                                                        ThingVertex target = typedTargetVertex(graphMgr, pair.first(), value, order.isAscending());
+                                                        ThingVertex target = attributeVertexTarget(graphMgr, pair.first(), value, order.isAscending());
                                                         return new KeyValue<>(target, v.value());
                                                     },
                                                     order)
@@ -374,7 +375,7 @@ public abstract class ProcedureVertex<
             if (vertexIterator.order().isAscending()) {
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> largest = params.largestGTValue(id().asVariable());
                 if (largest.isPresent()) {
-                    ThingVertex target = typedTargetVertex(graphMgr, type, (Encoding.ValueType<Object>) largest.get().first().valueType(), largest.get().second().value(), true);
+                    ThingVertex target = attributeVertexTarget(graphMgr, type, largest.get().second(), true);
                     vertexIterator.forward(target);
                 }
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> smallest = params.smallestLTValue(id().asVariable());
@@ -384,7 +385,7 @@ public abstract class ProcedureVertex<
             } else {
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> smallest = params.smallestLTValue(id().asVariable());
                 if (smallest.isPresent()) {
-                    ThingVertex target = typedTargetVertex(graphMgr, type, (Encoding.ValueType<Object>) smallest.get().first().valueType(), smallest.get().second().value(), false);
+                    ThingVertex target = attributeVertexTarget(graphMgr, type, smallest.get().second(), false);
                     vertexIterator.forward(target);
                 }
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> largest = params.largestGTValue(id().asVariable());
@@ -404,7 +405,7 @@ public abstract class ProcedureVertex<
             if (edgeIterator.order().isAscending()) {
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> largest = params.largestGTValue(id().asVariable());
                 if (largest.isPresent()) {
-                    ThingVertex target = typedTargetVertex(graphMgr, toType, (Encoding.ValueType<Object>) largest.get().first().valueType(), largest.get().second().value(), true);
+                    ThingVertex target = attributeVertexTarget(graphMgr, toType, largest.get().second(), true);
                     edgeIterator.forward(KeyValue.of(target, null));
                 }
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> smallest = params.smallestLTValue(id().asVariable());
@@ -414,7 +415,7 @@ public abstract class ProcedureVertex<
             } else {
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> smallest = params.smallestLTValue(id().asVariable());
                 if (smallest.isPresent()) {
-                    ThingVertex target = typedTargetVertex(graphMgr, toType, (Encoding.ValueType<Object>) smallest.get().first().valueType(), smallest.get().second().value(), false);
+                    ThingVertex target = attributeVertexTarget(graphMgr, toType, smallest.get().second(), false);
                     edgeIterator.forward(KeyValue.of(target, null));
                 }
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> largest = params.largestGTValue(id().asVariable());
@@ -448,41 +449,6 @@ public abstract class ProcedureVertex<
             return props().types().contains(vertex.type().properLabel());
         }
 
-        private <VALUE> ThingVertex typedTargetVertex(
-                GraphManager graphMgr, TypeVertex type, AttributeVertex<VALUE> target, boolean roundDown
-        ) {
-            return typedTargetVertex(graphMgr, type, target.valueType(), target.value(), roundDown);
-        }
-
-        private <VALUE> ThingVertex typedTargetVertex(
-                GraphManager graphMgr, TypeVertex type, Encoding.ValueType<VALUE> targetType, VALUE targetValue, boolean roundDown
-        ) {
-            if (type.valueType().equals(BOOLEAN)) {
-                assert targetType.equals(BOOLEAN) && targetValue instanceof Boolean;
-                return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Boolean(type.iid(), (Boolean) targetValue));
-            } else if (type.valueType().equals(DATETIME)) {
-                assert targetType.equals(DATETIME) && targetValue instanceof LocalDateTime;
-                return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.DateTime(type.iid(), (LocalDateTime) targetValue));
-            } else if (type.valueType().equals(LONG)) {
-                if (targetType.equals(LONG)) {
-                    assert targetValue instanceof Long;
-                    return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(type.iid(), (Long) targetValue));
-                } else if (targetType.equals(DOUBLE)) {
-                    assert targetValue instanceof Double;
-                    long rounded = roundDown ? ((Double) targetValue).longValue() : (long) (((Double) targetValue) + 1);
-                    return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Long(type.iid(), rounded));
-                } else throw TypeDBException.of(ILLEGAL_STATE);
-            } else if (type.valueType().equals(DOUBLE)) {
-                if (targetType.equals(LONG)) {
-                    assert targetValue instanceof Long;
-                    return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(type.iid(), (Long) targetValue));
-                } else if (targetType.equals(DOUBLE)) {
-                    assert targetValue instanceof Double;
-                    return ThingVertexImpl.Target.of(graphMgr.data(), new VertexIID.Thing.Attribute.Double(type.iid(), (Double) targetValue));
-                } else throw TypeDBException.of(ILLEGAL_STATE);
-            } else throw TypeDBException.of(ILLEGAL_STATE);
-        }
-
         List<AttributeVertex<?>> attributesEqual(
                 GraphManager graphMgr, Traversal.Parameters params, Predicate.Value<?, ?> eq
         ) {
@@ -506,17 +472,101 @@ public abstract class ProcedureVertex<
             return attributes;
         }
 
-        private AttributeVertex<?> attributeVertex(
-                GraphManager graphMgr, TypeVertex type, Traversal.Parameters.Value<?> value
+        private <T> AttributeVertex<?> attributeVertex(
+                GraphManager graphMgr, TypeVertex type, Traversal.Parameters.Value<T> value
         ) {
             assert type.isAttributeType();
             Encoding.ValueType<?> valueType = type.valueType();
-            if (valueType == BOOLEAN) return graphMgr.data().getReadable(type, value.asBoolean().value());
-            else if (valueType == LONG) return graphMgr.data().getReadable(type, value.asLong().value());
-            else if (valueType == DOUBLE) return graphMgr.data().getReadable(type, value.asDouble().value());
-            else if (valueType == STRING) return graphMgr.data().getReadable(type, value.asString().value());
-            else if (valueType == DATETIME) return graphMgr.data().getReadable(type, value.asDateTime().value());
+            if (valueType == BOOLEAN) {
+                return graphMgr.data().getReadable(type, convertToBoolean(value.valueType(), value.value()));
+            } else if (valueType == LONG) {
+                return graphMgr.data().getReadable(type, convertToLong(value.valueType(), value.value(), true));
+            } else if (valueType == DOUBLE) {
+                return graphMgr.data().getReadable(type, convertToDouble(value.valueType(), value.value()));
+            } else if (valueType == STRING) {
+                return graphMgr.data().getReadable(type, convertToString(value.valueType(), value.value()));
+            } else if (valueType == DATETIME) {
+                return graphMgr.data().getReadable(type, convertToDateTime(value.valueType(), value.value()));
+            }
             throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        private <VALUE> ThingVertex attributeVertexTarget(
+                GraphManager graphMgr, TypeVertex type, AttributeVertex<VALUE> target, boolean roundDown
+        ) {
+            return attributeVertexTarget(graphMgr, type, target.valueType(), target.value(), roundDown);
+        }
+
+        private <VALUE> ThingVertex attributeVertexTarget(
+                GraphManager graphMgr, TypeVertex type, Traversal.Parameters.Value<VALUE> param, boolean roundDown
+        ) {
+            return attributeVertexTarget(graphMgr, type, param.valueType(), param.value(), roundDown);
+        }
+
+        private <VALUE> ThingVertex attributeVertexTarget(
+                GraphManager graphMgr, TypeVertex type, Encoding.ValueType<VALUE> sourceEncoding, VALUE sourceValue, boolean roundDown
+        ) {
+            if (type.valueType().equals(BOOLEAN)) {
+                return ThingVertexImpl.Target.of(
+                        graphMgr.data(), new VertexIID.Thing.Attribute.Boolean(type.iid(), convertToBoolean(sourceEncoding, sourceValue))
+                );
+            } else if (type.valueType().equals(DATETIME)) {
+                return ThingVertexImpl.Target.of(
+                        graphMgr.data(), new VertexIID.Thing.Attribute.DateTime(type.iid(), convertToDateTime(sourceEncoding, sourceValue))
+                );
+            } else if (type.valueType().equals(LONG)) {
+                return ThingVertexImpl.Target.of(
+                        graphMgr.data(), new VertexIID.Thing.Attribute.Long(type.iid(), convertToLong(sourceEncoding, sourceValue, roundDown))
+                );
+            } else if (type.valueType().equals(DOUBLE)) {
+                return ThingVertexImpl.Target.of(
+                        graphMgr.data(), new VertexIID.Thing.Attribute.Double(type.iid(), convertToDouble(sourceEncoding, sourceValue))
+                );
+            } else if (type.valueType().equals(STRING)) throw TypeDBException.of(UNSUPPORTED_OPERATION);
+            else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        private <SOURCE_VALUE> Boolean convertToBoolean(
+                Encoding.ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue
+        ) {
+            assert BOOLEAN.comparableTo(sourceEncoding);
+            if (sourceEncoding.equals(BOOLEAN)) return (Boolean) sourceValue;
+            else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        private <SOURCE_VALUE> Long convertToLong(
+                Encoding.ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue, boolean roundDown
+        ) {
+            assert LONG.comparableTo(sourceEncoding);
+            if (sourceEncoding.equals(LONG)) return (Long) sourceValue;
+            else if (sourceEncoding.equals(DOUBLE)) {
+                return roundDown ? ((Double) sourceValue).longValue() : (long) (((Double) sourceValue) + 1);
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        private <SOURCE_VALUE> Double convertToDouble(
+                Encoding.ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue
+        ) {
+            assert DOUBLE.comparableTo(sourceEncoding);
+            if (sourceEncoding.equals(LONG)) return ((Long) sourceValue).doubleValue();
+            else if (sourceEncoding.equals(DOUBLE)) return (Double) sourceValue;
+            else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        private <SOURCE_VALUE> String convertToString(
+                Encoding.ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue
+        ) {
+            assert STRING.comparableTo(sourceEncoding);
+            if (sourceEncoding.equals(STRING)) return (String) sourceValue;
+            else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        private <SOURCE_VALUE> LocalDateTime convertToDateTime(
+                Encoding.ValueType<SOURCE_VALUE> sourceEncoding, SOURCE_VALUE sourceValue
+        ) {
+            assert DATETIME.comparableTo(sourceEncoding);
+            if (sourceEncoding.equals(DATETIME)) return (LocalDateTime) sourceValue;
+            else throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
