@@ -99,17 +99,9 @@ public class AnswerCountEstimator {
         return incrementalEstimator.scaledEstimate(estimateableVariables);
     }
 
-//    public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variables, Set<Resolvable<?>> resolvables) {
-//        if (!conjunctionModels.containsKey(conjunction)) buildConjunctionModel(conjunction);
-//        Set<Variable> estimateableVariables = ReasonerPlanner.estimateableVariables(variables);
-//        assert conjunction.pattern().variables().containsAll(estimateableVariables);
-//        assert logicMgr.compile(conjunction).containsAll(resolvables);
-//        return conjunctionModels.get(conjunction).estimateAnswers(estimateableVariables, resolvables);
-//    }
-
     public IncrementalEstimator createIncrementalEstimator(ResolvableConjunction conjunction) {
         if (!conjunctionModels.containsKey(conjunction)) buildConjunctionModel(conjunction);
-        return new IncrementalEstimator(conjunctionModels.get(conjunction), this);
+        return new IncrementalEstimator(conjunctionModels.get(conjunction));
     }
 
     public static class IncrementalEstimator {
@@ -118,21 +110,17 @@ public class AnswerCountEstimator {
         private final Map<Variable, Double> bestUnary;
         private final Map<Variable, Set<LocalModel>> modelsWithVar;
 
-        private IncrementalEstimator(ConjunctionModel conjunctionModel, AnswerCountEstimator answerCountEstimator) {
+        private IncrementalEstimator(ConjunctionModel conjunctionModel) {
             this.conjunctionModel = conjunctionModel;
             this.modelScale = new HashMap<>();
             this.bestUnary = new HashMap<>();
             this.modelsWithVar = new HashMap<>();
-
         }
 
         public void extend(Resolvable<?> resolvable) {
-            System.out.println("");
-            System.out.println("Extending model for " + conjunctionModel.conjunctionSummary.conjunction() + " with resolvable " + resolvable);
             Map<Variable, Double> unaryUpdates = new HashMap<>();
             List<LocalModel> models = conjunctionModel.modelsForResolvable(resolvable);
             for (LocalModel model : models) {
-                System.out.println("Extending with : " + model);
                 addAndCollectUnaryUpdates(model, unaryUpdates);
             }
             propagate(unaryUpdates);
@@ -143,12 +131,8 @@ public class AnswerCountEstimator {
             Pair<Double, Optional<Variable>> scale = modelScale.computeIfAbsent(model, m -> new Pair<>(1.0, Optional.empty()));
             double bestScaler = scale.first();
             Variable bestScalingVar = scale.second().orElse(null);
-            System.out.print("Updating : " + model + ": " + bestScaler + "->");
             // Update the index
-            model.variables.forEach(v -> {
-                modelsWithVar.computeIfAbsent(v, v1 -> new HashSet<>());
-                modelsWithVar.get(v).add(model);
-            });
+            model.variables.forEach(v -> modelsWithVar.computeIfAbsent(v, v1 -> new HashSet<>()).add(model));
 
             // Find scaling factor
             for (Variable v : model.variables) {
@@ -179,29 +163,19 @@ public class AnswerCountEstimator {
                 assert bestScaler == 1;
                 modelScale.put(model, new Pair<>(bestScaler, Optional.empty()));
             }
-            System.out.println("->" + bestScaler);
         }
 
         private void propagate(Map<Variable, Double> unaryUpdates) {
             // Ideally, we'd just remove and add each model again till unaryUpdates is empty.
-            int dbg__iters = 0;
-            int maxIters = 2 * modelScale.size(); // TODO: Revise ; Consider pruning out small changes?
+            int maxIters = 2 * modelScale.size(); // TODO: Consider pruning out small changes
             while (!unaryUpdates.isEmpty() && maxIters > 0) {
                 Set<LocalModel> affectedModels = iterate(unaryUpdates.keySet()).flatMap(v -> iterate(modelsWithVar.get(v))).toSet();
                 assert iterate(unaryUpdates.entrySet()).allMatch(update -> update.getValue() < bestUnary.getOrDefault(update.getKey(), Double.MAX_VALUE));
-                System.out.println("Propagating-effects : ");
-                unaryUpdates.entrySet().forEach(entry -> System.out.println("\t" + entry.getKey() + ":" + entry.getValue()));
                 bestUnary.putAll(unaryUpdates);
                 unaryUpdates.clear();
-                iterate(affectedModels).forEachRemaining(model -> {
-                    addAndCollectUnaryUpdates(model, unaryUpdates);
-                });
+                affectedModels.forEach(model -> addAndCollectUnaryUpdates(model, unaryUpdates));
                 maxIters--;
-                dbg__iters++;
             }
-            System.out.println("Propagation complete in " + dbg__iters + " iterations. BestUnary");
-            bestUnary.entrySet().forEach(entry -> System.out.println("\t" + entry.getKey() + ":" + entry.getValue()));
-
         }
 
         public long scaledEstimate(Set<Variable> variables) {
@@ -498,7 +472,7 @@ public class AnswerCountEstimator {
 
             @Override
             public String toString() {
-                return "VariableModel[" + variables.stream().findAny().toString() + "=" + estimateAnswers(set()) + "]";
+                return "VariableModel[" + variables.stream().findAny() + "=" + estimateAnswers(set()) + "]";
             }
         }
     }
@@ -593,7 +567,7 @@ public class AnswerCountEstimator {
             long persistedAnswerCount = countPersistedThingsMatchingType(v.asThing());
             long inferredAnswerCount = 0;
             Concludable sourceConcludable;
-            if (concludable.isPresent() && v == concludable.get().generating().get()) {
+            if (concludable.isPresent() && v == concludable.get().generating().orElse(null)) {
                 sourceConcludable = concludable.get();
                 inferredAnswerCount = (sourceConcludable.isHas() || sourceConcludable.isAttribute()) ?
                         attributesCreatedByExplicitHas(sourceConcludable) :

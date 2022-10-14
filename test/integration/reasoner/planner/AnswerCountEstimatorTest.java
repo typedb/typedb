@@ -661,6 +661,7 @@ public class AnswerCountEstimatorTest {
     }
 
     // TODO: Add tests with two rules inferring same relation but w/ different number of role-players
+    // TODO: Add test with non-tree pattern to check propagation time.
 
     private static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
         Disjunction disjunction = resolvedDisjunction(query, logicMgr);
