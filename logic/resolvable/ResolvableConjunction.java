@@ -62,4 +62,9 @@ public class ResolvableConjunction {
                 iterate(negations()).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                         .flatMap(conj -> conj.allConcludables()));
     }
+
+    @Override
+    public String toString() {
+        return "ResolvableConjunction{" +  conjunctionPattern + '}';
+    }
 }
