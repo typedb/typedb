@@ -361,7 +361,6 @@ public class AnswerCountEstimator {
             }
         }
 
-
         private static class RelationModel extends LocalModel {
             private final RelationConstraint relation;
             private final Map<TypeVariable, Long> rolePlayerEstimates;
@@ -383,7 +382,6 @@ public class AnswerCountEstimator {
                     TypeVariable roleType = player.roleType().isPresent() ? player.roleType().get() : null;
                     this.rolePlayerTypes.put(player.player(), roleType);
                 });
-
             }
 
             @Override
@@ -523,7 +521,6 @@ public class AnswerCountEstimator {
 
             inferredRelationsEstimate = Math.min(inferredRelationsEstimate, relationUpperBound - persistedRelationEstimate);
 
-
             for (RelationConstraint.RolePlayer rp : rolePlayers) {
                 TypeVariable key = rp.roleType().orElse(null);
                 rolePlayerCounts.put(key, rolePlayerCounts.getOrDefault(key, 0) + 1);
@@ -546,10 +543,7 @@ public class AnswerCountEstimator {
                     boolean rulesConcludeOwner = iterate(hasConstraint.owner().inferredTypes()).flatMap(ownerType -> iterate(answerCountEstimator.logicMgr.rulesConcluding(ownerType))).hasNext();
                     if (rulesConcludeOwner) ownerEstimate = hasEdgeEstimate / attributeEstimate;
                 }
-
-
             }
-
             return new LocalModel.HasModel(hasConstraint, hasEdgeEstimate, ownerEstimate, attributeEstimate);
         }
 

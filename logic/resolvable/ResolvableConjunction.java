@@ -65,6 +65,6 @@ public class ResolvableConjunction {
 
     @Override
     public String toString() {
-        return "ResolvableConjunction{" +  conjunctionPattern + '}';
+        return conjunctionPattern.toString();
     }
 }
