@@ -131,7 +131,7 @@ public class TypeGraph {
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> playedRoleTypes;
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> relatedRoleTypes;
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> relationsOfRoleType;
-        private final ConcurrentMap<Encoding.ValueType, NavigableSet<TypeVertex>> valueAttributeTypes;
+        private final ConcurrentMap<Encoding.ValueType<?>, NavigableSet<TypeVertex>> valueAttributeTypes;
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> supertypes;
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> subtypes;
         private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
@@ -268,11 +268,11 @@ public class TypeGraph {
         return iterateSorted(getSubtypes(rootAttributeType()), order);
     }
 
-    public FunctionalIterator<TypeVertex> attributeTypes(Encoding.ValueType valueType) {
+    public FunctionalIterator<TypeVertex> attributeTypes(Encoding.ValueType<?> valueType) {
         return attributeTypes(valueType, ASC);
     }
 
-    public <ORDER extends Order> Forwardable<TypeVertex, ORDER> attributeTypes(Encoding.ValueType valueType, ORDER order) {
+    public <ORDER extends Order> Forwardable<TypeVertex, ORDER> attributeTypes(Encoding.ValueType<?> valueType, ORDER order) {
         return iterateSorted(cache.valueAttributeTypes.computeIfAbsent(valueType,
                 vt -> attributeTypes(order).filter(at -> at.valueType().equals(valueType)).toNavigableSet()), order);
     }

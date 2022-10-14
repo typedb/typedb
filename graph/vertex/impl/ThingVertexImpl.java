@@ -331,6 +331,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         }
     }
 
+    /**
+     * A Target vertex can emulate a Read or Write vertex for the purposes of seeking to a particular
+     * vertex that may or may not exist on disk or in transaction-local write-vertex buffers. However
+     * it should not be usable for anything else.
+     */
     public static class Target extends ThingVertexImpl implements ThingVertex.Write {
 
         private Target(ThingGraph graph, VertexIID.Thing iid) {
@@ -356,7 +361,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
-
         @Override
         public AttributeVertex.Write<?> asAttribute() {
             throw TypeDBException.of(ILLEGAL_OPERATION);
@@ -375,7 +379,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         @Override
         public void setModified() {
             throw TypeDBException.of(ILLEGAL_OPERATION);
-
         }
 
         @Override
