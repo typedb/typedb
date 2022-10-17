@@ -325,6 +325,11 @@ public abstract class ProcedureVertex<
                             iterate(vertexIters).map(pair -> pair.second().filter(a -> checkPredicates(a, params, set()))),
                             order
                     );
+                } else if (!forceValueSort) {
+                    return merge(
+                            iterate(vertexIters).map(pair -> applyPredicatesOnVertices(graphMgr, params, pair.first(), pair.second())),
+                            order
+                    );
                 } else {
                     return merge(iterate(vertexIters)
                             .map(pair -> applyPredicatesOnVertices(graphMgr, params, pair.first(), pair.second())
@@ -354,19 +359,10 @@ public abstract class ProcedureVertex<
                             order
                     );
                 } else {
-                    return merge(iterate(edgeIters)
-                                    .map(pair -> applyPredicatesOnEdges(graphMgr, params, pair.first(), pair.second())
-                                            .mapSorted(
-                                                    a -> new KeyValue<>(a.key().asAttribute().toValue(), a.value()),
-                                                    v -> {
-                                                        AttributeVertex.Value<?> value = v.key().asAttribute().toValue();
-                                                        assert pair.first().valueType().comparables().contains(value.valueType());
-                                                        ThingVertex target = attributeVertexTarget(graphMgr, pair.first(), value, order.isAscending());
-                                                        return new KeyValue<>(target, v.value());
-                                                    },
-                                                    order)
-                                    ),
-                            order);
+                    return merge(
+                            iterate(edgeIters).map(pair -> applyPredicatesOnEdges(graphMgr, params, pair.first(), pair.second())),
+                            order
+                    );
                 }
             }
         }
