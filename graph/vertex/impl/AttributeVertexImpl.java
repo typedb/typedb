@@ -106,13 +106,13 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public Value<VALUE> toValue() {
-            return new AttributeVertexImpl.Value<>(this);
+        public Value<VALUE> asValue() {
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(AttributeVertex.Value.class));
         }
 
         @Override
-        public Value<VALUE> asValue() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(AttributeVertex.Value.class));
+        public Value<VALUE> toValue() {
+            return new AttributeVertexImpl.Value<>(this);
         }
 
         @Override
@@ -576,12 +576,12 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public Value<VALUE> toValue() {
+        public Value<VALUE> asValue() {
             return this;
         }
 
         @Override
-        public Value<VALUE> asValue() {
+        public Value<VALUE> toValue() {
             return this;
         }
 

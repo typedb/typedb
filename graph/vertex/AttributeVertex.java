@@ -52,9 +52,9 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
 
     boolean isValue();
 
-    AttributeVertex.Value<VALUE> toValue();
-
     AttributeVertex.Value<VALUE> asValue();
+
+    AttributeVertex.Value<VALUE> toValue();
 
     boolean isBoolean();
 

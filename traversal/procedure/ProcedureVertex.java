@@ -189,7 +189,7 @@ public abstract class ProcedureVertex<
             Identifier.Variable id = id().asVariable();
             ThingVertex vertex = graphMgr.data().getReadable(parameters.getIID(id));
             if (vertex == null) return emptySorted(order);
-            return iterateAndFilter(vertex, parameters, order); // TODO: re-applies IID filter
+            return iterateAndFilter(vertex, parameters, order);
         }
 
         <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilterFromTypes(
@@ -348,6 +348,7 @@ public abstract class ProcedureVertex<
             if (props().predicates().isEmpty()) return merge(iterate(edgeIters).map(Pair::second), order);
             else {
                 if (iterate(edgeIters).anyMatch(pair -> pair.first().isAttributeType() && pair.first().asType().valueType().equals(STRING))) {
+                    // TODO: once strings are sortable by value, we can optimise the predicates
                     return merge(
                             iterate(edgeIters).map(pair -> pair.second().filter(a -> checkPredicates(a.key(), params, set()))),
                             order
