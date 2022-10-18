@@ -54,12 +54,14 @@ public class RecursivePorPlanner extends ReasonerPlanner {
     final AnswerCountEstimator answerCountEstimator;
     private final Map<CallMode, Set<OrderingChoice>> candidateOrderings;
     private final ConjunctionGraph conjunctionGraph;
+    private final Map<CallMode, Double> cyclicScalingFactors;
 
     public RecursivePorPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
         super(traversalEng, conceptMgr, logicMgr);
         this.conjunctionGraph = new ConjunctionGraph(logicMgr);
         this.answerCountEstimator = new AnswerCountEstimator(logicMgr, traversalEng.graph(), this.conjunctionGraph);
         this.candidateOrderings = new HashMap<>();
+        this.cyclicScalingFactors = new HashMap<>();
     }
 
     private static Set<Variable> consideredVariables(Resolvable<?> resolvable) {
@@ -79,20 +81,18 @@ public class RecursivePorPlanner extends ReasonerPlanner {
         Map<CallMode, OrderingChoice> chosenSummaries = new HashMap<>();
         Set<CallMode> pendingKeys = new HashSet<>();
         pendingKeys.add(callMode);
-        Pair<List<OrderingChoice>, Double> bestPlan = componentPlanSearch(callMode, pendingKeys, chosenSummaries);
+        ComponentPlan bestPlan = componentPlanSearch(callMode, pendingKeys, chosenSummaries);
 
-        long bestGlobalCost = Math.round(Math.ceil(bestPlan.second()));
-        for (OrderingChoice bestPlanForCall : bestPlan.first()) {
-            // Caching all should be fine - scaling factors aren't propagated so we have the best plan for a scaling-factor 1.
-            // So a call from a different location would receive the cost it would expect?
-            planCache.put(bestPlanForCall.callMode, new Plan(bestPlanForCall.ordering, bestGlobalCost));
+        for (OrderingChoice bestPlanForCall : bestPlan.orderingChoices.values()) {
+            planCache.put(bestPlanForCall.callMode, new Plan(bestPlanForCall.ordering, Math.round(Math.ceil(bestPlan.cost(bestPlanForCall.callMode, 1.0)))));
+            cyclicScalingFactors.put(bestPlanForCall.callMode, bestPlan.cyclicScalingFactorSum.get(bestPlanForCall.callMode));
         }
     }
 
-    private Pair<List<OrderingChoice>, Double> componentPlanSearch(CallMode root, Set<CallMode> pendingCallModes, Map<CallMode, OrderingChoice> choices) { // The value contains the scaling factors needed for the other conjunctions in the globalCost.
+    private ComponentPlan componentPlanSearch(CallMode root, Set<CallMode> pendingCallModes, Map<CallMode, OrderingChoice> choices) { // The value contains the scaling factors needed for the other conjunctions in the globalCost.
         // Pick a choice of ordering, expand dependencies, recurse ; backtrack over choices
         if (pendingCallModes.isEmpty()) { // All modes have an ordering chosen -> we have a complete candidate plan
-            return new Pair<>(new ArrayList<>(choices.values()), cyclePlanCost(root, choices));
+            return createComponentPlan(choices);
         }
 
         CallMode mode = pendingCallModes.stream().findAny().get();
@@ -100,7 +100,8 @@ public class RecursivePorPlanner extends ReasonerPlanner {
         assert !choices.containsKey(mode); // Should not have been added to pending
 
         ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(mode.conjunction);
-        Pair<List<OrderingChoice>, Double> bestPlan = null; // for the branch of choices committed to so far.
+        ComponentPlan bestPlan = null; // for the branch of choices committed to so far.
+        double bestPlanCost = Double.MAX_VALUE;
         for (OrderingChoice orderingChoice : candidateOrderings.get(mode)) {
             choices.put(mode, orderingChoice);
 
@@ -110,8 +111,13 @@ public class RecursivePorPlanner extends ReasonerPlanner {
                 triggeredCalls.addAll(triggeredCalls(concludableBounds.first(), concludableBounds.second(), Optional.of(conjunctionNode.cyclicDependencies(concludableBounds.first()))));
             });
             iterate(triggeredCalls).filter(call -> !choices.containsKey(call)).forEachRemaining(nextPendingKeys::add);
-            Pair<List<OrderingChoice>, Double> newPlan = componentPlanSearch(root, nextPendingKeys, choices);
-            bestPlan = (bestPlan == null || newPlan.second() < bestPlan.second()) ? newPlan : bestPlan;
+            ComponentPlan newPlan = componentPlanSearch(root, nextPendingKeys, choices);
+
+            double newPlanCost = newPlan.cost(root, 1.0);
+            if (bestPlan == null || newPlanCost < bestPlanCost) {
+                bestPlan = newPlan;
+                bestPlanCost = newPlanCost;
+            }
 
             choices.remove(mode);
         }
@@ -185,7 +191,7 @@ public class RecursivePorPlanner extends ReasonerPlanner {
             double allPossibleBounds = thisResolvableOnlyEstimator.answerEstimate(restrictedResolvableBounds);
             double boundsFromPrefix = estimator.answerEstimate(restrictedResolvableBounds);
             double scalingFactor = Math.min(1, boundsFromPrefix/allPossibleBounds);
-            acyclicCost += scalingFactor * acyclicCost(conjunctionNode, resolvable, resolvableBounds);
+            acyclicCost += scaledAcyclicCost(scalingFactor, conjunctionNode, resolvable, resolvableBounds);
             if (resolvable.isConcludable() && conjunctionNode.cyclicConcludables().contains(resolvable.asConcludable())) {
                 scalingFactors.put(resolvable.asConcludable(), scalingFactor);
                 cyclicConcludableBounds.add(new Pair<>(resolvable.asConcludable(), resolvableBounds));
@@ -208,26 +214,28 @@ public class RecursivePorPlanner extends ReasonerPlanner {
         return estimator.answerEstimate(consideredVariables(resolvable));
     }
 
-    private double acyclicCost(ConjunctionNode conjunctionNode, Resolvable<?> resolvable, Set<Variable> resolvableBounds) {
+    private double scaledAcyclicCost(double scalingFactor, ConjunctionNode conjunctionNode, Resolvable<?> resolvable, Set<Variable> resolvableBounds) {
         double cost = 0.0;
         if (resolvable.isRetrievable()) {
-            cost += retrievalCost(conjunctionNode.conjunction(), resolvable, resolvableBounds);
+            cost += scalingFactor * retrievalCost(conjunctionNode.conjunction(), resolvable, resolvableBounds);
         } else if (resolvable.isConcludable()) {
-            cost += retrievalCost(conjunctionNode.conjunction(), resolvable, resolvableBounds);
+            cost += scalingFactor * retrievalCost(conjunctionNode.conjunction(), resolvable, resolvableBounds);
             Set<CallMode> acyclicCalls = triggeredCalls(resolvable.asConcludable(), resolvableBounds, Optional.of(conjunctionNode.acyclicDependencies(resolvable.asConcludable())));
-            cost += iterate(acyclicCalls).map(acylcicCall -> getPlan(acylcicCall).cost()).reduce(0L, Long::sum);    // Assumption: Decompose the global planning problems to SCCs
+            cost += iterate(acyclicCalls).map(acylcicCall -> scaledCallCost(scalingFactor, acylcicCall)).reduce(0.0, Double::sum);    // Assumption: Decompose the global planning problems to SCCs
         } else if (resolvable.isNegated()) {
             cost += iterate(resolvable.asNegated().disjunction().conjunctions())
-                    .map(conjunction -> getPlan(new CallMode(conjunction, resolvableBounds)).cost())
-                    .reduce(0L, Long::sum);
+                    .map(conjunction -> scaledCallCost(scalingFactor, new CallMode(conjunction, resolvableBounds)))
+                    .reduce(0.0, Double::sum);
         } else throw TypeDBException.of(ILLEGAL_STATE);
         return cost;
     }
 
-    private double cyclePlanCost(CallMode root, Map<CallMode, OrderingChoice> chosenSummaries) {
-        // Collect scaling factors and acyclic-costs
+    private double scaledCallCost(double scalingFactor, CallMode callMode) {
+        return getPlan(callMode).cost() * Math.min(1.0, scalingFactor + cyclicScalingFactors.get(callMode));
+    }
+
+    private ComponentPlan createComponentPlan(Map<CallMode, OrderingChoice> chosenSummaries) {
         Map<CallMode, Double> scalingFactorSum = new HashMap<>();
-        scalingFactorSum.put(root, 1.0); // root is unscaled
         for (OrderingChoice orderingChoice : chosenSummaries.values()) {
             ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(orderingChoice.callMode.conjunction);
             orderingChoice.cyclicConcludableBounds.forEach(concludableBounds -> {
@@ -238,13 +246,29 @@ public class RecursivePorPlanner extends ReasonerPlanner {
                         });
             });
         }
+        return new ComponentPlan(chosenSummaries, scalingFactorSum);
+    }
 
-        double cycleCost = 0L;
-        for (OrderingChoice orderingChoice : chosenSummaries.values()) {
-            cycleCost += orderingChoice.acyclicCost * scalingFactorSum.get(orderingChoice.callMode);
+
+    private static class ComponentPlan {
+        private final Map<CallMode, OrderingChoice> orderingChoices;
+        private final Map<CallMode, Double> cyclicScalingFactorSum;
+
+        private ComponentPlan(Map<CallMode, OrderingChoice> orderingChoices, Map<CallMode, Double> cyclicScalingFactorSum) {
+            this.orderingChoices = new HashMap<>(orderingChoices);
+            this.cyclicScalingFactorSum = new HashMap<>(cyclicScalingFactorSum);
+            this.orderingChoices.keySet().forEach(callMode -> this.cyclicScalingFactorSum.putIfAbsent(callMode, 0.0));
         }
 
-        return cycleCost;
+        private double cost(CallMode root, double rootScalingFactor) {
+            double cycleCost = 0L;
+            for (OrderingChoice orderingChoice : orderingChoices.values()) {
+                double scalingFactor = cyclicScalingFactorSum.get(orderingChoice.callMode) + ( orderingChoice.callMode.equals(root) ? rootScalingFactor : 0.0);
+                cycleCost += orderingChoice.acyclicCost * scalingFactor;
+            }
+
+            return cycleCost;
+        }
     }
 
     static class OrderingChoice {
