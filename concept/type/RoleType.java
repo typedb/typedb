@@ -44,6 +44,8 @@ public interface RoleType extends Type {
 
     Forwardable<? extends ThingType, Order.Asc> getPlayerTypes();
 
+    Forwardable<? extends ThingType, Order.Asc> getPlayerTypesExplicit();
+
     FunctionalIterator<? extends Relation> getRelationInstances();
 
     FunctionalIterator<? extends Relation> getRelationInstancesExplicit();

@@ -423,6 +423,13 @@ public class ResponseBuilder {
                                 players.stream().map(Type::protoType).collect(toList()))));
             }
 
+            public static TransactionProto.Transaction.ResPart getPlayerTypesExplicitResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> players) {
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayerTypesResPart(
+                        ConceptProto.RoleType.GetPlayerTypes.ResPart.newBuilder().addAllThingTypes(
+                                players.stream().map(Type::protoType).collect(toList()))));
+            }
+
             public static TransactionProto.Transaction.ResPart getRelationInstancesResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Relation> relations) {
                 return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetRelationInstancesResPart(

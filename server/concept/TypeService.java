@@ -27,28 +27,22 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
-import com.vaticle.typedb.core.concept.type.Type;
+import com.vaticle.typedb.core.concept.type.*;
 import com.vaticle.typedb.core.server.TransactionService;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.TransactionProto.Transaction;
+
+import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
+
 import static com.vaticle.typedb.common.util.Objects.className;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_FIELD;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.*;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_SUPERTYPE_ENCODING;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.RequestReader.valueType;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getOwnersExplicitResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getOwnersResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getRegexRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.getRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.putRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.setRegexRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.AttributeType.*;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.EntityType.createRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.createRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.getRelatesExplicitResPart;
@@ -57,35 +51,9 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.Relatio
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.getRelatesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.setRelatesRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RelationType.unsetRelatesRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayerInstancesExplicitResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayerInstancesResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getPlayerTypesResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getRelationInstancesExplicitResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getRelationInstancesResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.getRelationTypesResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesExplicitResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getInstancesResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsExplicitResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsOverriddenRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getOwnsResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysExplicitResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysOverriddenRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getPlaysResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.getSyntaxRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setAbstractRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setOwnsRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.setPlaysRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.unsetAbstractRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.unsetOwnsRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.unsetPlaysRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.deleteRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSubtypesExplicitResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSubtypesResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSupertypeRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSupertypesResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.isAbstractRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.setLabelRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.setSupertypeRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.RoleType.*;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.ThingType.*;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.*;
 import static com.vaticle.typedb.protocol.ConceptProto.RelationType.SetRelates.Req.OverriddenCase.OVERRIDDEN_LABEL;
 import static java.time.Instant.ofEpochMilli;
 import static java.time.ZoneOffset.UTC;
@@ -138,6 +106,9 @@ public class TypeService {
                 return;
             case ROLE_TYPE_GET_PLAYER_TYPES_REQ:
                 getPlayerTypes(type.asRoleType(), reqID);
+                return;
+            case ROLE_TYPE_GET_PLAYER_TYPES_EXPLICIT_REQ:
+                getPlayerTypesExplicit(type.asRoleType(), reqID);
                 return;
             case ROLE_TYPE_GET_RELATION_INSTANCES_REQ:
                 getRelationInstances(type.asRoleType(), reqID);
@@ -301,28 +272,23 @@ public class TypeService {
     }
 
     private void getSupertypes(Type type, UUID reqID) {
-        transactionSvc.stream(type.getSupertypes(), reqID,
-                              types -> getSupertypesResPart(reqID, types));
+        transactionSvc.stream(type.getSupertypes(), reqID, types -> getSupertypesResPart(reqID, types));
     }
 
     private void getSubtypes(Type type, UUID reqID) {
-        transactionSvc.stream(type.getSubtypes(), reqID,
-                              types -> getSubtypesResPart(reqID, types));
+        transactionSvc.stream(type.getSubtypes(), reqID, types -> getSubtypesResPart(reqID, types));
     }
 
     private void getSubtypesExplicit(Type type, UUID reqID) {
-        transactionSvc.stream(type.getSubtypesExplicit(), reqID,
-                              types -> getSubtypesExplicitResPart(reqID, types));
+        transactionSvc.stream(type.getSubtypesExplicit(), reqID, types -> getSubtypesExplicitResPart(reqID, types));
     }
 
     private void getInstances(ThingType thingType, UUID reqID) {
-        transactionSvc.stream(thingType.getInstances(), reqID,
-                              things -> getInstancesResPart(reqID, things));
+        transactionSvc.stream(thingType.getInstances(), reqID, things -> getInstancesResPart(reqID, things));
     }
 
     private void getInstancesExplicit(ThingType thingType, UUID reqID) {
-        transactionSvc.stream(thingType.getInstancesExplicit(), reqID,
-                              things -> getInstancesExplicitResPart(reqID, things));
+        transactionSvc.stream(thingType.getInstancesExplicit(), reqID, things -> getInstancesExplicitResPart(reqID, things));
     }
 
     private void getOwns(ThingType thingType, ConceptProto.ThingType.GetOwns.Req getOwnsReq, UUID reqID) {
@@ -407,13 +373,14 @@ public class TypeService {
     }
 
     private void getOwners(AttributeType attributeType, boolean onlyKey, UUID reqID) {
-        transactionSvc.stream(attributeType.getOwners(onlyKey), reqID,
-                              owners -> getOwnersResPart(reqID, owners));
+        transactionSvc.stream(attributeType.getOwners(onlyKey), reqID, owners -> getOwnersResPart(reqID, owners));
     }
 
     private void getOwnersExplicit(AttributeType attributeType, boolean onlyKey, UUID reqID) {
-        transactionSvc.stream(attributeType.getOwnersExplicit(onlyKey), reqID,
-                              owners -> getOwnersExplicitResPart(reqID, owners));
+        transactionSvc.stream(
+                attributeType.getOwnersExplicit(onlyKey), reqID,
+                owners -> getOwnersExplicitResPart(reqID, owners)
+        );
     }
 
     private void put(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, UUID reqID) {
@@ -487,8 +454,10 @@ public class TypeService {
     }
 
     private void getRelatesExplicit(RelationType relationType, UUID reqID) {
-        transactionSvc.stream(relationType.getRelatesExplicit(), reqID,
-                              roleTypes -> getRelatesExplicitResPart(reqID, roleTypes));
+        transactionSvc.stream(
+                relationType.getRelatesExplicit(), reqID,
+                roleTypes -> getRelatesExplicitResPart(reqID, roleTypes)
+        );
     }
 
     private void getRelatesForRoleLabel(RelationType relationType, String roleLabel, UUID reqID) {
@@ -516,32 +485,49 @@ public class TypeService {
     }
 
     private void getRelationTypes(RoleType roleType, UUID reqID) {
-        transactionSvc.stream(roleType.getRelationTypes(), reqID,
-                              relationTypes -> getRelationTypesResPart(reqID, relationTypes));
+        transactionSvc.stream(
+                roleType.getRelationTypes(), reqID,
+                relationTypes -> getRelationTypesResPart(reqID, relationTypes)
+        );
     }
 
     private void getPlayerTypes(RoleType roleType, UUID reqID) {
         transactionSvc.stream(roleType.getPlayerTypes(), reqID, types -> getPlayerTypesResPart(reqID, types));
     }
 
+    private void getPlayerTypesExplicit(RoleType roleType, UUID reqID) {
+        transactionSvc.stream(
+                roleType.getPlayerTypesExplicit(), reqID,
+                types -> getPlayerTypesExplicitResPart(reqID, types)
+        );
+    }
+
     private void getRelationInstances(RoleType roleType, UUID reqID) {
-        transactionSvc.stream(roleType.getRelationInstances(), reqID,
-                              relations -> getRelationInstancesResPart(reqID, relations));
+        transactionSvc.stream(
+                roleType.getRelationInstances(), reqID,
+                relations -> getRelationInstancesResPart(reqID, relations)
+        );
     }
 
     private void getRelationInstancesExplicit(RoleType roleType, UUID reqID) {
-        transactionSvc.stream(roleType.getRelationInstancesExplicit(), reqID,
-                              relations -> getRelationInstancesExplicitResPart(reqID, relations));
+        transactionSvc.stream(
+                roleType.getRelationInstancesExplicit(), reqID,
+                relations -> getRelationInstancesExplicitResPart(reqID, relations)
+        );
     }
 
     private void getPlayerInstances(RoleType roleType, UUID reqID) {
-        transactionSvc.stream(roleType.getPlayerInstances(), reqID,
-                              players -> getPlayerInstancesResPart(reqID, players));
+        transactionSvc.stream(
+                roleType.getPlayerInstances(), reqID,
+                players -> getPlayerInstancesResPart(reqID, players)
+        );
     }
 
     private void getPlayerInstancesExplicit(RoleType roleType, UUID reqID) {
-        transactionSvc.stream(roleType.getPlayerInstancesExplicit(), reqID,
-                              players -> getPlayerInstancesExplicitResPart(reqID, players));
+        transactionSvc.stream(
+                roleType.getPlayerInstancesExplicit(), reqID,
+                players -> getPlayerInstancesExplicitResPart(reqID, players)
+        );
     }
 
     private void create(EntityType entityType, UUID reqID) {
