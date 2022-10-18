@@ -65,9 +65,9 @@ public class ReasonerPlannerTest {
         transaction.query().define(TypeQL.parseQuery("define " +
                 "nid sub attribute, value long;\n" +
                 "node sub entity, owns nid @key,\n" +
-                "   plays edge:from, plays edge:to,\n" +
+                "   plays edge:from, plays edge:to, plays edge:through,\n" +
                 "   plays path:from, plays path:to;\n" +
-                "edge sub relation, relates from, relates to;\n" +
+                "edge sub relation, relates from, relates to, relates through;\n" +
                 "path sub relation, relates from, relates to;\n" +
                 "\n" +
                 "rule path-base:\n" +
@@ -82,33 +82,35 @@ public class ReasonerPlannerTest {
         session = databaseMgr.session(database, Arguments.Session.Type.DATA);
         transaction = session.transaction(Arguments.Transaction.Type.WRITE);
         transaction.query().insert(TypeQL.parseQuery("insert " +
+                "$n1 isa node, has nid 1;" +
                 "$n2 isa node, has nid 2;" +
+                "   (from: $n2, to: $n1, through: $n2) isa edge;" +
                 "$n3 isa node, has nid 3;" +
+                "   (from: $n3, to: $n1, through: $n3) isa edge;" +
                 "$n4 isa node, has nid 4;" +
-                "   (from: $n4, to: $n2) isa edge;" +
+                "   (from: $n4, to: $n2, through: $n2) isa edge;" +
                 "$n5 isa node, has nid 5;" +
+                "   (from: $n5, to: $n1, through: $n5) isa edge;" +
                 "$n6 isa node, has nid 6;" +
-                "   (from: $n6, to: $n3) isa edge;" +
-                "   (from: $n6, to: $n2) isa edge;" +
+                "   (from: $n6, to: $n3, through: $n2) isa edge;" +
                 "$n7 isa node, has nid 7;" +
+                "   (from: $n7, to: $n1, through: $n7) isa edge;" +
                 "$n8 isa node, has nid 8;" +
-                "   (from: $n8, to: $n2) isa edge;" +
+                "   (from: $n8, to: $n4, through: $n2) isa edge;" +
                 "$n9 isa node, has nid 9;" +
-                "   (from: $n9, to: $n3) isa edge;" +
+                "   (from: $n9, to: $n3, through: $n3) isa edge;" +
                 "$n10 isa node, has nid 10;" +
-                "   (from: $n10, to: $n5) isa edge;" +
-                "   (from: $n10, to: $n2) isa edge;" +
+                "   (from: $n10, to: $n5, through: $n2) isa edge;" +
                 "$n11 isa node, has nid 11;" +
+                "   (from: $n11, to: $n1, through: $n11) isa edge;" +
                 "$n12 isa node, has nid 12;" +
-                "   (from: $n12, to: $n3) isa edge;" +
-                "   (from: $n12, to: $n2) isa edge;" +
+                "   (from: $n12, to: $n6, through: $n2) isa edge;" +
                 "$n13 isa node, has nid 13;" +
+                "   (from: $n13, to: $n1, through: $n13) isa edge;" +
                 "$n14 isa node, has nid 14;" +
-                "   (from: $n14, to: $n7) isa edge;" +
-                "   (from: $n14, to: $n2) isa edge;" +
+                "   (from: $n14, to: $n7, through: $n2) isa edge;" +
                 "$n15 isa node, has nid 15;" +
-                "   (from: $n15, to: $n5) isa edge;" +
-                "   (from: $n15, to: $n3) isa edge;"));
+                "   (from: $n15, to: $n5, through: $n3) isa edge;"));
         transaction.commit();
         session.close();
         session = databaseMgr.session(database, Arguments.Session.Type.DATA);
@@ -134,12 +136,24 @@ public class ReasonerPlannerTest {
 
     @Test
     public void test_answers_flew_4() {
-        CoreTransaction tx = reasoningTransaction();
-        List<ConceptMap> answers = runQuery(tx, "match $n4 isa node, has nid 4; (from: $n4, to: $nx) isa path;");
-        assertEquals(1L, answers.size()); // For now the retrieval cost is just the answer-count
+        long expectedMessagesForSingleHop = 12; // Update this if we introduce an overhead in the reasoner.
+        double acceptableRatio = 1.1;
 
-        long answersFlew4 = tx.context().perfCounter().get(Monitor.PERFCOUNTER_KEY_ANSWERSCREATED);
-        assertTrue(String.format("%d < %d", answersFlew4, 20), answersFlew4 < 20);
+        CoreTransaction baselineTx = reasoningTransaction();
+        List<ConceptMap> oneHopeOneAnswer = runQuery(baselineTx, "match $n2 isa node, has nid 2; (from: $n2, to: $nx) isa path;");
+        assertEquals(1L, oneHopeOneAnswer.size()); // For now the retrieval cost is just the answer-count
+
+        long messagesForSingleHop = baselineTx.context().perfCounter().get(Monitor.PERFCOUNTER_KEY_ANSWERSCREATED);
+        assertTrue("calibration failed. See comment", messagesForSingleHop == expectedMessagesForSingleHop);
+
+        {
+            CoreTransaction tx = reasoningTransaction();
+            List<ConceptMap> answers = runQuery(tx, "match $n2 isa node, has nid 2; $n1 isa node, has nid 1; (from: $n2, to: $n1) isa path;");
+            assertEquals(1L, answers.size()); // For now the retrieval cost is just the answer-count
+            long expectedHops = 1;
+            long messagesSent = tx.context().perfCounter().get(Monitor.PERFCOUNTER_KEY_ANSWERSCREATED);
+            assertTrue(String.format("%d < %.1f", messagesSent, 1.1 * expectedHops * messagesForSingleHop), messagesSent/(expectedHops * messagesForSingleHop) < acceptableRatio);
+        }
     }
 
     private static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
