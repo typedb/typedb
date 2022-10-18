@@ -126,20 +126,20 @@ public class AnswerCountEstimator {
             Map<Variable, Double> unaryUpdates = new HashMap<>();
             List<LocalModel> models = conjunctionModel.modelsForResolvable(resolvable);
             for (LocalModel model : models) {
-                addAndCollectUnaryUpdates(model, unaryUpdates);
+                includeModelAndCheckUpdates(model, unaryUpdates);
             }
             propagate(unaryUpdates);
         }
 
-        private void addAndCollectUnaryUpdates(LocalModel model, Map<Variable, Double> unaryUpdates) {
-            if (model.isIsa()) {
+        private void includeModelAndCheckUpdates(LocalModel model, Map<Variable, Double> unaryUpdates) {
+            if (model.variables.size() <= 1) {
                 Variable v = model.variables.stream().findFirst().get();
                 double newEstimate = model.estimateAnswers(model.variables);
                 if (!bestUnary.containsKey(v) || newEstimate < bestUnary.get(v)) {
-                    unaryUpdates.put(v, newEstimate);
+                    unaryUpdates.put(v, Math.min(unaryUpdates.getOrDefault(v, Double.MAX_VALUE), newEstimate));
                 }
                 modelsWithVar.computeIfAbsent(v, v1 -> new HashSet<>()); // Don't add to modelScale
-                return; // IsaModel's aren't scaled; We use bestVar as baseline anyway.
+                return; // Unary-constraints have nowhere to propagate bounds to. No use having them in.
             }
 
             Pair<Double, Optional<Variable>> scale = modelScale.computeIfAbsent(model, m -> new Pair<>(1.0, Optional.empty()));
@@ -153,13 +153,13 @@ public class AnswerCountEstimator {
                 double ans = (double) model.estimateAnswers(set(v));
                 if (bestUnary.containsKey(v)) {
                     if (ans < bestUnary.get(v)) {
-                        unaryUpdates.put(v, ans);
+                        unaryUpdates.put(v, Math.min(unaryUpdates.getOrDefault(v, Double.MAX_VALUE), ans));
                     } else if (bestUnary.get(v) / ans < bestScaler) {
                         bestScaler = bestUnary.get(v) / ans;
                         bestScalingVar = v;
                     }
                 } else {
-                    unaryUpdates.put(v, ans);
+                    unaryUpdates.put(v, Math.min(unaryUpdates.getOrDefault(v, Double.MAX_VALUE), ans));
                 }
             }
 
@@ -187,7 +187,7 @@ public class AnswerCountEstimator {
                 assert iterate(unaryUpdates.entrySet()).allMatch(update -> update.getValue() < bestUnary.getOrDefault(update.getKey(), Double.MAX_VALUE));
                 bestUnary.putAll(unaryUpdates);
                 unaryUpdates.clear();
-                affectedModels.forEach(model -> addAndCollectUnaryUpdates(model, unaryUpdates));
+                affectedModels.forEach(model -> includeModelAndCheckUpdates(model, unaryUpdates));
                 maxIters--;
             }
         }

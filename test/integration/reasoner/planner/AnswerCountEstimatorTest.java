@@ -660,6 +660,37 @@ public class AnswerCountEstimatorTest {
         }
     }
 
+    @Test
+    public void test_bounds_from_callee() {
+        initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
+        transaction.query().define(TypeQL.parseQuery("define " +
+                "nick-name sub attribute, value string;" +
+                "person owns nick-name;" +
+                "rule bound-name-in-rule: " +
+                "when { $x isa person, has name $n; $n \"Steven\"; } " +
+                "then { $x has nick-name \"Steve\"; };"));
+        transaction.commit();
+        session.close();
+
+        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+        AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph(), new ConjunctionSummarizer(transaction.logic()));
+        {
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has nick-name $n; }", transaction.logic()));
+
+            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
+            assertEquals(1L, answers);
+
+            long answers1 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p")));
+            assertEquals(1L, answers1);
+        }
+        {
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has nick-name $n; (friendor: $p, friendee: $q) isa friendship; }", transaction.logic()));
+
+            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
+            assertEquals(1L, answers);
+        }
+    }
+
     // TODO: Add tests with two rules inferring same relation but w/ different number of role-players
     // TODO: Add test with non-tree pattern to check propagation time.
 
