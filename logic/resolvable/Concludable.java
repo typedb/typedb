@@ -87,6 +87,9 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         return retrievableIds;
     }
 
+    @Override
+    public Set<Variable> variables() { return pattern().variables(); }
+
     public boolean isConcludable() {
         return true;
     }

@@ -57,6 +57,9 @@ public class Retrievable extends Resolvable<Conjunction> {
     }
 
     @Override
+    public Set<Variable> variables() { return pattern().variables(); }
+
+    @Override
     public Retrievable asRetrievable() {
         return this;
     }

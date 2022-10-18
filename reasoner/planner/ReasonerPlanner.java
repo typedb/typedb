@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
@@ -53,6 +54,9 @@ public abstract class ReasonerPlanner {
         return new GreedyCostSearch.OldPlannerEmulator(traversalEng, conceptMgr, logicMgr);
     }
 
+    static Set<Variable> estimateableVariables(Set<Variable> variables) {
+        return iterate(variables).filter(Variable::isThing).toSet();
+    }
     public Plan plan(ResolvableConjunction conjunction, Set<Identifier.Variable.Retrievable> bounds) {
         return planCache.get(new Pair<>(conjunction, bounds), cbPair -> computeResolvableOrdering(logicMgr.compile(cbPair.first()), cbPair.second()));
     }
