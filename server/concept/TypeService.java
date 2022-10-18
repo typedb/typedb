@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
-import com.vaticle.typedb.core.concept.type.*;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.server.TransactionService;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.TransactionProto.Transaction;
