@@ -118,6 +118,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Forwardable<ThingTypeImpl, Order.Asc> getPlayerTypes() {
+        return iterateSorted(graphMgr.schema().playersOfRoleType(vertex), ASC)
+                .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), roleType -> roleType.vertex, ASC);
+    }
+
+    @Override
+    public Forwardable<ThingTypeImpl, Order.Asc> getPlayerTypesExplicit() {
         return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from()
                 .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
     }
