@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.logic.resolvable;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.Negation;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.HashSet;
@@ -53,6 +54,9 @@ public class Negated extends Resolvable<Disjunction> {
     public Set<Retrievable> retrieves() {
         return this.identifiers;
     }
+
+    @Override
+    public Set<Variable> variables() { return iterate(pattern().conjunctions()).flatMap(conj -> iterate(conj.variables())).toSet(); }
 
     @Override
     public boolean isNegated() {
