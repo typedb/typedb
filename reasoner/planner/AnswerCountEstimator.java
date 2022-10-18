@@ -112,54 +112,53 @@ public class AnswerCountEstimator {
     public static class IncrementalEstimator {
         private final ConjunctionModel conjunctionModel;
         private final Map<LocalModel, Pair<Double, Optional<Variable>>> modelScale;
-        private final Map<Variable, Double> bestUnary;
+        private final Map<Variable, Double> minVariableEstimate;
         private final Map<Variable, Set<LocalModel>> modelsWithVar;
 
         private IncrementalEstimator(ConjunctionModel conjunctionModel) {
             this.conjunctionModel = conjunctionModel;
             this.modelScale = new HashMap<>();
-            this.bestUnary = new HashMap<>();
+            this.minVariableEstimate = new HashMap<>();
             this.modelsWithVar = new HashMap<>();
         }
 
         public void extend(Resolvable<?> resolvable) {
-            Map<Variable, Double> unaryUpdates = new HashMap<>();
+            Map<Variable, Double> cascadingEffectsAccumulator = new HashMap<>();
             List<LocalModel> models = conjunctionModel.modelsForResolvable(resolvable);
-            for (LocalModel model : models) {
-                includeModelAndCheckUpdates(model, unaryUpdates);
-            }
-            propagate(unaryUpdates);
-        }
+            assert models.stream().allMatch(model -> model.variables.size() > 0);
 
-        private void includeModelAndCheckUpdates(LocalModel model, Map<Variable, Double> unaryUpdates) {
-            if (model.variables.size() <= 1) {
+            iterate(models).flatMap(model -> iterate(model.variables)).forEachRemaining(v -> modelsWithVar.computeIfAbsent(v, v1 -> new HashSet<>()));
+
+            iterate(models).filter(model -> model.variables.size() == 1).forEachRemaining(model -> {
                 Variable v = model.variables.stream().findFirst().get();
                 double newEstimate = model.estimateAnswers(model.variables);
-                if (!bestUnary.containsKey(v) || newEstimate < bestUnary.get(v)) {
-                    unaryUpdates.put(v, Math.min(unaryUpdates.getOrDefault(v, Double.MAX_VALUE), newEstimate));
+                if (newEstimate < minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
+                    cascadingEffectsAccumulator.merge(v, newEstimate, Math::min);
                 }
-                modelsWithVar.computeIfAbsent(v, v1 -> new HashSet<>()); // Don't add to modelScale
-                return; // Unary-constraints have nowhere to propagate bounds to. No use having them in.
-            }
+            });
 
-            Pair<Double, Optional<Variable>> scale = modelScale.computeIfAbsent(model, m -> new Pair<>(1.0, Optional.empty()));
+            iterate(models).filter(model -> model.variables.size() > 1).forEachRemaining(model -> {
+                model.variables.forEach(v -> modelsWithVar.get(v).add(model));
+                modelScale.put(model, new Pair<>(1.0, Optional.empty()));
+                evaluatePropagationEffectsOn(model, cascadingEffectsAccumulator);
+            });
+
+            propagate(cascadingEffectsAccumulator);
+        }
+
+        private void evaluatePropagationEffectsOn(LocalModel model, Map<Variable, Double> cascadingUpdateAccumulator) {
+            Pair<Double, Optional<Variable>> scale = modelScale.get(model);
             double bestScaler = scale.first();
             Variable bestScalingVar = scale.second().orElse(null);
-            // Update the index
-            model.variables.forEach(v -> modelsWithVar.computeIfAbsent(v, v1 -> new HashSet<>()).add(model));
 
             // Find scaling factor
             for (Variable v : model.variables) {
                 double ans = (double) model.estimateAnswers(set(v));
-                if (bestUnary.containsKey(v)) {
-                    if (ans < bestUnary.get(v)) {
-                        unaryUpdates.put(v, Math.min(unaryUpdates.getOrDefault(v, Double.MAX_VALUE), ans));
-                    } else if (bestUnary.get(v) / ans < bestScaler) {
-                        bestScaler = bestUnary.get(v) / ans;
-                        bestScalingVar = v;
-                    }
-                } else {
-                    unaryUpdates.put(v, Math.min(unaryUpdates.getOrDefault(v, Double.MAX_VALUE), ans));
+                if (minVariableEstimate.containsKey(v) && minVariableEstimate.get(v) / ans < bestScaler) {
+                    bestScaler = minVariableEstimate.get(v) / ans;
+                    bestScalingVar = v;
+                } else if (ans <  minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
+                    cascadingUpdateAccumulator.merge(v, ans, Math::min);
                 }
             }
 
@@ -168,26 +167,26 @@ public class AnswerCountEstimator {
                 modelScale.put(model, new Pair<>(bestScaler, Optional.of(bestScalingVar)));
                 for (Variable v : model.variables) {
                     if (v == bestScalingVar) continue;
-                    double newUnary = scaledEstimate(model, modelScale.get(model), set(v));
-                    if (newUnary < bestUnary.getOrDefault(v, Double.MAX_VALUE)) {
-                        unaryUpdates.put(v, Math.min(newUnary, unaryUpdates.getOrDefault(v, Double.MAX_VALUE)));
+                    double newEstimate = scaledEstimate(model, modelScale.get(model), set(v));
+                    if (newEstimate < minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
+                        cascadingUpdateAccumulator.merge(v, newEstimate, Math::min);
                     }
                 }
-            } else {
-                assert bestScaler == 1;
-                modelScale.put(model, new Pair<>(bestScaler, Optional.empty()));
             }
         }
 
-        private void propagate(Map<Variable, Double> unaryUpdates) {
+        private void propagate(Map<Variable, Double> minVarUpdates) {
             // Ideally, we'd just remove and add each model again till unaryUpdates is empty.
             int maxIters = Math.max(1, 2 * modelScale.size()); // TODO: Consider pruning out small changes
-            while (!unaryUpdates.isEmpty() && maxIters > 0) {
-                Set<LocalModel> affectedModels = iterate(unaryUpdates.keySet()).flatMap(v -> iterate(modelsWithVar.get(v))).toSet();
-                assert iterate(unaryUpdates.entrySet()).allMatch(update -> update.getValue() < bestUnary.getOrDefault(update.getKey(), Double.MAX_VALUE));
-                bestUnary.putAll(unaryUpdates);
-                unaryUpdates.clear();
-                affectedModels.forEach(model -> includeModelAndCheckUpdates(model, unaryUpdates));
+            Map<Variable, Double> updatesToApply = minVarUpdates;
+            while (!updatesToApply.isEmpty() && maxIters > 0) {
+                assert iterate(updatesToApply.entrySet()).allMatch(update -> update.getValue() < minVariableEstimate.getOrDefault(update.getKey(), Double.MAX_VALUE));
+                minVariableEstimate.putAll(updatesToApply);
+
+                Set<LocalModel> affectedModels = iterate(updatesToApply.keySet()).flatMap(v -> iterate(modelsWithVar.get(v))).toSet();
+                Map<Variable, Double> cascadingUpdateAccumulator = new HashMap<>();
+                affectedModels.forEach(model -> evaluatePropagationEffectsOn(model, cascadingUpdateAccumulator));
+                updatesToApply = cascadingUpdateAccumulator;
                 maxIters--;
             }
         }
@@ -198,7 +197,7 @@ public class AnswerCountEstimator {
                     .toList();
 
             Map<Variable, CoverElement> cover = new HashMap<>();
-            iterate(variables).forEachRemaining(v -> cover.put(v, new CoverElement(bestUnary.get(v))));
+            iterate(variables).forEachRemaining(v -> cover.put(v, new CoverElement(minVariableEstimate.get(v))));
 
             Map<LocalModel, Pair<Set<Variable>, Double>> scaledEstimates = new HashMap<>();
             relevantModels.forEach(model -> {
