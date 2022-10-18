@@ -38,7 +38,7 @@ import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.planner.ConjunctionSummarizer.ConjunctionSummary;
+import com.vaticle.typedb.core.reasoner.planner.ConjunctionGraph.ConjunctionNode;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.ArrayList;
@@ -59,14 +59,14 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public class AnswerCountEstimator {
     private final LogicManager logicMgr;
     private final ConjunctionModelFactory conjunctionModelFactory;
-    private final ConjunctionSummarizer conjunctionSummarizer;
+    private final ConjunctionGraph conjunctionGraph;
     private final Map<ResolvableConjunction, ConjunctionModel> conjunctionModels;
     private final Map<ResolvableConjunction, IncrementalEstimator> fullConjunctionEstimators;
 
-    public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph, ConjunctionSummarizer conjunctionSummarizer) {
+    public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph, ConjunctionGraph conjunctionGraph) {
         this.logicMgr = logicMgr;
         this.conjunctionModelFactory = new ConjunctionModelFactory(new LocalModelFactory(this, graph));
-        this.conjunctionSummarizer = conjunctionSummarizer;
+        this.conjunctionGraph = conjunctionGraph;
         this.conjunctionModels = new HashMap<>();
         this.fullConjunctionEstimators = new HashMap<>();
     }
@@ -74,20 +74,20 @@ public class AnswerCountEstimator {
     public void buildConjunctionModel(ResolvableConjunction conjunction) {
         if (!conjunctionModels.containsKey(conjunction)) {
             // Acyclic estimates
-            ConjunctionSummary conjunctionSummary = conjunctionSummarizer.conjunctionSummary(conjunction);
-            iterate(conjunctionSummary.negateds()).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+            ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(conjunction);
+            iterate(conjunctionNode.negateds()).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                     .forEachRemaining(this::buildConjunctionModel);
-            iterate(conjunctionSummary.acyclicConcludables()).flatMap(concludable -> iterate(conjunctionSummarizer.dependencies(concludable)))
+            iterate(conjunctionNode.acyclicConcludables()).flatMap(concludable -> iterate(conjunctionGraph.dependencies(concludable)))
                     .forEachRemaining(this::buildConjunctionModel);
             // Don't recurse into acyclic dependencies of cyclic concludables. That overconstrains the disjunction b/w acyclic & cyclic.
             // TODO: ^ Does it though?
-            AnswerCountEstimator.ConjunctionModel acyclicModel = conjunctionModelFactory.buildAcyclicModel(conjunctionSummary);
+            AnswerCountEstimator.ConjunctionModel acyclicModel = conjunctionModelFactory.buildAcyclicModel(conjunctionNode);
             conjunctionModels.put(conjunction, acyclicModel);
 
             // cyclic calls to this model will answer based on the acyclic model.
-            iterate(conjunctionSummary.cyclicConcludables()).flatMap(concludable -> iterate(conjunctionSummarizer.dependencies(concludable)))
+            iterate(conjunctionNode.cyclicConcludables()).flatMap(concludable -> iterate(conjunctionGraph.dependencies(concludable)))
                     .forEachRemaining(this::buildConjunctionModel);
-            AnswerCountEstimator.ConjunctionModel cyclicModel = conjunctionModelFactory.buildCyclicModel(conjunctionSummary, acyclicModel);
+            AnswerCountEstimator.ConjunctionModel cyclicModel = conjunctionModelFactory.buildCyclicModel(conjunctionNode, acyclicModel);
             conjunctionModels.put(conjunction, cyclicModel);
         }
     }
@@ -96,7 +96,7 @@ public class AnswerCountEstimator {
         if (!conjunctionModels.containsKey(conjunction)) buildConjunctionModel(conjunction);
         if (!fullConjunctionEstimators.containsKey(conjunction)) {
             IncrementalEstimator incrementalEstimator = createIncrementalEstimator(conjunction);
-            conjunctionModels.get(conjunction).conjunctionSummary.resolvables().forEach(incrementalEstimator::extend);
+            conjunctionModels.get(conjunction).conjunctionNode.resolvables().forEach(incrementalEstimator::extend);
             fullConjunctionEstimators.put(conjunction, incrementalEstimator);
         }
         IncrementalEstimator estimator = fullConjunctionEstimators.get(conjunction);
@@ -244,13 +244,13 @@ public class AnswerCountEstimator {
     }
 
     private static class ConjunctionModel {
-        private final ConjunctionSummary conjunctionSummary;
+        private final ConjunctionNode conjunctionNode;
         private final Map<Resolvable<?>, List<LocalModel>> constraintModels;
         private final boolean isCyclic;
 
-        private ConjunctionModel(ConjunctionSummary conjunctionSummary, Map<Resolvable<?>, List<LocalModel>> constraintModels,
+        private ConjunctionModel(ConjunctionNode conjunctionNode, Map<Resolvable<?>, List<LocalModel>> constraintModels,
                                  boolean isCyclic) {
-            this.conjunctionSummary = conjunctionSummary;
+            this.conjunctionNode = conjunctionNode;
             this.constraintModels = constraintModels;
             this.isCyclic = isCyclic;
         }
@@ -267,32 +267,32 @@ public class AnswerCountEstimator {
             this.localModelFactory = localModelFactory;
         }
 
-        private ConjunctionModel buildAcyclicModel(ConjunctionSummary conjunctionSummary) {
+        private ConjunctionModel buildAcyclicModel(ConjunctionNode conjunctionNode) {
             Map<Resolvable<?>, List<LocalModel>> models = new HashMap<>();
-            iterate(conjunctionSummary.acyclicConcludables())
+            iterate(conjunctionNode.acyclicConcludables())
                     .forEachRemaining(concludable -> models.put(concludable, buildModelsForConcludable(concludable)));
 
-            iterate(conjunctionSummary.retrievables())
+            iterate(conjunctionNode.retrievables())
                     .forEachRemaining(retrievable -> models.put(retrievable, buildModelsForRetrievable(retrievable)));
-            iterate(conjunctionSummary.negateds())
+            iterate(conjunctionNode.negateds())
                     .forEachRemaining(negated -> models.put(negated, buildModelsForNegated(negated)));
             // Should we recurse into the acyclic dependencies? Don't think so - Would over-constrain
-            iterate(conjunctionSummary.cyclicConcludables())
+            iterate(conjunctionNode.cyclicConcludables())
                     .forEachRemaining(concludable -> models.put(concludable, buildVariableModelsForConcludable(concludable)));
 
-            assert !iterate(conjunctionSummary.resolvables()).filter(resolvable -> !models.containsKey(resolvable)).hasNext();
-            return new ConjunctionModel(conjunctionSummary, models, false);
+            assert !iterate(conjunctionNode.resolvables()).filter(resolvable -> !models.containsKey(resolvable)).hasNext();
+            return new ConjunctionModel(conjunctionNode, models, false);
         }
 
-        private ConjunctionModel buildCyclicModel(ConjunctionSummary conjunctionSummary, ConjunctionModel acyclicModel) {
-            assert acyclicModel.conjunctionSummary == conjunctionSummary;
+        private ConjunctionModel buildCyclicModel(ConjunctionNode conjunctionNode, ConjunctionModel acyclicModel) {
+            assert acyclicModel.conjunctionNode == conjunctionNode;
             assert !acyclicModel.isCyclic;
             Map<Resolvable<?>, List<LocalModel>> models = new HashMap<>(acyclicModel.constraintModels);
-            iterate(conjunctionSummary.cyclicConcludables())
+            iterate(conjunctionNode.cyclicConcludables())
                     .forEachRemaining(concludable -> models.put(concludable, buildModelsForConcludable(concludable)));
 
-            assert !iterate(conjunctionSummary.resolvables()).filter(resolvable -> !models.containsKey(resolvable)).hasNext();
-            return new ConjunctionModel(conjunctionSummary, models, true);
+            assert !iterate(conjunctionNode.resolvables()).filter(resolvable -> !models.containsKey(resolvable)).hasNext();
+            return new ConjunctionModel(conjunctionNode, models, true);
         }
 
         private List<LocalModel> buildModelsForRetrievable(Retrievable retrievable) {

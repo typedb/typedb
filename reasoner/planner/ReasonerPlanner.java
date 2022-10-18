@@ -44,7 +44,7 @@ public abstract class ReasonerPlanner {
     final ConceptManager conceptMgr;
     final TraversalEngine traversalEng;
     final LogicManager logicMgr;
-    final CommonCache<CallKey, Plan> planCache;
+    final CommonCache<CallMode, Plan> planCache;
 
     public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
         this.traversalEng = traversalEng;
@@ -70,37 +70,37 @@ public abstract class ReasonerPlanner {
     }
 
     public void plan(ResolvableConjunction conjunction, Set<Variable> boundVariables) {
-        CallKey callKey = new CallKey(conjunction, estimateableVariables(boundVariables));
+        CallMode callMode = new CallMode(conjunction, estimateableVariables(boundVariables));
         // We can't use `planCache.get(Key, Func)` below because of the recursive-update error
-        if (planCache.getIfPresent(callKey) == null) {
+        if (planCache.getIfPresent(callMode) == null) {
             synchronized (this) {
-                if (planCache.getIfPresent(callKey) == null) {
-                    plan(callKey);
+                if (planCache.getIfPresent(callMode) == null) {
+                    plan(callMode);
                 }
             }
         }
     }
 
     public void planAllDependencies(Concludable concludable, Set<Variable> boundVariables) {
-        triggeredCalls(concludable, estimateableVariables(boundVariables), Optional.empty()).forEach(callKey -> plan(callKey.conjunction, callKey.bounds));
+        triggeredCalls(concludable, estimateableVariables(boundVariables), Optional.empty()).forEach(callMode -> plan(callMode.conjunction, callMode.bounds));
     }
 
     public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> boundVariables) {
-        return getPlan(new CallKey(conjunction, estimateableVariables(boundVariables)));
+        return getPlan(new CallMode(conjunction, estimateableVariables(boundVariables)));
     }
 
-    void plan(CallKey callKey) {
-        if (planCache.getIfPresent(callKey) == null) {
-            planCache.put(callKey, computePlan(callKey));
+    void plan(CallMode callMode) {
+        if (planCache.getIfPresent(callMode) == null) {
+            planCache.put(callMode, computePlan(callMode));
         }
     }
 
-    Plan getPlan(CallKey callKey) {
-        assert planCache.getIfPresent(callKey) != null;
-        return planCache.getIfPresent(callKey);
+    Plan getPlan(CallMode callMode) {
+        assert planCache.getIfPresent(callMode) != null;
+        return planCache.getIfPresent(callMode);
     }
 
-    abstract Plan computePlan(CallKey callKey);
+    abstract Plan computePlan(CallMode callMode);
 
     /**
      * Determine the resolvables that are dependent upon the generation of each variable
@@ -138,8 +138,8 @@ public abstract class ReasonerPlanner {
         return deps;
     }
 
-    public Set<ReasonerPlanner.CallKey> triggeredCalls(Concludable concludable, Set<Variable> concludableBounds, Optional<Set<ResolvableConjunction>> dependencyFilter) {
-        Set<ReasonerPlanner.CallKey> calls = new HashSet<>();
+    public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> concludableBounds, Optional<Set<ResolvableConjunction>> dependencyFilter) {
+        Set<CallMode> calls = new HashSet<>();
         for (Map.Entry<Rule, Set<Unifier>> entry : logicMgr.applicableRules(concludable).entrySet()) {
             ResolvableConjunction ruleConjunction = entry.getKey().condition().conjunction();
             if (dependencyFilter.isPresent() && !dependencyFilter.get().contains(ruleConjunction)) {
@@ -151,18 +151,18 @@ public abstract class ReasonerPlanner {
                 Set<Variable> ruleSideBounds = iterate(ruleSideIds)
                         .filter(id -> ruleConjunction.pattern().retrieves().contains(id)) // avoids constant has
                         .map(id -> ruleConjunction.pattern().variable(id)).toSet();
-                calls.add(new ReasonerPlanner.CallKey(ruleConjunction, ruleSideBounds));
+                calls.add(new CallMode(ruleConjunction, ruleSideBounds));
             }
         }
         return calls;
     }
 
-    static class CallKey {
+    static class CallMode {
         final ResolvableConjunction conjunction;
         final Set<Variable> bounds;
         private final int hash;
 
-        CallKey(ResolvableConjunction conjunction, Set<Variable> bounds) {
+        CallMode(ResolvableConjunction conjunction, Set<Variable> bounds) {
             this.conjunction = conjunction;
             this.bounds = bounds;
             this.hash = Objects.hash(conjunction, bounds);
@@ -177,7 +177,7 @@ public abstract class ReasonerPlanner {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            CallKey that = (CallKey) o;
+            CallMode that = (CallMode) o;
             return conjunction.equals(that.conjunction) &&
                     bounds.equals(that.bounds);
         }

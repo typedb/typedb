@@ -42,8 +42,8 @@ public abstract class GreedyCostSearch extends ReasonerPlanner {
     }
 
     @Override
-    Plan computePlan(CallKey callKey) {
-        return computePlan(logicMgr.compile(callKey.conjunction), callKey.bounds);
+    Plan computePlan(CallMode callMode) {
+        return computePlan(logicMgr.compile(callMode.conjunction), callMode.bounds);
     }
 
     Plan computePlan(Set<Resolvable<?>> resolvables, Set<Variable> inputBounds) {
