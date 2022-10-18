@@ -113,13 +113,13 @@ public class AnswerCountEstimator {
         private final ConjunctionModel conjunctionModel;
         private final Map<LocalModel, Pair<Double, Optional<Variable>>> modelScale;
         private final Map<Variable, Double> minVariableEstimate;
-        private final Map<Variable, Set<LocalModel>> modelsWithVar;
+        private final Map<Variable, Set<LocalModel>> affectedModels;
 
         private IncrementalEstimator(ConjunctionModel conjunctionModel) {
             this.conjunctionModel = conjunctionModel;
             this.modelScale = new HashMap<>();
             this.minVariableEstimate = new HashMap<>();
-            this.modelsWithVar = new HashMap<>();
+            this.affectedModels = new HashMap<>();
         }
 
         public void extend(Resolvable<?> resolvable) {
@@ -127,7 +127,7 @@ public class AnswerCountEstimator {
             List<LocalModel> models = conjunctionModel.modelsForResolvable(resolvable);
             assert models.stream().allMatch(model -> model.variables.size() > 0);
 
-            iterate(models).flatMap(model -> iterate(model.variables)).forEachRemaining(v -> modelsWithVar.computeIfAbsent(v, v1 -> new HashSet<>()));
+            iterate(models).flatMap(model -> iterate(model.variables)).forEachRemaining(v -> affectedModels.computeIfAbsent(v, v1 -> new HashSet<>()));
 
             iterate(models).filter(model -> model.variables.size() == 1).forEachRemaining(model -> {
                 Variable v = model.variables.stream().findFirst().get();
@@ -138,7 +138,7 @@ public class AnswerCountEstimator {
             });
 
             iterate(models).filter(model -> model.variables.size() > 1).forEachRemaining(model -> {
-                model.variables.forEach(v -> modelsWithVar.get(v).add(model));
+                model.variables.forEach(v -> affectedModels.get(v).add(model));
                 modelScale.put(model, new Pair<>(1.0, Optional.empty()));
                 evaluatePropagationEffectsOn(model, cascadingEffectsAccumulator);
             });
@@ -182,10 +182,9 @@ public class AnswerCountEstimator {
             while (!updatesToApply.isEmpty() && maxIters > 0) {
                 assert iterate(updatesToApply.entrySet()).allMatch(update -> update.getValue() < minVariableEstimate.getOrDefault(update.getKey(), Double.MAX_VALUE));
                 minVariableEstimate.putAll(updatesToApply);
-
-                Set<LocalModel> affectedModels = iterate(updatesToApply.keySet()).flatMap(v -> iterate(modelsWithVar.get(v))).toSet();
                 Map<Variable, Double> cascadingUpdateAccumulator = new HashMap<>();
-                affectedModels.forEach(model -> evaluatePropagationEffectsOn(model, cascadingUpdateAccumulator));
+                iterate(updatesToApply.keySet()).flatMap(v -> iterate(this.affectedModels.get(v))).distinct()
+                        .forEachRemaining(model -> evaluatePropagationEffectsOn(model, cascadingUpdateAccumulator));
                 updatesToApply = cascadingUpdateAccumulator;
                 maxIters--;
             }
@@ -229,8 +228,9 @@ public class AnswerCountEstimator {
         }
 
         private static long answerEstimateFromCover(Set<Variable> variables, Map<Variable, CoverElement> coverMap) {
-            Set<CoverElement> coverSet = iterate(variables).map(coverMap::get).toSet();
-            return Math.round(Math.ceil(iterate(coverSet).map(coverElement -> coverElement.estimate).reduce(1.0, (x, y) -> x * y)));
+            double estimate = iterate(variables).map(coverMap::get).distinct()
+                    .map(coverElement -> coverElement.estimate).reduce(1.0, (x, y) -> x * y);
+            return Math.round(Math.ceil(estimate));
         }
 
         private static class CoverElement {
