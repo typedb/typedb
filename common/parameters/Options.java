@@ -40,6 +40,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final long DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS = SECONDS.toMillis(10);
     public static final boolean DEFAULT_INFER = false;
     public static final boolean DEFAULT_TRACE_INFERENCE = false;
+    public static final boolean DEFAULT_PERF_COUNTERS = false;
     public static final boolean DEFAULT_EXPLAIN = false;
     public static final boolean DEFAULT_PARALLEL = true;
     public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
@@ -49,6 +50,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private PARENT parent;
     private Boolean infer = null;
     private Boolean traceInference = null;
+    private Boolean perfCounters = null;
     private Boolean explain = null;
     private Boolean parallel = null;
     private Integer prefetchSize = null;
@@ -89,6 +91,17 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public SELF traceInference(boolean traceInference) {
         this.traceInference = traceInference;
+        return getThis();
+    }
+
+    public boolean perfCounters() {
+        if (perfCounters != null) return perfCounters;
+        else if (parent != null) return parent.perfCounters();
+        else return DEFAULT_PERF_COUNTERS;
+    }
+
+    public SELF perfCounters(boolean perfCounters) {
+        this.perfCounters = perfCounters;
         return getThis();
     }
 

@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.common.util.PerfCounter;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
@@ -78,7 +79,7 @@ public class ControllerRegistry {
     private TypeDBException terminationCause;
 
     public ControllerRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                              LogicManager logicMgr, ReasonerPlanner reasonerPlanner, Context.Query context) {
+                              LogicManager logicMgr, ReasonerPlanner reasonerPlanner, PerfCounter perfCounter, Context.Query context) {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.reasonerPlanner = reasonerPlanner;
@@ -96,7 +97,7 @@ public class ControllerRegistry {
         }
         Tracer finalTracer = tracer;
         this.controllerContext = new AbstractController.Context(
-                executorService, this, Actor.driver(driver -> new Monitor(driver, finalTracer), executorService), tracer
+                executorService, this, Actor.driver(driver -> new Monitor(driver, finalTracer, perfCounter), executorService), tracer
         );
         this.materialisationController = Actor.driver(driver -> new MaterialisationController(
                 driver, controllerContext, traversalEngine(), conceptManager()), executorService
