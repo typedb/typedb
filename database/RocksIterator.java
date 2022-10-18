@@ -262,9 +262,8 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
         synchronized boolean seekToFirst() {
             assert state == State.OPENED;
             T lastKey = storage.getLastKey(prefix);
-            if (lastKey == null) {
-                return false;
-            } else {
+            if (lastKey == null) return false;
+            else {
                 this.internalRocksIterator.seek(lastKey.bytes().getBytes());
                 return true;
             }
