@@ -15,12 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-
 package com.vaticle.typedb.core.reasoner.planner;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.logic.LogicManager;
@@ -40,6 +38,7 @@ import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.reasoner.planner.ConjunctionSummarizer.ConjunctionSummary;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.ArrayList;
@@ -60,210 +59,204 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public class AnswerCountEstimator {
     private final LogicManager logicMgr;
     private final ConjunctionModelFactory conjunctionModelFactory;
-
+    private final ConjunctionSummarizer conjunctionSummarizer;
     private final Map<ResolvableConjunction, ConjunctionModel> conjunctionModels;
-    private final Map<ResolvableConjunction, Set<Concludable>> cyclicConcludables;
+    private final Map<ResolvableConjunction, IncrementalEstimator> fullConjunctionEstimators;
 
-    public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph) {
+    public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph, ConjunctionSummarizer conjunctionSummarizer) {
         this.logicMgr = logicMgr;
         this.conjunctionModelFactory = new ConjunctionModelFactory(new LocalModelFactory(this, graph));
+        this.conjunctionSummarizer = conjunctionSummarizer;
         this.conjunctionModels = new HashMap<>();
-        this.cyclicConcludables = new HashMap<>();
+        this.fullConjunctionEstimators = new HashMap<>();
     }
 
-    public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variables) {
-        return estimateAnswers(conjunction, variables, logicMgr.compile(conjunction));
-    }
-
-    public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variables, Set<Resolvable<?>> resolvables) {
-        if (!conjunctionModels.containsKey(conjunction)) registerAndBuildModel(conjunction);
-        assert conjunction.pattern().variables().containsAll(variables);
-        assert logicMgr.compile(conjunction).containsAll(resolvables);
-        return conjunctionModels.get(conjunction).estimateAnswers(variables, resolvables);
-    }
-
-    private void registerAndBuildModel(ResolvableConjunction conjunction) {
-        registerCycles(conjunction, new ConjunctionConcludableStack());
-        buildConjunctionModel(conjunction);
-    }
-
-    private void registerCycles(ResolvableConjunction conjunction, ConjunctionConcludableStack stack) {
-        if (stack.contains(conjunction)) {
-            stack.peekUntil(conjunction).forEach(conj ->
-                    cyclicConcludables.computeIfAbsent(conj, c -> new HashSet<>()).add(stack.getConcludable(conj))
-            );
-        } else {
-            stack.add(conjunction);
-            Set<Resolvable<?>> resolvables = logicMgr.compile(conjunction);
-            iterate(resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated)
-                    .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                    .forEachRemaining(dependency -> registerCycles(dependency, new ConjunctionConcludableStack())); // Stratified negation -> Fresh set
-            iterate(resolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
-                    .forEachRemaining(concludable -> {
-                        stack.setConcludable(conjunction, concludable);
-                        iterate(dependencies(concludable)).forEachRemaining(dependency -> registerCycles(dependency, stack));
-                    });
-            assert stack.last() == conjunction;
-            stack.pop();
-        }
-    }
-
-    private void buildConjunctionModel(ResolvableConjunction conjunction) {
+    public void buildConjunctionModel(ResolvableConjunction conjunction) {
         if (!conjunctionModels.containsKey(conjunction)) {
-            ConjunctionContext conjunctionContext = new ConjunctionContext(conjunction, logicMgr.compile(conjunction), cyclicConcludables.getOrDefault(conjunction, new HashSet<>()));
-
             // Acyclic estimates
-            iterate(conjunctionContext.negateds()).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
+            ConjunctionSummary conjunctionSummary = conjunctionSummarizer.conjunctionSummary(conjunction);
+            iterate(conjunctionSummary.negateds()).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                     .forEachRemaining(this::buildConjunctionModel);
-            iterate(conjunctionContext.acyclicConcludables()).flatMap(concludable -> iterate(dependencies(concludable)))
+            iterate(conjunctionSummary.acyclicConcludables()).flatMap(concludable -> iterate(conjunctionSummarizer.dependencies(concludable)))
                     .forEachRemaining(this::buildConjunctionModel);
-
-            ConjunctionModel acyclicModel = conjunctionModelFactory.buildAcyclicModel(conjunctionContext);
+            // Don't recurse into acyclic dependencies of cyclic concludables. That overconstrains the disjunction b/w acyclic & cyclic.
+            // TODO: ^ Does it though?
+            AnswerCountEstimator.ConjunctionModel acyclicModel = conjunctionModelFactory.buildAcyclicModel(conjunctionSummary);
             conjunctionModels.put(conjunction, acyclicModel);
 
             // cyclic calls to this model will answer based on the acyclic model.
-            iterate(conjunctionContext.cyclicConcludables()).flatMap(concludable -> iterate(dependencies(concludable)))
+            iterate(conjunctionSummary.cyclicConcludables()).flatMap(concludable -> iterate(conjunctionSummarizer.dependencies(concludable)))
                     .forEachRemaining(this::buildConjunctionModel);
-            ConjunctionModel cyclicModel = conjunctionModelFactory.buildCyclicModel(conjunctionContext, acyclicModel);
+            AnswerCountEstimator.ConjunctionModel cyclicModel = conjunctionModelFactory.buildCyclicModel(conjunctionSummary, acyclicModel);
             conjunctionModels.put(conjunction, cyclicModel);
         }
     }
 
-    private Set<ResolvableConjunction> dependencies(Concludable concludable) {
-        return iterate(logicMgr.applicableRules(concludable).keySet()).map(rule -> rule.condition().conjunction()).toSet();
+    public long estimateAnswers(ResolvableConjunction conjunction, Set<Variable> variables) {
+        if (!conjunctionModels.containsKey(conjunction)) buildConjunctionModel(conjunction);
+        if (!fullConjunctionEstimators.containsKey(conjunction)) {
+            IncrementalEstimator incrementalEstimator = createIncrementalEstimator(conjunction);
+            conjunctionModels.get(conjunction).conjunctionSummary.resolvables().forEach(incrementalEstimator::extend);
+            fullConjunctionEstimators.put(conjunction, incrementalEstimator);
+        }
+        IncrementalEstimator estimator = fullConjunctionEstimators.get(conjunction);
+        Set<Variable> estimateableVariables = ReasonerPlanner.estimateableVariables(variables);
+        return estimator.answerEstimate(estimateableVariables);
     }
 
-    private static class ConjunctionConcludableStack {
+    public IncrementalEstimator createIncrementalEstimator(ResolvableConjunction conjunction) {
+        if (!conjunctionModels.containsKey(conjunction)) buildConjunctionModel(conjunction);
+        return new IncrementalEstimator(conjunctionModels.get(conjunction));
+    }
 
-        ArrayList<ResolvableConjunction> stack;
-        Map<ResolvableConjunction, Concludable> concludables;
+    public static class IncrementalEstimator {
+        private final ConjunctionModel conjunctionModel;
+        private final Map<LocalModel, Pair<Double, Optional<Variable>>> modelScale;
+        private final Map<Variable, Double> minVariableEstimate;
+        private final Map<Variable, Set<LocalModel>> affectedModels;
 
-        ConjunctionConcludableStack() {
-            this.stack = new ArrayList<>();
-            this.concludables = new HashMap<>();
+        private IncrementalEstimator(ConjunctionModel conjunctionModel) {
+            this.conjunctionModel = conjunctionModel;
+            this.modelScale = new HashMap<>();
+            this.minVariableEstimate = new HashMap<>();
+            this.affectedModels = new HashMap<>();
         }
 
-        private void add(ResolvableConjunction conjunction) {
-            stack.add(conjunction);
-            concludables.put(conjunction, null);
+        public void extend(Resolvable<?> resolvable) {
+            Map<Variable, Double> improvedVariableEstimates = new HashMap<>();
+            List<LocalModel> models = conjunctionModel.modelsForResolvable(resolvable);
+            iterate(models).flatMap(model -> iterate(model.variables)).forEachRemaining(v -> affectedModels.computeIfAbsent(v, v1 -> new HashSet<>()));
+
+            iterate(models).filter(model -> model.variables.size() == 1).forEachRemaining(model -> {
+                Variable v = model.variables.stream().findFirst().get();
+                double newEstimate = model.estimateAnswers(model.variables);
+                if (newEstimate < minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
+                    improvedVariableEstimates.merge(v, newEstimate, Math::min);
+                } // Optimisation: Single variable models can only improve estimates once.
+            });
+
+            iterate(models).filter(model -> model.variables.size() > 1).forEachRemaining(model -> {
+                model.variables.forEach(v -> affectedModels.get(v).add(model));
+                modelScale.put(model, new Pair<>(1.0, Optional.empty()));
+                Map<Variable, Double> scaledEstimates = applyScaling(model);
+                scaledEstimates.forEach((k,v) -> improvedVariableEstimates.merge(k, v, Math::min));
+            });
+
+            propagate(improvedVariableEstimates);
         }
 
-        private ResolvableConjunction last() {
-            return stack.get(stack.size() - 1);
-        }
-
-        private boolean contains(ResolvableConjunction conjunction) {
-            return concludables.containsKey(conjunction);
-        }
-
-        private void pop() {
-            ResolvableConjunction conjunction = stack.remove(stack.size() - 1);
-            concludables.remove(conjunction);
-        }
-
-        private void setConcludable(ResolvableConjunction conjunction, Concludable concludable) {
-            assert stack.contains(conjunction);
-            concludables.put(conjunction, concludable);
-        }
-
-        private Concludable getConcludable(ResolvableConjunction conjunction) {
-            return concludables.get(conjunction);
-        }
-
-        public List<ResolvableConjunction> peekUntil(ResolvableConjunction untilInclusive) {
-            assert stack.contains(untilInclusive);
-            List<ResolvableConjunction> subList = new ArrayList<>();
-            for (int i = stack.size() - 1; stack.get(i) != untilInclusive; i--) {
-                subList.add(stack.get(i));
+        private Map<Variable,Double> applyScaling(LocalModel model) {
+            Map<Variable, Double> improvedVariableEstimates = new HashMap<>();
+            Pair<Double, Optional<Variable>> scale = modelScale.get(model);
+            double bestScaler = scale.first();
+            Variable bestScalingVar = scale.second().orElse(null);
+            // Find scaling factor
+            for (Variable v : model.variables) {
+                double ans = (double) model.estimateAnswers(set(v));
+                if (minVariableEstimate.containsKey(v) && minVariableEstimate.get(v) / ans < bestScaler) {
+                    bestScaler = minVariableEstimate.get(v) / ans;
+                    bestScalingVar = v;
+                } else if (ans <  minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
+                    improvedVariableEstimates.put(v, ans);
+                }
             }
-            subList.add(untilInclusive);
-            return subList;
-        }
-    }
-
-    private static class ConjunctionContext {
-        private final ResolvableConjunction conjunction;
-        private final Set<Resolvable<?>> resolvables;
-        private final Set<Variable> estimateableVars;
-        private final Set<Concludable> cyclicConcludables;
-        private final Set<Concludable> acyclicConcludables;
-
-        private ConjunctionContext(ResolvableConjunction conjunction, Set<Resolvable<?>> resolvables, Set<Concludable> cyclicConcludables) {
-            this.conjunction = conjunction;
-            this.resolvables = resolvables;
-            this.estimateableVars = iterate(conjunction.pattern().variables()).filter(Variable::isThing).toSet();
-            this.cyclicConcludables = cyclicConcludables;
-            this.acyclicConcludables = iterate(resolvables)
-                    .filter(resolvable -> resolvable.isConcludable() && !cyclicConcludables.contains(resolvable.asConcludable()))
-                    .map(Resolvable::asConcludable).toSet();
+            // Find cascading effects of scaling on other vars (to propagate)
+            if (bestScalingVar != null) {
+                modelScale.put(model, new Pair<>(bestScaler, Optional.of(bestScalingVar)));
+                for (Variable v : model.variables) {
+                    if (v == bestScalingVar) continue;
+                    double newEstimate = scaledEstimate(model, modelScale.get(model), set(v));
+                    if (newEstimate < minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
+                        improvedVariableEstimates.merge(v, newEstimate, Math::min);
+                    }
+                }
+            }
+            return improvedVariableEstimates;
         }
 
-        public FunctionalIterator<Resolvable<?>> resolvables() {
-            return iterate(resolvables);
+        private void propagate(Map<Variable, Double> minVarUpdates) {
+            // Ideally, we'd just remove and add each model again till unaryUpdates is empty.
+            int maxIters = Math.max(1, 2 * modelScale.size()); // TODO: Consider pruning out small changes
+            Map<Variable, Double> updatesToApply = minVarUpdates;
+            while (!updatesToApply.isEmpty() && maxIters > 0) {
+                assert iterate(updatesToApply.entrySet()).allMatch(update -> update.getValue() < minVariableEstimate.getOrDefault(update.getKey(), Double.MAX_VALUE));
+                minVariableEstimate.putAll(updatesToApply);
+                Map<Variable, Double> improvedVariableEstimates = new HashMap<>();
+                iterate(updatesToApply.keySet()).flatMap(v -> iterate(this.affectedModels.get(v))).distinct().forEachRemaining(model -> {
+                    Map<Variable, Double> scaledEstimates = applyScaling(model);
+                    scaledEstimates.forEach((k,v) -> improvedVariableEstimates.merge(k, v, Math::min));
+                });
+                updatesToApply = improvedVariableEstimates;
+                maxIters--;
+            }
         }
 
-        public FunctionalIterator<Retrievable> retrievables() {
-            return iterate(resolvables).filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable);
+        public long answerEstimate(Set<Variable> variables) {
+            List<LocalModel> relevantModels = iterate(modelScale.keySet())
+                    .filter(model -> model.variables.stream().anyMatch(variables::contains))
+                    .toList();
+
+            Map<Variable, CoverElement> cover = new HashMap<>();
+            iterate(variables).forEachRemaining(v -> cover.put(v, new CoverElement(minVariableEstimate.get(v))));
+
+            Map<LocalModel, Pair<Set<Variable>, Double>> scaledEstimates = new HashMap<>();
+            relevantModels.forEach(model -> {
+                Set<Variable> modelledVars = intersection(model.variables, variables);
+                scaledEstimates.put(model, new Pair<>(modelledVars, scaledEstimate(model, modelScale.get(model), variables)));
+            });
+            relevantModels.sort(Comparator.comparing(model -> scaledEstimates.get(model).second()));
+            for (LocalModel model : relevantModels) {
+                if (scaledEstimates.get(model).second() < answerEstimateFromCover(scaledEstimates.get(model).first(), cover)) {
+                    CoverElement coverElement = new CoverElement(scaledEstimates.get(model).second()); // Same instance for all keys
+                    scaledEstimates.get(model).first().forEach(v -> cover.put(v, coverElement));
+                }
+            }
+            return answerEstimateFromCover(variables, cover);
         }
 
-        public FunctionalIterator<Negated> negateds() {
-            return iterate(resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated);
+        private static double scaledEstimate(LocalModel model, Pair<Double, Optional<Variable>> scale, Set<Variable> estimateVariables) {
+            assert scale.second().isPresent() || scale.first() == 1.0;
+            Set<Variable> variables = new HashSet<>();
+            iterate(estimateVariables).filter(model.variables::contains).forEachRemaining(variables::add);
+            double ans = model.estimateAnswers(variables);
+            if (scale.second().isPresent()) {
+                assert scale.first() <= 1.0;
+                variables.add(scale.second().get());
+                double scaledAns = scale.first() * model.estimateAnswers(variables);
+                ans = Math.min(ans, scaledAns);
+            }
+            return ans;
         }
 
-        public FunctionalIterator<Concludable> cyclicConcludables() {
-            return iterate(cyclicConcludables);
+        private static long answerEstimateFromCover(Set<Variable> variables, Map<Variable, CoverElement> coverMap) {
+            double estimate = iterate(variables).map(coverMap::get).distinct()
+                    .map(coverElement -> coverElement.estimate).reduce(1.0, (x, y) -> x * y);
+            return Math.round(Math.ceil(estimate));
         }
 
-        public FunctionalIterator<Concludable> acyclicConcludables() {
-            return iterate(acyclicConcludables);
+        private static class CoverElement {
+            private final double estimate;
+
+            private CoverElement(double estimate) {
+                this.estimate = estimate;
+            }
         }
     }
 
     private static class ConjunctionModel {
-        private final ConjunctionContext conjunctionContext;
-        private final Map<Variable, LocalModel.VariableModel> variableModels;
+        private final ConjunctionSummary conjunctionSummary;
         private final Map<Resolvable<?>, List<LocalModel>> constraintModels;
         private final boolean isCyclic;
 
-        private ConjunctionModel(ConjunctionContext conjunctionContext,
-                                 Map<Variable, LocalModel.VariableModel> variableModels, Map<Resolvable<?>, List<LocalModel>> constraintModels,
+        private ConjunctionModel(ConjunctionSummary conjunctionSummary, Map<Resolvable<?>, List<LocalModel>> constraintModels,
                                  boolean isCyclic) {
-            this.conjunctionContext = conjunctionContext;
-            this.variableModels = variableModels;
+            this.conjunctionSummary = conjunctionSummary;
             this.constraintModels = constraintModels;
             this.isCyclic = isCyclic;
         }
 
-        private long estimateAnswers(Set<Variable> variables, Set<Resolvable<?>> resolvables) {
-            List<LocalModel> models = iterate(resolvables)
-                    .flatMap(resolvable -> iterate(constraintModels.get(resolvable)))
-                    .toList();
-
-            Set<Variable> estimateableVars = intersection(variables, conjunctionContext.estimateableVars);
-            Map<Variable, LocalModel> costCover = greedyCover(estimateableVars, variableModels, models);
-            long ret = answerEstimateFromCover(estimateableVars, costCover);
-            assert ret > 0;             // Flag in tests if it happens.
-            return Math.max(ret, 1);    // Don't do stupid stuff in prod when it happens.
-        }
-
-        private static Map<Variable, LocalModel> greedyCover(Set<Variable> variables, Map<Variable, LocalModel.VariableModel> variableModels, List<LocalModel> constraintModels) {
-            // Does a greedy set cover
-            Map<Variable, LocalModel> cover = new HashMap<>();
-            iterate(variables).forEachRemaining(v -> cover.put(v, variableModels.get(v)));
-
-            constraintModels.sort(Comparator.comparing(x -> x.estimateAnswers(variables)));
-            for (LocalModel model : constraintModels) {
-                Set<Variable> resolvableVars = intersection(model.variables, variables);
-                if (answerEstimateFromCover(resolvableVars, cover) > model.estimateAnswers(resolvableVars)) {
-                    resolvableVars.forEach(v -> cover.put(v, model));
-                }
-            }
-            return cover;
-        }
-
-        private static long answerEstimateFromCover(Set<Variable> variables, Map<Variable, LocalModel> coverMap) {
-            Set<LocalModel> models = iterate(intersection(variables, coverMap.keySet())).map(coverMap::get).toSet();
-            return iterate(models).map(model -> model.estimateAnswers(variables)).reduce(1L, (x, y) -> x * y);
+        private List<LocalModel> modelsForResolvable(Resolvable<?> resolvable) {
+            return constraintModels.get(resolvable);
         }
     }
 
@@ -274,63 +267,32 @@ public class AnswerCountEstimator {
             this.localModelFactory = localModelFactory;
         }
 
-        private ConjunctionModel buildAcyclicModel(ConjunctionContext conjunctionContext) {
+        private ConjunctionModel buildAcyclicModel(ConjunctionSummary conjunctionSummary) {
             Map<Resolvable<?>, List<LocalModel>> models = new HashMap<>();
-            List<LocalModel.VariableModel> generatedVariableModels = new ArrayList<>();
-            iterate(conjunctionContext.acyclicConcludables())
-                    .forEachRemaining(concludable -> {
-                        List<LocalModel.VariableModel> generatedVariableModelsForConcludable = modelsForGeneratedVariable(concludable);
-                        generatedVariableModels.addAll(generatedVariableModelsForConcludable);
-                        ArrayList<LocalModel> combinedModels = new ArrayList<>();
-                        combinedModels.addAll(generatedVariableModelsForConcludable);
-                        combinedModels.addAll(buildModelsForConcludable(concludable));
-                        models.put(concludable, combinedModels);
-                    });
+            iterate(conjunctionSummary.acyclicConcludables())
+                    .forEachRemaining(concludable -> models.put(concludable, buildModelsForConcludable(concludable)));
 
-            Map<Variable, LocalModel.VariableModel> variableModels = computeBaselineCover(conjunctionContext.estimateableVars, generatedVariableModels);
-
-            iterate(conjunctionContext.retrievables())
+            iterate(conjunctionSummary.retrievables())
                     .forEachRemaining(retrievable -> models.put(retrievable, buildModelsForRetrievable(retrievable)));
-            iterate(conjunctionContext.negateds())
+            iterate(conjunctionSummary.negateds())
                     .forEachRemaining(negated -> models.put(negated, buildModelsForNegated(negated)));
-            iterate(conjunctionContext.cyclicConcludables()).forEachRemaining(concludable -> models.put(concludable, list()));
+            // Should we recurse into the acyclic dependencies? Don't think so - Would over-constrain
+            iterate(conjunctionSummary.cyclicConcludables())
+                    .forEachRemaining(concludable -> models.put(concludable, buildVariableModelsForConcludable(concludable)));
 
-            // EdgeCase: Efficiently handle inferred `$x has $a` when $x is inferred in the body of the rule.
-            iterate(conjunctionContext.acyclicConcludables()).filter(Concludable::isHas).map(Concludable::asHas)
-                    .forEachRemaining(concludable -> {
-                        if (variableModels.get(concludable.owner()).estimateAnswers(set(concludable.owner())) == 0) {
-                            long attrCount = Math.max(1L, variableModels.get(concludable.attribute()).estimateAnswers(set(concludable.attribute())));
-                            long hasEdgeCount = iterate(models.get(concludable))
-                                    .map(localModel -> localModel.estimateAnswers(set(concludable.owner(), concludable.attribute())))
-                                    .reduce(1L, Long::sum);
-                            variableModels.put(concludable.owner(), new LocalModel.VariableModel(set(concludable.owner()), hasEdgeCount / attrCount));
-                        }
-                    });
-
-            assert !iterate(conjunctionContext.estimateableVars).filter(variable -> !variableModels.containsKey(variable)).hasNext();
-            assert !iterate(conjunctionContext.resolvables()).filter(resolvable -> !models.containsKey(resolvable)).hasNext();
-            return new ConjunctionModel(conjunctionContext, variableModels, models, false);
+            assert !iterate(conjunctionSummary.resolvables()).filter(resolvable -> !models.containsKey(resolvable)).hasNext();
+            return new ConjunctionModel(conjunctionSummary, models, false);
         }
 
-        private ConjunctionModel buildCyclicModel(ConjunctionContext conjunctionContext, ConjunctionModel acyclicModel) {
-            assert acyclicModel.conjunctionContext == conjunctionContext;
+        private ConjunctionModel buildCyclicModel(ConjunctionSummary conjunctionSummary, ConjunctionModel acyclicModel) {
+            assert acyclicModel.conjunctionSummary == conjunctionSummary;
             assert !acyclicModel.isCyclic;
             Map<Resolvable<?>, List<LocalModel>> models = new HashMap<>(acyclicModel.constraintModels);
-            List<LocalModel.VariableModel> generatedVariableModels = new ArrayList<>(acyclicModel.variableModels.values());
-            iterate(conjunctionContext.cyclicConcludables())
-                    .forEachRemaining(concludable -> {
-                        List<LocalModel.VariableModel> generatedVariableModelsForConcludable = modelsForGeneratedVariable(concludable);
-                        generatedVariableModels.addAll(generatedVariableModelsForConcludable);
-                        ArrayList<LocalModel> combinedModels = new ArrayList<>();
-                        combinedModels.addAll(generatedVariableModelsForConcludable);
-                        combinedModels.addAll(buildModelsForConcludable(concludable));
-                        models.put(concludable, combinedModels);
-                    });
-            Map<Variable, LocalModel.VariableModel> variableModels = computeBaselineCover(conjunctionContext.estimateableVars, generatedVariableModels);
+            iterate(conjunctionSummary.cyclicConcludables())
+                    .forEachRemaining(concludable -> models.put(concludable, buildModelsForConcludable(concludable)));
 
-            assert !iterate(conjunctionContext.estimateableVars).filter(variable -> !variableModels.containsKey(variable)).hasNext();
-            assert !iterate(conjunctionContext.resolvables()).filter(resolvable -> !models.containsKey(resolvable)).hasNext();
-            return new ConjunctionModel(conjunctionContext, variableModels, models, true);
+            assert !iterate(conjunctionSummary.resolvables()).filter(resolvable -> !models.containsKey(resolvable)).hasNext();
+            return new ConjunctionModel(conjunctionSummary, models, true);
         }
 
         private List<LocalModel> buildModelsForRetrievable(Retrievable retrievable) {
@@ -339,6 +301,7 @@ public class AnswerCountEstimator {
                     .toList();
         }
 
+        // INACCURACY: We don't consider negations, which can reduce the number of answers retrieved.
         private List<LocalModel> buildModelsForNegated(Negated negated) {
             return list();
         }
@@ -349,28 +312,10 @@ public class AnswerCountEstimator {
                     .toList();
         }
 
-        private List<LocalModel.VariableModel> modelsForGeneratedVariable(Concludable concludable) {
-            return list(localModelFactory.modelForVariable(concludable.generating().get(), concludable));
-        }
-
-        private Map<Variable, LocalModel.VariableModel> computeBaselineCover(Set<Variable> variablesToCover, List<LocalModel.VariableModel> generatedVariableModels) {
-            Map<Variable, LocalModel.VariableModel> newVariableCover = new HashMap<>();
-            iterate(variablesToCover).map(Variable::asThing).forEachRemaining(v -> { // baseline
-                newVariableCover.put(v, new LocalModel.VariableModel(set(v), localModelFactory.countPersistedThingsMatchingType(v)));
-            });
-
-            iterate(generatedVariableModels).flatMap(Iterators::iterate)
-                    .forEachRemaining(model -> {
-                        Variable v = model.variables.stream().findAny().get();
-                        long existingEstimate = newVariableCover.get(v).estimateAnswers(set(v));
-                        long newEstimate = model.estimateAnswers(set(v));
-                        if (newEstimate > existingEstimate) { // Biggest one serves as baseline.
-                            newVariableCover.put(v, model);
-                        }
-                    });
-
-            assert variablesToCover.stream().allMatch(newVariableCover::containsKey);
-            return newVariableCover;
+        private List<LocalModel> buildVariableModelsForConcludable(Concludable concludable) {
+            List<LocalModel> models = new ArrayList<>();
+            iterate(concludable.variables()).filter(Variable::isThing).map(v -> localModelFactory.modelForVariable(v, Optional.empty())).forEachRemaining(models::add);
+            return models;
         }
 
         private LocalModel buildConstraintModel(Constraint constraint, Optional<Concludable> correspondingConcludable) {
@@ -411,6 +356,11 @@ public class AnswerCountEstimator {
 
         abstract long estimateAnswers(Set<Variable> variableFilter);
 
+        public boolean isRelation() { return false; }
+        public boolean isHas() { return false; }
+        public boolean isIsa() { return false; }
+        public boolean isVariable() { return false; }
+
         private abstract static class StaticModel extends LocalModel {
             private final long staticEstimate;
 
@@ -423,30 +373,32 @@ public class AnswerCountEstimator {
             long estimateAnswers(Set<Variable> variableFilter) {
                 return staticEstimate;
             }
-
         }
 
         private static class RelationModel extends LocalModel {
             private final RelationConstraint relation;
             private final Map<TypeVariable, Long> rolePlayerEstimates;
-            private final double relationTypeEstimate;
-            private final long inferredRelationEstimate;
+            private final Map<TypeVariable, Long> typeMaximums;
+            private final long relationTypeEstimate;
             private final Map<ThingVariable, TypeVariable> rolePlayerTypes;
 
-            private RelationModel(RelationConstraint relation, double relationTypeEstimate,
-                                  Map<TypeVariable, Long> rolePlayerEstimates, long inferredRelationEstimate) {
+            private RelationModel(RelationConstraint relation, long relationTypeEstimate,
+                                  Map<TypeVariable, Long> typeMaximums, Map<TypeVariable, Long> rolePlayerEstimates) {
                 super(iterate(relation.variables()).filter(Variable::isThing).toSet());
                 this.relation = relation;
                 this.relationTypeEstimate = relationTypeEstimate;
                 this.rolePlayerEstimates = rolePlayerEstimates;
-                this.inferredRelationEstimate = inferredRelationEstimate;
+                this.typeMaximums = typeMaximums;
                 this.rolePlayerTypes = new HashMap<>();
+
                 relation.players().forEach(player -> {
                     // Error: null is a valid role-type, but two unspecified roles are not necessarily interchangable.
                     TypeVariable roleType = player.roleType().isPresent() ? player.roleType().get() : null;
                     this.rolePlayerTypes.put(player.player(), roleType);
                 });
             }
+
+            public boolean isRelation() { return true; }
 
             @Override
             long estimateAnswers(Set<Variable> variableFilter) {
@@ -459,15 +411,23 @@ public class AnswerCountEstimator {
                     }
                 }
 
+                long typeBasedUpperBound = 1L;
+                long typeBasedUpperBoundFromRelations = relationTypeEstimate;
                 if (relationTypeEstimate > 0) {
                     for (TypeVariable key : queriedRolePlayerCounts.keySet()) {
                         assert rolePlayerEstimates.containsKey(key);
-                        long avgRolePlayers = Double.valueOf(Math.ceil(rolePlayerEstimates.get(key) / relationTypeEstimate)).longValue();
+                        long avgRolePlayers = Double.valueOf(Math.ceil((double) rolePlayerEstimates.get(key) / relationTypeEstimate)).longValue();
                         singleRelationEstimate *= nPermuteKforSmallK(avgRolePlayers, queriedRolePlayerCounts.get(key));
+                        typeBasedUpperBoundFromRelations *= nPermuteKforSmallK(avgRolePlayers, queriedRolePlayerCounts.get(key));
+                        typeBasedUpperBound *= nPermuteKforSmallK(typeMaximums.get(key), queriedRolePlayerCounts.get(key));
                     }
                 }
 
-                return Double.valueOf(Math.ceil(relationTypeEstimate * singleRelationEstimate)).longValue() + inferredRelationEstimate;
+                // How do you correctly query $q($x) from $r($a, $b) ?
+                if (variableFilter.contains(relation.owner()))
+                    typeBasedUpperBound = typeBasedUpperBoundFromRelations; // We need the type based upper bound for the relationEstimate too
+
+                return Math.min(typeBasedUpperBound, Double.valueOf(Math.ceil(relationTypeEstimate * singleRelationEstimate)).longValue());
             }
 
             private long nPermuteKforSmallK(long n, long k) {
@@ -475,14 +435,40 @@ public class AnswerCountEstimator {
                 for (int i = 0; i < k; i++) ans *= n - i;
                 return ans;
             }
+
+            @Override
+            public String toString() {
+                return "RelationModel[" + relation.toString() + "]";
+            }
         }
 
-        private static class HasModel extends StaticModel {
+        private static class HasModel extends LocalModel {
             private final HasConstraint has;
+            private final long hasEdgeEstimate;
+            private final long ownerEstimate;
+            private final long attributeEstimate;
 
-            private HasModel(HasConstraint has, long hasEdgeEstimate) {
-                super(set(has.owner(), has.attribute()), hasEdgeEstimate);
+            private HasModel(HasConstraint has, long hasEdgeEstimate, long ownerEstimate, long attributeEstimate) {
+                super(set(has.owner(), has.attribute()));
                 this.has = has;
+                this.hasEdgeEstimate = hasEdgeEstimate;
+                this.ownerEstimate = ownerEstimate;
+                this.attributeEstimate = attributeEstimate;
+            }
+
+            public boolean isHas() { return true; }
+
+            @Override
+            long estimateAnswers(Set<Variable> variableFilter) {
+                long answerEstimate = 1;
+                if (variableFilter.contains(has.owner())) answerEstimate *= ownerEstimate;
+                if (variableFilter.contains(has.attribute())) answerEstimate *= attributeEstimate;
+                return Math.min(answerEstimate, this.hasEdgeEstimate);
+            }
+
+            @Override
+            public String toString() {
+                return "HasModel[" + has.toString() + "]";
             }
         }
 
@@ -493,11 +479,25 @@ public class AnswerCountEstimator {
                 super(set(isa.owner()), estimate);
                 this.isa = isa;
             }
+
+            public boolean isIsa() { return true; }
+
+            @Override
+            public String toString() {
+                return "IsaModel[" + isa.toString() + "]";
+            }
         }
 
         private static class VariableModel extends StaticModel {
             private VariableModel(Set<Variable> variables, long estimate) {
                 super(variables, estimate);
+            }
+
+            public boolean isVariable() { return true; }
+
+            @Override
+            public String toString() {
+                return "VariableModel[" + variables.stream().findAny() + "=" + estimateAnswers(set()) + "]";
             }
         }
     }
@@ -519,16 +519,17 @@ public class AnswerCountEstimator {
             Map<TypeVariable, Long> rolePlayerEstimates = new HashMap<>();
             Map<TypeVariable, Integer> rolePlayerCounts = new HashMap<>();
 
-            double relationTypeEstimate = countPersistedThingsMatchingType(relationConstraint.owner());
-
+            Map<TypeVariable, Long> typeMaximums = new HashMap<>();
+            long relationUpperBound = 1L;
             for (RelationConstraint.RolePlayer rp : rolePlayers) {
                 TypeVariable key = rp.roleType().orElse(null);
-                rolePlayerCounts.put(key, rolePlayerCounts.getOrDefault(key, 0) + 1);
-                if (!rolePlayerEstimates.containsKey(key)) {
-                    rolePlayerEstimates.put(key, countPersistedRolePlayers(rp));
+                if (!typeMaximums.containsKey(key)) {
+                    typeMaximums.put(key, countPersistedThingsMatchingType(rp.player()));
                 }
+                relationUpperBound *= typeMaximums.get(key);
             }
 
+            long persistedRelationEstimate = countPersistedThingsMatchingType(relationConstraint.owner());
             // TODO: Can improve estimate by collecting List<List<LocalModel>> from the triggered rules and doing sum(costCover).
             long inferredRelationsEstimate = 0L;
             if (correspondingConcludable.isPresent()) {
@@ -540,15 +541,32 @@ public class AnswerCountEstimator {
                 inferredRelationsEstimate = estimateInferredAnswerCount(correspondingConcludable.get(), new HashSet<>(constrainedVars));
             }
 
-            return new LocalModel.RelationModel(relationConstraint, relationTypeEstimate, rolePlayerEstimates, inferredRelationsEstimate);
+            inferredRelationsEstimate = Math.min(inferredRelationsEstimate, relationUpperBound - persistedRelationEstimate);
+
+            for (RelationConstraint.RolePlayer rp : rolePlayers) {
+                TypeVariable key = rp.roleType().orElse(null);
+                rolePlayerCounts.put(key, rolePlayerCounts.getOrDefault(key, 0) + 1);
+                if (!rolePlayerEstimates.containsKey(key)) {
+                    rolePlayerEstimates.put(key, countPersistedRolePlayers(rp) + inferredRelationsEstimate);
+                }
+            }
+
+            return new LocalModel.RelationModel(relationConstraint, inferredRelationsEstimate + persistedRelationEstimate, typeMaximums, rolePlayerEstimates);
         }
 
         private LocalModel.HasModel modelForHas(HasConstraint hasConstraint, Optional<Concludable> correspondingConcludable) {
             long hasEdgeEstimate = countPersistedHasEdges(hasConstraint.owner().inferredTypes(), hasConstraint.attribute().inferredTypes());
+            long ownerEstimate = countPersistedThingsMatchingType(hasConstraint.owner());
+            long attributeEstimate = countPersistedThingsMatchingType(hasConstraint.attribute());
             if (correspondingConcludable.isPresent()) {
                 hasEdgeEstimate += estimateInferredAnswerCount(correspondingConcludable.get(), set(hasConstraint.owner(), hasConstraint.attribute()));
+                attributeEstimate += attributesCreatedByExplicitHas(correspondingConcludable.get());
+                if (ownerEstimate < hasEdgeEstimate / attributeEstimate) {
+                    boolean rulesConcludeOwner = iterate(hasConstraint.owner().inferredTypes()).flatMap(ownerType -> iterate(answerCountEstimator.logicMgr.rulesConcluding(ownerType))).hasNext();
+                    if (rulesConcludeOwner) ownerEstimate = hasEdgeEstimate / attributeEstimate;
+                }
             }
-            return new LocalModel.HasModel(hasConstraint, hasEdgeEstimate);
+            return new LocalModel.HasModel(hasConstraint, hasEdgeEstimate, ownerEstimate, attributeEstimate);
         }
 
         private LocalModel.IsaModel modelForIsa(IsaConstraint isaConstraint, Optional<Concludable> correspondingConcludable) {
@@ -566,10 +584,12 @@ public class AnswerCountEstimator {
             } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
         }
 
-        private LocalModel.VariableModel modelForVariable(Variable v, Concludable sourceConcludable) {
+        private LocalModel.VariableModel modelForVariable(Variable v, Optional<Concludable> concludable) {
             long persistedAnswerCount = countPersistedThingsMatchingType(v.asThing());
             long inferredAnswerCount = 0;
-            if (v == sourceConcludable.generating().get()) {
+            Concludable sourceConcludable;
+            if (concludable.isPresent() && v == concludable.get().generating().orElse(null)) {
+                sourceConcludable = concludable.get();
                 inferredAnswerCount = (sourceConcludable.isHas() || sourceConcludable.isAttribute()) ?
                         attributesCreatedByExplicitHas(sourceConcludable) :
                         estimateInferredAnswerCount(sourceConcludable, set(v));
@@ -590,14 +610,7 @@ public class AnswerCountEstimator {
                         // There is one generated variable per combination of ALL variables in the conclusion
                         ruleSideIds = new HashSet<>(rule.conclusion().pattern().retrieves());
                     }
-//                        ruleSideVariables = iterate(rule.conclusion().pattern().variables())
-//                                .filter(v -> v.isThing() && v != rule.conclusion().generating().get())
-//                                .toSet();
-//                    } else {
-//                        ruleSideVariables = iterate(ruleSideIds)
-//                                .filter(id -> rule.condition().conjunction().pattern().variables().contains(id)) // avoids constant has
-//                                .map(id -> rule.conclusion().conjunction().pattern().variable(id)).toSet();
-//                    }
+
                     ruleSideVariables = iterate(ruleSideIds)
                             .filter(id -> rule.condition().conjunction().pattern().retrieves().contains(id)) // avoids constant has
                             .map(id -> rule.condition().conjunction().pattern().variable(id)).toSet();
@@ -631,5 +644,4 @@ public class AnswerCountEstimator {
             ).reduce(0L, Long::sum);
         }
     }
-
 }
