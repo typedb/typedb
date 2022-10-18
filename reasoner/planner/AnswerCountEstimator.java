@@ -123,7 +123,7 @@ public class AnswerCountEstimator {
         }
 
         public void extend(Resolvable<?> resolvable) {
-            Map<Variable, Double> cascadingEffectsAccumulator = new HashMap<>();
+            Map<Variable, Double> improvedVariableEstimates = new HashMap<>();
             List<LocalModel> models = conjunctionModel.modelsForResolvable(resolvable);
             assert models.stream().allMatch(model -> model.variables.size() > 0);
 
@@ -133,24 +133,25 @@ public class AnswerCountEstimator {
                 Variable v = model.variables.stream().findFirst().get();
                 double newEstimate = model.estimateAnswers(model.variables);
                 if (newEstimate < minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
-                    cascadingEffectsAccumulator.merge(v, newEstimate, Math::min);
-                }
+                    improvedVariableEstimates.merge(v, newEstimate, Math::min);
+                } // Optimisation: Single variable models can only improve estimates once.
             });
 
             iterate(models).filter(model -> model.variables.size() > 1).forEachRemaining(model -> {
                 model.variables.forEach(v -> affectedModels.get(v).add(model));
                 modelScale.put(model, new Pair<>(1.0, Optional.empty()));
-                evaluatePropagationEffectsOn(model, cascadingEffectsAccumulator);
+                Map<Variable, Double> scaledEstimates = applyScaling(model);
+                scaledEstimates.forEach((k,v) -> improvedVariableEstimates.merge(k, v, Math::min));
             });
 
-            propagate(cascadingEffectsAccumulator);
+            propagate(improvedVariableEstimates);
         }
 
-        private void evaluatePropagationEffectsOn(LocalModel model, Map<Variable, Double> cascadingUpdateAccumulator) {
+        private Map<Variable,Double> applyScaling(LocalModel model) {
+            Map<Variable, Double> improvedVariableEstimates = new HashMap<>();
             Pair<Double, Optional<Variable>> scale = modelScale.get(model);
             double bestScaler = scale.first();
             Variable bestScalingVar = scale.second().orElse(null);
-
             // Find scaling factor
             for (Variable v : model.variables) {
                 double ans = (double) model.estimateAnswers(set(v));
@@ -158,10 +159,9 @@ public class AnswerCountEstimator {
                     bestScaler = minVariableEstimate.get(v) / ans;
                     bestScalingVar = v;
                 } else if (ans <  minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
-                    cascadingUpdateAccumulator.merge(v, ans, Math::min);
+                    improvedVariableEstimates.put(v, ans);
                 }
             }
-
             // Find cascading effects of scaling on other vars (to propagate)
             if (bestScalingVar != null) {
                 modelScale.put(model, new Pair<>(bestScaler, Optional.of(bestScalingVar)));
@@ -169,10 +169,11 @@ public class AnswerCountEstimator {
                     if (v == bestScalingVar) continue;
                     double newEstimate = scaledEstimate(model, modelScale.get(model), set(v));
                     if (newEstimate < minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
-                        cascadingUpdateAccumulator.merge(v, newEstimate, Math::min);
+                        improvedVariableEstimates.merge(v, newEstimate, Math::min);
                     }
                 }
             }
+            return improvedVariableEstimates;
         }
 
         private void propagate(Map<Variable, Double> minVarUpdates) {
@@ -182,10 +183,12 @@ public class AnswerCountEstimator {
             while (!updatesToApply.isEmpty() && maxIters > 0) {
                 assert iterate(updatesToApply.entrySet()).allMatch(update -> update.getValue() < minVariableEstimate.getOrDefault(update.getKey(), Double.MAX_VALUE));
                 minVariableEstimate.putAll(updatesToApply);
-                Map<Variable, Double> cascadingUpdateAccumulator = new HashMap<>();
-                iterate(updatesToApply.keySet()).flatMap(v -> iterate(this.affectedModels.get(v))).distinct()
-                        .forEachRemaining(model -> evaluatePropagationEffectsOn(model, cascadingUpdateAccumulator));
-                updatesToApply = cascadingUpdateAccumulator;
+                Map<Variable, Double> improvedVariableEstimates = new HashMap<>();
+                iterate(updatesToApply.keySet()).flatMap(v -> iterate(this.affectedModels.get(v))).distinct().forEachRemaining(model -> {
+                    Map<Variable, Double> scaledEstimates = applyScaling(model);
+                    scaledEstimates.forEach((k,v) -> improvedVariableEstimates.merge(k, v, Math::min));
+                });
+                updatesToApply = improvedVariableEstimates;
                 maxIters--;
             }
         }
