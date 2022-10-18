@@ -118,7 +118,7 @@ public abstract class DisjunctionController<
             return fanIn;
         }
 
-        static class Request extends AbstractRequest<ResolvableConjunction, ConceptMap, ConceptMap, NestedConjunctionController> {
+        static class Request extends AbstractRequest<ResolvableConjunction, ConceptMap, ConceptMap> {
 
             Request(
                     Reactive.Identifier inputPortId, Driver<? extends Processor<?>> inputPortProcessor,

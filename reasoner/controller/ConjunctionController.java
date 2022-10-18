@@ -150,7 +150,7 @@ public abstract class ConjunctionController<
 
     static class Request<
             CONTROLLER_ID, CONTROLLER extends AbstractController<ConceptMap, ?, ConceptMap, ?, ?, ?>
-            > extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap, CONTROLLER> {
+            > extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap> {
         Request(Reactive.Identifier inputPortId,
                 Driver<? extends Processor<?, ?>> inputPortProcessor, CONTROLLER_ID controller_id,
                 ConceptMap conceptMap) {

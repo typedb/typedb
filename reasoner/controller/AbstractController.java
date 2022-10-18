@@ -40,7 +40,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RES
 
 public abstract class AbstractController<
         PROCESSOR_ID, INPUT, OUTPUT,
-        REQ extends AbstractRequest<?, ?, INPUT, ?>,
+        REQ extends AbstractRequest<?, ?, INPUT>,
         PROCESSOR extends AbstractProcessor<INPUT, OUTPUT, ?, PROCESSOR>,
         CONTROLLER extends AbstractController<PROCESSOR_ID, INPUT, OUTPUT, ?, PROCESSOR, CONTROLLER>
         > extends Actor<CONTROLLER> {
@@ -88,7 +88,7 @@ public abstract class AbstractController<
     /*
      * Called on the target controller
      */
-    <RECEIVED_REQ extends AbstractRequest<?, PROCESSOR_ID, OUTPUT, ?>> void establishProcessorConnection(RECEIVED_REQ req) {
+    <RECEIVED_REQ extends AbstractRequest<?, PROCESSOR_ID, OUTPUT>> void establishProcessorConnection(RECEIVED_REQ req) {
         if (isTerminated()) return;
         getOrCreateProcessor(req.bounds()).execute(actor -> actor.establishConnection(req));
     }

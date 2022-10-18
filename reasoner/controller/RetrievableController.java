@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanOut;
 
 public class RetrievableController extends AbstractController<
-        ConceptMap, Void, ConceptMap, AbstractRequest<?, ?, Void, ?>, RetrievableController.RetrievableProcessor,
+        ConceptMap, Void, ConceptMap, AbstractRequest<?, ?, Void>, RetrievableController.RetrievableProcessor,
         RetrievableController
         > {
 
@@ -61,14 +61,14 @@ public class RetrievableController extends AbstractController<
     }
 
     @Override
-    public void routeConnectionRequest(AbstractRequest<?, ?, Void, ?> connectionRequest) {
+    public void routeConnectionRequest(AbstractRequest<?, ?, Void> connectionRequest) {
         // Nothing to do
     }
 
     protected static class RetrievableProcessor extends AbstractProcessor<
                 Void,
                 ConceptMap,
-                AbstractRequest<?, ?, Void, ?>,
+                AbstractRequest<?, ?, Void>,
                 RetrievableProcessor
                 > {
 

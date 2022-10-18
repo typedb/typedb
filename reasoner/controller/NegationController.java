@@ -153,7 +153,7 @@ public class NegationController extends AbstractController<
         }
 
         static class Request extends AbstractRequest<
-                Disjunction, ConceptMap, ConceptMap, NestedDisjunctionController
+                Disjunction, ConceptMap, ConceptMap
                 > {
 
             Request(

@@ -44,7 +44,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 public abstract class AbstractProcessor<
-        INPUT, OUTPUT, REQ extends AbstractRequest<?, ?, INPUT, ?>,
+        INPUT, OUTPUT, REQ extends AbstractRequest<?, ?, INPUT>,
         PROCESSOR extends AbstractProcessor<INPUT, OUTPUT, REQ, PROCESSOR>> extends Actor<PROCESSOR> {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractProcessor.class);
@@ -107,7 +107,7 @@ public abstract class AbstractProcessor<
         controller.execute(actor -> actor.routeConnectionRequest(req));
     }
 
-    public <RECEIVED_REQ extends AbstractRequest<?, ?, OUTPUT, ?>> void establishConnection(RECEIVED_REQ request) {
+    public <RECEIVED_REQ extends AbstractRequest<?, ?, OUTPUT>> void establishConnection(RECEIVED_REQ request) {
         if (isTerminated()) return;
         OutputPort<OUTPUT> outputPort = createOutputPort();
         outputPort.setInputPort(request.inputPortId(), request.requestingProcessor());

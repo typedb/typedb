@@ -35,7 +35,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanOut;
 
 public class MaterialisationController extends AbstractController<
-        Materialisable, Void, Either<ConceptMap, Materialisation>, AbstractRequest<?, ?, Void, ?>,
+        Materialisable, Void, Either<ConceptMap, Materialisation>, AbstractRequest<?, ?, Void>,
         MaterialisationController.Processor, MaterialisationController
         > {
     // Either<> is just to match the input to ConclusionController, but this class only ever returns Materialisation
@@ -66,12 +66,12 @@ public class MaterialisationController extends AbstractController<
     }
 
     @Override
-    public void routeConnectionRequest(AbstractRequest<?, ?, Void, ?> connectionRequest) {
+    public void routeConnectionRequest(AbstractRequest<?, ?, Void> connectionRequest) {
         // Nothing to do
     }
 
     public static class Processor extends AbstractProcessor<Void, Either<ConceptMap, Materialisation>,
-                AbstractRequest<?, ?, Void, ?>, Processor> {
+                AbstractRequest<?, ?, Void>, Processor> {
 
         private final Materialisable materialisable;
         private final TraversalEngine traversalEng;
