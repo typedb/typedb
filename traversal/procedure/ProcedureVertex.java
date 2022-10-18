@@ -315,33 +315,34 @@ public abstract class ProcedureVertex<
                 GraphManager graphMgr, List<Pair<TypeVertex, Forwardable<ThingVertex, ORDER>>> vertexIters,
                 Traversal.Parameters params, ORDER order, boolean forceValueSort
         ) {
-            if (props().predicates().isEmpty() && !forceValueSort) {
-                return merge(iterate(vertexIters).map(Pair::second), order);
+            if (forceValueSort) {
+                FunctionalIterator<Forwardable<ThingVertex, ORDER>> mapped = iterate(vertexIters).map(pair -> {
+                    if (pair.first().isAttributeType() && pair.first().asType().valueType().equals(STRING)) {
+                        // TODO: once strings are sortable by value, we can optimise the predicates
+                        return pair.second().filter(v -> checkPredicates(v, params, set()));
+                    } else if (pair.first().isAttributeType()) {
+                        return applyPredicatesOnVertices(graphMgr, params, pair.first(), pair.second())
+                                .mapSorted(
+                                        a -> a.asAttribute().toValue(),
+                                        v -> {
+                                            assert v.isAttribute() && v.asAttribute().isValue() &&
+                                                    pair.first().valueType().comparables().contains(v.asAttribute().valueType());
+                                            return attributeVertexTarget(graphMgr, pair.first(), v.asAttribute().asValue(), order.isAscending());
+                                        },
+                                        order
+                                );
+                    } else return pair.second();
+                });
+                return merge(mapped, order);
             } else {
-                if (iterate(vertexIters).anyMatch(pair -> pair.first().isAttributeType() && pair.first().asType().valueType().equals(STRING))) {
-                    // TODO: once strings are sortable by value, we can optimise the predicates
-                    return merge(
-                            iterate(vertexIters).map(pair -> pair.second().filter(a -> checkPredicates(a, params, set()))),
-                            order
-                    );
-                } else if (!forceValueSort) {
-                    return merge(
-                            iterate(vertexIters).map(pair -> applyPredicatesOnVertices(graphMgr, params, pair.first(), pair.second())),
-                            order
-                    );
-                } else {
-                    return merge(iterate(vertexIters)
-                            .map(pair -> applyPredicatesOnVertices(graphMgr, params, pair.first(), pair.second())
-                                    .mapSorted(
-                                            a -> a.asAttribute().toValue(),
-                                            v -> {
-                                                assert v.isValue() && pair.first().valueType().comparables().contains(v.valueType());
-                                                return attributeVertexTarget(graphMgr, pair.first(), v, order.isAscending());
-                                            },
-                                            order
-                                    )
-                            ), order);
-                }
+                return merge(iterate(vertexIters).map(pair -> {
+                    if (pair.first().isAttributeType() && pair.first().asType().valueType().equals(STRING)) {
+                        // TODO: once strings are sortable by value, we can optimise the predicates
+                        return pair.second().filter(v -> checkPredicates(v, params, set()));
+                    } else if (pair.first().isAttributeType()) {
+                        return applyPredicatesOnVertices(graphMgr, params, pair.first(), pair.second());
+                    } else return pair.second();
+                }), order);
             }
         }
 
@@ -350,19 +351,17 @@ public abstract class ProcedureVertex<
                 Traversal.Parameters params, ORDER order
         ) {
             if (props().predicates().isEmpty()) return merge(iterate(edgeIters).map(Pair::second), order);
-            else {
-                if (iterate(edgeIters).anyMatch(pair -> pair.first().isAttributeType() && pair.first().asType().valueType().equals(STRING))) {
-                    // TODO: once strings are sortable by value, we can optimise the predicates
-                    return merge(
-                            iterate(edgeIters).map(pair -> pair.second().filter(a -> checkPredicates(a.key(), params, set()))),
-                            order
-                    );
-                } else {
-                    return merge(
-                            iterate(edgeIters).map(pair -> applyPredicatesOnEdges(graphMgr, params, pair.first(), pair.second())),
-                            order
-                    );
-                }
+            else if (iterate(edgeIters).anyMatch(pair -> pair.first().isAttributeType() && pair.first().asType().valueType().equals(STRING))) {
+                // TODO: once strings are sortable by value, we can optimise the predicates
+                return merge(
+                        iterate(edgeIters).map(pair -> pair.second().filter(a -> checkPredicates(a.key(), params, set()))),
+                        order
+                );
+            } else {
+                return merge(
+                        iterate(edgeIters).map(pair -> applyPredicatesOnEdges(graphMgr, params, pair.first(), pair.second())),
+                        order
+                );
             }
         }
 
@@ -371,6 +370,7 @@ public abstract class ProcedureVertex<
                 Forwardable<ThingVertex, ORDER> vertexIterator
         ) {
             assert type.isAttributeType() && type.asType().valueType().isSorted() && id().isVariable();
+            if (props().predicates().isEmpty()) return vertexIterator;
 
             if (vertexIterator.order().isAscending()) {
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> largest = params.largestGTValue(id().asVariable());

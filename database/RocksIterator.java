@@ -101,8 +101,13 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     private synchronized boolean initialiseAndCheck() {
         if (state != State.COMPLETED) {
             initialiseInternalIterator();
-            seekToFirst();
-            return hasValidNext();
+            if (seekToFirst()) {
+                state = State.FORWARDED;
+                return hasValidNext();
+            } else {
+                close();
+                return false;
+            }
         } else {
             return false;
         }
@@ -117,7 +122,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     @Override
     public abstract void forward(KeyValue<T, ByteArray> target);
 
-    abstract void seekToFirst();
+    abstract boolean seekToFirst();
 
     abstract boolean fetchAndCheck();
 
@@ -210,10 +215,10 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
             super(storage, prefix, ASC);
         }
 
-        synchronized void seekToFirst() {
+        synchronized boolean seekToFirst() {
             assert state == State.OPENED;
             this.internalRocksIterator.seek(prefix.bytes().getBytes());
-            state = State.FORWARDED;
+            return true;
         }
 
         @Override
@@ -254,11 +259,15 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
             super(storage, prefix, DESC);
         }
 
-        synchronized void seekToFirst() {
+        synchronized boolean seekToFirst() {
             assert state == State.OPENED;
             T lastKey = storage.getLastKey(prefix);
-            this.internalRocksIterator.seek(lastKey.bytes().getBytes());
-            state = State.FORWARDED;
+            if (lastKey == null) {
+                return false;
+            } else {
+                this.internalRocksIterator.seek(lastKey.bytes().getBytes());
+                return true;
+            }
         }
 
         @Override
