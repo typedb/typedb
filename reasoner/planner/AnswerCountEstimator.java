@@ -125,8 +125,6 @@ public class AnswerCountEstimator {
         public void extend(Resolvable<?> resolvable) {
             Map<Variable, Double> improvedVariableEstimates = new HashMap<>();
             List<LocalModel> models = conjunctionModel.modelsForResolvable(resolvable);
-            assert models.stream().allMatch(model -> model.variables.size() > 0);
-
             iterate(models).flatMap(model -> iterate(model.variables)).forEachRemaining(v -> affectedModels.computeIfAbsent(v, v1 -> new HashSet<>()));
 
             iterate(models).filter(model -> model.variables.size() == 1).forEachRemaining(model -> {
