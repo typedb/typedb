@@ -122,8 +122,10 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             if (getHas(attribute.getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
             } else {
-                ThingType topLevelOwnerType = getType();
-                while (topLevelOwnerType.getSupertype().getOwns(attribute.getType().getValueType()).hasNext()) topLevelOwnerType = topLevelOwnerType.getSupertype();
+                var supertypes = getType().getSupertypes();
+                var keyOwners = attribute.getType().getOwnersExplicit(true).toSet();
+                ThingType topLevelOwnerType = supertypes.filter(x -> keyOwners.contains(x)).firstOrNull();
+
                 if (attribute.getOwners(topLevelOwnerType).first().isPresent()) {
                     throw exception(TypeDBException.of(THING_KEY_TAKEN, ((AttributeImpl<?>) attribute).getValue(),
                             attribute.getType().getLabel(), topLevelOwnerType.getLabel()));
