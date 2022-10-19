@@ -211,6 +211,8 @@ public class AnswerCountEstimator {
                     scaledEstimates.get(model).first().forEach(v -> cover.put(v, coverElement));
                 }
             }
+
+            assert !variables.isEmpty() || answerEstimateFromCover(variables, cover) == 1;
             return answerEstimateFromCover(variables, cover);
         }
 

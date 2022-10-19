@@ -307,6 +307,48 @@ public class RecursivePorPlannerTest {
         }
     }
 
+    @Test
+    public void test_bound_cycles() {
+        initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
+        transaction.query().define(TypeQL.parseQuery("define " +
+                "transitive-friendship sub relation, relates friendor, relates friendee;" +
+                "person plays transitive-friendship:friendor, plays transitive-friendship:friendee;" +
+
+                "rule friendship-is-transitive-1: " +
+                "when { (friendor: $f1, friendee: $f2) isa friendship; } " +
+                "then { (friendor: $f1, friendee: $f2) isa transitive-friendship; };" +
+
+                "rule friendship-is-transitive-2: " +
+                "when { (friendor: $f1, friendee: $f2) isa friendship; (friendor: $f2, friendee: $f3) isa transitive-friendship;  } " +
+                "then { (friendor: $f1, friendee: $f3) isa transitive-friendship; };" +
+                ""));
+        transaction.commit();
+        session.close();
+
+        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+        RecursivePorPlanner planSpaceSearch = new RecursivePorPlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+        {
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$x has name \"Jim\"; (friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
+            planSpaceSearch.plan(conjunction, set());
+            ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
+            assertEquals(26L, plan.cost());
+            // Answercount($x,$y) = 5
+            // Answercount($x) = 1; Answercount($y) = 5
+            // Cost = 26 = (5) query + 1/5 * (3) rule1{$x:1} + min(1, (1+1/5) ) * (21) rule2{$x:1}
+            // With plan(rule2{$x}) = { (...) isa friendship; } -> { (...) isa transitive-friendship; }
+        }
+
+        {
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$y has name \"Jim\"; (friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
+            planSpaceSearch.plan(conjunction, set());
+            ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
+            assertEquals(10, plan.cost());
+            // Answercount($x,$y) = 5
+            // Answercount($x) = 3; Answercount($y) = 1
+            // Cost = 15 = (8) query + min(1,5/3) * (3) rule1{$y:1} + (0 + 1/5) * (21) rule2{$y:1}
+            // With plan(rule2{$x}) = { (...) isa transitive-friendship; } -> { (...) isa friendship; }
+        }
+    }
 
     private static Conjunction resolvedConjunction(String query, LogicManager logicMgr) {
         Disjunction disjunction = resolvedDisjunction(query, logicMgr);
