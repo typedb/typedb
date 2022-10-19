@@ -380,7 +380,7 @@ public abstract class ProcedureVertex<
                 }
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> smallest = params.smallestLTValue(id().asVariable());
                 if (smallest.isPresent()) {
-                    vertexIterator = vertexIterator.stopWhen(v -> !smallest.get().first().apply(v.asAttribute(), smallest.get().second()));
+                    vertexIterator = vertexIterator.takeWhile(v -> !smallest.get().first().apply(v.asAttribute(), smallest.get().second()));
                 }
             } else {
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> smallest = params.smallestLTValue(id().asVariable());
@@ -390,7 +390,7 @@ public abstract class ProcedureVertex<
                 }
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> largest = params.largestGTValue(id().asVariable());
                 if (largest.isPresent()) {
-                    vertexIterator = vertexIterator.stopWhen(v -> !largest.get().first().apply(v.asAttribute(), largest.get().second()));
+                    vertexIterator = vertexIterator.takeWhile(v -> !largest.get().first().apply(v.asAttribute(), largest.get().second()));
                 }
             }
             return vertexIterator.filter(a -> checkPredicates(a, params, optimisablePredicates));
@@ -410,7 +410,7 @@ public abstract class ProcedureVertex<
                 }
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> smallest = params.smallestLTValue(id().asVariable());
                 if (smallest.isPresent()) {
-                    edgeIterator = edgeIterator.stopWhen(kv -> smallest.get().first().apply(kv.key().asAttribute(), smallest.get().second()));
+                    edgeIterator = edgeIterator.takeWhile(kv -> smallest.get().first().apply(kv.key().asAttribute(), smallest.get().second()));
                 }
             } else {
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> smallest = params.smallestLTValue(id().asVariable());
@@ -420,7 +420,7 @@ public abstract class ProcedureVertex<
                 }
                 Optional<Pair<Predicate.Value<?, ?>, Traversal.Parameters.Value<?>>> largest = params.largestGTValue(id().asVariable());
                 if (largest.isPresent()) {
-                    edgeIterator = edgeIterator.stopWhen(v -> largest.get().first().apply(v.key().asAttribute(), largest.get().second()));
+                    edgeIterator = edgeIterator.takeWhile(v -> largest.get().first().apply(v.key().asAttribute(), largest.get().second()));
                 }
             }
             return edgeIterator.filter(kv -> checkPredicates(kv.key(), params, optimisablePredicates));

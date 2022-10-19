@@ -42,7 +42,7 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends O
     @Override
     SortedIterator<T, ORDER> limit(long limit);
 
-    SortedIterator<T, ORDER> stopWhen(Function<T, Boolean> stopCondition);
+    SortedIterator<T, ORDER> takeWhile(Function<T, Boolean> condition);
 
     NavigableSet<T> toNavigableSet();
 
@@ -68,7 +68,7 @@ public interface SortedIterator<T extends Comparable<? super T>, ORDER extends O
 
         Forwardable<T, ORDER> limit(long limit);
 
-        Forwardable<T, ORDER> stopWhen(Function<T, Boolean> stopCondition);
+        Forwardable<T, ORDER> takeWhile(Function<T, Boolean> condition);
 
         <U extends Comparable<? super U>, ORD extends Order> Forwardable<U, ORD> mapSorted(Function<T, U> mappingFn, Function<U, T> reverseMappingFn, ORD order);
 

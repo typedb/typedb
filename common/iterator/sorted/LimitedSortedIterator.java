@@ -117,8 +117,8 @@ public class LimitedSortedIterator<T extends Comparable<? super T>, ORDER extend
         }
 
         @Override
-        public SortedIterator.Forwardable<T, ORDER> stopWhen(Function<T, Boolean> stopCondition) {
-            return SortedIterators.Forwardable.stopWhen(this, stopCondition);
+        public SortedIterator.Forwardable<T, ORDER> takeWhile(Function<T, Boolean> condition) {
+            return SortedIterators.Forwardable.takeWhile(this, condition);
         }
 
         @Override

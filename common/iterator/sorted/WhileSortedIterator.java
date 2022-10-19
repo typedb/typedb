@@ -28,20 +28,20 @@ import java.util.function.Predicate;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public class StoppingSortedIterator<T extends Comparable<? super T>, ORDER extends Order, ITER extends SortedIterator<T, ORDER>>
+public class WhileSortedIterator<T extends Comparable<? super T>, ORDER extends Order, ITER extends SortedIterator<T, ORDER>>
         extends AbstractSortedIterator<T, ORDER> {
 
     final ITER source;
-    private final Function<T, Boolean> stopCondition;
+    private final Function<T, Boolean> condition;
     State state;
     T last;
 
     private enum State {EMPTY, FETCHED, COMPLETED}
 
-    protected StoppingSortedIterator(ITER source, Function<T, Boolean> stopCondition) {
+    protected WhileSortedIterator(ITER source, Function<T, Boolean> condition) {
         super(source.order());
         this.source = source;
-        this.stopCondition = stopCondition;
+        this.condition = condition;
         this.state = State.EMPTY;
     }
 
@@ -60,7 +60,7 @@ public class StoppingSortedIterator<T extends Comparable<? super T>, ORDER exten
     }
 
     private boolean fetchAndCheck() {
-        if (!source.hasNext() || stopCondition.apply(source.peek())) {
+        if (!source.hasNext() || !condition.apply(source.peek())) {
             state = State.COMPLETED;
             recycle();
         } else {
@@ -91,11 +91,11 @@ public class StoppingSortedIterator<T extends Comparable<? super T>, ORDER exten
     }
 
     public static class Forwardable<T extends Comparable<? super T>, ORDER extends Order>
-            extends StoppingSortedIterator<T, ORDER, SortedIterator.Forwardable<T, ORDER>>
+            extends WhileSortedIterator<T, ORDER, SortedIterator.Forwardable<T, ORDER>>
             implements SortedIterator.Forwardable<T, ORDER> {
 
-        public Forwardable(SortedIterator.Forwardable<T, ORDER> source, Function<T, Boolean> stopCondition) {
-            super(source, stopCondition);
+        public Forwardable(SortedIterator.Forwardable<T, ORDER> source, Function<T, Boolean> condition) {
+            super(source, condition);
         }
 
         @Override
@@ -143,8 +143,8 @@ public class StoppingSortedIterator<T extends Comparable<? super T>, ORDER exten
         }
 
         @Override
-        public SortedIterator.Forwardable<T, ORDER> stopWhen(Function<T, Boolean> stopCondition) {
-            return SortedIterators.Forwardable.stopWhen(this, stopCondition);
+        public SortedIterator.Forwardable<T, ORDER> takeWhile(Function<T, Boolean> condition) {
+            return SortedIterators.Forwardable.takeWhile(this, condition);
         }
 
         @Override

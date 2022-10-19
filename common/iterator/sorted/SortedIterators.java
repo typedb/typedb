@@ -137,10 +137,10 @@ public class SortedIterators {
             return new LimitedSortedIterator.Forwardable<>(iterator, limit);
         }
 
-        public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Forwardable<T, ORDER> stopWhen(
-                SortedIterator.Forwardable<T, ORDER> iterator, Function<T, Boolean> stopCondition
+        public static <T extends Comparable<? super T>, ORDER extends Order> SortedIterator.Forwardable<T, ORDER> takeWhile(
+                SortedIterator.Forwardable<T, ORDER> iterator, Function<T, Boolean> condition
         ) {
-            return new StoppingSortedIterator.Forwardable<>(iterator, stopCondition);
+            return new WhileSortedIterator.Forwardable<>(iterator, condition);
         }
 
         @SafeVarargs

@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.AbstractSortedIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.MappedSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.common.parameters.Order;
@@ -32,7 +31,6 @@ import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
@@ -195,8 +193,8 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     }
 
     @Override
-    public Forwardable<KeyValue<T, ByteArray>, ORDER> stopWhen(Function<KeyValue<T, ByteArray>, Boolean> stopCondition) {
-        return SortedIterators.Forwardable.stopWhen(this, stopCondition);
+    public Forwardable<KeyValue<T, ByteArray>, ORDER> takeWhile(Function<KeyValue<T, ByteArray>, Boolean> condition) {
+        return SortedIterators.Forwardable.takeWhile(this, condition);
     }
 
     @Override
