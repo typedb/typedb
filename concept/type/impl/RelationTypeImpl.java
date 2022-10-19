@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
@@ -102,6 +103,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void setSupertype(RelationType superType) {
         validateIsNotDeleted();
         setSuperTypeVertex(((RelationTypeImpl) superType).vertex);
+    }
+
+    @Override
+    public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
+        return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
+                .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), relationType -> relationType.vertex, ASC);
     }
 
     @Override

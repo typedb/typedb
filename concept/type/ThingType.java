@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.concept.type;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.thing.Thing;
@@ -29,7 +28,7 @@ public interface ThingType extends Type {
     ThingType getSupertype();
 
     @Override
-    FunctionalIterator<? extends ThingType> getSupertypes();
+    Forwardable<? extends ThingType, Order.Asc> getSupertypes();
 
     @Override
     Forwardable<? extends ThingType, Order.Asc> getSubtypes();

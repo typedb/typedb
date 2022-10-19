@@ -200,10 +200,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public FunctionalIterator<ThingTypeImpl> getSupertypes() {
-        return loop(vertex, Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull())
-                .map(v -> ThingTypeImpl.of(graphMgr, v));
-    }
+    public abstract Forwardable<? extends ThingTypeImpl, Order.Asc> getSupertypes();
 
     @Override
     public abstract Forwardable<? extends ThingTypeImpl, Order.Asc> getSubtypes();
@@ -570,8 +567,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public FunctionalIterator<ThingTypeImpl> getSupertypes() {
-            return Iterators.single(this);
+        public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
+            return iterateSorted(ASC, this);
         }
 
         @Override

@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -69,6 +70,12 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     public void setSupertype(EntityType superType) {
         validateIsNotDeleted();
         setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
+    }
+
+    @Override
+    public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
+        return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
+                .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), entityType -> entityType.vertex, ASC);
     }
 
     @Override
@@ -148,6 +155,11 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         @Override
         public void unsetAbstract() {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
+
+        @Override
+        public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
+            return iterateSorted(ASC, this);
         }
 
         @Override

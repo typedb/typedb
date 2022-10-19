@@ -25,6 +25,9 @@ import com.vaticle.typedb.core.concept.thing.Entity;
 public interface EntityType extends ThingType {
 
     @Override
+    Forwardable<? extends ThingType, Order.Asc> getSupertypes();
+
+    @Override
     Forwardable<? extends EntityType, Order.Asc> getSubtypes();
 
     @Override

@@ -26,6 +26,9 @@ import com.vaticle.typedb.core.concept.thing.Relation;
 public interface RelationType extends ThingType {
 
     @Override
+    Forwardable<? extends ThingType, Order.Asc> getSupertypes();
+
+    @Override
     Forwardable<? extends RelationType, Order.Asc> getSubtypes();
 
     @Override

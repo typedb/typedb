@@ -133,6 +133,7 @@ public class TypeGraph {
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> relationsOfRoleType;
         private final ConcurrentMap<Encoding.ValueType, NavigableSet<TypeVertex>> valueAttributeTypes;
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> subtypes;
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> supertypes;
         private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
 
         Cache() {
@@ -147,6 +148,7 @@ public class TypeGraph {
             resolvedRoleTypeLabels = new ConcurrentHashMap<>();
             valueAttributeTypes = new ConcurrentHashMap<>();
             subtypes = new ConcurrentHashMap<>();
+            supertypes = new ConcurrentHashMap<>();
         }
 
         public void clear() {
@@ -161,6 +163,7 @@ public class TypeGraph {
             resolvedRoleTypeLabels.clear();
             valueAttributeTypes.clear();
             subtypes.clear();
+            supertypes.clear();
         }
     }
 
@@ -236,6 +239,16 @@ public class TypeGraph {
             return subtypes;
         };
         if (isReadOnly) return cache.subtypes.computeIfAbsent(type, o -> fn.get());
+        else return fn.get();
+    }
+
+    public NavigableSet<TypeVertex> getSupertypes(TypeVertex type) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> {
+            TreeSet<TypeVertex> supertypes = new TreeSet<>();
+            tree(type, v -> v.outs().edge(SUB).to()).toSet(supertypes);
+            return supertypes;
+        };
+        if (isReadOnly) return cache.supertypes.computeIfAbsent(type, o -> fn.get());
         else return fn.get();
     }
 
