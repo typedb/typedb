@@ -135,24 +135,42 @@ public class ReasonerPlannerTest {
     }
 
     @Test
-    public void test_answers_flew_4() {
+    public void test_answers_flew() {
         long expectedMessagesForSingleHop = 12; // Update this if we introduce an overhead in the reasoner.
         double acceptableRatio = 1.1;
+        long overheadForSingleHop = 4;
+        long messagesForSingleHop;
+        {
+            CoreTransaction baselineTx = reasoningTransaction();
+            List<ConceptMap> oneHopeOneAnswer = runQuery(baselineTx, "match $n2 isa node, has nid 2; (from: $n2, to: $nx) isa path;");
+            assertEquals(1L, oneHopeOneAnswer.size()); // For now the retrieval cost is just the answer-count
 
-        CoreTransaction baselineTx = reasoningTransaction();
-        List<ConceptMap> oneHopeOneAnswer = runQuery(baselineTx, "match $n2 isa node, has nid 2; (from: $n2, to: $nx) isa path;");
-        assertEquals(1L, oneHopeOneAnswer.size()); // For now the retrieval cost is just the answer-count
+            long messagesForSingleHopAndOverhead = baselineTx.context().perfCounter().get(Monitor.PERFCOUNTER_KEY_ANSWERSCREATED);
+            assertTrue("calibration failed. See comment", messagesForSingleHopAndOverhead == expectedMessagesForSingleHop);
 
-        long messagesForSingleHop = baselineTx.context().perfCounter().get(Monitor.PERFCOUNTER_KEY_ANSWERSCREATED);
-        assertTrue("calibration failed. See comment", messagesForSingleHop == expectedMessagesForSingleHop);
+            messagesForSingleHop = messagesForSingleHopAndOverhead - overheadForSingleHop;
+        }
 
         {
             CoreTransaction tx = reasoningTransaction();
             List<ConceptMap> answers = runQuery(tx, "match $n2 isa node, has nid 2; $n1 isa node, has nid 1; (from: $n2, to: $n1) isa path;");
             assertEquals(1L, answers.size()); // For now the retrieval cost is just the answer-count
-            long expectedHops = 1;
             long messagesSent = tx.context().perfCounter().get(Monitor.PERFCOUNTER_KEY_ANSWERSCREATED);
-            assertTrue(String.format("%d < %.1f", messagesSent, 1.1 * expectedHops * messagesForSingleHop), messagesSent/(expectedHops * messagesForSingleHop) < acceptableRatio);
+            long expectedHops = 1;
+            long expectedOverhead = 4 + overheadForSingleHop; // to bind $n1
+            assertTrue(String.format("%d < %.1f", messagesSent, acceptableRatio * expectedHops * messagesForSingleHop + expectedOverhead),
+                    (double)messagesSent < acceptableRatio * expectedHops * messagesForSingleHop + expectedOverhead);
+        }
+
+        {
+            CoreTransaction tx = reasoningTransaction();
+            List<ConceptMap> answers = runQuery(tx, "match $n12 isa node, has nid 12; $n1 isa node, has nid 1; (from: $n12, to: $n1) isa path;");
+            assertEquals(1L, answers.size()); // For now the retrieval cost is just the answer-count
+            long messagesSent = tx.context().perfCounter().get(Monitor.PERFCOUNTER_KEY_ANSWERSCREATED);
+            long expectedHops = 3;
+            long expectedOverhead = 4 + overheadForSingleHop; // to bind $n1
+            assertTrue(String.format("%d < %.1f", messagesSent, acceptableRatio * expectedHops * messagesForSingleHop + expectedOverhead),
+                    (double)messagesSent < acceptableRatio * expectedHops * messagesForSingleHop + expectedOverhead);
         }
     }
 

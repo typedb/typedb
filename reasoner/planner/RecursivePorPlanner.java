@@ -193,7 +193,12 @@ public class RecursivePorPlanner extends ReasonerPlanner {
             double scalingFactor = Math.min(1, boundsFromPrefix/allPossibleBounds);
             acyclicCost += scaledAcyclicCost(scalingFactor, conjunctionNode, resolvable, resolvableBounds);
             if (resolvable.isConcludable() && conjunctionNode.cyclicConcludables().contains(resolvable.asConcludable())) {
-                scalingFactors.put(resolvable.asConcludable(), scalingFactor);
+                // Approximation: This severely underestimates the number of cyclic-calls generated in the case where a mix of input and local variables are arguments to the call.
+                Set<Variable> nonInputRestrictedBounds = iterate(restrictedResolvableBounds).filter(v -> !inputBounds.contains(v)).toSet();
+                double cyclicScalingFactor = nonInputRestrictedBounds.isEmpty() ?
+                        0.0 :
+                        (double)estimator.answerEstimate(nonInputRestrictedBounds) / thisResolvableOnlyEstimator.answerEstimate(resolvableBounds);
+                scalingFactors.put(resolvable.asConcludable(), cyclicScalingFactor);
                 cyclicConcludableBounds.add(new Pair<>(resolvable.asConcludable(), resolvableBounds));
             }
 
