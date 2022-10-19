@@ -425,8 +425,8 @@ public class ResponseBuilder {
 
             public static TransactionProto.Transaction.ResPart getPlayerTypesExplicitResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> players) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayerTypesResPart(
-                        ConceptProto.RoleType.GetPlayerTypes.ResPart.newBuilder().addAllThingTypes(
+                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayerTypesExplicitResPart(
+                        ConceptProto.RoleType.GetPlayerTypesExplicit.ResPart.newBuilder().addAllThingTypes(
                                 players.stream().map(Type::protoType).collect(toList()))));
             }
 
