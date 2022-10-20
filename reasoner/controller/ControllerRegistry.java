@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -169,9 +170,9 @@ public class ControllerRegistry {
     }
 
     public void createExplainableRoot(Concludable concludable, ConceptMap bounds, ReasonerConsumer<Explanation> reasonerConsumer) {
-        Set<com.vaticle.typedb.core.pattern.variable.Variable> boundVariables = bounds.concepts().keySet().stream()
+        Set<com.vaticle.typedb.core.pattern.variable.Variable> boundVariables = Iterators.iterate(bounds.concepts().keySet())
                 .map(id -> concludable.pattern().variable(id))
-                .filter(v -> v != null).collect(Collectors.toSet());
+                .filter(v -> v != null).toSet();
         planner().planAllDependencies(concludable, boundVariables);
 
         Function<Driver<ConcludableController.Explain>, ConcludableController.Explain> actorFn =
