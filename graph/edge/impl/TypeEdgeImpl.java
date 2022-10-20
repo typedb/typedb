@@ -294,7 +294,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
 
         @Override
         EdgeViewIID.Type computeBackwardIID() {
-            return EdgeViewIID.Type.of(to.iid(), encoding.forward(), from.iid());
+            return EdgeViewIID.Type.of(to.iid(), encoding.backward(), from.iid());
         }
 
         @Override

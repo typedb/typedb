@@ -339,6 +339,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
+            return iterateSorted(ASC, this);
+        }
+
+        @Override
         public Forwardable<AttributeTypeImpl, Order.Asc> getSubtypes() {
             return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC).mapSorted(v -> {
                 Encoding.ValueType<?> valueType = v.valueType();
