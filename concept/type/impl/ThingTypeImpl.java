@@ -193,16 +193,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
     }
 
-    @Nullable
     @Override
     public ThingTypeImpl getSupertype() {
         return vertex.outs().edge(SUB).to().map(t -> ThingTypeImpl.of(graphMgr, t)).firstOrNull();
     }
 
     @Override
-    public FunctionalIterator<ThingTypeImpl> getSupertypes() {
-        return loop(vertex, Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull())
-                .map(v -> ThingTypeImpl.of(graphMgr, v));
+    public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
+        return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
+                .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), t -> t.vertex, ASC);
     }
 
     @Override
@@ -570,8 +569,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public FunctionalIterator<ThingTypeImpl> getSupertypes() {
-            return Iterators.single(this);
+        public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
+            return iterateSorted(ASC, this);
         }
 
         @Override

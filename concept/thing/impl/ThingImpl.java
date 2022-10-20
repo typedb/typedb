@@ -21,12 +21,15 @@ package com.vaticle.typedb.core.concept.thing.impl;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptImpl;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
@@ -38,6 +41,7 @@ import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
@@ -115,14 +119,19 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     public void setHas(Attribute attribute, boolean isInferred) {
         validateIsNotDeleted();
         AttributeVertex.Write<?> attrVertex = ((AttributeImpl<?>) attribute).writableVertex();
-        if (!getType().getOwns().findFirst(attribute.getType()).isPresent()) {
+        if (getType().getOwns().findFirst(attribute.getType()).isEmpty()) {
             throw exception(TypeDBException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), readableVertex().type().label()));
         } else if (getType().getOwns(true).findFirst(attribute.getType()).isPresent()) {
             if (getHas(attribute.getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
-            } else if (attribute.getOwners(getType()).first().isPresent()) {
-                throw exception(TypeDBException.of(THING_KEY_TAKEN, ((AttributeImpl<?>) attribute).getValue(),
-                        attribute.getType().getLabel(), getType().getLabel()));
+            } else {
+                SortedIterator.Forwardable<? extends ThingType, Order.Asc> keyOwners = attribute.getType().getOwnersExplicit(true);
+                // use casting to avoid having to expensively repack the iterators into collections
+                ThingType topOwner = (ThingType) getType().getSupertypes().intersect((SortedIterator.Forwardable) keyOwners).first().get();
+                if (attribute.getOwners(topOwner).first().isPresent()) {
+                    throw exception(TypeDBException.of(THING_KEY_TAKEN, ((AttributeImpl<?>) attribute).getValue(),
+                            attribute.getType().getLabel(), topOwner.getLabel()));
+                }
             }
             vertex.graph().exclusiveOwnership(((TypeImpl) this.getType()).vertex, attrVertex);
         }

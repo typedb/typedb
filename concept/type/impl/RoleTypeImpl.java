@@ -89,9 +89,9 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public FunctionalIterator<RoleTypeImpl> getSupertypes() {
-        return loop(vertex, Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull())
-                .map(v -> RoleTypeImpl.of(graphMgr, v));
+    public Forwardable<RoleTypeImpl, Order.Asc> getSupertypes() {
+        return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
+                .mapSorted(v -> of(graphMgr, v), rt -> rt.vertex, ASC);
     }
 
     @Override

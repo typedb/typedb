@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.concept.type;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
@@ -41,7 +40,7 @@ public interface Type extends Concept, Comparable<Type> {
 
     Type getSupertype();
 
-    FunctionalIterator<? extends Type> getSupertypes();
+    Forwardable<? extends Type, Order.Asc> getSupertypes();
 
     Forwardable<? extends Type, Order.Asc> getSubtypes();
 

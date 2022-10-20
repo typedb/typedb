@@ -30,7 +30,7 @@ public interface RoleType extends Type {
     RoleType getSupertype();
 
     @Override
-    FunctionalIterator<? extends RoleType> getSupertypes();
+    Forwardable<? extends RoleType, Order.Asc> getSupertypes();
 
     @Override
     Forwardable<? extends RoleType, Order.Asc> getSubtypes();

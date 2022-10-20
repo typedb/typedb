@@ -315,11 +315,7 @@ public abstract class ProcedureEdge<
 
             Forwardable<TypeVertex, Order.Asc> isaTypes(ThingVertex thing) {
                 if (!isTransitive) return iterateSorted(ASC, thing.type());
-                else {
-                    TreeSet<TypeVertex> superTypes = new TreeSet<>();
-                    loop(thing.type(), Objects::nonNull, v -> v.outs().edge(SUB).to().firstOrNull()).forEachRemaining(superTypes::add);
-                    return iterateSorted(superTypes, ASC);
-                }
+                else return iterateSorted(thing.type().graph().getSupertypes(thing.type()), ASC);
             }
 
             @Override
