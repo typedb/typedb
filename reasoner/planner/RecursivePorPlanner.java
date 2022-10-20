@@ -44,7 +44,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public class RecursivePorPlanner extends ReasonerPlanner {
     // Inaccuracies:
     //      retrieval costs are treated the same as reasoning-overhead cost (Both approximated as the number of answers retrieved for all variables)
-    //      Excess calls are not penalized, since the scaling factor is capped at one (Solve using (calls + scaling-factor * rec-cost?) )
+    //      Excess calls are not penalised, since the scaling factor is capped at one (Solve using (calls + scaling-factor * rec-cost?) )
     //      Acyclic dependencies are counted once for each occurence
     //          (Can be fixed by including the optimal plans for the bound in the globalPlan chosenSummaries - The scaling factors will be capped at 1 then)
     // So far, these are acceptable because the difference in cost is some constant factor, and our aim is to avoid horrible plans.
@@ -125,16 +125,16 @@ public class RecursivePorPlanner extends ReasonerPlanner {
         return bestPlan;
     }
 
-    private void initializeOrderingDependencies(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> inputBounds) {
+    private void initialiseOrderingDependencies(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> inputBounds) {
         Set<Variable> currentBounds = new HashSet<>(inputBounds);
         for (Resolvable<?> resolvable : ordering) {
             Set<Variable> resolvableBounds = iterate(consideredVariables(resolvable)).filter(currentBounds::contains).toSet();
-            initializeDependencies(conjunctionNode, resolvable, resolvableBounds);
+            initialiseDependencies(conjunctionNode, resolvable, resolvableBounds);
             currentBounds.addAll(consideredVariables(resolvable));
         }
     }
 
-    private void initializeDependencies(ConjunctionNode conjunctionNode, Resolvable<?> resolvable, Set<Variable> resolvableBounds) {
+    private void initialiseDependencies(ConjunctionNode conjunctionNode, Resolvable<?> resolvable, Set<Variable> resolvableBounds) {
         if (resolvable.isConcludable()) {
             Set<ResolvableConjunction> cyclicDependencies = conjunctionNode.cyclicDependencies(resolvable.asConcludable());
             for (CallMode callMode : triggeredCalls(resolvable.asConcludable(), resolvableBounds, Optional.empty())) {
@@ -163,8 +163,8 @@ public class RecursivePorPlanner extends ReasonerPlanner {
             Map<Set<Pair<Concludable, Set<Variable>>>, OrderingChoice> bestChoice = new HashMap<>();
             PartialOrderReductionSearch porSearch = new PartialOrderReductionSearch(logicMgr.compile(callMode.conjunction), callMode.bounds);
             for (List<Resolvable<?>> ordering : porSearch.allOrderings()) {
-                initializeOrderingDependencies(conjunctionNode, ordering, callMode.bounds);
-                OrderingChoice orderingChoice = summarizeOrdering(conjunctionNode, ordering, callMode.bounds);
+                initialiseOrderingDependencies(conjunctionNode, ordering, callMode.bounds);
+                OrderingChoice orderingChoice = summariseOrdering(conjunctionNode, ordering, callMode.bounds);
                 if (!bestChoice.containsKey(orderingChoice.cyclicConcludableBounds) ||
                         bestChoice.get(orderingChoice.cyclicConcludableBounds).acyclicCost > orderingChoice.acyclicCost) {
                     bestChoice.put(orderingChoice.cyclicConcludableBounds, orderingChoice);
@@ -174,7 +174,7 @@ public class RecursivePorPlanner extends ReasonerPlanner {
         }
     }
 
-    private OrderingChoice summarizeOrdering(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> inputBounds) {
+    private OrderingChoice summariseOrdering(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> inputBounds) {
         Set<Variable> bounds = new HashSet<>(inputBounds);
         Set<Variable> restrictedBounds = new HashSet<>(); // Restricted by preceding resolvables
         double acyclicCost = 0L;
