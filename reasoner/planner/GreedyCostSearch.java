@@ -103,7 +103,7 @@ public abstract class GreedyCostSearch extends ReasonerPlanner {
         @Override
         long estimateCost(Resolvable<?> r, Set<Variable> bounds) {
             long cost = 0;
-            cost += r.variables().stream().anyMatch(bounds::contains) ? 0 : 10; // Connected:disconnected
+            cost += iterate(r.variables()).anyMatch(bounds::contains) ? 0 : 10; // Connected:disconnected
             if (r.isRetrievable()) {
                 cost += 1;
             } else if (r.isConcludable()) {

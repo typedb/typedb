@@ -95,7 +95,7 @@ public class RecursivePorPlanner extends ReasonerPlanner {
             return createComponentPlan(choices);
         }
 
-        CallMode mode = pendingCallModes.stream().findAny().get();
+        CallMode mode = iterate(pendingCallModes).next();
         pendingCallModes.remove(mode);
         assert !choices.containsKey(mode); // Should not have been added to pending
 

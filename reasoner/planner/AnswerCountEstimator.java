@@ -128,7 +128,7 @@ public class AnswerCountEstimator {
             iterate(models).flatMap(model -> iterate(model.variables)).forEachRemaining(v -> affectedModels.computeIfAbsent(v, v1 -> new HashSet<>()));
 
             iterate(models).filter(model -> model.variables.size() == 1).forEachRemaining(model -> {
-                Variable v = model.variables.stream().findFirst().get();
+                Variable v = iterate(model.variables).next();
                 double newEstimate = model.estimateAnswers(model.variables);
                 if (newEstimate < minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
                     improvedVariableEstimates.merge(v, newEstimate, Math::min);
@@ -193,7 +193,7 @@ public class AnswerCountEstimator {
 
         public long answerEstimate(Set<Variable> variables) {
             List<LocalModel> relevantModels = iterate(modelScale.keySet())
-                    .filter(model -> model.variables.stream().anyMatch(variables::contains))
+                    .filter(model -> iterate(model.variables).anyMatch(variables::contains))
                     .toList();
 
             Map<Variable, CoverElement> cover = new HashMap<>();
@@ -499,7 +499,7 @@ public class AnswerCountEstimator {
 
             @Override
             public String toString() {
-                return "VariableModel[" + variables.stream().findAny() + "=" + estimateAnswers(set()) + "]";
+                return "VariableModel[" + iterate(variables).next() + "=" + estimateAnswers(set()) + "]";
             }
         }
     }
