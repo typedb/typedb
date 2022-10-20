@@ -17,6 +17,7 @@
  */
 package com.vaticle.typedb.core.reasoner.planner;
 
+import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -24,8 +25,11 @@ import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
@@ -38,8 +42,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
@@ -61,13 +68,12 @@ public class ReasonerPlannerTest {
         databaseMgr.create(database);
         session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         transaction = session.transaction(Arguments.Transaction.Type.WRITE);
-
         transaction.query().define(TypeQL.parseQuery("define " +
                 "nid sub attribute, value long;\n" +
                 "node sub entity, owns nid @key,\n" +
-                "   plays edge:from, plays edge:to, plays edge:through,\n" +
+                "   plays edge:from, plays edge:to,\n" +
                 "   plays path:from, plays path:to;\n" +
-                "edge sub relation, relates from, relates to, relates through;\n" +
+                "edge sub relation, relates from, relates to;\n" +
                 "path sub relation, relates from, relates to;\n" +
                 "\n" +
                 "rule path-base:\n" +
@@ -84,47 +90,16 @@ public class ReasonerPlannerTest {
         transaction.query().insert(TypeQL.parseQuery("insert " +
                 "$n1 isa node, has nid 1;" +
                 "$n2 isa node, has nid 2;" +
-                "   (from: $n2, to: $n1, through: $n2) isa edge;" +
+                "   (from: $n1, to: $n2) isa edge;" +
                 "$n3 isa node, has nid 3;" +
-                "   (from: $n3, to: $n1, through: $n3) isa edge;" +
+                "   (from: $n2, to: $n3) isa edge;" +
                 "$n4 isa node, has nid 4;" +
-                "   (from: $n4, to: $n2, through: $n2) isa edge;" +
+                "   (from: $n3, to: $n4) isa edge;" +
                 "$n5 isa node, has nid 5;" +
-                "   (from: $n5, to: $n1, through: $n5) isa edge;" +
-                "$n6 isa node, has nid 6;" +
-                "   (from: $n6, to: $n3, through: $n2) isa edge;" +
-                "$n7 isa node, has nid 7;" +
-                "   (from: $n7, to: $n1, through: $n7) isa edge;" +
-                "$n8 isa node, has nid 8;" +
-                "   (from: $n8, to: $n4, through: $n2) isa edge;" +
-                "$n9 isa node, has nid 9;" +
-                "   (from: $n9, to: $n3, through: $n3) isa edge;" +
-                "$n10 isa node, has nid 10;" +
-                "   (from: $n10, to: $n5, through: $n2) isa edge;" +
-                "$n11 isa node, has nid 11;" +
-                "   (from: $n11, to: $n1, through: $n11) isa edge;" +
-                "$n12 isa node, has nid 12;" +
-                "   (from: $n12, to: $n6, through: $n2) isa edge;" +
-                "$n13 isa node, has nid 13;" +
-                "   (from: $n13, to: $n1, through: $n13) isa edge;" +
-                "$n14 isa node, has nid 14;" +
-                "   (from: $n14, to: $n7, through: $n2) isa edge;" +
-                "$n15 isa node, has nid 15;" +
-                "   (from: $n15, to: $n5, through: $n3) isa edge;"));
+                "   (from: $n4, to: $n5) isa edge;"));
         transaction.commit();
         session.close();
         session = databaseMgr.session(database, Arguments.Session.Type.DATA);
-    }
-
-    private CoreTransaction reasoningTransaction() {
-        if (transaction != null) transaction.close();
-        transaction = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true).perfCounters(true));
-        return transaction;
-    }
-
-    private List<ConceptMap> runQuery(CoreTransaction transaction, String query) {
-        TypeQLMatch typeQLQuery = TypeQL.parseQuery(query).asMatch();
-        return transaction.query().match(typeQLQuery).toList();
     }
 
     @After
@@ -134,43 +109,26 @@ public class ReasonerPlannerTest {
         databaseMgr.close();
     }
 
-    @Test
-    public void test_answers_flew() {
-        long expectedMessagesForSingleHop = 12; // Update this if we introduce an overhead in the reasoner.
-        double acceptableRatio = 1.1;
-        long overheadForSingleHop = 4;
-        long messagesForSingleHop;
-        {
-            CoreTransaction baselineTx = reasoningTransaction();
-            List<ConceptMap> oneHopeOneAnswer = runQuery(baselineTx, "match $n2 isa node, has nid 2; (from: $n2, to: $nx) isa path;");
-            assertEquals(1L, oneHopeOneAnswer.size()); // For now the retrieval cost is just the answer-count
+    private void initialise(Arguments.Session.Type schema, Arguments.Transaction.Type write) {
+        session = databaseMgr.session(database, schema);
+        transaction = session.transaction(write);
+    }
 
-            long messagesForSingleHopAndOverhead = baselineTx.context().perfCounter().get(Monitor.PERFCOUNTER_KEY_ANSWERSCREATED);
-            assertTrue("calibration failed. See comment", messagesForSingleHopAndOverhead == expectedMessagesForSingleHop);
+    private void verifyPlan(ReasonerPlanner planner, String ruleLabel, Set<String> inputBounds, List<String> order) {
+        ResolvableConjunction condition = transaction.logic().rules().filter(rule -> rule.getLabel().equals(ruleLabel)).next().condition().conjunction();
+        verifyPlan(planner, condition, inputBounds, order);
+    }
 
-            messagesForSingleHop = messagesForSingleHopAndOverhead - overheadForSingleHop;
-        }
-
-        {
-            CoreTransaction tx = reasoningTransaction();
-            List<ConceptMap> answers = runQuery(tx, "match $n2 isa node, has nid 2; $n1 isa node, has nid 1; (from: $n2, to: $n1) isa path;");
-            assertEquals(1L, answers.size()); // For now the retrieval cost is just the answer-count
-            long messagesSent = tx.context().perfCounter().get(Monitor.PERFCOUNTER_KEY_ANSWERSCREATED);
-            long expectedHops = 1;
-            long expectedOverhead = 4 + overheadForSingleHop; // to bind $n1
-            assertTrue(String.format("%d < %.1f", messagesSent, acceptableRatio * expectedHops * messagesForSingleHop + expectedOverhead),
-                    (double)messagesSent < acceptableRatio * expectedHops * messagesForSingleHop + expectedOverhead);
-        }
-
-        {
-            CoreTransaction tx = reasoningTransaction();
-            List<ConceptMap> answers = runQuery(tx, "match $n12 isa node, has nid 12; $n1 isa node, has nid 1; (from: $n12, to: $n1) isa path;");
-            assertEquals(1L, answers.size()); // For now the retrieval cost is just the answer-count
-            long messagesSent = tx.context().perfCounter().get(Monitor.PERFCOUNTER_KEY_ANSWERSCREATED);
-            long expectedHops = 3;
-            long expectedOverhead = 4 + overheadForSingleHop; // to bind $n1
-            assertTrue(String.format("%d < %.1f", messagesSent, acceptableRatio * expectedHops * messagesForSingleHop + expectedOverhead),
-                    (double)messagesSent < acceptableRatio * expectedHops * messagesForSingleHop + expectedOverhead);
+    private void verifyPlan(ReasonerPlanner planner, ResolvableConjunction conjunction, Set<String> inputBounds, List<String> order) {
+        Set<Variable> bounds = iterate(conjunction.pattern().variables())
+                .filter(variable -> variable.id().isName())
+                .filter(variable -> inputBounds.contains(variable.id().asName().name()))
+                .toSet();
+        assertEquals(bounds.size(), inputBounds.size());
+        List<Resolvable<?>> plan = planner.getPlan(new ReasonerPlanner.CallMode(conjunction, bounds)).plan();
+        assertEquals(order.size(), plan.size());
+        for (int i=0; i < order.size(); i++) {
+            assertEquals(plan.get(i).isConcludable() ? "c" : "r", order.get(i));
         }
     }
 
@@ -185,4 +143,77 @@ public class ReasonerPlannerTest {
         logicMgr.typeInference().applyCombination(disjunction);
         return disjunction;
     }
+
+    @Test
+    public void test_transitivity_from_is_recursive() {
+        initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
+        transaction.query().define(TypeQL.parseQuery("define " +
+                "nid sub attribute, value long;\n" +
+                "node sub entity, owns nid @key,\n" +
+                "   plays edge:from, plays edge:to,\n" +
+                "   plays path:from, plays path:to;\n" +
+                "edge sub relation, relates from, relates to;\n" +
+                "path sub relation, relates from, relates to;\n" +
+                "\n" +
+                "rule path-base:\n" +
+                "when { (from: $n1, to: $n2) isa edge; }\n" +
+                "then { (from: $n1, to: $n2) isa path; };\n" +
+                "rule path-recursive:\n" +
+                "when { (from: $n1, to: $n2) isa path; (from: $n2, to: $n3) isa edge; }\n" +
+                "then { (from: $n1, to: $n3) isa path; };\n"));
+        transaction.commit();
+        transaction.close();
+
+
+        {
+            initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+            RecursivePorPlanner planner = new RecursivePorPlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (from: $x, to: $y) isa path; }", transaction.logic()));
+            planner.plan(conjunction, set());
+            verifyPlan(planner, conjunction, set() , Collections.list("c"));
+            verifyPlan(planner, "path-recursive", set() , Collections.list("c", "r"));
+            transaction.close();
+        }
+
+        {
+            initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+            RecursivePorPlanner planner = new RecursivePorPlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $x isa node, has nid 0; (from: $x, to: $y) isa path; }", transaction.logic()));
+            planner.plan(conjunction, set());
+            verifyPlan(planner, conjunction, set() , Collections.list("r", "c"));
+            verifyPlan(planner, "path-recursive", set("n1") , Collections.list("c", "r"));
+            transaction.close();
+        }
+
+        {
+            initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+            RecursivePorPlanner planner = new RecursivePorPlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $y isa node, has nid 0; (from: $x, to: $y) isa path; }", transaction.logic()));
+            planner.plan(conjunction, set());
+            verifyPlan(planner, conjunction, set() , Collections.list("r", "c"));
+            verifyPlan(planner, "path-recursive", set("n3") , Collections.list("r", "c"));
+            transaction.close();
+        }
+
+        {
+            initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+            RecursivePorPlanner planner = new RecursivePorPlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $y isa node, has nid 0; (from: $x, to: $y) isa path; }", transaction.logic()));
+            planner.plan(conjunction, set());
+            verifyPlan(planner, conjunction, set() , Collections.list("r", "c"));
+            verifyPlan(planner, "path-recursive", set("n3") , Collections.list("r", "c"));
+            transaction.close();
+        }
+
+        {
+            initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+            RecursivePorPlanner planner = new RecursivePorPlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $x isa node, has nid 0; $y isa node, has nid 1; (from: $x, to: $y) isa path; }", transaction.logic()));
+            planner.plan(conjunction, set());
+            verifyPlan(planner, conjunction, set() , Collections.list("r", "r", "c"));
+            verifyPlan(planner, "path-recursive", set("n1", "n3") , Collections.list("r", "c"));
+            transaction.close();
+        }
+    }
+
 }
