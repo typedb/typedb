@@ -132,8 +132,8 @@ public class TypeGraph {
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> relatedRoleTypes;
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> relationsOfRoleType;
         private final ConcurrentMap<Encoding.ValueType, NavigableSet<TypeVertex>> valueAttributeTypes;
-        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> subtypes;
         private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> supertypes;
+        private final ConcurrentMap<TypeVertex, NavigableSet<TypeVertex>> subtypes;
         private final ConcurrentMap<Label, Set<Label>> resolvedRoleTypeLabels;
 
         Cache() {
@@ -145,10 +145,10 @@ public class TypeGraph {
             playedRoleTypes = new ConcurrentHashMap<>();
             relatedRoleTypes = new ConcurrentHashMap<>();
             relationsOfRoleType = new ConcurrentHashMap<>();
-            resolvedRoleTypeLabels = new ConcurrentHashMap<>();
             valueAttributeTypes = new ConcurrentHashMap<>();
-            subtypes = new ConcurrentHashMap<>();
             supertypes = new ConcurrentHashMap<>();
+            subtypes = new ConcurrentHashMap<>();
+            resolvedRoleTypeLabels = new ConcurrentHashMap<>();
         }
 
         public void clear() {
@@ -232,16 +232,6 @@ public class TypeGraph {
         return merge(iterateSorted(order, rootThingType()), entityTypes(order), relationTypes(order), attributeTypes(order));
     }
 
-    public NavigableSet<TypeVertex> getSubtypes(TypeVertex type) {
-        Supplier<NavigableSet<TypeVertex>> fn = () -> {
-            TreeSet<TypeVertex> subtypes = new TreeSet<>();
-            tree(type, v -> v.ins().edge(SUB).from()).toSet(subtypes);
-            return subtypes;
-        };
-        if (isReadOnly) return cache.subtypes.computeIfAbsent(type, o -> fn.get());
-        else return fn.get();
-    }
-
     public NavigableSet<TypeVertex> getSupertypes(TypeVertex type) {
         Supplier<NavigableSet<TypeVertex>> fn = () -> {
             TreeSet<TypeVertex> supertypes = new TreeSet<>();
@@ -249,6 +239,16 @@ public class TypeGraph {
             return supertypes;
         };
         if (isReadOnly) return cache.supertypes.computeIfAbsent(type, o -> fn.get());
+        else return fn.get();
+    }
+
+    public NavigableSet<TypeVertex> getSubtypes(TypeVertex type) {
+        Supplier<NavigableSet<TypeVertex>> fn = () -> {
+            TreeSet<TypeVertex> subtypes = new TreeSet<>();
+            tree(type, v -> v.ins().edge(SUB).from()).toSet(subtypes);
+            return subtypes;
+        };
+        if (isReadOnly) return cache.subtypes.computeIfAbsent(type, o -> fn.get());
         else return fn.get();
     }
 

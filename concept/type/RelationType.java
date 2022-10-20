@@ -18,15 +18,12 @@
 
 package com.vaticle.typedb.core.concept.type;
 
-import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.thing.Relation;
 
 
 public interface RelationType extends ThingType {
-
-    @Override
-    Forwardable<? extends ThingType, Order.Asc> getSupertypes();
 
     @Override
     Forwardable<? extends RelationType, Order.Asc> getSubtypes();

@@ -106,12 +106,6 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
-        return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
-                .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), relationType -> relationType.vertex, ASC);
-    }
-
-    @Override
     public Forwardable<RelationTypeImpl, Order.Asc> getSubtypes() {
         return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                 .mapSorted(v -> of(graphMgr, v), relationType -> relationType.vertex, ASC);

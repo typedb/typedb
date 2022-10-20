@@ -35,9 +35,6 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public interface AttributeType extends ThingType {
 
     @Override
-    Forwardable<? extends ThingType, Order.Asc> getSupertypes();
-
-    @Override
     Forwardable<? extends AttributeType, Order.Asc> getSubtypes();
 
     @Override

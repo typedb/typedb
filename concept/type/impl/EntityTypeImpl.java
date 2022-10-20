@@ -73,12 +73,6 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
-        return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
-                .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), entityType -> entityType.vertex, ASC);
-    }
-
-    @Override
     public Forwardable<EntityTypeImpl, Order.Asc> getSubtypes() {
         return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                 .mapSorted(v -> of(graphMgr, v), entityType -> entityType.vertex, ASC);

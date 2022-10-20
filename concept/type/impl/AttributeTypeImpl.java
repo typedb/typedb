@@ -103,9 +103,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public abstract Forwardable<ThingTypeImpl, Order.Asc> getSupertypes();
-
-    @Override
     public abstract Forwardable<? extends AttributeTypeImpl, Order.Asc> getSubtypes();
 
     @Override
@@ -433,12 +430,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
-            return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
-                    .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), attrType -> attrType.vertex, ASC);
-        }
-
-        @Override
         public Forwardable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypes() {
             return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                     .mapSorted(v -> AttributeTypeImpl.Boolean.of(graphMgr, v), attrType -> attrType.vertex, ASC);
@@ -581,12 +572,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             return vertex.label().equals(ATTRIBUTE.label()) ?
                     new Root(graphMgr, vertex) :
                     new AttributeTypeImpl.Long(graphMgr, vertex);
-        }
-
-        @Override
-        public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
-            return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
-                    .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
@@ -735,12 +720,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
-            return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
-                    .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), attrType -> attrType.vertex, ASC);
-        }
-
-        @Override
         public Forwardable<AttributeTypeImpl.Double, Order.Asc> getSubtypes() {
             return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
                     .mapSorted(v -> AttributeTypeImpl.Double.of(graphMgr, v), attrType -> attrType.vertex, ASC);
@@ -883,12 +862,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             return vertex.label().equals(ATTRIBUTE.label()) ?
                     new Root(graphMgr, vertex) :
                     new AttributeTypeImpl.String(graphMgr, vertex);
-        }
-
-        @Override
-        public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
-            return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
-                    .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
@@ -1073,12 +1046,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             return vertex.label().equals(ATTRIBUTE.label()) ?
                     new Root(graphMgr, vertex) :
                     new AttributeTypeImpl.DateTime(graphMgr, vertex);
-        }
-
-        @Override
-        public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
-            return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
-                    .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
