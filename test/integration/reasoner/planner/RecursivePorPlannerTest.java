@@ -116,7 +116,6 @@ public class RecursivePorPlannerTest {
         assertEquals(5L, plan.cost()); // For now the retrieval cost is just the answer-count
     }
 
-
     @Test
     public void test_owns_retrieval() {
         // Still just answer counts. Improve if we have an improved estimate for retrievables

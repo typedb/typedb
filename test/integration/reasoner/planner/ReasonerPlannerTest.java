@@ -123,7 +123,7 @@ public class ReasonerPlannerTest {
         assertEquals(bounds.size(), inputBounds.size());
         List<Resolvable<?>> plan = planner.getPlan(new ReasonerPlanner.CallMode(conjunction, bounds)).plan();
         assertEquals(order.size(), plan.size());
-        for (int i=0; i < order.size(); i++) {
+        for (int i = 0; i < order.size(); i++) {
             assertEquals(plan.get(i).isConcludable() ? "c" : "r", order.get(i));
         }
     }
@@ -160,14 +160,13 @@ public class ReasonerPlannerTest {
         transaction.commit();
         transaction.close();
 
-
         {
             initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
             RecursivePorPlanner planner = new RecursivePorPlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
-            verifyPlan(planner, conjunction, set() , Collections.list("c"));
-            verifyPlan(planner, "path-recursive", set() , Collections.list("c", "r"));
+            verifyPlan(planner, conjunction, set(), Collections.list("c"));
+            verifyPlan(planner, "path-recursive", set(), Collections.list("c", "r"));
             transaction.close();
         }
 
@@ -176,8 +175,8 @@ public class ReasonerPlannerTest {
             RecursivePorPlanner planner = new RecursivePorPlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $x isa node, has nid 0; (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
-            verifyPlan(planner, conjunction, set() , Collections.list("r", "c"));
-            verifyPlan(planner, "path-recursive", set("n1") , Collections.list("c", "r"));
+            verifyPlan(planner, conjunction, set(), Collections.list("r", "c"));
+            verifyPlan(planner, "path-recursive", set("n1"), Collections.list("c", "r"));
             transaction.close();
         }
 
@@ -186,8 +185,8 @@ public class ReasonerPlannerTest {
             RecursivePorPlanner planner = new RecursivePorPlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $y isa node, has nid 0; (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
-            verifyPlan(planner, conjunction, set() , Collections.list("r", "c"));
-            verifyPlan(planner, "path-recursive", set("n3") , Collections.list("r", "c"));
+            verifyPlan(planner, conjunction, set(), Collections.list("r", "c"));
+            verifyPlan(planner, "path-recursive", set("n3"), Collections.list("r", "c"));
             transaction.close();
         }
 
@@ -196,8 +195,8 @@ public class ReasonerPlannerTest {
             RecursivePorPlanner planner = new RecursivePorPlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $y isa node, has nid 0; (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
-            verifyPlan(planner, conjunction, set() , Collections.list("r", "c"));
-            verifyPlan(planner, "path-recursive", set("n3") , Collections.list("r", "c"));
+            verifyPlan(planner, conjunction, set(), Collections.list("r", "c"));
+            verifyPlan(planner, "path-recursive", set("n3"), Collections.list("r", "c"));
             transaction.close();
         }
 
@@ -206,8 +205,8 @@ public class ReasonerPlannerTest {
             RecursivePorPlanner planner = new RecursivePorPlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $x isa node, has nid 0; $y isa node, has nid 1; (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
-            verifyPlan(planner, conjunction, set() , Collections.list("r", "r", "c"));
-            verifyPlan(planner, "path-recursive", set("n1", "n3") , Collections.list("r", "c"));
+            verifyPlan(planner, conjunction, set(), Collections.list("r", "r", "c"));
+            verifyPlan(planner, "path-recursive", set("n1", "n3"), Collections.list("r", "c"));
             transaction.close();
         }
     }

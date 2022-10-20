@@ -184,7 +184,7 @@ public abstract class ReasonerPlanner {
 
         @Override
         public String toString() {
-            return conjunction + "::{" + iterate(bounds).reduce("", (x,y) -> (x + ", " + y)) + "}";
+            return conjunction + "::{" + iterate(bounds).reduce("", (x, y) -> (x + ", " + y)) + "}";
         }
     }
 

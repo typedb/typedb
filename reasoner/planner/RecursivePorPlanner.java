@@ -207,7 +207,7 @@ public class RecursivePorPlanner extends ReasonerPlanner {
                     Set<Variable> nonInputRestrictedBounds = iterate(restrictedResolvableBounds).filter(v -> !inputBounds.contains(v)).toSet();
 //                    double cyclicScalingFactor = nonInputRestrictedBounds.isEmpty() ? 0.0 : 1.0;
                     // Approximation: This severely underestimates the number of cyclic-calls generated in the case where a mix of input and local variables are arguments to the call.
-                    double cyclicScalingFactor = nonInputRestrictedBounds.isEmpty() ?  0.0 : (double) estimator.answerEstimate(nonInputRestrictedBounds) / thisResolvableOnlyEstimator.answerEstimate(resolvableBounds);
+                    double cyclicScalingFactor = nonInputRestrictedBounds.isEmpty() ? 0.0 : (double) estimator.answerEstimate(nonInputRestrictedBounds) / thisResolvableOnlyEstimator.answerEstimate(resolvableBounds);
                     scalingFactors.put(resolvable.asConcludable(), cyclicScalingFactor);
                     cyclicConcludableBounds.add(new Pair<>(resolvable.asConcludable(), resolvableBounds));
                 }
@@ -262,7 +262,6 @@ public class RecursivePorPlanner extends ReasonerPlanner {
         return new ComponentPlan(chosenSummaries, scalingFactorSum);
     }
 
-
     private static class ComponentPlan {
         private final Map<CallMode, OrderingChoice> orderingChoices;
         private final Map<CallMode, Double> cyclicScalingFactorSum;
@@ -276,7 +275,7 @@ public class RecursivePorPlanner extends ReasonerPlanner {
         private double cost(CallMode root, double rootScalingFactor) {
             double cycleCost = 0L;
             for (OrderingChoice orderingChoice : orderingChoices.values()) {
-                double scalingFactor = cyclicScalingFactorSum.get(orderingChoice.callMode) + ( orderingChoice.callMode.equals(root) ? rootScalingFactor : 0.0);
+                double scalingFactor = cyclicScalingFactorSum.get(orderingChoice.callMode) + (orderingChoice.callMode.equals(root) ? rootScalingFactor : 0.0);
                 cycleCost += orderingChoice.acyclicCost * scalingFactor;
             }
 
