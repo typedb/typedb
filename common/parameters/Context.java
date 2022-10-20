@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.common.parameters;
 
 import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.core.common.util.PerfCounter;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import javax.annotation.Nullable;
@@ -75,11 +74,8 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
 
     public static class Transaction extends Context<Context.Session, Options.Transaction> {
 
-        private final PerfCounter perfCounter;
-
         public Transaction(Context.Session context, Options.Transaction options) {
             super(context, options.parent(context.options()));
-            this.perfCounter = PerfCounter.createCounter();
         }
 
         public Transaction type(Arguments.Transaction.Type transactionType) {
@@ -95,8 +91,6 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
         public long id() {
             return transactionId;
         }
-
-        public PerfCounter perfCounter() { return perfCounter; }
     }
 
     public static class Query extends Context<Context.Transaction, Options.Query> {

@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.processor.reactive;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.util.PerfCounter;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
@@ -41,18 +40,14 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public class Monitor extends Actor<Monitor> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Monitor.class);
-    public static final String PERFCOUNTER_KEY_ANSWERSCREATED = "reasoner_answersCreated";
-    public static final String PERFCOUNTER_KEY_PROCESSORS = "reasoner_processors";
     private boolean terminated;
     private final Map<Reactive.Identifier, ReactiveNode> reactiveNodes;
     private final Tracer tracer;
-    private final PerfCounter perfCounter;
 
-    public Monitor(Driver<Monitor> driver, @Nullable Tracer tracer, PerfCounter perfCounter) {
+    public Monitor(Driver<Monitor> driver, @Nullable Tracer tracer) {
         super(driver, Monitor.class::getSimpleName);
         this.tracer = tracer;
         this.reactiveNodes = new HashMap<>();
-        this.perfCounter = perfCounter;
     }
 
     private Optional<Tracer> tracer() {
@@ -64,10 +59,7 @@ public class Monitor extends Actor<Monitor> {
     }
 
     private ReactiveNode getOrCreateNode(Reactive.Identifier reactive) {
-        return reactiveNodes.computeIfAbsent(reactive, p -> {
-            perfCounter.add(PERFCOUNTER_KEY_PROCESSORS, 1);
-            return new ReactiveNode(reactive);
-        });
+        return reactiveNodes.computeIfAbsent(reactive, p -> new ReactiveNode(reactive));
     }
 
     private void putNode(Reactive.Identifier reactive, ReactiveNode reactiveNode) {
@@ -118,7 +110,6 @@ public class Monitor extends Actor<Monitor> {
     }
 
     public void createAnswer(Reactive.Identifier publisher) {
-        perfCounter.add(PERFCOUNTER_KEY_ANSWERSCREATED, 1);
         tracer().ifPresent(tracer -> tracer.createAnswer(publisher, driver()));
         if (terminated) return;
         getOrCreateNode(publisher).createAnswer();

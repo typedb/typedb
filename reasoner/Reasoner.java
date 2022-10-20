@@ -45,6 +45,8 @@ import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
@@ -78,7 +80,7 @@ public class Reasoner {
         this.planner = ReasonerPlanner.create(traversalEng, conceptMgr, logicMgr);
         Context.Query defaultContext = new Context.Query(context, new Options.Query());
         defaultContext.producer(Either.first(EXHAUSTIVE));
-        this.controllerRegistry = new ControllerRegistry(actor(), traversalEng, conceptMgr, logicMgr, planner, context.perfCounter(), defaultContext);
+        this.controllerRegistry = new ControllerRegistry(actor(), traversalEng, conceptMgr, logicMgr, planner, defaultContext);
         this.explainablesManager = new ExplainablesManager();
     }
 
