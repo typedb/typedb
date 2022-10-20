@@ -181,6 +181,11 @@ public abstract class ReasonerPlanner {
             return conjunction.equals(that.conjunction) &&
                     bounds.equals(that.bounds);
         }
+
+        @Override
+        public String toString() {
+            return conjunction + "::{" + iterate(bounds).reduce("", (x,y) -> (x + ", " + y)) + "}";
+        }
     }
 
     public static class Plan {

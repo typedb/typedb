@@ -320,8 +320,11 @@ public class RecursivePorPlanner extends ReasonerPlanner {
         }
 
         List<List<Resolvable<?>>> allOrderings() {
-            Set<Variable> bounds = new HashSet<>(inputBounds);
             Set<Resolvable<?>> remaining = new HashSet<>(resolvables);
+            Set<Variable> bounds = new HashSet<>(inputBounds);
+            iterate(resolvables).flatMap(r -> iterate(consideredVariables(r)))
+                    .filter(v -> iterate(v.constraints()).anyMatch(constraint -> constraint.isThing() && constraint.asThing().isValue() && constraint.asThing().asValue().isValueIdentity()))
+                    .forEachRemaining(bounds::add);
 
             List<List<Resolvable<?>>> orderings = new ArrayList<>();
             porDFS(new Stack<>(), bounds, remaining, new HashSet<>(), orderings);
@@ -330,7 +333,6 @@ public class RecursivePorPlanner extends ReasonerPlanner {
 
         private void porDFS(Stack<Resolvable<?>> currentPath, Set<Variable> currentBounds,
                             Set<Resolvable<?>> remaining, Set<Resolvable<?>> sleepSet, List<List<Resolvable<?>>> orderings) {
-
             if (remaining.isEmpty()) {
                 orderings.add(new ArrayList<>(currentPath));
                 return;
