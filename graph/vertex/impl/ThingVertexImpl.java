@@ -336,7 +336,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
      * vertex that may or may not exist on disk or in transaction-local write-vertex buffers. However
      * it should not be usable for anything else.
      */
-    public static class Target extends ThingVertexImpl implements ThingVertex.Write {
+    public static class Target extends ThingVertexImpl {
 
         private Target(ThingGraph graph, VertexIID.Thing iid) {
             super(graph, iid);
@@ -348,7 +348,7 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         @Override
         public ThingVertex.Write toWrite() {
-            return this;
+            throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
         @Override
@@ -374,26 +374,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
         @Override
         public boolean isModified() {
             return false;
-        }
-
-        @Override
-        public void setModified() {
-            throw TypeDBException.of(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public void delete() {
-            throw TypeDBException.of(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public boolean isDeleted() {
-            return false;
-        }
-
-        @Override
-        public void commit() {
-            throw TypeDBException.of(ILLEGAL_OPERATION);
         }
     }
 }
