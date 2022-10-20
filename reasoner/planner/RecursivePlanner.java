@@ -41,7 +41,7 @@ import java.util.Stack;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class RecursivePorPlanner extends ReasonerPlanner {
+public class RecursivePlanner extends ReasonerPlanner {
     // Inaccuracies:
     //      retrieval costs are treated the same as reasoning-overhead cost (Both approximated as the number of answers retrieved for all variables)
     //      Excess calls are not penalised, since the scaling factor is capped at one (Solve using (calls + scaling-factor * rec-cost?) )
@@ -56,7 +56,7 @@ public class RecursivePorPlanner extends ReasonerPlanner {
     private final ConjunctionGraph conjunctionGraph;
     private final Map<CallMode, Double> cyclicScalingFactors;
 
-    public RecursivePorPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
+    public RecursivePlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
         super(traversalEng, conceptMgr, logicMgr);
         this.conjunctionGraph = new ConjunctionGraph(logicMgr);
         this.answerCountEstimator = new AnswerCountEstimator(logicMgr, traversalEng.graph(), this.conjunctionGraph);

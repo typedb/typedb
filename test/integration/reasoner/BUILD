@@ -140,7 +140,7 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "test-recursive-por-planner",
-    srcs = ["planner/RecursivePorPlannerTest.java"],
+    srcs = ["planner/RecursivePlannerTest.java"],
     test_class = "com.vaticle.typedb.core.reasoner.planner.RecursivePorPlannerTest",
     native_libraries_deps = [
         # Internal dependencies

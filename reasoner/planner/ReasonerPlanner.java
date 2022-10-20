@@ -54,7 +54,7 @@ public abstract class ReasonerPlanner {
     }
 
     public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
-        return new RecursivePorPlanner(traversalEng, conceptMgr, logicMgr);
+        return new RecursivePlanner(traversalEng, conceptMgr, logicMgr);
     }
 
     static Set<Variable> estimateableVariables(Set<Variable> variables) {
