@@ -20,11 +20,12 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 
 import java.util.function.Supplier;
 
 public class NestedDisjunctionController
-        extends DisjunctionController<NestedDisjunctionController.Processor, NestedDisjunctionController>{
+        extends DisjunctionController<ConceptMap, NestedDisjunctionController.Processor, NestedDisjunctionController>{
 
     NestedDisjunctionController(Driver<NestedDisjunctionController> driver, ResolvableDisjunction disjunction,
                                 Context context) {
@@ -41,12 +42,17 @@ public class NestedDisjunctionController
         );
     }
 
-    protected static class Processor extends DisjunctionController.Processor<Processor> {
+    protected static class Processor extends DisjunctionController.Processor<ConceptMap, Processor> {
 
         private Processor(Driver<Processor> driver,
                           Driver<NestedDisjunctionController> controller, Context context,
                           ResolvableDisjunction disjunction, ConceptMap bounds, Supplier<String> debugName) {
             super(driver, controller, context, disjunction, bounds, debugName);
+        }
+
+        @Override
+        protected Reactive.Publisher<ConceptMap> transformInput(Reactive.Publisher<ConceptMap> input) {
+            return input;
         }
     }
 }

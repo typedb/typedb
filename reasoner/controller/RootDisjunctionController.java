@@ -30,7 +30,7 @@ import java.util.HashSet;
 import java.util.function.Supplier;
 
 public class RootDisjunctionController
-        extends DisjunctionController<RootDisjunctionController.Processor, RootDisjunctionController> {
+        extends DisjunctionController<ConceptMap, RootDisjunctionController.Processor, RootDisjunctionController> {
 
     private final Modifiers.Filter filter;
     private final boolean explain;
@@ -68,7 +68,7 @@ public class RootDisjunctionController
         reasonerConsumer.exception(cause);
     }
 
-    protected static class Processor extends DisjunctionController.Processor<Processor> {
+    protected static class Processor extends DisjunctionController.Processor<ConceptMap, Processor> {
 
         private final Modifiers.Filter filter;
         private final boolean explain;
@@ -90,6 +90,11 @@ public class RootDisjunctionController
             super.setUp();
             rootSink = new RootSink<>(this, reasonerConsumer);
             hubReactive().registerSubscriber(rootSink);
+        }
+
+        @Override
+        protected Reactive.Publisher<ConceptMap> transformInput(Reactive.Publisher<ConceptMap> input) {
+            return input;
         }
 
         @Override

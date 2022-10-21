@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
+import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.controller.DisjunctionController.Processor.Request;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
@@ -45,10 +46,10 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.merge;
 
-public abstract class DisjunctionController<
-        PROCESSOR extends DisjunctionController.Processor<PROCESSOR>,
-        CONTROLLER extends DisjunctionController<PROCESSOR, CONTROLLER>
-        > extends AbstractController<ConceptMap, ConceptMap, ConceptMap, Request, PROCESSOR, CONTROLLER> {
+public abstract class DisjunctionController<OUTPUT,
+        PROCESSOR extends DisjunctionController.Processor<OUTPUT, PROCESSOR>,
+        CONTROLLER extends DisjunctionController<OUTPUT, PROCESSOR, CONTROLLER>
+        > extends AbstractController<ConceptMap, ConceptMap, OUTPUT, Request, PROCESSOR, CONTROLLER> {
 
     private final List<Pair<ResolvableConjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
     ResolvableDisjunction disjunction;
@@ -82,14 +83,14 @@ public abstract class DisjunctionController<
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    protected abstract static class Processor<PROCESSOR extends Processor<PROCESSOR>>
-            extends AbstractProcessor<ConceptMap, ConceptMap, Request, PROCESSOR> {
+    protected abstract static class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>>
+            extends AbstractProcessor<ConceptMap, OUTPUT, Request, PROCESSOR> {
 
         private final ResolvableDisjunction disjunction;
         private final ConceptMap bounds;
 
         Processor(Driver<PROCESSOR> driver,
-                  Driver<? extends DisjunctionController<PROCESSOR, ?>> controller,
+                  Driver<? extends DisjunctionController<OUTPUT, PROCESSOR, ?>> controller,
                   Context context, ResolvableDisjunction disjunction, ConceptMap bounds,
                   Supplier<String> debugName) {
             super(driver, controller, context, debugName);
@@ -99,11 +100,11 @@ public abstract class DisjunctionController<
 
         @Override
         public void setUp() {
-            PoolingStream<ConceptMap> fanIn = new BufferStream<>(this);
+            PoolingStream<OUTPUT> fanIn = new BufferStream<>(this);
             setHubReactive(getOrCreateHubReactive(fanIn));
             for (ResolvableConjunction conjunction : disjunction.conjunctions()) {
                 InputPort<ConceptMap> input = createInputPort();
-                input.registerSubscriber(fanIn);
+                transformInput(input).registerSubscriber(fanIn);
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.pattern().variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
@@ -113,7 +114,9 @@ public abstract class DisjunctionController<
             }
         }
 
-        Stream<ConceptMap, ConceptMap> getOrCreateHubReactive(Stream<ConceptMap, ConceptMap> fanIn) {
+        protected abstract Reactive.Publisher<OUTPUT> transformInput(Reactive.Publisher<ConceptMap> input);
+
+        Stream<OUTPUT, OUTPUT> getOrCreateHubReactive(Stream<OUTPUT, OUTPUT> fanIn) {
             // This method is only here to be overridden by root disjunction to avoid duplicating setUp
             return fanIn;
         }
@@ -121,7 +124,7 @@ public abstract class DisjunctionController<
         static class Request extends AbstractRequest<ResolvableConjunction, ConceptMap, ConceptMap> {
 
             Request(
-                    Reactive.Identifier inputPortId, Driver<? extends Processor<?>> inputPortProcessor,
+                    Reactive.Identifier inputPortId, Driver<? extends Processor<?,?>> inputPortProcessor,
                     ResolvableConjunction controllerId, ConceptMap processorId
             ) {
                 super(inputPortId, inputPortProcessor, controllerId, processorId);
