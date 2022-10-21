@@ -19,12 +19,13 @@
 package com.vaticle.typedb.core.graph.vertex.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
 import com.vaticle.typedb.core.graph.adjacency.impl.ThingAdjacencyImpl;
-import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
 
 import java.time.LocalDateTime;
 
@@ -100,6 +101,21 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
+        public boolean isValue() {
+            return false;
+        }
+
+        @Override
+        public Value<VALUE> asValue() {
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(AttributeVertex.Value.class));
+        }
+
+        @Override
+        public Value<VALUE> toValue() {
+            return new AttributeVertexImpl.Value<>(this);
+        }
+
+        @Override
         public boolean isAttribute() {
             return true;
         }
@@ -136,32 +152,32 @@ public abstract class AttributeVertexImpl {
 
         @Override
         public AttributeVertexImpl.Write<VALUE> asWrite() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(AttributeVertex.Write.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(AttributeVertex.Write.class));
         }
 
         @Override
-        public AttributeVertexImpl.Read.Boolean asBoolean() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Boolean.class));
+        public AttributeVertexImpl.Read<java.lang.Boolean> asBoolean() {
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(Boolean.class));
         }
 
         @Override
         public AttributeVertexImpl.Read.Long asLong() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Long.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(Long.class));
         }
 
         @Override
         public AttributeVertexImpl.Read.Double asDouble() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Double.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(Double.class));
         }
 
         @Override
         public AttributeVertexImpl.Read.String asString() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(String.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(String.class));
         }
 
         @Override
         public AttributeVertexImpl.Read.DateTime asDateTime() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(DateTime.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(DateTime.class));
         }
 
         public static class Boolean extends AttributeVertexImpl.Read<java.lang.Boolean> {
@@ -326,6 +342,21 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
+        public boolean isValue() {
+            return false;
+        }
+
+        @Override
+        public Value<VALUE> toValue() {
+            return new AttributeVertexImpl.Value<>(this);
+        }
+
+        @Override
+        public Value<VALUE> asValue() {
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(AttributeVertex.Value.class));
+        }
+
+        @Override
         public void setModified() {
             if (!isModified) {
                 isModified = true;
@@ -396,27 +427,27 @@ public abstract class AttributeVertexImpl {
 
         @Override
         public AttributeVertexImpl.Write.Boolean asBoolean() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Boolean.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(Boolean.class));
         }
 
         @Override
         public AttributeVertexImpl.Write.Long asLong() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Long.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(Long.class));
         }
 
         @Override
         public AttributeVertexImpl.Write.Double asDouble() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(Double.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(Double.class));
         }
 
         @Override
         public AttributeVertexImpl.Write.String asString() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(String.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(String.class));
         }
 
         @Override
         public AttributeVertexImpl.Write.DateTime asDateTime() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(DateTime.class));
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(DateTime.class));
         }
 
         public static class Boolean extends AttributeVertexImpl.Write<java.lang.Boolean> {
@@ -522,6 +553,49 @@ public abstract class AttributeVertexImpl {
             public DateTime asDateTime() {
                 return this;
             }
+        }
+    }
+
+    static class Value<VALUE> extends AttributeVertexImpl.Read<VALUE> implements AttributeVertex.Value<VALUE> {
+
+        private final AttributeVertex<VALUE> attributeVertex;
+
+        Value(AttributeVertex<VALUE> attributeVertex) {
+            super(attributeVertex.graph(), attributeVertex.iid());
+            this.attributeVertex = attributeVertex;
+        }
+
+        @Override
+        public AttributeVertex<VALUE> toAttribute() {
+            return attributeVertex;
+        }
+
+        @Override
+        public boolean isValue() {
+            return true;
+        }
+
+        @Override
+        public Value<VALUE> asValue() {
+            return this;
+        }
+
+        @Override
+        public Value<VALUE> toValue() {
+            return this;
+        }
+
+        @Override
+        public int compareTo(Vertex<?, ?> other) {
+            if (other.isThing() && other.asThing().isAttribute() && other.asThing().asAttribute().isValue()) {
+                Value<?> value = other.asThing().asAttribute().asValue();
+                int comp = compareValue(value);
+                return comp == 0 ? type().compareTo(value.type()) : comp;
+            } else return super.compareTo(other);
+        }
+
+        private <T> int compareValue(Value<T> valueVertex) {
+            return Encoding.ValueType.compare(valueType(), value(), valueVertex.valueType(), valueVertex.value());
         }
     }
 }

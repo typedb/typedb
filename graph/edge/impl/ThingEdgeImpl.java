@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
 import com.vaticle.typedb.core.encoding.iid.InfixIID;
-import com.vaticle.typedb.core.encoding.iid.SuffixIID;
+import com.vaticle.typedb.core.encoding.iid.KeyIID;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -216,7 +216,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (encoding().isOptimisation()) {
                 return EdgeViewIID.Thing.of(
                         fromIID(), InfixIID.Thing.of(encoding().forward(), optimised().get().type().iid()),
-                        toIID(), SuffixIID.of(optimised().get().iid().key())
+                        toIID(), optimised().get().iid().key()
                 );
             } else {
                 return EdgeViewIID.Thing.of(fromIID(), InfixIID.Thing.of(encoding().forward()), toIID());
@@ -228,7 +228,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (encoding().isOptimisation()) {
                 return EdgeViewIID.Thing.of(
                         toIID(), InfixIID.Thing.of(encoding().backward(), optimised().get().type().iid()),
-                        fromIID(), SuffixIID.of(optimised().get().iid().key())
+                        fromIID(), optimised().get().iid().key()
                 );
             } else {
                 return EdgeViewIID.Thing.of(toIID(), InfixIID.Thing.of(encoding().backward()), fromIID());
@@ -327,7 +327,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (encoding().isOptimisation()) {
                 return EdgeViewIID.Thing.of(
                         fromIID(), InfixIID.Thing.of(encoding().forward(), optimisedType.iid()),
-                        toIID(), SuffixIID.of(ByteArray.empty())
+                        toIID(), KeyIID.of(ByteArray.empty())
                 );
             } else {
                 return EdgeViewIID.Thing.of(fromIID(), InfixIID.Thing.of(encoding().forward()), toIID());
@@ -338,7 +338,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         EdgeViewIID.Thing computeBackwardIID() {
             if (encoding.isOptimisation()) {
                 return EdgeViewIID.Thing.of(toIID(), InfixIID.Thing.of(encoding().backward(), optimisedType.iid()),
-                        fromIID(), SuffixIID.of(ByteArray.empty()));
+                        fromIID(), KeyIID.of(ByteArray.empty()));
             } else {
                 return EdgeViewIID.Thing.of(toIID(), InfixIID.Thing.of(encoding().backward()), fromIID());
             }
@@ -430,7 +430,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             }
             if (!iid.suffix().isEmpty()) {
                 optimisedIID = VertexIID.Thing.of(join(
-                        VERTEX_ROLE.bytes(), iid.infix().asRolePlayer().tail().bytes(), iid.suffix().bytes()
+                        VERTEX_ROLE.bytes(), iid.infix().asRolePlayer().tail().get().bytes(), iid.suffix().bytes()
                 ));
             } else {
                 optimisedIID = null;
@@ -475,7 +475,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (encoding().isOptimisation()) {
                 return EdgeViewIID.Thing.of(
                         fromIID(), InfixIID.Thing.of(encoding().forward(), optimisedIID.type()),
-                        toIID(), SuffixIID.of(optimisedIID.key())
+                        toIID(), optimisedIID.key()
                 );
             } else {
                 return EdgeViewIID.Thing.of(fromIID(), InfixIID.Thing.of(encoding().forward()), toIID());
@@ -487,7 +487,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
             if (encoding().isOptimisation()) {
                 return EdgeViewIID.Thing.of(
                         toIID(), InfixIID.Thing.of(encoding().backward(), optimisedIID.type()),
-                        fromIID(), SuffixIID.of(optimisedIID.key())
+                        fromIID(), optimisedIID.key()
                 );
             } else {
                 return EdgeViewIID.Thing.of(toIID(), InfixIID.Thing.of(encoding().backward()), fromIID());

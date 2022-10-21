@@ -20,19 +20,22 @@ package com.vaticle.typedb.core.encoding.iid;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
 
-public class SuffixIID extends IID {
+/**
+ * Generated IID for a vertex without the type or other prefixes
+ */
+public class KeyIID extends IID {
 
-    private SuffixIID(ByteArray bytes) {
+    private KeyIID(ByteArray bytes) {
         super(bytes);
     }
 
-    public static SuffixIID of(ByteArray bytes) {
-        return new SuffixIID(bytes);
+    public static KeyIID of(ByteArray bytes) {
+        return new KeyIID(bytes);
     }
 
     @Override
     public String toString() {
-        if (readableString == null) readableString = "Suffix: " + bytes.toString();
+        if (readableString == null) readableString = "[" + bytes.length() + ": " + bytes.toString() + "]";
         return readableString;
     }
 }

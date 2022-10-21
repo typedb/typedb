@@ -26,63 +26,89 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 
-public class LimitedSortedIterator<T extends Comparable<? super T>, ORDER extends Order, ITER extends SortedIterator<T, ORDER>>
+public class WhileSortedIterator<T extends Comparable<? super T>, ORDER extends Order, ITER extends SortedIterator<T, ORDER>>
         extends AbstractSortedIterator<T, ORDER> {
 
-    private final long limit;
-    private long counter;
-    final ITER iterator;
+    final ITER source;
+    private final Function<T, Boolean> condition;
+    State state;
     T last;
 
-    public LimitedSortedIterator(ITER iterator, long limit) {
-        super(iterator.order());
-        this.iterator = iterator;
-        this.limit = limit;
-        this.counter = 0L;
+    private enum State {EMPTY, FETCHED, COMPLETED}
+
+    protected WhileSortedIterator(ITER source, Function<T, Boolean> condition) {
+        super(source.order());
+        this.source = source;
+        this.condition = condition;
+        this.state = State.EMPTY;
     }
 
     @Override
     public boolean hasNext() {
-        if (counter < limit && iterator.hasNext()) {
-            return true;
-        } else {
-            recycle();
-            return false;
+        switch (state) {
+            case EMPTY:
+                return fetchAndCheck();
+            case FETCHED:
+                return true;
+            case COMPLETED:
+                return false;
+            default:
+                throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
-    @Override
-    public T next() {
-        if (!hasNext()) throw new NoSuchElementException();
-        counter++;
-        last = iterator.next();
-        return last;
+    private boolean fetchAndCheck() {
+        if (!source.hasNext() || !condition.apply(source.peek())) {
+            state = State.COMPLETED;
+            recycle();
+        } else {
+            state = State.FETCHED;
+        }
+        return state == State.FETCHED;
     }
 
     @Override
     public T peek() {
         if (!hasNext()) throw new NoSuchElementException();
-        return iterator.peek();
+        return source.peek();
+    }
+
+    @Override
+    public T next() {
+        if (!hasNext()) throw new NoSuchElementException();
+        T next = source.next();
+        assert last == null || order.inOrder(last, next) : "Sorted mapped iterator produces out of order values";
+        state = State.EMPTY;
+        last = next;
+        return next;
     }
 
     @Override
     public void recycle() {
-        iterator.recycle();
+        source.recycle();
     }
 
     public static class Forwardable<T extends Comparable<? super T>, ORDER extends Order>
-            extends LimitedSortedIterator<T, ORDER, SortedIterator.Forwardable<T, ORDER>>
+            extends WhileSortedIterator<T, ORDER, SortedIterator.Forwardable<T, ORDER>>
             implements SortedIterator.Forwardable<T, ORDER> {
 
-        public Forwardable(SortedIterator.Forwardable<T, ORDER> source, long limit) {
-            super(source, limit);
+        public Forwardable(SortedIterator.Forwardable<T, ORDER> source, Function<T, Boolean> condition) {
+            super(source, condition);
         }
 
         @Override
         public void forward(T target) {
             if (last != null && !order.inOrder(last, target)) throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            iterator.forward(target);
+            if (state == State.EMPTY) {
+                source.forward(target);
+            } else if (state == State.FETCHED) {
+                if (order.inOrder(target, peek())) return;
+                last = peek();
+                source.forward(target);
+                state = State.EMPTY;
+            }
         }
 
         @Override

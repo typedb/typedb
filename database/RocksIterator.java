@@ -23,14 +23,15 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.AbstractSortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
-import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.encoding.key.Key;
 
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
@@ -42,7 +43,8 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     final Key.Prefix<T> prefix;
     final RocksStorage storage;
     State state;
-    private KeyValue<T, ByteArray> next;
+    KeyValue<T, ByteArray> next;
+    KeyValue<T, ByteArray> last;
     private boolean isClosed;
     org.rocksdb.RocksIterator internalRocksIterator;
 
@@ -71,8 +73,9 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
             if (isClosed) throw TypeDBException.of(RESOURCE_CLOSED);
             else throw new NoSuchElementException();
         }
+        last = next;
         state = State.UNFETCHED;
-        return next;
+        return last;
     }
 
     @Override
@@ -96,8 +99,13 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     private synchronized boolean initialiseAndCheck() {
         if (state != State.COMPLETED) {
             initialiseInternalIterator();
-            seekToFirst();
-            return hasValidNext();
+            if (seekToFirst()) {
+                state = State.FORWARDED;
+                return hasValidNext();
+            } else {
+                close();
+                return false;
+            }
         } else {
             return false;
         }
@@ -112,11 +120,12 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     @Override
     public abstract void forward(KeyValue<T, ByteArray> target);
 
-    abstract void seekToFirst();
+    abstract boolean seekToFirst();
 
     abstract boolean fetchAndCheck();
 
     synchronized boolean hasValidNext() {
+        assert state != State.COMPLETED;
         ByteArray key;
         if (!internalRocksIterator.isValid() || !((key = ByteArray.of(internalRocksIterator.key())).hasPrefix(prefix.bytes()))) {
             recycle();
@@ -184,6 +193,11 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
     }
 
     @Override
+    public Forwardable<KeyValue<T, ByteArray>, ORDER> takeWhile(Function<KeyValue<T, ByteArray>, Boolean> condition) {
+        return SortedIterators.Forwardable.takeWhile(this, condition);
+    }
+
+    @Override
     public Forwardable<KeyValue<T, ByteArray>, ORDER> onConsumed(Runnable function) {
         return SortedIterators.Forwardable.onConsume(this, function);
     }
@@ -199,10 +213,10 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
             super(storage, prefix, ASC);
         }
 
-        synchronized void seekToFirst() {
+        synchronized boolean seekToFirst() {
             assert state == State.OPENED;
             this.internalRocksIterator.seek(prefix.bytes().getBytes());
-            state = State.FORWARDED;
+            return true;
         }
 
         @Override
@@ -217,10 +231,23 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
         @Override
         public synchronized void forward(KeyValue<T, ByteArray> target) {
-            if (state == State.COMPLETED || !ASC.inOrder(prefix.bytes(), target.key().bytes())) return;
-            if (state == State.INIT) initialiseInternalIterator();
-            internalRocksIterator.seek(target.key().bytes().getBytes());
-            state = State.FORWARDED;
+            if (state == State.COMPLETED) return;
+            else if (state == State.INIT) {
+                if (order().inOrder(target.key(), prefix)) return;
+                else initialiseInternalIterator();
+            } else if (state == State.FETCHED) {
+                if (order().inOrder(target, next)) return;
+            } else if (state == State.UNFETCHED || state == State.FORWARDED) {
+                if (order().inOrder(target, last)) return;
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+
+            // at this point, the target has or exceeds the bound prefix
+            if (!target.key().bytes().hasPrefix(prefix.bytes())) close();
+            else {
+                internalRocksIterator.seek(target.key().bytes().getBytes());
+                last = target;
+                state = State.FORWARDED;
+            }
         }
     }
 
@@ -230,11 +257,14 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
             super(storage, prefix, DESC);
         }
 
-        synchronized void seekToFirst() {
+        synchronized boolean seekToFirst() {
             assert state == State.OPENED;
             T lastKey = storage.getLastKey(prefix);
-            this.internalRocksIterator.seek(lastKey.bytes().getBytes());
-            state = State.FORWARDED;
+            if (lastKey == null) return false;
+            else {
+                this.internalRocksIterator.seek(lastKey.bytes().getBytes());
+                return true;
+            }
         }
 
         @Override
@@ -249,10 +279,23 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
         @Override
         public synchronized void forward(KeyValue<T, ByteArray> target) {
-            if (state == State.COMPLETED || !DESC.inOrder(prefix.bytes(), target.key().bytes())) return;
-            if (state == State.INIT) initialiseInternalIterator();
-            internalRocksIterator.seekForPrev(target.key().bytes().getBytes());
-            state = State.FORWARDED;
+            if (state == State.COMPLETED) return;
+            else if (state == State.INIT) {
+                if (order().inOrderNotEq(target.key().bytes().view(0, prefix.bytes().length()), prefix.bytes())) return;
+                else initialiseInternalIterator();
+            } else if (state == State.FETCHED) {
+                if (order().inOrder(target, next)) return;
+            } else if (state == State.UNFETCHED || state == State.FORWARDED) {
+                if (order().inOrder(target, last)) return;
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+
+            // at this point, the target has or exceeds the bound prefix
+            if (!target.key().bytes().hasPrefix(prefix.bytes())) close();
+            else {
+                internalRocksIterator.seekForPrev(target.key().bytes().getBytes());
+                last = target;
+                state = State.FORWARDED;
+            }
         }
     }
 }

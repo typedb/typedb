@@ -91,7 +91,7 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
             return argument.valueType();
         }
 
-        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value value) {
+        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value<?> value) {
             return argument.apply(operator, vertex, value);
         }
 

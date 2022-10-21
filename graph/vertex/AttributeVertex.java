@@ -50,6 +50,12 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
 
     AttributeVertex.Write<VALUE> asWrite();
 
+    boolean isValue();
+
+    AttributeVertex.Value<VALUE> asValue();
+
+    AttributeVertex.Value<VALUE> toValue();
+
     boolean isBoolean();
 
     boolean isLong();
@@ -84,6 +90,17 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
 
         AttributeVertex.Write<LocalDateTime> asDateTime();
 
+    }
+
+    /**
+     * An vertex wrapper that sorts based on its value, then type -- as opposed to type, then value.
+     */
+    interface Value<VALUE> extends AttributeVertex<VALUE> {
+
+        AttributeVertex<VALUE> toAttribute();
+
+        @Override
+        int compareTo(Vertex<?, ?> other);
     }
 
 }

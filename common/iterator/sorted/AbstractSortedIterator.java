@@ -117,6 +117,11 @@ public abstract class AbstractSortedIterator<T extends Comparable<? super T>, OR
     }
 
     @Override
+    public SortedIterator<T, ORDER> takeWhile(Function<T, Boolean> condition) {
+        return new WhileSortedIterator<>(this, condition);
+    }
+
+    @Override
     public FunctionalIterator<T> link(FunctionalIterator<T> iterator) {
         return new LinkedIterators<>(list(this, iterator));
     }

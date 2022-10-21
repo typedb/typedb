@@ -29,12 +29,12 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.encoding.key.KeyGenerator;
-import com.vaticle.typedb.core.encoding.key.StatisticsKey;
 import com.vaticle.typedb.core.encoding.Storage;
-import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.encoding.iid.PartitionedIID;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.key.KeyGenerator;
+import com.vaticle.typedb.core.encoding.key.StatisticsKey;
+import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -60,8 +60,8 @@ import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Status.BUFFERED;
 import static com.vaticle.typedb.core.encoding.Encoding.Status.PERSISTED;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
@@ -229,8 +229,8 @@ public class ThingGraph {
         ).mapSorted(kv -> convertToReadable(kv.key()), vertex -> KeyValue.of(vertex.iid(), empty()), order);
         if (!thingsByTypeIID.containsKey(typeVertex.iid())) return vertices;
         else {
-            Forwardable<ThingVertex, ORDER> buffered = iterateSorted(thingsByTypeIID.get(typeVertex.iid()), order)
-                    .mapSorted(e -> e, ThingVertex::toWrite, order);
+            // WARN: work around Java's limitations that mean we can't build a .safeCast(Class<SuperType>) on the iterator
+            Forwardable<ThingVertex, ORDER> buffered = (Forwardable) iterateSorted(thingsByTypeIID.get(typeVertex.iid()), order);
             return vertices.merge(buffered).distinct();
         }
     }

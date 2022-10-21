@@ -33,8 +33,8 @@ import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
-import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.encoding.iid.PrefixIID;
+import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 

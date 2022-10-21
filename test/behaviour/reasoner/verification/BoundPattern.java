@@ -89,6 +89,11 @@ public class BoundPattern {
         public int hashCode() {
             return Objects.hash(conjunction, unboundConjunction, bounds);
         }
+
+        @Override
+        public String toString() {
+            return "BoundConjunction[" + conjunction + "\n{" + bounds + "}]";
+        }
     }
 
     static class BoundConcludable {

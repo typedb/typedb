@@ -20,8 +20,8 @@ package com.vaticle.typedb.core.encoding.iid;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.encoding.key.KeyGenerator;
 import com.vaticle.typedb.core.encoding.key.Key;
+import com.vaticle.typedb.core.encoding.key.KeyGenerator;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 
