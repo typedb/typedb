@@ -18,16 +18,18 @@
 
 package com.vaticle.typedb.core.traversal.procedure;
 
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterators;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.PrefixIID;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -36,11 +38,13 @@ import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
 import com.vaticle.typedb.core.traversal.planner.PlannerEdge;
+import com.vaticle.typedb.core.traversal.predicate.Predicate.Value;
 import com.vaticle.typedb.core.traversal.scanner.GraphIterator;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
-import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Optional;
@@ -58,9 +62,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNR
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNSUPPORTED_OPERATION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Direction.Edge.BACKWARD;
 import static com.vaticle.typedb.core.encoding.Encoding.Direction.Edge.FORWARD;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.ISA;
@@ -76,7 +80,6 @@ import static com.vaticle.typedb.core.encoding.Encoding.Prefix.VERTEX_ATTRIBUTE;
 import static com.vaticle.typedb.core.encoding.Encoding.Prefix.VERTEX_ROLE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.RELATION;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
-import static com.vaticle.typedb.core.traversal.procedure.ProcedureVertex.Thing.mapToAttributes;
 
 public abstract class ProcedureEdge<
         VERTEX_FROM extends ProcedureVertex<?, ?>, VERTEX_TO extends ProcedureVertex<?, ?>
@@ -200,7 +203,7 @@ public abstract class ProcedureEdge<
         ) {
             if (fromVertex.isThing()) {
                 if (to.isType()) return emptySorted();
-                else return to.asThing().filter(iterateSorted(ASC, fromVertex.asThing()), params);
+                else return to.asThing().iterateAndFilter(fromVertex.asThing(), params, ASC);
             } else if (fromVertex.isType()) {
                 if (to.isThing()) return emptySorted();
                 else return to.asType().filter(iterateSorted(ASC, fromVertex.asType()));
@@ -247,7 +250,11 @@ public abstract class ProcedureEdge<
             if (to.props().hasIID()) toIter = to.iterateAndFilterFromIID(graphMgr, params, ASC);
             else toIter = to.iterateAndFilterFromTypes(graphMgr, params, ASC);
 
-            return toIter.filter(toVertex -> predicate.apply(fromVertex.asThing().asAttribute(), toVertex.asAttribute()));
+            return toIter.filter(toVertex -> {
+                AttributeVertex<?> from = fromVertex.asThing().asAttribute();
+                AttributeVertex<?> to = toVertex.asAttribute();
+                return predicate.apply(from.isValue() ? from.asValue().toAttribute() : from, to.isValue() ? to.asValue().toAttribute() : to);
+            });
         }
 
         @Override
@@ -823,16 +830,16 @@ public abstract class ProcedureEdge<
                     GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
             );
 
-            Forwardable<ThingVertex, Order.Asc> backwardBranchToIIDFiltered(
+            Optional<ThingVertex> backwardBranchToIIDFiltered(
                     GraphManager graphMgr, ThingVertex fromVertex, Encoding.Edge.Thing encoding,
                     VertexIID.Thing toIID, Set<Label> allowedToTypes
             ) {
                 ThingVertex toVertex = graphMgr.data().getReadable(toIID);
                 if (toVertex != null && fromVertex.ins().edge(encoding, toVertex) != null &&
                         allowedToTypes.contains(toVertex.type().properLabel())) {
-                    return iterateSorted(ASC, toVertex);
+                    return Optional.of(toVertex);
                 } else {
-                    return emptySorted();
+                    return Optional.empty();
                 }
             }
 
@@ -866,50 +873,47 @@ public abstract class ProcedureEdge<
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isThing();
-                        Forwardable<? extends AttributeVertex<?>, Order.Asc> iter;
-                        com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?, ?> eq = null;
                         ThingVertex owner = fromVertex.asThing();
-                        if (to.props().hasIID()) iter = branchToIID(graphMgr, params, owner);
-                        else {
-                            eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).firstOrNull();
-                            iter = branchToTypes(graphMgr, params, owner, eq);
+                        if (to.props().hasIID()) {
+                            Optional<AttributeVertex<?>> attributeVertex = branchToIID(graphMgr, params, owner);
+                            if (attributeVertex.isPresent()) {
+                                return to.iterateAndFilterPredicates(attributeVertex.get(), params, ASC);
+                            } else return emptySorted(ASC);
+                        } else {
+                            Optional<Value<?, ?>> eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).first();
+                            if (eq.isPresent()) {
+                                return to.iterateAndFilterPredicates(branchToEq(graphMgr, params, owner, eq.get()), params, ASC );
+                            } else {
+                                return to.mergeAndFilterPredicatesOnVertices(graphMgr, branchToTypes(graphMgr, owner), params, ASC);
+                            }
                         }
-
-                        if (to.props().predicates().isEmpty()) return iter;
-                        else return to.filterPredicates(iter, params, eq);
                     }
 
-                    private Forwardable<? extends AttributeVertex<?>, Order.Asc> branchToIID(
+                    private Optional<AttributeVertex<?>> branchToIID(
                             GraphManager graphMgr, Traversal.Parameters params, ThingVertex owner
                     ) {
-                        assert to.props().hasIID();
-                        Forwardable<? extends AttributeVertex<?>, Order.Asc> iter;
-                        assert to.id().isVariable();
+                        assert to.props().hasIID() && to.id().isVariable();
                         VertexIID.Thing iid = params.getIID(to.id().asVariable());
-                        AttributeVertex<?> att;
-                        if (!iid.isAttribute()) att = null;
-                        else att = graphMgr.data().getReadable(iid.asAttribute());
+                        AttributeVertex<?> att = iid.isAttribute() ? graphMgr.data().getReadable(iid.asAttribute()) : null;
                         if (att != null && to.props().types().contains(att.type().properLabel()) && owner.outs().edge(HAS, att) != null) {
-                            return iterateSorted(ASC, att);
-                        } else return emptySorted();
+                            return Optional.of(att);
+                        } else return Optional.empty();
                     }
 
-                    private Forwardable<? extends AttributeVertex<?>, Order.Asc> branchToTypes(
-                            GraphManager graphMgr, Traversal.Parameters params,
-                            ThingVertex owner, @Nullable com.vaticle.typedb.core.traversal.predicate.Predicate.Value<?, ?> eq
+                    private List<AttributeVertex<?>> branchToEq(
+                            GraphManager graphMgr, Traversal.Parameters params, ThingVertex owner, Value<?, ?> eq
                     ) {
-                        Forwardable<? extends AttributeVertex<?>, Order.Asc> iter;
-                        if (eq != null) {
-                            return to.iteratorOfAttributesWithTypes(graphMgr, params, eq, ASC)
-                                    .filter(a -> owner.outs().edge(HAS, a.asAttribute()) != null);
-                        } else {
-                            Set<TypeVertex> attributes = graphMgr.schema().ownedAttributeTypes(owner.type());
-                            return iterate(attributes)
-                                    .filter(attr -> to.props().types().contains(attr.properLabel()))
-                                    .mergeMapForwardable(
-                                            t -> owner.outs().edge(HAS, PrefixIID.of(VERTEX_ATTRIBUTE), t.iid()).to(), ASC
-                                    ).mapSorted(ThingVertex::asAttribute, v -> v, ASC);
-                        }
+                        return iterate(to.attributesEqual(graphMgr, params, eq)).filter(a -> owner.outs().edge(HAS, a.asAttribute()) != null).toList();
+                    }
+
+                    private List<Pair<TypeVertex, Forwardable<ThingVertex, Order.Asc>>> branchToTypes(
+                            GraphManager graphMgr, ThingVertex owner
+                    ) {
+                        Set<TypeVertex> types = graphMgr.schema().ownedAttributeTypes(owner.type());
+                        return iterate(types)
+                                .filter(t -> to.props().types().contains(t.properLabel()))
+                                .map(t -> new Pair<>(t, owner.outs().edge(HAS, PrefixIID.of(VERTEX_ATTRIBUTE), t.iid()).to()))
+                                .toList();
                     }
 
                     @Override
@@ -935,19 +939,22 @@ public abstract class ProcedureEdge<
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isThing() && fromVertex.asThing().isAttribute();
-                        Forwardable<ThingVertex, Order.Asc> iter;
                         AttributeVertex<?> att = fromVertex.asThing().asAttribute();
 
                         if (to.props().hasIID()) {
-                            iter = backwardBranchToIIDFiltered(graphMgr, att, HAS, params.getIID(to.id().asVariable()), to.props().types());
+                            Optional<ThingVertex> toVertex = backwardBranchToIIDFiltered(graphMgr, att, HAS, params.getIID(to.id().asVariable()), to.props().types());
+                            if (toVertex.isPresent()) return to.iterateAndFilterPredicates(toVertex.get(), params, ASC);
+                            else return emptySorted();
                         } else {
                             Set<TypeVertex> owners = graphMgr.schema().ownersOfAttributeType(att.type());
-                            iter = iterate(owners).filter(owner -> to.props().types().contains(owner.properLabel()))
-                                    .mergeMapForwardable(t -> att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from(), ASC);
+                            return to.mergeAndFilterPredicatesOnVertices(
+                                    graphMgr,
+                                    iterate(owners).filter(owner -> to.props().types().contains(owner.properLabel()))
+                                            .map(t -> new Pair<>(t, att.ins().edge(HAS, PrefixIID.of(t.encoding().instance()), t.iid()).from()))
+                                            .toList(),
+                                    params, ASC
+                            );
                         }
-
-                        if (to.props().predicates().isEmpty()) return iter;
-                        else return to.filterPredicates(mapToAttributes(iter), params);
                     }
 
                     @Override
@@ -1013,15 +1020,21 @@ public abstract class ProcedureEdge<
 
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();
-                            iter = backwardBranchToIIDFiltered(graphMgr, role, PLAYING, params.getIID(to.id().asVariable()), toTypes);
+                            Optional<ThingVertex> toVertex = backwardBranchToIIDFiltered(
+                                    graphMgr, role, PLAYING, params.getIID(to.id().asVariable()), toTypes
+                            );
+                            if (toVertex.isPresent()) return to.iterateAndFilter(toVertex.get(), params, ASC);
+                            else return emptySorted();
                         } else {
                             Set<TypeVertex> players = graphMgr.schema().playersOfRoleType(role.type());
-                            iter = iterate(players).filter(player -> toTypes.contains(player.properLabel()))
-                                    .mergeMapForwardable(t -> role.ins().edge(PLAYING, PrefixIID.of(t.encoding().instance()), t.iid()).from(), ASC);
+                            return to.mergeAndFilterPredicatesOnVertices(
+                                    graphMgr,
+                                    iterate(players).filter(player -> toTypes.contains(player.properLabel()))
+                                            .map(t -> new Pair<>(t, role.ins().edge(PLAYING, PrefixIID.of(t.encoding().instance()), t.iid()).from()))
+                                            .toList(),
+                                    params, ASC
+                            );
                         }
-
-                        if (to.props().predicates().isEmpty()) return iter;
-                        else return to.filterPredicates(mapToAttributes(iter), params);
                     }
 
                     @Override
@@ -1098,7 +1111,8 @@ public abstract class ProcedureEdge<
 
                         if (to.props().hasIID()) {
                             assert to.id().isVariable();
-                            iter = backwardBranchToIIDFiltered(graphMgr, role, RELATING, params.getIID(to.id().asVariable()), toTypes);
+                            Optional<ThingVertex> toVertex = backwardBranchToIIDFiltered(graphMgr, role, RELATING, params.getIID(to.id().asVariable()), toTypes);
+                            return toVertex.map(thingVertex -> iterateSorted(ASC, thingVertex)).orElseGet(SortedIterators.Forwardable::emptySorted);
                         } else {
                             Set<TypeVertex> relations = graphMgr.schema().relationsOfRoleType(role.type());
                             iter = iterate(relations).filter(rel -> toTypes.contains(rel.properLabel()))
@@ -1211,46 +1225,45 @@ public abstract class ProcedureEdge<
                     ) {
                         assert fromVertex.isThing() && !roleTypes.isEmpty();
                         ThingVertex rel = fromVertex.asThing();
-                        Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iter;
 
                         Set<TypeVertex> relationRoleTypes = graphMgr.schema().relatedRoleTypes(rel.type());
                         FunctionalIterator<TypeVertex> instanceRoleTypes = iterate(relationRoleTypes)
                                 .filter(rt -> this.roleTypes.contains(rt.properLabel()));
-                        if (to.props().hasIID()) iter = branchToIID(graphMgr, params, rel, instanceRoleTypes);
-                        else iter = branchToTypes(graphMgr, rel, instanceRoleTypes);
-
-                        if (!to.props().predicates().isEmpty()) iter = to.filterPredicatesOnEdge(iter, params);
-                        return iter;
-                    }
-
-                    private Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> branchToIID(
-                            GraphManager graphMgr, Traversal.Parameters params, ThingVertex rel, FunctionalIterator<TypeVertex> instanceRoleTypes
-                    ) {
-                        assert to.id().isVariable();
-                        ThingVertex player = graphMgr.data().getReadable(params.getIID(to.id().asVariable()));
-                        if (player == null) return emptySorted();
-                        else {
-                            Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iter = instanceRoleTypes.mergeMapForwardable(
-                                    rt -> rel.outs().edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type())
-                                            .toAndOptimised(),
-                                    ASC
-                            ).filter(kv -> kv.key().equals(player));
-                            iter.forward(KeyValue.of(player, null));
-                            return iter;
+                        if (to.props().hasIID()) {
+                            return to.iterateAndFilterPredicatesOnEdges(branchToIID(graphMgr, params, rel, instanceRoleTypes), params, ASC);
+                        } else {
+                            return to.mergeAndFilterPredicatesOnEdges(graphMgr, branchToTypes(graphMgr, rel, instanceRoleTypes), params, ASC);
                         }
                     }
 
-                    private Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> branchToTypes(
-                            GraphManager graphMgr, ThingVertex rel, FunctionalIterator<TypeVertex> instanceRoleTypes
+                    private List<KeyValue<ThingVertex, ThingVertex>> branchToIID(
+                            GraphManager graphMgr, Traversal.Parameters params, ThingVertex rel,
+                            FunctionalIterator<TypeVertex> roleTypes
                     ) {
-                        return instanceRoleTypes.flatMap(rt ->
+                        assert to.id().isVariable();
+                        ThingVertex player = graphMgr.data().getReadable(params.getIID(to.id().asVariable()));
+                        List<KeyValue<ThingVertex, ThingVertex>> toAndRole = new ArrayList<>();
+                        if (player != null) {
+                            roleTypes.forEachRemaining(rt ->
+                                    rel.outs().edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type(), player.iid().key())
+                                            .toAndOptimised().forEachRemaining(toAndRole::add)
+                            );
+                        }
+                        return toAndRole;
+                    }
+
+                    private List<Pair<TypeVertex, Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc>>> branchToTypes(
+                            GraphManager graphMgr, ThingVertex rel, FunctionalIterator<TypeVertex> roleTypes
+                    ) {
+                        return roleTypes.flatMap(rt ->
                                 iterate(to.props().types())
                                         .map(l -> graphMgr.schema().getType(l))
-                                        .map(t -> rel.outs()
+                                        .filter(t -> graphMgr.schema().playersOfRoleType(rt).contains(t))
+                                        .map(t -> new Pair<>(t, rel.outs()
                                                 .edge(ROLEPLAYER, rt, PrefixIID.of(t.encoding().instance()), t.iid())
-                                                .toAndOptimised()
+                                                .toAndOptimised())
                                         )
-                        ).mergeMapForwardable(Function.identity(), ASC);
+                        ).toList();
                     }
 
                     public boolean isClosure(
@@ -1319,7 +1332,7 @@ public abstract class ProcedureEdge<
                         else {
                             Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iter = roleTypeVertices.mergeMapForwardable(
                                     rt -> player.ins()
-                                            .edge(ROLEPLAYER, rt, relation.iid().prefix(), relation.iid().type())
+                                            .edge(ROLEPLAYER, rt, relation.iid().prefix(), relation.iid().type(), relation.iid().key())
                                             .fromAndOptimised(),
                                     ASC
                             ).filter(kv -> kv.key().equals(relation));
@@ -1350,10 +1363,9 @@ public abstract class ProcedureEdge<
                         Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> closures = iterate(relationRoleTypes)
                                 .filter(rt -> roleTypes.contains(rt.properLabel()) && roleTypesPlayed.contains(rt))
                                 .mergeMapForwardable(
-                                        rt -> player.ins().edge(ROLEPLAYER, rt, rel.iid().prefix(), rel.iid().type())
-                                                .fromAndOptimised(),
+                                        rt -> player.ins().edge(ROLEPLAYER, rt, rel.iid()).fromAndOptimised(),
                                         ASC
-                                ).filter(kv -> kv.key().equals(rel) &&
+                                ).filter(kv ->
                                         scope.getRoleEdgeSource(kv.value()).map(source -> !source.equals(this)).orElse(true)
                                 );
                         closures.forward(KeyValue.of(rel, null));

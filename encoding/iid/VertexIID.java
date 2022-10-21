@@ -23,8 +23,8 @@ import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.encoding.key.KeyGenerator;
 import com.vaticle.typedb.core.encoding.key.Key;
+import com.vaticle.typedb.core.encoding.key.KeyGenerator;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeDateTimeAsSorted;
@@ -182,8 +182,8 @@ public abstract class VertexIID extends PartitionedIID {
             return Encoding.Vertex.Thing.of(bytes.get(0));
         }
 
-        public ByteArray key() {
-            return bytes.view(PREFIX_W_TYPE_LENGTH);
+        public KeyIID key() {
+            return KeyIID.of(bytes.view(PREFIX_W_TYPE_LENGTH));
         }
 
         public boolean isAttribute() {
@@ -214,19 +214,13 @@ public abstract class VertexIID extends PartitionedIID {
         static final int VALUE_INDEX = VALUE_TYPE_INDEX + VALUE_TYPE_LENGTH;
         private final Encoding.ValueType<VALUE> valueType;
 
+        Attribute(Encoding.ValueType<VALUE> valueType, Type typeIID, ByteArray valueBytes) {
+            this(join(ATTRIBUTE.prefix().bytes(), typeIID.bytes, valueType.bytes(), valueBytes), valueType);
+        }
+
         private Attribute(ByteArray bytes, Encoding.ValueType<VALUE> valueType) {
             super(bytes);
             assert bytes.get(PREFIX_W_TYPE_LENGTH) == valueType.key();
-            this.valueType = valueType;
-        }
-
-        Attribute(Encoding.ValueType<VALUE> valueType, Type typeIID, ByteArray valueBytes) {
-            super(join(
-                    ATTRIBUTE.prefix().bytes(),
-                    typeIID.bytes,
-                    valueType.bytes(),
-                    valueBytes
-            ));
             this.valueType = valueType;
         }
 

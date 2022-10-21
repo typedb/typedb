@@ -51,9 +51,9 @@ import java.util.TreeSet;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.intersect;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 
 /**
  * We have to include the optimisation to only find an answer if a connected predecessor or successor is retrieved
@@ -151,7 +151,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         Map<Identifier.Variable.Retrievable, Vertex<?, ?>> answer = new HashMap<>();
         for (ProcedureVertex<?, ?> procedureVertex : procedure.vertices()) {
             if (procedureVertex.id().isRetrievable() && modifiers.filter().variables().contains(procedureVertex.id().asVariable().asRetrievable())) {
-                answer.put(procedureVertex.id().asVariable().asRetrievable(), vertexTraversers.get(procedureVertex).vertex());
+                Vertex<?, ?> vertex = vertexTraversers.get(procedureVertex).vertex();
+                if (vertex.isThing() && vertex.asThing().isAttribute() && vertex.asThing().asAttribute().isValue()) {
+                    answer.put(procedureVertex.id().asVariable().asRetrievable(), vertex.asThing().asAttribute().asValue().toAttribute());
+                } else {
+                    answer.put(procedureVertex.id().asVariable().asRetrievable(), vertex);
+                }
             }
         }
 
@@ -264,6 +269,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private final Set<ProcedureVertex<?, ?>> implicitDependees;
         private ProcedureVertex<?, ?> lastDependee;
         private final Order order;
+        private final boolean sortByValue;
         private Forwardable<Vertex<?, ?>, ? extends Order> iterator;
         private Vertex<?, ?> vertex;
         private boolean anyAnswerFound;
@@ -274,7 +280,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             this.implicitDependees = new HashSet<>();
             this.anyAnswerFound = false;
             this.lastDependee = procedureVertex.ins().stream().map(ProcedureEdge::from).max(Comparator.comparing(ProcedureVertex::order)).orElse(null);
-            this.order = modifiers.sorting().order(procedureVertex.id());
+            Optional<Order> explicitOrder = modifiers.sorting().order(procedureVertex.id());
+            if (explicitOrder.isPresent()) {
+                order = explicitOrder.get();
+                sortByValue = true;
+            } else {
+                order = ASC;
+                sortByValue = false;
+            }
         }
 
         public void addImplicitDependee(ProcedureVertex<?, ?> from) {
@@ -363,9 +376,9 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         private Forwardable<Vertex<?, ?>, ? extends Order> createIteratorFromStart() {
             assert procedureVertex.isStartVertex();
             if (procedureVertex.id().isScoped()) {
-                return applyLocalScope((Forwardable<Vertex<?, ?>, ? extends Order>) procedureVertex.iterator(graphMgr, params, order));
+                return applyLocalScope((Forwardable<Vertex<?, ?>, ? extends Order>) procedureVertex.iterator(graphMgr, params, order, sortByValue));
             } else {
-                return (Forwardable<Vertex<?, ?>, ? extends Order>) procedureVertex.iterator(graphMgr, params, order);
+                return (Forwardable<Vertex<?, ?>, ? extends Order>) procedureVertex.iterator(graphMgr, params, order, sortByValue);
             }
         }
 

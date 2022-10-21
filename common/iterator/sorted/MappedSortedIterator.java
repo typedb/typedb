@@ -167,6 +167,11 @@ public class MappedSortedIterator<
         }
 
         @Override
+        public SortedIterator.Forwardable<U, ORDER> takeWhile(Function<U, Boolean> condition) {
+            return SortedIterators.Forwardable.takeWhile(this, condition);
+        }
+
+        @Override
         public SortedIterator.Forwardable<U, ORDER> onConsumed(Runnable function) {
             return SortedIterators.Forwardable.onConsume(this, function);
         }

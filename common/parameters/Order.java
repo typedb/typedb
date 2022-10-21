@@ -29,6 +29,10 @@ public abstract class Order {
         return orderer().compare(first, second) <= 0;
     }
 
+    public <T extends Comparable<? super T>> boolean inOrderNotEq(T first, T second) {
+        return orderer().compare(first, second) < 0;
+    }
+
     public boolean isAscending() {
         return false;
     }

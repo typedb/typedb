@@ -22,6 +22,8 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.key.Key;
 
+import java.util.List;
+
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 
 /**
@@ -35,7 +37,7 @@ public abstract class EdgeViewIID<
     EDGE_INFIX infix;
     VERTEX_IID start;
     VERTEX_IID end;
-    SuffixIID suffix;
+    KeyIID suffix;
     private int endIndex, infixIndex, suffixIndex;
 
     EdgeViewIID(ByteArray bytes) {
@@ -142,12 +144,22 @@ public abstract class EdgeViewIID<
             return new Thing(join(start.bytes, infix.bytes, end.bytes));
         }
 
-        public static Thing of(VertexIID.Thing start, InfixIID.Thing infix, VertexIID.Thing end, SuffixIID suffix) {
+        public static Thing of(VertexIID.Thing start, InfixIID.Thing infix, VertexIID.Thing end, KeyIID suffix) {
             return new Thing(join(start.bytes, infix.bytes, end.bytes, suffix.bytes));
         }
 
         public static Key.Prefix<Thing> prefix(VertexIID.Thing start, InfixIID.Thing infix) {
             return new Key.Prefix<>(join(start.bytes, infix.bytes), computePartition(start, infix), Thing::of);
+        }
+
+        public static Key.Prefix<Thing> prefix(VertexIID.Thing start, InfixIID.Thing infix, List<IID> iids) {
+            ByteArray[] bytes = new ByteArray[2 + iids.size()];
+            bytes[0] = start.bytes;
+            bytes[1] = infix.bytes;
+            for (int i = 0; i < iids.size(); i++) {
+                bytes[i + 2] = iids.get(i).bytes;
+            }
+            return new Key.Prefix<>(join(bytes), computePartition(start, infix), Thing::of);
         }
 
         @Override
@@ -156,10 +168,10 @@ public abstract class EdgeViewIID<
             return infix;
         }
 
-        public SuffixIID suffix() {
+        public KeyIID suffix() {
             if (suffix == null) {
-                if (suffixIndex() >= bytes.length()) suffix = SuffixIID.of(ByteArray.empty());
-                else suffix = SuffixIID.of(bytes.view(suffixIndex()));
+                if (suffixIndex() >= bytes.length()) suffix = KeyIID.of(ByteArray.empty());
+                else suffix = KeyIID.of(bytes.view(suffixIndex()));
             }
             return suffix;
         }
