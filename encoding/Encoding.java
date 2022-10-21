@@ -932,7 +932,7 @@ public class Encoding {
             }
 
             enum Optimised implements Thing {
-                ROLEPLAYER(Infix.EDGE_ROLEPLAYER_FORWARD, Infix.EDGE_ROLEPLAYER_BACKWARD, 1);
+                ROLEPLAYER(Infix.EDGE_ROLEPLAYER_FORWARD, Infix.EDGE_ROLEPLAYER_BACKWARD, 2);
 
                 private final Infix forward;
                 private final Infix backward;

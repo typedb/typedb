@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.graph.adjacency.impl;
 
 import com.vaticle.typedb.common.collection.ConcurrentSet;
+import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -249,9 +250,9 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         List<IID> infixTails(ThingEdge edge) {
             if (edge.encoding().isOptimisation()) {
                 if (isOut()) {
-                    return List.of(edge.forwardView().iid().infix().asRolePlayer().tail().get(), edge.toIID().prefix(), edge.toIID().type());
+                    return List.of(edge.forwardView().iid().infix().asRolePlayer().tail().get(), edge.toIID().prefix(), edge.toIID().type(), edge.toIID().key());
                 } else {
-                    return List.of(edge.backwardView().iid().infix().asRolePlayer().tail().get(), edge.fromIID().prefix(), edge.fromIID().type());
+                    return List.of(edge.backwardView().iid().infix().asRolePlayer().tail().get(), edge.fromIID().prefix(), edge.fromIID().type(), edge.fromIID().key());
                 }
             } else {
                 if (isOut()) return List.of(edge.toIID().prefix(), edge.toIID().type());
@@ -382,7 +383,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
             ThingEdgeImpl.Buffered edge = isOut()
                     ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, optimised, isInferred)
                     : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, optimised, isInferred);
-            List<IID> infixes = List.of(optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type());
+            List<IID> infixes = List.of(optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type(), adjacent.iid().key());
             put(encoding, edge, infixes, true);
             return edge;
         }

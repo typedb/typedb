@@ -1245,7 +1245,7 @@ public abstract class ProcedureEdge<
                         List<KeyValue<ThingVertex, ThingVertex>> toAndRole = new ArrayList<>();
                         if (player != null) {
                             roleTypes.forEachRemaining(rt ->
-                                    rel.outs().edge(ROLEPLAYER, rt, player.iid())
+                                    rel.outs().edge(ROLEPLAYER, rt, player.iid().prefix(), player.iid().type(), player.iid().key())
                                             .toAndOptimised().forEachRemaining(toAndRole::add)
                             );
                         }
@@ -1332,7 +1332,7 @@ public abstract class ProcedureEdge<
                         else {
                             Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iter = roleTypeVertices.mergeMapForwardable(
                                     rt -> player.ins()
-                                            .edge(ROLEPLAYER, rt, relation.iid())
+                                            .edge(ROLEPLAYER, rt, relation.iid().prefix(), relation.iid().type(), relation.iid().key())
                                             .fromAndOptimised(),
                                     ASC
                             ).filter(kv -> kv.key().equals(relation));
