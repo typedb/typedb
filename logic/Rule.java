@@ -85,10 +85,10 @@ public class Rule {
 
     // note: as `Rule` is cached between transactions, we cannot hold any transaction-bound objects such as Managers
     private final RuleStructure structure;
-    private final Conjunction when;
+    private final Disjunction when;
     private final Conjunction then;
     private final Conclusion conclusion;
-    private final Condition condition;
+    private final Set<Condition> conditions;
 
     private Rule(RuleStructure structure, LogicManager logicMgr) {
         this.structure = structure;
@@ -96,7 +96,7 @@ public class Rule {
         this.when = whenPattern(structure.when(), structure.then(), logicMgr);
         pruneThenResolvedTypes();
         this.conclusion = Conclusion.create(this);
-        this.condition = Condition.create(this);
+        this.conditions = iterate(this.when.conjunctions()).map(conj -> Condition.create(this, conj)).toSet();
     }
 
     public static Rule of(LogicManager logicMgr, RuleStructure structure) {
@@ -116,11 +116,11 @@ public class Rule {
         return conclusion;
     }
 
-    public Condition condition() {
-        return condition;
+    public Set<Condition> condition() {
+        return conditions;
     }
 
-    public Conjunction when() {
+    public Disjunction when() {
         return when;
     }
 
@@ -185,23 +185,24 @@ public class Rule {
     private void pruneThenResolvedTypes() {
         then.variables().stream().filter(variable -> variable.id().isName())
                 .forEach(thenVar -> {
-                    Variable whenVar = when.variable(thenVar.id());
-                    thenVar.retainInferredTypes(whenVar.inferredTypes());
-                    if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
+                    iterate(when.conjunctions()).forEachRemaining(conj -> {
+                        Variable whenVar = conj.variable(thenVar.id());
+                        thenVar.retainInferredTypes(whenVar.inferredTypes());
+                        if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
+                    });
                 });
     }
 
-    private Conjunction whenPattern(com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> conjunction,
+    private Disjunction whenPattern(com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> conjunction,
                                     com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> then, LogicManager logicMgr) {
         Disjunction when = Disjunction.create(conjunction.normalise(), VariableRegistry.createFromThings(list(then)));
-        assert when.conjunctions().size() == 1;
 
-        if (iterate(when.conjunctions().get(0).negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
+        if (iterate(when.conjunctions()).flatMap(conj -> iterate(conj.negations())).anyMatch(neg -> neg.disjunction().conjunctions().size() != 1)) {
             throw TypeDBException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
         }
 
         logicMgr.typeInference().applyCombination(when);
-        return when.conjunctions().get(0);
+        return when;
     }
 
     private Conjunction thenPattern(com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
@@ -221,13 +222,13 @@ public class Rule {
         private final Rule rule;
         private final ResolvableConjunction conjunction;
 
-        Condition(Rule rule) {
+        Condition(Rule rule, Conjunction conjunction) {
             this.rule = rule;
-            this.conjunction = ResolvableConjunction.of(rule.when());
+            this.conjunction = ResolvableConjunction.of(conjunction);
         }
 
-        public static Condition create(Rule rule) {
-            return new Condition(rule);
+        public static Condition create(Rule rule, Conjunction conjunction) {
+            return new Condition(rule, conjunction);
         }
 
         public Rule rule() {
@@ -239,25 +240,31 @@ public class Rule {
         }
 
         public Conjunction pattern() {
-            return rule().when();
+            return conjunction.pattern();
         }
 
         @Override
         public boolean equals(Object o) {
+            assert false;
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             final Condition that = (Condition) o;
-            return rule.equals(that.rule);
+            return rule.equals(that.rule) && conjunction.equals(that.conjunction);
         }
 
         @Override
         public int hashCode() {
-            return rule.hashCode();
+            assert false;
+            return Objects.hash(rule.hashCode(), conjunction.hashCode());
         }
 
         @Override
         public String toString() {
             return "Rule[" + rule.getLabel() + "] Condition " + rule.when;
+        }
+
+        public Conclusion conclusion() {
+            return rule.conclusion();
         }
     }
 
@@ -369,18 +376,19 @@ public class Rule {
         private void validateInsertable(LogicManager logicMgr) {
             Conjunction clonedThen = rule.then.clone();
             logicMgr.typeInference().applyCombination(clonedThen, true);
-
-            Set<Identifier.Variable.Name> sharedIDs = iterate(rule.then.retrieves())
-                    .filter(id -> id.isName() && rule.when.retrieves().contains(id))
-                    .map(Identifier.Variable::asName).toSet();
-            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenPermutations = logicMgr.typeInference()
-                    .getPermutations(rule.when, false, sharedIDs);
-            Set<Map<Identifier.Variable.Name, Label>> insertableThenPermutations = logicMgr.typeInference()
-                    .getPermutations(rule.then, true, sharedIDs).toSet();
-            whenPermutations.forEachRemaining(nameLabelMap -> {
-                if (!insertableThenPermutations.contains(nameLabelMap)) {
-                    throw TypeDBException.of(RULE_CONCLUSION_ILLEGAL_INSERT, rule.structure.label(), nameLabelMap.toString());
-                }
+            iterate(rule.when.conjunctions()).forEachRemaining(conj -> {
+                Set<Identifier.Variable.Name> sharedIDs = iterate(rule.then.retrieves())
+                        .filter(id -> id.isName() && conj.retrieves().contains(id))
+                        .map(Identifier.Variable::asName).toSet();
+                FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenPermutations = logicMgr.typeInference()
+                        .getPermutations(conj, false, sharedIDs);
+                Set<Map<Identifier.Variable.Name, Label>> insertableThenPermutations = logicMgr.typeInference()
+                        .getPermutations(rule.then, true, sharedIDs).toSet();
+                whenPermutations.forEachRemaining(nameLabelMap -> {
+                    if (!insertableThenPermutations.contains(nameLabelMap)) {
+                        throw TypeDBException.of(RULE_CONCLUSION_ILLEGAL_INSERT, rule.structure.label(), nameLabelMap.toString());
+                    }
+                });
             });
         }
 

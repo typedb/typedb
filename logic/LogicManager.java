@@ -107,7 +107,7 @@ public class LogicManager {
     }
 
     private FunctionalIterator<Rule> rulesWithNegations() {
-        return rules().filter(rule -> !rule.when().negations().isEmpty());
+        return rules().filter(rule -> iterate(rule.condition()).anyMatch(condition -> !condition.conjunction().negations().isEmpty()));
     }
 
     public Map<Rule, Set<Unifier>> applicableRules(Concludable concludable) {
@@ -159,7 +159,8 @@ public class LogicManager {
 
         // re-index the concludable-rule unifiers
         this.rules().forEachRemaining(rule -> {
-            rule.condition().conjunction().allConcludables().forEachRemaining(this::indexApplicableRules);
+            iterate(rule.condition()).flatMap(condition -> iterate(condition.conjunction().allConcludables()))
+                    .forEachRemaining(this::indexApplicableRules);
         });
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
@@ -195,16 +196,16 @@ public class LogicManager {
     }
 
     private FunctionalIterator<RuleDependency> ruleDependencies(Rule rule) {
-        return rule.condition().conjunction().allConcludables()
-                    .flatMap(c -> iterate(applicableRules(c).keySet()))
-                    .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
+        return iterate(rule.condition()).flatMap(condition -> condition.conjunction().allConcludables())
+                .flatMap(c -> iterate(applicableRules(c).keySet()))
+                .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
     }
 
     private FunctionalIterator<RuleDependency> negatedRuleDependencies(Rule rule) {
-        assert iterate(rule.condition().conjunction().negations())
+        assert iterate(rule.condition()).flatMap(condition -> iterate(condition.conjunction().negations()))
                 .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                 .allMatch(conj -> conj.negations().isEmpty()); // Revise when we support nested negations in rules
-        return iterate(rule.condition().conjunction().negations())
+        return iterate(rule.condition()).flatMap(condition -> iterate(condition.conjunction().negations()))
                 .flatMap(neg -> iterate(neg.disjunction().conjunctions()))
                 .flatMap(conj -> conj.allConcludables())
                 .flatMap(concludable -> iterate(applicableRules(concludable).keySet()))

@@ -230,7 +230,7 @@ public abstract class ConclusionController<
         public void setUp() {
             setHubReactive(fanOut(this));
             InputPort<Either<ConceptMap, Materialisation>> conditionInput = createInputPort();
-            ConceptMap filteredBounds = bounds().filter(rule.condition().pattern().retrieves());
+            ConceptMap filteredBounds = bounds().filter(rule.when().allBranchesRetrieve());
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), driver(), rule.condition(), filteredBounds));
             Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> conclusionReactive = createStream();
             conditionInput.map(Processor::convertConclusionInput).registerSubscriber(conclusionReactive);

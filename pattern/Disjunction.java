@@ -20,11 +20,13 @@ package com.vaticle.typedb.core.pattern;
 
 import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.ThreadTrace;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -40,10 +42,14 @@ public class Disjunction implements Pattern, Cloneable {
     private static final String TRACE_PREFIX = "disjunction.";
     private final List<Conjunction> conjunctions;
     private final int hash;
+    private Set<Identifier.Variable.Retrievable> allBranchesRetrieve;
 
     public Disjunction(List<Conjunction> conjunctions) {
         this.conjunctions = conjunctions;
         this.hash = Objects.hash(conjunctions);
+        this.allBranchesRetrieve = iterate(conjunctions)
+                .flatMap(conjunction -> iterate(conjunction.retrieves()))
+                .filter(id -> iterate(conjunctions).allMatch(conjunction -> conjunction.retrieves().contains(id))).toSet();
     }
 
     public static Disjunction create(
@@ -95,5 +101,9 @@ public class Disjunction implements Pattern, Cloneable {
     @Override
     public int hashCode() {
         return hash;
+    }
+
+    public Set<Identifier.Variable.Retrievable> allBranchesRetrieve() {
+        return allBranchesRetrieve;
     }
 }
