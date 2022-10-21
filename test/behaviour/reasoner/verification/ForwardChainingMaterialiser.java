@@ -181,11 +181,11 @@ public class ForwardChainingMaterialiser {
         }
 
         private Set<Rule> negatedDependencies() {
-            assert iterate(rule.condition()).flatMap(condition -> iterate(condition.conjunction().negations()))
+            assert iterate(rule.conditionBranches()).flatMap(condition -> iterate(condition.conjunction().negations()))
                     .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                     .allMatch(conj -> conj.negations().isEmpty()); // Revise when we support nested negations in rules
             if (negatedDependencies == null) {
-                negatedDependencies = iterate(rule.condition()).flatMap(condition -> iterate(condition.conjunction().negations()))
+                negatedDependencies = iterate(rule.conditionBranches()).flatMap(condition -> iterate(condition.conjunction().negations()))
                     .flatMap(negation -> iterate(negation.disjunction().conjunctions()))
                     .flatMap(conj -> conj.allConcludables())
                     .flatMap(concludable -> iterate(tx.logic().applicableRules(concludable).keySet()))
@@ -197,7 +197,7 @@ public class ForwardChainingMaterialiser {
 
         private Set<Rule> unnegatedDependencies() {
             if (unnegatedDependencies == null) {
-                unnegatedDependencies = iterate(rule.condition()).flatMap(condition -> iterate(condition.conjunction().positiveConcludables()))
+                unnegatedDependencies = iterate(rule.conditionBranches()).flatMap(condition -> iterate(condition.conjunction().positiveConcludables()))
                         .flatMap(concludable -> iterate(tx.logic().applicableRules(concludable).keySet()))
                         .map(r -> rules.get(r))
                         .toSet();
@@ -208,7 +208,7 @@ public class ForwardChainingMaterialiser {
         private boolean materialise() {
             // Get all the places where the rule condition is satisfied and materialise for each
             requiresReiteration = false;
-            iterate(rule.condition()).forEachRemaining(condition -> {
+            iterate(rule.conditionBranches()).forEachRemaining(condition -> {
                 traverse(condition.pattern()).forEachRemaining(conditionAns -> materialiseAndBind(
                         rule.conclusion(), conditionAns, tx.traversal(), tx.concepts()
                 ).ifPresent(materialisation -> record(condition, conditionAns, materialisation)));
@@ -223,8 +223,8 @@ public class ForwardChainingMaterialiser {
                     .map(materialisation -> materialisation.bindToConclusion(conclusion, whenConcepts));
         }
 
-        private void record(com.vaticle.typedb.core.logic.Rule.Condition condition, ConceptMap conditionAns, Map<Variable, Concept> conclusionAns) {
-            Materialisation materialisation = Materialisation.create(condition, conditionAns, conclusionAns);
+        private void record(com.vaticle.typedb.core.logic.Rule.Condition.ConditionBranch conditionBranch, ConceptMap conditionAns, Map<Variable, Concept> conclusionAns) {
+            Materialisation materialisation = Materialisation.create(conditionBranch, conditionAns, conclusionAns);
             if (!conditionAnsMaterialisations().containsKey(conditionAns)) {
                 requiresReiteration = true;
                 conditionAnsMaterialisations().put(conditionAns, materialisation);
@@ -305,21 +305,21 @@ public class ForwardChainingMaterialiser {
 
     static class Materialisation {
 
-        private final com.vaticle.typedb.core.logic.Rule.Condition ruleCondition;
+        private final com.vaticle.typedb.core.logic.Rule.Condition.ConditionBranch ruleConditionBranch;
         private final BoundCondition boundCondition;
         private final BoundConclusion boundConclusion;
 
-        private Materialisation(com.vaticle.typedb.core.logic.Rule.Condition ruleCondition, BoundCondition boundCondition,
+        private Materialisation(com.vaticle.typedb.core.logic.Rule.Condition.ConditionBranch ruleConditionBranch, BoundCondition boundCondition,
                                 BoundConclusion boundConclusion) {
-            this.ruleCondition = ruleCondition;
+            this.ruleConditionBranch = ruleConditionBranch;
             this.boundCondition = boundCondition;
             this.boundConclusion = boundConclusion;
         }
 
-        static Materialisation create(com.vaticle.typedb.core.logic.Rule.Condition ruleCondition, ConceptMap conditionAnswer,
+        static Materialisation create(com.vaticle.typedb.core.logic.Rule.Condition.ConditionBranch ruleConditionBranch, ConceptMap conditionAnswer,
                                       Map<Variable, Concept> conclusionAnswer) {
-            return new Materialisation(ruleCondition, BoundCondition.create(ruleCondition, conditionAnswer),
-                    BoundConclusion.create(ruleCondition.conclusion(), conclusionAnswer));
+            return new Materialisation(ruleConditionBranch, BoundCondition.create(ruleConditionBranch, conditionAnswer),
+                    BoundConclusion.create(ruleConditionBranch.conclusion(), conclusionAnswer));
         }
 
         BoundCondition boundCondition() {
@@ -335,14 +335,14 @@ public class ForwardChainingMaterialiser {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Materialisation that = (Materialisation) o;
-            return ruleCondition.equals(that.ruleCondition) &&
+            return ruleConditionBranch.equals(that.ruleConditionBranch) &&
                     boundCondition.equals(that.boundCondition) &&
                     boundConclusion.equals(that.boundConclusion);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(ruleCondition, boundCondition, boundConclusion);
+            return Objects.hash(ruleConditionBranch, boundCondition, boundConclusion);
         }
     }
 

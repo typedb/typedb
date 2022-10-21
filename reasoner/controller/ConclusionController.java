@@ -307,7 +307,7 @@ public abstract class ConclusionController<
                     Either<ConceptMap, Map<Variable, Concept>> packet
             ) {
                 if (packet.isFirst()) {
-                    assert packet.first().concepts().keySet().containsAll(conclusionProcessor().rule().condition().pattern().retrieves());
+                    assert packet.first().concepts().keySet().containsAll(conclusionProcessor().rule().condition().pattern().allBranchesRetrieve());
                     InputPort<Either<ConceptMap, Materialisation>> materialisationInput = conclusionProcessor().createInputPort();
                     ConceptMap filteredConditionAns = packet.first().filter(conclusionProcessor().rule().conclusion().retrievableIds());
                     conclusionProcessor().mayRequestMaterialiser(new MaterialiserRequest(

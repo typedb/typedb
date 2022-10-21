@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
@@ -88,7 +89,7 @@ public class Rule {
     private final Disjunction when;
     private final Conjunction then;
     private final Conclusion conclusion;
-    private final Set<Condition> conditions;
+    private final Condition condition;
 
     private Rule(RuleStructure structure, LogicManager logicMgr) {
         this.structure = structure;
@@ -96,7 +97,7 @@ public class Rule {
         this.when = whenPattern(structure.when(), structure.then(), logicMgr);
         pruneThenResolvedTypes();
         this.conclusion = Conclusion.create(this);
-        this.conditions = iterate(this.when.conjunctions()).map(conj -> Condition.create(this, conj)).toSet();
+        this.condition = Condition.create(this, ResolvableDisjunction.of(this.when));
     }
 
     public static Rule of(LogicManager logicMgr, RuleStructure structure) {
@@ -116,8 +117,12 @@ public class Rule {
         return conclusion;
     }
 
-    public Set<Condition> condition() {
-        return conditions;
+    public Condition condition() {
+        return condition;
+    }
+
+    public Set<Condition.ConditionBranch> conditionBranches() {
+        return condition.branches();
     }
 
     public Disjunction when() {
@@ -185,11 +190,9 @@ public class Rule {
     private void pruneThenResolvedTypes() {
         then.variables().stream().filter(variable -> variable.id().isName())
                 .forEach(thenVar -> {
-                    iterate(when.conjunctions()).forEachRemaining(conj -> {
-                        Variable whenVar = conj.variable(thenVar.id());
-                        thenVar.retainInferredTypes(whenVar.inferredTypes());
-                        if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
-                    });
+                    Set<Label> whenVarInferredTypes = iterate(when.conjunctions()).flatMap(conj -> iterate(conj.variable(thenVar.id()).inferredTypes())).toSet();
+                        thenVar.retainInferredTypes(whenVarInferredTypes);
+                    if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
                 });
     }
 
@@ -218,53 +221,82 @@ public class Rule {
     }
 
     public static class Condition {
-
         private final Rule rule;
-        private final ResolvableConjunction conjunction;
+        private final ResolvableDisjunction disjunction;
+        private final Set<ConditionBranch> branches;
 
-        Condition(Rule rule, Conjunction conjunction) {
+        public Condition(Rule rule, ResolvableDisjunction disjunction) {
             this.rule = rule;
-            this.conjunction = ResolvableConjunction.of(conjunction);
+            this.disjunction = disjunction;
+            this.branches = new HashSet<>();
+            disjunction.conjunctions().forEach(conjunction -> this.branches.add(new ConditionBranch(rule, conjunction)));
         }
 
-        public static Condition create(Rule rule, Conjunction conjunction) {
-            return new Condition(rule, conjunction);
+        public Set<ConditionBranch> branches() {
+            return branches;
+        }
+
+        public static Condition create(Rule rule, ResolvableDisjunction disjunction) {
+            return new Condition(rule, disjunction);
+        }
+
+        public Disjunction pattern() {
+            return disjunction.pattern();
+        }
+
+        public ResolvableDisjunction disjunction() {
+            return disjunction;
         }
 
         public Rule rule() {
             return rule;
         }
 
-        public ResolvableConjunction conjunction() {
-            return conjunction;
-        }
+        public static class ConditionBranch {
 
-        public Conjunction pattern() {
-            return conjunction.pattern();
-        }
+            private final Rule rule;
+            private final ResolvableConjunction conjunction;
 
-        @Override
-        public boolean equals(Object o) {
-            assert false;
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            final Condition that = (Condition) o;
-            return rule.equals(that.rule) && conjunction.equals(that.conjunction);
-        }
+            ConditionBranch(Rule rule, ResolvableConjunction conjunction) {
+                this.rule = rule;
+                this.conjunction = conjunction;
+            }
 
-        @Override
-        public int hashCode() {
-            assert false;
-            return Objects.hash(rule.hashCode(), conjunction.hashCode());
-        }
+            public Rule rule() {
+                return rule;
+            }
 
-        @Override
-        public String toString() {
-            return "Rule[" + rule.getLabel() + "] Condition " + rule.when;
-        }
+            public ResolvableConjunction conjunction() {
+                return conjunction;
+            }
 
-        public Conclusion conclusion() {
-            return rule.conclusion();
+            public Conjunction pattern() {
+                return conjunction.pattern();
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                // assert false;
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                final ConditionBranch that = (ConditionBranch) o;
+                return rule.equals(that.rule) && conjunction.equals(that.conjunction);
+            }
+
+            @Override
+            public int hashCode() {
+                //  assert false;
+                return Objects.hash(rule.hashCode(), conjunction.hashCode());
+            }
+
+            @Override
+            public String toString() {
+                return "Rule[" + rule.getLabel() + "] Condition " + rule.when;
+            }
+
+            public Conclusion conclusion() {
+                return rule.conclusion();
+            }
         }
     }
 
