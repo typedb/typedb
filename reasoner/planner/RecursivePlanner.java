@@ -64,7 +64,7 @@ public class RecursivePlanner extends ReasonerPlanner {
         this.cyclicScalingFactors = new HashMap<>();
     }
 
-    private static Set<Variable> consideredVariables(Resolvable<?> resolvable) {
+    static Set<Variable> consideredVariables(Resolvable<?> resolvable) {
         return iterate(resolvable.variables()).filter(Variable::isThing).toSet();
     }
 
@@ -214,8 +214,10 @@ public class RecursivePlanner extends ReasonerPlanner {
             }
 
             estimator.extend(resolvable);
-            bounds.addAll(consideredVariables(resolvable));
-            restrictedBounds.addAll(consideredVariables(resolvable));
+            if (!resolvable.isNegated()) {
+                bounds.addAll(consideredVariables(resolvable));
+                restrictedBounds.addAll(consideredVariables(resolvable));
+            }
         }
 
         CallMode callMode = new CallMode(conjunctionNode.conjunction(), new HashSet<>(inputBounds));
