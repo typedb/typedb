@@ -107,17 +107,19 @@ public class AnswerCountEstimator {
 
     public IncrementalEstimator createIncrementalEstimator(ResolvableConjunction conjunction) {
         if (!conjunctionModels.containsKey(conjunction)) buildConjunctionModel(conjunction);
-        return new IncrementalEstimator(conjunctionModels.get(conjunction));
+        return new IncrementalEstimator(conjunctionModels.get(conjunction), conjunctionModelFactory.localModelFactory);
     }
 
     public static class IncrementalEstimator {
         private final ConjunctionModel conjunctionModel;
+        private final LocalModelFactory localModelFactory;
         private final Map<LocalModel, Pair<Double, Optional<Variable>>> modelScale;
         private final Map<Variable, Double> minVariableEstimate;
         private final Map<Variable, Set<LocalModel>> affectedModels;
 
-        private IncrementalEstimator(ConjunctionModel conjunctionModel) {
+        private IncrementalEstimator(ConjunctionModel conjunctionModel, LocalModelFactory localModelFactory) {
             this.conjunctionModel = conjunctionModel;
+            this.localModelFactory = localModelFactory;
             this.modelScale = new HashMap<>();
             this.minVariableEstimate = new HashMap<>();
             this.affectedModels = new HashMap<>();
@@ -144,6 +146,9 @@ public class AnswerCountEstimator {
             });
 
             propagate(improvedVariableEstimates);
+            // Lazy-fix: Replace all unmodelled constraints with a pessimistic estimate (Inaccuracy: We don't consider inferred values)
+            iterate(consideredVariables(resolvable)).filter(v -> !minVariableEstimate.containsKey(v))
+                    .forEachRemaining(v -> minVariableEstimate.put(v, (double)localModelFactory.countPersistedThingsMatchingType(v.asThing())));
         }
 
         private Map<Variable,Double> applyScaling(LocalModel model) {
@@ -197,7 +202,6 @@ public class AnswerCountEstimator {
                     .filter(model -> iterate(model.variables).anyMatch(variables::contains))
                     .toList();
 
-            assert iterate(variables).allMatch(minVariableEstimate::containsKey);
             Map<Variable, CoverElement> cover = new HashMap<>();
             iterate(variables).forEachRemaining(v -> cover.put(v, new CoverElement(minVariableEstimate.get(v))));
 
@@ -259,7 +263,7 @@ public class AnswerCountEstimator {
             this.isCyclic = isCyclic;
         }
 
-        List<LocalModel> modelsForResolvable(Resolvable<?> resolvable) {
+        private List<LocalModel> modelsForResolvable(Resolvable<?> resolvable) {
             return constraintModels.get(resolvable);
         }
     }
@@ -300,20 +304,9 @@ public class AnswerCountEstimator {
         }
 
         private List<LocalModel> buildModelsForRetrievable(Retrievable retrievable) {
-            List<LocalModel> models = new ArrayList<>();
-            Set<Variable> coveredVariables = new HashSet<>();
-            iterate(extractConstraints(retrievable))
+            return iterate(extractConstraints(retrievable))
                     .map(constraint -> buildConstraintModel(constraint, Optional.empty()))
-                    .forEachRemaining(model -> {
-                        models.add(model);
-                        coveredVariables.addAll(model.variables);
-                    });
-            iterate(consideredVariables(retrievable)).filter(v -> !coveredVariables.contains(v)).forEachRemaining(v -> {
-                // Fallback for rules with vague bodies such as when {$x > 0;} then {$x has sign "positive";}
-                models.add(new LocalModel.VariableModel(set(v), Math.max(1, localModelFactory.countPersistedThingsMatchingType(v.asThing()))));
-            });
-
-            return models;
+                    .toList();
         }
 
         // INACCURACY: We don't consider negations, which can reduce the number of answers retrieved.
