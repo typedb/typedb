@@ -159,7 +159,6 @@ host_compatible_java_test(
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
-        "@vaticle_typeql//java/pattern:pattern",
     ],
 )
 
@@ -185,8 +184,6 @@ host_compatible_java_test(
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
-        "@vaticle_typeql//java/pattern:pattern",
-        "@vaticle_typeql//java/query",
     ],
 )
 
