@@ -242,7 +242,7 @@ docker_container_push(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", ".grabl/*", "bin/*", ".circleci/*"]),
+    include = glob(["*", ".factory/*", "bin/*", ".circleci/*"]),
     exclude = glob([
         "*.md",
         ".circleci/windows/*",
