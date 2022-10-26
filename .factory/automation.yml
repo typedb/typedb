@@ -36,7 +36,7 @@ build:
         SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
           bazel run @vaticle_dependencies//tool/sonarcloud:code-analysis -- \
           --project-key=vaticle_typedb \
-          --branch=$GRABL_BRANCH --commit-id=$GRABL_COMMIT
+          --branch=$FACTORY_BRANCH --commit-id=$FACTORY_COMMIT
     dependency-analysis:
       image: vaticle-ubuntu-21.04
       command: |
@@ -158,7 +158,7 @@ build:
         branch: [master, development]
       dependencies: [deploy-apt-snapshot]
       command: |
-        export TEST_DEPLOYMENT_APT_COMMIT=$GRABL_COMMIT
+        export TEST_DEPLOYMENT_APT_COMMIT=$FACTORY_COMMIT
         bazel test //test/deployment:apt --action_env=TEST_DEPLOYMENT_APT_COMMIT --test_output=streamed
 release:
   filter:
@@ -179,9 +179,9 @@ release:
         pyenv global 3.6.10 system
         pip install certifi
         export NOTES_CREATE_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run @vaticle_dependencies//tool/release/notes:create -- $GRABL_OWNER $GRABL_REPO $GRABL_COMMIT $(cat VERSION) ./RELEASE_TEMPLATE.md
+        bazel run @vaticle_dependencies//tool/release/notes:create -- $FACTORY_OWNER $FACTORY_REPO $FACTORY_COMMIT $(cat VERSION) ./RELEASE_TEMPLATE.md
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run --define version=$(cat VERSION) //:deploy-github -- $GRABL_COMMIT
+        bazel run --define version=$(cat VERSION) //:deploy-github -- $FACTORY_COMMIT
     deploy-brew:
       image: vaticle-ubuntu-21.04
       dependencies: [deploy-github]
