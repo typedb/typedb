@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
@@ -45,7 +46,10 @@ public class ConjunctionGraph {
     }
 
     public Set<ResolvableConjunction> dependencies(Concludable concludable) {
-        return iterate(logicMgr.applicableRules(concludable).keySet()).map(rule -> rule.condition().conjunction()).toSet();
+        return iterate(logicMgr.applicableRules(concludable).keySet())
+                .flatMap(rule -> iterate(rule.conditionBranches()))
+                .map(Rule.Condition.ConditionBranch::conjunction)
+                .toSet();
     }
 
     public ConjunctionNode conjunctionNode(ResolvableConjunction conjunction) {

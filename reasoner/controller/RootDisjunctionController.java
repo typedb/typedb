@@ -93,22 +93,17 @@ public class RootDisjunctionController
         }
 
         @Override
-        protected Reactive.Publisher<ConceptMap> transformInput(Reactive.Publisher<ConceptMap> input) {
-            return input;
-        }
-
-        @Override
-        public void rootPull() {
-            rootSink.pull();
-        }
-
-        @Override
-        protected Stream<ConceptMap, ConceptMap> getOrCreateHubReactive(Stream<ConceptMap, ConceptMap> fanIn) {
+        Stream<ConceptMap, ConceptMap> getOrCreateHubReactive(Stream<ConceptMap, ConceptMap> fanIn) {
             // Simply here to be overridden by root disjuntion to avoid duplicating setUp
             Stream<ConceptMap, ConceptMap> op = fanIn;
             if (!explain) op = op.map(conceptMap -> conceptMap.filter(filter));
             op = op.distinct();
             return op;
+        }
+
+        @Override
+        public void rootPull() {
+            rootSink.pull();
         }
 
         @Override

@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
-import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.controller.DisjunctionController.Processor.Request;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
@@ -100,11 +99,11 @@ public abstract class DisjunctionController<OUTPUT,
 
         @Override
         public void setUp() {
-            PoolingStream<OUTPUT> fanIn = new BufferStream<>(this);
+            PoolingStream<ConceptMap> fanIn = new BufferStream<>(this);
             setHubReactive(getOrCreateHubReactive(fanIn));
             for (ResolvableConjunction conjunction : disjunction.conjunctions()) {
                 InputPort<ConceptMap> input = createInputPort();
-                transformInput(input).registerSubscriber(fanIn);
+                input.registerSubscriber(fanIn);
                 Set<Retrievable> retrievableConjunctionVars = iterate(conjunction.pattern().variables())
                         .map(Variable::id).filter(Identifier::isRetrievable)
                         .map(Identifier.Variable::asRetrievable).toSet();
@@ -114,12 +113,7 @@ public abstract class DisjunctionController<OUTPUT,
             }
         }
 
-        protected abstract Reactive.Publisher<OUTPUT> transformInput(Reactive.Publisher<ConceptMap> input);
-
-        Stream<OUTPUT, OUTPUT> getOrCreateHubReactive(Stream<OUTPUT, OUTPUT> fanIn) {
-            // This method is only here to be overridden by root disjunction to avoid duplicating setUp
-            return fanIn;
-        }
+        abstract Stream<OUTPUT,OUTPUT> getOrCreateHubReactive(Stream<ConceptMap, ConceptMap> fanIn);
 
         static class Request extends AbstractRequest<ResolvableConjunction, ConceptMap, ConceptMap> {
 

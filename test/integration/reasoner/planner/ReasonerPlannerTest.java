@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.logic.LogicManager;
+import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.pattern.Conjunction;
@@ -113,7 +114,9 @@ public class ReasonerPlannerTest {
     }
 
     private void verifyPlan(ReasonerPlanner planner, String ruleLabel, Set<String> inputBounds, List<String> order) {
-        ResolvableConjunction condition = transaction.logic().rules().filter(rule -> rule.getLabel().equals(ruleLabel)).next().condition().conjunction();
+        Rule rule = transaction.logic().rules().filter(rule1 -> rule1.getLabel().equals(ruleLabel)).next();
+        assert rule.conditionBranches().size() == 1;
+        ResolvableConjunction condition = iterate(rule.conditionBranches()).next().conjunction();
         verifyPlan(planner, condition, inputBounds, order);
     }
 

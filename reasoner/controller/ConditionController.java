@@ -22,24 +22,25 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
-import com.vaticle.typedb.core.logic.resolvable.Resolvable;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
+import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 
-import java.util.List;
 import java.util.function.Supplier;
 
-import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanOut;
+import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanInFanOut;
 
-public class ConditionController extends ConjunctionController<
+public class ConditionController extends DisjunctionController<
         Either<ConceptMap, Materialisation>,
-        ConditionController,
-        ConditionController.Processor
+        ConditionController.Processor,
+        ConditionController
         > {
     // Either<> here is just to match the input to ConclusionController, but this class only ever returns ConceptMap
 
     private final Rule.Condition condition;
 
     ConditionController(Driver<ConditionController> driver, Rule.Condition condition, Context context) {
-        super(driver, condition.conjunction(), context);
+        super(driver, condition.disjunction(), context);
         this.condition = condition;
     }
 
@@ -47,26 +48,26 @@ public class ConditionController extends ConjunctionController<
     protected Processor createProcessorFromDriver(Driver<Processor> processorDriver,
                                                           ConceptMap bounds) {
         return new Processor(
-                processorDriver, driver(), processorContext(), bounds, getPlan(bounds.concepts().keySet()),
+                processorDriver, driver(), processorContext(), disjunction, bounds,
                 () -> Processor.class.getSimpleName() + "(pattern: " + condition.pattern() + ", bounds: " + bounds + ")"
         );
     }
 
     protected static class Processor
-            extends ConjunctionController.Processor<Either<ConceptMap, Materialisation>, Processor> {
+            extends DisjunctionController.Processor<Either<ConceptMap, Materialisation>, Processor> {
 
         private Processor(Driver<Processor> driver, Driver<ConditionController> controller,
-                          Context context, ConceptMap bounds, List<Resolvable<?>> plan,
+                          Context context, ResolvableDisjunction disjunction, ConceptMap bounds,
                           Supplier<String> debugName) {
-            super(driver, controller, context, bounds, plan, debugName);
+            super(driver, controller, context, disjunction, bounds, debugName);
         }
 
         @Override
-        public void setUp() {
-            setHubReactive(fanOut(this));
-            new CompoundStream(this, plan, bounds)
-                    .map(Either::<ConceptMap, Materialisation>first)
-                    .buffer().registerSubscriber(hubReactive());
+        Stream<Either<ConceptMap, Materialisation>, Either<ConceptMap, Materialisation>> getOrCreateHubReactive(Stream<ConceptMap,ConceptMap> fanIn) {
+            Stream<ConceptMap, Either<ConceptMap, Materialisation>> mapStream = fanIn.map(Either::<ConceptMap, Materialisation>first);
+            PoolingStream.BufferedFanStream<Either<ConceptMap, Materialisation>> fanMap = fanInFanOut(this);
+            mapStream.registerSubscriber(fanMap);
+            return fanMap;
         }
     }
 }

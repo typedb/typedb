@@ -641,10 +641,12 @@ public class AnswerCountEstimator {
                         ruleSideIds = new HashSet<>(rule.conclusion().pattern().retrieves());
                     }
 
-                    ruleSideVariables = iterate(ruleSideIds)
-                            .filter(id -> rule.condition().conjunction().pattern().retrieves().contains(id))
-                            .map(id -> rule.condition().conjunction().pattern().variable(id)).toSet();
-                    inferredEstimate += answerCountEstimator.estimateAnswers(rule.condition().conjunction(), ruleSideVariables);
+                    for (Rule.Condition.ConditionBranch conditionBranch: rule.conditionBranches()) {
+                        ruleSideVariables = iterate(ruleSideIds)
+                                .filter(id -> conditionBranch.pattern().retrieves().contains(id))
+                                .map(id -> conditionBranch.pattern().variable(id)).toSet();
+                        inferredEstimate += answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), ruleSideVariables);
+                    }
                 }
             }
 

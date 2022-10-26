@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
-import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
+import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 
 import java.util.function.Supplier;
 
@@ -51,8 +51,8 @@ public class NestedDisjunctionController
         }
 
         @Override
-        protected Reactive.Publisher<ConceptMap> transformInput(Reactive.Publisher<ConceptMap> input) {
-            return input;
+        Stream<ConceptMap, ConceptMap> getOrCreateHubReactive(Stream<ConceptMap, ConceptMap> fanIn) {
+            return fanIn;
         }
     }
 }
