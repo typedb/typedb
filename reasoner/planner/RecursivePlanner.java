@@ -323,7 +323,7 @@ public class RecursivePlanner extends ReasonerPlanner {
         List<List<Resolvable<?>>> allOrderings() {
             Set<Resolvable<?>> remaining = new HashSet<>(resolvables);
             Set<Variable> bounds = new HashSet<>(inputBounds);
-            iterate(resolvables).flatMap(r -> iterate(consideredVariables(r)))
+            iterate(resolvables).filter(resolvable -> !resolvable.isNegated()).flatMap(r -> iterate(consideredVariables(r)))
                     .filter(v -> iterate(v.constraints()).anyMatch(constraint -> constraint.isThing() && constraint.asThing().isValue() && constraint.asThing().asValue().isValueIdentity()))
                     .forEachRemaining(bounds::add);
 
