@@ -106,6 +106,8 @@ public class ReasonerPlannerTest {
     }
 
     private void initialise(Arguments.Session.Type schema, Arguments.Transaction.Type write) {
+        if (transaction.isOpen()) transaction.close();
+        if (session.isOpen()) session.close();
         session = databaseMgr.session(database, schema);
         transaction = session.transaction(write);
     }
@@ -141,7 +143,7 @@ public class ReasonerPlannerTest {
     }
 
     @Test
-    public void test_transitivity_from_is_recursive() {
+    public void test_directed_transitivity() {
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
         transaction.query().define(TypeQL.parseQuery("define " +
                 "nid sub attribute, value long;\n" +
@@ -159,6 +161,7 @@ public class ReasonerPlannerTest {
                 "then { (from: $n1, to: $n3) isa path; };\n"));
         transaction.commit();
         transaction.close();
+        session.close();
 
         {
             initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
@@ -167,7 +170,6 @@ public class ReasonerPlannerTest {
             planner.plan(conjunction, set());
             verifyPlan(planner, conjunction, set(), Collections.list("c"));
             verifyPlan(planner, "path-recursive", set(), Collections.list("c", "r"));
-            transaction.close();
         }
 
         {
@@ -177,7 +179,6 @@ public class ReasonerPlannerTest {
             planner.plan(conjunction, set());
             verifyPlan(planner, conjunction, set(), Collections.list("r", "c"));
             verifyPlan(planner, "path-recursive", set("n1"), Collections.list("c", "r"));
-            transaction.close();
         }
 
         {
@@ -187,17 +188,6 @@ public class ReasonerPlannerTest {
             planner.plan(conjunction, set());
             verifyPlan(planner, conjunction, set(), Collections.list("r", "c"));
             verifyPlan(planner, "path-recursive", set("n3"), Collections.list("r", "c"));
-            transaction.close();
-        }
-
-        {
-            initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-            RecursivePlanner planner = new RecursivePlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
-            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $y isa node, has nid 0; (from: $x, to: $y) isa path; }", transaction.logic()));
-            planner.plan(conjunction, set());
-            verifyPlan(planner, conjunction, set(), Collections.list("r", "c"));
-            verifyPlan(planner, "path-recursive", set("n3"), Collections.list("r", "c"));
-            transaction.close();
         }
 
         {
@@ -207,7 +197,6 @@ public class ReasonerPlannerTest {
             planner.plan(conjunction, set());
             verifyPlan(planner, conjunction, set(), Collections.list("r", "r", "c"));
             verifyPlan(planner, "path-recursive", set("n1", "n3"), Collections.list("r", "c"));
-            transaction.close();
         }
     }
 }
