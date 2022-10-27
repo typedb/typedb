@@ -180,8 +180,9 @@ public class RecursivePlanner extends ReasonerPlanner {
         Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes = new HashSet<>();
         AnswerCountEstimator.IncrementalEstimator estimator = answerCountEstimator.createIncrementalEstimator(conjunctionNode.conjunction());
         for (Resolvable<?> resolvable : ordering) {
-            Set<Variable> resolvableMode = Collections.intersection(estimateableVariables(resolvable), bounds);
-            Set<Variable> restrictedResolvableBounds = Collections.intersection(estimateableVariables(resolvable), restrictedBounds);
+            Set<Variable> estimateableVars = estimateableVariables(resolvable);
+            Set<Variable> resolvableMode = Collections.intersection(estimateableVars, bounds);
+            Set<Variable> restrictedResolvableBounds = Collections.intersection(estimateableVars, restrictedBounds);
 
             double boundsFromPrefix = estimator.answerEstimate(restrictedResolvableBounds);
 
@@ -210,8 +211,8 @@ public class RecursivePlanner extends ReasonerPlanner {
 
             estimator.extend(resolvable);
             if (!resolvable.isNegated()) {
-                bounds.addAll(estimateableVariables(resolvable));
-                restrictedBounds.addAll(estimateableVariables(resolvable));
+                bounds.addAll(estimateableVars);
+                restrictedBounds.addAll(estimateableVars);
             }
         }
 
