@@ -277,7 +277,7 @@ public class RecursivePlanner extends ReasonerPlanner {
         private double cost(CallMode root) {
             double cycleCost = 0L;
             for (OrderingChoice orderingChoice : orderingChoices.values()) {
-                double scalingFactor = cyclicScalingFactorSum.get(orderingChoice.callMode) + (orderingChoice.callMode.equals(root) ? 1.0 : 0.0);
+                double scalingFactor = orderingChoice.callMode.equals(root) ? 1.0 : cyclicScalingFactorSum.get(orderingChoice.callMode);
                 cycleCost += orderingChoice.acyclicCost * scalingFactor;
             }
 

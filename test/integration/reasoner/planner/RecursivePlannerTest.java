@@ -325,10 +325,10 @@ public class RecursivePlannerTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$x has name \"Jim\"; (friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planner.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
-            assertEquals(26L, plan.cost());
-            // Answercount($x,$y) = 5
+            assertEquals(18L, plan.cost());
             // Answercount($x) = 1; Answercount($y) = 5
-            // Cost = 26 = (5) query + 1/5 * (3) rule1{$x:1} + min(1, (1+1/5) ) * (21) rule2{$x:1}
+            // Cost = 18 = (1 + 1/5 * 18) query + 1/5 * (3) rule1{$x:1} + min(1, (1/5+3/5) ) * (16) rule2{$x:1}
+            //           = 3.6 + 0.6 + 13.8
             // With plan(rule2{$x}) = { (...) isa friendship; } -> { (...) isa transitive-friendship; }
         }
 
