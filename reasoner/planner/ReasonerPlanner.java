@@ -73,17 +73,17 @@ public abstract class ReasonerPlanner {
         return bounds.containsAll(dependencies.get(resolvable));
     }
 
-    public void plan(ResolvableConjunction conjunction, Set<Variable> boundVariables) {
-        plan(new CallMode(conjunction, estimateableVariables(boundVariables)));
+    public void plan(ResolvableConjunction conjunction, Set<Variable> mode) {
+        plan(new CallMode(conjunction, estimateableVariables(mode)));
     }
 
-    public void planAllDependencies(Concludable concludable, Set<Variable> boundVariables) {
-        triggeredCalls(concludable, estimateableVariables(boundVariables), Optional.empty())
-                .forEach(callMode -> plan(callMode.conjunction, callMode.bounds));
+    public void planAllDependencies(Concludable concludable, Set<Variable> mode) {
+        triggeredCalls(concludable, estimateableVariables(mode), Optional.empty())
+                .forEach(callMode -> plan(callMode.conjunction, callMode.mode));
     }
 
-    public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> boundVariables) {
-        return getPlan(new CallMode(conjunction, estimateableVariables(boundVariables)));
+    public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> mode) {
+        return getPlan(new CallMode(conjunction, estimateableVariables(mode)));
     }
 
     void plan(CallMode callMode) {
@@ -137,7 +137,7 @@ public abstract class ReasonerPlanner {
         return deps;
     }
 
-    public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> concludableBounds, Optional<Set<ResolvableConjunction>> dependencyFilter) {
+    public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> mode, Optional<Set<ResolvableConjunction>> dependencyFilter) {
         Set<CallMode> calls = new HashSet<>();
         for (Map.Entry<Rule, Set<Unifier>> entry : logicMgr.applicableRules(concludable).entrySet()) {
             ResolvableConjunction ruleConjunction = entry.getKey().condition().conjunction();
@@ -145,15 +145,15 @@ public abstract class ReasonerPlanner {
                 continue;
             }
             for (Unifier unifier : entry.getValue()) {
-                assert iterate(concludableBounds).allMatch(v -> v.id().isRetrievable());
-                Set<Identifier.Variable.Retrievable> ruleSideIds = iterate(concludableBounds)
+                assert iterate(mode).allMatch(v -> v.id().isRetrievable());
+                Set<Identifier.Variable.Retrievable> ruleModeIds = iterate(mode)
                         .flatMap(v -> iterate(unifier.mapping().get(v.id().asRetrievable())))
                         .map(Identifier.Variable::asRetrievable)
                         .toSet();
-                Set<Variable> ruleSideBounds = iterate(ruleSideIds)
+                Set<Variable> ruleMode = iterate(ruleModeIds)
                         .filter(id -> ruleConjunction.pattern().retrieves().contains(id))
                         .map(id -> ruleConjunction.pattern().variable(id)).toSet();
-                calls.add(new CallMode(ruleConjunction, ruleSideBounds));
+                calls.add(new CallMode(ruleConjunction, ruleMode));
             }
         }
         return calls;
@@ -161,13 +161,13 @@ public abstract class ReasonerPlanner {
 
     static class CallMode {
         final ResolvableConjunction conjunction;
-        final Set<Variable> bounds;
+        final Set<Variable> mode;
         private final int hash;
 
-        CallMode(ResolvableConjunction conjunction, Set<Variable> bounds) {
+        CallMode(ResolvableConjunction conjunction, Set<Variable> mode) {
             this.conjunction = conjunction;
-            this.bounds = bounds;
-            this.hash = Objects.hash(conjunction, bounds);
+            this.mode = mode;
+            this.hash = Objects.hash(conjunction, mode);
         }
 
         @Override
@@ -180,12 +180,12 @@ public abstract class ReasonerPlanner {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             CallMode that = (CallMode) o;
-            return conjunction.equals(that.conjunction) && bounds.equals(that.bounds);
+            return conjunction.equals(that.conjunction) && mode.equals(that.mode);
         }
 
         @Override
         public String toString() {
-            return conjunction + "::{" + iterate(bounds).reduce("", (x, y) -> (x + ", " + y)) + "}";
+            return conjunction + "::{" + iterate(mode).reduce("", (x, y) -> (x + ", " + y)) + "}";
         }
     }
 
