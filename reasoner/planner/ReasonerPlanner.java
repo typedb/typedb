@@ -61,6 +61,10 @@ public abstract class ReasonerPlanner {
         return iterate(variables).filter(Variable::isThing).toSet();
     }
 
+    static Set<Variable> estimateableVariables(Resolvable<?> resolvable) {
+        return iterate(resolvable.variables()).filter(Variable::isThing).toSet();
+    }
+
     static Set<Variable> retrievedVariables(Resolvable<?> resolvable) {
         return iterate(resolvable.variables()).filter(v -> v.id().isRetrievable()).toSet();
     }

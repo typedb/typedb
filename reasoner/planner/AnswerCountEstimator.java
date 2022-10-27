@@ -55,7 +55,7 @@ import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNSUPPORTED_OPERATION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.reasoner.planner.RecursivePlanner.consideredVariables;
+import static com.vaticle.typedb.core.reasoner.planner.RecursivePlanner.estimateableVariables;
 
 public class AnswerCountEstimator {
     private final LogicManager logicMgr;
@@ -144,7 +144,7 @@ public class AnswerCountEstimator {
 
             propagate(improvedVariableEstimates);
             // Lazy-fix: Give variables not included in any constraint a pessimistic estimate (Inaccuracy: We don't consider inferred values)
-            iterate(consideredVariables(resolvable)).filter(v -> !minVariableEstimate.containsKey(v))
+            iterate(estimateableVariables(resolvable)).filter(v -> !minVariableEstimate.containsKey(v))
                     .forEachRemaining(v -> minVariableEstimate.put(v, (double) localModelFactory.countPersistedThingsMatchingType(v.asThing())));
         }
 

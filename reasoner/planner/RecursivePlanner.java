@@ -52,7 +52,7 @@ public class RecursivePlanner extends ReasonerPlanner {
     //      !!! The cost does not depend on the binding mode !!! because of the formulation - Handle this with connectedness restriction when generating orders?
 
     final AnswerCountEstimator answerCountEstimator;
-    private final Map<CallMode, Set<CandidatePlan>> candidatePlans;
+    private final Map<CallMode, Set<PlanChoice>> planChoices;
     private final ConjunctionGraph conjunctionGraph;
     private final Map<CallMode, Double> cyclicScalingFactors;
 
@@ -60,17 +60,13 @@ public class RecursivePlanner extends ReasonerPlanner {
         super(traversalEng, conceptMgr, logicMgr);
         this.conjunctionGraph = new ConjunctionGraph(logicMgr);
         this.answerCountEstimator = new AnswerCountEstimator(logicMgr, traversalEng.graph(), this.conjunctionGraph);
-        this.candidatePlans = new HashMap<>();
+        this.planChoices = new HashMap<>();
         this.cyclicScalingFactors = new HashMap<>();
-    }
-
-    static Set<Variable> consideredVariables(Resolvable<?> resolvable) {
-        return iterate(resolvable.variables()).filter(Variable::isThing).toSet();
     }
 
     @Override
     Plan computePlan(CallMode callMode) {
-        recursivelyGenerateCandidatePlans(callMode);
+        recursivelyGeneratePlanChoices(callMode);
         planComponent(callMode);
         assert planCache.getIfPresent(callMode) != null;
         return planCache.getIfPresent(callMode);
@@ -78,20 +74,20 @@ public class RecursivePlanner extends ReasonerPlanner {
 
     // combined planning for all nodes in a strongly-connected-component
     private void planComponent(CallMode callMode) {
-        Map<CallMode, CandidatePlan> choices = new HashMap<>();
+        Map<CallMode, PlanChoice> choices = new HashMap<>();
         Set<CallMode> pendingModes = new HashSet<>();
         pendingModes.add(callMode);
         ComponentPlan bestPlan = componentPlanSearch(callMode, pendingModes, choices);
 
-        for (CandidatePlan bestPlanForCall : bestPlan.choices.values()) {
+        for (PlanChoice bestPlanForCall : bestPlan.choices.values()) {
             planCache.put(bestPlanForCall.callMode, new Plan(bestPlanForCall.ordering, Math.round(Math.ceil(bestPlan.cost(bestPlanForCall.callMode)))));
             cyclicScalingFactors.put(bestPlanForCall.callMode, bestPlan.cyclicScalingFactorSum.get(bestPlanForCall.callMode));
         }
     }
 
-    private ComponentPlan componentPlanSearch(CallMode root, Set<CallMode> pendingCallModes, Map<CallMode, CandidatePlan> choices) { // The value contains the scaling factors needed for the other conjunctions in the globalCost.
+    private ComponentPlan componentPlanSearch(CallMode root, Set<CallMode> pendingCallModes, Map<CallMode, PlanChoice> choices) { // The value contains the scaling factors needed for the other conjunctions in the globalCost.
         // Pick a choice of ordering, expand dependencies, recurse ; backtrack over choices
-        if (pendingCallModes.isEmpty()) { // All modes have an ordering chosen -> we have a complete candidate plan
+        if (pendingCallModes.isEmpty()) { // All modes have an ordering chosen -> we have a complete candidate plan for the component
             return createComponentPlan(choices);
         }
 
@@ -102,12 +98,12 @@ public class RecursivePlanner extends ReasonerPlanner {
         ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(mode.conjunction);
         ComponentPlan bestPlan = null; // for the branch of choices committed to so far.
         double bestPlanCost = Double.MAX_VALUE;
-        for (CandidatePlan candidatePlan : candidatePlans.get(mode)) {
-            choices.put(mode, candidatePlan);
+        for (PlanChoice planChoice : planChoices.get(mode)) {
+            choices.put(mode, planChoice);
 
             Set<CallMode> nextPendingModes = new HashSet<>(pendingCallModes);
             Set<CallMode> triggeredCalls = new HashSet<>();
-            iterate(candidatePlan.cyclicConcludableBounds).forEachRemaining(concludableBounds -> {
+            iterate(planChoice.cyclicConcludableBounds).forEachRemaining(concludableBounds -> {
                 triggeredCalls.addAll(triggeredCalls(concludableBounds.first(), concludableBounds.second(), Optional.of(conjunctionNode.cyclicDependencies(concludableBounds.first()))));
             });
             iterate(triggeredCalls).filter(call -> !choices.containsKey(call)).forEachRemaining(nextPendingModes::add);
@@ -128,9 +124,9 @@ public class RecursivePlanner extends ReasonerPlanner {
     private void initialiseOrderingDependencies(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> inputBounds) {
         Set<Variable> currentBounds = new HashSet<>(inputBounds);
         for (Resolvable<?> resolvable : ordering) {
-            Set<Variable> resolvableBounds = iterate(consideredVariables(resolvable)).filter(currentBounds::contains).toSet();
+            Set<Variable> resolvableBounds = iterate(estimateableVariables(resolvable)).filter(currentBounds::contains).toSet();
             initialiseDependencies(conjunctionNode, resolvable, resolvableBounds);
-            if (!resolvable.isNegated()) currentBounds.addAll(consideredVariables(resolvable));
+            if (!resolvable.isNegated()) currentBounds.addAll(estimateableVariables(resolvable));
         }
     }
 
@@ -138,7 +134,7 @@ public class RecursivePlanner extends ReasonerPlanner {
         if (resolvable.isConcludable()) {
             Set<ResolvableConjunction> cyclicDependencies = conjunctionNode.cyclicDependencies(resolvable.asConcludable());
             for (CallMode callMode : triggeredCalls(resolvable.asConcludable(), resolvableBounds, Optional.empty())) {
-                recursivelyGenerateCandidatePlans(callMode);
+                recursivelyGeneratePlanChoices(callMode);
                 if (!cyclicDependencies.contains(callMode.conjunction)) {
                     plan(callMode); // Acyclic dependencies can be fully planned
                 }
@@ -146,35 +142,36 @@ public class RecursivePlanner extends ReasonerPlanner {
         } else if (resolvable.isNegated()) {
             iterate(resolvable.asNegated().disjunction().conjunctions()).forEachRemaining(conjunction -> {
                 CallMode callMode = new CallMode(conjunction, resolvableBounds);
-                recursivelyGenerateCandidatePlans(callMode);
+                recursivelyGeneratePlanChoices(callMode);
                 plan(callMode);
             });
         }
     }
 
-    private void recursivelyGenerateCandidatePlans(CallMode callMode) {
-        if (!candidatePlans.containsKey(callMode)) {
-            candidatePlans.put(callMode, null); // Guard
+    private void recursivelyGeneratePlanChoices(CallMode callMode) {
+        if (!planChoices.containsKey(callMode)) {
+            planChoices.put(callMode, null); // Guard
             ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(callMode.conjunction);
             answerCountEstimator.buildConjunctionModel(callMode.conjunction);
 
-            // Two orderings for the same CallMode with identical cyclic-concludable modes are interchangeable in the component-plan
-            //      -> We only need to keep the cheaper one.
-            Map<Set<Pair<Concludable, Set<Variable>>>, CandidatePlan> bestChoice = new HashMap<>();
+            Map<Set<Pair<Concludable, Set<Variable>>>, PlanChoice> planChoices = new HashMap<>();
             PartialOrderReductionSearch porSearch = new PartialOrderReductionSearch(logicMgr.compile(callMode.conjunction), callMode.bounds);
             for (List<Resolvable<?>> ordering : porSearch.allOrderings()) {
                 initialiseOrderingDependencies(conjunctionNode, ordering, callMode.bounds);
-                CandidatePlan candidatePlan = summariseCandidatePlan(conjunctionNode, ordering, callMode.bounds);
-                if (!bestChoice.containsKey(candidatePlan.cyclicConcludableBounds) ||
-                        bestChoice.get(candidatePlan.cyclicConcludableBounds).acyclicCost > candidatePlan.acyclicCost) {
-                    bestChoice.put(candidatePlan.cyclicConcludableBounds, candidatePlan);
+                PlanChoice planChoice = summarisePlanChoice(conjunctionNode, ordering, callMode.bounds);
+
+                // Two orderings for the same CallMode with identical cyclic-concludable modes are interchangeable in the component-plan
+                //      -> We only need to keep the cheaper one.
+                if (!planChoices.containsKey(planChoice.cyclicConcludableBounds) ||
+                        planChoices.get(planChoice.cyclicConcludableBounds).acyclicCost > planChoice.acyclicCost) {
+                    planChoices.put(planChoice.cyclicConcludableBounds, planChoice);
                 }
             }
-            candidatePlans.put(callMode, new HashSet<>(bestChoice.values()));
+            this.planChoices.put(callMode, new HashSet<>(planChoices.values()));
         }
     }
 
-    private CandidatePlan summariseCandidatePlan(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> inputBounds) {
+    private PlanChoice summarisePlanChoice(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> inputBounds) {
         Set<Variable> bounds = new HashSet<>(inputBounds);
         Set<Variable> restrictedBounds = new HashSet<>(); // Restricted by preceding resolvables
         double acyclicCost = 0L;
@@ -183,8 +180,8 @@ public class RecursivePlanner extends ReasonerPlanner {
         Set<Pair<Concludable, Set<Variable>>> cyclicConcludableBounds = new HashSet<>();
         AnswerCountEstimator.IncrementalEstimator estimator = answerCountEstimator.createIncrementalEstimator(conjunctionNode.conjunction());
         for (Resolvable<?> resolvable : ordering) {
-            Set<Variable> resolvableBounds = Collections.intersection(consideredVariables(resolvable), bounds);
-            Set<Variable> restrictedResolvableBounds = Collections.intersection(consideredVariables(resolvable), restrictedBounds);
+            Set<Variable> resolvableBounds = Collections.intersection(estimateableVariables(resolvable), bounds);
+            Set<Variable> restrictedResolvableBounds = Collections.intersection(estimateableVariables(resolvable), restrictedBounds);
 
             double boundsFromPrefix = estimator.answerEstimate(restrictedResolvableBounds);
 
@@ -213,13 +210,13 @@ public class RecursivePlanner extends ReasonerPlanner {
 
             estimator.extend(resolvable);
             if (!resolvable.isNegated()) {
-                bounds.addAll(consideredVariables(resolvable));
-                restrictedBounds.addAll(consideredVariables(resolvable));
+                bounds.addAll(estimateableVariables(resolvable));
+                restrictedBounds.addAll(estimateableVariables(resolvable));
             }
         }
 
         CallMode callMode = new CallMode(conjunctionNode.conjunction(), new HashSet<>(inputBounds));
-        return new CandidatePlan(callMode, ordering, acyclicCost, cyclicConcludableBounds, scalingFactors);
+        return new PlanChoice(callMode, ordering, acyclicCost, cyclicConcludableBounds, scalingFactors);
     }
 
     private long retrievalCost(ResolvableConjunction conjunction, Resolvable<?> resolvable, Set<Variable> inputBounds) {
@@ -227,7 +224,7 @@ public class RecursivePlanner extends ReasonerPlanner {
         // Also inaccurate because it considers inferred answers for concludables? We could rename to computeLocalCost.
         AnswerCountEstimator.IncrementalEstimator estimator = answerCountEstimator.createIncrementalEstimator(conjunction);
         estimator.extend(resolvable);
-        return estimator.answerEstimate(consideredVariables(resolvable));
+        return estimator.answerEstimate(estimateableVariables(resolvable));
     }
 
     private double scaledAcyclicCost(double scalingFactor, ConjunctionNode conjunctionNode, Resolvable<?> resolvable, Set<Variable> resolvableBounds) {
@@ -247,15 +244,15 @@ public class RecursivePlanner extends ReasonerPlanner {
         return getPlan(callMode).cost() * Math.min(1.0, scalingFactor + cyclicScalingFactors.get(callMode));
     }
 
-    private ComponentPlan createComponentPlan(Map<CallMode, CandidatePlan> chosenSummaries) {
+    private ComponentPlan createComponentPlan(Map<CallMode, PlanChoice> chosenSummaries) {
         Map<CallMode, Double> scalingFactorSum = new HashMap<>();
-        for (CandidatePlan candidatePlan : chosenSummaries.values()) {
-            ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(candidatePlan.callMode.conjunction);
-            candidatePlan.cyclicConcludableBounds.forEach(concludableBounds -> {
+        for (PlanChoice planChoice : chosenSummaries.values()) {
+            ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(planChoice.callMode.conjunction);
+            planChoice.cyclicConcludableBounds.forEach(concludableBounds -> {
                 iterate(triggeredCalls(concludableBounds.first(), concludableBounds.second(), Optional.of(conjunctionNode.cyclicDependencies(concludableBounds.first()))))
                         .forEachRemaining(callMode -> {
                             scalingFactorSum.put(callMode, Math.min(1.0,
-                                    scalingFactorSum.getOrDefault(callMode, 0.0) + candidatePlan.scalingFactors.get(concludableBounds.first())));
+                                    scalingFactorSum.getOrDefault(callMode, 0.0) + planChoice.scalingFactors.get(concludableBounds.first())));
                         });
             });
         }
@@ -263,10 +260,10 @@ public class RecursivePlanner extends ReasonerPlanner {
     }
 
     private static class ComponentPlan {
-        private final Map<CallMode, CandidatePlan> choices;
+        private final Map<CallMode, PlanChoice> choices;
         private final Map<CallMode, Double> cyclicScalingFactorSum;
 
-        private ComponentPlan(Map<CallMode, CandidatePlan> choices, Map<CallMode, Double> cyclicScalingFactorSum) {
+        private ComponentPlan(Map<CallMode, PlanChoice> choices, Map<CallMode, Double> cyclicScalingFactorSum) {
             this.choices = new HashMap<>(choices);
             this.cyclicScalingFactorSum = new HashMap<>(cyclicScalingFactorSum);
             this.choices.keySet().forEach(callMode -> this.cyclicScalingFactorSum.putIfAbsent(callMode, 0.0));
@@ -274,24 +271,24 @@ public class RecursivePlanner extends ReasonerPlanner {
 
         private double cost(CallMode root) {
             double cycleCost = 0L;
-            for (CandidatePlan candidatePlan : choices.values()) {
-                double scalingFactor = candidatePlan.callMode.equals(root) ? 1.0 : cyclicScalingFactorSum.get(candidatePlan.callMode);
-                cycleCost += candidatePlan.acyclicCost * scalingFactor;
+            for (PlanChoice planChoice : choices.values()) {
+                double scalingFactor = planChoice.callMode.equals(root) ? 1.0 : cyclicScalingFactorSum.get(planChoice.callMode);
+                cycleCost += planChoice.acyclicCost * scalingFactor;
             }
 
             return cycleCost;
         }
     }
 
-    static class CandidatePlan {
+    static class PlanChoice {
         final CallMode callMode;
-        final double acyclicCost;
-        final Map<Concludable, Double> scalingFactors;
-        final Set<Pair<Concludable, Set<Variable>>> cyclicConcludableBounds;
         final List<Resolvable<?>> ordering;
+        final double acyclicCost;
+        final Set<Pair<Concludable, Set<Variable>>> cyclicConcludableBounds;
+        final Map<Concludable, Double> scalingFactors;
 
-        private CandidatePlan(CallMode callMode, List<Resolvable<?>> ordering, double acyclicCost,
-                              Set<Pair<Concludable, Set<Variable>>> cyclicConcludableBounds, Map<Concludable, Double> scalingFactors) {
+        private PlanChoice(CallMode callMode, List<Resolvable<?>> ordering, double acyclicCost,
+                           Set<Pair<Concludable, Set<Variable>>> cyclicConcludableBounds, Map<Concludable, Double> scalingFactors) {
             this.callMode = callMode;
             this.ordering = ordering;
             this.acyclicCost = acyclicCost;
@@ -321,7 +318,7 @@ public class RecursivePlanner extends ReasonerPlanner {
         List<List<Resolvable<?>>> allOrderings() {
             Set<Resolvable<?>> remaining = new HashSet<>(resolvables);
             Set<Variable> bounds = new HashSet<>(inputBounds);
-            iterate(resolvables).filter(resolvable -> !resolvable.isNegated()).flatMap(r -> iterate(consideredVariables(r)))
+            iterate(resolvables).filter(resolvable -> !resolvable.isNegated()).flatMap(r -> iterate(estimateableVariables(r)))
                     .filter(v -> iterate(v.constraints()).anyMatch(constraint ->
                             constraint.isThing() && constraint.asThing().isValue() && constraint.asThing().asValue().isValueIdentity()))
                     .forEachRemaining(bounds::add);
@@ -352,7 +349,7 @@ public class RecursivePlanner extends ReasonerPlanner {
 
             if (enableConnectednessRestriction) {
                 List<Resolvable<?>> connectedEnabled = iterate(enabled)
-                        .filter(r -> iterate(consideredVariables(r)).anyMatch(currentBounds::contains)).toList();
+                        .filter(r -> iterate(estimateableVariables(r)).anyMatch(currentBounds::contains)).toList();
                 if (!connectedEnabled.isEmpty()) {
                     enabled = connectedEnabled;
                 }
