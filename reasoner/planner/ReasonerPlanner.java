@@ -82,7 +82,8 @@ public abstract class ReasonerPlanner {
     }
 
     public void planAllDependencies(Concludable concludable, Set<Variable> boundVariables) {
-        triggeredCalls(concludable, estimateableVariables(boundVariables), Optional.empty()).forEach(callMode -> plan(callMode.conjunction, callMode.bounds));
+        triggeredCalls(concludable, estimateableVariables(boundVariables), Optional.empty())
+                .forEach(callMode -> plan(callMode.conjunction, callMode.bounds));
     }
 
     public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> boundVariables) {
@@ -147,7 +148,10 @@ public abstract class ReasonerPlanner {
             }
             for (Unifier unifier : entry.getValue()) {
                 assert iterate(concludableBounds).allMatch(v -> v.id().isRetrievable());
-                Set<Identifier.Variable.Retrievable> ruleSideIds = iterate(concludableBounds).flatMap(v -> iterate(unifier.mapping().get(v.id().asRetrievable()))).map(Identifier.Variable::asRetrievable).toSet();
+                Set<Identifier.Variable.Retrievable> ruleSideIds = iterate(concludableBounds)
+                        .flatMap(v -> iterate(unifier.mapping().get(v.id().asRetrievable())))
+                        .map(Identifier.Variable::asRetrievable)
+                        .toSet();
                 Set<Variable> ruleSideBounds = iterate(ruleSideIds)
                         .filter(id -> ruleConjunction.pattern().retrieves().contains(id))
                         .map(id -> ruleConjunction.pattern().variable(id)).toSet();
@@ -170,7 +174,7 @@ public abstract class ReasonerPlanner {
 
         @Override
         public int hashCode() {
-            return this.hash;
+            return hash;
         }
 
         @Override
@@ -178,8 +182,7 @@ public abstract class ReasonerPlanner {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             CallMode that = (CallMode) o;
-            return conjunction.equals(that.conjunction) &&
-                    bounds.equals(that.bounds);
+            return conjunction.equals(that.conjunction) && bounds.equals(that.bounds);
         }
 
         @Override
@@ -189,16 +192,16 @@ public abstract class ReasonerPlanner {
     }
 
     public static class Plan {
-        private final List<Resolvable<?>> elementOrder;
+        private final List<Resolvable<?>> order;
         private final long cost;
 
-        public Plan(List<Resolvable<?>> elementOrder, long cost) {
-            this.elementOrder = elementOrder;
+        public Plan(List<Resolvable<?>> resolvableOrder, long cost) {
+            this.order = resolvableOrder;
             this.cost = cost;
         }
 
         public List<Resolvable<?>> plan() {
-            return elementOrder;
+            return order;
         }
 
         public long cost() {
