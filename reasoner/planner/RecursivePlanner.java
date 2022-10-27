@@ -84,7 +84,7 @@ public class RecursivePlanner extends ReasonerPlanner {
         ComponentPlan bestPlan = componentPlanSearch(callMode, pendingKeys, chosenSummaries);
 
         for (OrderingChoice bestPlanForCall : bestPlan.orderingChoices.values()) {
-            planCache.put(bestPlanForCall.callMode, new Plan(bestPlanForCall.ordering, Math.round(Math.ceil(bestPlan.cost(bestPlanForCall.callMode, 1.0)))));
+            planCache.put(bestPlanForCall.callMode, new Plan(bestPlanForCall.ordering, Math.round(Math.ceil(bestPlan.cost(bestPlanForCall.callMode)))));
             cyclicScalingFactors.put(bestPlanForCall.callMode, bestPlan.cyclicScalingFactorSum.get(bestPlanForCall.callMode));
         }
     }
@@ -113,7 +113,7 @@ public class RecursivePlanner extends ReasonerPlanner {
             iterate(triggeredCalls).filter(call -> !choices.containsKey(call)).forEachRemaining(nextPendingKeys::add);
             ComponentPlan newPlan = componentPlanSearch(root, nextPendingKeys, choices);
 
-            double newPlanCost = newPlan.cost(root, 1.0);
+            double newPlanCost = newPlan.cost(root);
             if (bestPlan == null || newPlanCost < bestPlanCost) {
                 bestPlan = newPlan;
                 bestPlanCost = newPlanCost;
@@ -130,7 +130,7 @@ public class RecursivePlanner extends ReasonerPlanner {
         for (Resolvable<?> resolvable : ordering) {
             Set<Variable> resolvableBounds = iterate(consideredVariables(resolvable)).filter(currentBounds::contains).toSet();
             initialiseDependencies(conjunctionNode, resolvable, resolvableBounds);
-            currentBounds.addAll(consideredVariables(resolvable));
+            if (!resolvable.isNegated()) currentBounds.addAll(consideredVariables(resolvable));
         }
     }
 
@@ -274,10 +274,10 @@ public class RecursivePlanner extends ReasonerPlanner {
             this.orderingChoices.keySet().forEach(callMode -> this.cyclicScalingFactorSum.putIfAbsent(callMode, 0.0));
         }
 
-        private double cost(CallMode root, double rootScalingFactor) {
+        private double cost(CallMode root) {
             double cycleCost = 0L;
             for (OrderingChoice orderingChoice : orderingChoices.values()) {
-                double scalingFactor = cyclicScalingFactorSum.get(orderingChoice.callMode) + (orderingChoice.callMode.equals(root) ? rootScalingFactor : 0.0);
+                double scalingFactor = cyclicScalingFactorSum.get(orderingChoice.callMode) + (orderingChoice.callMode.equals(root) ? 1.0 : 0.0);
                 cycleCost += orderingChoice.acyclicCost * scalingFactor;
             }
 

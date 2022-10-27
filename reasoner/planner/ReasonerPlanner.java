@@ -149,7 +149,7 @@ public abstract class ReasonerPlanner {
                 assert iterate(concludableBounds).allMatch(v -> v.id().isRetrievable());
                 Set<Identifier.Variable.Retrievable> ruleSideIds = iterate(concludableBounds).flatMap(v -> iterate(unifier.mapping().get(v.id().asRetrievable()))).map(Identifier.Variable::asRetrievable).toSet();
                 Set<Variable> ruleSideBounds = iterate(ruleSideIds)
-                        .filter(id -> ruleConjunction.pattern().retrieves().contains(id)) // avoids constant has
+                        .filter(id -> ruleConjunction.pattern().retrieves().contains(id))
                         .map(id -> ruleConjunction.pattern().variable(id)).toSet();
                 calls.add(new CallMode(ruleConjunction, ruleSideBounds));
             }

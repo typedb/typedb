@@ -74,18 +74,14 @@ public class AnswerCountEstimator {
 
     public void buildConjunctionModel(ResolvableConjunction conjunction) {
         if (!conjunctionModels.containsKey(conjunction)) {
-            // Acyclic estimates
             ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(conjunction);
             iterate(conjunctionNode.negateds()).flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                     .forEachRemaining(this::buildConjunctionModel);
             iterate(conjunctionNode.acyclicConcludables()).flatMap(concludable -> iterate(conjunctionGraph.dependencies(concludable)))
                     .forEachRemaining(this::buildConjunctionModel);
-            // Don't recurse into acyclic dependencies of cyclic concludables. That overconstrains the disjunction b/w acyclic & cyclic.
-            // TODO: ^ Does it though?
             AnswerCountEstimator.ConjunctionModel acyclicModel = conjunctionModelFactory.buildAcyclicModel(conjunctionNode);
             conjunctionModels.put(conjunction, acyclicModel);
 
-            // cyclic calls to this model will answer based on the acyclic model.
             iterate(conjunctionNode.cyclicConcludables()).flatMap(concludable -> iterate(conjunctionGraph.dependencies(concludable)))
                     .forEachRemaining(this::buildConjunctionModel);
             AnswerCountEstimator.ConjunctionModel cyclicModel = conjunctionModelFactory.buildCyclicModel(conjunctionNode, acyclicModel);
@@ -142,16 +138,16 @@ public class AnswerCountEstimator {
                 model.variables.forEach(v -> affectedModels.get(v).add(model));
                 modelScale.put(model, new Pair<>(1.0, Optional.empty()));
                 Map<Variable, Double> scaledEstimates = applyScaling(model);
-                scaledEstimates.forEach((k,v) -> improvedVariableEstimates.merge(k, v, Math::min));
+                scaledEstimates.forEach((k, v) -> improvedVariableEstimates.merge(k, v, Math::min));
             });
 
             propagate(improvedVariableEstimates);
-            // Lazy-fix: Replace all unmodelled constraints with a pessimistic estimate (Inaccuracy: We don't consider inferred values)
+            // Lazy-fix: Give variables not included in any constraint a pessimistic estimate (Inaccuracy: We don't consider inferred values)
             iterate(consideredVariables(resolvable)).filter(v -> !minVariableEstimate.containsKey(v))
-                    .forEachRemaining(v -> minVariableEstimate.put(v, (double)localModelFactory.countPersistedThingsMatchingType(v.asThing())));
+                    .forEachRemaining(v -> minVariableEstimate.put(v, (double) localModelFactory.countPersistedThingsMatchingType(v.asThing())));
         }
 
-        private Map<Variable,Double> applyScaling(LocalModel model) {
+        private Map<Variable, Double> applyScaling(LocalModel model) {
             Map<Variable, Double> improvedVariableEstimates = new HashMap<>();
             Pair<Double, Optional<Variable>> scale = modelScale.get(model);
             double bestScaler = scale.first();
@@ -162,7 +158,7 @@ public class AnswerCountEstimator {
                 if (minVariableEstimate.containsKey(v) && minVariableEstimate.get(v) / ans < bestScaler) {
                     bestScaler = minVariableEstimate.get(v) / ans;
                     bestScalingVar = v;
-                } else if (ans <  minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
+                } else if (ans < minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
                     improvedVariableEstimates.put(v, ans);
                 }
             }
@@ -181,8 +177,7 @@ public class AnswerCountEstimator {
         }
 
         private void propagate(Map<Variable, Double> minVarUpdates) {
-            // Ideally, we'd just remove and add each model again till unaryUpdates is empty.
-            int maxIters = Math.max(1, 2 * modelScale.size()); // TODO: Consider pruning out small changes
+            int maxIters = Math.max(1, 2 * modelScale.size()); // TODO: Ignoring small changes can force early convergence
             Map<Variable, Double> updatesToApply = minVarUpdates;
             while (!updatesToApply.isEmpty() && maxIters > 0) {
                 assert iterate(updatesToApply.entrySet()).allMatch(update -> update.getValue() < minVariableEstimate.getOrDefault(update.getKey(), Double.MAX_VALUE));
@@ -190,7 +185,7 @@ public class AnswerCountEstimator {
                 Map<Variable, Double> improvedVariableEstimates = new HashMap<>();
                 iterate(updatesToApply.keySet()).flatMap(v -> iterate(this.affectedModels.get(v))).distinct().forEachRemaining(model -> {
                     Map<Variable, Double> scaledEstimates = applyScaling(model);
-                    scaledEstimates.forEach((k,v) -> improvedVariableEstimates.merge(k, v, Math::min));
+                    scaledEstimates.forEach((k, v) -> improvedVariableEstimates.merge(k, v, Math::min));
                 });
                 updatesToApply = improvedVariableEstimates;
                 maxIters--;
@@ -213,7 +208,7 @@ public class AnswerCountEstimator {
             relevantModels.sort(Comparator.comparing(model -> scaledEstimates.get(model).second()));
             for (LocalModel model : relevantModels) {
                 if (scaledEstimates.get(model).second() < answerEstimateFromCover(scaledEstimates.get(model).first(), cover)) {
-                    CoverElement coverElement = new CoverElement(scaledEstimates.get(model).second()); // Same instance for all keys
+                    CoverElement coverElement = new CoverElement(scaledEstimates.get(model).second());
                     scaledEstimates.get(model).first().forEach(v -> cover.put(v, coverElement));
                 }
             }
@@ -364,10 +359,21 @@ public class AnswerCountEstimator {
 
         abstract long estimateAnswers(Set<Variable> variableFilter);
 
-        public boolean isRelation() { return false; }
-        public boolean isHas() { return false; }
-        public boolean isIsa() { return false; }
-        public boolean isVariable() { return false; }
+        public boolean isRelation() {
+            return false;
+        }
+
+        public boolean isHas() {
+            return false;
+        }
+
+        public boolean isIsa() {
+            return false;
+        }
+
+        public boolean isVariable() {
+            return false;
+        }
 
         private abstract static class StaticModel extends LocalModel {
             private final long staticEstimate;
@@ -400,13 +406,15 @@ public class AnswerCountEstimator {
                 this.rolePlayerTypes = new HashMap<>();
 
                 relation.players().forEach(player -> {
-                    // Error: null is a valid role-type, but two unspecified roles are not necessarily interchangable.
+                    // Inaccuracy: null is a valid role-type, but two unspecified roles are not necessarily interchangable.
                     TypeVariable roleType = player.roleType().isPresent() ? player.roleType().get() : null;
                     this.rolePlayerTypes.put(player.player(), roleType);
                 });
             }
 
-            public boolean isRelation() { return true; }
+            public boolean isRelation() {
+                return true;
+            }
 
             @Override
             long estimateAnswers(Set<Variable> variableFilter) {
@@ -464,7 +472,9 @@ public class AnswerCountEstimator {
                 this.attributeEstimate = attributeEstimate;
             }
 
-            public boolean isHas() { return true; }
+            public boolean isHas() {
+                return true;
+            }
 
             @Override
             long estimateAnswers(Set<Variable> variableFilter) {
@@ -488,7 +498,9 @@ public class AnswerCountEstimator {
                 this.isa = isa;
             }
 
-            public boolean isIsa() { return true; }
+            public boolean isIsa() {
+                return true;
+            }
 
             @Override
             public String toString() {
@@ -501,7 +513,9 @@ public class AnswerCountEstimator {
                 super(variables, estimate);
             }
 
-            public boolean isVariable() { return true; }
+            public boolean isVariable() {
+                return true;
+            }
 
             @Override
             public String toString() {
@@ -620,7 +634,7 @@ public class AnswerCountEstimator {
                     }
 
                     ruleSideVariables = iterate(ruleSideIds)
-                            .filter(id -> rule.condition().conjunction().pattern().retrieves().contains(id)) // avoids constant has
+                            .filter(id -> rule.condition().conjunction().pattern().retrieves().contains(id))
                             .map(id -> rule.condition().conjunction().pattern().variable(id)).toSet();
                     inferredEstimate += answerCountEstimator.estimateAnswers(rule.condition().conjunction(), ruleSideVariables);
                 }
