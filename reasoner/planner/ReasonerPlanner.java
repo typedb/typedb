@@ -70,15 +70,7 @@ public abstract class ReasonerPlanner {
     }
 
     public void plan(ResolvableConjunction conjunction, Set<Variable> boundVariables) {
-        CallMode callMode = new CallMode(conjunction, estimateableVariables(boundVariables));
-        // We can't use `planCache.get(Key, Func)` below because of the recursive-update error
-        if (planCache.getIfPresent(callMode) == null) {
-            synchronized (this) {
-                if (planCache.getIfPresent(callMode) == null) {
-                    plan(callMode);
-                }
-            }
-        }
+        plan(new CallMode(conjunction, estimateableVariables(boundVariables)));
     }
 
     public void planAllDependencies(Concludable concludable, Set<Variable> boundVariables) {
@@ -91,8 +83,10 @@ public abstract class ReasonerPlanner {
     }
 
     void plan(CallMode callMode) {
-        if (planCache.getIfPresent(callMode) == null) {
-            planCache.put(callMode, computePlan(callMode));
+        synchronized (planCache) {
+            if (planCache.getIfPresent(callMode) == null) {
+                planCache.put(callMode, computePlan(callMode));
+            }
         }
     }
 
