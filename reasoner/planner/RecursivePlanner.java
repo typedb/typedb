@@ -67,17 +67,17 @@ public class RecursivePlanner extends ReasonerPlanner {
     @Override
     Plan computePlan(CallMode callMode) {
         recursivelyGeneratePlanChoices(callMode);
-        planComponent(callMode);
+        planMutuallyRecursiveSubgraph(callMode);
         assert planCache.getIfPresent(callMode) != null;
         return planCache.getIfPresent(callMode);
     }
 
-    // combined planning for all nodes in a strongly-connected-component
-    private void planComponent(CallMode callMode) {
+    // Conjunctions which call each other must be planned together
+    private void planMutuallyRecursiveSubgraph(CallMode callMode) {
         Map<CallMode, PlanChoice> choices = new HashMap<>();
         Set<CallMode> pendingModes = new HashSet<>();
         pendingModes.add(callMode);
-        ComponentPlan bestPlan = componentPlanSearch(callMode, pendingModes, choices);
+        SubgraphPlan bestPlan = subgraphPlanSearch(callMode, pendingModes, choices);
 
         for (PlanChoice bestPlanForCall : bestPlan.choices.values()) {
             planCache.put(bestPlanForCall.callMode, new Plan(bestPlanForCall.ordering, Math.round(Math.ceil(bestPlan.cost(bestPlanForCall.callMode)))));
@@ -85,10 +85,10 @@ public class RecursivePlanner extends ReasonerPlanner {
         }
     }
 
-    private ComponentPlan componentPlanSearch(CallMode root, Set<CallMode> pendingCallModes, Map<CallMode, PlanChoice> choices) { // The value contains the scaling factors needed for the other conjunctions in the globalCost.
+    private SubgraphPlan subgraphPlanSearch(CallMode root, Set<CallMode> pendingCallModes, Map<CallMode, PlanChoice> choices) { // The value contains the scaling factors needed for the other conjunctions in the globalCost.
         // Pick a choice of ordering, expand dependencies, recurse ; backtrack over choices
-        if (pendingCallModes.isEmpty()) { // All modes have an ordering chosen -> we have a complete candidate plan for the component
-            return createComponentPlan(choices);
+        if (pendingCallModes.isEmpty()) { // All modes have an ordering chosen -> we have a complete candidate plan for the subgraph
+            return createSubgraphPlan(choices);
         }
 
         CallMode mode = iterate(pendingCallModes).next();
@@ -96,7 +96,7 @@ public class RecursivePlanner extends ReasonerPlanner {
         assert !choices.containsKey(mode); // Should not have been added to pending
 
         ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(mode.conjunction);
-        ComponentPlan bestPlan = null; // for the branch of choices committed to so far.
+        SubgraphPlan bestPlan = null; // for the branch of choices committed to so far.
         double bestPlanCost = Double.MAX_VALUE;
         for (PlanChoice planChoice : planChoices.get(mode)) {
             choices.put(mode, planChoice);
@@ -107,7 +107,7 @@ public class RecursivePlanner extends ReasonerPlanner {
                 triggeredCalls.addAll(triggeredCalls(concludableMode.first(), concludableMode.second(), Optional.of(conjunctionNode.cyclicDependencies(concludableMode.first()))));
             });
             iterate(triggeredCalls).filter(call -> !choices.containsKey(call)).forEachRemaining(nextPendingModes::add);
-            ComponentPlan newPlan = componentPlanSearch(root, nextPendingModes, choices);
+            SubgraphPlan newPlan = subgraphPlanSearch(root, nextPendingModes, choices);
 
             double newPlanCost = newPlan.cost(root);
             if (bestPlan == null || newPlanCost < bestPlanCost) {
@@ -160,7 +160,7 @@ public class RecursivePlanner extends ReasonerPlanner {
                 initialiseOrderingDependencies(conjunctionNode, ordering, callMode.mode);
                 PlanChoice planChoice = summarisePlanChoice(conjunctionNode, ordering, callMode.mode);
 
-                // Two orderings for the same CallMode with identical cyclic-concludable modes are interchangeable in the component-plan
+                // Two orderings for the same CallMode with identical cyclic-concludable modes are interchangeable in the subgraph-plan
                 //      -> We only need to keep the cheaper one.
                 if (!planChoices.containsKey(planChoice.cyclicConcludableModes) ||
                         planChoices.get(planChoice.cyclicConcludableModes).acyclicCost > planChoice.acyclicCost) {
@@ -245,7 +245,7 @@ public class RecursivePlanner extends ReasonerPlanner {
         return getPlan(callMode).cost() * Math.min(1.0, scalingFactor + cyclicScalingFactors.get(callMode));
     }
 
-    private ComponentPlan createComponentPlan(Map<CallMode, PlanChoice> chosenSummaries) {
+    private SubgraphPlan createSubgraphPlan(Map<CallMode, PlanChoice> chosenSummaries) {
         Map<CallMode, Double> scalingFactorSum = new HashMap<>();
         for (PlanChoice planChoice : chosenSummaries.values()) {
             ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(planChoice.callMode.conjunction);
@@ -257,14 +257,14 @@ public class RecursivePlanner extends ReasonerPlanner {
                         });
             });
         }
-        return new ComponentPlan(chosenSummaries, scalingFactorSum);
+        return new SubgraphPlan(chosenSummaries, scalingFactorSum);
     }
 
-    private static class ComponentPlan {
+    private static class SubgraphPlan {
         private final Map<CallMode, PlanChoice> choices;
         private final Map<CallMode, Double> cyclicScalingFactorSum;
 
-        private ComponentPlan(Map<CallMode, PlanChoice> choices, Map<CallMode, Double> cyclicScalingFactorSum) {
+        private SubgraphPlan(Map<CallMode, PlanChoice> choices, Map<CallMode, Double> cyclicScalingFactorSum) {
             this.choices = new HashMap<>(choices);
             this.cyclicScalingFactorSum = new HashMap<>(cyclicScalingFactorSum);
             this.choices.keySet().forEach(callMode -> this.cyclicScalingFactorSum.putIfAbsent(callMode, 0.0));
