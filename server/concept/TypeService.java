@@ -86,7 +86,6 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSubt
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSubtypesResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSupertypeRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.getSupertypesResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.isAbstractRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.setLabelRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.setSupertypeRes;
 import static com.vaticle.typedb.protocol.ConceptProto.RelationType.SetRelates.Req.OverriddenCase.OVERRIDDEN_LABEL;
@@ -117,9 +116,6 @@ public class TypeService {
                 return;
             case TYPE_SET_LABEL_REQ:
                 setLabel(type, typeReq.getTypeSetLabelReq().getLabel(), reqID);
-                return;
-            case TYPE_IS_ABSTRACT_REQ:
-                isAbstract(type, reqID);
                 return;
             case TYPE_GET_SUPERTYPE_REQ:
                 getSupertype(type, reqID);
@@ -270,10 +266,6 @@ public class TypeService {
     private void setLabel(Type type, String label, UUID reqID) {
         type.setLabel(label);
         transactionSvc.respond(setLabelRes(reqID));
-    }
-
-    private void isAbstract(Type type, UUID reqID) {
-        transactionSvc.respond(isAbstractRes(reqID, type.isAbstract()));
     }
 
     private void setAbstract(ThingType thingType, UUID reqID) {

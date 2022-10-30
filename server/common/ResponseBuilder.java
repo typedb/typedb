@@ -343,7 +343,8 @@ public class ResponseBuilder {
                     .setLabel(type.getLabel().name()).setEncoding(protoEncoding(type));
             if (type.isAttributeType()) protoType.setValueType(AttributeType.protoValueType(type.asAttributeType()));
             if (type.isRoleType()) protoType.setScope(type.asRoleType().getLabel().scope().get());
-            if (type.isRoot()) protoType.setRoot(true);
+            if (type.isRoot()) protoType.setIsRoot(true);
+            if (type.isAbstract()) protoType.setIsAbstract(true);
             return protoType.build();
         }
 
@@ -364,12 +365,6 @@ public class ResponseBuilder {
         public static TransactionProto.Transaction.Res setLabelRes(UUID reqID) {
             return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setTypeSetLabelRes(
                     ConceptProto.Type.SetLabel.Res.getDefaultInstance()
-            ));
-        }
-
-        public static TransactionProto.Transaction.Res isAbstractRes(UUID reqID, boolean isAbstract) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setTypeIsAbstractRes(
-                    ConceptProto.Type.IsAbstract.Res.newBuilder().setAbstract(isAbstract)
             ));
         }
 
