@@ -415,8 +415,7 @@ public class AnswerCountEstimator {
             }
 
             static Label getRoleType(RelationConstraint.RolePlayer player) {
-                if (player.roleType().isPresent()) {
-                    assert player.roleType().get().label().isPresent();
+                if (player.roleType().isPresent() && player.roleType().get().label().isPresent()) {
                     return player.roleType().get().label().get().properLabel();
                 }
                 else if (player.inferredRoleTypes().size()==1) return iterate(player.inferredRoleTypes()).next();
