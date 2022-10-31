@@ -393,13 +393,13 @@ public class AnswerCountEstimator {
 
         private static class RelationModel extends LocalModel {
             private final RelationConstraint relation;
-            private final Map<TypeVariable, Long> rolePlayerEstimates;
-            private final Map<TypeVariable, Long> typeMaximums;
+            private final Map<Label, Long> rolePlayerEstimates;
+            private final Map<Label, Long> typeMaximums;
             private final long relationTypeEstimate;
-            private final Map<ThingVariable, TypeVariable> rolePlayerTypes;
+            private final Map<ThingVariable, Label> rolePlayerTypes;
 
             private RelationModel(RelationConstraint relation, long relationTypeEstimate,
-                                  Map<TypeVariable, Long> typeMaximums, Map<TypeVariable, Long> rolePlayerEstimates) {
+                                  Map<Label, Long> typeMaximums, Map<Label, Long> rolePlayerEstimates) {
                 super(iterate(relation.variables()).filter(Variable::isThing).toSet());
                 this.relation = relation;
                 this.relationTypeEstimate = relationTypeEstimate;
@@ -410,8 +410,17 @@ public class AnswerCountEstimator {
                 relation.players().forEach(player -> {
                     // Inaccuracy: null is a valid role-type, but two unspecified roles are not necessarily interchangable.
                     TypeVariable roleType = player.roleType().isPresent() ? player.roleType().get() : null;
-                    this.rolePlayerTypes.put(player.player(), roleType);
+                    this.rolePlayerTypes.put(player.player(), getRoleType(player));
                 });
+            }
+
+            static Label getRoleType(RelationConstraint.RolePlayer player) {
+                if (player.roleType().isPresent()) {
+                    assert player.roleType().get().label().isPresent();
+                    return player.roleType().get().label().get().properLabel();
+                }
+                else if (player.inferredRoleTypes().size()==1) return iterate(player.inferredRoleTypes()).next();
+                else return null;
             }
 
             public boolean isRelation() {
@@ -421,10 +430,10 @@ public class AnswerCountEstimator {
             @Override
             long estimateAnswers(Set<Variable> variableFilter) {
                 long singleRelationEstimate = 1L;
-                Map<TypeVariable, Integer> queriedRolePlayerCounts = new HashMap<>();
+                Map<Label, Integer> queriedRolePlayerCounts = new HashMap<>();
                 for (Variable v : variableFilter) {
                     if (v.isThing() && rolePlayerTypes.containsKey(v.asThing())) {
-                        TypeVariable vType = this.rolePlayerTypes.get(v);
+                        Label vType = this.rolePlayerTypes.get(v);
                         queriedRolePlayerCounts.put(vType, 1 + queriedRolePlayerCounts.getOrDefault(vType, 0));
                     }
                 }
@@ -432,7 +441,7 @@ public class AnswerCountEstimator {
                 long typeBasedUpperBound = 1L;
                 long typeBasedUpperBoundFromRelations = relationTypeEstimate;
                 if (relationTypeEstimate > 0) {
-                    for (TypeVariable key : queriedRolePlayerCounts.keySet()) {
+                    for (Label key : queriedRolePlayerCounts.keySet()) {
                         assert rolePlayerEstimates.containsKey(key);
                         long avgRolePlayers = Double.valueOf(Math.ceil((double) rolePlayerEstimates.get(key) / relationTypeEstimate)).longValue();
                         singleRelationEstimate *= nPermuteKforSmallK(avgRolePlayers, queriedRolePlayerCounts.get(key));
@@ -540,13 +549,13 @@ public class AnswerCountEstimator {
             // Small inaccuracy: We double count duplicate roles (r:$a, r:$b)
             // counts the case where r:$a=r:$b, which TypeDB wouldn't return
             Set<RelationConstraint.RolePlayer> rolePlayers = relationConstraint.players();
-            Map<TypeVariable, Long> rolePlayerEstimates = new HashMap<>();
-            Map<TypeVariable, Integer> rolePlayerCounts = new HashMap<>();
+            Map<Label, Long> rolePlayerEstimates = new HashMap<>();
+            Map<Label, Integer> rolePlayerCounts = new HashMap<>();
 
-            Map<TypeVariable, Long> typeMaximums = new HashMap<>();
+            Map<Label, Long> typeMaximums = new HashMap<>();
             long relationUpperBound = 1L;
             for (RelationConstraint.RolePlayer rp : rolePlayers) {
-                TypeVariable key = rp.roleType().orElse(null);
+                Label key = LocalModel.RelationModel.getRoleType(rp);
                 if (!typeMaximums.containsKey(key)) {
                     typeMaximums.put(key, countPersistedThingsMatchingType(rp.player()));
                 }
@@ -568,7 +577,7 @@ public class AnswerCountEstimator {
             inferredRelationsEstimate = Math.min(inferredRelationsEstimate, relationUpperBound - persistedRelationEstimate);
 
             for (RelationConstraint.RolePlayer rp : rolePlayers) {
-                TypeVariable key = rp.roleType().orElse(null);
+                Label key = LocalModel.RelationModel.getRoleType(rp);
                 rolePlayerCounts.put(key, rolePlayerCounts.getOrDefault(key, 0) + 1);
                 if (!rolePlayerEstimates.containsKey(key)) {
                     rolePlayerEstimates.put(key, countPersistedRolePlayers(rp) + inferredRelationsEstimate);
