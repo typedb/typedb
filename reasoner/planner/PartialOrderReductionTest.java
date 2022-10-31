@@ -48,7 +48,7 @@ public class PartialOrderReductionTest {
 
         Map<Resolvable<?>, Set<Variable>> dependencies = new HashMap<>();
         resolvables.forEach(resolvable -> dependencies.put(resolvable, set()));
-        RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, set(), dependencies, false);
+        RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, getVariablesByName(resolvables, set("a", "b")), dependencies);
         List<List<Resolvable<?>>> allOrderings = porSearch.allOrderings();
         assertEquals(1, allOrderings.size());
     }
@@ -63,7 +63,7 @@ public class PartialOrderReductionTest {
 
         Map<Resolvable<?>, Set<Variable>> dependencies = new HashMap<>();
         resolvables.forEach(resolvable -> dependencies.put(resolvable, set()));
-        RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, set(), dependencies, false);
+        RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables,  getVariablesByName(resolvables, set("r0", "r1", "r2")), dependencies);
         List<List<Resolvable<?>>> allOrderings = porSearch.allOrderings();
         assertEquals(4, allOrderings.size());
     }
@@ -79,7 +79,7 @@ public class PartialOrderReductionTest {
 
         Map<Resolvable<?>, Set<Variable>> dependencies = new HashMap<>();
         resolvables.forEach(resolvable -> dependencies.put(resolvable, set()));
-        RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, set(), dependencies, false);
+        RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables,  getVariablesByName(resolvables, set("r1", "r2", "r3", "r4")), dependencies);
         List<List<Resolvable<?>>> allOrderings = porSearch.allOrderings();
 
         assertEquals(8, allOrderings.size()); // Multiple starting points
@@ -96,7 +96,7 @@ public class PartialOrderReductionTest {
 
         Map<Resolvable<?>, Set<Variable>> dependencies = new HashMap<>();
         resolvables.forEach(resolvable -> dependencies.put(resolvable, set()));
-        RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, set(), dependencies, false);
+        RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, getVariablesByName(resolvables, set("r1", "r2", "r3", "r4")), dependencies);
         List<List<Resolvable<?>>> allOrderings = porSearch.allOrderings();
 
         assertEquals(14, allOrderings.size());
@@ -112,7 +112,7 @@ public class PartialOrderReductionTest {
 
         Map<Resolvable<?>, Set<Variable>> dependencies = new HashMap<>();
         resolvables.forEach(resolvable -> dependencies.put(resolvable, set()));
-        RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, set(), dependencies, false);
+        RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables,  getVariablesByName(resolvables, set("a", "b")), dependencies);
         List<List<Resolvable<?>>> allOrderings = porSearch.allOrderings();
 
         assertEquals(4, allOrderings.size());
@@ -129,7 +129,7 @@ public class PartialOrderReductionTest {
 
         Map<Resolvable<?>, Set<Variable>> dependencies = new HashMap<>();
         resolvables.forEach(resolvable -> dependencies.put(resolvable, set()));
-        RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, set(), dependencies, false);
+        RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables,  getVariablesByName(resolvables, set("a", "b", "c")), dependencies);
         List<List<Resolvable<?>>> allOrderings = porSearch.allOrderings();
 
         assertEquals(8, allOrderings.size());
@@ -147,16 +147,16 @@ public class PartialOrderReductionTest {
         Map<Resolvable<?>, Set<Variable>> dependencies = new HashMap<>();
         resolvables.forEach(resolvable -> dependencies.put(resolvable, set()));
         {
-            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, set(), dependencies, true);
+            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, set(), dependencies);
             assertEquals(4, porSearch.allOrderings().size()); // One per start point
         }
         {
-            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, getVariablesByName(resolvables, set("a")), dependencies, true);
+            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, getVariablesByName(resolvables, set("a")), dependencies);
             assertEquals(1, porSearch.allOrderings().size());
         }
 
         {
-            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, getVariablesByName(resolvables, set("a", "e")), dependencies, true);
+            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, getVariablesByName(resolvables, set("a", "e")), dependencies);
             assertEquals(4, porSearch.allOrderings().size());
         }
     }
@@ -173,11 +173,11 @@ public class PartialOrderReductionTest {
         Map<Resolvable<?>, Set<Variable>> dependencies = new HashMap<>();
         resolvables.forEach(resolvable -> dependencies.put(resolvable, set()));
         {
-            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, set(), dependencies, true);
+            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, set(), dependencies);
             assertEquals(4, porSearch.allOrderings().size()); // One per start point
         }
         {
-            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, getVariablesByName(resolvables, set("a")), dependencies, true);
+            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, getVariablesByName(resolvables, set("a")), dependencies);
             assertEquals(2, porSearch.allOrderings().size());
         }
     }
@@ -194,15 +194,15 @@ public class PartialOrderReductionTest {
         Map<Resolvable<?>, Set<Variable>> dependencies = new HashMap<>();
         resolvables.forEach(resolvable -> dependencies.put(resolvable, set()));
         {
-            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, set(), dependencies, true);
+            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, set(), dependencies);
             assertEquals(12, porSearch.allOrderings().size()); // 3 per start point
         }
         {
-            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, getVariablesByName(resolvables, set("a")), dependencies, true);
+            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, getVariablesByName(resolvables, set("a")), dependencies);
             assertEquals(6, porSearch.allOrderings().size()); // 3 per start point
         }
         {
-            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, getVariablesByName(resolvables, set("a", "c")), dependencies, true);
+            RecursivePlanner.PartialOrderReductionSearch porSearch = new RecursivePlanner.PartialOrderReductionSearch(resolvables, getVariablesByName(resolvables, set("a", "c")), dependencies);
             assertEquals(10, porSearch.allOrderings().size()); // 3 per start point
         }
     }
@@ -224,11 +224,13 @@ public class PartialOrderReductionTest {
         for (int i = 0; i < resolvables.size(); i++) {
             nameMap.put(resolvables.get(i), names.get(i));
         }
+        StringBuilder sb = new StringBuilder();
         for (List<Resolvable<?>> ordering : allOrderings) {
             for (Resolvable<?> r : ordering) {
-                LOG.debug("{} ", nameMap.get(r));
+                sb.append(nameMap.get(r));
             }
-            LOG.debug(".");
+            sb.append(".\n");
         }
+        LOG.debug(sb.toString());
     }
 }

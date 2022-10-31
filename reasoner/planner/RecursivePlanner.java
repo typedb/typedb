@@ -302,18 +302,16 @@ public class RecursivePlanner extends ReasonerPlanner {
         private final Set<Resolvable<?>> resolvables;
         private final Set<Variable> mode;
         private final Map<Resolvable<?>, Set<Variable>> dependencies;
-        private final boolean enableConnectednessRestriction;
 
         // TODO: Combine these when we fix ReasonerPlanner.dependencies
         PartialOrderReductionSearch(Set<Resolvable<?>> resolvables, Set<Variable> mode) {
-            this(resolvables, mode, ReasonerPlanner.dependencies(resolvables), true);
+            this(resolvables, mode, ReasonerPlanner.dependencies(resolvables));
         }
 
-        PartialOrderReductionSearch(Set<Resolvable<?>> resolvables, Set<Variable> mode, Map<Resolvable<?>, Set<Variable>> dependencies, boolean enableConnectednessRestriction) {
+        PartialOrderReductionSearch(Set<Resolvable<?>> resolvables, Set<Variable> mode, Map<Resolvable<?>, Set<Variable>> dependencies) {
             this.resolvables = resolvables;
             this.mode = mode;
             this.dependencies = dependencies;
-            this.enableConnectednessRestriction = enableConnectednessRestriction;
         }
 
         List<List<Resolvable<?>>> allOrderings() {
@@ -348,17 +346,19 @@ public class RecursivePlanner extends ReasonerPlanner {
                 return; // All enabled are sleeping
             }
 
-            if (enableConnectednessRestriction) {
-                List<Resolvable<?>> connectedEnabled = iterate(enabled)
-                        .filter(r -> iterate(estimateableVariables(r.variables())).anyMatch(currentBounds::contains)).toList();
-                if (!connectedEnabled.isEmpty()) {
-                    enabled = connectedEnabled;
-                }
-            }
+            // Restrict further to only the connected ones
+            List<Resolvable<?>> connectedEnabled = iterate(enabled)
+                    .filter(r -> iterate(estimateableVariables(r.variables())).anyMatch(currentBounds::contains)).toList();
+
+            if (!connectedEnabled.isEmpty()) {
+                enabled = connectedEnabled;
+            } else if (connectedEnabled.isEmpty() && !sleepSet.isEmpty()) {
+                return; // We should have tried the disconnected down a path that's now sleeping.
+            } // else enabled = enabled; and carry on
 
             Set<Resolvable<?>> newSleepSet = new HashSet<>(sleepSet);
             for (Resolvable<?> next : enabled) {
-                Set<Resolvable<?>> awaken = iterate(newSleepSet) //  Don't need to iterate(remaining), do I?
+                Set<Resolvable<?>> awaken = iterate(newSleepSet)
                         .filter(r -> iterate(r.variables()).anyMatch(next.variables()::contains)) // not necessarily newly bound
                         .toSet();
 
