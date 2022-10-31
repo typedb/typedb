@@ -100,7 +100,7 @@ public abstract class ConjunctionController<
 
     List<Resolvable<?>> getPlan(Set<Variable.Retrievable> bounds) {
         Set<com.vaticle.typedb.core.pattern.variable.Variable> boundVariables = iterate(bounds).map(id -> conjunction.pattern().variable(id)).toSet();
-        List<Resolvable<?>> plan = registry().planner().getPlan(conjunction, boundVariables).plan();
+        List<Resolvable<?>> plan = planner().getPlan(conjunction, boundVariables).plan();
         assert resolvables.size() == plan.size() && resolvables.containsAll(plan);
         return plan;
     }

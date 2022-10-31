@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -51,6 +52,7 @@ public class RootConjunctionController
     public void initialise() {
         setUpUpstreamControllers();
         getOrCreateProcessor(new ConceptMap());
+        planner().plan(conjunction, new HashSet<>());
     }
 
     @Override

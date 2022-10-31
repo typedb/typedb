@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
+import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
@@ -69,6 +70,10 @@ public abstract class AbstractController<
 
     protected Driver<Monitor> monitor() {
         return context.monitor();
+    }
+
+    ReasonerPlanner planner() {
+        return context.planner();
     }
 
     AbstractProcessor.Context processorContext() {
@@ -135,13 +140,15 @@ public abstract class AbstractController<
         private ActorExecutorGroup executorService;
         private final ControllerRegistry registry;
         private final Driver<Monitor> monitor;
+        private final ReasonerPlanner planner;
         private final Tracer tracer;
 
         Context(ActorExecutorGroup executorService, ControllerRegistry registry, Driver<Monitor> monitor,
-                @Nullable Tracer tracer) {
+                ReasonerPlanner planner, @Nullable Tracer tracer) {
             this.executorService = executorService;
             this.registry = registry;
             this.monitor = monitor;
+            this.planner = planner;
             this.tracer = tracer;
             this.processorContext = new AbstractProcessor.Context(monitor, tracer);
         }
@@ -162,6 +169,8 @@ public abstract class AbstractController<
             return monitor;
         }
 
+        public ReasonerPlanner planner() { return planner; }
+
         Optional<Tracer> tracer() {
             return Optional.ofNullable(tracer);
         }
@@ -169,6 +178,5 @@ public abstract class AbstractController<
         public AbstractProcessor.Context processor() {
             return processorContext;
         }
-
     }
 }
