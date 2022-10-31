@@ -41,6 +41,7 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.planner.ConjunctionGraph.ConjunctionNode;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -301,7 +302,7 @@ public class AnswerCountEstimator {
 
         private List<LocalModel> buildModelsForRetrievable(Retrievable retrievable) {
             return iterate(extractConstraints(retrievable))
-                    .map(constraint -> buildConstraintModel(constraint, Optional.empty()))
+                    .map(constraint -> buildConstraintModel(constraint, null))
                     .toList();
         }
 
@@ -312,17 +313,17 @@ public class AnswerCountEstimator {
 
         private List<LocalModel> buildModelsForConcludable(Concludable concludable) {
             return iterate(concludable.concludableConstraints()).filter(this::isModellable)
-                    .map(constraint -> buildConstraintModel(constraint, Optional.of(concludable)))
+                    .map(constraint -> buildConstraintModel(constraint, concludable))
                     .toList();
         }
 
         private List<LocalModel> buildVariableModelsForConcludable(Concludable concludable) {
             List<LocalModel> models = new ArrayList<>();
-            iterate(concludable.variables()).filter(Variable::isThing).map(v -> localModelFactory.modelForVariable(v, Optional.empty())).forEachRemaining(models::add);
+            iterate(concludable.variables()).filter(Variable::isThing).map(v -> localModelFactory.modelForVariable(v, null)).forEachRemaining(models::add);
             return models;
         }
 
-        private LocalModel buildConstraintModel(Constraint constraint, Optional<Concludable> correspondingConcludable) {
+        private LocalModel buildConstraintModel(Constraint constraint, @Nullable Concludable correspondingConcludable) {
             if (constraint.isThing()) {
                 ThingConstraint asThingConstraint = constraint.asThing();
                 if (asThingConstraint.isHas()) {
@@ -534,7 +535,7 @@ public class AnswerCountEstimator {
             this.graphMgr = graphMgr;
         }
 
-        private LocalModel.RelationModel modelForRelation(RelationConstraint relationConstraint, Optional<Concludable> correspondingConcludable) {
+        private LocalModel.RelationModel modelForRelation(RelationConstraint relationConstraint, @Nullable Concludable correspondingConcludable) {
             // Assumes role-players are evenly distributed.
             // Small inaccuracy: We double count duplicate roles (r:$a, r:$b)
             // counts the case where r:$a=r:$b, which TypeDB wouldn't return
@@ -555,13 +556,13 @@ public class AnswerCountEstimator {
             long persistedRelationEstimate = countPersistedThingsMatchingType(relationConstraint.owner());
             // TODO: Can improve estimate by collecting List<List<LocalModel>> from the triggered rules and doing sum(costCover).
             long inferredRelationsEstimate = 0L;
-            if (correspondingConcludable.isPresent()) {
+            if (correspondingConcludable != null) {
                 List<Variable> constrainedVars = new ArrayList<>();
                 iterate(relationConstraint.players()).forEachRemaining(player -> constrainedVars.add(player.player()));
                 if (relationConstraint.owner().id().isName()) {
                     constrainedVars.add(relationConstraint.owner());
                 }
-                inferredRelationsEstimate = estimateInferredAnswerCount(correspondingConcludable.get(), new HashSet<>(constrainedVars));
+                inferredRelationsEstimate = estimateInferredAnswerCount(correspondingConcludable, new HashSet<>(constrainedVars));
             }
 
             inferredRelationsEstimate = Math.min(inferredRelationsEstimate, relationUpperBound - persistedRelationEstimate);
@@ -577,13 +578,13 @@ public class AnswerCountEstimator {
             return new LocalModel.RelationModel(relationConstraint, inferredRelationsEstimate + persistedRelationEstimate, typeMaximums, rolePlayerEstimates);
         }
 
-        private LocalModel.HasModel modelForHas(HasConstraint hasConstraint, Optional<Concludable> correspondingConcludable) {
+        private LocalModel.HasModel modelForHas(HasConstraint hasConstraint, @Nullable Concludable correspondingConcludable) {
             long hasEdgeEstimate = countPersistedHasEdges(hasConstraint.owner().inferredTypes(), hasConstraint.attribute().inferredTypes());
             long ownerEstimate = countPersistedThingsMatchingType(hasConstraint.owner());
             long attributeEstimate = countPersistedThingsMatchingType(hasConstraint.attribute());
-            if (correspondingConcludable.isPresent()) {
-                hasEdgeEstimate += estimateInferredAnswerCount(correspondingConcludable.get(), set(hasConstraint.owner(), hasConstraint.attribute()));
-                attributeEstimate += attributesCreatedByExplicitHas(correspondingConcludable.get());
+            if (correspondingConcludable != null) {
+                hasEdgeEstimate += estimateInferredAnswerCount(correspondingConcludable, set(hasConstraint.owner(), hasConstraint.attribute()));
+                attributeEstimate += attributesCreatedByExplicitHas(correspondingConcludable);
                 if (ownerEstimate < hasEdgeEstimate / attributeEstimate) {
                     boolean rulesConcludeOwner = iterate(hasConstraint.owner().inferredTypes()).flatMap(ownerType -> iterate(answerCountEstimator.logicMgr.rulesConcluding(ownerType))).hasNext();
                     if (rulesConcludeOwner) ownerEstimate = hasEdgeEstimate / attributeEstimate;
@@ -592,30 +593,28 @@ public class AnswerCountEstimator {
             return new LocalModel.HasModel(hasConstraint, hasEdgeEstimate, ownerEstimate, attributeEstimate);
         }
 
-        private LocalModel.IsaModel modelForIsa(IsaConstraint isaConstraint, Optional<Concludable> correspondingConcludable) {
+        private LocalModel.IsaModel modelForIsa(IsaConstraint isaConstraint, @Nullable Concludable correspondingConcludable) {
             ThingVariable owner = isaConstraint.owner();
             long estimate = countPersistedThingsMatchingType(owner);
-            if (correspondingConcludable.isPresent()) {
-                estimate += estimateInferredAnswerCount(correspondingConcludable.get(), set(owner));
+            if (correspondingConcludable != null) {
+                estimate += estimateInferredAnswerCount(correspondingConcludable, set(owner));
             }
             return new LocalModel.IsaModel(isaConstraint, estimate);
         }
 
-        public LocalModel modelForValue(ValueConstraint<?> asValue, Optional<Concludable> correspondingConcludable) {
+        public LocalModel modelForValue(ValueConstraint<?> asValue, @Nullable Concludable correspondingConcludable) {
             if (asValue.isValueIdentity()) {
                 return new LocalModel.VariableModel(set(asValue.owner()), 1L);
             } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
         }
 
-        private LocalModel.VariableModel modelForVariable(Variable v, Optional<Concludable> concludable) {
+        private LocalModel.VariableModel modelForVariable(Variable v, @Nullable Concludable concludable) {
             long persistedAnswerCount = countPersistedThingsMatchingType(v.asThing());
             long inferredAnswerCount = 0;
-            Concludable sourceConcludable;
-            if (concludable.isPresent() && v == concludable.get().generating().orElse(null)) {
-                sourceConcludable = concludable.get();
-                inferredAnswerCount = (sourceConcludable.isHas() || sourceConcludable.isAttribute()) ?
-                        attributesCreatedByExplicitHas(sourceConcludable) :
-                        estimateInferredAnswerCount(sourceConcludable, set(v));
+            if (concludable != null && v == concludable.generating().orElse(null)) {
+                inferredAnswerCount = (concludable.isHas() || concludable.isAttribute()) ?
+                        attributesCreatedByExplicitHas(concludable) :
+                        estimateInferredAnswerCount(concludable, set(v));
             }
             return new LocalModel.VariableModel(set(v), persistedAnswerCount + inferredAnswerCount);
         }

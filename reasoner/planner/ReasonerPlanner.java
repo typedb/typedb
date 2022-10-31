@@ -141,11 +141,8 @@ public abstract class ReasonerPlanner {
             }
             for (Unifier unifier : entry.getValue()) {
                 assert iterate(mode).allMatch(v -> v.id().isRetrievable());
-                Set<Identifier.Variable.Retrievable> ruleModeIds = iterate(mode)
+                Set<Variable> ruleMode = iterate(mode)
                         .flatMap(v -> iterate(unifier.mapping().get(v.id().asRetrievable())))
-                        .map(Identifier.Variable::asRetrievable)
-                        .toSet();
-                Set<Variable> ruleMode = iterate(ruleModeIds)
                         .filter(id -> ruleConjunction.pattern().retrieves().contains(id))
                         .map(id -> ruleConjunction.pattern().variable(id)).toSet();
                 calls.add(new CallMode(ruleConjunction, ruleMode));
