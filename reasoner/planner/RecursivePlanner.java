@@ -120,33 +120,6 @@ public class RecursivePlanner extends ReasonerPlanner {
         return bestPlan;
     }
 
-    private void initialiseOrderingDependencies(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> mode) {
-        Set<Variable> currentBounds = new HashSet<>(mode);
-        for (Resolvable<?> resolvable : ordering) {
-            Set<Variable> resolvableMode = Collections.intersection(estimateableVariables(resolvable.variables()), currentBounds);
-            initialiseDependencies(conjunctionNode, resolvable, resolvableMode);
-            if (!resolvable.isNegated()) currentBounds.addAll(estimateableVariables(resolvable.variables()));
-        }
-    }
-
-    private void initialiseDependencies(ConjunctionNode conjunctionNode, Resolvable<?> resolvable, Set<Variable> resolvableMode) {
-        if (resolvable.isConcludable()) {
-            Set<ResolvableConjunction> cyclicDependencies = conjunctionNode.cyclicDependencies(resolvable.asConcludable());
-            for (CallMode callMode : triggeredCalls(resolvable.asConcludable(), resolvableMode, null)) {
-                recursivelyGeneratePlanChoices(callMode);
-                if (!cyclicDependencies.contains(callMode.conjunction)) {
-                    plan(callMode); // Acyclic dependencies can be fully planned
-                }
-            }
-        } else if (resolvable.isNegated()) {
-            iterate(resolvable.asNegated().disjunction().conjunctions()).forEachRemaining(conjunction -> {
-                CallMode callMode = new CallMode(conjunction, resolvableMode);
-                recursivelyGeneratePlanChoices(callMode);
-                plan(callMode);
-            });
-        }
-    }
-
     private void recursivelyGeneratePlanChoices(CallMode callMode) {
         if (!planChoices.containsKey(callMode)) {
             planChoices.put(callMode, null); // Guard
@@ -167,6 +140,34 @@ public class RecursivePlanner extends ReasonerPlanner {
                 }
             }
             this.planChoices.put(callMode, new HashSet<>(planChoices.values()));
+        }
+    }
+
+
+    private void initialiseOrderingDependencies(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> mode) {
+        Set<Variable> currentBounds = new HashSet<>(mode);
+        for (Resolvable<?> resolvable : ordering) {
+            Set<Variable> resolvableMode = Collections.intersection(estimateableVariables(resolvable.variables()), currentBounds);
+            initialiseResolvableDependencies(conjunctionNode, resolvable, resolvableMode);
+            if (!resolvable.isNegated()) currentBounds.addAll(estimateableVariables(resolvable.variables()));
+        }
+    }
+
+    private void initialiseResolvableDependencies(ConjunctionNode conjunctionNode, Resolvable<?> resolvable, Set<Variable> resolvableMode) {
+        if (resolvable.isConcludable()) {
+            Set<ResolvableConjunction> cyclicDependencies = conjunctionNode.cyclicDependencies(resolvable.asConcludable());
+            for (CallMode callMode : triggeredCalls(resolvable.asConcludable(), resolvableMode, null)) {
+                recursivelyGeneratePlanChoices(callMode);
+                if (!cyclicDependencies.contains(callMode.conjunction)) {
+                    plan(callMode); // Acyclic dependencies can be fully planned
+                }
+            }
+        } else if (resolvable.isNegated()) {
+            iterate(resolvable.asNegated().disjunction().conjunctions()).forEachRemaining(conjunction -> {
+                CallMode callMode = new CallMode(conjunction, resolvableMode);
+                recursivelyGeneratePlanChoices(callMode);
+                plan(callMode);
+            });
         }
     }
 
