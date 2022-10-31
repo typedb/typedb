@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -61,10 +62,6 @@ public abstract class ReasonerPlanner {
         return iterate(variables).filter(Variable::isThing).toSet();
     }
 
-    static Set<Variable> estimateableVariables(Resolvable<?> resolvable) {
-        return iterate(resolvable.variables()).filter(Variable::isThing).toSet();
-    }
-
     static Set<Variable> retrievedVariables(Resolvable<?> resolvable) {
         return iterate(resolvable.variables()).filter(v -> v.id().isRetrievable()).toSet();
     }
@@ -78,7 +75,7 @@ public abstract class ReasonerPlanner {
     }
 
     public void planAllDependencies(Concludable concludable, Set<Variable> mode) {
-        triggeredCalls(concludable, estimateableVariables(mode), Optional.empty())
+        triggeredCalls(concludable, estimateableVariables(mode), null)
                 .forEach(callMode -> plan(callMode.conjunction, callMode.mode));
     }
 
@@ -86,11 +83,9 @@ public abstract class ReasonerPlanner {
         return getPlan(new CallMode(conjunction, estimateableVariables(mode)));
     }
 
-    void plan(CallMode callMode) {
-        synchronized (planCache) {
-            if (planCache.getIfPresent(callMode) == null) {
-                planCache.put(callMode, computePlan(callMode));
-            }
+    synchronized void plan(CallMode callMode) {
+        if (planCache.getIfPresent(callMode) == null) {
+            planCache.put(callMode, computePlan(callMode));
         }
     }
 
@@ -137,11 +132,11 @@ public abstract class ReasonerPlanner {
         return deps;
     }
 
-    public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> mode, Optional<Set<ResolvableConjunction>> dependencyFilter) {
+    public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> mode, @Nullable Set<ResolvableConjunction> dependencyFilter) {
         Set<CallMode> calls = new HashSet<>();
         for (Map.Entry<Rule, Set<Unifier>> entry : logicMgr.applicableRules(concludable).entrySet()) {
             ResolvableConjunction ruleConjunction = entry.getKey().condition().conjunction();
-            if (dependencyFilter.isPresent() && !dependencyFilter.get().contains(ruleConjunction)) {
+            if (dependencyFilter != null && !dependencyFilter.contains(ruleConjunction)) {
                 continue;
             }
             for (Unifier unifier : entry.getValue()) {

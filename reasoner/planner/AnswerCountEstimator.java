@@ -144,7 +144,7 @@ public class AnswerCountEstimator {
 
             propagate(improvedVariableEstimates);
             // Lazy-fix: Give variables not included in any constraint a pessimistic estimate (Inaccuracy: We don't consider inferred values)
-            iterate(estimateableVariables(resolvable)).filter(v -> !minVariableEstimate.containsKey(v))
+            iterate(estimateableVariables(resolvable.variables())).filter(v -> !minVariableEstimate.containsKey(v))
                     .forEachRemaining(v -> minVariableEstimate.put(v, (double) localModelFactory.countPersistedThingsMatchingType(v.asThing())));
         }
 
