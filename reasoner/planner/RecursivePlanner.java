@@ -79,7 +79,7 @@ public class RecursivePlanner extends ReasonerPlanner {
         SubgraphPlan bestPlan = subgraphPlanSearch(callMode, pendingModes, choices);
 
         for (OrderingChoice bestPlanForCall : bestPlan.choices.values()) {
-            planCache.put(bestPlanForCall.callMode, new Plan(bestPlanForCall.ordering, Math.round(Math.ceil(bestPlan.cost(bestPlanForCall.callMode)))));
+            planCache.put(bestPlanForCall.callMode, new Plan(bestPlanForCall.ordering, Math.round(Math.ceil(bestPlan.cost(bestPlanForCall.callMode, 1.0)))));
             cyclicScalingFactors.put(bestPlanForCall.callMode, bestPlan.cyclicScalingFactorSum.get(bestPlanForCall.callMode));
         }
     }
@@ -108,7 +108,7 @@ public class RecursivePlanner extends ReasonerPlanner {
             iterate(triggeredCalls).filter(call -> !choices.containsKey(call)).forEachRemaining(nextPendingModes::add);
             SubgraphPlan newPlan = subgraphPlanSearch(root, nextPendingModes, choices);
 
-            double newPlanCost = newPlan.cost(root);
+            double newPlanCost = newPlan.cost(root, 1.0/choices.get(root).answersToMode);
             if (bestPlan == null || newPlanCost < bestPlanCost) {
                 bestPlan = newPlan;
                 bestPlanCost = newPlanCost;
@@ -134,9 +134,13 @@ public class RecursivePlanner extends ReasonerPlanner {
 
                 // Two orderings for the same CallMode with identical cyclic-concludable modes are interchangeable in the subgraph-plan
                 //      -> We only need to keep the cheaper one.
-                if (!orderingChoices.containsKey(orderingChoice.cyclicConcludableModes) ||
-                        orderingChoices.get(orderingChoice.cyclicConcludableModes).acyclicCost > orderingChoice.acyclicCost) {
+                if (!orderingChoices.containsKey(orderingChoice.cyclicConcludableModes) ) {
                     orderingChoices.put(orderingChoice.cyclicConcludableModes, orderingChoice);
+                } else {
+                    OrderingChoice existingChoice = orderingChoices.get(orderingChoice.cyclicConcludableModes);
+                    if (  orderingChoice.acyclicCost * 1.0/orderingChoice.answersToMode + orderingChoice.unscalableCost < existingChoice.acyclicCost * 1.0/existingChoice.answersToMode + existingChoice.unscalableCost) {
+                        orderingChoices.put(orderingChoice.cyclicConcludableModes, orderingChoice);
+                    }
                 }
             }
             this.orderingChoices.put(callMode, new HashSet<>(orderingChoices.values()));
@@ -173,7 +177,10 @@ public class RecursivePlanner extends ReasonerPlanner {
     private OrderingChoice createOrderingChoice(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> mode) {
         Set<Variable> boundVars = new HashSet<>(mode);  // bound -> in input mode or restricted locally
         Set<Variable> restrictedVars = new HashSet<>(); // restricted -> Restricted by preceding resolvables
-        double acyclicCost = 0L;
+        Set<Variable> inputConnectedVars = new HashSet<>(mode);
+        double acyclicCost = 0.0;
+        double unscalableCost = 0.0;
+        Map<Variable, Set<Resolvable<?>>> detachedResolvables = new HashMap<>(); // Detached starting-points can't be scaled.
 
         Map<Concludable, Double> scalingFactors = new HashMap<>();
         Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes = new HashSet<>();
@@ -184,9 +191,9 @@ public class RecursivePlanner extends ReasonerPlanner {
             Set<Variable> restrictedResolvableVars = Collections.intersection(resolvableVars, restrictedVars);
 
             double answersForModeFromPrefix = estimator.answerEstimate(restrictedResolvableVars);
-
+            double resolvableCost;
             if (resolvable.isNegated()) {
-                acyclicCost += iterate(resolvable.asNegated().disjunction().conjunctions()).map(conj -> {
+                resolvableCost = iterate(resolvable.asNegated().disjunction().conjunctions()).map(conj -> {
                     double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, restrictedResolvableVars);
                     double scalingFactor = Math.min(1, answersForModeFromPrefix / allAnswersForMode);
                     return scaledCallCost(scalingFactor, new CallMode(conj, resolvableMode));
@@ -196,7 +203,7 @@ public class RecursivePlanner extends ReasonerPlanner {
                 thisResolvableOnlyEstimator.extend(resolvable);
                 double allAnswersForMode = thisResolvableOnlyEstimator.answerEstimate(restrictedResolvableVars);
                 double scalingFactor = Math.min(1, answersForModeFromPrefix / allAnswersForMode);
-                acyclicCost += scaledAcyclicCost(scalingFactor, conjunctionNode, resolvable, resolvableMode);
+                resolvableCost = scaledAcyclicCost(scalingFactor, conjunctionNode, resolvable, resolvableMode);
 
                 if (resolvable.isConcludable() && conjunctionNode.cyclicConcludables().contains(resolvable.asConcludable())) {
                     Set<Variable> restrictedVarsNotInMode = iterate(restrictedResolvableVars).filter(v -> !mode.contains(v)).toSet();
@@ -209,6 +216,25 @@ public class RecursivePlanner extends ReasonerPlanner {
             }
 
             estimator.extend(resolvable);
+
+            if (Collections.intersection(resolvableMode, inputConnectedVars).isEmpty()){
+                unscalableCost += resolvableCost;
+                iterate(resolvableVars).forEachRemaining(v -> detachedResolvables.computeIfAbsent(v, v1 -> new HashSet<>()).add(resolvable));
+            } else {
+                acyclicCost += resolvableCost;
+                Set<Variable> newConnectedVars = new HashSet<>();
+                iterate(resolvableVars).filter(v -> !inputConnectedVars.contains(v)).forEachRemaining(newConnectedVars::add);
+                while (!newConnectedVars.isEmpty()) {
+                    Variable v = iterate(newConnectedVars).next();
+                    newConnectedVars.remove(v);
+                    inputConnectedVars.add(v);
+                    if (detachedResolvables.containsKey(v)) {
+                        iterate(detachedResolvables.get(v)).flatMap(res -> iterate(estimateableVariables(res.variables()))).forEachRemaining(newConnectedVars::add);
+                    }
+                    detachedResolvables.remove(v);
+                }
+            }
+
             if (!resolvable.isNegated()) {
                 boundVars.addAll(resolvableVars);
                 restrictedVars.addAll(resolvableVars);
@@ -216,7 +242,8 @@ public class RecursivePlanner extends ReasonerPlanner {
         }
 
         CallMode callMode = new CallMode(conjunctionNode.conjunction(), new HashSet<>(mode));
-        return new OrderingChoice(callMode, ordering, acyclicCost, cyclicConcludableModes, scalingFactors);
+        double answersToMode = answerCountEstimator.estimateAnswers(callMode.conjunction, mode);
+        return new OrderingChoice(callMode, ordering, acyclicCost, cyclicConcludableModes, scalingFactors, unscalableCost, answersToMode);
     }
 
     private long retrievalCost(ResolvableConjunction conjunction, Resolvable<?> resolvable, Set<Variable> mode) {
@@ -269,11 +296,13 @@ public class RecursivePlanner extends ReasonerPlanner {
             this.choices.keySet().forEach(callMode -> this.cyclicScalingFactorSum.putIfAbsent(callMode, 0.0));
         }
 
-        private double cost(CallMode root) {
+        private double cost(CallMode root, double rootScalingFactor) {
             double cycleCost = 0L;
             for (OrderingChoice orderingChoice : choices.values()) {
-                double scalingFactor = orderingChoice.callMode.equals(root) ? 1.0 : cyclicScalingFactorSum.get(orderingChoice.callMode);
-                cycleCost += orderingChoice.acyclicCost * scalingFactor;
+                double scalingFactor = orderingChoice.callMode.equals(root) ?
+                        Math.min(1.0, rootScalingFactor + cyclicScalingFactorSum.get(orderingChoice.callMode)) :
+                        cyclicScalingFactorSum.get(orderingChoice.callMode);
+                cycleCost += orderingChoice.acyclicCost * scalingFactor + orderingChoice.unscalableCost;
             }
 
             return cycleCost;
@@ -286,14 +315,18 @@ public class RecursivePlanner extends ReasonerPlanner {
         final double acyclicCost;
         final Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes;
         final Map<Concludable, Double> scalingFactors;
+        final double unscalableCost;
+        final double answersToMode;
 
         private OrderingChoice(CallMode callMode, List<Resolvable<?>> ordering, double acyclicCost,
-                               Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes, Map<Concludable, Double> scalingFactors) {
+                               Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes, Map<Concludable, Double> scalingFactors, double unscalableCost, double answersToMode) {
             this.callMode = callMode;
             this.ordering = ordering;
             this.acyclicCost = acyclicCost;
             this.cyclicConcludableModes = cyclicConcludableModes;
             this.scalingFactors = scalingFactors;
+            this.unscalableCost = unscalableCost;
+            this.answersToMode = answersToMode;
         }
     }
 
