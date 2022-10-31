@@ -50,9 +50,9 @@ public class RootConjunctionController
 
     @Override
     public void initialise() {
+        planner().plan(conjunction, new HashSet<>());
         setUpUpstreamControllers();
         getOrCreateProcessor(new ConceptMap());
-        planner().plan(conjunction, new HashSet<>());
     }
 
     @Override
