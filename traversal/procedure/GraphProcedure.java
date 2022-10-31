@@ -62,7 +62,6 @@ public class GraphProcedure implements PermutationProcedure {
     private static final Logger LOG = LoggerFactory.getLogger(GraphProcedure.class);
 
     private final ProcedureVertex<?, ?>[] vertices;
-    private Set<ProcedureVertex<?, ?>> startVertices;
     private Set<ProcedureVertex<?, ?>> endVertices;
 
     private GraphProcedure(ProcedureVertex<?, ?>[] vertices) {
@@ -81,6 +80,25 @@ public class GraphProcedure implements PermutationProcedure {
     public static GraphProcedure create(Structure structure, Map<Identifier, Integer> orders) {
         Builder builder = new Builder();
         builder.register(structure, orders);
+        return builder.build();
+    }
+
+    public GraphProcedure cloneRange(int toInclusive) {
+        assert toInclusive <= vertexCount();
+        Builder builder = new Builder();
+        for (int i = 0; i <= toInclusive; i++) {
+            builder.registerVertex(vertices[i], vertices[i].order());
+        }
+        for (int i = 0; i <= toInclusive; i++) {
+            ProcedureVertex<?, ?> from = vertices[i];
+            from.outs().forEach(e -> {
+                if (e.to().order() <= toInclusive) {
+                    ProcedureVertex<?, ?> to = vertices[e.to().order()];
+                    ProcedureEdge<?, ?> clonedEdge = e.cloneTo(from, to);
+                    builder.attachEdge(from, to, clonedEdge);
+                }
+            });
+        }
         return builder.build();
     }
 

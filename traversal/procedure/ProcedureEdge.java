@@ -55,6 +55,7 @@ import java.util.function.Function;
 import static com.vaticle.typedb.common.collection.Collections.intersection;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -190,6 +191,8 @@ public abstract class ProcedureEdge<
 
     public abstract ProcedureEdge<?, ?> reverse();
 
+    public abstract ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to);
+
     public static class Equal extends ProcedureEdge<ProcedureVertex<?, ?>, ProcedureVertex<?, ?>> {
 
         Equal(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to,
@@ -222,6 +225,11 @@ public abstract class ProcedureEdge<
         public ProcedureEdge<?, ?> reverse() {
             Encoding.Direction.Edge reverseDirection = direction().isForward() ? BACKWARD : FORWARD;
             return new Equal(to, from, reverseDirection);
+        }
+
+        @Override
+        public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+            return new Equal(from, to, direction());
         }
     }
 
@@ -267,6 +275,12 @@ public abstract class ProcedureEdge<
         @Override
         public ProcedureEdge<?, ?> reverse() {
             throw TypeDBException.of(UNSUPPORTED_OPERATION);
+        }
+
+        @Override
+        public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+            if (!from.isThing() || !to.isThing()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            return new Predicate(from.asThing(), to.asThing(), direction(), predicate);
         }
     }
 
@@ -357,6 +371,11 @@ public abstract class ProcedureEdge<
                 public ProcedureEdge<?, ?> reverse() {
                     return new Backward(to(), from(), isTransitive);
                 }
+
+                @Override
+                public ProcedureEdge<?, ?> cloneTo(ProcedureVertex.Thing from, ProcedureVertex.Type to) {
+                    return new Forward(from, to, isTransitive);
+                }
             }
 
             static class Backward extends Isa<ProcedureVertex.Type, ProcedureVertex.Thing> {
@@ -392,6 +411,11 @@ public abstract class ProcedureEdge<
                 @Override
                 public ProcedureEdge<?, ?> reverse() {
                     return new Forward(to(), from(), isTransitive);
+                }
+
+                @Override
+                public ProcedureEdge<?, ?> cloneTo(ProcedureVertex.Type from, ProcedureVertex.Thing to) {
+                    return new Backward(from, to, isTransitive);
                 }
             }
         }
