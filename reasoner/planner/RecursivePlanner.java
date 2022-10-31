@@ -145,11 +145,11 @@ public class RecursivePlanner extends ReasonerPlanner {
 
 
     private void initialiseOrderingDependencies(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> mode) {
-        Set<Variable> currentBounds = new HashSet<>(mode);
+        Set<Variable> currentBoundVars = new HashSet<>(mode);
         for (Resolvable<?> resolvable : ordering) {
-            Set<Variable> resolvableMode = Collections.intersection(estimateableVariables(resolvable.variables()), currentBounds);
+            Set<Variable> resolvableMode = Collections.intersection(estimateableVariables(resolvable.variables()), currentBoundVars);
             initialiseResolvableDependencies(conjunctionNode, resolvable, resolvableMode);
-            if (!resolvable.isNegated()) currentBounds.addAll(estimateableVariables(resolvable.variables()));
+            if (!resolvable.isNegated()) currentBoundVars.addAll(estimateableVariables(resolvable.variables()));
         }
     }
 
@@ -172,38 +172,38 @@ public class RecursivePlanner extends ReasonerPlanner {
     }
 
     private PlanChoice summarisePlanChoice(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> mode) {
-        Set<Variable> bounds = new HashSet<>(mode);
-        Set<Variable> restrictedBounds = new HashSet<>(); // Restricted by preceding resolvables
+        Set<Variable> boundVars = new HashSet<>(mode);  // bound -> in input mode or restricted locally
+        Set<Variable> restrictedVars = new HashSet<>(); // restricted -> Restricted by preceding resolvables
         double acyclicCost = 0L;
 
         Map<Concludable, Double> scalingFactors = new HashMap<>();
         Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes = new HashSet<>();
         AnswerCountEstimator.IncrementalEstimator estimator = answerCountEstimator.createIncrementalEstimator(conjunctionNode.conjunction());
         for (Resolvable<?> resolvable : ordering) {
-            Set<Variable> estimateableVars = estimateableVariables(resolvable.variables());
-            Set<Variable> resolvableMode = Collections.intersection(estimateableVars, bounds);
-            Set<Variable> restrictedResolvableBounds = Collections.intersection(estimateableVars, restrictedBounds);
+            Set<Variable> resolvableVars = estimateableVariables(resolvable.variables());
+            Set<Variable> resolvableMode = Collections.intersection(resolvableVars, boundVars);
+            Set<Variable> restrictedResolvableVars = Collections.intersection(resolvableVars, restrictedVars);
 
-            double boundsFromPrefix = estimator.answerEstimate(restrictedResolvableBounds);
+            double answersForModeFromPrefix = estimator.answerEstimate(restrictedResolvableVars);
 
             if (resolvable.isNegated()) {
                 acyclicCost += iterate(resolvable.asNegated().disjunction().conjunctions()).map(conj -> {
-                    double allPossibleBounds = answerCountEstimator.estimateAnswers(conj, restrictedResolvableBounds);
-                    double scalingFactor = Math.min(1, boundsFromPrefix / allPossibleBounds);
+                    double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, restrictedResolvableVars);
+                    double scalingFactor = Math.min(1, answersForModeFromPrefix / allAnswersForMode);
                     return scaledCallCost(scalingFactor, new CallMode(conj, resolvableMode));
                 }).reduce(0.0, Double::sum);
             } else {
                 AnswerCountEstimator.IncrementalEstimator thisResolvableOnlyEstimator = answerCountEstimator.createIncrementalEstimator(conjunctionNode.conjunction());
                 thisResolvableOnlyEstimator.extend(resolvable);
-                double allPossibleBounds = thisResolvableOnlyEstimator.answerEstimate(restrictedResolvableBounds);
-                double scalingFactor = Math.min(1, boundsFromPrefix / allPossibleBounds);
+                double allAnswersForMode = thisResolvableOnlyEstimator.answerEstimate(restrictedResolvableVars);
+                double scalingFactor = Math.min(1, answersForModeFromPrefix / allAnswersForMode);
                 acyclicCost += scaledAcyclicCost(scalingFactor, conjunctionNode, resolvable, resolvableMode);
 
                 if (resolvable.isConcludable() && conjunctionNode.cyclicConcludables().contains(resolvable.asConcludable())) {
-                    Set<Variable> nonInputRestrictedBounds = iterate(restrictedResolvableBounds).filter(v -> !mode.contains(v)).toSet();
+                    Set<Variable> restrictedVarsNotInMode = iterate(restrictedResolvableVars).filter(v -> !mode.contains(v)).toSet();
                     // Approximation: This severely underestimates the number of cyclic-calls generated in the case where a mix of input and local variables are arguments to the call.
-                    double cyclicScalingFactor = nonInputRestrictedBounds.isEmpty() ? 0.0 :
-                            (double) estimator.answerEstimate(nonInputRestrictedBounds) / thisResolvableOnlyEstimator.answerEstimate(resolvableMode);
+                    double cyclicScalingFactor = restrictedVarsNotInMode.isEmpty() ? 0.0 :
+                            (double) estimator.answerEstimate(restrictedVarsNotInMode) / thisResolvableOnlyEstimator.answerEstimate(resolvableMode);
                     scalingFactors.put(resolvable.asConcludable(), cyclicScalingFactor);
                     cyclicConcludableModes.add(new Pair<>(resolvable.asConcludable(), resolvableMode));
                 }
@@ -211,8 +211,8 @@ public class RecursivePlanner extends ReasonerPlanner {
 
             estimator.extend(resolvable);
             if (!resolvable.isNegated()) {
-                bounds.addAll(estimateableVars);
-                restrictedBounds.addAll(estimateableVars);
+                boundVars.addAll(resolvableVars);
+                restrictedVars.addAll(resolvableVars);
             }
         }
 
@@ -316,18 +316,18 @@ public class RecursivePlanner extends ReasonerPlanner {
 
         List<List<Resolvable<?>>> allOrderings() {
             Set<Resolvable<?>> remaining = new HashSet<>(resolvables);
-            Set<Variable> bounds = new HashSet<>(mode);
+            Set<Variable> restrictedVars = new HashSet<>(mode);
             iterate(resolvables).filter(resolvable -> !resolvable.isNegated()).flatMap(r -> iterate(estimateableVariables(r.variables())))
                     .filter(v -> iterate(v.constraints()).anyMatch(constraint ->
                             constraint.isThing() && constraint.asThing().isValue() && constraint.asThing().asValue().isValueIdentity()))
-                    .forEachRemaining(bounds::add);
+                    .forEachRemaining(restrictedVars::add);
 
             List<List<Resolvable<?>>> orderings = new ArrayList<>();
-            porDFS(new Stack<>(), bounds, remaining, new HashSet<>(), orderings);
+            porDFS(new Stack<>(), restrictedVars, remaining, new HashSet<>(), orderings);
             return orderings; // TODO: If this causes a memory blow-up, POR can "generate" one at a time.
         }
 
-        private void porDFS(Stack<Resolvable<?>> currentPath, Set<Variable> currentBounds,
+        private void porDFS(Stack<Resolvable<?>> currentPath, Set<Variable> currentBoundVars,
                             Set<Resolvable<?>> remaining, Set<Resolvable<?>> sleepSet, List<List<Resolvable<?>>> orderings) {
             if (remaining.isEmpty()) {
                 orderings.add(new ArrayList<>(currentPath));
@@ -335,7 +335,7 @@ public class RecursivePlanner extends ReasonerPlanner {
             }
 
             List<Resolvable<?>> enabled = iterate(remaining)
-                    .filter(r -> ReasonerPlanner.dependenciesSatisfied(r, currentBounds, dependencies) && !sleepSet.contains(r))
+                    .filter(r -> ReasonerPlanner.dependenciesSatisfied(r, currentBoundVars, dependencies) && !sleepSet.contains(r))
                     .toList();
 
             if (enabled.isEmpty()) {
@@ -348,7 +348,7 @@ public class RecursivePlanner extends ReasonerPlanner {
 
             // Restrict further to only the connected ones
             List<Resolvable<?>> connectedEnabled = iterate(enabled)
-                    .filter(r -> iterate(estimateableVariables(r.variables())).anyMatch(currentBounds::contains)).toList();
+                    .filter(r -> iterate(estimateableVariables(r.variables())).anyMatch(currentBoundVars::contains)).toList();
 
             if (!connectedEnabled.isEmpty()) {
                 enabled = connectedEnabled;
@@ -365,13 +365,13 @@ public class RecursivePlanner extends ReasonerPlanner {
                 Set<Resolvable<?>> nextSleepSet = iterate(newSleepSet).filter(r -> !awaken.contains(r)).toSet();
                 Set<Variable> newlyBoundVars = next.isNegated() ?
                         new HashSet<>() :
-                        iterate(next.variables()).filter(v -> !currentBounds.contains(v)).toSet();
+                        iterate(next.variables()).filter(v -> !currentBoundVars.contains(v)).toSet();
 
                 currentPath.add(next);
                 remaining.remove(next);
-                currentBounds.addAll(newlyBoundVars);
-                porDFS(currentPath, currentBounds, remaining, nextSleepSet, orderings);
-                currentBounds.removeAll(newlyBoundVars);
+                currentBoundVars.addAll(newlyBoundVars);
+                porDFS(currentPath, currentBoundVars, remaining, nextSleepSet, orderings);
+                currentBoundVars.removeAll(newlyBoundVars);
                 remaining.add(next);
                 currentPath.remove(currentPath.size() - 1);
 

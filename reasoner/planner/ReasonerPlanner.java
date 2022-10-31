@@ -66,8 +66,8 @@ public abstract class ReasonerPlanner {
         return iterate(resolvable.variables()).filter(v -> v.id().isRetrievable()).toSet();
     }
 
-    static boolean dependenciesSatisfied(Resolvable<?> resolvable, Set<Variable> bounds, Map<Resolvable<?>, Set<Variable>> dependencies) {
-        return bounds.containsAll(dependencies.get(resolvable));
+    static boolean dependenciesSatisfied(Resolvable<?> resolvable, Set<Variable> boundVars, Map<Resolvable<?>, Set<Variable>> dependencies) {
+        return boundVars.containsAll(dependencies.get(resolvable));
     }
 
     public void plan(ResolvableConjunction conjunction, Set<Variable> mode) {
