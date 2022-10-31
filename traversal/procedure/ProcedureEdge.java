@@ -482,7 +482,7 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public Forwardable<TypeVertex, Order.Asc> branch(
+                    public Forwardable<? extends TypeVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         Forwardable<TypeVertex, Order.Asc> iterator = superTypes(fromVertex.asType());
@@ -509,7 +509,7 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public Forwardable<TypeVertex, Order.Asc> branch(
+                    public Forwardable<? extends TypeVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isType();
@@ -564,14 +564,8 @@ public abstract class ProcedureEdge<
                         return true;
                     }
 
-                    private NavigableSet<TypeVertex> ownedAttributeTypes(GraphManager graphMgr, TypeVertex fromVertex) {
-                        return isKey ?
-                                graphMgr.schema().ownedKeyAttributeTypes(fromVertex) :
-                                graphMgr.schema().ownedAttributeTypes(fromVertex);
-                    }
-
                     @Override
-                    public Forwardable<TypeVertex, Order.Asc> branch(
+                    public Forwardable<? extends TypeVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isType();
@@ -584,6 +578,12 @@ public abstract class ProcedureEdge<
                     ) {
                         assert fromVertex.isType() && toVertex.isType();
                         return ownedAttributeTypes(graphMgr, fromVertex.asType()).contains(toVertex.asType());
+                    }
+
+                    private NavigableSet<TypeVertex> ownedAttributeTypes(GraphManager graphMgr, TypeVertex fromVertex) {
+                        return isKey ?
+                                graphMgr.schema().ownedKeyAttributeTypes(fromVertex) :
+                                graphMgr.schema().ownedAttributeTypes(fromVertex);
                     }
 
                     @Override
@@ -603,14 +603,8 @@ public abstract class ProcedureEdge<
                         return true;
                     }
 
-                    private NavigableSet<TypeVertex> ownersOfAttributeType(GraphManager graphMgr, TypeVertex attType) {
-                        return isKey ?
-                                graphMgr.schema().ownersOfAttributeTypeKey(attType) :
-                                graphMgr.schema().ownersOfAttributeType(attType);
-                    }
-
                     @Override
-                    public Forwardable<TypeVertex, Order.Asc> branch(
+                    public Forwardable<? extends TypeVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isType();
@@ -622,6 +616,12 @@ public abstract class ProcedureEdge<
                                              Traversal.Parameters params) {
                         assert fromVertex.isType() && toVertex.isType();
                         return ownersOfAttributeType(graphMgr, fromVertex.asType()).contains(toVertex.asType());
+                    }
+
+                    private NavigableSet<TypeVertex> ownersOfAttributeType(GraphManager graphMgr, TypeVertex attType) {
+                        return isKey ?
+                                graphMgr.schema().ownersOfAttributeTypeKey(attType) :
+                                graphMgr.schema().ownersOfAttributeType(attType);
                     }
 
                     @Override
@@ -649,7 +649,7 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public Forwardable<TypeVertex, Order.Asc> branch(
+                    public Forwardable<? extends TypeVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isType();
@@ -682,7 +682,7 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public Forwardable<TypeVertex, Order.Asc> branch(
+                    public Forwardable<? extends TypeVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isType();
@@ -722,7 +722,7 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public Forwardable<TypeVertex, Order.Asc> branch(
+                    public Forwardable<? extends TypeVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isType();
@@ -754,7 +754,7 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public Forwardable<TypeVertex, Order.Asc> branch(
+                    public Forwardable<? extends TypeVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isType();

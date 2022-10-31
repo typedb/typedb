@@ -230,7 +230,7 @@ public abstract class ProcedureVertex<
             }
         }
 
-        <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilter(
+        public <ORDER extends Order> Forwardable<? extends ThingVertex, ORDER> iterateAndFilter(
                 ThingVertex vertex, Traversal.Parameters params, ORDER order
         ) {
             if (!checkTypes(vertex) || props().hasIID() && !checkIID(vertex, params) ||
@@ -560,7 +560,7 @@ public abstract class ProcedureVertex<
             return iterator;
         }
 
-        Forwardable<TypeVertex, Order.Asc> filter(Forwardable<TypeVertex, Order.Asc> iterator) {
+        public <ORDER extends Order> Forwardable<? extends TypeVertex, ORDER> filter(Forwardable<TypeVertex, ORDER> iterator) {
             if (!props().labels().isEmpty()) iterator = filterLabels(iterator);
             if (!props().valueTypes().isEmpty()) iterator = filterValueTypes(iterator);
             if (props().isAbstract()) iterator = filterAbstract(iterator);

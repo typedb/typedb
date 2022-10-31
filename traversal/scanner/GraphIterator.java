@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -69,7 +70,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private final Modifiers modifiers;
     private final Map<Identifier.Variable, Scope> scopes;
     private final Map<ProcedureVertex<?, ?>, VertexTraverser> vertexTraversers;
-    private final Vertex<?, ?> initial;
+    private final Map<Identifier, Vertex<?, ?>> fixedVertices;
     private final SortedSet<ProcedureVertex<?, ?>> toTraverse;
     private final SortedSet<ProcedureVertex<?, ?>> toRevisit;
     private Direction direction;
@@ -79,12 +80,12 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private enum IteratorState {INIT, EMPTY, FETCHED, COMPLETED}
 
-    public GraphIterator(GraphManager graphMgr, Vertex<?, ?> initial, GraphProcedure procedure,
+    public GraphIterator(GraphManager graphMgr, Map<Identifier, Vertex<?, ?>> fixedVertices, GraphProcedure procedure,
                          Traversal.Parameters params, Modifiers modifiers) {
         this.graphMgr = graphMgr;
         this.procedure = procedure;
         this.params = params;
-        this.initial = initial;
+        this.fixedVertices = fixedVertices;
         this.modifiers = modifiers;
         this.toTraverse = new TreeSet<>(Comparator.comparing(ProcedureVertex::order));
         this.toRevisit = new TreeSet<>(Comparator.comparing(ProcedureVertex::order));
@@ -101,7 +102,11 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
         // set up traversers
         for (ProcedureVertex<?, ?> v : procedure.vertices()) {
-            vertexTraversers.put(v, new VertexTraverser(v));
+            if (fixedVertices.containsKey(v.id())) {
+                vertexTraversers.put(v, new VertexTraverser.Fixed(this, v, fixedVertices.get(v.id())));
+            } else {
+                vertexTraversers.put(v, new VertexTraverser(this, v));
+            }
         }
         // add implicit dependencies between traversers
         for (ProcedureVertex<?, ?> v : procedure.vertices()) {
@@ -262,25 +267,27 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         vertexTraversers.values().forEach(VertexTraverser::clear);
     }
 
-    private class VertexTraverser {
+    private static class VertexTraverser {
 
-        private final ProcedureVertex<?, ?> procedureVertex;
-        private final Scope localScope;
+        final GraphIterator graphIterator;
+        final ProcedureVertex<?, ?> procedureVertex;
+        final Scope localScope;
         private final Set<ProcedureVertex<?, ?>> implicitDependees;
         private ProcedureVertex<?, ?> lastDependee;
-        private final Order order;
+        final Order order;
         private final boolean sortByValue;
+
         private Forwardable<Vertex<?, ?>, ? extends Order> iterator;
         private Vertex<?, ?> vertex;
         private boolean anyAnswerFound;
 
-        private VertexTraverser(ProcedureVertex<?, ?> procedureVertex) {
+        private VertexTraverser(GraphIterator graphIterator, ProcedureVertex<?, ?> procedureVertex) {
+            this.graphIterator = graphIterator;
             this.procedureVertex = procedureVertex;
-            this.localScope = procedureVertex.id().isScoped() ? scopes.get(procedureVertex.id().asScoped().scope()) : null;
+            this.localScope = procedureVertex.id().isScoped() ? graphIterator.scopes.get(procedureVertex.id().asScoped().scope()) : null;
             this.implicitDependees = new HashSet<>();
-            this.anyAnswerFound = false;
             this.lastDependee = procedureVertex.ins().stream().map(ProcedureEdge::from).max(Comparator.comparing(ProcedureVertex::order)).orElse(null);
-            Optional<Order> explicitOrder = modifiers.sorting().order(procedureVertex.id());
+            Optional<Order> explicitOrder = graphIterator.modifiers.sorting().order(procedureVertex.id());
             if (explicitOrder.isPresent()) {
                 order = explicitOrder.get();
                 sortByValue = true;
@@ -288,6 +295,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 order = ASC;
                 sortByValue = false;
             }
+            this.anyAnswerFound = false;
         }
 
         public void addImplicitDependee(ProcedureVertex<?, ?> from) {
@@ -296,7 +304,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private boolean findNextVertex() {
-            Forwardable<Vertex<?, ?>, ? extends Order> iterator = getIterator();
+            Forwardable<? extends Vertex<?, ?>, ? extends Order> iterator = getIterator();
             while (iterator.hasNext()) {
                 vertex = getIterator().next();
                 if (verifyLoops()) {
@@ -325,10 +333,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private boolean isClosure(ProcedureEdge<?, ?> edge, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex) {
             if (edge.isRolePlayer()) {
-                Scope scope = scopes.get(edge.asRolePlayer().scope());
-                return edge.asRolePlayer().isClosure(graphMgr, fromVertex, toVertex, params, scope);
+                Scope scope = graphIterator.scopes.get(edge.asRolePlayer().scope());
+                return edge.asRolePlayer().isClosure(graphIterator.graphMgr, fromVertex, toVertex, graphIterator.params, scope);
             } else {
-                return edge.isClosure(graphMgr, fromVertex, toVertex, params);
+                return edge.isClosure(graphIterator.graphMgr, fromVertex, toVertex, graphIterator.params);
             }
         }
 
@@ -351,7 +359,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             else {
                 for (ProcedureEdge<?, ?> edge : procedureVertex.ins()) {
                     if (edge.isRolePlayer()) {
-                        Scope scope = scopes.get(edge.asRolePlayer().scope());
+                        Scope scope = graphIterator.scopes.get(edge.asRolePlayer().scope());
                         scope.removeSource(edge);
                     }
                 }
@@ -359,43 +367,45 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private Forwardable<Vertex<?, ?>, ? extends Order> getIterator() {
-            if (iterator == null) {
-                if (procedureVertex.equals(procedure.initialVertex())) iterator = createIteratorFromInitial();
-                else if (procedureVertex.isStartVertex()) iterator = createIteratorFromStart();
-                else iterator = createIteratorFromEdges();
-                // TODO: we may only need to find one valid answer if all dependents are not included in the filter and also find an answer
-            }
+            if (iterator == null) iterator = createIterator();
             return iterator;
         }
 
-        private Forwardable<Vertex<?, ?>, ? extends Order> createIteratorFromInitial() {
-            if (localScope != null) localScope.record(procedureVertex, initial.asThing());
-            return iterateSorted(order, initial);
+        Forwardable<Vertex<?, ?>, ? extends Order> createIterator() {
+            // TODO: we may only need to find one valid answer if all dependents are not included in the filter and also find an answer
+            if (procedureVertex.isStartVertex()) return createIteratorFromVertex();
+            else return createIteratorFromEdges();
         }
 
-        private Forwardable<Vertex<?, ?>, ? extends Order> createIteratorFromStart() {
+        private Forwardable<Vertex<?, ?>, ? extends Order> createIteratorFromVertex() {
             assert procedureVertex.isStartVertex();
             if (procedureVertex.id().isScoped()) {
-                return applyLocalScope((Forwardable<Vertex<?, ?>, ? extends Order>) procedureVertex.iterator(graphMgr, params, order, sortByValue));
+                return applyLocalScope((Forwardable<Vertex<?, ?>, ? extends Order>)
+                        procedureVertex.iterator(graphIterator.graphMgr, graphIterator.params, order, sortByValue));
             } else {
-                return (Forwardable<Vertex<?, ?>, ? extends Order>) procedureVertex.iterator(graphMgr, params, order, sortByValue);
+                return (Forwardable<Vertex<?, ?>, ? extends Order>)
+                        procedureVertex.iterator(graphIterator.graphMgr, graphIterator.params, order, sortByValue);
             }
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromEdges() {
             List<Forwardable<Vertex<?, ?>, Order.Asc>> iterators = new ArrayList<>();
-            procedureVertex.ins().forEach(edge -> iterators.add(branch(vertexTraversers.get(edge.from()).vertex(), edge)));
+            procedureVertex.ins().forEach(edge ->
+                    iterators.add(branch(graphIterator.vertexTraversers.get(edge.from()).vertex(), edge))
+            );
             if (iterators.size() == 1) return iterators.get(0);
             else return intersect(iterate(iterators), ASC);
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> branch(Vertex<?, ?> fromVertex, ProcedureEdge<?, ?> edge) {
             if (procedureVertex.id().isScoped()) {
-                return applyLocalScope((Forwardable<Vertex<?, ?>, Order.Asc>) edge.branch(graphMgr, fromVertex, params));
+                return applyLocalScope((Forwardable<Vertex<?, ?>, Order.Asc>)
+                        edge.branch(graphIterator.graphMgr, fromVertex, graphIterator.params));
             } else if (edge.isRolePlayer()) {
-                return applyEdgeScope(edge.asRolePlayer().branchEdge(graphMgr, fromVertex, params), edge);
+                return applyEdgeScope(edge.asRolePlayer().branchEdge(graphIterator.graphMgr, fromVertex, graphIterator.params), edge);
             } else {
-                return (Forwardable<Vertex<?, ?>, Order.Asc>) edge.branch(graphMgr, fromVertex, params);
+                return (Forwardable<Vertex<?, ?>, Order.Asc>)
+                        edge.branch(graphIterator.graphMgr, fromVertex, graphIterator.params);
             }
         }
 
@@ -415,7 +425,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
         private Forwardable<Vertex<?, ?>, Order.Asc> applyEdgeScope(Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iterator,
                                                                     ProcedureEdge<?, ?> edge) {
-            Scope scope = scopes.get(edge.asRolePlayer().scope());
+            Scope scope = graphIterator.scopes.get(edge.asRolePlayer().scope());
             return iterator.filter(thingAndRole -> {
                 Optional<ProcedureEdge<?, ?>> source = scope.getRoleEdgeSource(thingAndRole.value());
                 return source.isEmpty();
@@ -427,6 +437,40 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                     thing -> KeyValue.of(thing.asThing(), null),
                     ASC
             );
+        }
+
+        static class Fixed extends VertexTraverser {
+
+            private final Vertex<?, ?> fixedVertex;
+
+            private Fixed(GraphIterator graphIterator, ProcedureVertex<?, ?> procedureVertex, Vertex<?, ?> fixedVertex) {
+                super(graphIterator, procedureVertex);
+                this.fixedVertex = fixedVertex;
+            }
+
+            @Override
+            Forwardable<Vertex<?, ?>, ? extends Order> createIterator() {
+                if (procedureVertex.isStartVertex()) {
+                    if (localScope != null) localScope.record(procedureVertex, fixedVertex.asThing());
+                    return createIteratorAsStart();
+                } else {
+                    Forwardable<Vertex<?, ?>, ? extends Order> iterator = super.createIterator();
+                    iterator.forward(fixedVertex);
+                    return iterator.limit(1).filter(v -> v.equals(fixedVertex));
+                }
+            }
+
+            private Forwardable<Vertex<?, ?>, ? extends Order> createIteratorAsStart() {
+                if (procedureVertex.isThing()) {
+                    Forwardable<? extends Vertex<?, ?>, ? extends Order> iter = procedureVertex.asThing()
+                            .iterateAndFilter(fixedVertex.asThing(), graphIterator.params, order);
+                    return (Forwardable<Vertex<?,?>, ? extends Order>) iter;
+                } else {
+                    Forwardable<? extends Vertex<?, ?>, ? extends Order> iter = procedureVertex.asType()
+                            .filter(iterateSorted(order, fixedVertex.asType()));
+                    return (Forwardable<Vertex<?, ?>, ? extends Order>) iter;
+                }
+            }
         }
     }
 
