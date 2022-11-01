@@ -171,7 +171,11 @@ public class GraphProcedure implements PermutationProcedure {
     private GraphIterator sortedPrefixIterator(GraphManager graphMgr, Traversal.Parameters params,
                                                Modifiers modifiers) {
         assert sortingMatchesProcedure(modifiers.sorting());
-        int prefixEnd = modifiers.sorting().variables().isEmpty() ? 1 : modifiers.sorting().variables().size();
+        int prefixEnd;
+        if (modifiers.sorting().variables().isEmpty()) prefixEnd = 1;
+        else if (modifiers.sorting().variables().size() < vertexCount()) prefixEnd = modifiers.sorting().variables().size() + 1;
+        else prefixEnd = vertexCount();
+
         GraphProcedure prefixProcedure = cloneRange(prefixEnd);
         Modifiers prefixModifiers = new Modifiers();
         prefixModifiers.sorting(modifiers.sorting());

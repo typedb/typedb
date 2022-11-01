@@ -69,7 +69,7 @@ public class Optimiser {
 
     public synchronized Status optimise(long timeLimitMillis) {
         if (isOptimal()) return status;
-        assert solutionSatisfiesModel();
+//        assert solutionSatisfiesModel();
         maySetSolver();
         setSolutionAsHints();
         lastTimeLimit += timeLimitMillis;
