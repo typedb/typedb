@@ -135,7 +135,8 @@ public class GraphProcedure implements PermutationProcedure {
             LOG.trace(this.toString());
         }
         GraphIterator prefixIterator = sortedPrefixIterator(graphMgr, params, modifiers);
-        if (iterate(prefixIterator.procedure().vertices()).allMatch(v -> modifiers.filter().variables().contains(v.id()))) {
+        if (prefixIterator.procedure().equals(this)) return async(prefixIterator.distinct());
+        else if (iterate(prefixIterator.procedure().vertices()).allMatch(v -> modifiers.filter().variables().contains(v.id()))) {
             return async(prefixIterator.map(vertexMap ->
                     new GraphIterator(graphMgr, vertexMap.map(), this, params, modifiers).distinct()
             ), parallelisation);
@@ -154,7 +155,8 @@ public class GraphProcedure implements PermutationProcedure {
             LOG.trace(this.toString());
         }
         GraphIterator prefixIterator = sortedPrefixIterator(graphMgr, params, modifiers);
-        if (iterate(prefixIterator.procedure().vertices()).allMatch(v -> modifiers.filter().variables().contains(v.id()))) {
+        if (prefixIterator.procedure().equals(this)) return prefixIterator.distinct();
+        else if (iterate(prefixIterator.procedure().vertices()).allMatch(v -> modifiers.filter().variables().contains(v.id()))) {
             return prefixIterator.flatMap(vertexMap ->
                     new GraphIterator(graphMgr, vertexMap.map(), this, params, modifiers).distinct()
             );
