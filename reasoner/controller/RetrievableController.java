@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
-import com.vaticle.typedb.core.reasoner.common.Traversal;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Source;
@@ -50,13 +49,13 @@ public class RetrievableController extends AbstractController<
 
     @Override
     protected RetrievableProcessor createProcessorFromDriver(
-            Driver<RetrievableProcessor> processorDriver, ConceptMap conceptMap
+            Driver<RetrievableProcessor> processorDriver, ConceptMap bounds
     ) {
         return new RetrievableProcessor(
                 processorDriver, driver(), processorContext(),
-                () -> Traversal.traversalIterator(registry(), retrievable.pattern(), conceptMap),
+                () -> registry().logicManager().traverse(retrievable.pattern(), bounds),
                 () -> RetrievableProcessor.class.getSimpleName() + "(pattern: " + retrievable.pattern() +
-                        ", bounds: " + conceptMap.toString() + ")"
+                        ", bounds: " + bounds.toString() + ")"
         );
     }
 

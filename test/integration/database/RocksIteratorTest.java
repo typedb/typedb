@@ -108,7 +108,7 @@ public class RocksIteratorTest {
         try (CoreTransaction transaction = session.transaction(READ)) {
             Storage.Data storage = transaction.graphMgr.data().storage();
             AttributeType.String stringValueType = transaction.concepts().getAttributeType("string-value").asString();
-            VertexIID.Type iid = ((AttributeTypeImpl) stringValueType).vertex.iid();
+            VertexIID.Type iid = ((AttributeTypeImpl) stringValueType).vertex().iid();
             Key.Prefix<VertexIID.Thing> iteratePrefix = VertexIID.Thing.Attribute.String.prefix(iid);
             List<String> values = storage.iterate(iteratePrefix, ASC)
                     .map(kv -> kv.key().asAttribute().asString().value()).toList();
@@ -120,7 +120,7 @@ public class RocksIteratorTest {
         try (CoreTransaction transaction = session.transaction(READ)) {
             Storage.Data storage = transaction.graphMgr.data().storage();
             AttributeType.String stringValueType = transaction.concepts().getAttributeType("string-value").asString();
-            VertexIID.Type iid = ((AttributeTypeImpl) stringValueType).vertex.iid();
+            VertexIID.Type iid = ((AttributeTypeImpl) stringValueType).vertex().iid();
             Key.Prefix<VertexIID.Thing> iteratePrefix = VertexIID.Thing.Attribute.String.prefix(iid);
             List<String> values = storage.iterate(iteratePrefix, DESC)
                     .map(kv -> kv.key().asAttribute().asString().value()).toList();

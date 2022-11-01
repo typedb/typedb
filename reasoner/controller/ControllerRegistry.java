@@ -63,13 +63,13 @@ public class ControllerRegistry {
 
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
+    private final TraversalEngine traversalEngine;
     private final Map<Concludable, Driver<ConcludableController.Match>> concludableControllers;
     private final Map<Driver<ConcludableController.Match>, Set<Concludable>> controllerConcludables;
     private final Map<Rule, Driver<ConditionController>> conditions;
     private final Map<Rule, Driver<ConclusionController.Match>> conclusions; // by Rule not Rule.Conclusion because well defined equality exists
     private final Map<Rule, Driver<ConclusionController.Explain>> explainConclusions;
     private final Set<Driver<? extends AbstractController<?, ?, ?, ?, ?, ?>>> controllers;
-    private final TraversalEngine traversalEngine;
     private final AbstractController.Context controllerContext;
     private final Driver<MaterialisationController> materialisationController;
     private final AtomicBoolean terminated;
@@ -77,9 +77,9 @@ public class ControllerRegistry {
 
     public ControllerRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
                               LogicManager logicMgr, Context.Transaction context) {
-        this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
+        this.traversalEngine = traversalEngine;
         this.concludableControllers = new ConcurrentHashMap<>();
         this.controllerConcludables = new ConcurrentHashMap<>();
         this.conditions = new ConcurrentHashMap<>();

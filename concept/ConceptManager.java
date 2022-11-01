@@ -39,6 +39,8 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 
@@ -67,6 +69,15 @@ public final class ConceptManager {
 
     public ConceptManager(GraphManager graphMgr) {
         this.graphMgr = graphMgr;
+    }
+
+    public static Map<Identifier, Vertex<?, ?>> toVertices(ConceptMap conceptMap) {
+        Map<Identifier, Vertex<?, ?>> vertexBounds = new HashMap<>();
+        conceptMap.forEach((id, concept) -> {
+            if (concept.isType()) vertexBounds.put(id, ((TypeImpl) concept).vertex());
+            else vertexBounds.put(id, ((ThingImpl) concept).readableVertex());
+        });
+        return vertexBounds;
     }
 
     public ConceptMap conceptMap(VertexMap vertexMap) {

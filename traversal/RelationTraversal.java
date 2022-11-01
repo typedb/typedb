@@ -19,18 +19,23 @@
 package com.vaticle.typedb.core.traversal;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.scanner.RelationIterator;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 
 public class RelationTraversal extends Traversal {
 
@@ -46,7 +51,8 @@ public class RelationTraversal extends Traversal {
     }
 
     @Override
-    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
+    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Map<Identifier, Vertex<?, ?>> fixedVertices) {
+        if (!fixedVertices.isEmpty()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
         return new RelationIterator(this, graphMgr);
     }
 

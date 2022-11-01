@@ -21,15 +21,26 @@ package com.vaticle.typedb.core.traversal.procedure;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.Traversal;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
+
+import java.util.Map;
+
+import static java.util.Collections.emptyMap;
 
 public interface PermutationProcedure {
 
     FunctionalProducer<VertexMap> producer(GraphManager graphMgr, Traversal.Parameters params,
                                            Modifiers modifiers, int parallelisation);
 
+    default FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
+                                                   Modifiers modifiers) {
+        return iterator(graphMgr, params, modifiers, emptyMap());
+    }
+
     FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                           Modifiers modifiers);
+                                           Modifiers modifiers, Map<Identifier, Vertex<?, ?>> fixedVertices);
 }

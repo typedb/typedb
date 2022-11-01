@@ -22,12 +22,17 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
+import static java.util.Collections.emptyMap;
 
 public class TraversalEngine {
 
@@ -49,8 +54,12 @@ public class TraversalEngine {
     }
 
     public FunctionalIterator<VertexMap> iterator(GraphTraversal.Thing traversal) {
+        return iterator(traversal, emptyMap());
+    }
+
+    public <K, V> FunctionalIterator<VertexMap> iterator(GraphTraversal.Thing traversal, Map<Identifier, Vertex<?, ?>> fixedVertices) {
         traversal.initialise(cache);
-        return traversal.permutationIterator(graphMgr);
+        return traversal.permutationIterator(graphMgr, fixedVertices);
     }
 
     public FunctionalIterator<VertexMap> iterator(GraphTraversal.Type traversal) {

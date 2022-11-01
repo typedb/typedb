@@ -30,7 +30,6 @@ import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.answer.PartialExplanation;
-import com.vaticle.typedb.core.reasoner.common.Traversal;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest.Identifier;
@@ -102,7 +101,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         protected Processor.Match createProcessorFromDriver(Driver<Processor.Match> matchDriver, ConceptMap bounds) {
             return new Processor.Match(
                     matchDriver, driver(), concludable, processorContext(), bounds, unboundVars, conclusionUnifiers,
-                    () -> Traversal.traversalIterator(registry(), concludable.pattern(), bounds),
+                    () -> registry().logicManager().traverse(concludable.pattern(), bounds),
                     () -> Processor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
             );
         }
@@ -160,7 +159,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             assert bounds.equals(this.bounds);
             return new Processor.Explain(
                     explainDriver, driver(), processorContext(), concludable, bounds, set(), conclusionUnifiers, reasonerConsumer,
-                    () -> Traversal.traversalIterator(registry(), concludable.pattern(), bounds),
+                    () -> registry().logicManager().traverse(concludable.pattern(), bounds),
                     () -> Processor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
             );
         }

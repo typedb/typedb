@@ -60,6 +60,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
@@ -186,11 +187,11 @@ public class TypeQLSteps {
             FunctionalIterator<GraphProcedure> procedurePermutations = ProcedurePermutator.generate(traversal.structure()).limit(40320);
             GraphProcedure procedure = procedurePermutations.next();
             Set<VertexMap> answers = procedure.iterator(tx().concepts().graph(),
-                    traversal.parameters(), traversal.modifiers()).toSet();
+                    traversal.parameters(), traversal.modifiers(), map()).toSet();
             for (int i = 0; procedurePermutations.hasNext(); i++) {
                 procedure = procedurePermutations.next();
                 Set<VertexMap> permutationAnswers = procedure.iterator(tx().concepts().graph(),
-                        traversal.parameters(), traversal.modifiers()).toSet();
+                        traversal.parameters(), traversal.modifiers(), map()).toSet();
                 assertEquals(answers, permutationAnswers);
             }
         }

@@ -83,6 +83,10 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         }
     }
 
+    public TypeVertex vertex() {
+        return vertex;
+    }
+
     @Override
     public boolean isDeleted() {
         return vertex.isDeleted();

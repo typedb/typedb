@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
@@ -31,6 +32,7 @@ import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -52,6 +54,7 @@ import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equa
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.GTE;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.LT;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.LTE;
+import static java.util.Collections.emptyMap;
 
 public abstract class Traversal {
 
@@ -77,7 +80,11 @@ public abstract class Traversal {
         return modifiers;
     }
 
-    abstract FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr);
+    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
+        return permutationIterator(graphMgr, emptyMap());
+    }
+
+    abstract FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Map<Identifier, Vertex<?, ?>> fixedVertices);
 
     @Override
     public boolean equals(Object o) {

@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
@@ -71,9 +72,10 @@ public abstract class GraphTraversal extends Traversal {
         modifiers.sorting(sorting);
     }
 
-    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Planner planner, boolean singleUse) {
+    FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Planner planner, boolean singleUse,
+                                                      Map<Identifier, Vertex<?, ?>> fixedVertices) {
         planner.tryOptimise(graphMgr, singleUse);
-        return planner.procedure().iterator(graphMgr, parameters, modifiers);
+        return planner.procedure().iterator(graphMgr, parameters, modifiers, fixedVertices);
     }
 
     public void labels(Identifier.Variable type, Set<Label> labels) {
@@ -130,8 +132,8 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         @Override
-        FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
-            return permutationIterator(graphMgr, Planner.create(structure, modifiers), true);
+        FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Map<Identifier, Vertex<?, ?>> fixedVertices) {
+            return permutationIterator(graphMgr, Planner.create(structure, modifiers), true, fixedVertices);
         }
 
         public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
@@ -156,9 +158,9 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         @Override
-        FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr) {
+        FunctionalIterator<VertexMap> permutationIterator(GraphManager graphMgr, Map<Identifier, Vertex<?, ?>> fixedVertices) {
             assert planner != null && cache != null;
-            FunctionalIterator<VertexMap> iter = permutationIterator(graphMgr, planner, false);
+            FunctionalIterator<VertexMap> iter = permutationIterator(graphMgr, planner, false, fixedVertices);
             cache.mayUpdatePlanner(structure, modifiers, planner);
             return iter;
         }

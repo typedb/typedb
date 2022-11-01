@@ -23,9 +23,11 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.ConceptManager;
+import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.logic.tool.TypeInference;
+import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
@@ -53,19 +55,30 @@ public class LogicManager {
     private final GraphManager graphMgr;
     private final ConceptManager conceptMgr;
     private final TypeInference typeInference;
+    private final TraversalEngine traversalEng;
     private final LogicCache logicCache;
 
     public LogicManager(GraphManager graphMgr, ConceptManager conceptMgr, TraversalEngine traversalEng, LogicCache logicCache) {
         this.graphMgr = graphMgr;
         this.conceptMgr = conceptMgr;
+        this.traversalEng = traversalEng;
         this.logicCache = logicCache;
         this.typeInference = new TypeInference(logicCache, traversalEng, graphMgr);
     }
 
-    GraphManager graph() { return graphMgr; }
+    GraphManager graph() {
+        return graphMgr;
+    }
 
     public TypeInference typeInference() {
         return typeInference;
+    }
+
+    // TODO: this method doesn't belong here. It should go somewhere else that can convert Concepts into Vertices
+    public FunctionalIterator<ConceptMap> traverse(com.vaticle.typedb.core.pattern.Conjunction conjunction,
+                                                   ConceptMap bounds) {
+        GraphTraversal.Thing traversal = conjunction.traversal();
+        return traversalEng.iterator(traversal, ConceptManager.toVertices(bounds)).map(conceptMgr::conceptMap);
     }
 
     public void deleteAndInvalidateRule(Rule rule) {

@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
@@ -135,12 +136,12 @@ public class GraphProcedure implements PermutationProcedure {
 
     @Override
     public FunctionalIterator<VertexMap> iterator(GraphManager graphMgr, Traversal.Parameters params,
-                                                  Modifiers modifiers) {
+                                                  Modifiers modifiers, Map<Identifier, Vertex<?, ?>> fixedVertices) {
         if (LOG.isTraceEnabled()) {
             LOG.trace(params.toString());
             LOG.trace(this.toString());
         }
-        return new GraphIterator(graphMgr, map(), this, params, modifiers).distinct();
+        return new GraphIterator(graphMgr, fixedVertices, this, params, modifiers).distinct();
     }
 
     @Override
