@@ -65,7 +65,6 @@ public class ControllerRegistry {
 
     private final ConceptManager conceptMgr;
     private final LogicManager logicMgr;
-    private final ReasonerPlanner reasonerPlanner;
     private final Map<Concludable, Driver<ConcludableController.Match>> concludableControllers;
     private final Map<Driver<ConcludableController.Match>, Set<Concludable>> controllerConcludables;
     private final Map<Rule, Driver<ConditionController>> conditions;
@@ -82,7 +81,6 @@ public class ControllerRegistry {
                               LogicManager logicMgr, ReasonerPlanner reasonerPlanner, Context.Transaction context) {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
-        this.reasonerPlanner = reasonerPlanner;
         this.logicMgr = logicMgr;
         this.concludableControllers = new ConcurrentHashMap<>();
         this.controllerConcludables = new ConcurrentHashMap<>();
@@ -97,7 +95,8 @@ public class ControllerRegistry {
         }
         Tracer finalTracer = tracer;
         this.controllerContext = new AbstractController.Context(
-                executorService, this, Actor.driver(driver -> new Monitor(driver, finalTracer), executorService), tracer
+                executorService, this, Actor.driver(driver -> new Monitor(driver, finalTracer), executorService),
+                reasonerPlanner, tracer
         );
         this.materialisationController = Actor.driver(driver -> new MaterialisationController(
                 driver, controllerContext, traversalEngine(), conceptManager()), executorService
@@ -114,10 +113,6 @@ public class ControllerRegistry {
 
     public LogicManager logicManager() {
         return logicMgr;
-    }
-
-    public ReasonerPlanner planner() {
-        return this.reasonerPlanner;
     }
 
     public void terminate(Throwable e) {

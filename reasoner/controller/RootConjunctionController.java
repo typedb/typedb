@@ -18,10 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
@@ -30,6 +27,7 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -52,6 +50,7 @@ public class RootConjunctionController
 
     @Override
     public void initialise() {
+        planner().plan(conjunction, new HashSet<>());
         setUpUpstreamControllers();
         getOrCreateProcessor(new ConceptMap());
     }
@@ -59,15 +58,9 @@ public class RootConjunctionController
     @Override
     protected Processor createProcessorFromDriver(Driver<Processor> processorDriver, ConceptMap bounds) {
         return new Processor(
-                processorDriver, driver(), processorContext(), bounds, plan(bounds.concepts().keySet()), filter, explain, reasonerConsumer,
+                processorDriver, driver(), processorContext(), bounds, getPlan(bounds.concepts().keySet()), filter, explain, reasonerConsumer,
                 () -> Processor.class.getSimpleName() + "(pattern:" + conjunction + ", bounds: " + bounds + ")"
         );
-    }
-
-    @Override
-    FunctionalIterator<Concludable> concludablesTriggeringRules() {
-        return Iterators.iterate(conjunction.positiveConcludables())
-                .filter(c -> !registry().logicManager().applicableRules(c).isEmpty());
     }
 
     @Override
