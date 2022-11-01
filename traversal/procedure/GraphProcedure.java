@@ -87,14 +87,15 @@ public class GraphProcedure implements PermutationProcedure {
         }
         for (int i = 0; i < toExclusive; i++) {
             ProcedureVertex<?, ?> from = vertices[i];
+            ProcedureVertex<?, ?> clonedFrom = builder.vertices.get(vertices[i].id());
             from.outs().forEach(e -> {
                 if (e.to().order() < toExclusive) {
-                    ProcedureVertex<?, ?> to = vertices[e.to().order()];
-                    ProcedureEdge<?, ?> clonedEdge = e.cloneTo(from, to);
-                    builder.attachEdge(from, to, clonedEdge);
+                    ProcedureVertex<?, ?> clonedTo = builder.vertices.get(e.to().id());
+                    ProcedureEdge<?, ?> clonedEdge = e.cloneTo(clonedFrom, clonedTo);
+                    builder.attachEdge(clonedFrom, clonedTo, clonedEdge);
                 }
             });
-            from.loops().forEach(e -> builder.attachEdge(from, from, e.cloneTo(from, from)));
+            from.loops().forEach(e -> builder.attachEdge(clonedFrom, clonedFrom, e.cloneTo(clonedFrom, clonedFrom)));
         }
         return builder.build();
     }
@@ -206,6 +207,9 @@ public class GraphProcedure implements PermutationProcedure {
             ProcedureVertex<?, ?> vertex = vertices[i];
             str.append("\n\t").append(vertex);
             for (ProcedureEdge<?, ?> edge : vertex.ins()) {
+                str.append("\n\t\t\t").append(edge);
+            }
+            for (ProcedureEdge<?, ?> edge : vertex.loops()) {
                 str.append("\n\t\t\t").append(edge);
             }
         }

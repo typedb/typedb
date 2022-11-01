@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
+import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.common.parameters.Order;
@@ -112,7 +113,9 @@ public class TraversalTest {
             Identifier.Variable.Name var = Identifier.Variable.name("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
             Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, DESC)));
-            SortedIterator<ConceptMap.Sortable, Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
+            SortedIterator<ConceptMap.Sortable, Order.Asc> answers = transaction.reasoner().executeTraversalSorted(
+                    disjunction, new Context.Query(transaction.context(), new Options.Query()), filter, sorting
+            );
 
             long lastValue = Long.MAX_VALUE;
             while (answers.hasNext()) {
@@ -146,7 +149,9 @@ public class TraversalTest {
             Identifier.Variable.Name var = Identifier.Variable.name("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
             Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, DESC)));
-            List<ConceptMap.Sortable> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting).toList();
+            List<ConceptMap.Sortable> answers = transaction.reasoner().executeTraversalSorted(
+                    disjunction, new Context.Query(transaction.context(), new Options.Query()), filter, sorting
+            ).toList();
             assertEquals(true, answers.get(0).get("a").asAttribute().asBoolean().getValue());
             assertEquals(false, answers.get(1).get("a").asAttribute().asBoolean().getValue());
         }
@@ -175,7 +180,9 @@ public class TraversalTest {
             Identifier.Variable.Name var = Identifier.Variable.name("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
             Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, ASC)));
-            SortedIterator<ConceptMap.Sortable, Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
+            SortedIterator<ConceptMap.Sortable, Order.Asc> answers = transaction.reasoner().executeTraversalSorted(
+                    disjunction, new Context.Query(transaction.context(), new Options.Query()), filter, sorting
+            );
 
             double lastValue = Double.MIN_VALUE;
             while (answers.hasNext()) {
@@ -213,7 +220,9 @@ public class TraversalTest {
             Identifier.Variable.Name var = Identifier.Variable.name("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
             Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, DESC)));
-            SortedIterator<ConceptMap.Sortable, Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
+            SortedIterator<ConceptMap.Sortable, Order.Asc> answers = transaction.reasoner().executeTraversalSorted(
+                    disjunction, new Context.Query(transaction.context(), new Options.Query()), filter, sorting
+            );
 
             LocalDateTime lastValue = LocalDateTime.MAX;
             while (answers.hasNext()) {

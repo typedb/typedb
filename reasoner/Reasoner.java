@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -101,7 +102,7 @@ public class Reasoner {
             answers = executeReasoner(disjunction, filter, context);
             if (sorting.isPresent()) answers = eagerSort(answers, sorting.get());
         } else if (sorting.isPresent() && isNativelySortable(disjunction, sorting.get())) {
-            answers = executeTraversalSorted(disjunction, filter, sorting.get());
+            answers = executeTraversalSorted(disjunction, context.producer(Either.first(INCREMENTAL)), filter, sorting.get());
         } else {
             if (sorting.isPresent()) {
                 answers = executeTraversal(disjunction, context.producer(Either.first(EXHAUSTIVE)), filter);
@@ -218,11 +219,17 @@ public class Reasoner {
         return answers;
     }
 
-    public SortedIterator<ConceptMap.Sortable, Order.Asc> executeTraversalSorted(Disjunction disjunction, Filter filter,
-                                                                                 Sorting sorting) {
-        // TODO: parallelised sorted queries
+    public SortedIterator<ConceptMap.Sortable, Order.Asc> executeTraversalSorted(Disjunction disjunction, Context.Query context,
+                                                                                 Filter filter, Sorting sorting) {
+        SortedIterator<ConceptMap.Sortable, Order.Asc> answers;
         FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
-        SortedIterator<ConceptMap.Sortable, Order.Asc> answers = conjs.mergeMap(conj -> iteratorSorted(conj, filter, sorting), ASC);
+        if (!context.options().parallel()) answers = conjs.mergeMap(conj -> iteratorSorted(conj, filter, sorting), ASC);
+        else {
+            answers = conjs.mergeMap(conj ->
+                            produce(producerSorted(conj, filter, sorting), context.producer(), async1()).mapSorted(cm -> cm, ASC),
+                    ASC
+            );
+        }
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
         return answers;
     }
@@ -234,6 +241,19 @@ public class Reasoner {
         } else {
             return traversalEng.producer(conjunction.traversal(), PARALLELISATION_FACTOR)
                     .map(conceptMgr::conceptMap).filter(answer -> !isNegated(answer, conjunction.negations()))
+                    .map(answer -> answer.filter(filter)).distinct();
+        }
+    }
+
+    private Producer<ConceptMap.Sortable> producerSorted(Conjunction conjunction, Filter filter, Sorting sorting) {
+        ConceptMap.Sortable.Comparator comparator = ConceptMap.Comparator.create(sorting);
+        if (conjunction.negations().isEmpty()) {
+            return traversalEng.producer(conjunction.traversal(filter, sorting), PARALLELISATION_FACTOR)
+                    .map(vm -> conceptMgr.conceptMapSortable(vm, comparator));
+        } else {
+            return traversalEng.producer(conjunction.traversal(Filter.create(list()), sorting), PARALLELISATION_FACTOR)
+                    .map(vm -> conceptMgr.conceptMapSortable(vm, comparator))
+                    .filter(answer -> !isNegated(answer, conjunction.negations()))
                     .map(answer -> answer.filter(filter)).distinct();
         }
     }
@@ -265,7 +285,7 @@ public class Reasoner {
                                                                           Filter filter, Sorting sorting) {
         ConceptMap.Sortable.Comparator comparator = ConceptMap.Comparator.create(sorting);
         SortedIterator<ConceptMap.Sortable, Order.Asc> answers = traversalEng.iterator(conjunction.traversal(filter, sorting))
-                .mapSorted(vertexMap -> conceptMgr.conceptMapOrdered(vertexMap, comparator), ASC);
+                .mapSorted(vertexMap -> conceptMgr.conceptMapSortable(vertexMap, comparator), ASC);
         if (conjunction.negations().isEmpty()) return answers;
         else {
             return answers.filter(ans -> !isNegated(ans, conjunction.negations()))
