@@ -35,27 +35,27 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class ConjunctionSummarizer {
+public class ConjunctionGraph {
     private final LogicManager logicMgr;
-    private final Map<ResolvableConjunction, ConjunctionSummary> conjunctionSummaries;
+    private final Map<ResolvableConjunction, ConjunctionNode> conjunctionNodes;
 
-    public ConjunctionSummarizer(LogicManager logicMgr) {
+    public ConjunctionGraph(LogicManager logicMgr) {
         this.logicMgr = logicMgr;
-        this.conjunctionSummaries = new HashMap<>();
+        this.conjunctionNodes = new HashMap<>();
     }
 
     public Set<ResolvableConjunction> dependencies(Concludable concludable) {
         return iterate(logicMgr.applicableRules(concludable).keySet()).map(rule -> rule.condition().conjunction()).toSet();
     }
 
-    public ConjunctionSummary conjunctionSummary(ResolvableConjunction conjunction) {
-        if (!conjunctionSummaries.containsKey(conjunction)) {
-            recursivelySummarizeConjunctions(conjunction);
+    public ConjunctionNode conjunctionNode(ResolvableConjunction conjunction) {
+        if (!conjunctionNodes.containsKey(conjunction)) {
+            recursivelyProcessConjunctions(conjunction);
         }
-        return conjunctionSummaries.get(conjunction);
+        return conjunctionNodes.get(conjunction);
     }
 
-    private ConjunctionSummary createConjunctionSummary(ResolvableConjunction conjunction, Set<Pair<Concludable, ResolvableConjunction>> cyclicConcludables) {
+    private ConjunctionNode createConjunctionNode(ResolvableConjunction conjunction, Set<Pair<Concludable, ResolvableConjunction>> cyclicConcludables) {
         Set<Resolvable<?>> resolvables = logicMgr.compile(conjunction);
         Map<Concludable, Set<ResolvableConjunction>> cyclicDependencies = new HashMap<>();
         Map<Concludable, Set<ResolvableConjunction>> acyclicDependencies = new HashMap<>();
@@ -74,21 +74,21 @@ public class ConjunctionSummarizer {
                     .forEachRemaining(dependency -> acyclicDependencies.get(concludable).add(dependency));
         });
 
-        return new ConjunctionSummary(conjunction, resolvables, cyclicDependencies, acyclicDependencies);
+        return new ConjunctionNode(conjunction, resolvables, cyclicDependencies, acyclicDependencies);
     }
 
-    private void recursivelySummarizeConjunctions(ResolvableConjunction root) {
+    private void recursivelyProcessConjunctions(ResolvableConjunction root) {
         ConjunctionConcludableStack stack = new ConjunctionConcludableStack();
         Map<ResolvableConjunction, Set<Pair<Concludable, ResolvableConjunction>>> cyclicConcludables = new HashMap<>();
         findCyclicDependencies(root, stack, cyclicConcludables);
         iterate(stack.visited()).forEachRemaining(conjunction -> {
-            conjunctionSummaries.put(conjunction, createConjunctionSummary(conjunction, cyclicConcludables.getOrDefault(conjunction, new HashSet<>())));
+            conjunctionNodes.put(conjunction, createConjunctionNode(conjunction, cyclicConcludables.getOrDefault(conjunction, new HashSet<>())));
         });
     }
 
     private void findCyclicDependencies(ResolvableConjunction conjunction, ConjunctionConcludableStack stack, Map<ResolvableConjunction, Set<Pair<Concludable, ResolvableConjunction>>> cyclicConcludables) {
-        if (conjunctionSummaries.containsKey(conjunction)) {
-            return; // We only add conjunction summaries at the end of a search -> this does not loop back.
+        if (conjunctionNodes.containsKey(conjunction)) {
+            return; // We only create conjunction nodes at the end of a search -> this does not loop back.
         }
 
         if (stack.contains(conjunction)) {
@@ -103,7 +103,7 @@ public class ConjunctionSummarizer {
             Set<Resolvable<?>> resolvables = logicMgr.compile(conjunction);
             iterate(resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated)
                     .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
-                    .forEachRemaining(dependency -> conjunctionSummary(dependency)); // Stratified negation -> Fresh set
+                    .forEachRemaining(dependency -> conjunctionNode(dependency)); // Stratified negation -> Fresh set
             iterate(resolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable)
                     .forEachRemaining(concludable -> {
                         stack.setConcludable(conjunction, concludable);
@@ -114,7 +114,7 @@ public class ConjunctionSummarizer {
         }
     }
 
-    static class ConjunctionSummary {
+    static class ConjunctionNode {
         private final ResolvableConjunction conjunction;
         private final Set<Resolvable<?>> resolvables;
         private final Set<Variable> estimateableVars;
@@ -123,8 +123,8 @@ public class ConjunctionSummarizer {
         private final Map<Concludable, Set<ResolvableConjunction>> cyclicDependencies;
         private final Map<Concludable, Set<ResolvableConjunction>> acyclicDependencies;
 
-        ConjunctionSummary(ResolvableConjunction conjunction, Set<Resolvable<?>> resolvables,
-                           Map<Concludable, Set<ResolvableConjunction>> cyclicDependencies, Map<Concludable, Set<ResolvableConjunction>> acyclicDependencies) {
+        ConjunctionNode(ResolvableConjunction conjunction, Set<Resolvable<?>> resolvables,
+                        Map<Concludable, Set<ResolvableConjunction>> cyclicDependencies, Map<Concludable, Set<ResolvableConjunction>> acyclicDependencies) {
             this.conjunction = conjunction;
             this.resolvables = resolvables;
             this.estimateableVars = ReasonerPlanner.estimateableVariables(conjunction.pattern().variables());

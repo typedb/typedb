@@ -18,10 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 
@@ -40,18 +37,12 @@ public class NestedConjunctionController extends ConjunctionController<
     }
 
     @Override
-    FunctionalIterator<Concludable> concludablesTriggeringRules() {
-        return Iterators.iterate(conjunction.positiveConcludables())
-                .filter(c -> !registry().logicManager().applicableRules(c).isEmpty());
-    }
-
-    @Override
     protected NestedConjunctionProcessor createProcessorFromDriver(
             Driver<NestedConjunctionProcessor> processorDriver,
             ConceptMap bounds
     ) {
         return new NestedConjunctionProcessor(
-                processorDriver, driver(), processorContext(), bounds, plan(bounds.concepts().keySet()),
+                processorDriver, driver(), processorContext(), bounds, getPlan(bounds.concepts().keySet()),
                 () -> NestedConjunctionProcessor.class.getSimpleName() + "(pattern: " + conjunction + ", bounds: " + bounds + ")"
         );
     }
