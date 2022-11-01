@@ -109,12 +109,12 @@ public class ConceptMap implements Answer {
         return filter(filter.variables());
     }
 
-    public ConceptMap filter(Set<Identifier.Variable.Retrievable> filter) {
+    public ConceptMap filter(Set<? extends Identifier> filter) {
         return new ConceptMap(filteredMap(concepts, filter)); // TODO this should include explainables?
     }
 
 
-    static Map<Retrievable, ? extends Concept> filteredMap(Map<Retrievable, ? extends Concept> concepts, Set<? extends Retrievable> vars) {
+    static Map<Retrievable, ? extends Concept> filteredMap(Map<Retrievable, ? extends Concept> concepts, Set<? extends Identifier> vars) {
         return concepts.entrySet().stream()
                 .filter(e -> vars.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -170,7 +170,7 @@ public class ConceptMap implements Answer {
         }
 
         @Override
-        public Sortable filter(Set<Retrievable> filter) {
+        public Sortable filter(Set<? extends Identifier> filter) {
             return new Sortable(filteredMap(concepts(), filter), conceptsComparator); // TODO this should include explainables?
         }
 

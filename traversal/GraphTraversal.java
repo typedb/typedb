@@ -134,8 +134,9 @@ public abstract class GraphTraversal extends Traversal {
             return permutationIterator(graphMgr, Planner.create(structure, modifiers), true);
         }
 
-        public Optional<Map<Identifier.Variable.Retrievable, Set<TypeVertex>>> combination(
-                GraphManager graphMgr, Set<Identifier.Variable.Retrievable> concreteVarIds) {
+        public Optional<Map<Identifier, Set<TypeVertex>>> combination(
+                GraphManager graphMgr, Set<Identifier.Variable.Retrievable> concreteVarIds
+        ) {
             return new CombinationFinder(graphMgr, CombinationProcedure.create(structure), modifiers.filter(), concreteVarIds).combination();
         }
     }

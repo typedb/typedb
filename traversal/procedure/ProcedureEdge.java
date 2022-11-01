@@ -373,8 +373,9 @@ public abstract class ProcedureEdge<
                 }
 
                 @Override
-                public ProcedureEdge<?, ?> cloneTo(ProcedureVertex.Thing from, ProcedureVertex.Type to) {
-                    return new Forward(from, to, isTransitive);
+                public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                    if (!from.isThing() || !to.isType()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                    return new Forward(from.asThing(), to.asType(), isTransitive);
                 }
             }
 
@@ -414,8 +415,9 @@ public abstract class ProcedureEdge<
                 }
 
                 @Override
-                public ProcedureEdge<?, ?> cloneTo(ProcedureVertex.Type from, ProcedureVertex.Thing to) {
-                    return new Backward(from, to, isTransitive);
+                public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                    if (!from.isType() || !to.isThing()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                    return new Backward(from.asType(), to.asThing(), isTransitive);
                 }
             }
         }
@@ -524,6 +526,12 @@ public abstract class ProcedureEdge<
                     public ProcedureEdge<?, ?> reverse() {
                         return new Sub.Backward(to, from, isTransitive);
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isType() || !to.isType()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Forward(from.asType(), to.asType(), isTransitive);
+                    }
                 }
 
                 static class Backward extends Sub {
@@ -554,6 +562,12 @@ public abstract class ProcedureEdge<
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
                         return new Sub.Forward(to, from, isTransitive);
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isType() || !to.isType()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Backward(from.asType(), to.asType(), isTransitive);
                     }
                 }
             }
@@ -614,6 +628,12 @@ public abstract class ProcedureEdge<
                     public ProcedureEdge<?, ?> reverse() {
                         return new Owns.Backward(to, from, isKey);
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isType() || !to.isType()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Forward(from.asType(), to.asType(), isKey);
+                    }
                 }
 
                 static class Backward extends Owns {
@@ -651,6 +671,12 @@ public abstract class ProcedureEdge<
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
                         return new Owns.Forward(to, from, isKey);
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isType() || !to.isType()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Backward(from.asType(), to.asType(), isKey);
                     }
                 }
             }
@@ -692,6 +718,12 @@ public abstract class ProcedureEdge<
                     public ProcedureEdge<?, ?> reverse() {
                         return new Plays.Backward(to, from);
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isType() || !to.isType()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Forward(from.asType(), to.asType());
+                    }
                 }
 
                 static class Backward extends Plays {
@@ -724,6 +756,12 @@ public abstract class ProcedureEdge<
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
                         return new Plays.Forward(to, from);
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isType() || !to.isType()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Backward(from.asType(), to.asType());
                     }
                 }
             }
@@ -764,6 +802,12 @@ public abstract class ProcedureEdge<
                     public ProcedureEdge<?, ?> reverse() {
                         return new Relates.Backward(to, from);
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isType() || !to.isType()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Forward(from.asType(), to.asType());
+                    }
                 }
 
                 static class Backward extends Relates {
@@ -796,6 +840,12 @@ public abstract class ProcedureEdge<
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
                         return new Relates.Forward(to, from);
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isType() || !to.isType()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Backward(from.asType(), to.asType());
                     }
                 }
             }
@@ -906,7 +956,7 @@ public abstract class ProcedureEdge<
                         } else {
                             Optional<Value<?, ?>> eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).first();
                             if (eq.isPresent()) {
-                                return to.iterateAndFilterPredicates(branchToEq(graphMgr, params, owner, eq.get()), params, ASC );
+                                return to.iterateAndFilterPredicates(branchToEq(graphMgr, params, owner, eq.get()), params, ASC);
                             } else {
                                 return to.mergeAndFilterPredicatesOnVertices(graphMgr, branchToTypes(graphMgr, owner), params, ASC);
                             }
@@ -950,6 +1000,12 @@ public abstract class ProcedureEdge<
                     public ProcedureEdge<?, ?> reverse() {
                         return new Backward(to, from);
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isThing() || !to.isThing()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Forward(from.asThing(), to.asThing());
+                    }
                 }
 
                 static class Backward extends Has {
@@ -991,6 +1047,12 @@ public abstract class ProcedureEdge<
                     public ProcedureEdge<?, ?> reverse() {
                         return new Forward(to, from);
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isThing() || !to.isThing()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Backward(from.asThing(), to.asThing());
+                    }
                 }
             }
 
@@ -1024,6 +1086,12 @@ public abstract class ProcedureEdge<
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
                         return new Backward(to, from);
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isThing() || !to.isThing()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Forward(from.asThing(), to.asThing());
                     }
                 }
 
@@ -1072,6 +1140,12 @@ public abstract class ProcedureEdge<
                     public ProcedureEdge<?, ?> reverse() {
                         return new Forward(to, from);
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isThing() || !to.isThing()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Backward(from.asThing(), to.asThing());
+                    }
                 }
             }
 
@@ -1116,6 +1190,12 @@ public abstract class ProcedureEdge<
                     public ProcedureEdge<?, ?> reverse() {
                         return new Backward(to, from);
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isThing() || !to.isThing()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Forward(from.asThing(), to.asThing());
+                    }
                 }
 
                 static class Backward extends Relating {
@@ -1157,6 +1237,11 @@ public abstract class ProcedureEdge<
                         return new Forward(to, from);
                     }
 
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isThing() || !to.isThing()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Backward(from.asThing(), to.asThing());
+                    }
                 }
             }
 
@@ -1322,6 +1407,12 @@ public abstract class ProcedureEdge<
                     public ProcedureEdge<?, ?> reverse() {
                         return new Backward(to, from, repetition, roleTypes);
                     }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isThing() || !to.isThing()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Forward(from.asThing(), to.asThing(), repetition, roleTypes);
+                    }
                 }
 
                 static class Backward extends RolePlayer {
@@ -1406,6 +1497,12 @@ public abstract class ProcedureEdge<
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
                         return new Forward(to, from, repetition, roleTypes);
+                    }
+
+                    @Override
+                    public ProcedureEdge<?, ?> cloneTo(ProcedureVertex<?, ?> from, ProcedureVertex<?, ?> to) {
+                        if (!from.isThing() || !to.isThing()) throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                        return new Backward(from.asThing(), to.asThing(), repetition, roleTypes);
                     }
                 }
             }

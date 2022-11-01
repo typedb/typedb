@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 
@@ -61,8 +62,8 @@ public class TraversalEngine {
         return traversal.permutationIterator(graphMgr);
     }
 
-    public Optional<Map<Retrievable, Set<TypeVertex>>> combination(GraphTraversal.Type traversal,
-                                                                   Set<Retrievable> concreteTypesOnly) {
+    public Optional<Map<Identifier, Set<TypeVertex>>> combination(GraphTraversal.Type traversal,
+                                                                  Set<Retrievable> concreteTypesOnly) {
         return traversal.combination(graphMgr, concreteTypesOnly);
     }
 }

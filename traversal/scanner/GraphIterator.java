@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
-import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -70,7 +69,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private final Modifiers modifiers;
     private final Map<Identifier.Variable, Scope> scopes;
     private final Map<ProcedureVertex<?, ?>, VertexTraverser> vertexTraversers;
-    private final Map<Identifier, Vertex<?, ?>> fixedVertices;
+    private final Map<? extends Identifier, Vertex<?, ?>> fixedVertices;
     private final SortedSet<ProcedureVertex<?, ?>> toTraverse;
     private final SortedSet<ProcedureVertex<?, ?>> toRevisit;
     private Direction direction;
@@ -80,7 +79,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private enum IteratorState {INIT, EMPTY, FETCHED, COMPLETED}
 
-    public GraphIterator(GraphManager graphMgr, Map<Identifier, Vertex<?, ?>> fixedVertices, GraphProcedure procedure,
+    public GraphIterator(GraphManager graphMgr, Map<? extends Identifier, Vertex<?, ?>> fixedVertices, GraphProcedure procedure,
                          Traversal.Parameters params, Modifiers modifiers) {
         this.graphMgr = graphMgr;
         this.procedure = procedure;
@@ -99,6 +98,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         // set up scopes
         for (ProcedureVertex<?, ?> v : procedure.vertices()) {
             if (v.isThing() && v.asThing().isScope()) scopes.put(v.id().asVariable(), new Scope());
+            else if (v.id().isScoped()) scopes.putIfAbsent(v.id().asScoped().scope(), new Scope());
         }
         // set up traversers
         for (ProcedureVertex<?, ?> v : procedure.vertices()) {
@@ -145,6 +145,10 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         vertexTraversers.get(to).addImplicitDependee(from);
     }
 
+    public GraphProcedure procedure() {
+        return procedure;
+    }
+
     @Override
     public VertexMap next() {
         if (!hasNext()) throw new NoSuchElementException();
@@ -153,14 +157,14 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     }
 
     private VertexMap toVertexMap() {
-        Map<Identifier.Variable.Retrievable, Vertex<?, ?>> answer = new HashMap<>();
+        Map<Identifier, Vertex<?, ?>> answer = new HashMap<>();
         for (ProcedureVertex<?, ?> procedureVertex : procedure.vertices()) {
-            if (procedureVertex.id().isRetrievable() && modifiers.filter().variables().contains(procedureVertex.id().asVariable().asRetrievable())) {
+            if (modifiers.filter().variables().contains(procedureVertex.id())) {
                 Vertex<?, ?> vertex = vertexTraversers.get(procedureVertex).vertex();
                 if (vertex.isThing() && vertex.asThing().isAttribute() && vertex.asThing().asAttribute().isValue()) {
-                    answer.put(procedureVertex.id().asVariable().asRetrievable(), vertex.asThing().asAttribute().asValue().toAttribute());
+                    answer.put(procedureVertex.id(), vertex.asThing().asAttribute().asValue().toAttribute());
                 } else {
-                    answer.put(procedureVertex.id().asVariable().asRetrievable(), vertex);
+                    answer.put(procedureVertex.id(), vertex);
                 }
             }
         }
@@ -464,7 +468,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
                 if (procedureVertex.isThing()) {
                     Forwardable<? extends Vertex<?, ?>, ? extends Order> iter = procedureVertex.asThing()
                             .iterateAndFilter(fixedVertex.asThing(), graphIterator.params, order);
-                    return (Forwardable<Vertex<?,?>, ? extends Order>) iter;
+                    return (Forwardable<Vertex<?, ?>, ? extends Order>) iter;
                 } else {
                     Forwardable<? extends Vertex<?, ?>, ? extends Order> iter = procedureVertex.asType()
                             .filter(iterateSorted(order, fixedVertex.asType()));

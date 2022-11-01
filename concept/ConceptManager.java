@@ -80,9 +80,11 @@ public final class ConceptManager {
     private Map<Retrievable, Concept> toConcepts(VertexMap vertexMap) {
         Map<Retrievable, Concept> map = new HashMap<>();
         vertexMap.forEach((id, vertex) -> {
-            if (vertex.isThing()) map.put(id, ThingImpl.of(vertex.asThing()));
-            else if (vertex.isType()) map.put(id, TypeImpl.of(graphMgr, vertex.asType()));
-            else throw exception(TypeDBException.of(ILLEGAL_STATE));
+            if (id.isRetrievable() && vertex.isThing()) {
+                map.put(id.asVariable().asRetrievable(), ThingImpl.of(vertex.asThing()));
+            } else if (id.isRetrievable() && vertex.isType()) {
+                map.put(id.asVariable().asRetrievable(), TypeImpl.of(graphMgr, vertex.asType()));
+            } else throw exception(TypeDBException.of(ILLEGAL_STATE));
         });
         return map;
     }

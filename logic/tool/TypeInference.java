@@ -196,10 +196,10 @@ public class TypeInference {
         }
 
         private void applyCombination(LogicCache logicCache) {
-            Optional<Map<Retrievable, Set<Label>>> inferredTypes = logicCache.inference().get(
+            Optional<Map<Identifier, Set<Label>>> inferredTypes = logicCache.inference().get(
                     traversal,
                     traversal -> traversalEng.combination(traversal, thingInferenceVars()).map(types -> {
-                        HashMap<Retrievable, Set<Label>> labels = new HashMap<>();
+                        HashMap<Identifier, Set<Label>> labels = new HashMap<>();
                         types.forEach((id, ts) -> labels.put(id, iterate(ts).map(TypeVertex::properLabel).toSet()));
                         return labels;
                     })
@@ -214,7 +214,7 @@ public class TypeInference {
             ).toSet();
         }
 
-        private void applyTypes(Map<Retrievable, Set<Label>> types) {
+        private void applyTypes(Map<Identifier, Set<Label>> types) {
             inferenceToOriginal.forEach((inferenceID, conjunctionVar) ->
                     conjunctionVar.setInferredTypes(types.get(inferenceID))
             );
@@ -222,7 +222,7 @@ public class TypeInference {
                     .flatMap(var -> iterate(var.asThing().relation().get().players()).map(rp -> new Pair<>(var.id(), rp)))
                     .forEachRemaining(ownerAndRP -> {
                         assert rolePlayerToInference.containsKey(ownerAndRP);
-                        ownerAndRP.second().setInferredRoleTypes(types.get(rolePlayerToInference.get(ownerAndRP).id().asRetrievable()));
+                        ownerAndRP.second().setInferredRoleTypes(types.get(rolePlayerToInference.get(ownerAndRP).id()));
                     });
         }
 

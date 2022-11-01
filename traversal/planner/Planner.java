@@ -41,7 +41,7 @@ public interface Planner {
      */
     static List<Structure> splitStructure(Structure structure, Modifiers modifiers) {
         return iterate(structure.splitDisjoint(modifiers.sorting().variables())).filter(s ->
-                iterate(s.vertices()).anyMatch(v -> v.id().isRetrievable() && modifiers.filter().variables().contains(v.id().asVariable().asRetrievable()))
+                iterate(s.vertices()).anyMatch(v -> modifiers.filter().variables().contains(v.id()))
         ).toList();
     }
 

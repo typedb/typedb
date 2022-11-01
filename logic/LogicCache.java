@@ -29,7 +29,7 @@ import java.util.Set;
 
 public class LogicCache {
 
-    private final CommonCache<GraphTraversal.Type, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> typeInferenceCache;
+    private final CommonCache<GraphTraversal.Type, Optional<Map<Identifier, Set<Label>>>> typeInferenceCache;
     private final CommonCache<String, Rule> ruleCache;
 
     public LogicCache() {
@@ -42,7 +42,7 @@ public class LogicCache {
         this.typeInferenceCache = new CommonCache<>(size, timeOutMinutes);
     }
 
-    public CommonCache<GraphTraversal.Type, Optional<Map<Identifier.Variable.Retrievable, Set<Label>>>> inference() {
+    public CommonCache<GraphTraversal.Type, Optional<Map<Identifier, Set<Label>>>> inference() {
         return typeInferenceCache;
     }
 

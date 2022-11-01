@@ -17,10 +17,87 @@
 
 Feature: Debugging Space
 
-  Background:
-    Given connection has been opened
-    Given connection delete all databases
-    Given connection does not have any database
 
-  # Paste any scenarios below for debugging.
-  # Do not commit any changes to this file.
+  Background: Open connection and create a simple extensible schema
+    Given connection has been opened
+    Given connection does not have any database
+    Given connection create database: typedb
+    Given connection open schema session for database: typedb
+    Given session opens transaction of type: write
+
+    Given typeql define
+      """
+      define
+      person sub entity,
+        plays friendship:friend,
+        plays employment:employee,
+        owns name,
+        owns age,
+        owns ref @key;
+      company sub entity,
+        plays employment:employer,
+        owns name,
+        owns ref @key;
+      friendship sub relation,
+        relates friend,
+        owns ref @key;
+      employment sub relation,
+        relates employee,
+        relates employer,
+        owns ref @key;
+      name sub attribute, value string;
+      age sub attribute, value long;
+      ref sub attribute, value long;
+      """
+    Given transaction commits
+
+    Given session opens transaction of type: write
+
+  Scenario: when multiple relation instances exist with the same roleplayer, matching that player returns just 1 answer
+    Given typeql define
+      """
+      define
+      residency sub relation,
+        relates resident,
+        owns ref @key;
+      person plays residency:resident;
+      """
+    Given transaction commits
+
+    Given connection close all sessions
+    Given connection open data session for database: typedb
+    Given session opens transaction of type: write
+    Given typeql insert
+      """
+      insert
+      $x isa person, has ref 0;
+      $e (employee: $x) isa employment, has ref 1;
+      $f (friend: $x) isa friendship, has ref 2;
+      $r (resident: $x) isa residency, has ref 3;
+      """
+    Given transaction commits
+
+    Given session opens transaction of type: read
+    Given get answers of typeql match
+      """
+      match $r isa relation;
+      """
+    Given uniquely identify answer concepts
+      | r         |
+      | key:ref:1 |
+      | key:ref:2 |
+      | key:ref:3 |
+    When get answers of typeql match
+      """
+      match ($x) isa relation;
+      """
+    Then uniquely identify answer concepts
+      | x         |
+      | key:ref:0 |
+    When get answers of typeql match
+      """
+      match ($x);
+      """
+    Then uniquely identify answer concepts
+      | x         |
+      | key:ref:0 |

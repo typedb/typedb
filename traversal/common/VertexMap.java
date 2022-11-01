@@ -29,31 +29,31 @@ import static java.util.Collections.unmodifiableMap;
 
 public class VertexMap {
 
-    private final Map<Retrievable, Vertex<?, ?>> map;
+    private final Map<Identifier, Vertex<?, ?>> map;
     private final int hash;
 
-    public VertexMap(Map<Retrievable, Vertex<?, ?>> map) {
+    public VertexMap(Map<Identifier, Vertex<?, ?>> map) {
         this.map = unmodifiableMap(map);
         this.hash = Objects.hash(this.map);
     }
 
-    public static VertexMap of(Map<Retrievable, Vertex<?, ?>> map) {
+    public static VertexMap of(Map<Identifier, Vertex<?, ?>> map) {
         return new VertexMap(map);
     }
 
-    public Map<Retrievable, Vertex<?, ?>> map() {
+    public Map<Identifier, Vertex<?, ?>> map() {
         return map;
     }
 
-    public Vertex<?, ?> get(Retrievable id) {
+    public Vertex<?, ?> get(Identifier id) {
         return map.get(id);
     }
 
-    public boolean containsKey(Retrievable id) {
+    public boolean containsKey(Identifier id) {
         return map.containsKey(id);
     }
 
-    public void forEach(BiConsumer<Retrievable, Vertex<?, ?>> action) {
+    public void forEach(BiConsumer<Identifier, Vertex<?, ?>> action) {
         map.forEach(action);
     }
 

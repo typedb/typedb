@@ -82,23 +82,23 @@ public class Modifiers {
 
     public static class Filter {
 
-        private final Set<Identifier.Variable.Retrievable> variables;
+        private final Set<? extends Identifier> variables;
 
-        private Filter(Set<Identifier.Variable.Retrievable> variables) {
+        private Filter(Set<? extends Identifier> variables) {
             this.variables = variables;
         }
 
-        public static Filter create(Set<Identifier.Variable.Retrievable> variables) {
+        public static Filter create(Set<? extends Identifier> variables) {
             return new Filter(variables);
         }
 
         public static Filter create(List<UnboundVariable> vars) {
-            Set<Identifier.Variable.Retrievable> variables = new HashSet<>();
+            Set<Identifier> variables = new HashSet<>();
             iterate(vars).map(v -> Identifier.Variable.of(v.reference().asName())).forEachRemaining(variables::add);
             return new Filter(variables);
         }
 
-        public Set<Identifier.Variable.Retrievable> variables() {
+        public Set<? extends Identifier> variables() {
             return variables;
         }
 

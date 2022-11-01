@@ -32,7 +32,6 @@ import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.RelationTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
-import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 
@@ -56,7 +55,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
     private final RelationTraversal traversal;
     private final List<StructureEdge<?, ?>> edges;
     private final Map<Integer, Forwardable<ThingVertex, Order.Asc>> iterators;
-    private final Map<Retrievable, Vertex<?, ?>> answer;
+    private final Map<Identifier, Vertex<?, ?>> answer;
     private final Set<Label> relationTypes;
     private final Scoped scoped;
     private ThingVertex relation;

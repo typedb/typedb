@@ -67,7 +67,7 @@ public class CombinationFinder {
         this.combination = new HashMap<>();
     }
 
-    public Optional<Map<Retrievable, Set<TypeVertex>>> combination() {
+    public Optional<Map<Identifier, Set<TypeVertex>>> combination() {
         if (LOG.isTraceEnabled()) LOG.trace(procedure.toString());
 
         start(procedure);
@@ -167,12 +167,10 @@ public class CombinationFinder {
         return iterator;
     }
 
-    private Map<Retrievable, Set<TypeVertex>> filtered(Map<Identifier, Set<TypeVertex>> answer) {
-        Map<Retrievable, Set<TypeVertex>> filtered = new HashMap<>();
+    private Map<Identifier, Set<TypeVertex>> filtered(Map<Identifier, Set<TypeVertex>> answer) {
+        Map<Identifier, Set<TypeVertex>> filtered = new HashMap<>();
         answer.forEach((id, vertices) -> {
-            if (id.isRetrievable() && filter.variables().contains(id.asVariable().asRetrievable())) {
-                filtered.put(id.asVariable().asRetrievable(), vertices);
-            }
+            if (filter.variables().contains(id)) filtered.put(id, vertices);
         });
         return filtered;
     }

@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.traversal.procedure;
 
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.GraphManager;
@@ -47,13 +46,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
-import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 import static java.util.Comparator.comparing;
 
@@ -83,21 +79,22 @@ public class GraphProcedure implements PermutationProcedure {
         return builder.build();
     }
 
-    public GraphProcedure cloneRange(int toInclusive) {
-        assert toInclusive <= vertexCount();
+    public GraphProcedure cloneRange(int toExclusive) {
+        assert toExclusive <= vertexCount();
         Builder builder = new Builder();
-        for (int i = 0; i <= toInclusive; i++) {
+        for (int i = 0; i < toExclusive; i++) {
             builder.registerVertex(vertices[i], vertices[i].order());
         }
-        for (int i = 0; i <= toInclusive; i++) {
+        for (int i = 0; i < toExclusive; i++) {
             ProcedureVertex<?, ?> from = vertices[i];
             from.outs().forEach(e -> {
-                if (e.to().order() <= toInclusive) {
+                if (e.to().order() < toExclusive) {
                     ProcedureVertex<?, ?> to = vertices[e.to().order()];
                     ProcedureEdge<?, ?> clonedEdge = e.cloneTo(from, to);
                     builder.attachEdge(from, to, clonedEdge);
                 }
             });
+            from.loops().forEach(e -> builder.attachEdge(from, from, e.cloneTo(from, from)));
         }
         return builder.build();
     }
@@ -137,17 +134,15 @@ public class GraphProcedure implements PermutationProcedure {
             LOG.trace(params.toString());
             LOG.trace(this.toString());
         }
-        Optional<Order> order = modifiers.sorting().order(initialVertex().id());
-        boolean sortByValue = order.isPresent();
-        if (initialVertex().id().isRetrievable() && modifiers.filter().variables().contains(initialVertex().id().asVariable().asRetrievable())) {
-            return async(initialVertex().iterator(graphMgr, params, order.orElse(ASC), sortByValue)
-                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                    .map(v -> new GraphIterator(graphMgr, map(pair(initialVertex().id(), v)), this, params, modifiers).distinct()), parallelisation);
+        GraphIterator prefixIterator = sortedPrefixIterator(graphMgr, params, modifiers);
+        if (iterate(prefixIterator.procedure().vertices()).allMatch(v -> modifiers.filter().variables().contains(v.id()))) {
+            return async(prefixIterator.map(vertexMap ->
+                    new GraphIterator(graphMgr, vertexMap.map(), this, params, modifiers).distinct()
+            ), parallelisation);
         } else {
-            return async(initialVertex().iterator(graphMgr, params, order.orElse(ASC), sortByValue)
-                    .map(v -> new GraphIterator(graphMgr, map(pair(initialVertex().id(), v)), this, params, modifiers)), parallelisation)
-                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                    .distinct();
+            return async(prefixIterator.map(vertexMap ->
+                    new GraphIterator(graphMgr, vertexMap.map(), this, params, modifiers)
+            ), parallelisation).distinct();
         }
     }
 
@@ -158,19 +153,34 @@ public class GraphProcedure implements PermutationProcedure {
             LOG.trace(params.toString());
             LOG.trace(this.toString());
         }
-        Optional<Order> order = modifiers.sorting().order(initialVertex().id());
-        boolean sortByValue = order.isPresent();
-        if (initialVertex().id().isRetrievable() && modifiers.filter().variables().contains(initialVertex().id().asVariable().asRetrievable())) {
-            return initialVertex().iterator(graphMgr, params, order.orElse(ASC), sortByValue)
-                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                    .flatMap(v -> new GraphIterator(graphMgr, map(pair(initialVertex().id(), v)), this, params, modifiers).distinct());
+        GraphIterator prefixIterator = sortedPrefixIterator(graphMgr, params, modifiers);
+        if (iterate(prefixIterator.procedure().vertices()).allMatch(v -> modifiers.filter().variables().contains(v.id()))) {
+            return prefixIterator.flatMap(vertexMap ->
+                    new GraphIterator(graphMgr, vertexMap.map(), this, params, modifiers).distinct()
+            );
         } else {
-            // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-            return initialVertex().iterator(graphMgr, params, order.orElse(ASC), sortByValue)
-                    .flatMap(v -> new GraphIterator(graphMgr, map(pair(initialVertex().id(), v)), this, params, modifiers))
-                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                    .distinct();
+            return prefixIterator.flatMap(vertexMap ->
+                    new GraphIterator(graphMgr, vertexMap.map(), this, params, modifiers)
+            ).distinct();
         }
+    }
+
+    private GraphIterator sortedPrefixIterator(GraphManager graphMgr, Traversal.Parameters params,
+                                               Modifiers modifiers) {
+        assert sortingMatchesProcedure(modifiers.sorting());
+        int prefixEnd = modifiers.sorting().variables().isEmpty() ? 1 : modifiers.sorting().variables().size();
+        GraphProcedure prefixProcedure = cloneRange(prefixEnd);
+        Modifiers prefixModifiers = new Modifiers();
+        prefixModifiers.sorting(modifiers.sorting());
+        prefixModifiers.filter(Modifiers.Filter.create(iterate(prefixProcedure.vertices()).map(TraversalVertex::id).toSet()));
+        return new GraphIterator(graphMgr, map(), prefixProcedure, params, prefixModifiers);
+    }
+
+    private boolean sortingMatchesProcedure(Modifiers.Sorting sorting) {
+        for (int i = 0; i < sorting.variables().size(); i++) {
+            if (!vertex(i).id().equals(sorting.variables().get(i))) return false;
+        }
+        return true;
     }
 
     @Override
