@@ -90,31 +90,7 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-planner",
-    srcs = ["planner/PlannerTest.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.planner.PlannerTest",
-    native_libraries_deps = [
-        # Internal dependencies
-        "//database:database",
-        "//:typedb",
-        "//common:common",
-        "//concept:concept",
-        "//pattern:pattern",
-        "//logic:logic",
-        "//reasoner:reasoner",
-         "//traversal:traversal",
-    ],
-    deps = [
-        "//test/integration/util",
-
-        # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java:typeql-lang",
-    ],
-)
-
-host_compatible_java_test(
-    name = "test-answercountestimator",
+    name = "test-answer-count-estimator",
     srcs = ["planner/AnswerCountEstimatorTest.java"],
     test_class = "com.vaticle.typedb.core.reasoner.planner.AnswerCountEstimatorTest",
     native_libraries_deps = [
@@ -135,6 +111,55 @@ host_compatible_java_test(
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/pattern:pattern",
+    ],
+)
+
+host_compatible_java_test(
+    name = "test-recursive-planner",
+    srcs = ["planner/RecursivePlannerTest.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.planner.RecursivePlannerTest",
+    native_libraries_deps = [
+        # Internal dependencies
+        "//database:database",
+        "//:typedb",
+        "//common:common",
+        "//concept:concept",
+        "//pattern:pattern",
+        "//logic:logic",
+        "//reasoner:reasoner",
+         "//traversal:traversal",
+    ],
+    deps = [
+        "//test/integration/util",
+
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql-lang",
+    ],
+)
+
+
+host_compatible_java_test(
+    name = "test-reasoner-planner",
+    srcs = ["planner/ReasonerPlannerTest.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.planner.ReasonerPlannerTest",
+    native_libraries_deps = [
+        # Internal dependencies
+        "//database:database",
+        "//:typedb",
+        "//common:common",
+        "//concept:concept",
+        "//pattern:pattern",
+        "//logic:logic",
+        "//reasoner:reasoner",
+         "//traversal:traversal",
+    ],
+    deps = [
+        "//test/integration/util",
+
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql-lang",
     ],
 )
 
