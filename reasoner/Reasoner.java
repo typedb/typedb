@@ -220,7 +220,7 @@ public class Reasoner {
 
     public SortedIterator<ConceptMap.Sortable, Order.Asc> executeTraversalSorted(Disjunction disjunction, Filter filter,
                                                                                  Sorting sorting) {
-        // TODO: parallelised sorted queries
+        // TODO: parallelise sorted queries below each in-order prefix
         FunctionalIterator<Conjunction> conjs = iterate(disjunction.conjunctions());
         SortedIterator<ConceptMap.Sortable, Order.Asc> answers = conjs.mergeMap(conj -> iteratorSorted(conj, filter, sorting), ASC);
         if (disjunction.conjunctions().size() > 1) answers = answers.distinct();
@@ -265,7 +265,7 @@ public class Reasoner {
                                                                           Filter filter, Sorting sorting) {
         ConceptMap.Sortable.Comparator comparator = ConceptMap.Comparator.create(sorting);
         SortedIterator<ConceptMap.Sortable, Order.Asc> answers = traversalEng.iterator(conjunction.traversal(filter, sorting))
-                .mapSorted(vertexMap -> conceptMgr.conceptMapOrdered(vertexMap, comparator), ASC);
+                .mapSorted(vertexMap -> conceptMgr.conceptMapSortable(vertexMap, comparator), ASC);
         if (conjunction.negations().isEmpty()) return answers;
         else {
             return answers.filter(ans -> !isNegated(ans, conjunction.negations()))

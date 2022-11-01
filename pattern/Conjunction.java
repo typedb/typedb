@@ -76,7 +76,6 @@ public class Conjunction implements Pattern, Cloneable {
     private final int hash;
 
     private boolean isCoherent;
-    private boolean isBounded;
     private Set<Identifier.Variable.Retrievable> retrieves;
 
     public Conjunction(Set<Variable> variables, List<Negation> negations) {
@@ -85,7 +84,6 @@ public class Conjunction implements Pattern, Cloneable {
         this.negations = unmodifiableList(negations);
         this.hash = Objects.hash(variables, negations);
         this.isCoherent = true;
-        this.isBounded = false;
     }
 
     private Map<Identifier.Variable, Variable> parseToMap(Set<Variable> variables) {
@@ -141,7 +139,6 @@ public class Conjunction implements Pattern, Cloneable {
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             }
         });
-        isBounded = true;
     }
 
     public Variable variable(Identifier.Variable identifier) {

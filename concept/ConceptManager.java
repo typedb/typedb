@@ -73,7 +73,7 @@ public final class ConceptManager {
         return new ConceptMap(toConcepts(vertexMap));
     }
 
-    public ConceptMap.Sortable conceptMapOrdered(VertexMap vertexMap, ConceptMap.Sortable.Comparator comparator) {
+    public ConceptMap.Sortable conceptMapSortable(VertexMap vertexMap, ConceptMap.Sortable.Comparator comparator) {
         return new ConceptMap.Sortable(toConcepts(vertexMap), comparator);
     }
 

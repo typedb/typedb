@@ -560,17 +560,6 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromThingType() {
-                        return true;
-                    }
-
-                    private NavigableSet<TypeVertex> ownedAttributeTypes(GraphManager graphMgr, TypeVertex fromVertex) {
-                        return isKey ?
-                                graphMgr.schema().ownedKeyAttributeTypes(fromVertex) :
-                                graphMgr.schema().ownedAttributeTypes(fromVertex);
-                    }
-
-                    @Override
                     public Forwardable<TypeVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
@@ -587,6 +576,17 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
+                    public boolean onlyStartsFromThingType() {
+                        return true;
+                    }
+
+                    private NavigableSet<TypeVertex> ownedAttributeTypes(GraphManager graphMgr, TypeVertex fromVertex) {
+                        return isKey ?
+                                graphMgr.schema().ownedKeyAttributeTypes(fromVertex) :
+                                graphMgr.schema().ownedAttributeTypes(fromVertex);
+                    }
+
+                    @Override
                     public ProcedureEdge<?, ?> reverse() {
                         return new Owns.Backward(to, from, isKey);
                     }
@@ -596,17 +596,6 @@ public abstract class ProcedureEdge<
 
                     Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, boolean isKey) {
                         super(from, to, BACKWARD, isKey);
-                    }
-
-                    @Override
-                    public boolean onlyStartsFromAttributeType() {
-                        return true;
-                    }
-
-                    private NavigableSet<TypeVertex> ownersOfAttributeType(GraphManager graphMgr, TypeVertex attType) {
-                        return isKey ?
-                                graphMgr.schema().ownersOfAttributeTypeKey(attType) :
-                                graphMgr.schema().ownersOfAttributeType(attType);
                     }
 
                     @Override
@@ -622,6 +611,17 @@ public abstract class ProcedureEdge<
                                              Traversal.Parameters params) {
                         assert fromVertex.isType() && toVertex.isType();
                         return ownersOfAttributeType(graphMgr, fromVertex.asType()).contains(toVertex.asType());
+                    }
+
+                    @Override
+                    public boolean onlyStartsFromAttributeType() {
+                        return true;
+                    }
+
+                    private NavigableSet<TypeVertex> ownersOfAttributeType(GraphManager graphMgr, TypeVertex attType) {
+                        return isKey ?
+                                graphMgr.schema().ownersOfAttributeTypeKey(attType) :
+                                graphMgr.schema().ownersOfAttributeType(attType);
                     }
 
                     @Override
@@ -644,11 +644,6 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromThingType() {
-                        return true;
-                    }
-
-                    @Override
                     public Forwardable<TypeVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
@@ -665,6 +660,11 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
+                    public boolean onlyStartsFromThingType() {
+                        return true;
+                    }
+
+                    @Override
                     public ProcedureEdge<?, ?> reverse() {
                         return new Plays.Backward(to, from);
                     }
@@ -674,11 +674,6 @@ public abstract class ProcedureEdge<
 
                     Backward(ProcedureVertex.Type from, ProcedureVertex.Type to) {
                         super(from, to, BACKWARD);
-                    }
-
-                    @Override
-                    public boolean onlyStartsFromRoleType() {
-                        return true;
                     }
 
                     @Override
@@ -695,6 +690,11 @@ public abstract class ProcedureEdge<
                     ) {
                         assert fromVertex.isType() && toVertex.isType();
                         return graphMgr.schema().playersOfRoleType(fromVertex.asType()).contains(toVertex.asType());
+                    }
+
+                    @Override
+                    public boolean onlyStartsFromRoleType() {
+                        return true;
                     }
 
                     @Override
@@ -717,11 +717,6 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
-                    public boolean onlyStartsFromRelationType() {
-                        return true;
-                    }
-
-                    @Override
                     public Forwardable<TypeVertex, Order.Asc> branch(
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
@@ -737,6 +732,11 @@ public abstract class ProcedureEdge<
                     }
 
                     @Override
+                    public boolean onlyStartsFromRelationType() {
+                        return true;
+                    }
+
+                    @Override
                     public ProcedureEdge<?, ?> reverse() {
                         return new Relates.Backward(to, from);
                     }
@@ -746,11 +746,6 @@ public abstract class ProcedureEdge<
 
                     Backward(ProcedureVertex.Type from, ProcedureVertex.Type to) {
                         super(from, to, BACKWARD);
-                    }
-
-                    @Override
-                    public boolean onlyStartsFromRoleType() {
-                        return true;
                     }
 
                     @Override
@@ -767,6 +762,11 @@ public abstract class ProcedureEdge<
                     ) {
                         assert fromVertex.isType() && toVertex.isType();
                         return graphMgr.schema().relationsOfRoleType(fromVertex.asType()).contains(toVertex.asType());
+                    }
+
+                    @Override
+                    public boolean onlyStartsFromRoleType() {
+                        return true;
                     }
 
                     @Override

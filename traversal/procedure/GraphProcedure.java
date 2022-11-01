@@ -50,6 +50,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.map;
+import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
@@ -122,10 +124,10 @@ public class GraphProcedure implements PermutationProcedure {
         if (initialVertex().id().isRetrievable() && modifiers.filter().variables().contains(initialVertex().id().asVariable().asRetrievable())) {
             return async(initialVertex().iterator(graphMgr, params, order.orElse(ASC), sortByValue)
                     // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                    .map(v -> new GraphIterator(graphMgr, v, this, params, modifiers).distinct()), parallelisation);
+                    .map(v -> new GraphIterator(graphMgr, map(pair(initialVertex().id(), v)), this, params, modifiers).distinct()), parallelisation);
         } else {
             return async(initialVertex().iterator(graphMgr, params, order.orElse(ASC), sortByValue)
-                    .map(v -> new GraphIterator(graphMgr, v, this, params, modifiers)), parallelisation)
+                    .map(v -> new GraphIterator(graphMgr, map(pair(initialVertex().id(), v)), this, params, modifiers)), parallelisation)
                     // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
                     .distinct();
         }
@@ -138,19 +140,7 @@ public class GraphProcedure implements PermutationProcedure {
             LOG.trace(params.toString());
             LOG.trace(this.toString());
         }
-        Optional<Order> order = modifiers.sorting().order(initialVertex().id());
-        boolean sortByValue = order.isPresent();
-        if (initialVertex().id().isRetrievable() && modifiers.filter().variables().contains(initialVertex().id().asVariable().asRetrievable())) {
-            return initialVertex().iterator(graphMgr, params, order.orElse(ASC), sortByValue)
-                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                    .flatMap(v -> new GraphIterator(graphMgr, v, this, params, modifiers).distinct());
-        } else {
-            // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-            return initialVertex().iterator(graphMgr, params, order.orElse(ASC), sortByValue)
-                    .flatMap(v -> new GraphIterator(graphMgr, v, this, params, modifiers))
-                    // TODO we can reduce the size of the distinct() set if the traversal engine doesn't overgenerate as much
-                    .distinct();
-        }
+        return new GraphIterator(graphMgr, map(), this, params, modifiers).distinct();
     }
 
     @Override
@@ -174,6 +164,9 @@ public class GraphProcedure implements PermutationProcedure {
             ProcedureVertex<?, ?> vertex = vertices[i];
             str.append("\n\t").append(vertex);
             for (ProcedureEdge<?, ?> edge : vertex.ins()) {
+                str.append("\n\t\t\t").append(edge);
+            }
+            for (ProcedureEdge<?, ?> edge : vertex.loops()) {
                 str.append("\n\t\t\t").append(edge);
             }
         }
