@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 public class NestedConjunctionController extends ConjunctionController<
-        ConceptMap,
         NestedConjunctionController,
         NestedConjunctionController.NestedConjunctionProcessor
         > {
@@ -48,7 +47,7 @@ public class NestedConjunctionController extends ConjunctionController<
     }
 
     protected static class NestedConjunctionProcessor
-            extends ConjunctionController.Processor<ConceptMap, NestedConjunctionProcessor> {
+            extends ConjunctionController.Processor<NestedConjunctionProcessor> {
 
         private NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
                                            Driver<NestedConjunctionController> controller, Context context,

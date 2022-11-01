@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 public class RootConjunctionController
-        extends ConjunctionController<ConceptMap, RootConjunctionController, RootConjunctionController.Processor> {
+        extends ConjunctionController<RootConjunctionController, RootConjunctionController.Processor> {
 
     private final Modifiers.Filter filter;
     private final boolean explain;
@@ -69,7 +69,7 @@ public class RootConjunctionController
         reasonerConsumer.exception(cause);
     }
 
-    protected static class Processor extends ConjunctionController.Processor<ConceptMap, Processor> {
+    protected static class Processor extends ConjunctionController.Processor<Processor> {
 
         private final Modifiers.Filter filter;
         private RootSink<ConceptMap> rootSink;
