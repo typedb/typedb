@@ -125,12 +125,9 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             if (getHas(attribute.getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
             } else {
-                SortedIterator.Forwardable<? extends ThingType, Order.Asc> keyOwners = attribute.getType().getOwnersExplicit(true);
-                // use casting to avoid having to expensively repack the iterators into collections
-                ThingType topOwner = (ThingType) getType().getSupertypes().intersect((SortedIterator.Forwardable) keyOwners).first().get();
-                if (attribute.getOwners(topOwner).first().isPresent()) {
+                if (attribute.getOwners(getType()).anyMatch(owner -> owner.getType().equals(getType()))) {
                     throw exception(TypeDBException.of(THING_KEY_TAKEN, ((AttributeImpl<?>) attribute).getValue(),
-                            attribute.getType().getLabel(), topOwner.getLabel()));
+                            attribute.getType().getLabel(), getType().getLabel()));
                 }
             }
             vertex.graph().exclusiveOwnership(((TypeImpl) this.getType()).vertex, attrVertex);
