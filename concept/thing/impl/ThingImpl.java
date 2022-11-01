@@ -125,7 +125,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             if (getHas(attribute.getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
             } else {
-                if (attribute.getOwnersExplicit(getType()).first().isPresent()) {
+                if (attribute.getOwners(getType()).anyMatch(owner -> owner.getType().equals(getType()))) {
                     throw exception(TypeDBException.of(THING_KEY_TAKEN, ((AttributeImpl<?>) attribute).getValue(),
                             attribute.getType().getLabel(), getType().getLabel()));
                 }

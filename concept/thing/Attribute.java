@@ -41,8 +41,6 @@ public interface Attribute extends Thing {
 
     FunctionalIterator<? extends Thing> getOwners(ThingType ownerType);
 
-    FunctionalIterator<? extends Thing> getOwnersExplicit(ThingType ownerType);
-
     boolean isBoolean();
 
     boolean isLong();
