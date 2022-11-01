@@ -115,8 +115,8 @@ public class ReasonerPlannerTest {
 
     private void verifyPlan(ReasonerPlanner planner, String ruleLabel, Set<String> inputBounds, List<String> order) {
         Rule rule = transaction.logic().rules().filter(rule1 -> rule1.getLabel().equals(ruleLabel)).next();
-        assert rule.conditionBranches().size() == 1;
-        ResolvableConjunction condition = iterate(rule.conditionBranches()).next().conjunction();
+        assert rule.condition().branches().size() == 1;
+        ResolvableConjunction condition = iterate(rule.condition().branches()).next().conjunction();
         verifyPlan(planner, condition, inputBounds, order);
     }
 

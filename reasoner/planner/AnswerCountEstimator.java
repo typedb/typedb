@@ -641,7 +641,7 @@ public class AnswerCountEstimator {
                         ruleSideIds = new HashSet<>(rule.conclusion().pattern().retrieves());
                     }
 
-                    for (Rule.Condition.ConditionBranch conditionBranch: rule.conditionBranches()) {
+                    for (Rule.Condition.ConditionBranch conditionBranch: rule.condition().branches()) {
                         ruleSideVariables = iterate(ruleSideIds)
                                 .filter(id -> conditionBranch.pattern().retrieves().contains(id))
                                 .map(id -> conditionBranch.pattern().variable(id)).toSet();

@@ -47,7 +47,7 @@ public class ConjunctionGraph {
 
     public Set<ResolvableConjunction> dependencies(Concludable concludable) {
         return iterate(logicMgr.applicableRules(concludable).keySet())
-                .flatMap(rule -> iterate(rule.conditionBranches()))
+                .flatMap(rule -> iterate(rule.condition().branches()))
                 .map(Rule.Condition.ConditionBranch::conjunction)
                 .toSet();
     }

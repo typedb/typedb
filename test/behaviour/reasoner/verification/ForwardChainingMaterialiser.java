@@ -181,11 +181,11 @@ public class ForwardChainingMaterialiser {
         }
 
         private Set<Rule> negatedDependencies() {
-            assert iterate(rule.conditionBranches()).flatMap(condition -> iterate(condition.conjunction().negations()))
+            assert iterate(rule.condition().branches()).flatMap(condition -> iterate(condition.conjunction().negations()))
                     .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                     .allMatch(conj -> conj.negations().isEmpty()); // Revise when we support nested negations in rules
             if (negatedDependencies == null) {
-                negatedDependencies = iterate(rule.conditionBranches()).flatMap(condition -> iterate(condition.conjunction().negations()))
+                negatedDependencies = iterate(rule.condition().branches()).flatMap(condition -> iterate(condition.conjunction().negations()))
                     .flatMap(negation -> iterate(negation.disjunction().conjunctions()))
                     .flatMap(conj -> conj.allConcludables())
                     .flatMap(concludable -> iterate(tx.logic().applicableRules(concludable).keySet()))
@@ -197,7 +197,7 @@ public class ForwardChainingMaterialiser {
 
         private Set<Rule> unnegatedDependencies() {
             if (unnegatedDependencies == null) {
-                unnegatedDependencies = iterate(rule.conditionBranches()).flatMap(condition -> iterate(condition.conjunction().positiveConcludables()))
+                unnegatedDependencies = iterate(rule.condition().branches()).flatMap(condition -> iterate(condition.conjunction().positiveConcludables()))
                         .flatMap(concludable -> iterate(tx.logic().applicableRules(concludable).keySet()))
                         .map(r -> rules.get(r))
                         .toSet();
@@ -208,7 +208,7 @@ public class ForwardChainingMaterialiser {
         private boolean materialise() {
             // Get all the places where the rule condition is satisfied and materialise for each
             requiresReiteration = false;
-            iterate(rule.conditionBranches()).forEachRemaining(condition -> {
+            iterate(rule.condition().branches()).forEachRemaining(condition -> {
                 traverse(condition.pattern()).forEachRemaining(conditionAns -> materialiseAndBind(
                         rule.conclusion(), conditionAns, tx.traversal(), tx.concepts()
                 ).ifPresent(materialisation -> record(condition, conditionAns, materialisation)));

@@ -121,10 +121,6 @@ public class Rule {
         return condition;
     }
 
-    public Set<Condition.ConditionBranch> conditionBranches() {
-        return condition.branches();
-    }
-
     public Disjunction when() {
         return when;
     }

@@ -134,7 +134,7 @@ public abstract class ReasonerPlanner {
     public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> mode, @Nullable Set<ResolvableConjunction> dependencyFilter) {
         Set<CallMode> calls = new HashSet<>();
         for (Map.Entry<Rule, Set<Unifier>> entry : logicMgr.applicableRules(concludable).entrySet()) {
-            for (Rule.Condition.ConditionBranch conditionBranch : entry.getKey().conditionBranches()) {
+            for (Rule.Condition.ConditionBranch conditionBranch : entry.getKey().condition().branches()) {
                 ResolvableConjunction ruleConjunction = conditionBranch.conjunction();
                 if (dependencyFilter != null && !dependencyFilter.contains(ruleConjunction)) {
                     continue;
