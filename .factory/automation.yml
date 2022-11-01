@@ -137,9 +137,9 @@ build:
         bazel run --define version=$(git rev-parse HEAD) //:deploy-windows-zip -- snapshot
     deploy-apt-snapshot:
       image: vaticle-ubuntu-22.04
-      filter:
-        owner: vaticle
-        branch: [master, development]
+#      filter:
+#        owner: vaticle
+#        branch: [master, development]
       dependencies: [test-assembly-linux-targz]
       command: |
         export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
