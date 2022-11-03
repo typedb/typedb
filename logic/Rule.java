@@ -195,11 +195,6 @@ public class Rule {
     private Disjunction whenPattern(com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> conjunction,
                                     com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> then, LogicManager logicMgr) {
         Disjunction when = Disjunction.create(conjunction.normalise(), VariableRegistry.createFromThings(list(then)));
-
-        if (iterate(when.conjunctions()).flatMap(conj -> iterate(conj.negations())).anyMatch(neg -> neg.disjunction().conjunctions().size() != 1)) {
-            throw TypeDBException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
-        }
-
         logicMgr.typeInference().applyCombination(when);
         return when;
     }
