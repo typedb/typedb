@@ -60,7 +60,7 @@ public abstract class ConjunctionController<
         CONTROLLER extends ConjunctionController<CONTROLLER, PROCESSOR>,
         PROCESSOR extends AbstractProcessor<ConceptMap, ConceptMap, ?, PROCESSOR>
         > extends AbstractController<
-        ConceptMap, ConceptMap, ConceptMap, ConjunctionController.Request<?, ?>, PROCESSOR, CONTROLLER
+        ConceptMap, ConceptMap, ConceptMap, ConjunctionController.Request<?>, PROCESSOR, CONTROLLER
         > {
 
     private final Set<Resolvable<?>> resolvables;
@@ -112,7 +112,7 @@ public abstract class ConjunctionController<
     }
 
     @Override
-    public void routeConnectionRequest(Request<?, ?> connectionRequest) {
+    public void routeConnectionRequest(Request<?> connectionRequest) {
         if (isTerminated()) return;
         if (connectionRequest.isRetrievable()) {
             RetrievableRequest req = connectionRequest.asRetrievable();
@@ -148,9 +148,7 @@ public abstract class ConjunctionController<
         else return withExplainable(new ConceptMap(answer.concepts()), concludable);
     }
 
-    static class Request<
-            CONTROLLER_ID, CONTROLLER extends AbstractController<ConceptMap, ?, ConceptMap, ?, ?, ?>
-            > extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap> {
+    static class Request<CONTROLLER_ID> extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap> {
         Request(Reactive.Identifier inputPortId,
                 Driver<? extends Processor<?>> inputPortProcessor, CONTROLLER_ID controller_id,
                 ConceptMap conceptMap) {
@@ -184,7 +182,7 @@ public abstract class ConjunctionController<
     }
 
     protected abstract static class Processor<PROCESSOR extends Processor<PROCESSOR>>
-            extends AbstractProcessor<ConceptMap, ConceptMap, Request<?, ?>, PROCESSOR> {
+            extends AbstractProcessor<ConceptMap, ConceptMap, Request<?>, PROCESSOR> {
 
         final ConceptMap bounds;
         final List<Resolvable<?>> plan;
@@ -261,7 +259,7 @@ public abstract class ConjunctionController<
             return input;
         }
 
-        public static class RetrievableRequest extends Request<Retrievable, RetrievableController> {
+        public static class RetrievableRequest extends Request<Retrievable> {
 
             private RetrievableRequest(
                     Reactive.Identifier inputPortId,
@@ -283,7 +281,7 @@ public abstract class ConjunctionController<
 
         }
 
-        static class ConcludableRequest extends Request<Concludable, ConcludableController.Match> {
+        static class ConcludableRequest extends Request<Concludable> {
 
             private ConcludableRequest(
                     Reactive.Identifier inputPortId,
@@ -303,7 +301,7 @@ public abstract class ConjunctionController<
 
         }
 
-        static class NegatedRequest extends Request<Negated, NegationController> {
+        static class NegatedRequest extends Request<Negated> {
 
             private NegatedRequest(
                     Reactive.Identifier inputPortId,

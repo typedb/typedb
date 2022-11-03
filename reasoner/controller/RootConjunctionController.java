@@ -29,7 +29,6 @@ import com.vaticle.typedb.core.traversal.common.Modifiers;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
 
 public class RootConjunctionController

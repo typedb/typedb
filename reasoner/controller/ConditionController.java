@@ -64,7 +64,7 @@ public class ConditionController extends DisjunctionController<
 
         @Override
         Stream<Either<ConceptMap, Materialisation>, Either<ConceptMap, Materialisation>> getOrCreateHubReactive(Stream<ConceptMap,ConceptMap> fanIn) {
-            Stream<ConceptMap, Either<ConceptMap, Materialisation>> mapStream = fanIn.map(Either::<ConceptMap, Materialisation>first);
+            Stream<ConceptMap, Either<ConceptMap, Materialisation>> mapStream = fanIn.map(Either::first);
             PoolingStream.BufferedFanStream<Either<ConceptMap, Materialisation>> fanMap = fanInFanOut(this);
             mapStream.registerSubscriber(fanMap);
             return fanMap;
