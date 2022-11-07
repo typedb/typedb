@@ -153,25 +153,27 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
     }
 
     public static class Database extends ErrorMessage {
+        public static final Database INVALID_DATABASE_DIRECTORIES =
+                new Database(1, "Database '%s' (located at: %s) does not contain required directories '%s'.");
         public static final Database INCOMPATIBLE_ENCODING =
-                new Database(1, "Database '%s' (located at: %s) has incompatible data version '%d' - this server supports " +
+                new Database(2, "Database '%s' (located at: %s) has incompatible data version '%d' - this server supports " +
                         "version '%d'. Please reload or migrate your data.");
         public static final Database DATABASE_MANAGER_CLOSED =
-                new Database(2, "Attempted to use database manager when it has been closed.");
+                new Database(3, "Attempted to use database manager when it has been closed.");
         public static final Database DATABASE_EXISTS =
-                new Database(3, "The database with the name '%s' already exists.");
+                new Database(4, "The database with the name '%s' already exists.");
         public static final Database DATABASE_NOT_FOUND =
-                new Database(4, "The database with the name '%s' does not exist.");
+                new Database(5, "The database with the name '%s' does not exist.");
         public static final Database DATABASE_DELETED =
-                new Database(5, "Database with the name '%s' has been deleted.");
+                new Database(6, "Database with the name '%s' has been deleted.");
         public static final Database DATABASE_CLOSED =
-                new Database(6, "Attempted to open a new session from the database '%s' that has been closed.");
+                new Database(7, "Attempted to open a new session from the database '%s' that has been closed.");
         public static final Database DATABASE_NAME_RESERVED =
-                new Database(7, "Database name must not start with an underscore.");
+                new Database(8, "Database name must not start with an underscore.");
         public static final Database ROCKS_LOGGER_SHUTDOWN_TIMEOUT =
-                new Database(8, "Background RocksDB properties logger shutdown timed out.");
+                new Database(9, "Background RocksDB properties logger shutdown timed out.");
         public static final Database STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT =
-                new Database(9, "Background statistics corrector shutdowne timed out.");
+                new Database(10, "Background statistics corrector shutdowne timed out.");
 
         private static final String codePrefix = "DBS";
         private static final String messagePrefix = "Invalid Database Operation";
