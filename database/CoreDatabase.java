@@ -291,7 +291,7 @@ public class CoreDatabase implements TypeDB.Database {
             );
             int encoding = encodingBytes == null || encodingBytes.length == 0 ? 0 : ByteArray.of(encodingBytes).decodeInt();
             if (encoding != ENCODING_VERSION) {
-                throw TypeDBException.of(INCOMPATIBLE_ENCODING,  name(), directory().toAbsolutePath(), encoding, ENCODING_VERSION);
+                throw TypeDBException.of(INCOMPATIBLE_ENCODING, name(), directory().toAbsolutePath(), encoding, ENCODING_VERSION);
             }
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
@@ -547,12 +547,15 @@ public class CoreDatabase implements TypeDB.Database {
                 ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> deletable;
                 if (oldestUncommittedSnapshot.isEmpty()) deletable = commitTimeline;
                 else deletable = commitTimeline.headMap(oldestUncommittedSnapshot.get());
-                iterate(deletable.values()).flatMap(Iterators::iterate)
-                        .forEachRemaining(txn -> {
-                            txn.delete();
-                            commitStates.remove(txn);
-                        });
-                deletable.clear();
+                deletable.keySet().forEach(snapshot ->
+                        deletable.computeIfPresent(snapshot, (s, txns) -> {
+                            for (CoreTransaction.Data txn : txns) {
+                                txn.delete();
+                                commitStates.remove(txn);
+                            }
+                            return null;
+                        })
+                );
                 cleanupRunning.set(false);
             }
         }
