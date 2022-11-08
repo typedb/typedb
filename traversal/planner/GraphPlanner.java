@@ -338,9 +338,10 @@ public class GraphPlanner implements ComponentPlanner {
     }
 
     private void updateTraversalCosts(GraphManager graphMgr) {
-        if (snapshot < graphMgr.data().stats().snapshot()) {
-            // TODO: we should not include the graph's uncommitted writes, but only the persisted counts in the costs
-            snapshot = graphMgr.data().stats().snapshot();
+        long statisticsVersion = graphMgr.data().stats().getDBStatisticsVersion();
+        if (snapshot < statisticsVersion) {
+            // update this shared planner based on the databases latest committed statistics version
+            snapshot = statisticsVersion;
             computeTotalCost(graphMgr);
 
             if (!isUpToDate) {
