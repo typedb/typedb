@@ -65,7 +65,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVA
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_CONCLUSION_ILLEGAL_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_HAVE_ANSWERS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_HAVE_ANSWERS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COLON;
@@ -172,7 +174,9 @@ public class Rule {
 
     private void validateSatisfiable() {
         if (!when.isCoherent()) throw TypeDBException.of(RULE_WHEN_CANNOT_BE_SATISFIED, structure.label(), when);
+        if (!when.isAnswerable()) throw TypeDBException.of(RULE_WHEN_CANNOT_HAVE_ANSWERS, structure.label(), when);
         if (!then.isCoherent()) throw TypeDBException.of(RULE_THEN_CANNOT_BE_SATISFIED, structure.label(), then);
+        if (!then.isAnswerable()) throw TypeDBException.of(RULE_THEN_CANNOT_HAVE_ANSWERS, structure.label(), then);
     }
 
     /**

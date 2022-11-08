@@ -52,6 +52,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -60,7 +61,6 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN_VARIABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN_VARIABLE_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_SUB_PATTERN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
@@ -196,16 +196,23 @@ public class TypeInference {
         }
 
         private void applyCombination(LogicCache logicCache) {
-            Optional<Map<Retrievable, Set<Label>>> inferredTypes = logicCache.inference().get(
+            Boolean isCoherent = logicCache.queryCoherence().get(
                     traversal,
-                    traversal -> traversalEng.combination(traversal, thingInferenceVars()).map(types -> {
-                        HashMap<Retrievable, Set<Label>> labels = new HashMap<>();
-                        types.forEach((id, ts) -> labels.put(id, iterate(ts).map(TypeVertex::properLabel).toSet()));
-                        return labels;
-                    })
+                    traversal -> traversalEng.combination(traversal, Collections.emptySet()).isPresent()
             );
-            if (inferredTypes.isPresent()) applyTypes(inferredTypes.get());
-            else conjunction.setCoherent(false);
+            if (isCoherent) {
+                conjunction.setCoherent(true);
+                Optional<Map<Retrievable, Set<Label>>> inferredTypes = logicCache.typeInference().get(
+                        traversal,
+                        traversal -> traversalEng.combination(traversal, thingInferenceVars()).map(types -> {
+                            HashMap<Retrievable, Set<Label>> labels = new HashMap<>();
+                            types.forEach((id, ts) -> labels.put(id, iterate(ts).map(TypeVertex::properLabel).toSet()));
+                            return labels;
+                        })
+                );
+                if (inferredTypes.isPresent()) applyTypes(inferredTypes.get());
+                else conjunction.setAnswerable(false);
+            } else conjunction.setCoherent(false);
         }
 
         private Set<Identifier.Variable.Retrievable> thingInferenceVars() {
@@ -416,10 +423,6 @@ public class TypeInference {
                 Set<Label> intersection = labels.filter(props.labels()::contains).toSet();
                 props.clearLabels();
                 props.labels(intersection);
-            }
-            if (props.labels().isEmpty()) {
-                conjunction.setCoherent(false);
-                throw TypeDBException.of(UNSATISFIABLE_PATTERN_VARIABLE, conjunction, inferenceToOriginal.get(id.asRetrievable()));
             }
         }
 

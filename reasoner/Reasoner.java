@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concurrent.producer.Producer;
+import com.vaticle.typedb.core.concurrent.producer.Producers;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
@@ -62,6 +63,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSA
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_SUB_PATTERN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.cartesian;
+import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.INCREMENTAL;
@@ -96,29 +98,35 @@ public class Reasoner {
 
     public FunctionalIterator<? extends ConceptMap> execute(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Context.Query context) {
         inferAndValidateTypes(disjunction);
-        FunctionalIterator<? extends ConceptMap> answers;
         Filter filter = Filter.create(modifiers.filter());
         Optional<Sorting> sorting = modifiers.sort().map(Sorting::create);
         sorting.ifPresent(value -> validateSorting(disjunction, value));
-        if (mayReason(disjunction, context)) {
-            answers = executeReasoner(disjunction, filter, context);
+        Disjunction answerableDisjunction = filterUnanswerable(disjunction);
+        FunctionalIterator<? extends ConceptMap> answers;
+        if (answerableDisjunction.conjunctions().isEmpty()) return empty();
+        else if (mayReason(answerableDisjunction, context)) {
+            answers = executeReasoner(answerableDisjunction, filter, context);
             if (sorting.isPresent()) answers = eagerSort(answers, sorting.get());
-        } else if (sorting.isPresent() && isNativelySortable(disjunction, sorting.get())) {
-            answers = executeTraversalSorted(disjunction, filter, sorting.get());
+        } else if (sorting.isPresent() && isNativelySortable(answerableDisjunction, sorting.get())) {
+            answers = executeTraversalSorted(answerableDisjunction, filter, sorting.get());
         } else {
             if (sorting.isPresent()) {
-                answers = executeTraversal(disjunction, context.producer(Either.first(EXHAUSTIVE)), filter);
+                answers = executeTraversal(answerableDisjunction, context.producer(Either.first(EXHAUSTIVE)), filter);
                 answers = eagerSort(answers, sorting.get());
             } else if (modifiers.limit().isPresent()) {
-                answers = executeTraversal(disjunction, context.producer(Either.second(modifiers.offset().orElse(0L) + modifiers.limit().get())), filter);
+                answers = executeTraversal(answerableDisjunction, context.producer(Either.second(modifiers.offset().orElse(0L) + modifiers.limit().get())), filter);
             } else {
-                answers = executeTraversal(disjunction, context.producer(Either.first(INCREMENTAL)), filter);
+                answers = executeTraversal(answerableDisjunction, context.producer(Either.first(INCREMENTAL)), filter);
             }
         }
 
         if (modifiers.offset().isPresent()) answers = answers.offset(modifiers.offset().get());
         if (modifiers.limit().isPresent()) answers = answers.limit(modifiers.limit().get());
         return answers;
+    }
+
+    private Disjunction filterUnanswerable(Disjunction disjunction) {
+        return new Disjunction(iterate(disjunction.conjunctions()).filter(Conjunction::isAnswerable).toList());
     }
 
     private void inferAndValidateTypes(Disjunction disjunction) {
@@ -231,6 +239,8 @@ public class Reasoner {
     }
 
     private Producer<ConceptMap> producer(Conjunction conjunction, Filter filter) {
+        assert conjunction.isCoherent();
+        if (!conjunction.isAnswerable()) return Producers.empty();
         if (conjunction.negations().isEmpty()) {
             return traversalEng.producer(conjunction.traversal(filter), PARALLELISATION_FACTOR)
                     .map(conceptMgr::conceptMap);
@@ -254,7 +264,8 @@ public class Reasoner {
     }
 
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, Filter filter) {
-        if (!conjunction.isCoherent()) return Iterators.empty();
+        assert conjunction.isCoherent();
+        if (!conjunction.isAnswerable()) return empty();
         FunctionalIterator<ConceptMap> answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
         if (conjunction.negations().isEmpty()) return answers;
         else {
