@@ -75,12 +75,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongs;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INCOMPATIBLE_ENCODING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INVALID_DATABASE_DIRECTORIES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
@@ -97,6 +99,8 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Ty
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.serial;
 import static com.vaticle.typedb.core.encoding.Encoding.ENCODING_VERSION;
+import static com.vaticle.typedb.core.encoding.Encoding.ROCKS_DATA;
+import static com.vaticle.typedb.core.encoding.Encoding.ROCKS_SCHEMA;
 import static com.vaticle.typedb.core.encoding.Encoding.System.ENCODING_VERSION_KEY;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -228,6 +232,7 @@ public class CoreDatabase implements TypeDB.Database {
     }
 
     protected void load() {
+        validateDirectories();
         openSchema();
         validateEncodingVersion();
         openData();
@@ -239,6 +244,14 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
         statisticsCorrector.initialiseAndCleanUp();
+    }
+
+    protected void validateDirectories() {
+        boolean dataExists = directory().resolve(Encoding.ROCKS_DATA).toFile().exists();
+        boolean schemaExists = directory().resolve(Encoding.ROCKS_SCHEMA).toFile().exists();
+        if (!schemaExists || !dataExists) {
+            throw TypeDBException.of(INVALID_DATABASE_DIRECTORIES, name(), directory(), list(ROCKS_SCHEMA, ROCKS_DATA));
+        }
     }
 
     protected void openData() {
