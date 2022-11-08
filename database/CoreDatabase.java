@@ -829,7 +829,7 @@ public class CoreDatabase implements TypeDB.Database {
         private final LogicCache logicCache;
         private final TypeGraph typeGraph;
         private final RocksStorage schemaStorage;
-        private final AtomicLong DBStatisticsVersion;
+        private final AtomicLong statisticsVersion;
         private long borrowerCount;
         private boolean invalidated;
 
@@ -840,7 +840,7 @@ public class CoreDatabase implements TypeDB.Database {
             logicCache = new LogicCache();
             borrowerCount = 0L;
             invalidated = false;
-            DBStatisticsVersion = new AtomicLong(0);
+            statisticsVersion = new AtomicLong(0);
         }
 
         public TraversalCache traversal() {
@@ -875,12 +875,12 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        AtomicLong getDBStatisticsVersion() {
-            return DBStatisticsVersion;
+        AtomicLong statisticsVersion() {
+            return statisticsVersion;
         }
 
         void incrementStatisticsVersion() {
-            DBStatisticsVersion.incrementAndGet();
+            statisticsVersion.incrementAndGet();
         }
 
         private void close() {

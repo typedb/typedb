@@ -281,7 +281,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
             this.cache = session.database().cacheBorrow();
             this.dataStorage = storageFactory.storageData(session.database(), this);
-            ThingGraph.Statistics statistics = new ThingGraph.Statistics(cache.typeGraph(), dataStorage, cache.getDBStatisticsVersion());
+            ThingGraph.Statistics statistics = new ThingGraph.Statistics(cache.typeGraph(), dataStorage, cache.statisticsVersion());
             ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph(), statistics);
             this.graphMgr = new GraphManager(cache.typeGraph(), thingGraph);
 
