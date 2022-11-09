@@ -22,7 +22,6 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
@@ -59,8 +58,8 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_SUB_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INCOHERENT_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INCOHERENT_SUB_PATTERN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.cartesian;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
@@ -134,9 +133,9 @@ public class Reasoner {
         if (!disjunction.isCoherent()) {
             Set<Conjunction> causes = incoherentConjunctions(disjunction);
             if (set(disjunction.conjunctions()).equals(causes)) {
-                throw TypeDBException.of(UNSATISFIABLE_PATTERN, disjunction);
+                throw TypeDBException.of(INCOHERENT_PATTERN, disjunction);
             } else {
-                throw TypeDBException.of(UNSATISFIABLE_SUB_PATTERN, disjunction, causes);
+                throw TypeDBException.of(INCOHERENT_SUB_PATTERN, disjunction, causes);
             }
         }
     }

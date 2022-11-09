@@ -61,8 +61,8 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_PATTERN_VARIABLE_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNSATISFIABLE_SUB_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INCOHERENT_PATTERN_VARIABLE_VALUE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INCOHERENT_SUB_PATTERN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -363,7 +363,7 @@ public class TypeInference {
             TypeVertex type = graphMgr.schema().convert(VertexIID.Thing.of(constraint.iid()).type());
             if (type == null) {
                 conjunction.setCoherent(false);
-                throw TypeDBException.of(UNSATISFIABLE_SUB_PATTERN, conjunction, constraint);
+                throw TypeDBException.of(INCOHERENT_SUB_PATTERN, conjunction, constraint);
             }
             restrictTypes(resolver.id(), iterate(type).map(TypeVertex::properLabel));
         }
@@ -436,7 +436,7 @@ public class TypeInference {
             }
             if (props.valueTypes().isEmpty()) {
                 conjunction.setCoherent(false);
-                throw TypeDBException.of(UNSATISFIABLE_PATTERN_VARIABLE_VALUE, conjunction, inferenceToOriginal.get(id.asRetrievable()));
+                throw TypeDBException.of(INCOHERENT_PATTERN_VARIABLE_VALUE, conjunction, inferenceToOriginal.get(id.asRetrievable()));
             }
         }
 

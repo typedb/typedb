@@ -64,11 +64,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_CONCLUSION_ILLEGAL_INSERT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_HAVE_ANSWERS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INCOHERENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_UNANSWERABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_HAVE_ANSWERS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_UNANSWERABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_INCOHERENT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COLON;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_CLOSE;
@@ -173,10 +173,10 @@ public class Rule {
     }
 
     private void validateSatisfiable() {
-        if (!when.isCoherent()) throw TypeDBException.of(RULE_WHEN_CANNOT_BE_SATISFIED, structure.label(), when);
-        if (!when.isAnswerable()) throw TypeDBException.of(RULE_WHEN_CANNOT_HAVE_ANSWERS, structure.label(), when);
-        if (!then.isCoherent()) throw TypeDBException.of(RULE_THEN_CANNOT_BE_SATISFIED, structure.label(), then);
-        if (!then.isAnswerable()) throw TypeDBException.of(RULE_THEN_CANNOT_HAVE_ANSWERS, structure.label(), then);
+        if (!when.isCoherent()) throw TypeDBException.of(RULE_WHEN_INCOHERENT, structure.label(), when);
+        if (!when.isAnswerable()) throw TypeDBException.of(RULE_WHEN_UNANSWERABLE, structure.label(), when);
+        if (!then.isCoherent()) throw TypeDBException.of(RULE_THEN_INCOHERENT, structure.label(), then);
+        if (!then.isAnswerable()) throw TypeDBException.of(RULE_THEN_UNANSWERABLE, structure.label(), then);
     }
 
     /**
