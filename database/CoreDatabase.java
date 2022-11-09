@@ -650,7 +650,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         CompletableFuture<Void> submitCorrection() {
             CompletableFuture<Void> correction = CompletableFuture.runAsync(() -> {
-                if (correctionRequired.compareAndSet(true, false)) this.correctMiscounts();
+                if (correctionRequired.compareAndSet(true, false)) correctMiscounts();
             }, serial());
             corrections.add(correction);
             correction.thenRun(() -> corrections.remove(correction));
@@ -673,13 +673,12 @@ public class CoreDatabase implements TypeDB.Database {
          * and correct them if we have enough information to do so.
          */
         protected void correctMiscounts() {
-            // note: take copy before open a snapshotted transaction
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
-                correctMiscounts(txn);
+                if (mayCorrectMiscounts(txn)) cache.incrementStatisticsVersion();
             }
         }
 
-        protected void correctMiscounts(CoreTransaction.Data txn) {
+        protected boolean mayCorrectMiscounts(CoreTransaction.Data txn) {
             Set<Long> deletableTxnIDs = new HashSet<>(deletedTxnIDs);
             boolean[] modified = new boolean[]{false};
             boolean[] miscountCorrected = new boolean[]{false};
@@ -708,10 +707,8 @@ public class CoreDatabase implements TypeDB.Database {
                 deletedTxnIDs.removeAll(deletableTxnIDs);
                 modified[0] = true;
             }
-            if (modified[0]) {
-                if (miscountCorrected[0]) txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
-                txn.commit();
-            }
+            if (modified[0]) txn.commit();
+            return miscountCorrected[0];
         }
 
         private void correctMiscount(StatisticsKey.Miscountable miscount, CoreTransaction.Data txn) {
@@ -835,6 +832,7 @@ public class CoreDatabase implements TypeDB.Database {
         private final LogicCache logicCache;
         private final TypeGraph typeGraph;
         private final RocksStorage schemaStorage;
+        private final AtomicLong statisticsVersion;
         private long borrowerCount;
         private boolean invalidated;
 
@@ -845,6 +843,7 @@ public class CoreDatabase implements TypeDB.Database {
             logicCache = new LogicCache();
             borrowerCount = 0L;
             invalidated = false;
+            statisticsVersion = new AtomicLong(0);
         }
 
         public TraversalCache traversal() {
@@ -877,6 +876,14 @@ public class CoreDatabase implements TypeDB.Database {
             if (borrowerCount == 0 && invalidated) {
                 schemaStorage.close();
             }
+        }
+
+        AtomicLong statisticsVersion() {
+            return statisticsVersion;
+        }
+
+        void incrementStatisticsVersion() {
+            statisticsVersion.incrementAndGet();
         }
 
         private void close() {
