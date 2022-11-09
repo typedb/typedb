@@ -653,7 +653,11 @@ public class CoreDatabase implements TypeDB.Database {
                 if (correctionRequired.compareAndSet(true, false)) correctMiscounts();
             }, serial());
             corrections.add(correction);
-            correction.thenRun(() -> corrections.remove(correction));
+            correction.exceptionally(exception -> {
+                LOG.debug("StatisticsCorrection task failed with exception: " + exception.toString());
+                return null;
+            }).thenRun(() -> corrections.remove(correction));
+
             return correction;
         }
 
