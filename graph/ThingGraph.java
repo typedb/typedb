@@ -49,6 +49,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -89,14 +90,14 @@ public class ThingGraph {
     private final ConcurrentSet<ThingEdge> hasEdgeDeleted;
     private boolean isModified;
 
-    public ThingGraph(Storage.Data storage, TypeGraph typeGraph) {
+    public ThingGraph(Storage.Data storage, TypeGraph typeGraph, Statistics statistics) {
         this.storage = storage;
         this.typeGraph = typeGraph;
+        this.statistics = statistics;
         keyGenerator = new KeyGenerator.Data.Buffered();
         thingsByIID = new ConcurrentHashMap<>();
         attributesByIID = new AttributesByIID();
         thingsByTypeIID = new ConcurrentHashMap<>();
-        statistics = new Statistics(typeGraph, storage);
         committedIIDs = new HashMap<>();
         attributesCreated = new ConcurrentSet<>();
         attributesDeleted = new ConcurrentSet<>();
@@ -608,9 +609,11 @@ public class ThingGraph {
 
         private final TypeGraph typeGraph;
         private final Storage.Data storage;
-        private final long snapshot;
+        private final AtomicLong DBStatisticsVersion;
 
-        Statistics(TypeGraph typeGraph, Storage.Data storage) {
+        private boolean statisticsPersisted;
+
+        public Statistics(TypeGraph typeGraph, Storage.Data storage, AtomicLong DBStatisticsVersion) {
             persistedVertexCount = new ConcurrentHashMap<>();
             deltaVertexCount = new ConcurrentHashMap<>();
             inferredVertexCount = new ConcurrentHashMap<>();
@@ -618,13 +621,20 @@ public class ThingGraph {
             deltaHasEdgeCount = new ConcurrentHashMap<>();
             inferredHasEdgeCount = new ConcurrentHashMap<>();
 
-            snapshot = bytesToLongOrZero(storage.get(StatisticsKey.snapshot()));
             this.typeGraph = typeGraph;
             this.storage = storage;
+            this.DBStatisticsVersion = DBStatisticsVersion;
+
+            statisticsPersisted = false;
         }
 
-        public long snapshot() {
-            return snapshot;
+        /**
+         * Get the latest committed statistics version, across all transactions (is not snapshot-bound)
+         * NB: persisting a statistics version number in RocksDB that is stored per snapshot & read in every transaction
+         *     ends up being a performance bottleneck during heavy writes.
+         */
+        public long getDBStatisticsVersion() {
+            return DBStatisticsVersion.get();
         }
 
         public long thingVertexSum(Set<Label> labels) {
@@ -751,9 +761,11 @@ public class ThingGraph {
             deltaHasEdgeCount.forEach((ownership, delta) ->
                     storage.mergeUntracked(StatisticsKey.hasEdgeCount(ownership.first(), ownership.second()), encodeLong(delta))
             );
-            if (!deltaVertexCount.isEmpty() || !deltaHasEdgeCount.isEmpty()) {
-                storage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
-            }
+            if (!deltaVertexCount.isEmpty() || !deltaHasEdgeCount.isEmpty()) statisticsPersisted = true;
+        }
+
+        public boolean statisticsPersisted() {
+            return statisticsPersisted;
         }
 
         private void clear() {

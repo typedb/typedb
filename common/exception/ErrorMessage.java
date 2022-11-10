@@ -153,25 +153,27 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
     }
 
     public static class Database extends ErrorMessage {
+        public static final Database INVALID_DATABASE_DIRECTORIES =
+                new Database(1, "Database '%s' (located at: %s) does not contain required directories '%s'.");
         public static final Database INCOMPATIBLE_ENCODING =
-                new Database(1, "Database '%s' (located at: %s) has incompatible data version '%d' - this server supports " +
+                new Database(2, "Database '%s' (located at: %s) has incompatible data version '%d' - this server supports " +
                         "version '%d'. Please reload or migrate your data.");
         public static final Database DATABASE_MANAGER_CLOSED =
-                new Database(2, "Attempted to use database manager when it has been closed.");
+                new Database(3, "Attempted to use database manager when it has been closed.");
         public static final Database DATABASE_EXISTS =
-                new Database(3, "The database with the name '%s' already exists.");
+                new Database(4, "The database with the name '%s' already exists.");
         public static final Database DATABASE_NOT_FOUND =
-                new Database(4, "The database with the name '%s' does not exist.");
+                new Database(5, "The database with the name '%s' does not exist.");
         public static final Database DATABASE_DELETED =
-                new Database(5, "Database with the name '%s' has been deleted.");
+                new Database(6, "Database with the name '%s' has been deleted.");
         public static final Database DATABASE_CLOSED =
-                new Database(6, "Attempted to open a new session from the database '%s' that has been closed.");
+                new Database(7, "Attempted to open a new session from the database '%s' that has been closed.");
         public static final Database DATABASE_NAME_RESERVED =
-                new Database(7, "Database name must not start with an underscore.");
+                new Database(8, "Database name must not start with an underscore.");
         public static final Database ROCKS_LOGGER_SHUTDOWN_TIMEOUT =
-                new Database(8, "Background RocksDB properties logger shutdown timed out.");
+                new Database(9, "Background RocksDB properties logger shutdown timed out.");
         public static final Database STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT =
-                new Database(9, "Background statistics corrector shutdowne timed out.");
+                new Database(10, "Background statistics corrector shutdowne timed out.");
 
         private static final String codePrefix = "DBS";
         private static final String messagePrefix = "Invalid Database Operation";
@@ -277,14 +279,12 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Pattern(14, "Tye type variable '%s' has multiple 'value' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_REGEX =
                 new Pattern(15, "The type variable '%s' has multiple 'regex' constraints.");
-        public static final Pattern UNSATISFIABLE_PATTERN =
-                new Pattern(16, "The pattern '%s' can never be satisfied in the current schema.");
-        public static final Pattern UNSATISFIABLE_SUB_PATTERN =
-                new Pattern(17, "The pattern '%s' can never be satisfied in the current schema, due to '%s'.");
-        public static final Pattern UNSATISFIABLE_PATTERN_VARIABLE =
-                new Pattern(18, "The pattern '%s' can never be satisfied in the current schema, due to contradicting types for '%s'.");
-        public static final Pattern UNSATISFIABLE_PATTERN_VARIABLE_VALUE =
-                new Pattern(19, "The pattern '%s' can never be satisfied in the current schema, due to contradicting attribute value types for '%s'.");
+        public static final Pattern INCOHERENT_PATTERN =
+                new Pattern(16, "The pattern '%s' is illegal in the current schema.");
+        public static final Pattern INCOHERENT_SUB_PATTERN =
+                new Pattern(17, "The pattern '%s' is illegal in the current schema, due to '%s'.");
+        public static final Pattern INCOHERENT_PATTERN_VARIABLE_VALUE =
+                new Pattern(18, "The pattern '%s' is illegal in the current schema, due to contradicting attribute value types for '%s'.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";
@@ -573,14 +573,18 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new RuleWrite(3, "The rule '%s' contains a negation containing a disjunction, which is currently unsupported");
         public static final RuleWrite RULE_CONCLUSION_ILLEGAL_INSERT =
                 new RuleWrite(4, "The conclusion of rule '%s' may insert types '%s', which is not allowed in the current schema.");
-        public static final RuleWrite RULE_WHEN_CANNOT_BE_SATISFIED =
-                new RuleWrite(5, "The rule '%s' has a when clause '%s' that can never be satisfied in the current schema.");
-        public static final RuleWrite RULE_THEN_CANNOT_BE_SATISFIED =
-                new RuleWrite(6, "The rule '%s' has a then clause '%s' that can never be satisfied in the current schema.");
+        public static final RuleWrite RULE_WHEN_INCOHERENT =
+                new RuleWrite(5, "The rule '%s' has a when clause '%s' that is illegal in the current schema.");
+        public static final RuleWrite RULE_WHEN_UNANSWERABLE =
+                new RuleWrite(6, "The rule '%s' has a when clause '%s' that can never have answers in the current schema.");
+        public static final RuleWrite RULE_THEN_INCOHERENT =
+                new RuleWrite(7, "The rule '%s' has a then clause '%s' that can never be satisfied in the current schema.");
+        public static final RuleWrite RULE_THEN_UNANSWERABLE =
+                new RuleWrite(8, "The rule '%s' has a then clause '%s' that can never have answers in the current schema.");
         public static final RuleWrite RULE_THEN_INVALID_VALUE_ASSIGNMENT =
-                new RuleWrite(7, "The rule '%s' has a then clause with an invalid assignment of '%s' into a '%s'.");
+                new RuleWrite(9, "The rule '%s' has a then clause with an invalid assignment of '%s' into a '%s'.");
         public static final RuleWrite MAX_RULE_REACHED =
-                new RuleWrite(8, "The maximum number of rules has been reached: '%s'");
+                new RuleWrite(10, "The maximum number of rules has been reached: '%s'");
 
         private static final String codePrefix = "RUW";
         private static final String messagePrefix = "Invalid Rule Write";

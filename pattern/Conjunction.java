@@ -76,7 +76,7 @@ public class Conjunction implements Pattern, Cloneable {
     private final int hash;
 
     private boolean isCoherent;
-    private boolean isBounded;
+    private boolean isAnswerable;
     private Set<Identifier.Variable.Retrievable> retrieves;
 
     public Conjunction(Set<Variable> variables, List<Negation> negations) {
@@ -85,7 +85,7 @@ public class Conjunction implements Pattern, Cloneable {
         this.negations = unmodifiableList(negations);
         this.hash = Objects.hash(variables, negations);
         this.isCoherent = true;
-        this.isBounded = false;
+        this.isAnswerable = true;
     }
 
     private Map<Identifier.Variable, Variable> parseToMap(Set<Variable> variables) {
@@ -126,7 +126,7 @@ public class Conjunction implements Pattern, Cloneable {
                 else if (var.isType()) {
                     Optional<LabelConstraint> existingLabel = var.asType().label();
                     if (existingLabel.isPresent() && !existingLabel.get().properLabel().equals(boundVar.first())) {
-                        this.setCoherent(false);
+                        this.setAnswerable(false);
                     } else if (!existingLabel.isPresent()) {
                         var.asType().label(boundVar.first());
                         var.asType().setInferredTypes(set(boundVar.first()));
@@ -134,14 +134,13 @@ public class Conjunction implements Pattern, Cloneable {
                 } else if (var.isThing()) {
                     Optional<IIDConstraint> existingIID = var.asThing().iid();
                     if (existingIID.isPresent() && !existingIID.get().iid().equals(boundVar.second())) {
-                        this.setCoherent(false);
+                        this.setAnswerable(false);
                     } else {
                         var.asThing().iid(boundVar.second());
                     }
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             }
         });
-        isBounded = true;
     }
 
     public Variable variable(Identifier.Variable identifier) {
@@ -199,6 +198,14 @@ public class Conjunction implements Pattern, Cloneable {
 
     public boolean isCoherent() {
         return isCoherent && iterate(negations).allMatch(Negation::isCoherent);
+    }
+
+    public void setAnswerable(boolean isAnswerable) {
+        this.isAnswerable = isAnswerable;
+    }
+
+    public boolean isAnswerable() {
+        return isAnswerable;
     }
 
     @Override

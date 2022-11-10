@@ -56,8 +56,8 @@ import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_CANNOT_BE_SATISFIED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_CANNOT_BE_SATISFIED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INCOHERENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_INCOHERENT;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.test.Util.assertNotThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
@@ -660,7 +660,7 @@ public class RuleTest {
                             "dogs-are-named-fido",
                             TypeQL.parsePattern("{$x isa dog;}").asConjunction(),
                             then
-                    ), RULE_THEN_CANNOT_BE_SATISFIED.code());
+                    ), RULE_THEN_INCOHERENT.code());
                 }
             }
         }
@@ -686,7 +686,7 @@ public class RuleTest {
                             "two-unique-dogs-exist-called-fido",
                             TypeQL.parsePattern("{$x isa dog; $y isa dog; $x != $y;}").asConjunction(),
                             TypeQL.parseVariable("$x has name 'fido'").asThing()
-                    ), RULE_WHEN_CANNOT_BE_SATISFIED.code());
+                    ), RULE_WHEN_INCOHERENT.code());
                 }
             }
         }

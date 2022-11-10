@@ -75,12 +75,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongs;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INCOMPATIBLE_ENCODING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INVALID_DATABASE_DIRECTORIES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
@@ -97,6 +99,8 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Ty
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.serial;
 import static com.vaticle.typedb.core.encoding.Encoding.ENCODING_VERSION;
+import static com.vaticle.typedb.core.encoding.Encoding.ROCKS_DATA;
+import static com.vaticle.typedb.core.encoding.Encoding.ROCKS_SCHEMA;
 import static com.vaticle.typedb.core.encoding.Encoding.System.ENCODING_VERSION_KEY;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -228,6 +232,7 @@ public class CoreDatabase implements TypeDB.Database {
     }
 
     protected void load() {
+        validateDirectories();
         openSchema();
         validateEncodingVersion();
         openData();
@@ -239,6 +244,14 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
         statisticsCorrector.initialiseAndCleanUp();
+    }
+
+    protected void validateDirectories() {
+        boolean dataExists = directory().resolve(Encoding.ROCKS_DATA).toFile().exists();
+        boolean schemaExists = directory().resolve(Encoding.ROCKS_SCHEMA).toFile().exists();
+        if (!schemaExists || !dataExists) {
+            throw TypeDBException.of(INVALID_DATABASE_DIRECTORIES, name(), directory(), list(ROCKS_SCHEMA, ROCKS_DATA));
+        }
     }
 
     protected void openData() {
@@ -291,7 +304,7 @@ public class CoreDatabase implements TypeDB.Database {
             );
             int encoding = encodingBytes == null || encodingBytes.length == 0 ? 0 : ByteArray.of(encodingBytes).decodeInt();
             if (encoding != ENCODING_VERSION) {
-                throw TypeDBException.of(INCOMPATIBLE_ENCODING,  name(), directory().toAbsolutePath(), encoding, ENCODING_VERSION);
+                throw TypeDBException.of(INCOMPATIBLE_ENCODING, name(), directory().toAbsolutePath(), encoding, ENCODING_VERSION);
             }
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
@@ -547,12 +560,15 @@ public class CoreDatabase implements TypeDB.Database {
                 ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> deletable;
                 if (oldestUncommittedSnapshot.isEmpty()) deletable = commitTimeline;
                 else deletable = commitTimeline.headMap(oldestUncommittedSnapshot.get());
-                iterate(deletable.values()).flatMap(Iterators::iterate)
-                        .forEachRemaining(txn -> {
-                            txn.delete();
-                            commitStates.remove(txn);
-                        });
-                deletable.clear();
+                deletable.keySet().forEach(snapshot ->
+                        deletable.computeIfPresent(snapshot, (s, txns) -> {
+                            for (CoreTransaction.Data txn : txns) {
+                                txn.delete();
+                                commitStates.remove(txn);
+                            }
+                            return null;
+                        })
+                );
                 cleanupRunning.set(false);
             }
         }
@@ -634,10 +650,14 @@ public class CoreDatabase implements TypeDB.Database {
 
         CompletableFuture<Void> submitCorrection() {
             CompletableFuture<Void> correction = CompletableFuture.runAsync(() -> {
-                if (correctionRequired.compareAndSet(true, false)) this.correctMiscounts();
+                if (correctionRequired.compareAndSet(true, false)) correctMiscounts();
             }, serial());
             corrections.add(correction);
-            correction.thenRun(() -> corrections.remove(correction));
+            correction.exceptionally(exception -> {
+                LOG.debug("StatisticsCorrection task failed with exception: " + exception.toString());
+                return null;
+            }).thenRun(() -> corrections.remove(correction));
+
             return correction;
         }
 
@@ -657,13 +677,12 @@ public class CoreDatabase implements TypeDB.Database {
          * and correct them if we have enough information to do so.
          */
         protected void correctMiscounts() {
-            // note: take copy before open a snapshotted transaction
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
-                correctMiscounts(txn);
+                if (mayCorrectMiscounts(txn)) cache.incrementStatisticsVersion();
             }
         }
 
-        protected void correctMiscounts(CoreTransaction.Data txn) {
+        protected boolean mayCorrectMiscounts(CoreTransaction.Data txn) {
             Set<Long> deletableTxnIDs = new HashSet<>(deletedTxnIDs);
             boolean[] modified = new boolean[]{false};
             boolean[] miscountCorrected = new boolean[]{false};
@@ -692,10 +711,8 @@ public class CoreDatabase implements TypeDB.Database {
                 deletedTxnIDs.removeAll(deletableTxnIDs);
                 modified[0] = true;
             }
-            if (modified[0]) {
-                if (miscountCorrected[0]) txn.dataStorage.mergeUntracked(StatisticsKey.snapshot(), encodeLong(1));
-                txn.commit();
-            }
+            if (modified[0]) txn.commit();
+            return miscountCorrected[0];
         }
 
         private void correctMiscount(StatisticsKey.Miscountable miscount, CoreTransaction.Data txn) {
@@ -819,6 +836,7 @@ public class CoreDatabase implements TypeDB.Database {
         private final LogicCache logicCache;
         private final TypeGraph typeGraph;
         private final RocksStorage schemaStorage;
+        private final AtomicLong statisticsVersion;
         private long borrowerCount;
         private boolean invalidated;
 
@@ -829,6 +847,7 @@ public class CoreDatabase implements TypeDB.Database {
             logicCache = new LogicCache();
             borrowerCount = 0L;
             invalidated = false;
+            statisticsVersion = new AtomicLong(0);
         }
 
         public TraversalCache traversal() {
@@ -861,6 +880,14 @@ public class CoreDatabase implements TypeDB.Database {
             if (borrowerCount == 0 && invalidated) {
                 schemaStorage.close();
             }
+        }
+
+        AtomicLong statisticsVersion() {
+            return statisticsVersion;
+        }
+
+        void incrementStatisticsVersion() {
+            statisticsVersion.incrementAndGet();
         }
 
         private void close() {

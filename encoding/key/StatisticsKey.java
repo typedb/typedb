@@ -63,10 +63,6 @@ public class StatisticsKey implements Key {
         ));
     }
 
-    public static StatisticsKey snapshot() {
-        return new StatisticsKey(Statistics.Prefix.SNAPSHOT.bytes());
-    }
-
     public static StatisticsKey txnCommitted(long txnID) {
         return new StatisticsKey(join(
                 Statistics.Prefix.TXN_COMMITTED_ID.bytes(),

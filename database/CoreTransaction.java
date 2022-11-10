@@ -41,6 +41,7 @@ import org.rocksdb.RocksDBException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -170,7 +171,8 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
             TypeGraph typeGraph = new TypeGraph(schemaStorage, type().isRead());
 
             dataStorage = storageFactory.storageData(session.database(), this);
-            ThingGraph thingGraph = new ThingGraph(dataStorage, typeGraph);
+            ThingGraph.Statistics statistics = new ThingGraph.Statistics(typeGraph, dataStorage, new AtomicLong(0));
+            ThingGraph thingGraph = new ThingGraph(dataStorage, typeGraph, statistics);
 
             graphMgr = new GraphManager(typeGraph, thingGraph);
             initialise(graphMgr, new TraversalCache(), new LogicCache());
@@ -279,7 +281,8 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
             this.cache = session.database().cacheBorrow();
             this.dataStorage = storageFactory.storageData(session.database(), this);
-            ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph());
+            ThingGraph.Statistics statistics = new ThingGraph.Statistics(cache.typeGraph(), dataStorage, cache.statisticsVersion());
+            ThingGraph thingGraph = new ThingGraph(dataStorage, cache.typeGraph(), statistics);
             this.graphMgr = new GraphManager(cache.typeGraph(), thingGraph);
 
             if (type().isWrite()) session.database().isolationMgr().opened(this);
@@ -328,6 +331,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     dataStorage.commit();
                     session.database().isolationMgr().committed(this);
                     session.database().statisticsCorrector().committed(this);
+                    if (graphMgr.data().stats().statisticsPersisted()) cache.incrementStatisticsVersion();
                 } catch (TypeDBException e) {
                     delete();
                     throw e;
