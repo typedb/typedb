@@ -75,7 +75,11 @@ artifact_repackage(
 
 assemble_targz(
     name = "assemble-linux-targz",
-    targets = ["//server:server-deps-linux", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = [
+        ":console-artifact-jars",
+        "//server:server-deps-linux",
+        "@vaticle_typedb_common//binary:assemble-bash-targz"
+    ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
@@ -217,25 +221,25 @@ docker_container_image(
 )
 
 docker_container_push(
-    name = "deploy-docker-latest",
+    name = "deploy-docker-release-overwrite-latest-tag",
     image = ":assemble-docker",
     format = "Docker",
-    registry = deployment_docker["docker.release"],
+    registry = deployment_docker["docker.index"],
     repository = "{}/{}".format(
         deployment_docker["docker.organisation"],
-        deployment_docker["docker.repository"],
+        deployment_docker["docker.release.repository"],
     ),
     tag = "latest"
 )
 
 docker_container_push(
-    name = "deploy-docker-versioned",
+    name = "deploy-docker-release",
     image = ":assemble-docker",
     format = "Docker",
-    registry = deployment_docker["docker.release"],
+    registry = deployment_docker["docker.index"],
     repository = "{}/{}".format(
         deployment_docker["docker.organisation"],
-        deployment_docker["docker.repository"],
+        deployment_docker["docker.release..repository"],
     ),
     tag_file = ":VERSION",
 )
