@@ -239,7 +239,7 @@ docker_container_push(
     registry = deployment_docker["docker.index"],
     repository = "{}/{}".format(
         deployment_docker["docker.organisation"],
-        deployment_docker["docker.release..repository"],
+        deployment_docker["docker.release.repository"],
     ),
     tag_file = ":VERSION",
 )
