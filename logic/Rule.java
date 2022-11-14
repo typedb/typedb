@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.logic;
 
 import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
@@ -63,13 +64,13 @@ import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_CONCLUSION_ILLEGAL_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INCOHERENT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_UNANSWERABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_UNANSWERABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_UNANSWERABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_INCOHERENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_UNANSWERABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_UNANSWERABLE_BRANCH;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COLON;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_CLOSE;
@@ -175,7 +176,12 @@ public class Rule {
 
     private void validateSatisfiable() {
         if (!when.isCoherent()) throw TypeDBException.of(RULE_WHEN_INCOHERENT, structure.label(), when);
-        if (!when.isAnswerable()) throw TypeDBException.of(RULE_WHEN_UNANSWERABLE, structure.label(), when);
+        for (Conjunction whenBranch : when.conjunctions()) {
+            if (!whenBranch.isAnswerable()) {
+                ErrorMessage errorMessage = when.conjunctions().size() > 1 ? RULE_WHEN_UNANSWERABLE_BRANCH : RULE_WHEN_UNANSWERABLE;
+                throw TypeDBException.of(errorMessage, structure.label(), whenBranch);
+            }
+        }
         if (!then.isCoherent()) throw TypeDBException.of(RULE_THEN_INCOHERENT, structure.label(), then);
         if (!then.isAnswerable()) throw TypeDBException.of(RULE_THEN_UNANSWERABLE, structure.label(), then);
     }
@@ -187,7 +193,7 @@ public class Rule {
         then.variables().stream().filter(variable -> variable.id().isName())
                 .forEach(thenVar -> {
                     Set<Label> whenVarInferredTypes = iterate(when.conjunctions()).flatMap(conj -> iterate(conj.variable(thenVar.id()).inferredTypes())).toSet();
-                        thenVar.retainInferredTypes(whenVarInferredTypes);
+                    thenVar.retainInferredTypes(whenVarInferredTypes);
                     if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
                 });
     }
