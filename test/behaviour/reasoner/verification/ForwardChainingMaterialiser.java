@@ -209,7 +209,7 @@ public class ForwardChainingMaterialiser {
             // Get all the places where the rule condition is satisfied and materialise for each
             requiresReiteration = false;
             iterate(rule.condition().branches()).forEachRemaining(condition -> {
-                traverse(condition.pattern()).forEachRemaining(conditionAns -> materialiseAndBind(
+                traverse(condition.conjunction().pattern()).forEachRemaining(conditionAns -> materialiseAndBind(
                         rule.conclusion(), conditionAns, tx.traversal(), tx.concepts()
                 ).ifPresent(materialisation -> record(condition, conditionAns, materialisation)));
             });

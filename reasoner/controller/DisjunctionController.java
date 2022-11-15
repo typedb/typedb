@@ -45,7 +45,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.controller.ConjunctionController.merge;
 
-public abstract class DisjunctionController<OUTPUT,
+public abstract class DisjunctionController<
+        OUTPUT,
         PROCESSOR extends DisjunctionController.Processor<OUTPUT, PROCESSOR>,
         CONTROLLER extends DisjunctionController<OUTPUT, PROCESSOR, CONTROLLER>
         > extends AbstractController<ConceptMap, ConceptMap, OUTPUT, Request, PROCESSOR, CONTROLLER> {

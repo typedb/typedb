@@ -253,7 +253,7 @@ public class BoundPattern {
         }
 
         static BoundCondition create(Rule.Condition.ConditionBranch conditionBranch, ConceptMap conditionAnswer) {
-            return new BoundCondition(BoundConjunction.create(conditionBranch.pattern(), conditionAnswer), conditionBranch);
+            return new BoundCondition(BoundConjunction.create(conditionBranch.conjunction().pattern(), conditionAnswer), conditionBranch);
         }
 
         BoundConjunction conjunction() {

@@ -42,14 +42,15 @@ public class Disjunction implements Pattern, Cloneable {
     private static final String TRACE_PREFIX = "disjunction.";
     private final List<Conjunction> conjunctions;
     private final int hash;
-    private Set<Identifier.Variable.Retrievable> allBranchesRetrieve;
+    private final Set<Identifier.Variable.Retrievable> retrieves;
 
     public Disjunction(List<Conjunction> conjunctions) {
         this.conjunctions = conjunctions;
         this.hash = Objects.hash(conjunctions);
-        this.allBranchesRetrieve = iterate(conjunctions)
+        this.retrieves = iterate(conjunctions)
                 .flatMap(conjunction -> iterate(conjunction.retrieves()))
-                .filter(id -> iterate(conjunctions).allMatch(conjunction -> conjunction.retrieves().contains(id))).toSet();
+                .filter(id -> iterate(conjunctions).allMatch(conjunction -> conjunction.retrieves().contains(id)))
+                .toSet();
     }
 
     public static Disjunction create(
@@ -73,6 +74,10 @@ public class Disjunction implements Pattern, Cloneable {
 
     public boolean isCoherent() {
         return iterate(conjunctions).allMatch(Conjunction::isCoherent);
+    }
+
+    public Set<Identifier.Variable.Retrievable> retrieves() {
+        return retrieves;
     }
 
     @Override
@@ -101,9 +106,5 @@ public class Disjunction implements Pattern, Cloneable {
     @Override
     public int hashCode() {
         return hash;
-    }
-
-    public Set<Identifier.Variable.Retrievable> allBranchesRetrieve() {
-        return allBranchesRetrieve;
     }
 }

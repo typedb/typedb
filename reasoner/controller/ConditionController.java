@@ -49,7 +49,7 @@ public class ConditionController extends DisjunctionController<
                                                           ConceptMap bounds) {
         return new Processor(
                 processorDriver, driver(), processorContext(), disjunction, bounds,
-                () -> Processor.class.getSimpleName() + "(pattern: " + condition.pattern() + ", bounds: " + bounds + ")"
+                () -> Processor.class.getSimpleName() + "(pattern: " + condition.disjunction().pattern() + ", bounds: " + bounds + ")"
         );
     }
 

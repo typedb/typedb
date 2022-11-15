@@ -98,7 +98,7 @@ public class Rule {
         this.when = whenPattern(structure.when(), structure.then(), logicMgr);
         pruneThenResolvedTypes();
         this.conclusion = Conclusion.create(this);
-        this.condition = Condition.create(this, ResolvableDisjunction.of(this.when));
+        this.condition = Condition.create(this);
     }
 
     public static Rule of(LogicManager logicMgr, RuleStructure structure) {
@@ -222,23 +222,18 @@ public class Rule {
         private final ResolvableDisjunction disjunction;
         private final Set<ConditionBranch> branches;
 
-        public Condition(Rule rule, ResolvableDisjunction disjunction) {
+        public Condition(Rule rule) {
             this.rule = rule;
-            this.disjunction = disjunction;
-            this.branches = new HashSet<>();
-            disjunction.conjunctions().forEach(conjunction -> this.branches.add(new ConditionBranch(rule, conjunction)));
+            this.disjunction = ResolvableDisjunction.of(rule.when);
+            this.branches = iterate(disjunction.conjunctions()).map(c -> new ConditionBranch(rule, c)).toSet();
+        }
+
+        public static Condition create(Rule rule) {
+            return new Condition(rule);
         }
 
         public Set<ConditionBranch> branches() {
             return branches;
-        }
-
-        public static Condition create(Rule rule, ResolvableDisjunction disjunction) {
-            return new Condition(rule, disjunction);
-        }
-
-        public Disjunction pattern() {
-            return disjunction.pattern();
         }
 
         public ResolvableDisjunction disjunction() {
@@ -249,14 +244,34 @@ public class Rule {
             return rule;
         }
 
+        @Override
+        public String toString() {
+            return "Rule[" + rule.getLabel() + "] Condition: " + disjunction.pattern();
+        }
+
+        @Override
+        public int hashCode() {
+            return rule.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            final Condition that = (Condition) o;
+            return rule.equals(that.rule);
+        }
+
         public static class ConditionBranch {
 
             private final Rule rule;
             private final ResolvableConjunction conjunction;
+            private final int hash;
 
             ConditionBranch(Rule rule, ResolvableConjunction conjunction) {
                 this.rule = rule;
                 this.conjunction = conjunction;
+                this.hash = Objects.hash(rule, conjunction);
             }
 
             public Rule rule() {
@@ -267,13 +282,13 @@ public class Rule {
                 return conjunction;
             }
 
-            public Conjunction pattern() {
-                return conjunction.pattern();
+            @Override
+            public String toString() {
+                return "Rule[" + rule.getLabel() + "] ConditionBranch: " + conjunction.pattern();
             }
 
             @Override
             public boolean equals(Object o) {
-                // assert false;
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 final ConditionBranch that = (ConditionBranch) o;
@@ -282,13 +297,7 @@ public class Rule {
 
             @Override
             public int hashCode() {
-                //  assert false;
-                return Objects.hash(rule.hashCode(), conjunction.hashCode());
-            }
-
-            @Override
-            public String toString() {
-                return "Rule[" + rule.getLabel() + "] Condition " + rule.when;
+                return this.hash;
             }
 
             public Conclusion conclusion() {

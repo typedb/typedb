@@ -573,10 +573,10 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new RuleWrite(3, "The conclusion of rule '%s' may insert types '%s', which is not allowed in the current schema.");
         public static final RuleWrite RULE_WHEN_INCOHERENT =
                 new RuleWrite(4, "The rule '%s' has a when clause '%s' that is illegal in the current schema.");
-        public static final RuleWrite RULE_WHEN_UNANSWERABLE_BRANCH =
-                new RuleWrite(5, "The rule '%s' has a branch in the when clause '%s' that can never have answers in the current schema.");
         public static final RuleWrite RULE_WHEN_UNANSWERABLE =
-                new RuleWrite(6, "The rule '%s' has a when clause '%s' that can never have answers in the current schema.");
+                new RuleWrite(5, "The rule '%s' has a when clause '%s' that can never have answers in the current schema.");
+        public static final RuleWrite RULE_WHEN_UNANSWERABLE_BRANCH =
+                new RuleWrite(6, "The rule '%s' has a branch in the when clause '%s' that can never have answers in the current schema.");
         public static final RuleWrite RULE_THEN_INCOHERENT =
                 new RuleWrite(7, "The rule '%s' has a then clause '%s' that can never be satisfied in the current schema.");
         public static final RuleWrite RULE_THEN_UNANSWERABLE =

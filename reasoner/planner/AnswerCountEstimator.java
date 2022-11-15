@@ -638,13 +638,13 @@ public class AnswerCountEstimator {
                     if ((concludable.isRelation() || concludable.isIsa())
                             && rule.conclusion().generating().isPresent() && ruleSideIds.contains(rule.conclusion().generating().get().id())) {
                         // There is one generated variable per combination of ALL variables in the conclusion
-                        ruleSideIds = new HashSet<>(rule.conclusion().pattern().retrieves());
+                        ruleSideIds = new HashSet<>(rule.conclusion().conjunction().pattern().retrieves());
                     }
 
                     for (Rule.Condition.ConditionBranch conditionBranch: rule.condition().branches()) {
                         ruleSideVariables = iterate(ruleSideIds)
-                                .filter(id -> conditionBranch.pattern().retrieves().contains(id))
-                                .map(id -> conditionBranch.pattern().variable(id)).toSet();
+                                .filter(id -> conditionBranch.conjunction().pattern().retrieves().contains(id))
+                                .map(id -> conditionBranch.conjunction().pattern().variable(id)).toSet();
                         inferredEstimate += answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), ruleSideVariables);
                     }
                 }
