@@ -299,10 +299,6 @@ public class Rule {
             public int hashCode() {
                 return this.hash;
             }
-
-            public Conclusion conclusion() {
-                return rule.conclusion();
-            }
         }
     }
 

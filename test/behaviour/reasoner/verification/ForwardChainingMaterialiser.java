@@ -319,7 +319,7 @@ public class ForwardChainingMaterialiser {
         static Materialisation create(com.vaticle.typedb.core.logic.Rule.Condition.ConditionBranch ruleConditionBranch, ConceptMap conditionAnswer,
                                       Map<Variable, Concept> conclusionAnswer) {
             return new Materialisation(ruleConditionBranch, BoundCondition.create(ruleConditionBranch, conditionAnswer),
-                    BoundConclusion.create(ruleConditionBranch.conclusion(), conclusionAnswer));
+                    BoundConclusion.create(ruleConditionBranch.rule().conclusion(), conclusionAnswer));
         }
 
         BoundCondition boundCondition() {
