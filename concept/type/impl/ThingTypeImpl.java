@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
@@ -73,7 +72,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TY
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
-import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
@@ -273,7 +271,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             throw exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, type.getLabel(), overriddenType.getLabel()));
         }
 
-        vertex.outs().edge(encoding, ((TypeImpl) type).vertex).overridden(((TypeImpl) overriddenType).vertex);
+        vertex.outs().edge(encoding, ((TypeImpl) type).vertex).setOverridden(((TypeImpl) overriddenType).vertex);
     }
 
     private void ownsKey(AttributeTypeImpl attributeType) {
@@ -309,7 +307,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_NO_INSTANCES, vertex.label(), attVertex.label()));
         }
         ownsKeyEdge = vertex.outs().put(OWNS_KEY, attVertex);
-        if (getSupertype().declaredOwns(false).findFirst(attributeType).isPresent()) ownsKeyEdge.overridden(attVertex);
+        if (getSupertype().declaredOwns(false).findFirst(attributeType).isPresent())
+            ownsKeyEdge.setOverridden(attVertex);
+        else ownsKeyEdge.unsetOverridden();
     }
 
     private void ownsKey(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
@@ -329,11 +329,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         TypeVertex attVertex = attributeType.vertex;
         TypeEdge existingEdge;
-        if ((existingEdge = vertex.outs().edge(OWNS_KEY, attVertex)) != null ||
-                (existingEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
-            existingEdge.delete();
+        if ((existingEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
+            existingEdge.unsetOverridden();
+        } else {
+            if ((existingEdge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) existingEdge.delete();
+            vertex.outs().put(OWNS, attVertex);
         }
-        vertex.outs().put(OWNS, attVertex);
     }
 
     private void ownsAttribute(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
@@ -440,8 +441,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, getLabel(), roleType.getLabel()));
         }
         TypeEdge existingEdge = vertex.outs().edge(PLAYS, ((RoleTypeImpl) roleType).vertex);
-        if (existingEdge != null) existingEdge.delete();
-        vertex.outs().put(PLAYS, ((RoleTypeImpl) roleType).vertex);
+        if (existingEdge != null) existingEdge.unsetOverridden();
+        else vertex.outs().put(PLAYS, ((RoleTypeImpl) roleType).vertex);
     }
 
     @Override

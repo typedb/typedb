@@ -216,8 +216,13 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public void overridden(TypeVertex overridden) {
+        public void setOverridden(TypeVertex overridden) {
             this.overridden = overridden;
+        }
+
+        @Override
+        public void unsetOverridden() {
+            this.overridden = null;
         }
 
         /**
@@ -314,7 +319,12 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public void overridden(TypeVertex overridden) {
+        public void setOverridden(TypeVertex overridden) {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public void unsetOverridden() {
             throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
@@ -430,11 +440,19 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          * @param overridden the type vertex to override by the head
          */
         @Override
-        public void overridden(TypeVertex overridden) {
+        public void setOverridden(TypeVertex overridden) {
             this.overridden = overridden;
             overriddenIID = overridden.iid();
             graph.storage().putUntracked(computeForwardIID(), overriddenIID.bytes());
             graph.storage().putUntracked(computeBackwardIID(), overriddenIID.bytes());
+        }
+
+        @Override
+        public void unsetOverridden() {
+            this.overridden = null;
+            this.overriddenIID = null;
+            graph.storage().putUntracked(computeForwardIID());
+            graph.storage().putUntracked(computeBackwardIID());
         }
 
         /**
