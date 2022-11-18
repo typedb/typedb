@@ -49,7 +49,9 @@ public interface TypeEdge extends Edge<Encoding.Edge.Type, TypeVertex> {
      *
      * @param overridden the type vertex to override by the head vertex
      */
-    void overridden(TypeVertex overridden);
+    void setOverridden(TypeVertex overridden);
+
+    void unsetOverridden();
 
     View.Forward forwardView();
 
