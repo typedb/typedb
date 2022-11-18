@@ -245,15 +245,15 @@ public class BoundPattern {
 
     static class BoundCondition {
         private final BoundConjunction conjunction;
-        private final Rule.Condition unboundCondition;
+        private final Rule.Condition.ConditionBranch unboundConditionBranch;
 
-        private BoundCondition(BoundConjunction conjunction, Rule.Condition unboundCondition) {
+        private BoundCondition(BoundConjunction conjunction, Rule.Condition.ConditionBranch unboundConditionBranch) {
             this.conjunction = conjunction;
-            this.unboundCondition = unboundCondition;
+            this.unboundConditionBranch = unboundConditionBranch;
         }
 
-        static BoundCondition create(Rule.Condition condition, ConceptMap conditionAnswer) {
-            return new BoundCondition(BoundConjunction.create(condition.pattern(), conditionAnswer), condition);
+        static BoundCondition create(Rule.Condition.ConditionBranch conditionBranch, ConceptMap conditionAnswer) {
+            return new BoundCondition(BoundConjunction.create(conditionBranch.conjunction().pattern(), conditionAnswer), conditionBranch);
         }
 
         BoundConjunction conjunction() {
@@ -266,12 +266,12 @@ public class BoundPattern {
             if (o == null || getClass() != o.getClass()) return false;
             BoundCondition that = (BoundCondition) o;
             return conjunction.equals(that.conjunction) &&
-                    unboundCondition.equals(that.unboundCondition);
+                    unboundConditionBranch.equals(that.unboundConditionBranch);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(conjunction, unboundCondition);
+            return Objects.hash(conjunction, unboundConditionBranch);
         }
     }
 }

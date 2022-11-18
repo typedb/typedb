@@ -167,7 +167,8 @@ public class RecursivePlanner extends ReasonerPlanner {
             }
         } else if (resolvable.isNegated()) {
             iterate(resolvable.asNegated().disjunction().conjunctions()).forEachRemaining(conjunction -> {
-                CallMode callMode = new CallMode(conjunction, resolvableMode);
+                Set<Variable> branchVariables = Collections.intersection(estimateableVariables(conjunction.pattern().variables()), resolvableMode);
+                CallMode callMode = new CallMode(conjunction, branchVariables);
                 recursivelyGenerateOrderingChoices(callMode);
                 plan(callMode);
             });
@@ -194,9 +195,10 @@ public class RecursivePlanner extends ReasonerPlanner {
             double resolvableCost;
             if (resolvable.isNegated()) {
                 resolvableCost = iterate(resolvable.asNegated().disjunction().conjunctions()).map(conj -> {
-                    double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, restrictedResolvableVars);
+                    Set<Variable> conjVariables = estimateableVariables(conj.pattern().variables());
+                    double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, Collections.intersection(conjVariables, restrictedResolvableVars));
                     double scalingFactor = Math.min(1, answersForModeFromPrefix / allAnswersForMode);
-                    return scaledCallCost(scalingFactor, new CallMode(conj, resolvableMode));
+                    return scaledCallCost(scalingFactor, new CallMode(conj, Collections.intersection(conjVariables, resolvableMode)));
                 }).reduce(0.0, Double::sum);
             } else {
                 AnswerCountEstimator.IncrementalEstimator thisResolvableOnlyEstimator = answerCountEstimator.createIncrementalEstimator(conjunctionNode.conjunction());

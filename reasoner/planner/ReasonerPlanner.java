@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -135,17 +134,19 @@ public abstract class ReasonerPlanner {
     public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> mode, @Nullable Set<ResolvableConjunction> dependencyFilter) {
         Set<CallMode> calls = new HashSet<>();
         for (Map.Entry<Rule, Set<Unifier>> entry : logicMgr.applicableRules(concludable).entrySet()) {
-            ResolvableConjunction ruleConjunction = entry.getKey().condition().conjunction();
-            if (dependencyFilter != null && !dependencyFilter.contains(ruleConjunction)) {
-                continue;
-            }
-            for (Unifier unifier : entry.getValue()) {
-                assert iterate(mode).allMatch(v -> v.id().isRetrievable());
-                Set<Variable> ruleMode = iterate(mode)
-                        .flatMap(v -> iterate(unifier.mapping().get(v.id().asRetrievable())))
-                        .filter(id -> ruleConjunction.pattern().retrieves().contains(id))
-                        .map(id -> ruleConjunction.pattern().variable(id)).toSet();
-                calls.add(new CallMode(ruleConjunction, ruleMode));
+            for (Rule.Condition.ConditionBranch conditionBranch : entry.getKey().condition().branches()) {
+                ResolvableConjunction ruleConjunction = conditionBranch.conjunction();
+                if (dependencyFilter != null && !dependencyFilter.contains(ruleConjunction)) {
+                    continue;
+                }
+                for (Unifier unifier : entry.getValue()) {
+                    assert iterate(mode).allMatch(v -> v.id().isRetrievable());
+                    Set<Variable> ruleMode = iterate(mode)
+                            .flatMap(v -> iterate(unifier.mapping().get(v.id().asRetrievable())))
+                            .filter(id -> ruleConjunction.pattern().retrieves().contains(id))
+                            .map(id -> ruleConjunction.pattern().variable(id)).toSet();
+                    calls.add(new CallMode(ruleConjunction, ruleMode));
+                }
             }
         }
         return calls;

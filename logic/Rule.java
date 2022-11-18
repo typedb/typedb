@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.logic;
 
 import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
@@ -33,6 +34,7 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
@@ -62,13 +64,13 @@ import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_NEGATION_CONTAINS_DISJUNCTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_CONCLUSION_ILLEGAL_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INCOHERENT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_UNANSWERABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_UNANSWERABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_UNANSWERABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_INCOHERENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_UNANSWERABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_UNANSWERABLE_BRANCH;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COLON;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_CLOSE;
@@ -85,7 +87,7 @@ public class Rule {
 
     // note: as `Rule` is cached between transactions, we cannot hold any transaction-bound objects such as Managers
     private final RuleStructure structure;
-    private final Conjunction when;
+    private final Disjunction when;
     private final Conjunction then;
     private final Conclusion conclusion;
     private final Condition condition;
@@ -120,7 +122,7 @@ public class Rule {
         return condition;
     }
 
-    public Conjunction when() {
+    public Disjunction when() {
         return when;
     }
 
@@ -174,7 +176,12 @@ public class Rule {
 
     private void validateSatisfiable() {
         if (!when.isCoherent()) throw TypeDBException.of(RULE_WHEN_INCOHERENT, structure.label(), when);
-        if (!when.isAnswerable()) throw TypeDBException.of(RULE_WHEN_UNANSWERABLE, structure.label(), when);
+        for (Conjunction whenBranch : when.conjunctions()) {
+            if (!whenBranch.isAnswerable()) {
+                ErrorMessage errorMessage = when.conjunctions().size() > 1 ? RULE_WHEN_UNANSWERABLE_BRANCH : RULE_WHEN_UNANSWERABLE;
+                throw TypeDBException.of(errorMessage, structure.label(), whenBranch);
+            }
+        }
         if (!then.isCoherent()) throw TypeDBException.of(RULE_THEN_INCOHERENT, structure.label(), then);
         if (!then.isAnswerable()) throw TypeDBException.of(RULE_THEN_UNANSWERABLE, structure.label(), then);
     }
@@ -185,23 +192,17 @@ public class Rule {
     private void pruneThenResolvedTypes() {
         then.variables().stream().filter(variable -> variable.id().isName())
                 .forEach(thenVar -> {
-                    Variable whenVar = when.variable(thenVar.id());
-                    thenVar.retainInferredTypes(whenVar.inferredTypes());
+                    Set<Label> whenVarInferredTypes = iterate(when.conjunctions()).flatMap(conj -> iterate(conj.variable(thenVar.id()).inferredTypes())).toSet();
+                    thenVar.retainInferredTypes(whenVarInferredTypes);
                     if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
                 });
     }
 
-    private Conjunction whenPattern(com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> conjunction,
+    private Disjunction whenPattern(com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> conjunction,
                                     com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> then, LogicManager logicMgr) {
         Disjunction when = Disjunction.create(conjunction.normalise(), VariableRegistry.createFromThings(list(then)));
-        assert when.conjunctions().size() == 1;
-
-        if (iterate(when.conjunctions().get(0).negations()).filter(neg -> neg.disjunction().conjunctions().size() != 1).hasNext()) {
-            throw TypeDBException.of(INVALID_NEGATION_CONTAINS_DISJUNCTION, getLabel());
-        }
-
         logicMgr.typeInference().applyCombination(when);
-        return when.conjunctions().get(0);
+        return when;
     }
 
     private Conjunction thenPattern(com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
@@ -217,29 +218,40 @@ public class Rule {
     }
 
     public static class Condition {
-
         private final Rule rule;
-        private final ResolvableConjunction conjunction;
+        private final ResolvableDisjunction disjunction;
+        private final Set<ConditionBranch> branches;
 
-        Condition(Rule rule) {
+        public Condition(Rule rule) {
             this.rule = rule;
-            this.conjunction = ResolvableConjunction.of(rule.when());
+            this.disjunction = ResolvableDisjunction.of(rule.when);
+            this.branches = iterate(disjunction.conjunctions()).map(c -> new ConditionBranch(rule, c)).toSet();
         }
 
         public static Condition create(Rule rule) {
             return new Condition(rule);
         }
 
+        public Set<ConditionBranch> branches() {
+            return branches;
+        }
+
+        public ResolvableDisjunction disjunction() {
+            return disjunction;
+        }
+
         public Rule rule() {
             return rule;
         }
 
-        public ResolvableConjunction conjunction() {
-            return conjunction;
+        @Override
+        public String toString() {
+            return "Rule[" + rule.getLabel() + "] Condition: " + disjunction.pattern();
         }
 
-        public Conjunction pattern() {
-            return rule().when();
+        @Override
+        public int hashCode() {
+            return rule.hashCode();
         }
 
         @Override
@@ -250,14 +262,43 @@ public class Rule {
             return rule.equals(that.rule);
         }
 
-        @Override
-        public int hashCode() {
-            return rule.hashCode();
-        }
+        public static class ConditionBranch {
 
-        @Override
-        public String toString() {
-            return "Rule[" + rule.getLabel() + "] Condition " + rule.when;
+            private final Rule rule;
+            private final ResolvableConjunction conjunction;
+            private final int hash;
+
+            ConditionBranch(Rule rule, ResolvableConjunction conjunction) {
+                this.rule = rule;
+                this.conjunction = conjunction;
+                this.hash = Objects.hash(rule, conjunction);
+            }
+
+            public Rule rule() {
+                return rule;
+            }
+
+            public ResolvableConjunction conjunction() {
+                return conjunction;
+            }
+
+            @Override
+            public String toString() {
+                return "Rule[" + rule.getLabel() + "] ConditionBranch: " + conjunction.pattern();
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                final ConditionBranch that = (ConditionBranch) o;
+                return rule.equals(that.rule) && conjunction.equals(that.conjunction);
+            }
+
+            @Override
+            public int hashCode() {
+                return this.hash;
+            }
         }
     }
 
@@ -369,18 +410,19 @@ public class Rule {
         private void validateInsertable(LogicManager logicMgr) {
             Conjunction clonedThen = rule.then.clone();
             logicMgr.typeInference().applyCombination(clonedThen, true);
-
-            Set<Identifier.Variable.Name> sharedIDs = iterate(rule.then.retrieves())
-                    .filter(id -> id.isName() && rule.when.retrieves().contains(id))
-                    .map(Identifier.Variable::asName).toSet();
-            FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenPermutations = logicMgr.typeInference()
-                    .getPermutations(rule.when, false, sharedIDs);
-            Set<Map<Identifier.Variable.Name, Label>> insertableThenPermutations = logicMgr.typeInference()
-                    .getPermutations(rule.then, true, sharedIDs).toSet();
-            whenPermutations.forEachRemaining(nameLabelMap -> {
-                if (!insertableThenPermutations.contains(nameLabelMap)) {
-                    throw TypeDBException.of(RULE_CONCLUSION_ILLEGAL_INSERT, rule.structure.label(), nameLabelMap.toString());
-                }
+            iterate(rule.when.conjunctions()).forEachRemaining(conj -> {
+                Set<Identifier.Variable.Name> sharedIDs = iterate(rule.then.retrieves())
+                        .filter(id -> id.isName() && conj.retrieves().contains(id))
+                        .map(Identifier.Variable::asName).toSet();
+                FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenPermutations = logicMgr.typeInference()
+                        .getPermutations(conj, false, sharedIDs);
+                Set<Map<Identifier.Variable.Name, Label>> insertableThenPermutations = logicMgr.typeInference()
+                        .getPermutations(rule.then, true, sharedIDs).toSet();
+                whenPermutations.forEachRemaining(nameLabelMap -> {
+                    if (!insertableThenPermutations.contains(nameLabelMap)) {
+                        throw TypeDBException.of(RULE_CONCLUSION_ILLEGAL_INSERT, rule.structure.label(), nameLabelMap.toString());
+                    }
+                });
             });
         }
 

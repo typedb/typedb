@@ -57,10 +57,10 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.controller.ConcludableController.Processor.Match.withExplainable;
 
 public abstract class ConjunctionController<
-        OUTPUT, CONTROLLER extends ConjunctionController<OUTPUT, CONTROLLER, PROCESSOR>,
-        PROCESSOR extends AbstractProcessor<ConceptMap, OUTPUT, ?, PROCESSOR>
+        CONTROLLER extends ConjunctionController<CONTROLLER, PROCESSOR>,
+        PROCESSOR extends AbstractProcessor<ConceptMap, ConceptMap, ?, PROCESSOR>
         > extends AbstractController<
-        ConceptMap, ConceptMap, OUTPUT, ConjunctionController.Request<?, ?>, PROCESSOR, CONTROLLER
+        ConceptMap, ConceptMap, ConceptMap, ConjunctionController.Request<?>, PROCESSOR, CONTROLLER
         > {
 
     private final Set<Resolvable<?>> resolvables;
@@ -112,7 +112,7 @@ public abstract class ConjunctionController<
     }
 
     @Override
-    public void routeConnectionRequest(Request<?, ?> connectionRequest) {
+    public void routeConnectionRequest(Request<?> connectionRequest) {
         if (isTerminated()) return;
         if (connectionRequest.isRetrievable()) {
             RetrievableRequest req = connectionRequest.asRetrievable();
@@ -148,11 +148,9 @@ public abstract class ConjunctionController<
         else return withExplainable(new ConceptMap(answer.concepts()), concludable);
     }
 
-    static class Request<
-            CONTROLLER_ID, CONTROLLER extends AbstractController<ConceptMap, ?, ConceptMap, ?, ?, ?>
-            > extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap, CONTROLLER> {
+    static class Request<CONTROLLER_ID> extends AbstractRequest<CONTROLLER_ID, ConceptMap, ConceptMap> {
         Request(Reactive.Identifier inputPortId,
-                Driver<? extends Processor<?, ?>> inputPortProcessor, CONTROLLER_ID controller_id,
+                Driver<? extends Processor<?>> inputPortProcessor, CONTROLLER_ID controller_id,
                 ConceptMap conceptMap) {
             super(inputPortId, inputPortProcessor, controller_id, conceptMap);
         }
@@ -183,14 +181,14 @@ public abstract class ConjunctionController<
 
     }
 
-    protected abstract static class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>>
-            extends AbstractProcessor<ConceptMap, OUTPUT, Request<?, ?>, PROCESSOR> {
+    protected abstract static class Processor<PROCESSOR extends Processor<PROCESSOR>>
+            extends AbstractProcessor<ConceptMap, ConceptMap, Request<?>, PROCESSOR> {
 
         final ConceptMap bounds;
         final List<Resolvable<?>> plan;
 
         Processor(Driver<PROCESSOR> driver,
-                  Driver<? extends ConjunctionController<OUTPUT, ?, PROCESSOR>> controller,
+                  Driver<? extends ConjunctionController<?, PROCESSOR>> controller,
                   Context context, ConceptMap bounds, List<Resolvable<?>> plan,
                   Supplier<String> debugName) {
             super(driver, controller, context, debugName);
@@ -261,11 +259,11 @@ public abstract class ConjunctionController<
             return input;
         }
 
-        public static class RetrievableRequest extends Request<Retrievable, RetrievableController> {
+        public static class RetrievableRequest extends Request<Retrievable> {
 
             private RetrievableRequest(
                     Reactive.Identifier inputPortId,
-                    Driver<? extends Processor<?, ?>> inputPortProcessor, Retrievable controllerId,
+                    Driver<? extends Processor<?>> inputPortProcessor, Retrievable controllerId,
                     ConceptMap processorId
             ) {
                 super(inputPortId, inputPortProcessor, controllerId, processorId);
@@ -283,11 +281,11 @@ public abstract class ConjunctionController<
 
         }
 
-        static class ConcludableRequest extends Request<Concludable, ConcludableController.Match> {
+        static class ConcludableRequest extends Request<Concludable> {
 
             private ConcludableRequest(
                     Reactive.Identifier inputPortId,
-                    Driver<? extends Processor<?, ?>> inputPortProcessor, Concludable controllerId,
+                    Driver<? extends Processor<?>> inputPortProcessor, Concludable controllerId,
                     ConceptMap processorId
             ) {
                 super(inputPortId, inputPortProcessor, controllerId, processorId);
@@ -303,11 +301,11 @@ public abstract class ConjunctionController<
 
         }
 
-        static class NegatedRequest extends Request<Negated, NegationController> {
+        static class NegatedRequest extends Request<Negated> {
 
             private NegatedRequest(
                     Reactive.Identifier inputPortId,
-                    Driver<? extends Processor<?, ?>> inputPortProcessor, Negated controllerId, ConceptMap processorId
+                    Driver<? extends Processor<?>> inputPortProcessor, Negated controllerId, ConceptMap processorId
             ) {
                 super(inputPortId, inputPortProcessor, controllerId, processorId);
             }

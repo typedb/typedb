@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.processor;
 
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.controller.AbstractController;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 
@@ -28,8 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
-        CONTROLLER extends AbstractController<BOUNDS, ?, PACKET, ?, ?, ?>> {
+public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET> {
 
     private final Reactive.Identifier inputPortId;
     private final Actor.Driver<? extends AbstractProcessor<PACKET, ?, ?, ?>> inputPortProcessor;
@@ -77,12 +75,12 @@ public abstract class AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET,
         op.registerSubscriber(output);
     }
 
-    public AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET, CONTROLLER> withMap(Function<PACKET, PACKET> function) {
+    public AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET> withMap(Function<PACKET, PACKET> function) {
         transforms.add(function);
         return this;
     }
 
-    public AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET, CONTROLLER> withNewBounds(BOUNDS newBounds) {
+    public AbstractRequest<CONTROLLER_ID, BOUNDS, PACKET> withNewBounds(BOUNDS newBounds) {
         bounds = newBounds;
         return this;
     }
