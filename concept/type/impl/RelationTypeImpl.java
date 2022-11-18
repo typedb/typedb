@@ -146,6 +146,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
                 roleType.setSupertype(RoleTypeImpl.of(graphMgr, graphMgr.schema().rootRoleType()));
             }
             assert roleType.getSupertype() != null;
+            TypeEdge existingEdge = vertex.outs().edge(RELATES, roleType.vertex);
+            if (existingEdge != null) existingEdge.delete();
             vertex.outs().edge(RELATES, roleType.vertex).overridden(roleType.getSupertype().vertex);
         }
     }
@@ -165,6 +167,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         ) { throw exception(TypeDBException.of(RELATION_RELATES_ROLE_NOT_AVAILABLE, roleLabel, overriddenLabel)); }
 
         roleType.setSupertype(inherited.get());
+        TypeEdge existingEdge = vertex.outs().edge(RELATES, roleType.vertex);
+        if (existingEdge != null) existingEdge.delete();
         vertex.outs().edge(RELATES, roleType.vertex).overridden(inherited.get().vertex);
     }
 

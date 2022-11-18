@@ -439,7 +439,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         } else if (getSupertypes().filter(t -> !t.equals(this)).mergeMapForwardable(ThingType::getPlays, ASC).findFirst(roleType).isPresent()) {
             throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, getLabel(), roleType.getLabel()));
         }
-        vertex.outs().put(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
+        TypeEdge existingEdge = vertex.outs().edge(PLAYS, ((RoleTypeImpl) roleType).vertex);
+        if (existingEdge != null) existingEdge.delete();
+        vertex.outs().put(PLAYS, ((RoleTypeImpl) roleType).vertex);
     }
 
     @Override
