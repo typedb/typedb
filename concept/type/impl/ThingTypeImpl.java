@@ -307,9 +307,9 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_NO_INSTANCES, vertex.label(), attVertex.label()));
         }
         ownsKeyEdge = vertex.outs().put(OWNS_KEY, attVertex);
-        if (getSupertype().declaredOwns(false).findFirst(attributeType).isPresent())
+        if (getSupertype().declaredOwns(false).findFirst(attributeType).isPresent()) {
             ownsKeyEdge.setOverridden(attVertex);
-        else ownsKeyEdge.unsetOverridden();
+        } else ownsKeyEdge.unsetOverridden();
     }
 
     private void ownsKey(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
