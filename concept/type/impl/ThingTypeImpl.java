@@ -328,8 +328,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         TypeVertex attVertex = attributeType.vertex;
-        TypeEdge keyEdge;
-        if ((keyEdge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) keyEdge.delete();
+        TypeEdge existingEdge;
+        if ((existingEdge = vertex.outs().edge(OWNS_KEY, attVertex)) != null ||
+                (existingEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
+            existingEdge.delete();
+        }
         vertex.outs().put(OWNS, attVertex);
     }
 
