@@ -35,18 +35,18 @@ import com.vaticle.typedb.core.concept.type.impl.RelationTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
 import com.vaticle.typedb.core.concurrent.producer.ProducerIterator;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
@@ -58,6 +58,7 @@ import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ROLE;
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 
 public final class ConceptManager {
 
@@ -184,11 +185,9 @@ public final class ConceptManager {
     }
 
     public void validateTypes() {
-        List<TypeDBException> exceptions = graphMgr.schema().bufferedTypes().parallel()
-                .filter(TypeVertex::isModified)
-                .flatMap(v -> TypeImpl.of(graphMgr, v).getSubtypes().stream())
-                .distinct().map(TypeImpl::validate)
-                .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
+        List<TypeDBException> exceptions = list(getRootThingType(), getRootRelationType().getRelates().first().get())
+                .stream().flatMap(t -> t.getSubtypes().stream()).filter(t -> !t.isRoot()).parallel()
+                .flatMap(t -> t.exceptions().stream()).collect(toList());
         if (!exceptions.isEmpty()) throw exception(TypeDBException.of(exceptions));
     }
 

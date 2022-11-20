@@ -411,9 +411,9 @@ public class TypeGraph {
             Set<TypeVertex> overriddens = new HashSet<>();
             NavigableSet<TypeVertex> roleTypes = new TreeSet<>();
             loop(relation, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
-                    .flatMap(sub -> sub.outs().edge(RELATES).toAndOverridden().map(e -> {
+                    .flatMap(rel -> rel.outs().edge(RELATES).toAndOverridden().map(e -> {
                         if (e.value() != null) overriddens.add(e.value());
-                        if (sub.equals(relation) || !overriddens.contains(e.key())) return e.key();
+                        if (rel.equals(relation) || !overriddens.contains(e.key())) return e.key();
                         else return null;
                     }).noNulls()).toSet(roleTypes);
             return roleTypes;

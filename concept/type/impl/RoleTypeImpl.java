@@ -27,21 +27,21 @@ import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.thing.impl.RoleImpl;
 import com.vaticle.typedb.core.concept.thing.impl.ThingImpl;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-import java.util.Collections;
+
 import java.util.List;
-import java.util.Objects;
 import javax.annotation.Nullable;
+
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ROLE;
@@ -179,17 +179,19 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     @Override
-    public List<TypeDBException> validate() {
-        List<TypeDBException> exceptions = super.validate();
-        exceptions.addAll(validatePlayersNotAbstract());
+    public List<TypeDBException> exceptions() {
+        List<TypeDBException> exceptions = super.exceptions();
+        exceptions.addAll(validateOverriddenTypesAreInheritedFromRelationType());
         return exceptions;
     }
 
-    private List<TypeDBException> validatePlayersNotAbstract() {
-        if (!isAbstract()) return Collections.emptyList();
-        else return getPlayerTypes().filter(o -> !o.isAbstract()).map(
-                player -> TypeDBException.of(PLAYS_ABSTRACT_ROLE_TYPE, player.getLabel(), getLabel())
-        ).toList();
+    private List<TypeDBException> validateOverriddenTypesAreInheritedFromRelationType() {
+        RoleTypeImpl superType = getSupertype();
+        assert !isRoot() || superType != null;
+        if (superType.isRoot()) return list();
+        else if (getRelationType().getSupertype().asRelationType().getRelates().noneMatch(rt -> rt.equals(superType))) {
+            return list(TypeDBException.of(OVERRIDDEN_NOT_SUPERTYPE, getLabel(), superType.getLabel()));
+        } else return list();
     }
 
     @Override

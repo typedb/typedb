@@ -243,15 +243,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public List<TypeDBException> validate() {
-        List<TypeDBException> exceptions = super.validate();
+    public List<TypeDBException> exceptions() {
+        List<TypeDBException> exceptions = super.exceptions();
         if (!isRoot() && !isAbstract() && !getRelates().filter(r -> !r.getLabel().equals(ROLE.properLabel())).hasNext()) {
             exceptions.add(TypeDBException.of(RELATION_NO_ROLE, this.getLabel()));
-        } else if (!isAbstract()) {
-            getRelates().filter(Type::isAbstract).forEachRemaining(
-                    rt -> exceptions.add(TypeDBException.of(RELATION_ABSTRACT_ROLE, getLabel(), rt.getLabel()))
-            );
-        }
+        } else if (!isAbstract()) getRelates().filter(Type::isAbstract).forEachRemaining(
+                rt -> exceptions.add(TypeDBException.of(RELATION_ABSTRACT_ROLE, getLabel(), rt.getLabel()))
+        );
         return exceptions;
     }
 
