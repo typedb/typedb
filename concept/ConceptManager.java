@@ -185,10 +185,14 @@ public final class ConceptManager {
     }
 
     public void validateTypes() {
-        List<TypeDBException> exceptions = list(getRootThingType(), getRootRelationType().getRelates().first().get())
+        List<TypeDBException> exceptions = getSchemaExceptions();
+        if (!exceptions.isEmpty()) throw exception(TypeDBException.of(exceptions));
+    }
+
+    public List<TypeDBException> getSchemaExceptions() {
+        return list(getRootThingType(), getRootRelationType().getRelates().first().get())
                 .stream().flatMap(t -> t.getSubtypes().stream()).filter(t -> !t.isRoot()).parallel()
                 .flatMap(t -> t.exceptions().stream()).collect(toList());
-        if (!exceptions.isEmpty()) throw exception(TypeDBException.of(exceptions));
     }
 
     public void validateThings() {

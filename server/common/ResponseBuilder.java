@@ -45,6 +45,7 @@ import com.vaticle.typedb.protocol.SessionProto;
 import com.vaticle.typedb.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +53,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
+
 import static com.google.protobuf.ByteString.copyFrom;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeUUID;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -264,15 +266,27 @@ public class ResponseBuilder {
         }
 
         public static TransactionProto.Transaction.Res getThingTypeRes(UUID reqID, ThingType thingType) {
-            ConceptProto.ConceptManager.GetThingType.Res.Builder getThingTypeRes = ConceptProto.ConceptManager.GetThingType.Res.newBuilder();
+            ConceptProto.ConceptManager.GetThingType.Res.Builder getThingTypeRes =
+                    ConceptProto.ConceptManager.GetThingType.Res.newBuilder();
             if (thingType != null) getThingTypeRes.setThingType(protoType(thingType));
             return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetThingTypeRes(getThingTypeRes));
         }
 
-        public static TransactionProto.Transaction.Res getThingRes(UUID reqID, @Nullable com.vaticle.typedb.core.concept.thing.Thing thing) {
-            ConceptProto.ConceptManager.GetThing.Res.Builder getThingRes = ConceptProto.ConceptManager.GetThing.Res.newBuilder();
+        public static TransactionProto.Transaction.Res getThingRes(
+                UUID reqID, @Nullable com.vaticle.typedb.core.concept.thing.Thing thing
+        ) {
+            ConceptProto.ConceptManager.GetThing.Res.Builder getThingRes =
+                    ConceptProto.ConceptManager.GetThing.Res.newBuilder();
             if (thing != null) getThingRes.setThing(protoThing(thing));
             return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetThingRes(getThingRes));
+        }
+
+        public static TransactionProto.Transaction.Res getSchemaExceptionsRes(UUID reqID, List<TypeDBException> exceptions) {
+            return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetSchemaExceptionsRes(
+                    ConceptProto.ConceptManager.GetSchemaExceptions.Res.newBuilder().addAllExceptions(
+                            exceptions.stream().map(Throwable::getMessage).collect(toList())
+                    ).build()
+            ));
         }
     }
 
