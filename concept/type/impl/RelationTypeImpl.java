@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
@@ -51,7 +50,6 @@ import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.RELATION_TYPE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.RELATION;
-import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ROLE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static java.util.Comparator.comparing;
 
@@ -245,9 +243,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public List<TypeDBException> exceptions() {
         List<TypeDBException> exceptions = super.exceptions();
-        if (!isRoot() && !isAbstract() && !getRelates().filter(r -> !r.getLabel().equals(ROLE.properLabel())).hasNext()) {
+        if (!isRoot() && !isAbstract() && !getRelates().filter(rt -> !rt.isRoot()).hasNext()) {
             exceptions.add(TypeDBException.of(RELATION_NO_ROLE, this.getLabel()));
-        } else if (!isAbstract()) getRelates().filter(Type::isAbstract).forEachRemaining(
+        } else if (!isAbstract()) getRelates().filter(rt -> !rt.isRoot() && rt.isAbstract()).forEachRemaining(
                 rt -> exceptions.add(TypeDBException.of(RELATION_ABSTRACT_ROLE, getLabel(), rt.getLabel()))
         );
         return exceptions;
