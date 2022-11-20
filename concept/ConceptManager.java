@@ -190,7 +190,8 @@ public final class ConceptManager {
     }
 
     public List<TypeDBException> getSchemaExceptions() {
-        return list(getRootThingType(), getRootRelationType().getRelates().first().get())
+        if (!graphMgr.schema().hasModifiedTypes()) return list();
+        else return list(getRootThingType(), getRootRelationType().getRelates().first().get())
                 .stream().flatMap(t -> t.getSubtypes().stream()).filter(t -> !t.isRoot()).parallel()
                 .flatMap(t -> t.exceptions().stream()).collect(toList());
     }
