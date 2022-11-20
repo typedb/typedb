@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.concept.type.impl;
 
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -53,7 +54,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.IN
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_PLAYS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_HAS_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_HAS_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATT_NOT_AVAILABLE;
@@ -265,9 +267,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private <T extends Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
                                            Forwardable<? extends Type, Order.Asc> overridable,
-                                           Forwardable<? extends Type, Order.Asc> notOverridable) {
+                                           Forwardable<? extends Type, Order.Asc> notOverridable,
+                                           ErrorMessage message) {
         if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
-            throw exception(TypeDBException.of(OVERRIDDEN_NOT_SUPERTYPE, type.getLabel(), overriddenType.getLabel()));
+            throw exception(TypeDBException.of(message, getLabel(), type.getLabel(), overriddenType.getLabel()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
             throw exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, type.getLabel(), overriddenType.getLabel()));
         }
@@ -317,7 +320,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         ownsKey(attributeType);
         override(OWNS_KEY, attributeType, overriddenType,
                 getSupertype().getOwns(attributeType.getValueType()),
-                declaredOwns(false));
+                declaredOwns(false),
+                OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE);
     }
 
     private void ownsAttribute(AttributeTypeImpl attributeType) {
@@ -343,7 +347,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         this.ownsAttribute(attributeType);
         override(OWNS, attributeType, overriddenType,
                 getSupertype().getOwns(attributeType.getValueType()),
-                getSupertype().getOwns(true).merge(declaredOwns(false)));
+                getSupertype().getOwns(true).merge(declaredOwns(false)),
+                OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE);
     }
 
     private Forwardable<AttributeType, Order.Asc> declaredOwns(boolean onlyKey) {
@@ -451,14 +456,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
         setPlays(roleType);
-        override(Encoding.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().mapSorted(v -> RoleTypeImpl.of(graphMgr, v), rt -> rt.vertex, ASC));
+        override(PLAYS, roleType, overriddenType, getSupertype().getPlays(),
+                vertex.outs().edge(PLAYS).to().mapSorted(v -> RoleTypeImpl.of(graphMgr, v), rt -> rt.vertex, ASC),
+                OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE);
     }
 
     @Override
     public void unsetPlays(RoleType roleType) {
         validateIsNotDeleted();
-        TypeEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
+        TypeEdge edge = vertex.outs().edge(PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (edge == null) {
             if (this.getPlays().findFirst(roleType).isPresent()) {
                 throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_PLAYS,
@@ -485,7 +491,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public Forwardable<RoleType, Order.Asc> getPlaysExplicit() {
         if (isRoot()) return emptySorted();
-        return vertex.outs().edge(Encoding.Edge.Type.PLAYS).to()
+        return vertex.outs().edge(PLAYS).to()
                 .mapSorted(v -> RoleTypeImpl.of(graphMgr, v), rt -> ((RoleTypeImpl) rt).vertex, ASC);
     }
 
@@ -545,7 +551,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return getOwns().map(at -> pair(at, getOwnsOverridden(at)))
                 .filter(p -> p.second() != null)
                 .filter(p -> p.first().getSupertypes().noneMatch(s -> s.equals(p.second()))).map(
-                        p -> TypeDBException.of(OVERRIDDEN_NOT_SUPERTYPE, p.first().getLabel(), p.second().getLabel())
+                        p -> TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE,
+                                getLabel(), p.first().getLabel(), p.second().getLabel())
                 ).toList();
     }
 
@@ -553,7 +560,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return getPlays().map(rt -> pair(rt, getPlaysOverridden(rt)))
                 .filter(p -> p.second() != null)
                 .filter(p -> p.first().getSupertypes().noneMatch(s -> s.equals(p.second()))).map(
-                        p -> TypeDBException.of(OVERRIDDEN_NOT_SUPERTYPE, p.first().getLabel(), p.second().getLabel())
+                        p -> TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE,
+                                getLabel(), p.first().getLabel(), p.second().getLabel())
                 ).toList();
     }
 

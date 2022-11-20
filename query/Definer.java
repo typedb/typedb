@@ -52,7 +52,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.AT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MODIFIED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_DEFINE_SUB;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IS;
@@ -255,15 +255,10 @@ public class Definer {
                     String overriddenLabelName = plays.overridden().get().label().get().properLabel().name();
                     Optional<? extends RoleType> overriddenType = roleType.getSupertypes()
                             .filter(rt -> rt.getLabel().name().equals(overriddenLabelName)).first();
-                    if (overriddenType.isPresent()) {
-                        thingType.setPlays(roleType, overriddenType.get());
-
-                    } else {
-                        throw TypeDBException.of(OVERRIDDEN_NOT_SUPERTYPE, roleTypeLabel.scopedLabel(), overriddenLabelName);
-                    }
-                } else {
-                    thingType.setPlays(roleType);
-                }
+                    if (overriddenType.isPresent()) thingType.setPlays(roleType, overriddenType.get());
+                    else throw TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE,
+                            thingType.getLabel(), roleTypeLabel.scopedLabel(), overriddenLabelName);
+                } else thingType.setPlays(roleType);
             });
         }
     }

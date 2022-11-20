@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_HAS_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
@@ -190,7 +190,8 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         assert !isRoot() || superType != null;
         if (superType.isRoot()) return list();
         else if (getRelationType().getSupertype().asRelationType().getRelates().noneMatch(rt -> rt.equals(superType))) {
-            return list(TypeDBException.of(OVERRIDDEN_NOT_SUPERTYPE, getLabel(), superType.getLabel()));
+            return list(TypeDBException.of(OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED,
+                    getRelationType().getLabel().name(), getLabel().name(), superType.getLabel().name()));
         } else return list();
     }
 
