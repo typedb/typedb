@@ -157,7 +157,7 @@ public class AnswerCountEstimator {
             // Find scaling factor
             for (Variable v : model.variables) {
                 double ans = (double) model.estimateAnswers(set(v));
-                if (minVariableEstimate.containsKey(v) && minVariableEstimate.get(v) / ans < bestScaler) {
+                if (ans > 0 && minVariableEstimate.containsKey(v) && minVariableEstimate.get(v) / ans < bestScaler) {
                     bestScaler = minVariableEstimate.get(v) / ans;
                     bestScalingVar = v;
                 } else if (ans < minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
@@ -216,7 +216,7 @@ public class AnswerCountEstimator {
             }
 
             assert !variables.isEmpty() || answerEstimateFromCover(variables, cover) == 1;
-            return answerEstimateFromCover(variables, cover);
+            return Math.max(1, answerEstimateFromCover(variables, cover)); // Avoid divisions by zero
         }
 
         private static double scaledEstimate(LocalModel model, Pair<Double, Optional<Variable>> scale, Set<Variable> estimateVariables) {
@@ -593,7 +593,7 @@ public class AnswerCountEstimator {
             if (correspondingConcludable != null) {
                 hasEdgeEstimate += estimateInferredAnswerCount(correspondingConcludable, set(hasConstraint.owner(), hasConstraint.attribute()));
                 attributeEstimate += attributesCreatedByExplicitHas(correspondingConcludable);
-                if (ownerEstimate < hasEdgeEstimate / attributeEstimate) {
+                if (attributeEstimate != 0 && ownerEstimate < hasEdgeEstimate / attributeEstimate) {
                     boolean rulesConcludeOwner = iterate(hasConstraint.owner().inferredTypes()).flatMap(ownerType -> iterate(answerCountEstimator.logicMgr.rulesConcluding(ownerType))).hasNext();
                     if (rulesConcludeOwner) ownerEstimate = hasEdgeEstimate / attributeEstimate;
                 }
