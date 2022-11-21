@@ -157,7 +157,8 @@ public class AnswerCountEstimator {
             // Find scaling factor
             for (Variable v : model.variables) {
                 double ans = (double) model.estimateAnswers(set(v));
-                if (ans > 0 && minVariableEstimate.containsKey(v) && minVariableEstimate.get(v) / ans < bestScaler) {
+                if (ans == 0) ans = 1;
+                if (minVariableEstimate.containsKey(v) && minVariableEstimate.get(v) / ans < bestScaler) {
                     bestScaler = minVariableEstimate.get(v) / ans;
                     bestScalingVar = v;
                 } else if (ans < minVariableEstimate.getOrDefault(v, Double.MAX_VALUE)) {
@@ -216,7 +217,9 @@ public class AnswerCountEstimator {
             }
 
             assert !variables.isEmpty() || answerEstimateFromCover(variables, cover) == 1;
-            return Math.max(1, answerEstimateFromCover(variables, cover)); // Avoid divisions by zero
+            long ret = answerEstimateFromCover(variables, cover);
+            assert ret != 0;
+            return Math.max(1, ret); // Avoid divisions by zero
         }
 
         private static double scaledEstimate(LocalModel model, Pair<Double, Optional<Variable>> scale, Set<Variable> estimateVariables) {
