@@ -24,7 +24,6 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
@@ -64,8 +63,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -495,15 +492,15 @@ public class CoreDatabase implements TypeDB.Database {
     public static class IsolationManager {
 
         private final ConcurrentMap<CoreTransaction.Data, CommitState> commitStates;
-        private final ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> commitTimeline;
+        private final AtomicLong approximateLastCommitSnapshot;
         private final AtomicBoolean cleanupRunning;
 
         private enum CommitState {UNCOMMITTED, COMMITTING, COMMITTED}
 
         IsolationManager() {
-            this.cleanupRunning = new AtomicBoolean(false);
-            this.commitStates = new ConcurrentHashMap<>();
-            this.commitTimeline = new ConcurrentSkipListMap<>();
+            cleanupRunning = new AtomicBoolean(false);
+            commitStates = new ConcurrentHashMap<>();
+            approximateLastCommitSnapshot = new AtomicLong(0);
         }
 
         void opened(CoreTransaction.Data transaction) {
@@ -542,11 +539,9 @@ public class CoreDatabase implements TypeDB.Database {
         public void committed(CoreTransaction.Data txn) {
             assert commitStates.get(txn) == CommitState.COMMITTING && txn.snapshotEnd().isPresent();
             commitStates.put(txn, CommitState.COMMITTED);
-            commitTimeline.compute(txn.snapshotEnd().get(), (snapshot, committed) -> {
-                if (committed == null) committed = new HashSet<>();
-                committed.add(txn);
-                return committed;
-            });
+            if (approximateLastCommitSnapshot.get() < txn.dataStorage.snapshotEnd().get()) {
+                approximateLastCommitSnapshot.set(txn.dataStorage.snapshotEnd().get());
+            }
         }
 
         void closed(CoreTransaction.Data txn) {
@@ -556,24 +551,19 @@ public class CoreDatabase implements TypeDB.Database {
 
         private void cleanupCommitted() {
             if (cleanupRunning.compareAndSet(false, true)) {
-                Optional<Long> oldestUncommittedSnapshot = oldestNotCommittedSnapshot();
-                ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> deletable;
-                if (oldestUncommittedSnapshot.isEmpty()) deletable = commitTimeline;
-                else deletable = commitTimeline.headMap(oldestUncommittedSnapshot.get());
-                deletable.keySet().forEach(snapshot ->
-                        deletable.computeIfPresent(snapshot, (s, txns) -> {
-                            for (CoreTransaction.Data txn : txns) {
-                                txn.delete();
-                                commitStates.remove(txn);
-                            }
-                            return null;
-                        })
-                );
+                long lastCommittedSnapshot = approximateLastCommitSnapshot.get();
+                Long cleanupUntil = oldestUnCommittedSnapshot().orElse(lastCommittedSnapshot + 1);
+                commitStates.forEach((txn, state) -> {
+                    if (txn.snapshotEnd().isPresent() && txn.snapshotEnd().get() < cleanupUntil) {
+                        txn.delete();
+                        commitStates.remove(txn);
+                    }
+                });
                 cleanupRunning.set(false);
             }
         }
 
-        private Optional<Long> oldestNotCommittedSnapshot() {
+        private Optional<Long> oldestUnCommittedSnapshot() {
             return getNotCommitted().map(CoreTransaction.Data::snapshotStart).stream().min(Comparator.naturalOrder());
         }
 
