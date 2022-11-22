@@ -552,7 +552,7 @@ public class CoreDatabase implements TypeDB.Database {
         private void cleanupCommitted() {
             if (cleanupRunning.compareAndSet(false, true)) {
                 long lastCommittedSnapshot = approximateLastCommitSnapshot.get();
-                Long cleanupUntil = oldestUnCommittedSnapshot().orElse(lastCommittedSnapshot + 1);
+                Long cleanupUntil = oldestUncommittedSnapshot().orElse(lastCommittedSnapshot + 1);
                 commitStates.forEach((txn, state) -> {
                     if (txn.snapshotEnd().isPresent() && txn.snapshotEnd().get() < cleanupUntil) {
                         txn.delete();
@@ -563,7 +563,7 @@ public class CoreDatabase implements TypeDB.Database {
             }
         }
 
-        private Optional<Long> oldestUnCommittedSnapshot() {
+        private Optional<Long> oldestUncommittedSnapshot() {
             return getNotCommitted().map(CoreTransaction.Data::snapshotStart).stream().min(Comparator.naturalOrder());
         }
 
