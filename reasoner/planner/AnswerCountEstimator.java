@@ -218,7 +218,6 @@ public class AnswerCountEstimator {
 
             assert !variables.isEmpty() || answerEstimateFromCover(variables, cover) == 1;
             long ret = answerEstimateFromCover(variables, cover);
-            assert ret != 0;
             return Math.max(1, ret); // Avoid divisions by zero
         }
 
