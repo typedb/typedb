@@ -173,20 +173,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public List<TypeDBException> exceptions() {
-        List<TypeDBException> exceptions = super.exceptions();
-        exceptions.addAll(validateOwnersNotAbstract());
-        return exceptions;
-    }
-
-    private List<TypeDBException> validateOwnersNotAbstract() {
-        if (!isAbstract()) return Collections.emptyList();
-        else return getOwners().filter(o -> !o.isAbstract()).map(
-                owner -> TypeDBException.of(OWNS_ABSTRACT_ATTRIBUTE_TYPE, owner.getLabel(), getLabel())
-        ).toList();
-    }
-
-    @Override
     public boolean isAttributeType() {
         return true;
     }

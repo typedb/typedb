@@ -93,11 +93,6 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
-    public List<TypeDBException> exceptions() {
-        return super.exceptions();
-    }
-
-    @Override
     public EntityImpl create() {
         return create(false);
     }

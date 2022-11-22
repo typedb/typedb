@@ -46,6 +46,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
@@ -525,12 +526,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public List<TypeDBException> exceptions() {
-        List<TypeDBException> exceptions = super.exceptions();
-        exceptions.addAll(validateIsAbstractOrOwnedAttributeTypesNotAbstract());
-        exceptions.addAll(validateIsAbstractOrPlayedRoleTypesNotAbstract());
-        exceptions.addAll(validateOverriddenOwnedAttributeTypesAreSupertypes());
-        exceptions.addAll(validateOverriddenPlayedRoleTypesAreSupertypes());
-        return exceptions;
+        return list(
+                validateIsAbstractOrOwnedAttributeTypesNotAbstract(),
+                validateIsAbstractOrPlayedRoleTypesNotAbstract(),
+                validateOverriddenOwnedAttributeTypesAreSupertypes(),
+                validateOverriddenPlayedRoleTypesAreSupertypes()
+        );
     }
 
     private List<TypeDBException> validateIsAbstractOrOwnedAttributeTypesNotAbstract() {

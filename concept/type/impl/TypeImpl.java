@@ -156,11 +156,6 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     }
 
     @Override
-    public List<TypeDBException> exceptions() {
-        return new ArrayList<>();
-    }
-
-    @Override
     public boolean isType() {
         return true;
     }

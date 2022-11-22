@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -180,9 +181,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public List<TypeDBException> exceptions() {
-        List<TypeDBException> exceptions = super.exceptions();
-        exceptions.addAll(validateOverriddenTypesAreInheritedFromRelationType());
-        return exceptions;
+        return new ArrayList<>(validateOverriddenTypesAreInheritedFromRelationType());
     }
 
     private List<TypeDBException> validateOverriddenTypesAreInheritedFromRelationType() {
