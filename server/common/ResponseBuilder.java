@@ -284,7 +284,13 @@ public class ResponseBuilder {
         public static TransactionProto.Transaction.Res getSchemaExceptionsRes(UUID reqID, List<TypeDBException> exceptions) {
             return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetSchemaExceptionsRes(
                     ConceptProto.ConceptManager.GetSchemaExceptions.Res.newBuilder().addAllExceptions(
-                            exceptions.stream().map(Throwable::getMessage).collect(toList())
+                            exceptions.stream().map(
+                                    // TODO: We need a new TypeDB Exception API that is consistent,
+                                    //       that ensures every exception has a code and a message.
+                                    //       For this specific API we know that getSchemaExceptions() always does.
+                                    e -> ConceptProto.Exceptions.newBuilder()
+                                            .setCode(e.code().get()).setMessage(e.getMessage()).build()
+                            ).collect(toList())
                     ).build()
             ));
         }

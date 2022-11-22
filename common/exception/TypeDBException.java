@@ -18,10 +18,10 @@
 
 package com.vaticle.typedb.core.common.exception;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 /**
  * TODO: there is some technical debt in the way we throw and catch TypeDBException, which is a RuntimeException.
@@ -30,28 +30,28 @@ import java.util.Optional;
 public class TypeDBException extends RuntimeException {
 
     @Nullable
-    private final ErrorMessage errorMessage;
+    public final ErrorMessage error;
 
     private TypeDBException(String error) {
         super(error);
-        errorMessage = null;
+        this.error = null;
     }
 
     private TypeDBException(ErrorMessage error, Throwable cause) {
         super(error.message(cause), cause);
         assert !getMessage().contains("%s");
-        this.errorMessage = error;
+        this.error = error;
     }
 
     private TypeDBException(ErrorMessage error, Object... parameters) {
         super(error.message(parameters));
         assert !getMessage().contains("%s");
-        this.errorMessage = error;
+        this.error = error;
     }
 
     private TypeDBException(Throwable e) {
         super(e);
-        errorMessage = null;
+        error = null;
     }
 
     public static TypeDBException of(Throwable e) {
@@ -67,7 +67,7 @@ public class TypeDBException extends RuntimeException {
     }
 
     public Optional<String> code() {
-        return Optional.ofNullable(errorMessage).map(com.vaticle.typedb.common.exception.ErrorMessage::code);
+        return Optional.ofNullable(error).map(ErrorMessage::code);
     }
 
     public static TypeDBException of(List<TypeDBException> exceptions) {
@@ -83,11 +83,11 @@ public class TypeDBException extends RuntimeException {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TypeDBException that = (TypeDBException) o;
-        return Objects.equals(errorMessage, that.errorMessage);
+        return Objects.equals(error, that.error);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(errorMessage);
+        return Objects.hash(error);
     }
 }
