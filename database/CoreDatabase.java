@@ -497,8 +497,6 @@ public class CoreDatabase implements TypeDB.Database {
         private final ConcurrentSet<CoreTransaction.Data> committed;
         private final AtomicBoolean cleanupRunning;
 
-        private enum CommitState {UNCOMMITTED, COMMITTING, COMMITTED}
-
         IsolationManager() {
             uncommitted = new ConcurrentSet<>();
             committing = new ConcurrentSet<>();
