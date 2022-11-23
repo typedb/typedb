@@ -607,11 +607,11 @@ public class CoreDatabase implements TypeDB.Database {
 
         public void initialiseAndCleanUp() {
             initialise();
-            LOG.debug("Cleaning up statistics metadata.");
+            LOG.trace("Cleaning up statistics metadata.");
             correctMiscounts();
             deleteCorrectionMetadata();
-            LOG.debug("Statistics are ready and up to date.");
-            if (LOG.isDebugEnabled()) logSummary();
+            LOG.trace("Statistics are ready and up to date.");
+            if (LOG.isTraceEnabled()) logSummary();
         }
 
         private void deleteCorrectionMetadata() {
@@ -625,7 +625,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         private void logSummary() {
             try (CoreTransaction.Data txn = session.transaction(READ)) {
-                LOG.debug("Total 'thing' count: " +
+                LOG.trace("Total 'thing' count: " +
                         txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootThingType())
                 );
                 long hasCount = 0;
@@ -634,10 +634,10 @@ public class CoreDatabase implements TypeDB.Database {
                 for (TypeVertex attr : attributes) {
                     hasCount += txn.graphMgr.data().stats().hasEdgeSum(allTypes, attr);
                 }
-                LOG.debug("Total 'role' count: " +
+                LOG.trace("Total 'role' count: " +
                         txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootRoleType())
                 );
-                LOG.debug("Total 'has' count: " + hasCount);
+                LOG.trace("Total 'has' count: " + hasCount);
             }
         }
 

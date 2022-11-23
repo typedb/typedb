@@ -45,7 +45,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
@@ -269,7 +268,7 @@ public class GraphPlanner implements ComponentPlanner {
     private void startReOptimise(GraphManager graphMgr, long timeLimitMillis) {
         updateTraversalCosts(graphMgr);
         if (isUpToDate() && isOptimal()) {
-            if (LOG.isDebugEnabled()) LOG.debug("GraphPlanner still optimal and up-to-date");
+            if (LOG.isTraceEnabled()) LOG.trace("GraphPlanner still optimal and up-to-date");
             isOptimising.set(false);
             return;
         }
@@ -291,7 +290,7 @@ public class GraphPlanner implements ComponentPlanner {
         end = Instant.now();
 
         isUpToDate = true;
-        printDebug(start, endSolver, end);
+        printTrace(start, endSolver, end);
         isOptimising.set(false);
     }
 
@@ -402,13 +401,13 @@ public class GraphPlanner implements ComponentPlanner {
         throw TypeDBException.of(UNEXPECTED_PLANNING_ERROR);
     }
 
-    private void printDebug(Instant start, Instant endSolver, Instant end) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Optimisation status         : {}", optimiser.status().name());
-            LOG.debug("Objective function value    : {}", optimiser.objectiveValue());
-            LOG.debug("Solver duration             : {} (ms)", between(start, endSolver).toMillis());
-            LOG.debug("Procedure creation duration : {} (ms)", between(endSolver, end).toMillis());
-            LOG.debug("Total duration ------------ : {} (ms)", between(start, end).toMillis());
+    private void printTrace(Instant start, Instant endSolver, Instant end) {
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Optimisation status         : {}", optimiser.status().name());
+            LOG.trace("Objective function value    : {}", optimiser.objectiveValue());
+            LOG.trace("Solver duration             : {} (ms)", between(start, endSolver).toMillis());
+            LOG.trace("Procedure creation duration : {} (ms)", between(endSolver, end).toMillis());
+            LOG.trace("Total duration ------------ : {} (ms)", between(start, end).toMillis());
         }
     }
 
