@@ -671,6 +671,7 @@ public class CoreDatabase implements TypeDB.Database {
          * and correct them if we have enough information to do so.
          */
         protected void correctMiscounts() {
+            if (!databaseMgr.isOpen()) return;
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
                 if (mayCorrectMiscounts(txn)) cache.incrementStatisticsVersion();
             }
