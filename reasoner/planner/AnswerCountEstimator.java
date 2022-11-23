@@ -156,8 +156,7 @@ public class AnswerCountEstimator {
             Variable bestScalingVar = scale.second().orElse(null);
             // Find scaling factor
             for (Variable v : model.variables) {
-                double ans = (double) model.estimateAnswers(set(v));
-                if (ans == 0) ans = 1;
+                double ans = (double) Math.max(1,model.estimateAnswers(set(v)));
                 if (minVariableEstimate.containsKey(v) && minVariableEstimate.get(v) / ans < bestScaler) {
                     bestScaler = minVariableEstimate.get(v) / ans;
                     bestScalingVar = v;
