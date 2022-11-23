@@ -570,7 +570,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         private long newestCommittedSnapshot() {
-            return iterate(committed).map(txn -> txn.snapshotEnd().get()).stream().min(Comparator.naturalOrder()).orElse(0L);
+            return iterate(committed).map(txn -> txn.snapshotEnd().get()).stream().max(Comparator.naturalOrder()).orElse(0L);
         }
 
         FunctionalIterator<CoreTransaction.Data> getNotCommitted() {
