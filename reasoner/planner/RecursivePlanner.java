@@ -197,21 +197,22 @@ public class RecursivePlanner extends ReasonerPlanner {
                 resolvableCost = iterate(resolvable.asNegated().disjunction().conjunctions()).map(conj -> {
                     Set<Variable> conjVariables = estimateableVariables(conj.pattern().variables());
                     double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, Collections.intersection(conjVariables, restrictedResolvableVars));
-                    double scalingFactor = Math.min(1, answersForModeFromPrefix / allAnswersForMode);
+                    double scalingFactor = allAnswersForMode !=0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
                     return scaledCallCost(scalingFactor, new CallMode(conj, Collections.intersection(conjVariables, resolvableMode)));
                 }).reduce(0.0, Double::sum);
             } else {
                 AnswerCountEstimator.IncrementalEstimator thisResolvableOnlyEstimator = answerCountEstimator.createIncrementalEstimator(conjunctionNode.conjunction());
                 thisResolvableOnlyEstimator.extend(resolvable);
                 double allAnswersForMode = thisResolvableOnlyEstimator.answerEstimate(restrictedResolvableVars);
-                double scalingFactor = Math.min(1, answersForModeFromPrefix / allAnswersForMode);
+                double scalingFactor = allAnswersForMode != 0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
                 resolvableCost = scaledAcyclicCost(scalingFactor, conjunctionNode, resolvable, resolvableMode);
 
                 if (resolvable.isConcludable() && conjunctionNode.cyclicConcludables().contains(resolvable.asConcludable())) {
                     Set<Variable> restrictedVarsNotInMode = iterate(restrictedResolvableVars).filter(v -> !mode.contains(v)).toSet();
                     // Approximation: This severely underestimates the number of cyclic-calls generated in the case where a mix of input and local variables are arguments to the call.
-                    double cyclicScalingFactor = restrictedVarsNotInMode.isEmpty() ? 0.0 :
-                            (double) estimator.answerEstimate(restrictedVarsNotInMode) / thisResolvableOnlyEstimator.answerEstimate(resolvableMode);
+                    long allAnswersForUnrestrictedMode = thisResolvableOnlyEstimator.answerEstimate(resolvableMode);
+                    double cyclicScalingFactor = restrictedVarsNotInMode.isEmpty() && allAnswersForUnrestrictedMode != 0 ? 0.0 :
+                            (double) estimator.answerEstimate(restrictedVarsNotInMode) / allAnswersForUnrestrictedMode;
                     scalingFactors.put(resolvable.asConcludable(), cyclicScalingFactor);
                     cyclicConcludableModes.add(new Pair<>(resolvable.asConcludable(), resolvableMode));
                 }

@@ -216,8 +216,7 @@ public class AnswerCountEstimator {
             }
 
             assert !variables.isEmpty() || answerEstimateFromCover(variables, cover) == 1;
-            long ret = answerEstimateFromCover(variables, cover);
-            return Math.max(1, ret); // Avoid divisions by zero
+            return Math.round(Math.ceil(answerEstimateFromCover(variables, cover)));
         }
 
         private static double scaledEstimate(LocalModel model, Pair<Double, Optional<Variable>> scale, Set<Variable> estimateVariables) {
