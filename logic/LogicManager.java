@@ -151,7 +151,7 @@ public class LogicManager {
 
         if (graphMgr.schema().hasModifiedTypes()) {
             // re-validate all rules are valid
-            rules().forEachRemaining(rule -> rule.validate(this, conceptMgr));
+            rules().stream().parallel().forEach(rule -> rule.validate(this, conceptMgr));
 
             // recreate rule index conclusions
             graphMgr.schema().rules().all().forEachRemaining(s -> fromStructure(s).conclusion().reindex());
