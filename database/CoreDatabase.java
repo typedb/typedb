@@ -24,17 +24,16 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
-import com.vaticle.typedb.core.encoding.key.Key;
-import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.key.Key;
 import com.vaticle.typedb.core.encoding.key.KeyGenerator;
 import com.vaticle.typedb.core.encoding.key.StatisticsKey;
+import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
-import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -64,8 +63,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentNavigableMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -93,6 +90,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ISOLATION_MODIFY_DELETE_VIOLATION;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.DATA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.SCHEMA;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.READ;
@@ -494,20 +492,20 @@ public class CoreDatabase implements TypeDB.Database {
 
     public static class IsolationManager {
 
-        private final ConcurrentMap<CoreTransaction.Data, CommitState> commitStates;
-        private final ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> commitTimeline;
+        private final ConcurrentSet<CoreTransaction.Data> uncommitted;
+        private final ConcurrentSet<CoreTransaction.Data> committing;
+        private final ConcurrentSet<CoreTransaction.Data> committed;
         private final AtomicBoolean cleanupRunning;
 
-        private enum CommitState {UNCOMMITTED, COMMITTING, COMMITTED}
-
         IsolationManager() {
-            this.cleanupRunning = new AtomicBoolean(false);
-            this.commitStates = new ConcurrentHashMap<>();
-            this.commitTimeline = new ConcurrentSkipListMap<>();
+            uncommitted = new ConcurrentSet<>();
+            committing = new ConcurrentSet<>();
+            committed = new ConcurrentSet<>();
+            cleanupRunning = new AtomicBoolean(false);
         }
 
         void opened(CoreTransaction.Data transaction) {
-            commitStates.put(transaction, CommitState.UNCOMMITTED);
+            uncommitted.add(transaction);
         }
 
         public Set<CoreTransaction.Data> validateOverlappingAndStartCommit(CoreTransaction.Data txn) {
@@ -515,18 +513,18 @@ public class CoreDatabase implements TypeDB.Database {
             synchronized (this) {
                 transactions = commitMayConflict(txn);
                 transactions.forEach(other -> validateIsolation(txn, other));
-                commitStates.put(txn, CommitState.COMMITTING);
+                committing.add(txn);
+                uncommitted.remove(txn);
             }
             return transactions;
         }
 
         private Set<CoreTransaction.Data> commitMayConflict(CoreTransaction.Data txn) {
             if (!txn.dataStorage.hasTrackedWrite()) return set();
-            return iterate(commitStates.entrySet())
-                    .filter(e -> e.getValue() == CommitState.COMMITTING ||
-                            (e.getValue() == CommitState.COMMITTED && e.getKey().snapshotEnd().get() > txn.snapshotStart()))
-                    .map(Map.Entry::getKey)
-                    .toSet();
+            Set<CoreTransaction.Data> mayConflict = new HashSet<>(committing);
+            iterate(committed).filter(committed -> committed.snapshotEnd().get() > txn.snapshotStart())
+                    .forEachRemaining(mayConflict::add);
+            return mayConflict;
         }
 
         private void validateIsolation(CoreTransaction.Data txn, CoreTransaction.Data mayConflict) {
@@ -540,51 +538,47 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         public void committed(CoreTransaction.Data txn) {
-            assert commitStates.get(txn) == CommitState.COMMITTING && txn.snapshotEnd().isPresent();
-            commitStates.put(txn, CommitState.COMMITTED);
-            commitTimeline.compute(txn.snapshotEnd().get(), (snapshot, committed) -> {
-                if (committed == null) committed = new HashSet<>();
-                committed.add(txn);
-                return committed;
-            });
+            assert committing.contains(txn) && txn.snapshotEnd().isPresent();
+            committed.add(txn);
+            committing.remove(txn);
         }
 
         void closed(CoreTransaction.Data txn) {
-            if (commitStates.get(txn) != CommitState.COMMITTED) commitStates.remove(txn);
+            // txn closed with commit or without failed commit
+            uncommitted.remove(txn);
+            committing.remove(txn);
             cleanupCommitted();
         }
 
         private void cleanupCommitted() {
             if (cleanupRunning.compareAndSet(false, true)) {
-                Optional<Long> oldestUncommittedSnapshot = oldestNotCommittedSnapshot();
-                ConcurrentNavigableMap<Long, Set<CoreTransaction.Data>> deletable;
-                if (oldestUncommittedSnapshot.isEmpty()) deletable = commitTimeline;
-                else deletable = commitTimeline.headMap(oldestUncommittedSnapshot.get());
-                deletable.keySet().forEach(snapshot ->
-                        deletable.computeIfPresent(snapshot, (s, txns) -> {
-                            for (CoreTransaction.Data txn : txns) {
-                                txn.delete();
-                                commitStates.remove(txn);
-                            }
-                            return null;
-                        })
-                );
+                long lastCommittedSnapshot = newestCommittedSnapshot();
+                Long cleanupUntil = oldestUncommittedSnapshot().orElse(lastCommittedSnapshot + 1);
+                committed.forEach(txn -> {
+                    if (txn.snapshotEnd().get() < cleanupUntil) {
+                        txn.delete();
+                        committed.remove(txn);
+                    }
+                });
                 cleanupRunning.set(false);
             }
         }
 
-        private Optional<Long> oldestNotCommittedSnapshot() {
-            return getNotCommitted().map(CoreTransaction.Data::snapshotStart).stream().min(Comparator.naturalOrder());
+        private Optional<Long> oldestUncommittedSnapshot() {
+            return link(iterate(uncommitted), iterate(committing)).map(CoreTransaction.Data::snapshotStart)
+                    .stream().min(Comparator.naturalOrder());
+        }
+
+        private long newestCommittedSnapshot() {
+            return iterate(committed).map(txn -> txn.snapshotEnd().get()).stream().max(Comparator.naturalOrder()).orElse(0L);
         }
 
         FunctionalIterator<CoreTransaction.Data> getNotCommitted() {
-            return iterate(commitStates.entrySet())
-                    .filter(e -> e.getValue() != CommitState.COMMITTED)
-                    .map(Map.Entry::getKey);
+            return link(iterate(uncommitted), iterate(committing));
         }
 
         long committedEventCount() {
-            return iterate(commitStates.values()).filter(s -> s == CommitState.COMMITTED).count();
+            return committed.size();
         }
     }
 
@@ -607,11 +601,11 @@ public class CoreDatabase implements TypeDB.Database {
 
         public void initialiseAndCleanUp() {
             initialise();
-            LOG.debug("Cleaning up statistics metadata.");
+            LOG.trace("Cleaning up statistics metadata.");
             correctMiscounts();
             deleteCorrectionMetadata();
-            LOG.debug("Statistics are ready and up to date.");
-            if (LOG.isDebugEnabled()) logSummary();
+            LOG.trace("Statistics are ready and up to date.");
+            if (LOG.isTraceEnabled()) logSummary();
         }
 
         private void deleteCorrectionMetadata() {
@@ -625,7 +619,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         private void logSummary() {
             try (CoreTransaction.Data txn = session.transaction(READ)) {
-                LOG.debug("Total 'thing' count: " +
+                LOG.trace("Total 'thing' count: " +
                         txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootThingType())
                 );
                 long hasCount = 0;
@@ -634,10 +628,10 @@ public class CoreDatabase implements TypeDB.Database {
                 for (TypeVertex attr : attributes) {
                     hasCount += txn.graphMgr.data().stats().hasEdgeSum(allTypes, attr);
                 }
-                LOG.debug("Total 'role' count: " +
+                LOG.trace("Total 'role' count: " +
                         txn.graphMgr.data().stats().thingVertexTransitiveCount(txn.graphMgr.schema().rootRoleType())
                 );
-                LOG.debug("Total 'has' count: " + hasCount);
+                LOG.trace("Total 'has' count: " + hasCount);
             }
         }
 
@@ -677,6 +671,7 @@ public class CoreDatabase implements TypeDB.Database {
          * and correct them if we have enough information to do so.
          */
         protected void correctMiscounts() {
+            if (!databaseMgr.isOpen()) return;
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
                 if (mayCorrectMiscounts(txn)) cache.incrementStatisticsVersion();
             }

@@ -33,6 +33,7 @@ import java.util.UUID;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.ConceptManager.getSchemaExceptionsRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.ConceptManager.getThingRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.ConceptManager.putAttributeTypeRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.ConceptManager.putEntityTypeRes;
@@ -66,6 +67,9 @@ public class ConceptService {
                 return;
             case PUT_RELATION_TYPE_REQ:
                 putRelationType(conceptMgrReq.getPutRelationTypeReq().getLabel(), reqID);
+                return;
+            case GET_SCHEMA_EXCEPTIONS_REQ:
+                getSchemaExceptions(reqID);
                 return;
             default:
             case REQ_NOT_SET:
@@ -119,4 +123,7 @@ public class ConceptService {
         transactionSvc.respond(putRelationTypeRes(reqID, relationType));
     }
 
+    private void getSchemaExceptions(UUID reqID) {
+        transactionSvc.respond(getSchemaExceptionsRes(reqID, conceptMgr.getSchemaExceptions()));
+    }
 }

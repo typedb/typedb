@@ -75,7 +75,7 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private Direction direction;
     private IteratorState iteratorState;
 
-    private enum Direction {TRAVERSE, REVISIT}
+    private enum Direction {TRAVERSE, REVISIT_ALL, REVISIT_RETRIEVED}
 
     private enum IteratorState {INIT, EMPTY, FETCHED, COMPLETED}
 
@@ -206,19 +206,22 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
     private void initialiseEnds() {
         assert toTraverse.isEmpty();
         toRevisit.addAll(procedure.endVertices());
-        direction = Direction.REVISIT;
+        direction = Direction.REVISIT_RETRIEVED;
     }
 
     private boolean computeAnswer() {
         while ((direction == Direction.TRAVERSE && !toTraverse.isEmpty()) ||
-                (direction == Direction.REVISIT && !toRevisit.isEmpty())) {
+                ((direction == Direction.REVISIT_ALL || direction == Direction.REVISIT_RETRIEVED) && !toRevisit.isEmpty())) {
             ProcedureVertex<?, ?> vertex;
             if (direction == Direction.TRAVERSE) {
                 toTraverse.remove(vertex = toTraverse.first());
                 traverse(vertex);
-            } else {
+            } else if (direction == Direction.REVISIT_ALL) {
                 toRevisit.remove(vertex = toRevisit.last());
                 revisit(vertex);
+            } else {
+                toRevisit.remove(vertex = toRevisit.last());
+                revisitRetrieved(vertex);
             }
         }
         return direction == Direction.TRAVERSE;
@@ -226,8 +229,28 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void traverse(ProcedureVertex<?, ?> procedureVertex) {
         VertexTraverser vertexTraverser = vertexTraversers.get(procedureVertex);
-        if (vertexTraverser.findNextVertex()) success(vertexTraverser);
-        else failed(vertexTraverser);
+        if (vertexTraverser.findNextVertex()) {
+            success(vertexTraverser);
+            assert direction == Direction.TRAVERSE;
+        }
+        else {
+            failed(vertexTraverser);
+            direction = Direction.REVISIT_ALL;
+        }
+    }
+
+    private void revisit(ProcedureVertex<?, ?> procedureVertex) {
+        toTraverse.add(procedureVertex);
+        direction = Direction.TRAVERSE;
+    }
+
+    private void revisitRetrieved(ProcedureVertex<?, ?> vertex) {
+        if (vertex.id().isRetrievable() && modifiers.filter().variables().contains(vertex.id().asVariable().asRetrievable())) {
+            revisit(vertex);
+        } else {
+            failed(vertexTraversers.get(vertex));
+            direction = Direction.REVISIT_RETRIEVED;
+        }
     }
 
     private void success(VertexTraverser vertexTraverser) {
@@ -249,12 +272,6 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             }
         }
         vertexTraverser.clear();
-        direction = Direction.REVISIT;
-    }
-
-    private void revisit(ProcedureVertex<?, ?> procedureVertex) {
-        toTraverse.add(procedureVertex);
-        direction = Direction.TRAVERSE;
     }
 
     @Override

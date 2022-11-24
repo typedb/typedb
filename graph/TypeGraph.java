@@ -27,13 +27,13 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.encoding.key.KeyGenerator;
 import com.vaticle.typedb.core.encoding.Storage;
-import com.vaticle.typedb.core.encoding.key.Key;
 import com.vaticle.typedb.core.encoding.iid.IndexIID;
 import com.vaticle.typedb.core.encoding.iid.IndexIID.Type.RuleUsage;
 import com.vaticle.typedb.core.encoding.iid.StructureIID;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
+import com.vaticle.typedb.core.encoding.key.Key;
+import com.vaticle.typedb.core.encoding.key.KeyGenerator;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.graph.structure.impl.RuleStructureImpl;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -42,7 +42,6 @@ import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -56,6 +55,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -66,9 +66,9 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.merge;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.PLAYS;
@@ -411,9 +411,9 @@ public class TypeGraph {
             Set<TypeVertex> overriddens = new HashSet<>();
             NavigableSet<TypeVertex> roleTypes = new TreeSet<>();
             loop(relation, Objects::nonNull, r -> r.outs().edge(SUB).to().firstOrNull())
-                    .flatMap(sub -> sub.outs().edge(RELATES).toAndOverridden().map(e -> {
+                    .flatMap(rel -> rel.outs().edge(RELATES).toAndOverridden().map(e -> {
                         if (e.value() != null) overriddens.add(e.value());
-                        if (sub.equals(relation) || !overriddens.contains(e.key())) return e.key();
+                        if (rel.equals(relation) || !overriddens.contains(e.key())) return e.key();
                         else return null;
                     }).noNulls()).toSet(roleTypes);
             return roleTypes;
@@ -561,7 +561,7 @@ public class TypeGraph {
         return isModified;
     }
 
-    public boolean typesModified() {
+    public boolean hasModifiedTypes() {
         return iterate(typesByIID.values()).anyMatch(TypeVertex::isModified);
     }
 

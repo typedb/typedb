@@ -56,7 +56,7 @@ public abstract class ConclusionController<
         OUTPUT, PROCESSOR extends AbstractProcessor<Either<ConceptMap, Materialisation>, OUTPUT, ?, PROCESSOR>,
         CONTROLLER extends ConclusionController<OUTPUT, PROCESSOR, CONTROLLER>
         > extends AbstractController<
-        ConceptMap, Either<ConceptMap, Materialisation>, OUTPUT, ConclusionController.Request<?, ?, ?>,
+        ConceptMap, Either<ConceptMap, Materialisation>, OUTPUT, ConclusionController.Request<?, ?>,
         PROCESSOR, CONTROLLER
         > {
 
@@ -77,7 +77,7 @@ public abstract class ConclusionController<
     }
 
     @Override
-    public void routeConnectionRequest(Request<?, ?, ?> req) {
+    public void routeConnectionRequest(Request<?, ?> req) {
         if (isTerminated()) return;
         if (req.isCondition()) {
             conditionController.execute(actor -> actor.establishProcessorConnection(req.asCondition()));
@@ -125,10 +125,8 @@ public abstract class ConclusionController<
         }
     }
 
-    protected static class Request<
-            CONTROLLER_ID, BOUNDS,
-            CONTROLLER extends AbstractController<BOUNDS, ?, Either<ConceptMap, Materialisation>, ?, ?, ?>
-            > extends AbstractRequest<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>, CONTROLLER> {
+    protected static class Request<CONTROLLER_ID, BOUNDS>
+            extends AbstractRequest<CONTROLLER_ID, BOUNDS, Either<ConceptMap, Materialisation>> {
 
         Request(Reactive.Identifier inputPortId,
                 Driver<? extends Processor<?, ?>> inputPortProcessor, CONTROLLER_ID controller_id, BOUNDS bounds) {
@@ -151,7 +149,7 @@ public abstract class ConclusionController<
             throw TypeDBException.of(ILLEGAL_STATE);
         }
 
-        protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap, ConditionController> {
+        protected static class ConditionRequest extends Request<Rule.Condition, ConceptMap> {
 
             ConditionRequest(Reactive.Identifier inputPortId,
                              Driver<? extends Processor<?, ?>> inputPortProcessor,
@@ -171,7 +169,7 @@ public abstract class ConclusionController<
 
         }
 
-        protected static class MaterialiserRequest extends Request<Void, Materialisable, MaterialisationController> {
+        protected static class MaterialiserRequest extends Request<Void, Materialisable> {
 
             MaterialiserRequest(
                     Reactive.Identifier inputPortId,
@@ -194,7 +192,7 @@ public abstract class ConclusionController<
     }
 
     protected abstract static class Processor<OUTPUT, PROCESSOR extends Processor<OUTPUT, PROCESSOR>>
-            extends AbstractProcessor<Either<ConceptMap, Materialisation>, OUTPUT, Request<?, ?, ?>, PROCESSOR> {
+            extends AbstractProcessor<Either<ConceptMap, Materialisation>, OUTPUT, Request<?, ?>, PROCESSOR> {
 
         private final Rule rule;
         private final ConceptMap bounds;
@@ -230,7 +228,7 @@ public abstract class ConclusionController<
         public void setUp() {
             setHubReactive(fanOut(this));
             InputPort<Either<ConceptMap, Materialisation>> conditionInput = createInputPort();
-            ConceptMap filteredBounds = bounds().filter(rule.condition().pattern().retrieves());
+            ConceptMap filteredBounds = bounds().filter(rule.when().retrieves());
             mayRequestCondition(new ConditionRequest(conditionInput.identifier(), driver(), rule.condition(), filteredBounds));
             Stream<Either<ConceptMap, Map<Variable, Concept>>, OUTPUT> conclusionReactive = createStream();
             conditionInput.map(Processor::convertConclusionInput).registerSubscriber(conclusionReactive);
@@ -307,7 +305,7 @@ public abstract class ConclusionController<
                     Either<ConceptMap, Map<Variable, Concept>> packet
             ) {
                 if (packet.isFirst()) {
-                    assert packet.first().concepts().keySet().containsAll(conclusionProcessor().rule().condition().pattern().retrieves());
+                    assert packet.first().concepts().keySet().containsAll(conclusionProcessor().rule().condition().disjunction().pattern().retrieves());
                     InputPort<Either<ConceptMap, Materialisation>> materialisationInput = conclusionProcessor().createInputPort();
                     ConceptMap filteredConditionAns = packet.first().filter(conclusionProcessor().rule().conclusion().retrievableIds());
                     conclusionProcessor().mayRequestMaterialiser(new MaterialiserRequest(

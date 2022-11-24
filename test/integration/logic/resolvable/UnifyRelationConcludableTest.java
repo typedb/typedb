@@ -1156,8 +1156,8 @@ public class UnifyRelationConcludableTest {
         for (int parentIndex = 0; parentIndex < parents.size(); parentIndex++) {
             String parent = parents.get(parentIndex);
             assertEquals(
-                    String.format("Unexpected unification outcome at index [%s]:\nconjunction: %s\nconclusion: %s\nconditions: %s\n",
-                                  parentIndex, parent, rule.conclusion(), rule.condition()),
+                    String.format("Unexpected unification outcome at index [%s]:\nconjunction: %s\nconclusion: %s\ncondition: %s\n",
+                                  parentIndex, parent, rule.conclusion(), rule.condition().disjunction().pattern()),
                     unifiableParents.contains(parentIndex), unifiers(parent, rule).hasNext()
             );
         }

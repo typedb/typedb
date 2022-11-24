@@ -30,7 +30,7 @@ import java.util.HashSet;
 import java.util.function.Supplier;
 
 public class RootDisjunctionController
-        extends DisjunctionController<RootDisjunctionController.Processor, RootDisjunctionController> {
+        extends DisjunctionController<ConceptMap, RootDisjunctionController.Processor, RootDisjunctionController> {
 
     private final Modifiers.Filter filter;
     private final boolean explain;
@@ -68,7 +68,7 @@ public class RootDisjunctionController
         reasonerConsumer.exception(cause);
     }
 
-    protected static class Processor extends DisjunctionController.Processor<Processor> {
+    protected static class Processor extends DisjunctionController.Processor<ConceptMap, Processor> {
 
         private final Modifiers.Filter filter;
         private final boolean explain;
@@ -93,17 +93,17 @@ public class RootDisjunctionController
         }
 
         @Override
-        public void rootPull() {
-            rootSink.pull();
-        }
-
-        @Override
-        protected Stream<ConceptMap, ConceptMap> getOrCreateHubReactive(Stream<ConceptMap, ConceptMap> fanIn) {
+        Stream<ConceptMap, ConceptMap> getOrCreateHubReactive(Stream<ConceptMap, ConceptMap> fanIn) {
             // Simply here to be overridden by root disjuntion to avoid duplicating setUp
             Stream<ConceptMap, ConceptMap> op = fanIn;
             if (!explain) op = op.map(conceptMap -> conceptMap.filter(filter));
             op = op.distinct();
             return op;
+        }
+
+        @Override
+        public void rootPull() {
+            rootSink.pull();
         }
 
         @Override

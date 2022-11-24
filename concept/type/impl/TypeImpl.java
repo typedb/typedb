@@ -20,17 +20,17 @@ package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.concept.ConceptImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.Type;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.TypeQL;
@@ -153,11 +153,6 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         if (rules.hasNext()) {
             throw exception(TypeDBException.of(TYPE_REFERENCED_IN_RULES, getLabel(), rules.toList()));
         }
-    }
-
-    @Override
-    public List<TypeDBException> validate() {
-        return new ArrayList<>();
     }
 
     @Override

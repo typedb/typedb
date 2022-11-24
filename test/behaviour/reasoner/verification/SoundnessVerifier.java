@@ -107,7 +107,7 @@ class SoundnessVerifier {
 
     private boolean canExplanationBeVerified(Explanation explanation) {
         return iterate(explanation.conditionAnswer().concepts().values())
-                .filter(c -> c.asThing().isInferred() && !inferredConceptMapping.containsKey(c))
+                .filter(c -> c.isThing() && c.asThing().isInferred() && !inferredConceptMapping.containsKey(c))
                 .first().isEmpty();
     }
 
@@ -238,7 +238,7 @@ class SoundnessVerifier {
                 if (inferredConceptMapping.containsKey(concept)) {
                     substituted.put(var, inferredConceptMapping.get(concept));
                 } else {
-                    assert !concept.asThing().isInferred();
+                    assert !(concept.isThing() && concept.asThing().isInferred());
                     substituted.put(var, concept);
                 }
             } else {

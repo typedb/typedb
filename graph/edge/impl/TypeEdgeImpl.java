@@ -19,11 +19,11 @@
 package com.vaticle.typedb.core.graph.edge.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
+import com.vaticle.typedb.core.graph.TypeGraph;
+import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
 import javax.annotation.Nullable;
@@ -42,6 +42,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
     final Encoding.Edge.Type encoding;
     final View.Forward forward;
     final View.Backward backward;
+    private int hash;
 
     TypeEdgeImpl(TypeGraph graph, Encoding.Edge.Type encoding) {
         this.graph = graph;
@@ -63,6 +64,26 @@ public abstract class TypeEdgeImpl implements TypeEdge {
     abstract EdgeViewIID.Type computeForwardIID();
 
     abstract EdgeViewIID.Type computeBackwardIID();
+
+    abstract VertexIID.Type fromIID();
+
+    abstract VertexIID.Type toIID();
+
+    @Override
+    public final boolean equals(Object object) {
+        if (this == object) return true;
+        if (!(object instanceof TypeEdgeImpl)) return false;
+        TypeEdgeImpl that = (TypeEdgeImpl) object;
+        return (this.encoding.equals(that.encoding) &&
+                this.fromIID().equals(that.fromIID()) &&
+                this.toIID().equals(that.toIID()));
+    }
+
+    @Override
+    public final int hashCode() {
+        if (hash == 0) hash = hash(encoding, fromIID().hashCode(), toIID().hashCode());
+        return hash;
+    }
 
     private static abstract class View<T extends TypeEdge.View<T>> implements TypeEdge.View<T> {
 
@@ -137,7 +158,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         private final AtomicBoolean committed;
         private final AtomicBoolean deleted;
         private TypeVertex overridden;
-        private int hash;
 
         /**
          * Default constructor for {@code EdgeImpl.Buffered}.
@@ -181,13 +201,28 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
+        VertexIID.Type fromIID() {
+            return from.iid();
+        }
+
+        @Override
+        VertexIID.Type toIID() {
+            return to.iid();
+        }
+
+        @Override
         public Optional<TypeVertex> overridden() {
             return Optional.ofNullable(overridden);
         }
 
         @Override
-        public void overridden(TypeVertex overridden) {
+        public void setOverridden(TypeVertex overridden) {
             this.overridden = overridden;
+        }
+
+        @Override
+        public void unsetOverridden() {
+            this.overridden = null;
         }
 
         /**
@@ -229,43 +264,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
                 }
             }
         }
-
-        /**
-         * Determine the equality of a {@code TypeEdgeImpl.Buffered} against another.
-         *
-         * We only use {@code encoding}, {@code from} and {@code to} as the are
-         * the fixed properties that do not change, unlike {@code overridden}.
-         * They are also the canonical properties required to uniquely identify
-         * a {@code TypeEdgeImpl.Buffered} uniquely.
-         *
-         * @param object that we want to compare against
-         * @return true if equal, else false
-         */
-        @Override
-        public final boolean equals(Object object) {
-            if (this == object) return true;
-            if (object == null || getClass() != object.getClass()) return false;
-            TypeEdgeImpl.Buffered that = (TypeEdgeImpl.Buffered) object;
-            return (this.encoding.equals(that.encoding) &&
-                    this.from.equals(that.from) &&
-                    this.to.equals(that.to));
-        }
-
-        /**
-         * Determine the equality of a {@code Edge.Buffered} against another.
-         *
-         * We only use {@code encoding}, {@code from} and {@code to} as the are
-         * the fixed properties that do not change, unlike {@code overridden}.
-         * They are also the canonical properties required to uniquely identify
-         * a {@code TypeEdgeImpl.Buffered}.
-         *
-         * @return int of the hashcode
-         */
-        @Override
-        public final int hashCode() {
-            if (hash == 0) hash = hash(encoding, from, to);
-            return hash;
-        }
     }
 
 
@@ -273,13 +271,11 @@ public abstract class TypeEdgeImpl implements TypeEdge {
 
         private final TypeVertex from;
         private final TypeVertex to;
-        private final int hash;
 
         public Target(Encoding.Edge.Type encoding, TypeVertex from, TypeVertex to) {
             super(from.graph(), encoding);
             this.from = from;
             this.to = to;
-            this.hash = hash(Target.class, from, to);
         }
 
         @Override
@@ -308,12 +304,27 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
+        VertexIID.Type fromIID() {
+            return from.iid();
+        }
+
+        @Override
+        VertexIID.Type toIID() {
+            return to.iid();
+        }
+
+        @Override
         public Optional<TypeVertex> overridden() {
             return Optional.empty();
         }
 
         @Override
-        public void overridden(TypeVertex overridden) {
+        public void setOverridden(TypeVertex overridden) {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public void unsetOverridden() {
             throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
@@ -325,21 +336,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         @Override
         public void commit() {
             throw TypeDBException.of(ILLEGAL_OPERATION);
-        }
-
-        @Override
-        public final boolean equals(Object object) {
-            if (this == object) return true;
-            if (object == null || getClass() != object.getClass()) return false;
-            TypeEdgeImpl.Target that = (TypeEdgeImpl.Target) object;
-            return this.encoding.equals(that.encoding) &&
-                    this.from.equals(that.from) &&
-                    this.to.equals(that.to);
-        }
-
-        @Override
-        public final int hashCode() {
-            return hash;
         }
     }
 
@@ -356,7 +352,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         private TypeVertex to;
         private VertexIID.Type overriddenIID;
         private TypeVertex overridden;
-        private int hash;
 
         /**
          * Default constructor for {@code Edge.Persisted}.
@@ -419,6 +414,16 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
+        VertexIID.Type fromIID() {
+            return fromIID;
+        }
+
+        @Override
+        VertexIID.Type toIID() {
+            return toIID;
+        }
+
+        @Override
         public Optional<TypeVertex> overridden() {
             if (overridden != null) return Optional.of(overridden);
             if (overriddenIID == null) return Optional.empty();
@@ -435,11 +440,19 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          * @param overridden the type vertex to override by the head
          */
         @Override
-        public void overridden(TypeVertex overridden) {
+        public void setOverridden(TypeVertex overridden) {
             this.overridden = overridden;
             overriddenIID = overridden.iid();
             graph.storage().putUntracked(computeForwardIID(), overriddenIID.bytes());
             graph.storage().putUntracked(computeBackwardIID(), overriddenIID.bytes());
+        }
+
+        @Override
+        public void unsetOverridden() {
+            this.overridden = null;
+            this.overriddenIID = null;
+            graph.storage().putUntracked(computeForwardIID());
+            graph.storage().putUntracked(computeBackwardIID());
         }
 
         /**
@@ -468,44 +481,6 @@ public abstract class TypeEdgeImpl implements TypeEdge {
          */
         @Override
         public void commit() {
-        }
-
-        /**
-         * Determine the equality of a {@code Edge} against another.
-         *
-         * We only use {@code encoding}, {@code fromIID} and {@code toIID} as the
-         * are the fixed properties that do not change, unlike
-         * {@code overriddenIID} and {@code isDeleted}. They are also the
-         * canonical properties required to identify a {@code Persisted} edge.
-         *
-         * @param object that that we want to compare against
-         * @return true if equal, else false
-         */
-        @Override
-        public final boolean equals(Object object) {
-            if (this == object) return true;
-            if (object == null || getClass() != object.getClass()) return false;
-            TypeEdgeImpl.Persisted that = (TypeEdgeImpl.Persisted) object;
-            return (this.encoding.equals(that.encoding) &&
-                    this.fromIID.equals(that.fromIID) &&
-                    this.toIID.equals(that.toIID));
-        }
-
-        /**
-         * HashCode of a {@code TypeEdgeImpl.Persisted}.
-         *
-         * We only use {@code encoding}, {@code fromIID} and {@code toIID} as the
-         * are the fixed properties that do not change, unlike
-         * {@code overriddenIID} and {@code isDeleted}. They are also the
-         * canonical properties required to uniquely identify an
-         * {@code TypeEdgeImpl.Persisted}.
-         *
-         * @return int of the hashcode
-         */
-        @Override
-        public final int hashCode() {
-            if (hash == 0) hash = hash(encoding, fromIID.hashCode(), toIID.hashCode());
-            return hash;
         }
     }
 }

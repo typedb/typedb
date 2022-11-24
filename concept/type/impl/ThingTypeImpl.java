@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.concept.type.impl;
 
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
@@ -32,8 +33,8 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -44,8 +45,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
@@ -53,7 +55,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.IN
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_NONEXISTENT_PLAYS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_HAS_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_HAS_INSTANCES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_NOT_SUPERTYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATT_NOT_AVAILABLE;
@@ -73,10 +76,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TY
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
-import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.util.StringBuilders.COMMA_NEWLINE_INDENT;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
@@ -264,16 +266,17 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
     }
 
-    private <T extends com.vaticle.typedb.core.concept.type.Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
-                                                                                Forwardable<? extends Type, Order.Asc> overridable,
-                                                                                Forwardable<? extends Type, Order.Asc> notOverridable) {
+    private <T extends Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
+                                           Forwardable<? extends Type, Order.Asc> overridable,
+                                           Forwardable<? extends Type, Order.Asc> notOverridable,
+                                           ErrorMessage message) {
         if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
-            throw exception(TypeDBException.of(OVERRIDDEN_NOT_SUPERTYPE, type.getLabel(), overriddenType.getLabel()));
+            throw exception(TypeDBException.of(message, getLabel(), type.getLabel(), overriddenType.getLabel()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
             throw exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, type.getLabel(), overriddenType.getLabel()));
         }
 
-        vertex.outs().edge(encoding, ((TypeImpl) type).vertex).overridden(((TypeImpl) overriddenType).vertex);
+        vertex.outs().edge(encoding, ((TypeImpl) type).vertex).setOverridden(((TypeImpl) overriddenType).vertex);
     }
 
     private void ownsKey(AttributeTypeImpl attributeType) {
@@ -309,18 +312,22 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_NO_INSTANCES, vertex.label(), attVertex.label()));
         }
         ownsKeyEdge = vertex.outs().put(OWNS_KEY, attVertex);
-        if (getSupertype().declaredOwns(false).findFirst(attributeType).isPresent()) ownsKeyEdge.overridden(attVertex);
+        if (getSupertype().declaredOwns(false).findFirst(attributeType).isPresent()) {
+            ownsKeyEdge.setOverridden(attVertex);
+        } else ownsKeyEdge.unsetOverridden();
     }
 
     private void ownsKey(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
         ownsKey(attributeType);
         override(OWNS_KEY, attributeType, overriddenType,
                 getSupertype().getOwns(attributeType.getValueType()),
-                declaredOwns(false));
+                declaredOwns(false),
+                OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE);
     }
 
     private void ownsAttribute(AttributeTypeImpl attributeType) {
-        Forwardable<AttributeType, Order.Asc> owns = getSupertypes().filter(t -> !t.equals(this)).mergeMapForwardable(ThingType::getOwns, ASC);
+        Forwardable<AttributeType, Order.Asc> owns = getSupertypes().filter(t -> !t.equals(this))
+                .mergeMapForwardable(ThingType::getOwns, ASC);
         if (attributeType.isRoot()) {
             throw exception(TypeDBException.of(ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED));
         } else if (owns.findFirst(attributeType).isPresent()) {
@@ -328,16 +335,21 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         TypeVertex attVertex = attributeType.vertex;
-        TypeEdge keyEdge;
-        if ((keyEdge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) keyEdge.delete();
-        vertex.outs().put(OWNS, attVertex);
+        TypeEdge existingEdge;
+        if ((existingEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
+            existingEdge.unsetOverridden();
+        } else {
+            if ((existingEdge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) existingEdge.delete();
+            vertex.outs().put(OWNS, attVertex);
+        }
     }
 
     private void ownsAttribute(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
         this.ownsAttribute(attributeType);
         override(OWNS, attributeType, overriddenType,
                 getSupertype().getOwns(attributeType.getValueType()),
-                getSupertype().getOwns(true).merge(declaredOwns(false)));
+                getSupertype().getOwns(true).merge(declaredOwns(false)),
+                OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE);
     }
 
     private Forwardable<AttributeType, Order.Asc> declaredOwns(boolean onlyKey) {
@@ -436,21 +448,24 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         } else if (getSupertypes().filter(t -> !t.equals(this)).mergeMapForwardable(ThingType::getPlays, ASC).findFirst(roleType).isPresent()) {
             throw exception(TypeDBException.of(PLAYS_ROLE_NOT_AVAILABLE, getLabel(), roleType.getLabel()));
         }
-        vertex.outs().put(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
+        TypeEdge existingEdge = vertex.outs().edge(PLAYS, ((RoleTypeImpl) roleType).vertex);
+        if (existingEdge != null) existingEdge.unsetOverridden();
+        else vertex.outs().put(PLAYS, ((RoleTypeImpl) roleType).vertex);
     }
 
     @Override
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
         setPlays(roleType);
-        override(Encoding.Edge.Type.PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                vertex.outs().edge(Encoding.Edge.Type.PLAYS).to().mapSorted(v -> RoleTypeImpl.of(graphMgr, v), rt -> rt.vertex, ASC));
+        override(PLAYS, roleType, overriddenType, getSupertype().getPlays(),
+                vertex.outs().edge(PLAYS).to().mapSorted(v -> RoleTypeImpl.of(graphMgr, v), rt -> rt.vertex, ASC),
+                OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE);
     }
 
     @Override
     public void unsetPlays(RoleType roleType) {
         validateIsNotDeleted();
-        TypeEdge edge = vertex.outs().edge(Encoding.Edge.Type.PLAYS, ((RoleTypeImpl) roleType).vertex);
+        TypeEdge edge = vertex.outs().edge(PLAYS, ((RoleTypeImpl) roleType).vertex);
         if (edge == null) {
             if (this.getPlays().findFirst(roleType).isPresent()) {
                 throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_PLAYS,
@@ -477,7 +492,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public Forwardable<RoleType, Order.Asc> getPlaysExplicit() {
         if (isRoot()) return emptySorted();
-        return vertex.outs().edge(Encoding.Edge.Type.PLAYS).to()
+        return vertex.outs().edge(PLAYS).to()
                 .mapSorted(v -> RoleTypeImpl.of(graphMgr, v), rt -> ((RoleTypeImpl) rt).vertex, ASC);
     }
 
@@ -510,25 +525,45 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public List<TypeDBException> validate() {
-        List<TypeDBException> exceptions = super.validate();
-        exceptions.addAll(validateOwnedAttributeTypesNotAbstract());
-        exceptions.addAll(validatePlayedRoleTypesNotAbstract());
-        return exceptions;
+    public List<TypeDBException> exceptions() {
+        return list(
+                validateIsAbstractOrOwnedAttributeTypesNotAbstract(),
+                validateIsAbstractOrPlayedRoleTypesNotAbstract(),
+                validateOverriddenOwnedAttributeTypesAreSupertypes(),
+                validateOverriddenPlayedRoleTypesAreSupertypes()
+        );
     }
 
-    private List<TypeDBException> validateOwnedAttributeTypesNotAbstract() {
+    private List<TypeDBException> validateIsAbstractOrOwnedAttributeTypesNotAbstract() {
         if (isAbstract()) return Collections.emptyList();
         else return getOwns().filter(Type::isAbstract).map(
                 attType -> TypeDBException.of(OWNS_ABSTRACT_ATTRIBUTE_TYPE, getLabel(), attType.getLabel())
         ).toList();
     }
 
-    private List<TypeDBException> validatePlayedRoleTypesNotAbstract() {
+    private List<TypeDBException> validateIsAbstractOrPlayedRoleTypesNotAbstract() {
         if (isAbstract()) return Collections.emptyList();
         else return getPlays().filter(Type::isAbstract).map(
                 roleType -> TypeDBException.of(PLAYS_ABSTRACT_ROLE_TYPE, getLabel(), roleType.getLabel())
         ).toList();
+    }
+
+    private List<TypeDBException> validateOverriddenOwnedAttributeTypesAreSupertypes() {
+        return getOwns().map(at -> pair(at, getOwnsOverridden(at)))
+                .filter(p -> p.second() != null)
+                .filter(p -> p.first().getSupertypes().noneMatch(s -> s.equals(p.second()))).map(
+                        p -> TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE,
+                                getLabel(), p.first().getLabel(), p.second().getLabel())
+                ).toList();
+    }
+
+    private List<TypeDBException> validateOverriddenPlayedRoleTypesAreSupertypes() {
+        return getPlays().map(rt -> pair(rt, getPlaysOverridden(rt)))
+                .filter(p -> p.second() != null)
+                .filter(p -> p.first().getSupertypes().noneMatch(s -> s.equals(p.second()))).map(
+                        p -> TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE,
+                                getLabel(), p.first().getLabel(), p.second().getLabel())
+                ).toList();
     }
 
     @Override
@@ -662,11 +697,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         /**
          * No-op validation method of the root type 'thing'.
-         *
+         * <p>
          * There's nothing to validate for the root type 'thing'.
          */
         @Override
-        public List<TypeDBException> validate() {
+        public List<TypeDBException> exceptions() {
             return Collections.emptyList();
         }
     }

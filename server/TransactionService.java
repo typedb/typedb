@@ -40,7 +40,6 @@ import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -57,6 +56,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.continueTraceOnThread;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
@@ -355,7 +355,10 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             // TODO: We should restrict the type of errors that we log.
             //       Expected error handling from the server side does not need to be logged - they create noise.
             if (isClientCancelled(error)) LOG.debug(error.getMessage(), error);
-            else LOG.error(error.getMessage(), error);
+            else {
+                LOG.error(error.getMessage().trim());
+                LOG.debug("", error);
+            }
         }
     }
 

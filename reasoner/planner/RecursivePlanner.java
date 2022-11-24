@@ -167,7 +167,8 @@ public class RecursivePlanner extends ReasonerPlanner {
             }
         } else if (resolvable.isNegated()) {
             iterate(resolvable.asNegated().disjunction().conjunctions()).forEachRemaining(conjunction -> {
-                CallMode callMode = new CallMode(conjunction, resolvableMode);
+                Set<Variable> branchVariables = Collections.intersection(estimateableVariables(conjunction.pattern().variables()), resolvableMode);
+                CallMode callMode = new CallMode(conjunction, branchVariables);
                 recursivelyGenerateOrderingChoices(callMode);
                 plan(callMode);
             });
@@ -194,22 +195,24 @@ public class RecursivePlanner extends ReasonerPlanner {
             double resolvableCost;
             if (resolvable.isNegated()) {
                 resolvableCost = iterate(resolvable.asNegated().disjunction().conjunctions()).map(conj -> {
-                    double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, restrictedResolvableVars);
-                    double scalingFactor = Math.min(1, answersForModeFromPrefix / allAnswersForMode);
-                    return scaledCallCost(scalingFactor, new CallMode(conj, resolvableMode));
+                    Set<Variable> conjVariables = estimateableVariables(conj.pattern().variables());
+                    double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, Collections.intersection(conjVariables, restrictedResolvableVars));
+                    double scalingFactor = allAnswersForMode !=0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
+                    return scaledCallCost(scalingFactor, new CallMode(conj, Collections.intersection(conjVariables, resolvableMode)));
                 }).reduce(0.0, Double::sum);
             } else {
                 AnswerCountEstimator.IncrementalEstimator thisResolvableOnlyEstimator = answerCountEstimator.createIncrementalEstimator(conjunctionNode.conjunction());
                 thisResolvableOnlyEstimator.extend(resolvable);
                 double allAnswersForMode = thisResolvableOnlyEstimator.answerEstimate(restrictedResolvableVars);
-                double scalingFactor = Math.min(1, answersForModeFromPrefix / allAnswersForMode);
+                double scalingFactor = allAnswersForMode != 0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
                 resolvableCost = scaledAcyclicCost(scalingFactor, conjunctionNode, resolvable, resolvableMode);
 
                 if (resolvable.isConcludable() && conjunctionNode.cyclicConcludables().contains(resolvable.asConcludable())) {
                     Set<Variable> restrictedVarsNotInMode = iterate(restrictedResolvableVars).filter(v -> !mode.contains(v)).toSet();
                     // Approximation: This severely underestimates the number of cyclic-calls generated in the case where a mix of input and local variables are arguments to the call.
-                    double cyclicScalingFactor = restrictedVarsNotInMode.isEmpty() ? 0.0 :
-                            (double) estimator.answerEstimate(restrictedVarsNotInMode) / thisResolvableOnlyEstimator.answerEstimate(resolvableMode);
+                    long allAnswersForUnrestrictedMode = thisResolvableOnlyEstimator.answerEstimate(resolvableMode);
+                    double cyclicScalingFactor = restrictedVarsNotInMode.isEmpty() && allAnswersForUnrestrictedMode != 0 ? 0.0 :
+                            (double) estimator.answerEstimate(restrictedVarsNotInMode) / allAnswersForUnrestrictedMode;
                     scalingFactors.put(resolvable.asConcludable(), cyclicScalingFactor);
                     cyclicConcludableModes.add(new Pair<>(resolvable.asConcludable(), resolvableMode));
                 }

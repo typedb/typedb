@@ -36,7 +36,6 @@ import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -45,6 +44,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -107,7 +107,7 @@ public class LogicManager {
     }
 
     private FunctionalIterator<Rule> rulesWithNegations() {
-        return rules().filter(rule -> !rule.when().negations().isEmpty());
+        return rules().filter(rule -> iterate(rule.condition().branches()).anyMatch(condition -> !condition.conjunction().negations().isEmpty()));
     }
 
     public Map<Rule, Set<Unifier>> applicableRules(Concludable concludable) {
@@ -149,18 +149,20 @@ public class LogicManager {
         logicCache.rule().clear();
         logicCache.unifiers().clear();
 
-        if (graphMgr.schema().typesModified()) {
+        if (graphMgr.schema().hasModifiedTypes()) {
             // re-validate all rules are valid
-            rules().forEachRemaining(rule -> rule.validate(this, conceptMgr));
+            rules().stream().parallel().forEach(rule -> rule.validate(this, conceptMgr));
 
             // recreate rule index conclusions
             graphMgr.schema().rules().all().forEachRemaining(s -> fromStructure(s).conclusion().reindex());
         }
 
         // re-index the concludable-rule unifiers
-        this.rules().forEachRemaining(rule -> {
-            rule.condition().conjunction().allConcludables().forEachRemaining(this::indexApplicableRules);
-        });
+        this.rules().forEachRemaining(
+                rule -> iterate(rule.condition().branches())
+                        .flatMap(condition -> iterate(condition.conjunction().allConcludables()))
+                        .forEachRemaining(this::indexApplicableRules)
+        );
 
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
         validateCyclesThroughNegations();
@@ -195,16 +197,16 @@ public class LogicManager {
     }
 
     private FunctionalIterator<RuleDependency> ruleDependencies(Rule rule) {
-        return rule.condition().conjunction().allConcludables()
-                    .flatMap(c -> iterate(applicableRules(c).keySet()))
-                    .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
+        return iterate(rule.condition().branches()).flatMap(condition -> condition.conjunction().allConcludables())
+                .flatMap(c -> iterate(applicableRules(c).keySet()))
+                .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
     }
 
     private FunctionalIterator<RuleDependency> negatedRuleDependencies(Rule rule) {
-        assert iterate(rule.condition().conjunction().negations())
+        assert iterate(rule.condition().branches()).flatMap(condition -> iterate(condition.conjunction().negations()))
                 .flatMap(negated -> iterate(negated.disjunction().conjunctions()))
                 .allMatch(conj -> conj.negations().isEmpty()); // Revise when we support nested negations in rules
-        return iterate(rule.condition().conjunction().negations())
+        return iterate(rule.condition().branches()).flatMap(condition -> iterate(condition.conjunction().negations()))
                 .flatMap(neg -> iterate(neg.disjunction().conjunctions()))
                 .flatMap(conj -> conj.allConcludables())
                 .flatMap(concludable -> iterate(applicableRules(concludable).keySet()))

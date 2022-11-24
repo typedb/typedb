@@ -54,7 +54,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanInFanOut;
 
 public abstract class ConcludableController<INPUT, OUTPUT,
-        REQ extends AbstractRequest<Conclusion, ConceptMap, INPUT, ?>,
+        REQ extends AbstractRequest<Conclusion, ConceptMap, INPUT>,
         PROCESSOR extends ConcludableController.Processor<INPUT, OUTPUT, ?, PROCESSOR>,
         CONTROLLER extends ConcludableController<INPUT, OUTPUT, ?, PROCESSOR, CONTROLLER>
         > extends AbstractController<ConceptMap, INPUT, OUTPUT, REQ, PROCESSOR, CONTROLLER> {
@@ -176,7 +176,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
     }
 
     protected abstract static class Processor<
-            INPUT, OUTPUT, REQ extends AbstractRequest<?, ?, INPUT, ?>,
+            INPUT, OUTPUT, REQ extends AbstractRequest<?, ?, INPUT>,
             PROCESSOR extends AbstractProcessor<INPUT, OUTPUT, REQ, PROCESSOR>
             > extends AbstractProcessor<INPUT, OUTPUT, REQ, PROCESSOR> {
 
@@ -313,7 +313,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 return new Request(inputPortId, driver(), conclusion, bounds);
             }
 
-            protected static class Request extends AbstractRequest<Conclusion, ConceptMap, Map<Variable, Concept>, ConclusionController.Match> {
+            protected static class Request extends AbstractRequest<Conclusion, ConceptMap, Map<Variable, Concept>> {
 
                 Request(Reactive.Identifier inputPortId,
                         Driver<Match> inputPortProcessor, Conclusion controllerId, ConceptMap processorId) {
@@ -408,7 +408,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 return new Request(inputPortId, driver(), conclusion, bounds);
             }
 
-            protected static class Request extends AbstractRequest<Conclusion, ConceptMap, PartialExplanation, ConclusionController.Explain> {
+            protected static class Request extends AbstractRequest<Conclusion, ConceptMap, PartialExplanation> {
 
                 Request(Reactive.Identifier inputPortId,
                         Driver<Explain> inputPortProcessor, Conclusion conclusion, ConceptMap conceptMap) {

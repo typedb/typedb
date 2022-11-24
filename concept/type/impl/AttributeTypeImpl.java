@@ -26,17 +26,19 @@ import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken;
+
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
@@ -49,10 +51,10 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.AT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.merge;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
@@ -168,20 +170,6 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         Forwardable<TypeVertex, Order.Asc> iterator = vertex.ins().edge(OWNS_KEY).from();
         if (!onlyKey) iterator = iterator.merge(vertex.ins().edge(OWNS).from());
         return iterator.mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
-    }
-
-    @Override
-    public List<TypeDBException> validate() {
-        List<TypeDBException> exceptions = super.validate();
-        exceptions.addAll(validateOwnersNotAbstract());
-        return exceptions;
-    }
-
-    private List<TypeDBException> validateOwnersNotAbstract() {
-        if (!isAbstract()) return Collections.emptyList();
-        else return getOwners().filter(o -> !o.isAbstract()).map(
-                owner -> TypeDBException.of(OWNS_ABSTRACT_ATTRIBUTE_TYPE, owner.getLabel(), getLabel())
-        ).toList();
     }
 
     @Override

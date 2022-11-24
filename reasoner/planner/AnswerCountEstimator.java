@@ -156,7 +156,7 @@ public class AnswerCountEstimator {
             Variable bestScalingVar = scale.second().orElse(null);
             // Find scaling factor
             for (Variable v : model.variables) {
-                double ans = (double) model.estimateAnswers(set(v));
+                double ans = (double) Math.max(1,model.estimateAnswers(set(v)));
                 if (minVariableEstimate.containsKey(v) && minVariableEstimate.get(v) / ans < bestScaler) {
                     bestScaler = minVariableEstimate.get(v) / ans;
                     bestScalingVar = v;
@@ -216,7 +216,7 @@ public class AnswerCountEstimator {
             }
 
             assert !variables.isEmpty() || answerEstimateFromCover(variables, cover) == 1;
-            return answerEstimateFromCover(variables, cover);
+            return Math.round(Math.ceil(answerEstimateFromCover(variables, cover)));
         }
 
         private static double scaledEstimate(LocalModel model, Pair<Double, Optional<Variable>> scale, Set<Variable> estimateVariables) {
@@ -593,7 +593,7 @@ public class AnswerCountEstimator {
             if (correspondingConcludable != null) {
                 hasEdgeEstimate += estimateInferredAnswerCount(correspondingConcludable, set(hasConstraint.owner(), hasConstraint.attribute()));
                 attributeEstimate += attributesCreatedByExplicitHas(correspondingConcludable);
-                if (ownerEstimate < hasEdgeEstimate / attributeEstimate) {
+                if (attributeEstimate != 0 && ownerEstimate < hasEdgeEstimate / attributeEstimate) {
                     boolean rulesConcludeOwner = iterate(hasConstraint.owner().inferredTypes()).flatMap(ownerType -> iterate(answerCountEstimator.logicMgr.rulesConcluding(ownerType))).hasNext();
                     if (rulesConcludeOwner) ownerEstimate = hasEdgeEstimate / attributeEstimate;
                 }
@@ -638,13 +638,15 @@ public class AnswerCountEstimator {
                     if ((concludable.isRelation() || concludable.isIsa())
                             && rule.conclusion().generating().isPresent() && ruleSideIds.contains(rule.conclusion().generating().get().id())) {
                         // There is one generated variable per combination of ALL variables in the conclusion
-                        ruleSideIds = new HashSet<>(rule.conclusion().pattern().retrieves());
+                        ruleSideIds = new HashSet<>(rule.conclusion().conjunction().pattern().retrieves());
                     }
 
-                    ruleSideVariables = iterate(ruleSideIds)
-                            .filter(id -> rule.condition().conjunction().pattern().retrieves().contains(id))
-                            .map(id -> rule.condition().conjunction().pattern().variable(id)).toSet();
-                    inferredEstimate += answerCountEstimator.estimateAnswers(rule.condition().conjunction(), ruleSideVariables);
+                    for (Rule.Condition.ConditionBranch conditionBranch: rule.condition().branches()) {
+                        ruleSideVariables = iterate(ruleSideIds)
+                                .filter(id -> conditionBranch.conjunction().pattern().retrieves().contains(id))
+                                .map(id -> conditionBranch.conjunction().pattern().variable(id)).toSet();
+                        inferredEstimate += answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), ruleSideVariables);
+                    }
                 }
             }
 
