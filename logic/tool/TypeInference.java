@@ -187,7 +187,7 @@ public class TypeInference {
 
         private FunctionalIterator<Map<Identifier.Variable.Name, Label>> typePermutations(Set<Identifier.Variable.Name> filter) {
             Modifiers.Filter inferenceFilter = Modifiers.Filter.create(iterate(filter).map(id -> originalToInference.get(id).id().asRetrievable()).toSet());
-            List<Retrievable> sortVars = iterate(filter).filter(Retrievable::isRetrievable).map(Retrievable::asRetrievable).toList();
+            List<Retrievable> sortVars = iterate(filter).filter(Retrievable::isRetrievable).map(id -> originalToInference.get(id).id().asRetrievable()).toList();
             Map<Retrievable, Order> sortOrder = new HashMap<>();
             sortVars.forEach(var -> sortOrder.put(var, Order.Asc.ASC));
             traversal.modifiers().filter(inferenceFilter).sorting(Modifiers.Sorting.create(sortVars, sortOrder));
