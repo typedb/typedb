@@ -31,7 +31,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 public interface ComponentPlanner extends Planner {
 
     static ComponentPlanner create(Structure structure, Modifiers modifiers) {
-        assert structure.splitDisjoint().size() == 1;
         if (structure.vertices().size() == 1) return VertexPlanner.create(structure.vertices().iterator().next());
         else return GraphPlanner.create(structure, modifiers);
     }

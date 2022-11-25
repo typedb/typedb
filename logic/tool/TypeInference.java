@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
@@ -55,10 +56,13 @@ import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INCOHERENT_PATTERN_VARIABLE_VALUE;
@@ -183,7 +187,10 @@ public class TypeInference {
 
         private FunctionalIterator<Map<Identifier.Variable.Name, Label>> typePermutations(Set<Identifier.Variable.Name> filter) {
             Modifiers.Filter inferenceFilter = Modifiers.Filter.create(iterate(filter).map(id -> originalToInference.get(id).id().asRetrievable()).toSet());
-            traversal.modifiers().filter(inferenceFilter).sorting(Modifiers.Sorting.EMPTY);
+            List<Retrievable> sortVars = iterate(filter).filter(Retrievable::isRetrievable).map(id -> originalToInference.get(id).id().asRetrievable()).toList();
+            Map<Retrievable, Order> sortOrder = new HashMap<>();
+            sortVars.forEach(var -> sortOrder.put(var, Order.Asc.ASC));
+            traversal.modifiers().filter(inferenceFilter).sorting(Modifiers.Sorting.create(sortVars, sortOrder));
             return traversalEng.iterator(traversal).map(vertexMap -> {
                 Map<Retrievable.Name, Label> labels = new HashMap<>();
                 vertexMap.forEach((id, vertex) -> {

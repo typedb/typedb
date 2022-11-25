@@ -101,7 +101,7 @@ public class TypeGraph {
     private final Statistics statistics;
     private final Cache cache;
     private final Map<VertexIID.Type, VertexIID.Type> committedIIDs;
-    private final boolean isReadOnly;
+    private boolean isReadOnly;
     private boolean isModified;
 
     public TypeGraph(Storage storage, boolean isReadOnly) {
@@ -185,6 +185,10 @@ public class TypeGraph {
 
     public boolean isReadOnly() {
         return isReadOnly;
+    }
+
+    public void isReadOnly(boolean isReadOnly) {
+        this.isReadOnly = isReadOnly;
     }
 
     public boolean isInitialised() throws TypeDBException {
