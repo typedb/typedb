@@ -29,7 +29,7 @@ build:
   quality:
     filter:
       owner: vaticle
-      branch: master
+      branch: [master, development]
     build-analysis:
       image: vaticle-ubuntu-22.04
       command: |
