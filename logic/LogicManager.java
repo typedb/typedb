@@ -111,15 +111,7 @@ public class LogicManager {
     }
 
     public Map<Rule, Set<Unifier>> applicableRules(Concludable concludable) {
-        Map<Rule, Set<Unifier>> unifiers = logicCache.unifiers().getIfPresent(concludable);
-        if (unifiers == null) {
-            unifiers = concludable.computeApplicableRules(conceptMgr, this);
-        }
-        return unifiers;
-    }
-
-    public void indexApplicableRules(Concludable concludable) {
-        logicCache.unifiers().get(concludable, c -> c.computeApplicableRules(conceptMgr, this));
+        return logicCache.unifiers().get(concludable, c -> c.computeApplicableRules(conceptMgr, this));
     }
 
     public Set<Resolvable<?>> compile(ResolvableConjunction conjunction) {
@@ -156,14 +148,6 @@ public class LogicManager {
             // recreate rule index conclusions
             graphMgr.schema().rules().all().forEachRemaining(s -> fromStructure(s).conclusion().reindex());
         }
-
-        // re-index the concludable-rule unifiers
-        this.rules().forEachRemaining(
-                rule -> iterate(rule.condition().branches())
-                        .flatMap(condition -> iterate(condition.conjunction().allConcludables()))
-                        .forEachRemaining(this::indexApplicableRules)
-        );
-
         // using the new index, validate new rules are stratifiable (eg. do not cause cycles through a negation)
         validateCyclesThroughNegations();
     }
