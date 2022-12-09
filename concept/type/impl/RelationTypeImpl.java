@@ -34,6 +34,7 @@ import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -242,7 +243,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public List<TypeDBException> exceptions() {
-        List<TypeDBException> exceptions = super.exceptions();
+        List<TypeDBException> exceptions = new ArrayList<>(super.exceptions());
         if (!isRoot() && !isAbstract() && !getRelates().filter(rt -> !rt.isRoot()).hasNext()) {
             exceptions.add(TypeDBException.of(RELATION_NO_ROLE, this.getLabel()));
         } else if (!isAbstract()) getRelates().filter(rt -> !rt.isRoot() && rt.isAbstract()).forEachRemaining(
