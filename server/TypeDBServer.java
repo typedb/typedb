@@ -60,6 +60,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
 import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
@@ -102,6 +103,13 @@ public class TypeDBServer implements AutoCloseable {
         this.factory = factory;
         databaseMgr = factory.databaseManager(options);
         server = rpcServer();
+        Thread.setDefaultUncaughtExceptionHandler(
+                (t, e) -> {
+                    logger().error(UNCAUGHT_EXCEPTION.message(t.getName() + ": " + e.getMessage()), e);
+                    close();
+                    System.exit(1);
+                }
+        );
         Runtime.getRuntime().addShutdownHook(
                 NamedThreadFactory.create(TypeDBServer.class, "shutdown").newThread(this::close)
         );
@@ -205,7 +213,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         logger().info("");
         logger().info("Shutting down {}...", name());
         try {
