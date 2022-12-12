@@ -42,7 +42,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Server EXITED_WITH_ERROR =
                 new Server(3, "Exited with error.");
         public static final Server UNCAUGHT_EXCEPTION =
-                new Server(4, "Uncaught exception thrown at thread '%s'.");
+                new Server(4, "Uncaught exception thrown at thread '%s':\n'%s'");
         public static final Server CONFIG_FILE_NOT_FOUND =
                 new Server(5, "Could not find/read the configuration file '%s'.");
         public static final Server UNRECOGNISED_CLI_COMMAND =

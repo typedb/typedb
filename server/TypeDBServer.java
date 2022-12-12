@@ -105,7 +105,7 @@ public class TypeDBServer implements AutoCloseable {
         server = rpcServer();
         Thread.setDefaultUncaughtExceptionHandler(
                 (t, e) -> {
-                    logger().error(UNCAUGHT_EXCEPTION.message(t.getName() + ": " + e.getMessage()), e);
+                    logger().error(UNCAUGHT_EXCEPTION.message(t.getName(), e));
                     close();
                     System.exit(1);
                 }
