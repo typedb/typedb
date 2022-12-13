@@ -71,7 +71,6 @@ public class TypeDBServer implements AutoCloseable {
 
     protected final Factory factory;
     protected final CoreConfig config;
-    protected final CoreLogback logback;
     protected final CoreDatabaseManager databaseMgr;
     protected final io.grpc.Server server;
     protected final boolean debug;
@@ -80,7 +79,7 @@ public class TypeDBServer implements AutoCloseable {
     private static TypeDBServer create(CoreConfig config, boolean debug) {
         CoreLogback coreLogback = new CoreLogback();
         configureLogging(coreLogback, config);
-        return new TypeDBServer(config, debug, new CoreFactory(), coreLogback);
+        return new TypeDBServer(config, debug, new CoreFactory());
     }
 
     protected static void configureLogging(CoreLogback logback, CoreConfig config) {
@@ -88,10 +87,9 @@ public class TypeDBServer implements AutoCloseable {
         java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
-    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory, CoreLogback logback) {
+    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory) {
         this.config = config;
         this.debug = debug;
-        this.logback = logback;
 
         verifyJavaVersion();
         verifyDataDir();
