@@ -77,8 +77,7 @@ public class TypeDBServer implements AutoCloseable {
     protected TypeDBService typeDBService;
 
     private static TypeDBServer create(CoreConfig config, boolean debug) {
-        CoreLogback coreLogback = new CoreLogback();
-        configureLogging(coreLogback, config);
+        configureLogging(new CoreLogback(), config);
         return new TypeDBServer(config, debug, new CoreFactory());
     }
 
