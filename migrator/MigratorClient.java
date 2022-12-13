@@ -35,10 +35,15 @@ public class MigratorClient {
 
     private final MigratorGrpc.MigratorStub stub;
 
-    public MigratorClient(int serverPort) {
+    protected MigratorClient(MigratorGrpc.MigratorStub stub) {
+        this.stub = stub;
+    }
+
+    public static MigratorClient create(int serverPort) {
         String uri = "localhost:" + serverPort;
         ManagedChannel channel = ManagedChannelBuilder.forTarget(uri).usePlaintext().build();
-        stub = MigratorGrpc.newStub(channel);
+        MigratorGrpc.MigratorStub stub = MigratorGrpc.newStub(channel);
+        return new MigratorClient(stub);
     }
 
     public boolean importData(String database, Path file) {

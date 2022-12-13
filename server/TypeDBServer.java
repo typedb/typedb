@@ -284,7 +284,7 @@ public class TypeDBServer implements AutoCloseable {
         ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
-        MigratorClient migrator = new MigratorClient(subcmdExport.port());
+        MigratorClient migrator = MigratorClient.create(subcmdExport.port());
         boolean success = migrator.exportData(subcmdExport.database(), subcmdExport.file());
         System.exit(success ? 0 : 1);
     }
@@ -293,7 +293,7 @@ public class TypeDBServer implements AutoCloseable {
         ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
-        MigratorClient migrator = new MigratorClient(subcmdImport.port());
+        MigratorClient migrator = MigratorClient.create(subcmdImport.port());
         boolean success = migrator.importData(subcmdImport.database(), subcmdImport.file());
         System.exit(success ? 0 : 1);
     }
