@@ -77,8 +77,15 @@ public class TypeDBServer implements AutoCloseable {
     protected final boolean debug;
     protected TypeDBService typeDBService;
 
-    private TypeDBServer(CoreConfig config, boolean debug) {
-        this(config, debug, new CoreFactory(), new CoreLogback());
+    private static TypeDBServer create(CoreConfig config, boolean debug) {
+        CoreLogback coreLogback = new CoreLogback();
+        configureLogging(coreLogback, config);
+        return new TypeDBServer(config, debug, new CoreFactory(), coreLogback);
+    }
+
+    protected static void configureLogging(CoreLogback logback, CoreConfig config) {
+        logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
+        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
     protected TypeDBServer(CoreConfig config, boolean debug, Factory factory, CoreLogback logback) {
@@ -88,7 +95,6 @@ public class TypeDBServer implements AutoCloseable {
 
         verifyJavaVersion();
         verifyDataDir();
-        configureLogging(this.logback, this.config);
         configureTracing();
 
         if (debug) logger().info("Running {} in debug mode.", name());
@@ -128,11 +134,6 @@ public class TypeDBServer implements AutoCloseable {
         if (!Files.isWritable(config.storage().dataDir())) {
             throw TypeDBException.of(DATA_DIRECTORY_NOT_WRITABLE, config.storage().dataDir());
         }
-    }
-
-    private static void configureLogging(CoreLogback logback, CoreConfig config) {
-        logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
-        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
     private void configureTracing() {
@@ -267,7 +268,7 @@ public class TypeDBServer implements AutoCloseable {
 
     private static void runServer(ServerSubcommand.Server subcmdServer) {
         Instant start = Instant.now();
-        TypeDBServer server = new TypeDBServer(subcmdServer.config(), subcmdServer.isDebug());
+        TypeDBServer server = TypeDBServer.create(subcmdServer.config(), subcmdServer.isDebug());
         server.start();
         Instant end = Instant.now();
         server.logger().info("version: {}", Version.VERSION);
