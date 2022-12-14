@@ -104,7 +104,11 @@ public class TypeDBServer implements AutoCloseable {
         databaseMgr = factory.databaseManager(options);
         server = rpcServer();
         Thread.setDefaultUncaughtExceptionHandler(
-                (t, e) -> logger().error(UNCAUGHT_EXCEPTION.message(t.getName() + ": " + e.getMessage()), e)
+                (t, e) -> {
+                    logger().error(UNCAUGHT_EXCEPTION.message(t.getName(), e));
+                    close();
+                    System.exit(1);
+                }
         );
         Runtime.getRuntime().addShutdownHook(
                 NamedThreadFactory.create(TypeDBServer.class, "shutdown").newThread(this::close)
@@ -209,7 +213,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         logger().info("");
         logger().info("Shutting down {}...", name());
         try {
