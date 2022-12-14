@@ -71,24 +71,27 @@ public class TypeDBServer implements AutoCloseable {
 
     protected final Factory factory;
     protected final CoreConfig config;
-    protected final CoreLogback logback;
     protected final CoreDatabaseManager databaseMgr;
     protected final io.grpc.Server server;
     protected final boolean debug;
     protected TypeDBService typeDBService;
 
-    private TypeDBServer(CoreConfig config, boolean debug) {
-        this(config, debug, new CoreFactory(), new CoreLogback());
+    private static TypeDBServer create(CoreConfig config, boolean debug) {
+        configureLogging(new CoreLogback(), config);
+        return new TypeDBServer(config, debug, new CoreFactory());
     }
 
-    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory, CoreLogback logback) {
+    protected static void configureLogging(CoreLogback logback, CoreConfig config) {
+        logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
+        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
+    }
+
+    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory) {
         this.config = config;
         this.debug = debug;
-        this.logback = logback;
 
         verifyJavaVersion();
         verifyDataDir();
-        configureLogging(this.logback, this.config);
         configureTracing();
 
         if (debug) logger().info("Running {} in debug mode.", name());
@@ -132,11 +135,6 @@ public class TypeDBServer implements AutoCloseable {
         if (!Files.isWritable(config.storage().dataDir())) {
             throw TypeDBException.of(DATA_DIRECTORY_NOT_WRITABLE, config.storage().dataDir());
         }
-    }
-
-    private static void configureLogging(CoreLogback logback, CoreConfig config) {
-        logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
-        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
     private void configureTracing() {
@@ -271,7 +269,7 @@ public class TypeDBServer implements AutoCloseable {
 
     private static void runServer(ServerSubcommand.Server subcmdServer) {
         Instant start = Instant.now();
-        TypeDBServer server = new TypeDBServer(subcmdServer.config(), subcmdServer.isDebug());
+        TypeDBServer server = TypeDBServer.create(subcmdServer.config(), subcmdServer.isDebug());
         server.start();
         Instant end = Instant.now();
         server.logger().info("version: {}", Version.VERSION);
