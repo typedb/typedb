@@ -16,26 +16,21 @@
 #
 
 class Typedb < Formula
-  desc "TypeDB: a strongly-typed database"
+  desc "Strongly-typed database with a rich and logical type system"
   homepage "https://vaticle.com"
   url "https://github.com/vaticle/typedb/releases/download/{version}/typedb-all-mac-{version}.zip"
   sha256 "{sha256}"
+  license "AGPL-3.0-or-later"
 
-  depends_on "openjdk@11"
-
-  def setup_directory(dir)
-    typedb_dir = var / name / dir
-    typedb_dir.mkpath
-    orig_dir = libexec / "server" / dir
-    rm_rf orig_dir
-    ln_s typedb_dir, orig_dir
-  end
+  depends_on "openjdk"
 
   def install
     libexec.install Dir["*"]
-    setup_directory "data"
-    setup_directory "logs"
+    mkdir_p var/"typedb/data"
+    inreplace libexec/"server/conf/config.yml", "server/data", var/"typedb/data"
+    mkdir_p var/"log/typedb"
+    inreplace libexec/"server/conf/config.yml", "server/logs", var/"typedb/logs"
     bin.install libexec / "typedb"
-    bin.env_script_all_files(libexec, Language::Java.java_home_env("1.11"))
+    bin.env_script_all_files(libexec, Language::Java.java_home_env)
   end
 end
