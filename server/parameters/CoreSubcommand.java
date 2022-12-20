@@ -25,33 +25,33 @@ import java.nio.file.Path;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public abstract class CoreSubcommand {
+public interface CoreSubcommand {
 
-    public boolean isServer() {
+    default boolean isServer() {
         return false;
     }
 
-    public Server asServer() {
+    default Server asServer() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Server.class));
     }
 
-    public boolean isImport() {
+    default boolean isImport() {
         return false;
     }
 
-    public Import asImport() {
+    default Import asImport() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Import.class));
     }
 
-    public boolean isExport() {
+    default boolean isExport() {
         return false;
     }
 
-    public Export asExport() {
+    default Export asExport() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Export.class));
     }
 
-    public static class Server extends CoreSubcommand {
+    class Server implements CoreSubcommand {
 
         private final boolean isDebug;
         private final boolean isHelp;
@@ -92,7 +92,7 @@ public abstract class CoreSubcommand {
         }
     }
 
-    public static class Import extends CoreSubcommand {
+    class Import implements CoreSubcommand {
 
         private final String database;
         private final Path file;
@@ -127,7 +127,7 @@ public abstract class CoreSubcommand {
         }
     }
 
-    public static class Export extends CoreSubcommand {
+    class Export implements CoreSubcommand {
 
         private final String database;
         private final Path file;
