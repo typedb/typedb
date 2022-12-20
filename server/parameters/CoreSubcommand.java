@@ -58,7 +58,7 @@ public interface CoreSubcommand {
         private final boolean isVersion;
         private final CoreConfig config;
 
-        protected Server(boolean isDebug, boolean isHelp, boolean isVersion, CoreConfig config) {
+        Server(boolean isDebug, boolean isHelp, boolean isVersion, CoreConfig config) {
             this.isDebug = isDebug;
             this.isHelp = isHelp;
             this.isVersion = isVersion;
@@ -98,7 +98,7 @@ public interface CoreSubcommand {
         private final Path file;
         private final int port;
 
-        protected Import(String database, Path file, int port) {
+        Import(String database, Path file, int port) {
             this.database = database;
             this.file = file;
             this.port = port;
@@ -133,7 +133,7 @@ public interface CoreSubcommand {
         private final Path file;
         private final int port;
 
-        protected Export(String database, Path file, int port) {
+        Export(String database, Path file, int port) {
             this.database = database;
             this.file = file;
             this.port = port;
