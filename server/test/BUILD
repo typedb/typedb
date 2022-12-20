@@ -55,6 +55,6 @@ filegroup(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "parameters/config/*"]),
+    include = glob(["*", "*/*", "parameters/config/*"]),
     license_type = "agpl-header",
 )
