@@ -34,8 +34,8 @@ import com.vaticle.typedb.core.migrator.MigratorService;
 import com.vaticle.typedb.core.server.logging.CoreLogback;
 import com.vaticle.typedb.core.server.parameters.CoreConfig;
 import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
-import com.vaticle.typedb.core.server.parameters.ServerSubcommand;
-import com.vaticle.typedb.core.server.parameters.ServerSubcommandParser;
+import com.vaticle.typedb.core.server.parameters.CoreSubcommand;
+import com.vaticle.typedb.core.server.parameters.CoreSubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -66,19 +66,19 @@ import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
 import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
-public class TypeDBServer implements AutoCloseable {
+public class TypeDBServer<CONFIG extends CoreConfig> implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBServer.class);
 
     protected final Factory factory;
-    protected final CoreConfig config;
     protected final CoreDatabaseManager databaseMgr;
     protected final io.grpc.Server server;
     protected final boolean debug;
     protected TypeDBService typeDBService;
+    private final CONFIG config;
 
-    private static TypeDBServer create(CoreConfig config, boolean debug) {
+    private static <CONFIG extends CoreConfig> TypeDBServer<CONFIG> create(CONFIG config, boolean debug) {
         configureLogging(new CoreLogback(), config);
-        return new TypeDBServer(config, debug, new CoreFactory());
+        return new TypeDBServer<>(config, debug, new CoreFactory());
     }
 
     protected static void configureLogging(CoreLogback logback, CoreConfig config) {
@@ -86,7 +86,7 @@ public class TypeDBServer implements AutoCloseable {
         java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
-    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory) {
+    protected TypeDBServer(CONFIG config, boolean debug, Factory factory) {
         this.config = config;
         this.debug = debug;
 
@@ -173,6 +173,10 @@ public class TypeDBServer implements AutoCloseable {
         return "TypeDB Server";
     }
 
+    protected CONFIG config() {
+        return config;
+    }
+
     private InetSocketAddress address() {
         return config.server().address();
     }
@@ -233,18 +237,18 @@ public class TypeDBServer implements AutoCloseable {
             printASCIILogo();
 
             CoreConfigParser configParser = new CoreConfigParser();
-            ArgsParser<ServerSubcommand> argsParser = new ArgsParser<ServerSubcommand>()
-                    .subcommand(new ServerSubcommandParser.Server(configParser))
-                    .subcommand(new ServerSubcommandParser.Import())
-                    .subcommand(new ServerSubcommandParser.Export());
-            Optional<ServerSubcommand> subcmd = argsParser.parse(args);
+            ArgsParser<CoreSubcommand> argsParser = new ArgsParser<CoreSubcommand>()
+                    .subcommand(new CoreSubcommandParser.Server(configParser))
+                    .subcommand(new CoreSubcommandParser.Import())
+                    .subcommand(new CoreSubcommandParser.Export());
+            Optional<CoreSubcommand> subcmd = argsParser.parse(args);
             if (subcmd.isEmpty()) {
                 LOG.error(UNRECOGNISED_CLI_COMMAND.message(String.join(" ", args)));
                 LOG.error(argsParser.usage());
                 System.exit(1);
             } else {
                 if (subcmd.get().isServer()) {
-                    ServerSubcommand.Server subcmdServer = subcmd.get().asServer();
+                    CoreSubcommand.Server subcmdServer = subcmd.get().asServer();
                     if (subcmdServer.isHelp()) System.out.println(argsParser.help());
                     else if (subcmdServer.isVersion()) System.out.println("Version: " + Version.VERSION);
                     else runServer(subcmdServer);
@@ -267,9 +271,9 @@ public class TypeDBServer implements AutoCloseable {
         System.exit(0);
     }
 
-    private static void runServer(ServerSubcommand.Server subcmdServer) {
+    private static void runServer(CoreSubcommand.Server subcmdServer) {
         Instant start = Instant.now();
-        TypeDBServer server = TypeDBServer.create(subcmdServer.config(), subcmdServer.isDebug());
+        TypeDBServer<CoreConfig> server = TypeDBServer.create(subcmdServer.config(), subcmdServer.isDebug());
         server.start();
         Instant end = Instant.now();
         server.logger().info("version: {}", Version.VERSION);
@@ -280,7 +284,7 @@ public class TypeDBServer implements AutoCloseable {
         server.serve();
     }
 
-    protected static void exportData(ServerSubcommand.Export subcmdExport) {
+    protected static void exportData(CoreSubcommand.Export subcmdExport) {
         ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
@@ -289,7 +293,7 @@ public class TypeDBServer implements AutoCloseable {
         System.exit(success ? 0 : 1);
     }
 
-    protected static void importData(ServerSubcommand.Import subcmdImport) {
+    protected static void importData(CoreSubcommand.Import subcmdImport) {
         ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
