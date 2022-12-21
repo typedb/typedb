@@ -29,7 +29,7 @@ import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.database.Factory;
-import com.vaticle.typedb.core.migrator.MigratorClient;
+import com.vaticle.typedb.core.migrator.CoreMigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
 import com.vaticle.typedb.core.server.logging.CoreLogback;
 import com.vaticle.typedb.core.server.parameters.CoreConfig;
@@ -66,7 +66,7 @@ import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
 import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
-public class TypeDBServer<CONFIG extends CoreConfig> implements AutoCloseable {
+public class TypeDBServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBServer.class);
 
     protected final Factory factory;
@@ -74,11 +74,11 @@ public class TypeDBServer<CONFIG extends CoreConfig> implements AutoCloseable {
     protected final io.grpc.Server server;
     protected final boolean debug;
     protected TypeDBService typeDBService;
-    private final CONFIG config;
+    private final CoreConfig config;
 
-    private static <CONFIG extends CoreConfig> TypeDBServer<CONFIG> create(CONFIG config, boolean debug) {
+    private static TypeDBServer create(CoreConfig config, boolean debug) {
         configureLogging(new CoreLogback(), config);
-        return new TypeDBServer<>(config, debug, new CoreFactory());
+        return new TypeDBServer(config, debug, new CoreFactory());
     }
 
     protected static void configureLogging(CoreLogback logback, CoreConfig config) {
@@ -86,7 +86,7 @@ public class TypeDBServer<CONFIG extends CoreConfig> implements AutoCloseable {
         java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
-    protected TypeDBServer(CONFIG config, boolean debug, Factory factory) {
+    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory) {
         this.config = config;
         this.debug = debug;
 
@@ -173,7 +173,7 @@ public class TypeDBServer<CONFIG extends CoreConfig> implements AutoCloseable {
         return "TypeDB Server";
     }
 
-    protected CONFIG config() {
+    protected CoreConfig config() {
         return config;
     }
 
@@ -273,7 +273,7 @@ public class TypeDBServer<CONFIG extends CoreConfig> implements AutoCloseable {
 
     private static void runServer(CoreSubcommand.Server subcmdServer) {
         Instant start = Instant.now();
-        TypeDBServer<CoreConfig> server = TypeDBServer.create(subcmdServer.config(), subcmdServer.isDebug());
+        TypeDBServer server = TypeDBServer.create(subcmdServer.config(), subcmdServer.isDebug());
         server.start();
         Instant end = Instant.now();
         server.logger().info("version: {}", Version.VERSION);
@@ -288,7 +288,7 @@ public class TypeDBServer<CONFIG extends CoreConfig> implements AutoCloseable {
         ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
-        MigratorClient migrator = MigratorClient.create(subcmdExport.port());
+        CoreMigratorClient migrator = CoreMigratorClient.create(subcmdExport.port());
         boolean success = migrator.exportData(subcmdExport.database(), subcmdExport.file());
         System.exit(success ? 0 : 1);
     }
@@ -297,7 +297,7 @@ public class TypeDBServer<CONFIG extends CoreConfig> implements AutoCloseable {
         ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
-        MigratorClient migrator = MigratorClient.create(subcmdImport.port());
+        CoreMigratorClient migrator = CoreMigratorClient.create(subcmdImport.port());
         boolean success = migrator.importData(subcmdImport.database(), subcmdImport.file());
         System.exit(success ? 0 : 1);
     }

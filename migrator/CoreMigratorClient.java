@@ -31,19 +31,19 @@ import java.util.concurrent.CountDownLatch;
 
 // TODO: This class does not belong in the server, it should be moved to client-side,
 //       and it should be able to stream import/export file to/from the server
-public class MigratorClient {
+public class CoreMigratorClient {
 
     private final MigratorGrpc.MigratorStub stub;
 
-    protected MigratorClient(MigratorGrpc.MigratorStub stub) {
+    protected CoreMigratorClient(MigratorGrpc.MigratorStub stub) {
         this.stub = stub;
     }
 
-    public static MigratorClient create(int serverPort) {
+    public static CoreMigratorClient create(int serverPort) {
         String uri = "localhost:" + serverPort;
         ManagedChannel channel = ManagedChannelBuilder.forTarget(uri).usePlaintext().build();
         MigratorGrpc.MigratorStub stub = MigratorGrpc.newStub(channel);
-        return new MigratorClient(stub);
+        return new CoreMigratorClient(stub);
     }
 
     public boolean importData(String database, Path file) {
