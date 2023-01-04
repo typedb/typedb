@@ -18,6 +18,10 @@
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
+exports_files(
+    ["schema.tql", "data.typedb"],
+)
+
 host_compatible_java_test(
     name = "test-migrator",
     srcs = ["MigratorTest.java"],

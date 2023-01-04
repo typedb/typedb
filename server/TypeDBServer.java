@@ -253,9 +253,9 @@ public class TypeDBServer implements AutoCloseable {
                     else if (subcmdServer.isVersion()) System.out.println("Version: " + Version.VERSION);
                     else runServer(subcmdServer);
                 } else if (subcmd.get().isImport()) {
-                    importData(subcmd.get().asImport());
+                    runImportData(subcmd.get().asImport());
                 } else if (subcmd.get().isExport()) {
-                    exportData(subcmd.get().asExport());
+                    runExportData(subcmd.get().asExport());
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             }
         } catch (Exception e) {
@@ -284,7 +284,7 @@ public class TypeDBServer implements AutoCloseable {
         server.serve();
     }
 
-    protected static void exportData(CoreSubcommand.Export subcmdExport) {
+    private static void runExportData(CoreSubcommand.Export subcmdExport) {
         ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
@@ -293,7 +293,7 @@ public class TypeDBServer implements AutoCloseable {
         System.exit(success ? 0 : 1);
     }
 
-    protected static void importData(CoreSubcommand.Import subcmdImport) {
+    private static void runImportData(CoreSubcommand.Import subcmdImport) {
         ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
