@@ -25,40 +25,40 @@ import java.nio.file.Path;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 
-public abstract class ServerSubcommand {
+public interface CoreSubcommand {
 
-    public boolean isServer() {
+    default boolean isServer() {
         return false;
     }
 
-    public Server asServer() {
+    default Server asServer() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Server.class));
     }
 
-    public boolean isImport() {
+    default boolean isImport() {
         return false;
     }
 
-    public Import asImport() {
+    default Import asImport() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Import.class));
     }
 
-    public boolean isExport() {
+    default boolean isExport() {
         return false;
     }
 
-    public Export asExport() {
+    default Export asExport() {
         throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Export.class));
     }
 
-    public static class Server extends ServerSubcommand {
+    class Server implements CoreSubcommand {
 
         private final boolean isDebug;
         private final boolean isHelp;
         private final boolean isVersion;
         private final CoreConfig config;
 
-        Server(boolean isDebug, boolean isHelp, boolean isVersion, CoreConfig config) {
+        protected Server(boolean isDebug, boolean isHelp, boolean isVersion, CoreConfig config) {
             this.isDebug = isDebug;
             this.isHelp = isHelp;
             this.isVersion = isVersion;
@@ -92,13 +92,13 @@ public abstract class ServerSubcommand {
         }
     }
 
-    public static class Import extends ServerSubcommand {
+    class Import implements CoreSubcommand {
 
         private final String database;
         private final Path file;
         private final int port;
 
-        Import(String database, Path file, int port) {
+        protected Import(String database, Path file, int port) {
             this.database = database;
             this.file = file;
             this.port = port;
@@ -127,13 +127,13 @@ public abstract class ServerSubcommand {
         }
     }
 
-    public static class Export extends ServerSubcommand {
+    class Export implements CoreSubcommand {
 
         private final String database;
         private final Path file;
         private final int port;
 
-        public Export(String database, Path file, int port) {
+        protected Export(String database, Path file, int port) {
             this.database = database;
             this.file = file;
             this.port = port;

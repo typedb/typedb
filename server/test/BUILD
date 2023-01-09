@@ -29,7 +29,7 @@ package(default_visibility = ["//visibility:private",])
 host_compatible_java_test(
     name = "test-configuration",
     srcs = [
-        "CoreConfigTest.java",
+        "parameters/CoreConfigTest.java",
     ],
     native_libraries_deps = [
         "//common:common",
@@ -50,11 +50,11 @@ host_compatible_java_test(
 
 filegroup(
     name = "configurations",
-    srcs = glob(["config/*.yml"])
+    srcs = glob(["parameters/config/*.yml"])
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "config/*"]),
+    include = glob(["*", "*/*", "parameters/config/*"]),
     license_type = "agpl-header",
 )

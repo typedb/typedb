@@ -34,9 +34,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_O
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_OPTION_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class ServerSubcommandParser {
+public class CoreSubcommandParser {
 
-    private static void validateRequiredOptions(Set<OptionParser> requiredParsers, Set<Option> options) {
+    protected static void validateRequiredOptions(Set<OptionParser> requiredParsers, Set<Option> options) {
         requiredParsers.forEach(parser -> {
             if (iterate(options).noneMatch(option -> option.name().equals(parser.name()))) {
                 throw TypeDBException.of(CLI_OPTION_REQUIRED, parser.name());
@@ -44,24 +44,25 @@ public class ServerSubcommandParser {
         });
     }
 
-    private static void validateUnrecognisedOptions(Set<OptionParser> recognisedParsers, Set<Option> options) {
-        recognisedParsers.forEach(parser -> {
-            if (iterate(options).noneMatch(option -> option.name().equals(parser.name()))) {
-                throw TypeDBException.of(CLI_OPTION_UNRECOGNISED, parser);
+    protected static void validateUnrecognisedOptions(Set<OptionParser> recognisedParsers, Set<Option> options) {
+        options.forEach(option -> {
+            if (iterate(recognisedParsers).noneMatch(parser -> option.name().equals(parser.name()))) {
+                throw TypeDBException.of(CLI_OPTION_UNRECOGNISED, option.name());
             }
         });
     }
 
-    public static class Server extends SubcommandParser<ServerSubcommand.Server> {
+    public static class Server extends SubcommandParser<CoreSubcommand.Server> {
 
-        private static final OptionParser.Flag debug = new OptionParser.Flag("debug", "Run server in debug mode.");
-        private static final OptionParser.Flag help = new OptionParser.Flag("help", "Print help menu.");
-        private static final OptionParser.Flag version = new OptionParser.Flag("version", "Print version number.");
-        private static final OptionParser.Path configPath =
+        public static final String[] tokens = new String[]{};
+        public static final String description = "Run TypeDB server";
+
+        public static final OptionParser.Flag debug = new OptionParser.Flag("debug", "Run server in debug mode.");
+        public static final OptionParser.Flag help = new OptionParser.Flag("help", "Print help menu.");
+        public static final OptionParser.Flag version = new OptionParser.Flag("version", "Print version number.");
+        public static final OptionParser.Path configPath =
                 new OptionParser.Path("config", "Path to TypeDB YAML configuration file.");
-        private static final Set<OptionParser> auxiliaryParsers = set(debug, help, version, configPath);
-        private static final String[] tokens = new String[]{};
-        private static final String description = "Run TypeDB server";
+        public static final Set<OptionParser> auxiliaryParsers = set(debug, help, version, configPath);
 
         private final CoreConfigParser configParser;
 
@@ -71,24 +72,24 @@ public class ServerSubcommandParser {
         }
 
         @Override
-        protected ServerSubcommand.Server parse(Set<Option> options) {
-            Set<Option> auxOptions = findAuxiliaryOptions(options);
+        protected CoreSubcommand.Server parse(Set<Option> options) {
+            Set<Option> auxOptions = findAuxiliaryOptions(auxiliaryParsers, options);
             Set<Option> configOptions = excludeOptions(options, auxOptions);
             Optional<Path> configPath = Server.configPath.parse(auxOptions);
             CoreConfig config = configPath
                     .map(path -> CoreConfigFactory.config(path, configOptions, configParser))
                     .orElseGet(() -> CoreConfigFactory.config(configOptions, configParser));
-            return new ServerSubcommand.Server(debug.parse(auxOptions), help.parse(auxOptions),
+            return new CoreSubcommand.Server(debug.parse(auxOptions), help.parse(auxOptions),
                     version.parse(auxOptions), config);
         }
 
-        private Set<Option> findAuxiliaryOptions(Set<Option> options) {
+        public static Set<Option> findAuxiliaryOptions(Set<OptionParser> auxiliaryParsers, Set<Option> options) {
             return iterate(options)
                     .filter(opt -> iterate(auxiliaryParsers).anyMatch(auxParser -> auxParser.name.equals(opt.name())))
                     .toSet();
         }
 
-        private Set<Option> excludeOptions(Set<Option> options, Set<Option> exclude) {
+        public static Set<Option> excludeOptions(Set<Option> options, Set<Option> exclude) {
             return iterate(options).filter(opt -> !exclude.contains(opt)).toSet();
         }
 
@@ -99,16 +100,16 @@ public class ServerSubcommandParser {
         }
     }
 
-    public static class Import extends SubcommandParser<ServerSubcommand.Import> {
+    public static class Import extends SubcommandParser<CoreSubcommand.Import> {
 
         public static final String[] tokens = new String[]{"import"};
         public static final String description = "Run TypeDB import.";
 
-        private static final OptionParser.String database =
+        public static final OptionParser.String database =
                 new OptionParser.String("database", "Database to import into.");
-        private static final OptionParser.Path filePath =
+        public static final OptionParser.Path filePath =
                 new OptionParser.Path("file", "Path to data file to import (.typedb format).");
-        private static final OptionParser.Int port = new OptionParser.Int("port", "TypeDB's GRPC port.");
+        public static final OptionParser.Int port = new OptionParser.Int("port", "TypeDB's GRPC port.");
         private static final Set<OptionParser> parsers = set(database, filePath, port);
 
         public Import() {
@@ -116,10 +117,10 @@ public class ServerSubcommandParser {
         }
 
         @Override
-        protected ServerSubcommand.Import parse(Set<Option> options) {
+        protected CoreSubcommand.Import parse(Set<Option> options) {
             validateRequiredOptions(parsers, options);
             validateUnrecognisedOptions(parsers, options);
-            return new ServerSubcommand.Import(database.parse(options).get(), filePath.parse(options).get(),
+            return new CoreSubcommand.Import(database.parse(options).get(), filePath.parse(options).get(),
                     port.parse(options).get());
         }
 
@@ -129,16 +130,16 @@ public class ServerSubcommandParser {
         }
     }
 
-    public static class Export extends SubcommandParser<ServerSubcommand.Export> {
+    public static class Export extends SubcommandParser<CoreSubcommand.Export> {
 
         public static final String[] tokens = new String[]{"export"};
         public static final String description = "Run TypeDB export.";
 
-        private static final OptionParser.String database =
+        public static final OptionParser.String database =
                 new OptionParser.String("database", "Database to export.");
-        private static final OptionParser.Path filePath =
+        public static final OptionParser.Path filePath =
                 new OptionParser.Path("file", "Path to data file to export to.");
-        private static final OptionParser.Int port = new OptionParser.Int("port", "TypeDB's GRPC port.");
+        public static final OptionParser.Int port = new OptionParser.Int("port", "TypeDB's GRPC port.");
         private static final Set<OptionParser> parsers = set(database, filePath, port);
 
         public Export() {
@@ -146,10 +147,10 @@ public class ServerSubcommandParser {
         }
 
         @Override
-        protected ServerSubcommand.Export parse(Set<Option> options) {
+        protected CoreSubcommand.Export parse(Set<Option> options) {
             validateRequiredOptions(parsers, options);
             validateUnrecognisedOptions(parsers, options);
-            return new ServerSubcommand.Export(database.parse(options).get(), filePath.parse(options).get(),
+            return new CoreSubcommand.Export(database.parse(options).get(), filePath.parse(options).get(),
                     port.parse(options).get());
         }
 

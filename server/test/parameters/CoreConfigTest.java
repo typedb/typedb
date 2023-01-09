@@ -16,14 +16,11 @@
  *
  */
 
-package com.vaticle.typedb.core.server.test;
+package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.common.Util;
-import com.vaticle.typedb.core.server.parameters.CoreConfig;
-import com.vaticle.typedb.core.server.parameters.CoreConfigFactory;
-import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
 import com.vaticle.typedb.core.server.parameters.util.Option;
 import com.vaticle.typedb.core.server.parameters.util.YAMLParser;
 import org.junit.Test;
@@ -166,11 +163,11 @@ public class CoreConfigTest {
     public void config_file_accepts_overrides() {
         CoreConfig config = CoreConfigFactory.config(
                 set(
-                    new Option("storage.data", "server/alt-data"),
-                    new Option("server.address", "0.0.0.0:1730"),
-                    new Option("log.output.file.directory", "server/alt-logs"),
-                    new Option("log.logger.default.level", "info"),
-                    new Option("log.logger.typedb.output", "[file]")
+                        new Option("storage.data", "server/alt-data"),
+                        new Option("server.address", "0.0.0.0:1730"),
+                        new Option("log.output.file.directory", "server/alt-logs"),
+                        new Option("log.logger.default.level", "info"),
+                        new Option("log.logger.typedb.output", "[file]")
                 ),
                 new CoreConfigParser()
         );
@@ -199,8 +196,8 @@ public class CoreConfigTest {
 
         CoreConfig configWithRepeatedArgs = CoreConfigFactory.config(
                 set(
-                    new Option("log.logger.typedb.output", "file"),
-                    new Option("log.logger.typedb.output", "stdout")
+                        new Option("log.logger.typedb.output", "file"),
+                        new Option("log.logger.typedb.output", "stdout")
                 ),
                 new CoreConfigParser()
         );
