@@ -142,7 +142,7 @@ public final class ConceptManager {
 
     public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
         if (valueType == null) throw exception(TypeDBException.of(ATTRIBUTE_VALUE_TYPE_MISSING, label));
-        if (!valueType.isWritable()) throw exception(TypeDBException.of(UNSUPPORTED_OPERATION));
+        if (!valueType.isWritable()) throw exception(TypeDBException.of(UNSUPPORTED_OPERATION, "putAttributeType", valueType.name()));
 
         TypeVertex vertex = graphMgr.schema().getType(label);
         switch (valueType) {
