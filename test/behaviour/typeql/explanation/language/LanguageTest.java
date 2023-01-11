@@ -43,7 +43,7 @@ public class LanguageTest {
     //    a) Use '//<this>/<package>/<name>:test' to test against
     //
     // 5) Update 'Bazel Flags':
-    //    a) Remove the line that says: '--test_filter=typedb.client.*'
+    //    a) Remove the line that says: '--test_filter=com.vaticle.typedb.core.*'
     //    b) Use the following Bazel flags:
     //       --cache_test_results=no : to make sure you're not using cache
     //       --test_output=streamed : to make sure all output is printed
