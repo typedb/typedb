@@ -280,7 +280,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_REGEX =
                 new Pattern(15, "The type variable '%s' has multiple 'regex' constraints.");
         public static final Pattern INCOHERENT_PATTERN =
-                new Pattern(16, "The pattern '%s' is illegal in the current schema.");
+                new Pattern(16, "The schema does not allow for data matching the pattern '%s'.");
         public static final Pattern INCOHERENT_SUB_PATTERN =
                 new Pattern(17, "The pattern '%s' is illegal in the current schema, due to '%s'.");
         public static final Pattern INCOHERENT_PATTERN_VARIABLE_VALUE =
