@@ -4,6 +4,10 @@
 @maven//:ch_qos_logback_logback_core_1_2_7
 @maven//:com_eclipsesource_minimal_json_minimal_json
 @maven//:com_eclipsesource_minimal_json_minimal_json_0_9_5
+@maven//:com_electronwill_night_config_core
+@maven//:com_electronwill_night_config_core_3_6_5
+@maven//:com_electronwill_night_config_toml
+@maven//:com_electronwill_night_config_toml_3_6_5
 @maven//:com_github_ben_manes_caffeine_caffeine
 @maven//:com_github_ben_manes_caffeine_caffeine_2_8_6
 @maven//:com_google_android_annotations
@@ -146,6 +150,8 @@
 @maven//:org_hamcrest_hamcrest_core_1_3
 @maven//:org_hamcrest_hamcrest_library
 @maven//:org_hamcrest_hamcrest_library_1_3
+@maven//:org_jetbrains_compose_compiler_compiler
+@maven//:org_jetbrains_compose_compiler_compiler_1_3_2
 @maven//:org_mockito_mockito_core
 @maven//:org_mockito_mockito_core_2_6_4
 @maven//:org_objenesis_objenesis
