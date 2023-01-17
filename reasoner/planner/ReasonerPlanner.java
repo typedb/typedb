@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
@@ -103,9 +104,9 @@ public abstract class ReasonerPlanner {
         // if r cannot independently generate all satisfying value for v by itself.
         FunctionalIterator<? extends Constraint> variableConstraints;
         if (resolvable.isRetrievable()) {
-            variableConstraints = iterate(resolvable.asRetrievable().pattern().variable(v.id()).constraints());
+            variableConstraints = iterate(resolvable.asRetrievable().pattern().variable(v.id()).constraining());
         } else if (resolvable.isConcludable()) {
-            variableConstraints = iterate(resolvable.asConcludable().pattern().variable(v.id()).constraints());
+            variableConstraints = iterate(resolvable.asConcludable().pattern().variable(v.id()).constraining());
         } else if (resolvable.isNegated()) {
             return true;
         } else throw TypeDBException.of(ILLEGAL_STATE);
@@ -127,9 +128,11 @@ public abstract class ReasonerPlanner {
 
         Map<Variable, Integer> unnegatedRefCount = new HashMap<>();
         for (Resolvable<?> resolvable : resolvables) {
+            Optional<ThingVariable> generating = resolvable.generating();
             deps.putIfAbsent(resolvable, new HashSet<>());
+
             for (Variable v : retrievedVariables(resolvable)) {
-                if (generated.contains(v) && isDependency(resolvable, v)) {
+                if (generated.contains(v) && !(generating.isPresent() && generating.get().equals(v)) && isDependency(resolvable, v)) {
                     deps.get(resolvable).add(v);
                 }
                 if (!resolvable.isNegated()) {
