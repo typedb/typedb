@@ -18,6 +18,8 @@
 package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.core.common.cache.CommonCache;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
@@ -25,7 +27,7 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
-import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.constraint.Constraint;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
@@ -38,6 +40,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ReasonerPlanner {
@@ -95,6 +98,23 @@ public abstract class ReasonerPlanner {
 
     abstract Plan computePlan(CallMode callMode);
 
+    private static boolean isDependency(Resolvable<?> resolvable, Variable v) {
+        // A variable v is a dependency of a resolvable r,
+        // if r cannot independently generate all satisfying value for v by itself.
+        FunctionalIterator<? extends Constraint> variableConstraints;
+        if (resolvable.isRetrievable()) {
+            variableConstraints = iterate(resolvable.asRetrievable().pattern().variable(v.id()).constraints());
+        } else if (resolvable.isConcludable()) {
+            variableConstraints = iterate(resolvable.asConcludable().pattern().variable(v.id()).constraints());
+        } else if (resolvable.isNegated()) {
+            return true;
+        } else throw TypeDBException.of(ILLEGAL_STATE);
+
+        return variableConstraints.allMatch(constraint -> {
+            // predicates are dependent on other constraints (e.g. `isa` constraints) to trigger reasoning.
+            return constraint.isThing() && constraint.asThing().isValue();
+        });
+    }
     /**
      * Determine the resolvables that are dependent upon the generation of each variable
      */
@@ -107,11 +127,9 @@ public abstract class ReasonerPlanner {
 
         Map<Variable, Integer> unnegatedRefCount = new HashMap<>();
         for (Resolvable<?> resolvable : resolvables) {
-            Optional<ThingVariable> generating = resolvable.generating();
             deps.putIfAbsent(resolvable, new HashSet<>());
-
             for (Variable v : retrievedVariables(resolvable)) {
-                if (generated.contains(v) && !(generating.isPresent() && generating.get().equals(v))) {
+                if (generated.contains(v) && isDependency(resolvable, v)) {
                     deps.get(resolvable).add(v);
                 }
                 if (!resolvable.isNegated()) {
