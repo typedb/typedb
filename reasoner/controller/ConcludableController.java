@@ -180,7 +180,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             PROCESSOR extends AbstractProcessor<INPUT, OUTPUT, REQ, PROCESSOR>
             > extends AbstractProcessor<INPUT, OUTPUT, REQ, PROCESSOR> {
 
-        private final ConceptMap bounds;
+        final Concludable concludable;
+        final ConceptMap bounds;
         private final Set<Variable.Retrievable> unboundVars;  // TODO: Can just use a boolean to indicate if fully bound
         private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
         private final Set<Identifier> requestedConnections;
@@ -188,12 +189,13 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
         Processor(Driver<PROCESSOR> driver,
                   Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller,
-                  Context context, ConceptMap bounds,
+                  Concludable concludable, Context context, ConceptMap bounds,
                   Set<Variable.Retrievable> unboundVars,
                   Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                   Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
                   Supplier<String> debugName) {
             super(driver, controller, context, debugName);
+            this.concludable = concludable;
             this.bounds = bounds;
             this.unboundVars = unboundVars;
             this.conclusionUnifiers = conclusionUnifiers;
@@ -205,7 +207,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         public void setUp() {
             setHubReactive(fanInFanOut(this));
             // TODO: Add a find first optimisation when all variables are bound
-            mayAddTraversal();
+            mayAddTraversal(false);
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     InputPort<INPUT> inputPort = createInputPort();
@@ -230,7 +232,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         protected abstract REQ createRequest(Reactive.Identifier identifier, Conclusion conclusion,
                                              ConceptMap bounds);
 
-        protected abstract void mayAddTraversal();
+        protected abstract void mayAddTraversal(boolean includeInferred);
 
         private void mayRequestConnection(REQ conclusionRequest) {
             if (!requestedConnections.contains(conclusionRequest.id())) {
@@ -241,22 +243,33 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
         public static class Match extends Processor<Map<Variable, Concept>, ConceptMap, Match.Request, Match> {
 
-            private final Concludable concludable;
-
             Match(
                     Driver<Match> driver, Driver<ConcludableController.Match> controller, Concludable concludable,
                     Context context, ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, Supplier<String> debugName
             ) {
-                super(driver, controller, context, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
+                super(driver, controller, concludable, context, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
                       debugName);
-                this.concludable = concludable;
+            }
+
+
+            @Override
+            public void setUp() {
+                // TODO: Add a find first optimisation when all variables are bound
+                if (concludable.isRelation() && concludable.generating().isPresent() && bounds.contains(concludable.generating().get().id())) {
+                    // Optimisation: If we know the relation instance, just do a lookup.
+                    setHubReactive(fanInFanOut(this));
+                    mayAddTraversal(true);
+                } else {
+                    super.setUp();
+                }
             }
 
             @Override
-            protected void mayAddTraversal() {
-                new Source<>(this, traversalSuppplier).flatMap(this::filterInferred).registerSubscriber(hubReactive());
+            protected void mayAddTraversal(boolean includeInferred) {
+                if (includeInferred) new Source<>(this, traversalSuppplier).registerSubscriber(hubReactive());
+                else new Source<>(this, traversalSuppplier).flatMap(this::filterInferred).registerSubscriber(hubReactive());
             }
 
             private FunctionalIterator<ConceptMap> filterInferred(ConceptMap conceptMap) {
@@ -327,21 +340,20 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         public static class Explain extends Processor<PartialExplanation, Explanation, Explain.Request, Explain> {
 
             private final ReasonerConsumer<Explanation> reasonerConsumer;
-            private final Concludable concludable;
             private RootSink<Explanation> rootSink;
 
             Explain(
                     Driver<Explain> driver, Driver<ConcludableController.Explain> controller, Context context,
                     Concludable concludable,
-                    ConceptMap bounds, Set<Variable.Retrievable> unboundVars,
+                    ConceptMap bounds,
+                    Set<Variable.Retrievable> unboundVars,
                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                     ReasonerConsumer<Explanation> reasonerConsumer,
                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
                     Supplier<String> debugName
             ) {
-                super(driver, controller, context, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
+                super(driver, controller, concludable, context, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
                       debugName);
-                this.concludable = concludable;
                 this.reasonerConsumer = reasonerConsumer;
             }
 
@@ -391,10 +403,9 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             }
 
             @Override
-            protected void mayAddTraversal() {
+            protected void mayAddTraversal(boolean includeInferred) {
                 // No traversal when explaining
             }
-
 
             @Override
             public void onFinished(Reactive.Identifier finishable) {
