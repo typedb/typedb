@@ -101,32 +101,9 @@ public abstract class ReasonerPlanner {
 
     abstract Plan computePlan(CallMode callMode);
 
-    private static boolean isDependency(Resolvable<?> resolvable, Variable v) {
-        // A variable v is a dependency of a resolvable r,
-        // if r cannot independently generate all satisfying value for v by itself.
-        FunctionalIterator<? extends Constraint> variableConstraints;
-        if (resolvable.isRetrievable()) {
-            variableConstraints = iterate(resolvable.asRetrievable().pattern().variable(v.id()).constraining());
-        } else if (resolvable.isConcludable()) {
-            variableConstraints = iterate(resolvable.asConcludable().pattern().variable(v.id()).constraining());
-        } else if (resolvable.isNegated()) {
-            return true;
-        } else throw TypeDBException.of(ILLEGAL_STATE);
-
-        return variableConstraints.allMatch(constraint -> {
-            // predicates are dependent on other constraints (e.g. `isa` constraints) to trigger reasoning.
-            return constraint.isThing() && constraint.asThing().isValue();
-        });
-    }
-
     /**
      * Determine the resolvables that are dependent upon the generation of each variable
      */
-    private static boolean hasNoGeneratingConstraint(Variable variable) {
-        return Iterators.link(iterate(variable.constraints()), iterate(variable.constraining()))
-                .allMatch(constraint -> constraint.isThing() && constraint.asThing().isValue());
-    }
-
     static Map<Resolvable<?>, Set<Variable>> dependencies(Set<Resolvable<?>> resolvables) {
         // TODO: There may not be any generated->used dependencies since every use either triggers the rule or is unsatisfiable
         Map<Resolvable<?>, Set<Variable>> deps = new HashMap<>();
@@ -144,6 +121,11 @@ public abstract class ReasonerPlanner {
                 ));
 
         return deps;
+    }
+
+    private static boolean hasNoGeneratingConstraint(Variable variable) {
+        return Iterators.link(iterate(variable.constraints()), iterate(variable.constraining()))
+                .allMatch(constraint -> constraint.isThing() && constraint.asThing().isValue());
     }
 
     public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> mode, @Nullable Set<ResolvableConjunction> dependencyFilter) {
