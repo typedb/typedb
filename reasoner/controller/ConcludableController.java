@@ -182,7 +182,6 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
         final Concludable concludable;
         final ConceptMap bounds;
-        private final Set<Variable.Retrievable> unboundVars;  // TODO: Can just use a boolean to indicate if fully bound
         private final Map<Conclusion, Set<Unifier>> conclusionUnifiers;
         private final Set<Identifier> requestedConnections;
         final java.util.function.Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier;
@@ -190,14 +189,12 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         Processor(Driver<PROCESSOR> driver,
                   Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller,
                   Concludable concludable, Context context, ConceptMap bounds,
-                  Set<Variable.Retrievable> unboundVars,
                   Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                   Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
                   Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.concludable = concludable;
             this.bounds = bounds;
-            this.unboundVars = unboundVars;
             this.conclusionUnifiers = conclusionUnifiers;
             this.traversalSuppplier = traversalSuppplier;
             this.requestedConnections = new HashSet<>();
@@ -249,14 +246,12 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier, Supplier<String> debugName
             ) {
-                super(driver, controller, concludable, context, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
-                      debugName);
+                super(driver, controller, concludable, context, bounds, conclusionUnifiers, traversalSuppplier, debugName);
             }
 
 
             @Override
             public void setUp() {
-                // TODO: Add a find first optimisation when all variables are bound
                 if (concludable.isRelation() && concludable.generating().isPresent() && bounds.contains(concludable.generating().get().id())) {
                     // Optimisation: If we know the relation instance, just do a lookup.
                     setHubReactive(fanInFanOut(this));
@@ -352,7 +347,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
                     Supplier<String> debugName
             ) {
-                super(driver, controller, concludable, context, bounds, unboundVars, conclusionUnifiers, traversalSuppplier,
+                super(driver, controller, concludable, context, bounds, conclusionUnifiers, traversalSuppplier,
                       debugName);
                 this.reasonerConsumer = reasonerConsumer;
             }
