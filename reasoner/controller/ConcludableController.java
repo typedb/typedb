@@ -72,7 +72,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
     @Override
     public void setUpUpstreamControllers() {
-        iterate(registry().logicManager().applicableRules(concludable).entrySet()).forEachRemaining( ruleAndUnifiers -> {
+        iterate(registry().logicManager().applicableRules(concludable).entrySet()).forEachRemaining(ruleAndUnifiers -> {
                 Rule rule = ruleAndUnifiers.getKey();
                 Driver<? extends ConclusionController<INPUT, ?, ?>> controller = registerConclusionController(rule);
                 conclusionControllers.put(rule.conclusion(), controller);
@@ -200,11 +200,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             this.requestedConnections = new HashSet<>();
         }
 
-        @Override
-        public void setUp() {
-            setHubReactive(fanInFanOut(this));
-            // TODO: Add a find first optimisation when all variables are bound
-            mayAddTraversal(false);
+        void addRules() {
             conclusionUnifiers.forEach((conclusion, unifiers) -> {
                 unifiers.forEach(unifier -> unifier.unify(bounds).ifPresent(boundsAndRequirements -> {
                     InputPort<INPUT> inputPort = createInputPort();
@@ -229,7 +225,6 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         protected abstract REQ createRequest(Reactive.Identifier identifier, Conclusion conclusion,
                                              ConceptMap bounds);
 
-        protected abstract void mayAddTraversal(boolean includeInferred);
 
         private void mayRequestConnection(REQ conclusionRequest) {
             if (!requestedConnections.contains(conclusionRequest.id())) {
@@ -252,19 +247,31 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             @Override
             public void setUp() {
-                if (concludable.isRelation() && concludable.generating().isPresent() && bounds.contains(concludable.generating().get().id())) {
-                    // Optimisation: If we know the relation instance, just do a lookup.
-                    setHubReactive(fanInFanOut(this));
-                    mayAddTraversal(true);
+                setHubReactive(fanInFanOut(this));
+                if (canBypassReasoning(bounds)) {
+                    addTraversal(true);
                 } else {
-                    super.setUp();
+                    addTraversal(false);
+                    addRules();
                 }
             }
 
-            @Override
-            protected void mayAddTraversal(boolean includeInferred) {
-                if (includeInferred) new Source<>(this, traversalSuppplier).registerSubscriber(hubReactive());
-                else new Source<>(this, traversalSuppplier).flatMap(this::filterInferred).registerSubscriber(hubReactive());
+            private boolean canBypassReasoning(ConceptMap bounds) {
+                if (concludable.isHas()) {
+                    return bounds.contains(concludable.asHas().owner().id()) &&
+                            bounds.contains(concludable.asHas().attribute().id()) &&
+                            concludable.isInferredAnswer(bounds);
+                } else {
+                    return bounds.contains(concludable.generating().get().id()) && concludable.isInferredAnswer(bounds);
+                }
+            }
+
+            protected void addTraversal(boolean includeInferred) {
+                if (includeInferred) {
+                    new Source<>(this, traversalSuppplier).map(ans -> withExplainable(ans, concludable)).registerSubscriber(hubReactive());
+                } else {
+                    new Source<>(this, traversalSuppplier).flatMap(this::filterInferred).registerSubscriber(hubReactive());
+                }
             }
 
             private FunctionalIterator<ConceptMap> filterInferred(ConceptMap conceptMap) {
@@ -354,7 +361,8 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             @Override
             public void setUp() {
-                super.setUp();
+                setHubReactive(fanInFanOut(this));
+                addRules();
                 rootSink = new RootSink<>(this, reasonerConsumer);
                 hubReactive().registerSubscriber(rootSink);
             }
@@ -395,11 +403,6 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 }).map(
                         p -> new Explanation(p.rule(), unifier.mapping(), p.conclusionAnswer(), p.conditionAnswer())
                 );
-            }
-
-            @Override
-            protected void mayAddTraversal(boolean includeInferred) {
-                // No traversal when explaining
             }
 
             @Override
