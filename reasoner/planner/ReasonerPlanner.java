@@ -113,17 +113,18 @@ public abstract class ReasonerPlanner {
         Set<Variable> unnegatedVars = iterate(resolvables).filter(r -> !r.isNegated()).flatMap(r -> iterate(r.variables())).toSet();
         iterate(resolvables).filter(Resolvable::isNegated)
                 .forEachRemaining(resolvable -> deps.get(resolvable).addAll(intersection(resolvable.variables(), unnegatedVars)));
-
+        Set<ThingVariable> generatedVars = iterate(resolvables).filter(resolvable -> resolvable.generating().isPresent())
+                .map(resolvable -> resolvable.generating().get()).toSet();
         // Add dependency for resolvable to any variables for which it can't (independently) generate all satisfying values
         iterate(resolvables).filter(resolvable -> !resolvable.isNegated())
                 .forEachRemaining(resolvable -> deps.get(resolvable).addAll(
-                        iterate(resolvable.variables()).filter(ReasonerPlanner::hasNoGeneratingConstraint).toSet()
+                        iterate(resolvable.variables()).filter(v -> generatedVars.contains(v) && notGeneratedByResolvable(v)).toSet()
                 ));
 
         return deps;
     }
 
-    private static boolean hasNoGeneratingConstraint(Variable variable) {
+    private static boolean notGeneratedByResolvable(Variable variable) {
         return Iterators.link(iterate(variable.constraints()), iterate(variable.constraining()))
                 .allMatch(constraint -> constraint.isThing() && constraint.asThing().isValue());
     }
