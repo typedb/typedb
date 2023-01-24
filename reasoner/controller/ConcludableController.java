@@ -163,7 +163,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             //  concludable. They should be filtered before being passed to the concludableProcessor's constructor
             assert bounds.equals(this.bounds);
             return new Processor.Explain(
-                    explainDriver, driver(), processorContext(), concludable, bounds, set(), conclusionUnifiers, reasonerConsumer,
+                    explainDriver, driver(), processorContext(), concludable, bounds, conclusionUnifiers, reasonerConsumer,
                     () -> Traversal.traversalIterator(registry(), concludable.pattern(), bounds),
                     () -> Processor.class.getSimpleName() + "(pattern: " + concludable.pattern() + ", bounds: " + bounds + ")"
             );
@@ -348,7 +348,6 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                     Driver<Explain> driver, Driver<ConcludableController.Explain> controller, Context context,
                     Concludable concludable,
                     ConceptMap bounds,
-                    Set<Variable.Retrievable> unboundVars,
                     Map<Conclusion, Set<Unifier>> conclusionUnifiers,
                     ReasonerConsumer<Explanation> reasonerConsumer,
                     Supplier<FunctionalIterator<ConceptMap>> traversalSuppplier,
