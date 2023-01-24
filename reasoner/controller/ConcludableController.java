@@ -47,7 +47,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -258,11 +257,12 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             private boolean canBypassReasoning(ConceptMap bounds) {
                 if (concludable.isHas()) {
-                    return bounds.contains(concludable.asHas().owner().id()) &&
-                            bounds.contains(concludable.asHas().attribute().id()) &&
-                            concludable.isInferredAnswer(bounds);
+                    Concept owner; Concept attribute;
+                    return  (owner = bounds.get(concludable.asHas().owner().id())) != null &&
+                            (attribute = bounds.get(concludable.asHas().attribute().id())) != null &&
+                            (owner.asThing().hasInferred(attribute.asAttribute()) || owner.asThing().hasNonInferred(attribute.asAttribute()));
                 } else {
-                    return bounds.contains(concludable.generating().get().id()) && concludable.isInferredAnswer(bounds);
+                    return bounds.contains(concludable.generating().get().id());
                 }
             }
 
