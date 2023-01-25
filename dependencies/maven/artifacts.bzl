@@ -37,6 +37,7 @@ artifacts = [
     "io.grpc:grpc-netty",
     "io.grpc:grpc-stub",
     "io.netty:netty-all",
+    "io.netty:netty-transport",
     "junit:junit",
     "org.rocksdb:rocksdbjni",
     "org.rocksdb:rocksdbjni-dev-mac",
