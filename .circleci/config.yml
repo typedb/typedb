@@ -70,9 +70,11 @@ workflows:
             branches:
               only:
                 - master
+                - development
       - test-assembly-windows-zip:
           filters:
             branches:
               only:
                 - master
+                - development
 
