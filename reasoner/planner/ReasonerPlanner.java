@@ -18,6 +18,9 @@
 package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.core.common.cache.CommonCache;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
@@ -25,6 +28,7 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
+import com.vaticle.typedb.core.pattern.constraint.Constraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -38,6 +42,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.intersection;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ReasonerPlanner {
@@ -101,34 +107,26 @@ public abstract class ReasonerPlanner {
     static Map<Resolvable<?>, Set<Variable>> dependencies(Set<Resolvable<?>> resolvables) {
         // TODO: There may not be any generated->used dependencies since every use either triggers the rule or is unsatisfiable
         Map<Resolvable<?>, Set<Variable>> deps = new HashMap<>();
-        Set<Variable> generated = new HashSet<>(iterate(resolvables)
-                .map(Resolvable::generating).filter(Optional::isPresent)
-                .map(Optional::get).toSet());
+        iterate(resolvables).forEachRemaining(resolvable -> deps.put(resolvable, new HashSet<>()));
 
-        Map<Variable, Integer> unnegatedRefCount = new HashMap<>();
-        for (Resolvable<?> resolvable : resolvables) {
-            Optional<ThingVariable> generating = resolvable.generating();
-            deps.putIfAbsent(resolvable, new HashSet<>());
-
-            for (Variable v : retrievedVariables(resolvable)) {
-                if (generated.contains(v) && !(generating.isPresent() && generating.get().equals(v))) {
-                    deps.get(resolvable).add(v);
-                }
-                if (!resolvable.isNegated()) {
-                    unnegatedRefCount.put(v, 1 + unnegatedRefCount.getOrDefault(v, 0));
-                }
-            }
-        }
-
-        for (Resolvable<?> resolvable : resolvables) {
-            if (resolvable.isNegated()) {
-                iterate(retrievedVariables(resolvable))
-                        .filter(v -> unnegatedRefCount.getOrDefault(v, 0) > 0)
-                        .forEachRemaining(v -> deps.get(resolvable).add(v));
-            }
-        }
+        // Add dependency between negateds and shared variables
+        Set<Variable> unnegatedVars = iterate(resolvables).filter(r -> !r.isNegated()).flatMap(r -> iterate(r.variables())).toSet();
+        iterate(resolvables).filter(Resolvable::isNegated)
+                .forEachRemaining(resolvable -> deps.get(resolvable).addAll(intersection(resolvable.variables(), unnegatedVars)));
+        Set<ThingVariable> generatedVars = iterate(resolvables).filter(resolvable -> resolvable.generating().isPresent())
+                .map(resolvable -> resolvable.generating().get()).toSet();
+        // Add dependency for resolvable to any variables for which it can't (independently) generate all satisfying values
+        iterate(resolvables).filter(resolvable -> !resolvable.isNegated())
+                .forEachRemaining(resolvable -> deps.get(resolvable).addAll(
+                        iterate(resolvable.variables()).filter(v -> generatedVars.contains(v) && notGeneratedByResolvable(v)).toSet()
+                ));
 
         return deps;
+    }
+
+    private static boolean notGeneratedByResolvable(Variable variable) {
+        return Iterators.link(iterate(variable.constraints()), iterate(variable.constraining()))
+                .allMatch(constraint -> constraint.isThing() && constraint.asThing().isValue());
     }
 
     public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> mode, @Nullable Set<ResolvableConjunction> dependencyFilter) {
