@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
+import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.Relation;
@@ -45,7 +46,6 @@ import static junit.framework.TestCase.assertEquals;
 
 public class BenchmarkSmallIT {
 
-    private static final boolean PREVENT_HANGING = true;
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("computation-graph-test");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
@@ -134,8 +134,8 @@ public class BenchmarkSmallIT {
                 String queryString = "match " + queryPattern + " get $x, $y;";
                 String limitedQueryString = "match " + queryPattern + " get $x, $y; limit " + limit + ";";
 
-                assertEquals(executeQuery(queryString, tx, "full").size(), limit);
-                assertEquals(executeQuery(limitedQueryString, tx, "limit").size(), limit);
+                assertEquals(limit, executeQuery(queryString, tx, "full").size());
+                assertEquals(limit, executeQuery(limitedQueryString, tx, "limit").size());
             }
         }
     }
@@ -165,11 +165,11 @@ public class BenchmarkSmallIT {
      *  j e [1, N]
      */
     @Test
-    public void testTransitiveMatrixLinear() throws IOException {
+    public void testTransitiveMatrixLinear() {
         int N = 10;
         int limit = 100;
 
-        LinearTransitivityMatrixGraph linearGraph = new LinearTransitivityMatrixGraph(databaseMgr, database);
+        TransitivityMatrixGraph linearGraph = new TransitivityMatrixGraph.Linear(databaseMgr, database);
 
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
 
@@ -190,112 +190,109 @@ public class BenchmarkSmallIT {
         }
     }
 
-//
-//    /**
-//     * single-rule transitivity test with initial data arranged in a chain of length N
-//     * The rule is given as:
-//     *
-//     * (Q-from: $x, Q-to: $z) isa Q;
-//     * (Q-from: $z, Q-to: $y) isa Q;
-//     * ->
-//     * (Q-from: $x, Q-to: $y) isa Q;
-//     *
-//     * Each neighbouring grid points are related in the following fashion:
-//     *
-//     *  a_{i} -  Q  - a_{i + 1}
-//     *
-//     *  i e [0, N)
-//     */
-//    @Test
-//    public void testTransitiveChain()  {
-//        int N = 100;
-//        int limit = 10;
-//        int answers = (N+1)*N/2;
-//
-//        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
-//
-//        TransitivityChainGraph transitivityChainGraph = new TransitivityChainGraph(databaseMgr, database);
-//        transitivityChainGraph.load(N);
-//
-//        try (TypeDB.Session session = dataSession()) {
-//            try (TypeDB.Transaction tx = session.transaction(Transaction.Type.WRITE)){
-//
-//                String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
-//                GraqlGet query = Graql.parse(queryString).asGet();
-//
-//                String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
-//                GraqlGet query2 = Graql.parse(queryString2).asGet();
-//
-//                assertEquals(executeQuery(query, tx, "full").size(), answers);
-//                assertEquals(executeQuery(query2, tx, "With specific resource").size(), N);
-//
-//                executeQuery(query.match().get().limit(limit), tx, "limit " + limit);
-//                executeQuery(query2.match().get().limit(limit), tx, "limit " + limit);
-//                tx.close();
-//                session.close();
-//            }
-//        }
-//    }
 
-//    /**
-//     * single-rule transitivity test with initial data arranged in a N x N square grid.
-//     * The rule is given as:
-//     *
-//     * (Q-from: $x, Q-to: $z) isa Q;
-//     * (Q-from: $z, Q-to: $y) isa Q;
-//     * ->
-//     * (Q-from: $x, Q-to: $y) isa Q;
-//     *
-//     * Each pair of neighbouring grid points is related in the following fashion:
-//     *
-//     *  a_{i  , j} -  Q  - a_{i, j + 1}
-//     *       |                    |
-//     *       Q                    Q
-//     *       |                    |
-//     *  a_{i+1, j} -  Q  - a_{i+1, j+1}
-//     *
-//     *  i e [0, N)
-//     *  j e [0, N)
-//     */
-//    @Test
-//    public void testTransitiveMatrix(){
-//        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
-//        int N = 10;
-//        int limit = 100;
-//
-//        Session session = server.sessionWithNewKeyspace();
-//        TransitivityMatrixGraph transitivityMatrixGraph = new TransitivityMatrixGraph(session);
-//        //                         DJ       IC     FO
-//        //results @N = 15 14400     ?
-//        //results @N = 20 44100     ?       ?     12s     4 s
-//        //results @N = 25 105625    ?       ?     50s    11 s
-//        //results @N = 30 216225    ?       ?      ?     30 s
-//        //results @N = 35 396900   ?        ?      ?     76 s
-//        transitivityMatrixGraph.load(N, N);
-//        Transaction tx = session.transaction(Transaction.Type.WRITE);
-//
-//
-//        //full result
-//        String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
-//        GraqlGet query = Graql.parse(queryString).asGet();
-//
-//        //with specific resource
-//        String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
-//        GraqlGet query2 = Graql.parse(queryString2).asGet();
-//
-//        //with substitution
-//        Concept id = tx.execute(Graql.parse("match $x has index 'a'; get;").asGet()).iterator().next().get("x");
-//        String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id " + id.id().getValue() + "; get;";
-//        GraqlGet query3 = Graql.parse(queryString3).asGet();
-//
-//        executeQuery(query, tx, "full");
-//        executeQuery(query2, tx, "With specific resource");
-//        executeQuery(query3, tx, "Single argument bound");
-//        executeQuery(query.match().get().limit(limit), tx, "limit " + limit);
-//        tx.close();
-//        session.close();
-//    }
-//
+    /**
+     * single-rule transitivity test with initial data arranged in a chain of length N
+     * The rule is given as:
+     *
+     * (from: $x, to: $z) isa Q;
+     * (from: $z, to: $y) isa Q;
+     * ->
+     * (from: $x, to: $y) isa Q;
+     *
+     * Each neighbouring grid points are related in the following fashion:
+     *
+     *  a_{i} -  Q  - a_{i + 1}
+     *
+     *  i e [0, N)
+     */
+    @Test
+    public void testTransitiveChain()  {
+        int N = 100;
+        int limit = 10;
+        int answers = (N+1)*N/2;
+
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
+
+        TransitivityChainGraph transitivityChainGraph = new TransitivityChainGraph(databaseMgr, database);
+        transitivityChainGraph.load(N);
+
+        try (TypeDB.Session session = dataSession()) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))){
+
+                TypeQLMatch.Unfiltered query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;"));
+
+                TypeQLMatch.Unfiltered query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q; $x has index 'a'; "));
+
+                assertEquals(answers, executeQuery(query, tx, "full").size());
+                assertEquals(N, executeQuery(query2, tx, "With specific resource").size());
+
+                executeQuery(query.limit(limit), tx, "limit " + limit);
+                executeQuery(query2.limit(limit), tx, "limit " + limit);
+                tx.close();
+                session.close();
+            }
+        }
+    }
+
+    /**
+     * single-rule transitivity test with initial data arranged in a N x N square grid.
+     * The rule is given as:
+     *
+     * (Q-from: $x, Q-to: $z) isa Q;
+     * (Q-from: $z, Q-to: $y) isa Q;
+     * ->
+     * (Q-from: $x, Q-to: $y) isa Q;
+     *
+     * Each pair of neighbouring grid points is related in the following fashion:
+     *
+     *  a_{i  , j} -  Q  - a_{i, j + 1}
+     *       |                    |
+     *       Q                    Q
+     *       |                    |
+     *  a_{i+1, j} -  Q  - a_{i+1, j+1}
+     *
+     *  i e [0, N)
+     *  j e [0, N)
+     */
+    @Test
+    public void testTransitiveMatrix(){
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
+        int N = 10;
+        int limit = 100;
+
+        TransitivityMatrixGraph transitivityMatrixGraph = new TransitivityMatrixGraph.Quadratic(databaseMgr, database);
+        //                         DJ       IC     FO
+        //results @N = 15 14400     ?
+        //results @N = 20 44100     ?       ?     12s     4 s
+        //results @N = 25 105625    ?       ?     50s    11 s
+        //results @N = 30 216225    ?       ?      ?     30 s
+        //results @N = 35 396900   ?        ?      ?     76 s
+        transitivityMatrixGraph.load(N, N);
+        try (TypeDB.Session session = dataSession()) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                //full result
+                TypeQLMatch.Unfiltered query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;"));
+
+
+                //with specific resource
+                TypeQLMatch.Unfiltered query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x has index 'a';"));
+
+
+                //with substitution
+                Concept id = tx.query().match(TypeQL.parseQuery("match $x has index 'a';").asMatch()).next().get("x");
+                TypeQLMatch.Unfiltered query3 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x iid " + id.asThing().getIID().toHexString() + ";"));
+
+
+                executeQuery(query, tx, "full");
+                executeQuery(query2, tx, "With specific resource");
+                executeQuery(query3, tx, "Single argument bound");
+                executeQuery(query.limit(limit), tx, "limit " + limit);
+            }
+        }
+
+    }
+
 //    /**
 //     * single-rule mimicking transitivity test rule defined by two-hop relations
 //     * Initial data arranged in N x N square grid.

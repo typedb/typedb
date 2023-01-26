@@ -27,72 +27,56 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 
-import java.io.IOException;
-
 @SuppressWarnings("CheckReturnValue")
-public class LinearTransitivityMatrixGraph{
+public class TransitivityChainGraph {
+
 
     private final TypeDB.DatabaseManager dbm;
     private final String databaseName;
 
-    private final static String gqlPath = "test/integration/reasoner/benchmark/resources/linearTransitivity.tql";
-
+    private final static String tqlPath = "test/integration/reasoner/benchmark/resources/quadraticTransitivity.tql";
     private final static Label key = Label.of("index");
 
-    public LinearTransitivityMatrixGraph(TypeDB.DatabaseManager dbm, String dbName){
+    public TransitivityChainGraph(TypeDB.DatabaseManager dbm, String dbName){
         this.dbm = dbm;
         this.databaseName = dbName;
     }
-
-    public final void load(int n, int m)  throws IOException {
+    public final void load(int n) {
         try (TypeDB.Session session = dbm.session(databaseName, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                tx.query().define(Util.parseTQL(gqlPath).asDefine());
+                tx.query().define(Util.parseTQL(tqlPath).asDefine());
                 tx.commit();
             }
         }
 
         try (TypeDB.Session session = dbm.session(databaseName, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                buildExtensionalDB(n, m, tx);
+                buildExtensionalDB(n, tx);
                 tx.commit();
             }
         }
     }
 
-    protected void buildExtensionalDB(int n, int m, TypeDB.Transaction tx){
-
+    protected void buildExtensionalDB(int n, TypeDB.Transaction tx){
         EntityType aEntity = tx.concepts().getEntityType("a-entity");
         RelationType Q = tx.concepts().getRelationType("Q");
-        RoleType Qfrom = Q.getRelates("from");
-        RoleType Qto = Q.getRelates("to");
-
-
-        Thing[][] aInstancesIds = new Thing[n+1][m+1];
+        RoleType qfrom = Q.getRelates("from");
+        RoleType qto = Q.getRelates("to");
         Thing aInst = Util.putEntityWithResource(tx, "a", tx.concepts().getEntityType("entity2"), key);
-        for(int i = 1 ; i <= n ;i++) {
-            for (int j = 1; j <= m; j++) {
-                aInstancesIds[i][j] = Util.putEntityWithResource(tx, "a" + i + "," + j, aEntity, key);
-            }
+        Thing[] aInstanceIds = new Thing[n];
+        for(int i = 0 ; i < n ;i++) {
+            aInstanceIds[i] = Util.putEntityWithResource(tx, "a" + i, aEntity, key);
         }
 
-        Relation rel = Q.create();
-        rel.addPlayer(Qfrom, aInst);
-        rel.addPlayer(Qto, aInstancesIds[1][1]);
+        Relation q0 = Q.create();
+        q0.addPlayer(qfrom, aInst);
+        q0.addPlayer(qto, aInstanceIds[0]);
 
-        for(int i = 1 ; i <= n ; i++) {
-            for (int j = 1; j <= m; j++) {
-                if ( i < n ) {
-                    Relation q = Q.create();
-                    q.addPlayer(Qfrom, aInstancesIds[i][j]);
-                    q.addPlayer(Qto, aInstancesIds[i][j]);
-                }
-                if (j < m) {
-                    Relation q = Q.create();
-                    q.addPlayer(Qfrom, aInstancesIds[i][j]);
-                    q.addPlayer(Qto, aInstancesIds[i][j+1]);
-                }
-            }
+        for(int i = 0 ; i < n - 1 ; i++) {
+            Relation q = Q.create();
+            q.addPlayer(qfrom, aInstanceIds[i]);
+            q.addPlayer(qto, aInstanceIds[i+1]);
         }
     }
+
 }

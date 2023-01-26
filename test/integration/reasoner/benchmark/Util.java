@@ -13,8 +13,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 public class Util {
-    public static TypeQLQuery parseTQL(String tqlPath) throws IOException {
-        return TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get(tqlPath))));
+    public static TypeQLQuery parseTQL(String tqlPath) {
+        try {
+            return TypeQL.parseQuery(new String(Files.readAllBytes(Paths.get(tqlPath))));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static Thing putEntityWithResource(TypeDB.Transaction tx, String id, EntityType type, Label key) {
