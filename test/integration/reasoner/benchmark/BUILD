@@ -22,7 +22,8 @@ host_compatible_java_test(
     name = "benchmark-small-it",
     size = "large",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.BenchmarkSmallIT",
-    srcs = ["BenchmarkSmallIT.java"],
+    srcs = ["BenchmarkSmallIT.java", "LinearTransitivityMatrixGraph.java", "Util.java"],
+    data = [":resources/linearTransitivity.tql"],
     native_libraries_deps = [
         "//:typedb",
         "//database:database",

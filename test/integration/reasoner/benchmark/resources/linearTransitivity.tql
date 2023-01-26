@@ -1,0 +1,33 @@
+define
+entity2 sub entity,
+    owns index,
+    plays P:from, plays P:to,
+    plays Q:from, plays Q:to,
+    plays S:from, plays S:to;
+
+a-entity sub entity2;
+
+P sub relation, relates from, relates to;
+Q sub relation, relates from, relates to;
+S sub relation, relates from, relates to;
+
+
+index sub attribute, value string;
+
+
+rule r1:
+when { (from: $x, to: $y) isa Q; }
+then { (from: $x, to: $y) isa P; };
+
+rule r2:
+when {
+    (from: $x, to: $z) isa Q;
+    (from: $z, to: $y) isa P;
+} then {
+    (from: $x, to: $y) isa P;
+};
+
+rule r3:
+when { (from: $x, to: $y) isa P; }
+then { (from: $x, to: $y) isa S; };
+

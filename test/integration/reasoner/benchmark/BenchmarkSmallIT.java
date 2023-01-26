@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark;
 
+import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
@@ -27,8 +28,6 @@ import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
-import com.vaticle.typedb.core.database.CoreSession;
-import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
@@ -65,11 +64,11 @@ public class BenchmarkSmallIT {
         databaseMgr.close();
     }
 
-    private CoreSession schemaSession() {
+    private TypeDB.Session schemaSession() {
         return databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
     }
 
-    private CoreSession dataSession() {
+    private TypeDB.Session dataSession() {
         return databaseMgr.session(database, Arguments.Session.Type.DATA);
     }
 
@@ -86,9 +85,9 @@ public class BenchmarkSmallIT {
         final int N = 200;
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
 
-        try (CoreSession session = schemaSession()) {
+        try (TypeDB.Session session = schemaSession()) {
             //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
-            try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
 
                 RelationType relation0 = tx.concepts().putRelationType("relation0");
                 relation0.setRelates("fromRole");
@@ -115,9 +114,9 @@ public class BenchmarkSmallIT {
             }
         }
 
-        try (CoreSession session = dataSession()) {
+        try (TypeDB.Session session = dataSession()) {
             //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
-            try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 EntityType genericEntity = tx.concepts().getEntityType("genericEntity");
                 Entity fromEntity = genericEntity.create();
                 Entity toEntity = genericEntity.create();
@@ -129,7 +128,7 @@ public class BenchmarkSmallIT {
                 tx.commit();
             }
 
-            try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
                 final long limit = 1;
                 String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
                 String queryString = "match " + queryPattern + " get $x, $y;";
@@ -140,54 +139,57 @@ public class BenchmarkSmallIT {
             }
         }
     }
-//
-//    /**
-//     * 2-rule transitive test with transitivity expressed in terms of two linear rules
-//     * The rules are defined as:
-//     *
-//     * (Q-from: $x, Q-to: $y) isa Q;
-//     * ->
-//     * (P-from: $x, P-to: $y) isa P;
-//     *
-//     * (Q-from: $x, Q-to: $z) isa Q;
-//     * (P-from: $z, P-to: $y) isa P;
-//     * ->
-//     * (P-from: $z, P-to: $y) isa P;
-//     *
-//     * Each pair of neighbouring grid points is related in the following fashion:
-//     *
-//     *  a_{i  , j} -  Q  - a_{i, j + 1}
-//     *       |                    |
-//     *       Q                    Q
-//     *       |                    |
-//     *  a_{i+1, j} -  Q  - a_{i+1, j+1}
-//     *
-//     *  i e [1, N]
-//     *  j e [1, N]
-//     */
-//    @Test
-//    public void testTransitiveMatrixLinear()  {
-//        int N = 10;
-//        int limit = 100;
-//        Session session = server.sessionWithNewKeyspace();
-//        LinearTransitivityMatrixGraph linearGraph = new LinearTransitivityMatrixGraph(session);
-//
-//        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
-//
-//        //                         DJ       IC     FO
-//        //results @N = 15 14400   3-5s
-//        //results @N = 20 44100    15s     8 s      8s
-//        //results @N = 25 105625   48s    27 s     31s
-//        //results @N = 30 216225  132s    65 s
-//        linearGraph.load(N, N);
-//
-//        String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
-//        Transaction tx = session.transaction(Transaction.Type.WRITE);
-//        executeQuery(queryString, tx, "full");
-//        executeQuery(Graql.parse(queryString).asGet().match().get().limit(limit), tx, "limit " + limit);
-//        tx.close();
-//        session.close();
-//    }
+
+    /**
+     * 2-rule transitive test with transitivity expressed in terms of two linear rules
+     * The rules are defined as:
+     *
+     * (from: $x, to: $y) isa Q;
+     * ->
+     * (from: $x, to: $y) isa P;
+     *
+     * (from: $x, to: $z) isa Q;
+     * (from: $z, to: $y) isa P;
+     * ->
+     * (from: $z, to: $y) isa P;
+     *
+     * Each pair of neighbouring grid points is related in the following fashion:
+     *
+     *  a_{i  , j} -  Q  - a_{i, j + 1}
+     *       |                    |
+     *       Q                    Q
+     *       |                    |
+     *  a_{i+1, j} -  Q  - a_{i+1, j+1}
+     *
+     *  i e [1, N]
+     *  j e [1, N]
+     */
+    @Test
+    public void testTransitiveMatrixLinear() throws IOException {
+        int N = 10;
+        int limit = 100;
+
+        LinearTransitivityMatrixGraph linearGraph = new LinearTransitivityMatrixGraph(databaseMgr, database);
+
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
+
+        //                         DJ       IC     FO
+        //results @N = 15 14400   3-5s
+        //results @N = 20 44100    15s     8 s      8s
+        //results @N = 25 105625   48s    27 s     31s
+        //results @N = 30 216225  132s    65 s
+        linearGraph.load(N, N);
+
+        TypeQLMatch.Unfiltered match = TypeQL.match(TypeQL.parsePattern("(from: $x, to: $y) isa P"));
+        try (TypeDB.Session session = dataSession()) {
+            try (TypeDB.Transaction tx =  session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
+                executeQuery(match, tx, "full");
+                executeQuery(match.limit(limit), tx, "limit " + limit);
+            }
+
+        }
+    }
+
 //
 //    /**
 //     * single-rule transitivity test with initial data arranged in a chain of length N
@@ -209,27 +211,32 @@ public class BenchmarkSmallIT {
 //        int N = 100;
 //        int limit = 10;
 //        int answers = (N+1)*N/2;
-//        Session session = server.sessionWithNewKeyspace();
+//
 //        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
-//        TransitivityChainGraph transitivityChainGraph = new TransitivityChainGraph(session);
+//
+//        TransitivityChainGraph transitivityChainGraph = new TransitivityChainGraph(databaseMgr, database);
 //        transitivityChainGraph.load(N);
-//        Transaction tx = session.transaction(Transaction.Type.WRITE);
 //
-//        String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
-//        GraqlGet query = Graql.parse(queryString).asGet();
+//        try (TypeDB.Session session = dataSession()) {
+//            try (TypeDB.Transaction tx = session.transaction(Transaction.Type.WRITE)){
 //
-//        String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
-//        GraqlGet query2 = Graql.parse(queryString2).asGet();
+//                String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
+//                GraqlGet query = Graql.parse(queryString).asGet();
 //
-//        assertEquals(executeQuery(query, tx, "full").size(), answers);
-//        assertEquals(executeQuery(query2, tx, "With specific resource").size(), N);
+//                String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
+//                GraqlGet query2 = Graql.parse(queryString2).asGet();
 //
-//        executeQuery(query.match().get().limit(limit), tx, "limit " + limit);
-//        executeQuery(query2.match().get().limit(limit), tx, "limit " + limit);
-//        tx.close();
-//        session.close();
+//                assertEquals(executeQuery(query, tx, "full").size(), answers);
+//                assertEquals(executeQuery(query2, tx, "With specific resource").size(), N);
+//
+//                executeQuery(query.match().get().limit(limit), tx, "limit " + limit);
+//                executeQuery(query2.match().get().limit(limit), tx, "limit " + limit);
+//                tx.close();
+//                session.close();
+//            }
+//        }
 //    }
-//
+
 //    /**
 //     * single-rule transitivity test with initial data arranged in a N x N square grid.
 //     * The rule is given as:
@@ -393,11 +400,11 @@ public class BenchmarkSmallIT {
 //        session.close();
 //    }
 
-    private List<ConceptMap> executeQuery(String queryString, CoreTransaction transaction, String msg){
+    private List<ConceptMap> executeQuery(String queryString, TypeDB.Transaction transaction, String msg){
         return executeQuery(TypeQL.parseQuery(queryString).asMatch(), transaction, msg);
     }
 
-    private List<ConceptMap> executeQuery(TypeQLMatch query, CoreTransaction transaction, String msg){
+    private List<ConceptMap> executeQuery(TypeQLMatch query, TypeDB.Transaction transaction, String msg){
         final long startTime = System.currentTimeMillis();
         List<ConceptMap> results = (List<ConceptMap>) transaction.query().match(query).toList();
         final long answerTime = System.currentTimeMillis() - startTime;
