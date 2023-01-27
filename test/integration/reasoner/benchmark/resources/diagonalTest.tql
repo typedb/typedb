@@ -1,0 +1,25 @@
+define
+
+entity1 sub entity,
+    plays horizontal:from, plays horizontal:to,
+    plays vertical:from, plays vertical:to,
+    plays diagonal:from, plays diagonal:to,
+    owns name;
+
+horizontal sub relation, relates from, relates to;
+
+vertical sub relation, relates from, relates to;
+
+diagonal sub relation, relates from, relates to;
+
+name sub attribute, value string;
+
+rule rule-1:
+when {
+    (from:$x, to:$y) isa horizontal;
+    (from:$y, to:$z) isa horizontal;
+    (from:$z, to:$u) isa vertical;
+    (from:$u, to:$v) isa vertical;
+} then {
+    (from:$x, to:$v) isa diagonal;
+};

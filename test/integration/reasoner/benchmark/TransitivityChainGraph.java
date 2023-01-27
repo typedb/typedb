@@ -30,21 +30,21 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 @SuppressWarnings("CheckReturnValue")
 public class TransitivityChainGraph {
 
-
     private final TypeDB.DatabaseManager dbm;
     private final String databaseName;
 
-    private final static String tqlPath = "test/integration/reasoner/benchmark/resources/quadraticTransitivity.tql";
+    private final static String schemaFile = "test/integration/reasoner/benchmark/resources/quadraticTransitivity.tql";
     private final static Label key = Label.of("index");
 
     public TransitivityChainGraph(TypeDB.DatabaseManager dbm, String dbName){
         this.dbm = dbm;
         this.databaseName = dbName;
     }
+
     public final void load(int n) {
         try (TypeDB.Session session = dbm.session(databaseName, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                tx.query().define(Util.parseTQL(tqlPath).asDefine());
+                tx.query().define(Util.parseTQL(schemaFile).asDefine());
                 tx.commit();
             }
         }
