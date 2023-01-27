@@ -39,7 +39,6 @@ host_compatible_java_test(
         # Internal dependencies
         "//test/integration/util:util",
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
     ],
@@ -65,7 +64,6 @@ host_compatible_java_test(
         # Internal dependencies
         "//test/integration/util:util",
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
         "@vaticle_typeql//java/pattern",
@@ -91,9 +89,14 @@ host_compatible_java_test(
         # Internal dependencies
         "//test/integration/util:util",
         # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
-        "@vaticle_typeql//java/query",
         "@vaticle_typeql//java/pattern",
     ],
 )
+
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*", "resources/*"]),
+    license_type = "agpl-header",
+)
+
