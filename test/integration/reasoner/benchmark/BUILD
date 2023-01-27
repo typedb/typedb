@@ -44,3 +44,30 @@ host_compatible_java_test(
         "@vaticle_typeql//java/query",
     ],
 )
+
+host_compatible_java_test(
+    name = "benchmark-big-it",
+    size = "large",
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.BenchmarkBigIT",
+    srcs = ["BenchmarkBigIT.java", "Util.java"],
+    data = [":resources/linearTransitivity.tql", ":resources/multiJoin.tql"],
+    native_libraries_deps = [
+        "//:typedb",
+        "//database:database",
+        "//concept:concept",
+        "//common:common",
+        "//concurrent:concurrent",
+        "//logic:logic",
+        "//reasoner:reasoner",
+        "//traversal:traversal",
+    ],
+    deps = [
+        # Internal dependencies
+        "//test/integration/util:util",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/query",
+        "@vaticle_typeql//java/pattern",
+    ],
+)

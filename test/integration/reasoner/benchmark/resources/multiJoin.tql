@@ -1,0 +1,54 @@
+define
+
+genericEntity sub entity,
+    owns index,
+    plays AbstractBaseRelation:fromRole,
+    plays AbstractBaseRelation:toRole;
+
+# Abstract base relation
+AbstractBaseRelation sub relation,
+    relates fromRole, relates toRole;
+
+A sub AbstractBaseRelation;
+B1 sub AbstractBaseRelation;
+B2 sub AbstractBaseRelation;
+C1 sub AbstractBaseRelation;
+C2 sub AbstractBaseRelation;
+C3 sub AbstractBaseRelation;
+C4 sub AbstractBaseRelation;
+D1 sub AbstractBaseRelation;
+D2 sub AbstractBaseRelation;
+
+index sub attribute, value long;
+
+rule rule-1:
+when {
+    (fromRole: $x, toRole: $z) isa B1;
+    (fromRole: $z, toRole: $y) isa B2;
+} then {
+    (fromRole: $x, toRole: $y) isa A;
+};
+
+rule rule-2:
+when {
+    (fromRole: $x, toRole: $z) isa C1;
+    (fromRole: $z, toRole: $y) isa C2;
+} then {
+    (fromRole: $x, toRole: $y) isa B1;
+};
+
+rule rule-3:
+when {
+    (fromRole: $x, toRole: $z) isa C3;
+    (fromRole: $z, toRole: $y) isa C4;
+} then {
+    (fromRole: $x, toRole: $y) isa B2;
+};
+
+rule rule-4:
+when {
+    (fromRole: $x, toRole: $z) isa D1;
+    (fromRole: $z, toRole: $y) isa D2;
+} then {
+    (fromRole: $x, toRole: $y) isa C1;
+};
