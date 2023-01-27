@@ -49,9 +49,7 @@ public class RootConjunctionController
 
     @Override
     public void initialise() {
-        long DEBUG__START = System.nanoTime();
         planner().plan(conjunction, new HashSet<>());
-        System.out.println("DONE PLANNING: " + (System.nanoTime()-DEBUG__START));
         setUpUpstreamControllers();
         getOrCreateProcessor(new ConceptMap());
     }

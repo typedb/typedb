@@ -71,3 +71,29 @@ host_compatible_java_test(
         "@vaticle_typeql//java/pattern",
     ],
 )
+
+host_compatible_java_test(
+    name = "rule-scaling-it",
+    size = "large",
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.RuleScalingIT",
+    srcs = ["RuleScalingIT.java"],
+    native_libraries_deps = [
+        "//:typedb",
+        "//database:database",
+        "//concept:concept",
+        "//common:common",
+        "//concurrent:concurrent",
+        "//logic:logic",
+        "//reasoner:reasoner",
+        "//traversal:traversal",
+    ],
+    deps = [
+        # Internal dependencies
+        "//test/integration/util:util",
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/query",
+        "@vaticle_typeql//java/pattern",
+    ],
+)

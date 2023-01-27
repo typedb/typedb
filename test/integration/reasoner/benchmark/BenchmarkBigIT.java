@@ -62,7 +62,7 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class BenchmarkBigIT {
 
-    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("computation-graph-test");
+    private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("reasoner-benchmark-big");
     private static final Path logDir = dataDir.resolve("logs");
     private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB).traceInference(false).explain(true);
