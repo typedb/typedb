@@ -65,6 +65,7 @@ public class AnswerCountEstimator {
     private final Map<ResolvableConjunction, ConjunctionModel> conjunctionModels;
     private final Map<ResolvableConjunction, IncrementalEstimator> fullConjunctionEstimators;
 
+
     public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph, ConjunctionGraph conjunctionGraph) {
         this.logicMgr = logicMgr;
         this.conjunctionModelFactory = new ConjunctionModelFactory(new LocalModelFactory(this, graph));
@@ -102,9 +103,17 @@ public class AnswerCountEstimator {
         return estimator.answerEstimate(estimateableVariables);
     }
 
+    public long localEstimate(ResolvableConjunction conjunction, Resolvable<?> resolvable, Set<Variable> variables) {
+        return conjunctionModels.get(conjunction).localEstimate(this, resolvable, variables);
+    }
+
     public IncrementalEstimator createIncrementalEstimator(ResolvableConjunction conjunction) {
+        return createIncrementalEstimator(conjunction, set());
+    }
+
+    public IncrementalEstimator createIncrementalEstimator(ResolvableConjunction conjunction, Set<Variable> mode) {
         if (!conjunctionModels.containsKey(conjunction)) buildConjunctionModel(conjunction);
-        return new IncrementalEstimator(conjunctionModels.get(conjunction), conjunctionModelFactory.localModelFactory);
+        return new IncrementalEstimator(conjunctionModels.get(conjunction), conjunctionModelFactory.localModelFactory, mode);
     }
 
     public static class IncrementalEstimator {
@@ -114,11 +123,12 @@ public class AnswerCountEstimator {
         private final Map<Variable, Double> minVariableEstimate;
         private final Map<Variable, Set<LocalModel>> affectedModels;
 
-        private IncrementalEstimator(ConjunctionModel conjunctionModel, LocalModelFactory localModelFactory) {
+        private IncrementalEstimator(ConjunctionModel conjunctionModel, LocalModelFactory localModelFactory, Set<Variable> initialBounds) {
             this.conjunctionModel = conjunctionModel;
             this.localModelFactory = localModelFactory;
             this.modelScale = new HashMap<>();
             this.minVariableEstimate = new HashMap<>();
+            initialBounds.forEach(v -> this.minVariableEstimate.put(v, 1.0));
             this.affectedModels = new HashMap<>();
         }
 
@@ -233,6 +243,15 @@ public class AnswerCountEstimator {
             return ans;
         }
 
+        public IncrementalEstimator clone() {
+            // initialbounds = set() is ok, the next steps will take care of it.
+            IncrementalEstimator cloned = new IncrementalEstimator(conjunctionModel, localModelFactory, set());
+            cloned.minVariableEstimate.putAll(this.minVariableEstimate);
+            cloned.modelScale.putAll(this.modelScale);
+            cloned.affectedModels.putAll(this.affectedModels);
+            return cloned;
+        }
+
         private static long answerEstimateFromCover(Set<Variable> variables, Map<Variable, CoverElement> coverMap) {
             double estimate = iterate(variables).map(coverMap::get).distinct()
                     .map(coverElement -> coverElement.estimate).reduce(1.0, (x, y) -> x * y);
@@ -253,15 +272,26 @@ public class AnswerCountEstimator {
         private final Map<Resolvable<?>, List<LocalModel>> constraintModels;
         private final boolean isCyclic;
 
+        private final Map<Resolvable<?>, IncrementalEstimator> resolvableEstimators;
+
         private ConjunctionModel(ConjunctionNode conjunctionNode, Map<Resolvable<?>, List<LocalModel>> constraintModels,
                                  boolean isCyclic) {
             this.conjunctionNode = conjunctionNode;
             this.constraintModels = constraintModels;
             this.isCyclic = isCyclic;
+            this.resolvableEstimators = new HashMap<>();
         }
 
         private List<LocalModel> modelsForResolvable(Resolvable<?> resolvable) {
             return constraintModels.get(resolvable);
+        }
+
+        private long localEstimate(AnswerCountEstimator answerCountEstimator, Resolvable<?> resolvable, Set<Variable> variables) {
+            return resolvableEstimators.computeIfAbsent(resolvable, res -> {
+                IncrementalEstimator estimator = answerCountEstimator.createIncrementalEstimator(conjunctionNode.conjunction());
+                estimator.extend(res);
+                return estimator;
+            }).answerEstimate(variables);
         }
     }
 
