@@ -243,15 +243,6 @@ public class AnswerCountEstimator {
             return ans;
         }
 
-        public IncrementalEstimator clone() {
-            // initialbounds = set() is ok, the next steps will take care of it.
-            IncrementalEstimator cloned = new IncrementalEstimator(conjunctionModel, localModelFactory, set());
-            cloned.minVariableEstimate.putAll(this.minVariableEstimate);
-            cloned.modelScale.putAll(this.modelScale);
-            cloned.affectedModels.putAll(this.affectedModels);
-            return cloned;
-        }
-
         private static long answerEstimateFromCover(Set<Variable> variables, Map<Variable, CoverElement> coverMap) {
             double estimate = iterate(variables).map(coverMap::get).distinct()
                     .map(coverElement -> coverElement.estimate).reduce(1.0, (x, y) -> x * y);
