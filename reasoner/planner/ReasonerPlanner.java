@@ -183,10 +183,12 @@ public abstract class ReasonerPlanner {
     public static class Plan {
         private final List<Resolvable<?>> order;
         private final long cost;
+        public double cyclicScalingFactor;
 
-        public Plan(List<Resolvable<?>> resolvableOrder, long cost) {
+        public Plan(List<Resolvable<?>> resolvableOrder, long cost, double cyclicScalingFactor) {
             this.order = resolvableOrder;
             this.cost = cost;
+            this.cyclicScalingFactor = cyclicScalingFactor;
         }
 
         public List<Resolvable<?>> plan() {
