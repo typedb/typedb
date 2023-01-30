@@ -87,7 +87,7 @@ public class RecursivePlanner extends ReasonerPlanner {
     private SubgraphPlan subgraphPlanSearch(CallMode root, Set<CallMode> pendingCallModes, Map<CallMode, OrderingChoice> choices) { // The value contains the scaling factors needed for the other conjunctions in the globalCost.
         // Pick a choice of ordering, expand dependencies, recurse ; backtrack over choices
         if (pendingCallModes.isEmpty()) { // All modes have an ordering chosen -> we have a complete candidate plan for the subgraph
-            return createSubgraphPlan(choices);
+            return SubgraphPlan.fromOrderingChoices(this, choices);
         }
 
         CallMode mode = iterate(pendingCallModes).next();
@@ -126,7 +126,7 @@ public class RecursivePlanner extends ReasonerPlanner {
             ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(callMode.conjunction);
             answerCountEstimator.buildConjunctionModel(callMode.conjunction);
 
-            Map<Set<Pair<Concludable, Set<Variable>>>, OrderingSummary> bestOrderingSummaries = new HashMap<>();
+            Map<Set<Pair<Concludable, Set<Variable>>>, OrderingSummary> bestOrderings = new HashMap<>();
             PartialOrderReductionSearch porSearch = new PartialOrderReductionSearch(logicMgr.compile(callMode.conjunction), callMode.mode);
             for (List<Resolvable<?>> ordering : porSearch.allOrderings()) {
                 initialiseOrderingDependencies(conjunctionNode, ordering, callMode.mode);
@@ -134,19 +134,48 @@ public class RecursivePlanner extends ReasonerPlanner {
 
                 // Two orderings for the same CallMode with identical cyclic-concludable modes are interchangeable in the subgraph-plan
                 //      -> We only need to keep the cheaper one.
-                if (!bestOrderingSummaries.containsKey(orderingSummary.cyclicConcludableModes) ) {
-                    bestOrderingSummaries.put(orderingSummary.cyclicConcludableModes, orderingSummary);
+                if (!bestOrderings.containsKey(orderingSummary.cyclicConcludableModes) ) {
+                    bestOrderings.put(orderingSummary.cyclicConcludableModes, orderingSummary);
                 } else {
-                    OrderingSummary existingSummary = bestOrderingSummaries.get(orderingSummary.cyclicConcludableModes);
+                    OrderingSummary existingSummary = bestOrderings.get(orderingSummary.cyclicConcludableModes);
                     if (orderingSummary.singlyBoundCost < existingSummary.singlyBoundCost) {
-                        bestOrderingSummaries.put(orderingSummary.cyclicConcludableModes, orderingSummary);
+                        bestOrderings.put(orderingSummary.cyclicConcludableModes, orderingSummary);
                     }
                 }
             }
-            this.orderingChoices.put(callMode, iterate(bestOrderingSummaries.values()).map(this::createOrderingChoice).toSet());
+            this.orderingChoices.put(callMode, iterate(bestOrderings.values()).map(this::createOrderingChoice).toSet());
         }
     }
 
+    private void initialiseOrderingDependencies(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> mode) {
+        Set<Variable> currentBoundVars = new HashSet<>(mode);
+        for (Resolvable<?> resolvable : ordering) {
+            Set<Variable> resolvableMode = Collections.intersection(estimateableVariables(resolvable.variables()), currentBoundVars);
+            initialiseResolvableDependencies(conjunctionNode, resolvable, resolvableMode);
+            if (!resolvable.isNegated()) currentBoundVars.addAll(estimateableVariables(resolvable.variables()));
+        }
+    }
+
+    private void initialiseResolvableDependencies(ConjunctionNode conjunctionNode, Resolvable<?> resolvable, Set<Variable> resolvableMode) {
+        if (resolvable.isConcludable()) {
+            Set<ResolvableConjunction> cyclicDependencies = conjunctionNode.cyclicDependencies(resolvable.asConcludable());
+            for (CallMode callMode : triggeredCalls(resolvable.asConcludable(), resolvableMode, null)) {
+                recursivelyGenerateOrderingChoices(callMode);
+                if (!cyclicDependencies.contains(callMode.conjunction)) {
+                    plan(callMode); // Acyclic dependencies can be fully planned
+                }
+            }
+        } else if (resolvable.isNegated()) {
+            iterate(resolvable.asNegated().disjunction().conjunctions()).forEachRemaining(conjunction -> {
+                Set<Variable> branchVariables = Collections.intersection(estimateableVariables(conjunction.pattern().variables()), resolvableMode);
+                CallMode callMode = new CallMode(conjunction, branchVariables);
+                recursivelyGenerateOrderingChoices(callMode);
+                plan(callMode);
+            });
+        }
+    }
+
+    // Functions which compute the cost of orderings
     private OrderingSummary createOrderingSummary(CallMode callMode, List<Resolvable<?>> ordering) {
         Set<Variable> boundVars = new HashSet<>(callMode.mode);  // bound -> in input mode or restricted locally
         ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(callMode.conjunction);
@@ -185,35 +214,6 @@ public class RecursivePlanner extends ReasonerPlanner {
         }
         return new OrderingSummary(callMode, ordering, cyclicConcludableModes, singlyBoundCost);
     }
-
-    private void initialiseOrderingDependencies(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> mode) {
-        Set<Variable> currentBoundVars = new HashSet<>(mode);
-        for (Resolvable<?> resolvable : ordering) {
-            Set<Variable> resolvableMode = Collections.intersection(estimateableVariables(resolvable.variables()), currentBoundVars);
-            initialiseResolvableDependencies(conjunctionNode, resolvable, resolvableMode);
-            if (!resolvable.isNegated()) currentBoundVars.addAll(estimateableVariables(resolvable.variables()));
-        }
-    }
-
-    private void initialiseResolvableDependencies(ConjunctionNode conjunctionNode, Resolvable<?> resolvable, Set<Variable> resolvableMode) {
-        if (resolvable.isConcludable()) {
-            Set<ResolvableConjunction> cyclicDependencies = conjunctionNode.cyclicDependencies(resolvable.asConcludable());
-            for (CallMode callMode : triggeredCalls(resolvable.asConcludable(), resolvableMode, null)) {
-                recursivelyGenerateOrderingChoices(callMode);
-                if (!cyclicDependencies.contains(callMode.conjunction)) {
-                    plan(callMode); // Acyclic dependencies can be fully planned
-                }
-            }
-        } else if (resolvable.isNegated()) {
-            iterate(resolvable.asNegated().disjunction().conjunctions()).forEachRemaining(conjunction -> {
-                Set<Variable> branchVariables = Collections.intersection(estimateableVariables(conjunction.pattern().variables()), resolvableMode);
-                CallMode callMode = new CallMode(conjunction, branchVariables);
-                recursivelyGenerateOrderingChoices(callMode);
-                plan(callMode);
-            });
-        }
-    }
-
 
     private OrderingChoice createOrderingChoice(OrderingSummary summary) {
         ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(summary.callMode.conjunction);
@@ -302,21 +302,6 @@ public class RecursivePlanner extends ReasonerPlanner {
         return getPlan(callMode).cost() * Math.min(1.0, scalingFactor + cyclicScalingFactors.get(callMode));
     }
 
-    private SubgraphPlan createSubgraphPlan(Map<CallMode, OrderingChoice> chosenSummaries) {
-        Map<CallMode, Double> scalingFactorSum = new HashMap<>();
-        for (OrderingChoice orderingChoice : chosenSummaries.values()) {
-            ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(orderingChoice.callMode.conjunction);
-            orderingChoice.cyclicConcludableModes.forEach(concludableMode -> {
-                iterate(triggeredCalls(concludableMode.first(), concludableMode.second(), conjunctionNode.cyclicDependencies(concludableMode.first())))
-                        .forEachRemaining(callMode -> {
-                            scalingFactorSum.put(callMode, Math.min(1.0,
-                                    scalingFactorSum.getOrDefault(callMode, 0.0) + orderingChoice.scalingFactors.get(concludableMode.first())));
-                        });
-            });
-        }
-        return new SubgraphPlan(chosenSummaries, scalingFactorSum);
-    }
-
     private static class SubgraphPlan {
         private final Map<CallMode, OrderingChoice> choices;
         private final Map<CallMode, Double> cyclicScalingFactorSum;
@@ -338,9 +323,26 @@ public class RecursivePlanner extends ReasonerPlanner {
 
             return cycleCost;
         }
+
+        private static SubgraphPlan fromOrderingChoices(RecursivePlanner planner, Map<CallMode, OrderingChoice> orderingChoices) {
+            Map<CallMode, Double> scalingFactorSum = new HashMap<>();
+            for (OrderingChoice orderingChoice : orderingChoices.values()) {
+                ConjunctionNode conjunctionNode = planner.conjunctionGraph.conjunctionNode(orderingChoice.callMode.conjunction);
+                orderingChoice.cyclicConcludableModes.forEach(concludableMode -> {
+                    iterate(planner.triggeredCalls(concludableMode.first(), concludableMode.second(), conjunctionNode.cyclicDependencies(concludableMode.first())))
+                            .forEachRemaining(callMode -> {
+                                scalingFactorSum.put(callMode, Math.min(1.0,
+                                        scalingFactorSum.getOrDefault(callMode, 0.0) + orderingChoice.scalingFactors.get(concludableMode.first())));
+                            });
+                });
+            }
+            return new SubgraphPlan(orderingChoices, scalingFactorSum);
+        }
+
     }
 
     static class OrderingSummary {
+        // Created for every resolvable-ordering of a CallMode
         final CallMode callMode;
         final List<Resolvable<?>> ordering;
         final Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes;
@@ -355,6 +357,7 @@ public class RecursivePlanner extends ReasonerPlanner {
     }
 
     static class OrderingChoice {
+        // Created for one ordering per (CallMode, CyclicConcludableModes) - the one with lowest SinglyBoundCost.
         final CallMode callMode;
         final List<Resolvable<?>> ordering;
         final double acyclicCost;
