@@ -19,7 +19,6 @@ package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.common.collection.Pair;
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -28,7 +27,7 @@ import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.planner.ConjunctionGraph.ConjunctionNode;
 import com.vaticle.typedb.core.reasoner.planner.OrderingCostEstimator.OrderingChoice;
-import com.vaticle.typedb.core.reasoner.planner.OrderingCostEstimator.OrderingSummary;
+import com.vaticle.typedb.core.reasoner.planner.OrderingCostEstimator.SingleCallSummary;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import java.util.ArrayList;
@@ -39,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class RecursivePlanner extends ReasonerPlanner {
@@ -130,20 +128,20 @@ public class RecursivePlanner extends ReasonerPlanner {
             ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(callMode.conjunction);
             answerCountEstimator.buildConjunctionModel(callMode.conjunction);
 
-            Map<Set<Pair<Concludable, Set<Variable>>>, OrderingSummary> bestOrderings = new HashMap<>();
+            Map<Set<Pair<Concludable, Set<Variable>>>, SingleCallSummary> bestOrderings = new HashMap<>();
             PartialOrderReductionSearch porSearch = new PartialOrderReductionSearch(logicMgr.compile(callMode.conjunction), callMode.mode);
             for (List<Resolvable<?>> ordering : porSearch.allOrderings()) {
                 initialiseOrderingDependencies(conjunctionNode, ordering, callMode.mode);
-                OrderingSummary orderingSummary = orderingCostEstimator.createOrderingSummary(callMode, ordering);
+                SingleCallSummary singleCallSummary = orderingCostEstimator.createSingleCallSummary(callMode, ordering);
 
                 // Two orderings for the same CallMode with identical cyclic-concludable modes are interchangeable in the subgraph-plan
                 //      -> We only need to keep the cheaper one.
-                if (!bestOrderings.containsKey(orderingSummary.cyclicConcludableModes) ) {
-                    bestOrderings.put(orderingSummary.cyclicConcludableModes, orderingSummary);
+                if (!bestOrderings.containsKey(singleCallSummary.cyclicConcludableModes) ) {
+                    bestOrderings.put(singleCallSummary.cyclicConcludableModes, singleCallSummary);
                 } else {
-                    OrderingSummary existingSummary = bestOrderings.get(orderingSummary.cyclicConcludableModes);
-                    if (orderingSummary.singlyBoundCost < existingSummary.singlyBoundCost) {
-                        bestOrderings.put(orderingSummary.cyclicConcludableModes, orderingSummary);
+                    SingleCallSummary existingSummary = bestOrderings.get(singleCallSummary.cyclicConcludableModes);
+                    if (singleCallSummary.singlyBoundCost < existingSummary.singlyBoundCost) {
+                        bestOrderings.put(singleCallSummary.cyclicConcludableModes, singleCallSummary);
                     }
                 }
             }
