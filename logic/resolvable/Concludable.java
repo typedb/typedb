@@ -82,7 +82,9 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
     }
 
     @Override
-    public Set<Variable> variables() { return pattern().variables(); }
+    public Set<Variable> variables() {
+        return pattern().variables();
+    }
 
     public boolean isConcludable() {
         return true;
@@ -100,13 +102,21 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
     public abstract boolean isInferredAnswer(ConceptMap conceptMap);
 
-    public boolean isRelation() { return false; }
+    public boolean isRelation() {
+        return false;
+    }
 
-    public boolean isHas() { return false; }
+    public boolean isHas() {
+        return false;
+    }
 
-    public boolean isIsa() { return false; }
+    public boolean isIsa() {
+        return false;
+    }
 
-    public boolean isAttribute() { return false; }
+    public boolean isAttribute() {
+        return false;
+    }
 
     public Relation asRelation() {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
@@ -182,7 +192,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                 clonedIsa = cloner.getClone(isa).asThing().asIsa();
             }
             return new Relation(cloner.conjunction(), cloner.getClone(relation).asThing().asRelation(), clonedIsa,
-                                iterate(labels).map(l -> cloner.getClone(l).asType().asLabel()).toSet());
+                    iterate(labels).map(l -> cloner.getClone(l).asType().asLabel()).toSet());
         }
 
         public RelationConstraint relation() {
@@ -247,7 +257,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         private FunctionalIterator<Map<RolePlayer, RolePlayer>> matchRolePlayers(Set<RolePlayer> conjRolePlayerSet, Set<RolePlayer> thenRolePlayers, ConceptManager conceptMgr) {
-            // TODO: If this is ever slow again, consider Divide & Conquer: Partition conjRolePlayers such that the result sets of all partitions are disjoint
+            // If this is ever slow again, consider Divide & Conquer: Partition conjRolePlayers such that the result sets of all partitions are disjoint
             // Sort, So that the once with identical role-labels are together; They hopefully fail together
             List<RolePlayer> conjRolePlayers = new ArrayList<>(conjRolePlayerSet);
             conjRolePlayers.sort(Comparator.comparing(rolePlayer -> rolePlayer.roleType().map(typeVariable -> typeVariable.label().map(LabelConstraint::label).orElse("")).orElse("")));
