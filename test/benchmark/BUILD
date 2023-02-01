@@ -23,7 +23,7 @@ host_compatible_java_test(
     size = "large",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.BenchmarkSmallIT",
     srcs = ["BenchmarkSmallIT.java", "Util.java",
-            "DiagonalGraph.java", "TransitivityMatrixGraph.java", "TransitivityChainGraph.java", "PathTreeGraph.java"],
+            "generation/DiagonalGraph.java", "generation/TransitivityMatrixGraph.java", "generation/TransitivityChainGraph.java", "generation/PathTreeGraph.java"],
     data = [":resources/linearTransitivity.tql", ":resources/quadraticTransitivity.tql", ":resources/diagonalTest.tql", ":resources/pathTest.tql"],
     native_libraries_deps = [
         "//:typedb",

@@ -94,9 +94,9 @@ public class BenchmarkBigIT {
     final private Random rand = new Random();
 
     private void loadOntology(String fileName, TypeDB.Session session) {
-        String filePath = "test/integration/reasoner/benchmark/resources/" + fileName;
+        String filePath = "test/benchmark/resources/" + fileName;
         try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            tx.query().define(com.vaticle.typedb.core.reasoner.benchmark.Util.parseTQL(filePath).asDefine());
+            tx.query().define(com.vaticle.typedb.core.test.benchmark.Util.parseTQL(filePath).asDefine());
             tx.commit();
         }
     }

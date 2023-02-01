@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.benchmark;
+package com.vaticle.typedb.core.test.benchmark.generation;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
+import com.vaticle.typedb.core.test.benchmark.Util;
 
 /**
  * Defines a Graph based on test 6.10 from Cao p. 82.
@@ -35,7 +36,7 @@ public class PathTreeGraph{
     private final TypeDB.DatabaseManager dbm;
     private final String databaseName;
 
-    private final static String schemaPath = "test/integration/reasoner/benchmark/resources/";
+    private final static String schemaPath = "test/benchmark/resources/";
     private final String schemaFile;
     private final static Label key = Label.of("index");
 
