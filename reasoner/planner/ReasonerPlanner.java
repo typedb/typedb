@@ -110,7 +110,9 @@ public abstract class ReasonerPlanner {
         iterate(resolvables).forEachRemaining(resolvable -> deps.put(resolvable, new HashSet<>()));
 
         // Add dependency between negateds and shared variables
-        Set<Variable> unnegatedVars = iterate(resolvables).filter(r -> !r.isNegated()).flatMap(r -> iterate(r.variables())).toSet();
+        Set<Variable> unnegatedVars = iterate(resolvables).filter(r -> !r.isNegated())
+                .flatMap(r -> iterate(r.variables()).filter(v -> !(v.isType() && v.reference().isLabel())))
+                .toSet();
         iterate(resolvables).filter(Resolvable::isNegated)
                 .forEachRemaining(resolvable -> deps.get(resolvable).addAll(intersection(resolvable.variables(), unnegatedVars)));
         Set<ThingVariable> generatedVars = iterate(resolvables).filter(resolvable -> resolvable.generating().isPresent())

@@ -200,7 +200,7 @@ public class OrderingCostEstimator {
             singlyBoundCost += resolvableCost;
 
             if (!resolvable.isNegated()) {
-                boundVars.addAll(resolvableVars);
+                boundVars.addAll(resolvable.variables()); // We need non-estimateable variables too.
             }
         }
 
