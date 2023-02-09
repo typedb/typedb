@@ -1,21 +1,3 @@
-/*
- * Copyright (C) 2022 Vaticle
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- */
-
 package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.common.collection.Collections;
@@ -76,22 +58,7 @@ public class OrderingCostEstimator {
             Set<Variable> resolvableMode = Collections.intersection(resolvableVars, boundVars);
             Set<Variable> restrictedResolvableVars = Collections.intersection(resolvableVars, restrictedVars);
 
-            double resolvableCost;
-            if (resolvable.isNegated()) {
-                resolvableCost = iterate(resolvable.asNegated().disjunction().conjunctions()).map(conj -> {
-                    Set<Variable> conjVariables = estimateableVariables(conj.pattern().variables());
-                    Set<Variable> nestedMode = Collections.intersection(conjVariables, restrictedResolvableVars);
-                    double answersForModeFromPrefix = estimator.answerEstimate(nestedMode);
-                    double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, nestedMode);
-                    double scalingFactor = allAnswersForMode !=0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
-                    return scaledCallCost(scalingFactor, new ReasonerPlanner.CallMode(conj, Collections.intersection(conjVariables, resolvableMode)));
-                }).reduce(0.0, Double::sum);
-            } else {
-                double answersForModeFromPrefix = estimator.answerEstimate(restrictedResolvableVars);
-                double allAnswersForMode = answerCountEstimator.localEstimate(conjunctionNode.conjunction(), resolvable, restrictedResolvableVars);
-                double scalingFactor = allAnswersForMode != 0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
-                resolvableCost = scaledAcyclicCost(scalingFactor, conjunctionNode, resolvable, resolvableMode);
-            }
+            double resolvableCost = scaledAcyclicCost(conjunctionNode, estimator, resolvable, restrictedResolvableVars, resolvableMode);
 
             if (resolvable.isConcludable() && conjunctionNode.cyclicConcludables().contains(resolvable.asConcludable())) {
                 // Question: Do we project onto all the restrictedVars, or only those not in the mode?
@@ -124,25 +91,37 @@ public class OrderingCostEstimator {
         return new OrderingChoice(summary.callMode, summary.ordering, summary.cyclicConcludableModes, scalingFactors, acyclicCost, unscalableCost, answersToMode);
     }
 
-    private long retrievalCost(ResolvableConjunction conjunction, Resolvable<?> resolvable, Set<Variable> mode) {
+    private double retrievalCost(ResolvableConjunction conjunction, Resolvable<?> resolvable, Set<Variable> mode) {
         // Inaccurate because retrievables traversals work differently.
         // Also inaccurate because it considers inferred answers for concludables? We could rename to computeLocalCost.
-        AnswerCountEstimator.IncrementalEstimator estimator = answerCountEstimator.createIncrementalEstimator(conjunction);
-        estimator.extend(resolvable);
-        return estimator.answerEstimate(estimateableVariables(resolvable.variables()));
+        return answerCountEstimator.localEstimate(conjunction, resolvable, estimateableVariables(resolvable.variables()));
     }
 
-    private double scaledAcyclicCost(double scalingFactor, ConjunctionGraph.ConjunctionNode conjunctionNode, Resolvable<?> resolvable, Set<Variable> resolvableMode) {
-        assert !resolvable.isNegated();
-        double cost = 0.0;
-        if (resolvable.isRetrievable()) {
-            cost += scalingFactor * retrievalCost(conjunctionNode.conjunction(), resolvable, resolvableMode);
-        } else if (resolvable.isConcludable()) {
-            cost += scalingFactor * retrievalCost(conjunctionNode.conjunction(), resolvable, resolvableMode);
-            Set<ReasonerPlanner.CallMode> acyclicCalls = planner.triggeredCalls(resolvable.asConcludable(), resolvableMode, conjunctionNode.acyclicDependencies(resolvable.asConcludable()));
-            cost += iterate(acyclicCalls).map(acylcicCall -> scaledCallCost(scalingFactor, acylcicCall)).reduce(0.0, Double::sum);    // Assumption: Decompose the global planning problems to SCCs
-        } else throw TypeDBException.of(ILLEGAL_STATE);
-        return cost;
+    double scaledAcyclicCost(ConjunctionGraph.ConjunctionNode conjunctionNode, AnswerCountEstimator.IncrementalEstimator scaledEstimator,
+                             Resolvable<?> resolvable, Set<Variable> restrictedResolvableMode, Set<Variable> resolvableMode) {
+        if (resolvable.isNegated()) {
+            return iterate(resolvable.asNegated().disjunction().conjunctions()).map(conj -> {
+                Set<Variable> conjVariables = estimateableVariables(conj.pattern().variables());
+                Set<Variable> nestedMode = Collections.intersection(conjVariables, restrictedResolvableMode);
+                double answersForModeFromPrefix = scaledEstimator.answerEstimate(nestedMode);
+                double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, nestedMode);
+                double scalingFactor = allAnswersForMode != 0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
+                return scaledCallCost(scalingFactor, new ReasonerPlanner.CallMode(conj, Collections.intersection(conjVariables, resolvableMode)));
+            }).reduce(0.0, Double::sum);
+        } else {
+            double answersForModeFromPrefix = scaledEstimator.answerEstimate(restrictedResolvableMode);
+            double allAnswersForMode = answerCountEstimator.localEstimate(conjunctionNode.conjunction(), resolvable, restrictedResolvableMode);
+            double scalingFactor = allAnswersForMode != 0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
+            double cost = 0.0;
+            if (resolvable.isRetrievable()) {
+                cost += scalingFactor * retrievalCost(conjunctionNode.conjunction(), resolvable, resolvableMode);
+            } else if (resolvable.isConcludable()) {
+                cost += scalingFactor * retrievalCost(conjunctionNode.conjunction(), resolvable, resolvableMode);
+                Set<ReasonerPlanner.CallMode> acyclicCalls = planner.triggeredCalls(resolvable.asConcludable(), resolvableMode, conjunctionNode.acyclicDependencies(resolvable.asConcludable()));
+                cost += iterate(acyclicCalls).map(acylcicCall -> scaledCallCost(scalingFactor, acylcicCall)).reduce(0.0, Double::sum);    // Assumption: Decompose the global planning problems to SCCs
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+            return cost;
+        }
     }
 
     private double scaledCallCost(double scalingFactor, ReasonerPlanner.CallMode callMode) {
@@ -150,7 +129,7 @@ public class OrderingCostEstimator {
         return plan.cost() * Math.min(1.0, scalingFactor + plan.cyclicScalingFactor);
     }
 
-    class SingleCallEstimateBuilder {
+    public class SingleCallEstimateBuilder {
         private final ReasonerPlanner.CallMode callMode;
         private final ConjunctionGraph.ConjunctionNode conjunctionNode;
         private final AnswerCountEstimator.IncrementalEstimator estimator;
@@ -179,20 +158,7 @@ public class OrderingCostEstimator {
             ordering.add(resolvable);
             Set<Variable> resolvableVars = estimateableVariables(resolvable.variables());
             Set<Variable> resolvableMode = Collections.intersection(resolvableVars, boundVars);
-            double answersForModeFromPrefix = estimator.answerEstimate(resolvableMode);
-            double resolvableCost;
-            if (resolvable.isNegated()) {
-                resolvableCost = iterate(resolvable.asNegated().disjunction().conjunctions()).map(conj -> {
-                    Set<Variable> conjVariables = estimateableVariables(conj.pattern().variables());
-                    double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, Collections.intersection(conjVariables, resolvableMode));
-                    double scalingFactor = allAnswersForMode !=0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
-                    return scaledCallCost(scalingFactor, new ReasonerPlanner.CallMode(conj, Collections.intersection(conjVariables, resolvableMode)));
-                }).reduce(0.0, Double::sum);
-            } else {
-                double allAnswersForMode = answerCountEstimator.localEstimate(callMode.conjunction, resolvable, resolvableMode);
-                double scalingFactor = allAnswersForMode != 0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
-                resolvableCost = scaledAcyclicCost(scalingFactor, conjunctionNode, resolvable, resolvableMode);
-            }
+            double resolvableCost = scaledAcyclicCost(conjunctionNode, estimator, resolvable, resolvableMode, resolvableMode);
 
             if (resolvable.isConcludable() && conjunctionNode.cyclicConcludables().contains(resolvable.asConcludable())) {
                 cyclicConcludableModes.add(new Pair<>(resolvable.asConcludable(), resolvableMode));
