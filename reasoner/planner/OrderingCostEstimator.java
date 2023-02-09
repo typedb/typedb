@@ -76,16 +76,18 @@ public class OrderingCostEstimator {
             Set<Variable> resolvableMode = Collections.intersection(resolvableVars, boundVars);
             Set<Variable> restrictedResolvableVars = Collections.intersection(resolvableVars, restrictedVars);
 
-            double answersForModeFromPrefix = estimator.answerEstimate(restrictedResolvableVars);
             double resolvableCost;
             if (resolvable.isNegated()) {
                 resolvableCost = iterate(resolvable.asNegated().disjunction().conjunctions()).map(conj -> {
                     Set<Variable> conjVariables = estimateableVariables(conj.pattern().variables());
-                    double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, Collections.intersection(conjVariables, restrictedResolvableVars));
+                    Set<Variable> nestedMode = Collections.intersection(conjVariables, restrictedResolvableVars);
+                    double answersForModeFromPrefix = estimator.answerEstimate(nestedMode);
+                    double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, nestedMode);
                     double scalingFactor = allAnswersForMode !=0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
                     return scaledCallCost(scalingFactor, new ReasonerPlanner.CallMode(conj, Collections.intersection(conjVariables, resolvableMode)));
                 }).reduce(0.0, Double::sum);
             } else {
+                double answersForModeFromPrefix = estimator.answerEstimate(restrictedResolvableVars);
                 double allAnswersForMode = answerCountEstimator.localEstimate(conjunctionNode.conjunction(), resolvable, restrictedResolvableVars);
                 double scalingFactor = allAnswersForMode != 0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
                 resolvableCost = scaledAcyclicCost(scalingFactor, conjunctionNode, resolvable, resolvableMode);
