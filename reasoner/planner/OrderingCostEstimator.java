@@ -65,7 +65,7 @@ public class OrderingCostEstimator {
                 // Including those in the mode leads to double-scaling. Excluding them leads to an overestimate if the bounds are not restrictive.
                 // I lean towards the overestimate.
                 Set<Variable> projectionVars = iterate(restrictedResolvableVars).filter(v -> !summary.callMode.mode.contains(v)).toSet();
-                long allAnswersForUnrestrictedMode = answerCountEstimator.localEstimate(conjunctionNode.conjunction(), resolvable, resolvableMode);
+                double allAnswersForUnrestrictedMode = answerCountEstimator.localEstimate(conjunctionNode.conjunction(), resolvable, resolvableMode);
                 double cyclicScalingFactor = projectionVars.isEmpty() && allAnswersForUnrestrictedMode != 0 ? 0.0 :
                         (double) estimator.answerEstimate(projectionVars) / allAnswersForUnrestrictedMode;
                 scalingFactors.put(resolvable.asConcludable(), cyclicScalingFactor);
