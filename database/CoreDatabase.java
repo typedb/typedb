@@ -456,7 +456,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    protected void close() {
+    public void close() {
         if (isOpen.compareAndSet(true, false)) {
             if (scheduledPropertiesLogger != null) shutdownRocksPropertiesLogger();
             closeResources();
