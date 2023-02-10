@@ -182,7 +182,8 @@ public class CoreDatabase implements TypeDB.Database {
                 txn.commit();
             }
         }
-        statisticsCorrector.initialise(false);
+        statisticsCorrector.markActivating();
+        statisticsCorrector.doActivate();
     }
 
     protected void openSchema() {
@@ -242,7 +243,8 @@ public class CoreDatabase implements TypeDB.Database {
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
-        statisticsCorrector.load(false);
+        statisticsCorrector.markReactivating();
+        statisticsCorrector.doReactivate();
     }
 
     protected void validateDirectories() {
@@ -595,7 +597,7 @@ public class CoreDatabase implements TypeDB.Database {
         private final ConcurrentSet<Long> deletedTxnIDs;
         protected CoreSession.Data session;
 
-        protected enum State {INACTIVE, INIT, LOAD, WAITING, CORRECTION_QUEUED, CLOSED}
+        protected enum State {INACTIVE, ACTIVATING, REACTIVATING, WAITING, CORRECTION_QUEUED, CLOSED}
 
         protected StatisticsCorrector(CoreDatabase database) {
             this.database = database;
@@ -604,26 +606,24 @@ public class CoreDatabase implements TypeDB.Database {
             state = new AtomicReference<>(State.INACTIVE);
         }
 
-        public void initialise(boolean deferInit) {
+        public void markActivating() {
             assert state.get() == State.INACTIVE;
-            state.set(State.INIT);
-            if (!deferInit) doInitialise();
+            state.set(State.ACTIVATING);
         }
 
-        protected void doInitialise() {
-            assert state.get() == State.INIT;
+        public void doActivate() {
+            assert state.get() == State.ACTIVATING;
             session = database.createAndOpenSession(DATA, new Options.Session()).asData();
             state.set(State.WAITING);
         }
 
-        public void load(boolean deferLoad) {
+        public void markReactivating() {
             assert state.get() == State.INACTIVE;
-            state.set(State.LOAD);
-            if (!deferLoad) doLoad();
+            state.set(State.REACTIVATING);
         }
 
-        protected void doLoad() {
-            assert state.get() == State.LOAD;
+        protected void doReactivate() {
+            assert state.get() == State.REACTIVATING;
             session = database.createAndOpenSession(DATA, new Options.Session()).asData();
             state.set(State.WAITING);
             LOG.trace("Cleaning up statistics metadata.");
@@ -668,13 +668,13 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         private void handleDeferredSetUp() {
-            if (state.get() == State.INIT) {
+            if (state.get() == State.ACTIVATING) {
                 synchronized (this) {
-                    if (state.get() == State.INIT) doInitialise();
+                    if (state.get() == State.ACTIVATING) doActivate();
                 }
-            } else if (state.get() == State.LOAD) {
+            } else if (state.get() == State.REACTIVATING) {
                 synchronized (this) {
-                    if (state.get() == State.LOAD) doLoad();
+                    if (state.get() == State.REACTIVATING) doReactivate();
                 }
             }
         }
