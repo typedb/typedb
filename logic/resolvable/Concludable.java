@@ -265,7 +265,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             iterate(conjRolePlayers).forEachRemaining(conjRP -> {
                 unifiesWith.put(conjRP, iterate(thenRolePlayers).filter(thenRP -> Unifier.Builder.unificationSatisfiable(conjRP, thenRP, conceptMgr)).toSet());
             });
-            FunctionalIterator<Map<RolePlayer, RolePlayer>> it = iterate(new HashMap<>());
+            FunctionalIterator<Map<RolePlayer, RolePlayer>> it = Iterators.single(new HashMap<>());
             for (int i = 0; i < conjRolePlayers.size(); i++) {
                 RolePlayer conjRP = conjRolePlayers.get(i);
                 it = it.flatMap(currentMapping -> iterate(unifiesWith.get(conjRP))
