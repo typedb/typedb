@@ -638,15 +638,15 @@ public class UnifyRelationConcludableTest {
                                "(employee: $x, employer: $x, employee: $y) isa employment", logicMgr);
 
         List<Unifier> unifier = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
-        List<Map<String, Set<String>>> result = iterate(unifier).map(u -> getStringMapping(u.mapping())).toList();
+        Set<Map<String, Set<String>>> result = iterate(unifier).map(u -> getStringMapping(u.mapping())).toSet();
 
-        List<Map<String, Set<String>>> expected = list(
-                new HashMap<String, Set<String>>() {{
+        Set<Map<String, Set<String>>> expected = set(
+                new HashMap<>() {{
                     put("$p", set("$x"));
                     put("$q", set("$y"));
                     put("$_0", set("$_0"));
                 }},
-                new HashMap<String, Set<String>>() {{
+                new HashMap<>() {{
                     put("$p", set("$x", "$y"));
                     put("$q", set("$x"));
                     put("$_0", set("$_0"));
