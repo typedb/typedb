@@ -69,6 +69,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
@@ -148,7 +149,7 @@ public class CoreDatabase implements TypeDB.Database {
     }
 
     protected StatisticsCorrector createStatisticsCorrector() {
-        return new StatisticsCorrector();
+        return new StatisticsCorrector(this);
     }
 
     static CoreDatabase createAndOpen(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
@@ -172,7 +173,7 @@ public class CoreDatabase implements TypeDB.Database {
     protected void initialise() {
         openSchema();
         initialiseEncodingVersion();
-        openAndInitialiseData();
+        openData();
         isOpen.set(true);
         try (CoreSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (CoreTransaction.Schema txn = session.initialisationTransaction()) {
@@ -181,7 +182,7 @@ public class CoreDatabase implements TypeDB.Database {
                 txn.commit();
             }
         }
-        statisticsCorrector.initialise();
+        statisticsCorrector.initialise(false);
     }
 
     protected void openSchema() {
@@ -205,7 +206,7 @@ public class CoreDatabase implements TypeDB.Database {
         return new CorePartitionManager.Schema(schemaDescriptors, schemaHandles);
     }
 
-    protected void openAndInitialiseData() {
+    protected void openData() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -231,9 +232,9 @@ public class CoreDatabase implements TypeDB.Database {
 
     protected void load() {
         validateDirectories();
-        openSchema();
+        loadSchema();
         validateEncodingVersion();
-        openData();
+        loadData();
         isOpen.set(true);
         try (CoreSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
             try (CoreTransaction.Schema txn = session.initialisationTransaction()) {
@@ -241,7 +242,7 @@ public class CoreDatabase implements TypeDB.Database {
                 dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
             }
         }
-        statisticsCorrector.initialiseAndCleanUp();
+        statisticsCorrector.load(false);
     }
 
     protected void validateDirectories() {
@@ -252,7 +253,11 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    protected void openData() {
+    protected void loadSchema() {
+        openSchema();
+    }
+
+    protected void loadData() {
         try {
             List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
             List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
@@ -582,25 +587,45 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    public class StatisticsCorrector {
+    public static class StatisticsCorrector {
 
+        private final CoreDatabase database;
+        protected final AtomicReference<State> state;
         protected final ConcurrentSet<CompletableFuture<Void>> corrections;
         private final ConcurrentSet<Long> deletedTxnIDs;
-        protected final AtomicBoolean correctionRequired;
         protected CoreSession.Data session;
 
-        protected StatisticsCorrector() {
+        protected enum State {INACTIVE, INIT, LOAD, WAITING, CORRECTION_QUEUED, CLOSED}
+
+        protected StatisticsCorrector(CoreDatabase database) {
+            this.database = database;
             corrections = new ConcurrentSet<>();
             deletedTxnIDs = new ConcurrentSet<>();
-            correctionRequired = new AtomicBoolean(false);
+            state = new AtomicReference<>(State.INACTIVE);
         }
 
-        protected void initialise() {
-            session = createAndOpenSession(DATA, new Options.Session()).asData();
+        public void initialise(boolean deferInit) {
+            assert state.get() == State.INACTIVE;
+            state.set(State.INIT);
+            if (!deferInit) doInitialise();
         }
 
-        public void initialiseAndCleanUp() {
-            initialise();
+        protected void doInitialise() {
+            assert state.get() == State.INIT;
+            session = database.createAndOpenSession(DATA, new Options.Session()).asData();
+            state.set(State.WAITING);
+        }
+
+        public void load(boolean deferLoad) {
+            assert state.get() == State.INACTIVE;
+            state.set(State.LOAD);
+            if (!deferLoad) doLoad();
+        }
+
+        protected void doLoad() {
+            assert state.get() == State.LOAD;
+            session = database.createAndOpenSession(DATA, new Options.Session()).asData();
+            state.set(State.WAITING);
             LOG.trace("Cleaning up statistics metadata.");
             correctMiscounts();
             deleteCorrectionMetadata();
@@ -636,15 +661,27 @@ public class CoreDatabase implements TypeDB.Database {
         }
 
         public void committed(CoreTransaction.Data transaction) {
-            if (mayMiscount(transaction) && correctionRequired.compareAndSet(false, true)) {
+            handleDeferredSetUp();
+            if (mayMiscount(transaction) && state.compareAndSet(State.WAITING, State.CORRECTION_QUEUED)) {
                 submitCorrection();
+            }
+        }
 
+        private void handleDeferredSetUp() {
+            if (state.get() == State.INIT) {
+                synchronized (this) {
+                    if (state.get() == State.INIT) doInitialise();
+                }
+            } else if (state.get() == State.LOAD) {
+                synchronized (this) {
+                    if (state.get() == State.LOAD) doLoad();
+                }
             }
         }
 
         CompletableFuture<Void> submitCorrection() {
             CompletableFuture<Void> correction = CompletableFuture.runAsync(() -> {
-                if (correctionRequired.compareAndSet(true, false)) correctMiscounts();
+                if (state.compareAndSet(State.CORRECTION_QUEUED, State.WAITING)) correctMiscounts();
             }, serial());
             corrections.add(correction);
             correction.exceptionally(exception -> {
@@ -671,9 +708,9 @@ public class CoreDatabase implements TypeDB.Database {
          * and correct them if we have enough information to do so.
          */
         protected void correctMiscounts() {
-            if (!databaseMgr.isOpen()) return;
+            if (state.get().equals(State.CLOSED)) return;
             try (CoreTransaction.Data txn = session.transaction(WRITE)) {
-                if (mayCorrectMiscounts(txn)) cache.incrementStatisticsVersion();
+                if (mayCorrectMiscounts(txn)) database.cache.incrementStatisticsVersion();
             }
         }
 
@@ -681,7 +718,7 @@ public class CoreDatabase implements TypeDB.Database {
             Set<Long> deletableTxnIDs = new HashSet<>(deletedTxnIDs);
             boolean[] modified = new boolean[]{false};
             boolean[] miscountCorrected = new boolean[]{false};
-            Set<Long> openTxnIDs = isolationMgr.getNotCommitted().map(CoreTransaction::id).toSet();
+            Set<Long> openTxnIDs = database.isolationMgr.getNotCommitted().map(CoreTransaction::id).toSet();
             txn.dataStorage.iterate(StatisticsKey.Miscountable.prefix()).forEachRemaining(kv -> {
                 StatisticsKey.Miscountable item = kv.key();
                 List<Long> txnIDsCausingMiscount = kv.value().decodeLongs();
@@ -804,7 +841,7 @@ public class CoreDatabase implements TypeDB.Database {
 
         protected void close() {
             try {
-                correctionRequired.set(false);
+                state.set(State.CLOSED);
                 for (CompletableFuture<Void> correction : corrections) {
                     correction.get(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
                 }
