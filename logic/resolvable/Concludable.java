@@ -46,6 +46,8 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -80,7 +82,9 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
     }
 
     @Override
-    public Set<Variable> variables() { return pattern().variables(); }
+    public Set<Variable> variables() {
+        return pattern().variables();
+    }
 
     public boolean isConcludable() {
         return true;
@@ -98,13 +102,21 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
     public abstract boolean isInferredAnswer(ConceptMap conceptMap);
 
-    public boolean isRelation() { return false; }
+    public boolean isRelation() {
+        return false;
+    }
 
-    public boolean isHas() { return false; }
+    public boolean isHas() {
+        return false;
+    }
 
-    public boolean isIsa() { return false; }
+    public boolean isIsa() {
+        return false;
+    }
 
-    public boolean isAttribute() { return false; }
+    public boolean isAttribute() {
+        return false;
+    }
 
     public Relation asRelation() {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Relation.class));
@@ -180,7 +192,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                 clonedIsa = cloner.getClone(isa).asThing().asIsa();
             }
             return new Relation(cloner.conjunction(), cloner.getClone(relation).asThing().asRelation(), clonedIsa,
-                                iterate(labels).map(l -> cloner.getClone(l).asType().asLabel()).toSet());
+                    iterate(labels).map(l -> cloner.getClone(l).asType().asLabel()).toSet());
         }
 
         public RelationConstraint relation() {
@@ -237,33 +249,39 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                 }
             }
 
-            List<RolePlayer> conjRolePlayers = list(relation().players());
+            Set<RolePlayer> conjRolePlayers = relation().players();
             Set<RolePlayer> thenRolePlayers = relationConclusion.relation().players();
 
-            return matchRolePlayers(conjRolePlayers, thenRolePlayers, new HashMap<>(), conceptMgr)
+            return matchRolePlayers(conjRolePlayers, thenRolePlayers, conceptMgr)
                     .map(mapping -> convertRPMappingToUnifier(mapping, unifierBuilder.clone(), conceptMgr)).distinct();
         }
 
-        private FunctionalIterator<Map<RolePlayer, Set<RolePlayer>>> matchRolePlayers(
-                List<RolePlayer> conjRolePLayers, Set<RolePlayer> thenRolePlayers,
-                Map<RolePlayer, Set<RolePlayer>> mapping, ConceptManager conceptMgr) {
-            if (conjRolePLayers.isEmpty()) return single(mapping);
-            RolePlayer conjRP = conjRolePLayers.get(0);
-            return iterate(thenRolePlayers)
-                    .filter(thenRP -> iterate(mapping.values()).noneMatch(rolePlayers -> rolePlayers.contains(thenRP)))
-                    .filter(thenRP -> Unifier.Builder.unificationSatisfiable(conjRP, thenRP, conceptMgr))
-                    .map(thenRP -> {
-                        Map<RolePlayer, Set<RolePlayer>> clone = cloneMapping(mapping);
-                        clone.putIfAbsent(conjRP, new HashSet<>());
-                        clone.get(conjRP).add(thenRP);
-                        return clone;
-                    }).flatMap(newMapping -> matchRolePlayers(conjRolePLayers.subList(1, conjRolePLayers.size()),
-                                                              thenRolePlayers, newMapping, conceptMgr));
+        private FunctionalIterator<Map<RolePlayer, RolePlayer>> matchRolePlayers(Set<RolePlayer> conjRolePlayerSet, Set<RolePlayer> thenRolePlayers, ConceptManager conceptMgr) {
+            // If this is ever slow again, consider Divide & Conquer: Partition conjRolePlayers such that the result sets of all partitions are disjoint
+            // Sort, So that the once with identical role-labels are together; They hopefully fail together
+            List<RolePlayer> conjRolePlayers = new ArrayList<>(conjRolePlayerSet);
+            conjRolePlayers.sort(Comparator.comparing(rolePlayer -> rolePlayer.roleType().map(typeVariable -> typeVariable.label().map(LabelConstraint::label).orElse("")).orElse("")));
+            Map<RolePlayer, Set<RolePlayer>> unifiesWith = new HashMap<>();
+            iterate(conjRolePlayers).forEachRemaining(conjRP -> {
+                unifiesWith.put(conjRP, iterate(thenRolePlayers).filter(thenRP -> Unifier.Builder.unificationSatisfiable(conjRP, thenRP, conceptMgr)).toSet());
+            });
+            FunctionalIterator<Map<RolePlayer, RolePlayer>> it = Iterators.single(new HashMap<>());
+            for (int i = 0; i < conjRolePlayers.size(); i++) {
+                RolePlayer conjRP = conjRolePlayers.get(i);
+                it = it.flatMap(currentMapping -> iterate(unifiesWith.get(conjRP))
+                        .filter(thenRP -> !currentMapping.values().contains(thenRP))
+                        .map(thenRP -> {
+                            Map<RolePlayer, RolePlayer> clonedMapping = new HashMap<>(currentMapping);
+                            clonedMapping.put(conjRP, thenRP);
+                            return clonedMapping;
+                        }));
+            }
+            return it;
         }
 
-        private Unifier convertRPMappingToUnifier(Map<RolePlayer, Set<RolePlayer>> mapping,
+        private Unifier convertRPMappingToUnifier(Map<RolePlayer, RolePlayer> mapping,
                                                   Unifier.Builder unifierBuilder, ConceptManager conceptMgr) {
-            mapping.forEach((conjRP, thenRPs) -> thenRPs.forEach(thenRP -> {
+            mapping.forEach((conjRP, thenRP) -> {
                 unifierBuilder.addThing(conjRP.player(), thenRP.player().id());
                 if (conjRP.roleType().isPresent()) {
                     assert thenRP.roleType().isPresent();
@@ -278,7 +296,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                         unifierBuilder.addVariableType(conjRoleType, thenRoleType.id());
                     }
                 }
-            }));
+            });
 
             return unifierBuilder.build();
         }

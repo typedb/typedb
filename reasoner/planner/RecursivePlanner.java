@@ -359,6 +359,7 @@ public class RecursivePlanner extends ReasonerPlanner {
 
             List<List<Resolvable<?>>> orderings = new ArrayList<>();
             porDFS(new Stack<>(), restrictedVars, remaining, new HashSet<>(), orderings);
+            assert !orderings.isEmpty();
             return orderings; // TODO: If this causes a memory blow-up, POR can "generate" one at a time.
         }
 
@@ -372,10 +373,6 @@ public class RecursivePlanner extends ReasonerPlanner {
             List<Resolvable<?>> enabled = iterate(remaining)
                     .filter(r -> ReasonerPlanner.dependenciesSatisfied(r, currentBoundVars, dependencies) && !sleepSet.contains(r))
                     .toList();
-
-            if (enabled.isEmpty()) {
-                enabled = iterate(remaining).filter(r -> !r.isNegated() && !sleepSet.contains(r)).toList();
-            }
 
             if (enabled.isEmpty()) {
                 return; // All enabled are sleeping

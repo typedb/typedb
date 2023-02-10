@@ -58,6 +58,11 @@ public abstract class OptionParser {
         return iterate(options).filter(opt -> opt.name().equals(name()));
     }
 
+    @Override
+    public java.lang.String toString() {
+        return help().toString();
+    }
+
     public static class Flag extends OptionParser {
 
         public Flag(java.lang.String name, java.lang.String description) {
@@ -159,7 +164,6 @@ public abstract class OptionParser {
         public java.lang.String description() {
             return description;
         }
-
 
         @Override
         public java.lang.String toString() {

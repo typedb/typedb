@@ -29,13 +29,13 @@ import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.database.Factory;
-import com.vaticle.typedb.core.migrator.MigratorClient;
+import com.vaticle.typedb.core.migrator.CoreMigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
 import com.vaticle.typedb.core.server.logging.CoreLogback;
 import com.vaticle.typedb.core.server.parameters.CoreConfig;
 import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
-import com.vaticle.typedb.core.server.parameters.ServerSubcommand;
-import com.vaticle.typedb.core.server.parameters.ServerSubcommandParser;
+import com.vaticle.typedb.core.server.parameters.CoreSubcommand;
+import com.vaticle.typedb.core.server.parameters.CoreSubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -70,25 +70,28 @@ public class TypeDBServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBServer.class);
 
     protected final Factory factory;
-    protected final CoreConfig config;
-    protected final CoreLogback logback;
     protected final CoreDatabaseManager databaseMgr;
     protected final io.grpc.Server server;
     protected final boolean debug;
     protected TypeDBService typeDBService;
+    private final CoreConfig config;
 
-    private TypeDBServer(CoreConfig config, boolean debug) {
-        this(config, debug, new CoreFactory(), new CoreLogback());
+    private static TypeDBServer create(CoreConfig config, boolean debug) {
+        configureLogging(new CoreLogback(), config);
+        return new TypeDBServer(config, debug, new CoreFactory());
     }
 
-    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory, CoreLogback logback) {
+    protected static void configureLogging(CoreLogback logback, CoreConfig config) {
+        logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
+        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
+    }
+
+    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory) {
         this.config = config;
         this.debug = debug;
-        this.logback = logback;
 
         verifyJavaVersion();
         verifyDataDir();
-        configureLogging(this.logback, this.config);
         configureTracing();
 
         if (debug) logger().info("Running {} in debug mode.", name());
@@ -104,7 +107,11 @@ public class TypeDBServer implements AutoCloseable {
         databaseMgr = factory.databaseManager(options);
         server = rpcServer();
         Thread.setDefaultUncaughtExceptionHandler(
-                (t, e) -> logger().error(UNCAUGHT_EXCEPTION.message(t.getName() + ": " + e.getMessage()), e)
+                (t, e) -> {
+                    logger().error(UNCAUGHT_EXCEPTION.message(t.getName(), e), e);
+                    close();
+                    System.exit(1);
+                }
         );
         Runtime.getRuntime().addShutdownHook(
                 NamedThreadFactory.create(TypeDBServer.class, "shutdown").newThread(this::close)
@@ -128,11 +135,6 @@ public class TypeDBServer implements AutoCloseable {
         if (!Files.isWritable(config.storage().dataDir())) {
             throw TypeDBException.of(DATA_DIRECTORY_NOT_WRITABLE, config.storage().dataDir());
         }
-    }
-
-    private static void configureLogging(CoreLogback logback, CoreConfig config) {
-        logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
-        java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
     private void configureTracing() {
@@ -169,6 +171,10 @@ public class TypeDBServer implements AutoCloseable {
 
     protected String name() {
         return "TypeDB Server";
+    }
+
+    protected CoreConfig config() {
+        return config;
     }
 
     private InetSocketAddress address() {
@@ -209,7 +215,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         logger().info("");
         logger().info("Shutting down {}...", name());
         try {
@@ -231,25 +237,25 @@ public class TypeDBServer implements AutoCloseable {
             printASCIILogo();
 
             CoreConfigParser configParser = new CoreConfigParser();
-            ArgsParser<ServerSubcommand> argsParser = new ArgsParser<ServerSubcommand>()
-                    .subcommand(new ServerSubcommandParser.Server(configParser))
-                    .subcommand(new ServerSubcommandParser.Import())
-                    .subcommand(new ServerSubcommandParser.Export());
-            Optional<ServerSubcommand> subcmd = argsParser.parse(args);
+            ArgsParser<CoreSubcommand> argsParser = new ArgsParser<CoreSubcommand>()
+                    .subcommand(new CoreSubcommandParser.Server(configParser))
+                    .subcommand(new CoreSubcommandParser.Import())
+                    .subcommand(new CoreSubcommandParser.Export());
+            Optional<CoreSubcommand> subcmd = argsParser.parse(args);
             if (subcmd.isEmpty()) {
                 LOG.error(UNRECOGNISED_CLI_COMMAND.message(String.join(" ", args)));
                 LOG.error(argsParser.usage());
                 System.exit(1);
             } else {
                 if (subcmd.get().isServer()) {
-                    ServerSubcommand.Server subcmdServer = subcmd.get().asServer();
+                    CoreSubcommand.Server subcmdServer = subcmd.get().asServer();
                     if (subcmdServer.isHelp()) System.out.println(argsParser.help());
                     else if (subcmdServer.isVersion()) System.out.println("Version: " + Version.VERSION);
                     else runServer(subcmdServer);
                 } else if (subcmd.get().isImport()) {
-                    importData(subcmd.get().asImport());
+                    runImportData(subcmd.get().asImport());
                 } else if (subcmd.get().isExport()) {
-                    exportData(subcmd.get().asExport());
+                    runExportData(subcmd.get().asExport());
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             }
         } catch (Exception e) {
@@ -265,9 +271,9 @@ public class TypeDBServer implements AutoCloseable {
         System.exit(0);
     }
 
-    private static void runServer(ServerSubcommand.Server subcmdServer) {
+    private static void runServer(CoreSubcommand.Server subcmdServer) {
         Instant start = Instant.now();
-        TypeDBServer server = new TypeDBServer(subcmdServer.config(), subcmdServer.isDebug());
+        TypeDBServer server = TypeDBServer.create(subcmdServer.config(), subcmdServer.isDebug());
         server.start();
         Instant end = Instant.now();
         server.logger().info("version: {}", Version.VERSION);
@@ -278,20 +284,20 @@ public class TypeDBServer implements AutoCloseable {
         server.serve();
     }
 
-    protected static void exportData(ServerSubcommand.Export subcmdExport) {
+    private static void runExportData(CoreSubcommand.Export subcmdExport) {
         ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
-        MigratorClient migrator = new MigratorClient(subcmdExport.port());
+        CoreMigratorClient migrator = CoreMigratorClient.create(subcmdExport.port());
         boolean success = migrator.exportData(subcmdExport.database(), subcmdExport.file());
         System.exit(success ? 0 : 1);
     }
 
-    protected static void importData(ServerSubcommand.Import subcmdImport) {
+    private static void runImportData(CoreSubcommand.Import subcmdImport) {
         ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
-        MigratorClient migrator = new MigratorClient(subcmdImport.port());
+        CoreMigratorClient migrator = CoreMigratorClient.create(subcmdImport.port());
         boolean success = migrator.importData(subcmdImport.database(), subcmdImport.file());
         System.exit(success ? 0 : 1);
     }

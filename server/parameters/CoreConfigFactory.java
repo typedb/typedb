@@ -38,21 +38,21 @@ import static com.vaticle.typedb.core.server.common.Constants.CONFIG_PATH;
 
 public class CoreConfigFactory {
 
-    public static CoreConfig config(CoreConfigParser parser) {
+    static CoreConfig config(CoreConfigParser parser) {
         return config(new HashSet<>(), parser);
     }
 
-    public static CoreConfig config(Set<Option> overrides, CoreConfigParser parser) {
+    static CoreConfig config(Set<Option> overrides, CoreConfigParser parser) {
         return config(CONFIG_PATH, overrides, parser);
     }
 
-    public static CoreConfig config(Path file, Set<Option> overrides, CoreConfigParser parser) {
+    static CoreConfig config(Path file, Set<Option> overrides, CoreConfigParser parser) {
         YAML.Map yaml = merge(file, overrides);
         substituteEnvVars(yaml);
         return parser.parse(yaml, "");
     }
 
-    private static YAML.Map merge(Path file, Set<Option> overrides) {
+    protected static YAML.Map merge(Path file, Set<Option> overrides) {
         YAML.Map yaml = readFile(file);
         YAML.Map yamlOverrides = convertOverrides(overrides);
         for (String key: yamlOverrides.keys()) {
@@ -102,7 +102,7 @@ public class CoreConfigFactory {
         nested.put(split[split.length - 1], value);
     }
 
-    private static void substituteEnvVars(YAML.Map yaml) {
+    protected static void substituteEnvVars(YAML.Map yaml) {
         for (String key : yaml.keys()) {
             YAML value = yaml.get(key);
             if (value.isString()) {

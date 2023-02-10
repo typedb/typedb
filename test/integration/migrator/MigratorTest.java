@@ -61,7 +61,7 @@ public class MigratorTest {
         try (TypeDB.DatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
             databaseMgr.create(database);
             String savedSchema = new String(Files.readAllBytes(schemaPath), UTF_8);
-            runSchema(databaseMgr, savedSchema);
+            defineSchema(databaseMgr, savedSchema);
             String exportedSchema = databaseMgr.get(database).schema();
             assertEquals(trimSchema(savedSchema), trimSchema(exportedSchema));
         }
@@ -73,14 +73,14 @@ public class MigratorTest {
         try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
             databaseMgr.create(database);
             String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
-            runSchema(databaseMgr, schema);
+            defineSchema(databaseMgr, schema);
             new DataImporter(databaseMgr, database, dataPath, Version.VERSION).run();
             new DataExporter(databaseMgr, database, exportDataPath, Version.VERSION).run();
             assertEquals(getChecksums(dataPath), getChecksums(exportDataPath));
         }
     }
 
-    private void runSchema(TypeDB.DatabaseManager databaseMgr, String schema) {
+    private void defineSchema(TypeDB.DatabaseManager databaseMgr, String schema) {
         try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 TypeQLDefine query = TypeQL.parseQuery(schema);

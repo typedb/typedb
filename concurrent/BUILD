@@ -30,6 +30,7 @@ native_java_libraries(
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:io_netty_netty_all",
+        "@maven//:io_netty_netty_transport",
         "@maven//:org_slf4j_slf4j_api",
     ],
     native_libraries_deps = [
