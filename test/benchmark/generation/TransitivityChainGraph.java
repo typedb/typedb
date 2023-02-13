@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.test.benchmark.Util;
+import com.vaticle.typedb.core.reasoner.benchmark.Util;
 
 @SuppressWarnings("CheckReturnValue")
 public class TransitivityChainGraph {
@@ -63,10 +63,10 @@ public class TransitivityChainGraph {
         RelationType Q = tx.concepts().getRelationType("Q");
         RoleType qfrom = Q.getRelates("from");
         RoleType qto = Q.getRelates("to");
-        Thing aInst = Util.putEntityWithResource(tx, "a", tx.concepts().getEntityType("entity2"), key);
+        Thing aInst = Util.createEntityWithKey(tx, "a", tx.concepts().getEntityType("entity2"), key);
         Thing[] aInstanceIds = new Thing[n];
         for(int i = 0 ; i < n ;i++) {
-            aInstanceIds[i] = Util.putEntityWithResource(tx, "a" + i, aEntity, key);
+            aInstanceIds[i] = Util.createEntityWithKey(tx, "a" + i, aEntity, key);
         }
 
         Relation q0 = Q.create();

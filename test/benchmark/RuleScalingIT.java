@@ -18,14 +18,12 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark;
 
-// TODO: Move executeQuery to util so we have only one.
-
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
-import com.vaticle.typedb.core.test.integration.util.Util;
+import com.vaticle.typedb.core.reasoner.benchmark.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.schema.Rule;
@@ -45,15 +43,14 @@ public class RuleScalingIT {
 
     private String database = "rule-scaling-test";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("rule-scaling-test");
-    private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
-            .storageDataCacheSize(MB).storageIndexCacheSize(MB).traceInference(false).explain(true);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
 
     private static CoreDatabaseManager databaseMgr;
 
     @Before
     public void setUp() throws IOException {
-        Util.resetDirectory(dataDir);
+        com.vaticle.typedb.core.test.integration.util.Util.resetDirectory(dataDir);
         databaseMgr = CoreDatabaseManager.open(options);
         databaseMgr.create(database);
     }
@@ -189,17 +186,9 @@ public class RuleScalingIT {
                         "$r has inferredAttribute $value;" +
                         "$r has anotherInferredAttribute $anotherValue;" +
                         "(someRole: $anotherLink, anotherRole: $index) isa indexingRelation;";
-                List<ConceptMap> answers = executeQuery(query, tx);
+                List<ConceptMap> answers = Util.executeQuery(query, tx, "RuleScaling query");
                 assertEquals(populatedChains, answers.size());
             }
         }
-    }
-
-    private List<ConceptMap> executeQuery(String queryString, TypeDB.Transaction transaction){
-        final long startTime = System.currentTimeMillis();
-        List<ConceptMap> results = (List<ConceptMap>) transaction.query().match(TypeQL.parseQuery(queryString).asMatch()).toList();
-        final long answerTime = System.currentTimeMillis() - startTime;
-        System.out.println("Query results = " + results.size() + " answerTime: " + answerTime);
-        return results;
     }
 }

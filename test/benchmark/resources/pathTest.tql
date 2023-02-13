@@ -29,6 +29,7 @@ path sub relation, relates from, relates to;
 
 index sub attribute, value string;
 
+# rules
 rule rule-1:
 when {
     (from: $x, to: $y) isa arc;

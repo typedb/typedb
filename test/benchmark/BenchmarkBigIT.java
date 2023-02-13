@@ -18,16 +18,11 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark;
 
-// TODO: Make common base relation type so we don't have so many different role types
-// TODO: See if i need to name the anonymous variables
-// TODO: See if they rely on inference in match-insert queries
-
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
@@ -36,7 +31,6 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
-import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.schema.Rule;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
@@ -47,14 +41,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typeql.lang.TypeQL.var;
@@ -64,15 +52,14 @@ import static org.junit.Assert.assertEquals;
 public class BenchmarkBigIT {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("reasoner-benchmark-big");
-    private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
-            .storageDataCacheSize(MB).storageIndexCacheSize(MB).traceInference(false).explain(true);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
     private String database;
     private static CoreDatabaseManager databaseMgr;
 
     @Before
     public void setUp() throws IOException {
-        Util.resetDirectory(dataDir);
+        com.vaticle.typedb.core.test.integration.util.Util.resetDirectory(dataDir);
         databaseMgr = CoreDatabaseManager.open(options);
         database = "a" + UUID.randomUUID().toString().replaceAll("-", "");
         databaseMgr.create(database);
@@ -93,10 +80,10 @@ public class BenchmarkBigIT {
 
     final private Random rand = new Random();
 
-    private void loadOntology(String fileName, TypeDB.Session session) {
+    private void loadSchema(String fileName, TypeDB.Session session) {
         String filePath = "test/benchmark/resources/" + fileName;
         try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            tx.query().define(com.vaticle.typedb.core.test.benchmark.Util.parseTQL(filePath).asDefine());
+            tx.query().define(Util.parseTQL(filePath).asDefine());
             tx.commit();
         }
     }
@@ -141,7 +128,7 @@ public class BenchmarkBigIT {
 
     private void loadJoinData(int N) {
         try (TypeDB.Session session = schemaSession()) {
-            loadOntology("multiJoin.tql", session);
+            loadSchema("multiJoin.tql", session);
         }
 
         try (TypeDB.Session session = dataSession()) {
@@ -157,7 +144,7 @@ public class BenchmarkBigIT {
 
     private void loadTransitivityData(int N) {
         try (TypeDB.Session session = schemaSession()) {
-            loadOntology("linearTransitivity.tql", session);
+            loadSchema("linearTransitivity.tql", session);
         }
         try (TypeDB.Session session = dataSession()) {
             loadEntities("a-entity", N, session);
@@ -173,7 +160,6 @@ public class BenchmarkBigIT {
         String fromRoleLabel = "fromRole";
         String toRoleLabel = "toRole";
 
-        //load ontology
         try (TypeDB.Session session = schemaSession()) {
             try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
 
@@ -270,10 +256,10 @@ public class BenchmarkBigIT {
                 String limitedQueryString = "match " + queryPattern +
                         " limit " + limit + ";";
 
-                executeQuery(queryString, tx, "full");
-                executeQuery(subbedQueryString, tx, "first argument bound");
-                executeQuery(subbedQueryString2, tx, "second argument bound");
-                executeQuery(limitedQueryString, tx, "limit " + limit);
+                Util.executeQuery(queryString, tx, "full");
+                Util.executeQuery(subbedQueryString, tx, "first argument bound");
+                Util.executeQuery(subbedQueryString2, tx, "second argument bound");
+                Util.executeQuery(limitedQueryString, tx, "limit " + limit);
             }
         }
     }
@@ -313,10 +299,10 @@ public class BenchmarkBigIT {
                 String limitedQueryString = "match " + queryPattern +
                         " limit " + limit + ";";
 
-                executeQuery(queryString, tx, "full");
-                executeQuery(subbedQueryString, tx, "first argument bound");
-                executeQuery(subbedQueryString2, tx, "second argument bound");
-                executeQuery(limitedQueryString, tx, "limit " + limit);
+                Util.executeQuery(queryString, tx, "full");
+                Util.executeQuery(subbedQueryString, tx, "first argument bound");
+                Util.executeQuery(subbedQueryString2, tx, "second argument bound");
+                Util.executeQuery(limitedQueryString, tx, "limit " + limit);
             }
         }
     }
@@ -333,7 +319,7 @@ public class BenchmarkBigIT {
      */
     @Test
     public void testJoinRuleChain() {
-        final int N = 100;  // Stack-size of 200 causes an overflow
+        final int N = 100;  // TODO: Stack-size of 200 causes an overflow
         System.out.println(new Object() {
         }.getClass().getEnclosingMethod().getName());
         loadRuleChainData(N);
@@ -350,46 +336,11 @@ public class BenchmarkBigIT {
                         "$y iid " + lastId.getIID().toHexString() + ";";
                 String limitedQueryString = "match " + queryPattern +
                         " limit 1;";
-                assertEquals(1, executeQuery(queryString, tx, "full").size());
-                assertEquals(1, executeQuery(subbedQueryString, tx, "first argument bound").size());
-                assertEquals(1, executeQuery(subbedQueryString2, tx, "second argument bound").size());
-                assertEquals(1, executeQuery(limitedQueryString, tx, "limit ").size());
+                assertEquals(1, Util.executeQuery(queryString, tx, "full").size());
+                assertEquals(1, Util.executeQuery(subbedQueryString, tx, "first argument bound").size());
+                assertEquals(1, Util.executeQuery(subbedQueryString2, tx, "second argument bound").size());
+                assertEquals(1, Util.executeQuery(limitedQueryString, tx, "limit ").size());
             }
         }
-    }
-
-    @Test
-    public void whenQueryingConcurrently_reasonerDoesNotThrowException() throws ExecutionException, InterruptedException {
-        final int N = 20;
-        System.out.println(new Object() {
-        }.getClass().getEnclosingMethod().getName());
-        loadRuleChainData(N);
-
-        try (TypeDB.Session session = dataSession()) {
-            ExecutorService executor = Executors.newFixedThreadPool(8);
-            List<CompletableFuture<Void>> asyncMatches = new ArrayList<>();
-            for (int i = 0; i < 8; i++) {
-                CompletableFuture<Void> asyncMatch = CompletableFuture.supplyAsync(() -> {
-                    try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
-                        int randomRelation = rand.nextInt(N - 1);
-                        String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + (randomRelation + 1) + ";";
-                        String queryString = "match " + queryPattern;
-                        executeQuery(queryString, tx, "full");
-                    }
-                    return null;
-                }, executor);
-                asyncMatches.add(asyncMatch);
-            }
-
-            CompletableFuture.allOf(asyncMatches.toArray(new CompletableFuture[]{})).get();
-        }
-    }
-
-    private List<ConceptMap> executeQuery(String query, TypeDB.Transaction transaction, String msg) {
-        final long startTime = System.currentTimeMillis();
-        List<ConceptMap> results = (List<ConceptMap>) transaction.query().match(TypeQL.parseQuery(query).asMatch()).toList();
-        final long answerTime = System.currentTimeMillis() - startTime;
-        System.out.println(msg + " results = " + results.size() + " answerTime: " + answerTime);
-        return results;
     }
 }

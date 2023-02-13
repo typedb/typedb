@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
 import com.vaticle.typedb.core.concept.Concept;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.type.EntityType;
@@ -33,7 +32,6 @@ import com.vaticle.typedb.core.test.benchmark.generation.DiagonalGraph;
 import com.vaticle.typedb.core.test.benchmark.generation.PathTreeGraph;
 import com.vaticle.typedb.core.test.benchmark.generation.TransitivityChainGraph;
 import com.vaticle.typedb.core.test.benchmark.generation.TransitivityMatrixGraph;
-import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.After;
@@ -43,7 +41,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static junit.framework.TestCase.assertEquals;
@@ -51,15 +48,14 @@ import static junit.framework.TestCase.assertEquals;
 public class BenchmarkSmallIT {
     private static final String database = "reasoner-benchmark-small";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("reasoner-benchmark-small");
-    private static final Path logDir = dataDir.resolve("logs");
-    private static final Database options = new Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
-            .storageDataCacheSize(MB).storageIndexCacheSize(MB).traceInference(false).explain(true);
+    private static final Database options = new Database().dataDir(dataDir)
+            .storageDataCacheSize(MB).storageIndexCacheSize(MB);
 
     private static CoreDatabaseManager databaseMgr;
 
     @Before
     public void setUp() throws IOException {
-        Util.resetDirectory(dataDir);
+        com.vaticle.typedb.core.test.integration.util.Util.resetDirectory(dataDir);
         databaseMgr = CoreDatabaseManager.open(options);
         databaseMgr.create(database);
     }
@@ -90,7 +86,6 @@ public class BenchmarkSmallIT {
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
 
         try (TypeDB.Session session = schemaSession()) {
-            //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
 
                 RelationType relation0 = tx.concepts().putRelationType("relation0");
@@ -119,7 +114,6 @@ public class BenchmarkSmallIT {
         }
 
         try (TypeDB.Session session = dataSession()) {
-            //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 EntityType genericEntity = tx.concepts().getEntityType("genericEntity");
                 Entity fromEntity = genericEntity.create();
@@ -138,8 +132,8 @@ public class BenchmarkSmallIT {
                 String queryString = "match " + queryPattern + " get $x, $y;";
                 String limitedQueryString = "match " + queryPattern + " get $x, $y; limit " + limit + ";";
 
-                assertEquals(limit, executeQuery(queryString, tx, "full").size());
-                assertEquals(limit, executeQuery(limitedQueryString, tx, "limit").size());
+                assertEquals(limit, Util.executeQuery(queryString, tx, "full").size());
+                assertEquals(limit, Util.executeQuery(limitedQueryString, tx, "limit").size());
             }
         }
     }
@@ -187,13 +181,12 @@ public class BenchmarkSmallIT {
         TypeQLMatch.Unfiltered match = TypeQL.match(TypeQL.parsePattern("(from: $x, to: $y) isa P"));
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx =  session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
-                executeQuery(match, tx, "full");
-                executeQuery(match.limit(limit), tx, "limit " + limit);
+                Util.executeQuery(match, tx, "full");
+                Util.executeQuery(match.limit(limit), tx, "limit " + limit);
             }
 
         }
     }
-
 
     /**
      * single-rule transitivity test with initial data arranged in a chain of length N
@@ -228,11 +221,11 @@ public class BenchmarkSmallIT {
 
                 TypeQLMatch.Unfiltered query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q; $x has index 'a'; "));
 
-                assertEquals(answers, executeQuery(query, tx, "full").size());
-                assertEquals(N, executeQuery(query2, tx, "With specific resource").size());
+                assertEquals(answers, Util.executeQuery(query, tx, "full").size());
+                assertEquals(N, Util.executeQuery(query2, tx, "With specific resource").size());
 
-                executeQuery(query.limit(limit), tx, "limit " + limit);
-                executeQuery(query2.limit(limit), tx, "limit " + limit);
+                Util.executeQuery(query.limit(limit), tx, "limit " + limit);
+                Util.executeQuery(query2.limit(limit), tx, "limit " + limit);
                 tx.close();
                 session.close();
             }
@@ -288,10 +281,10 @@ public class BenchmarkSmallIT {
                 TypeQLMatch.Unfiltered query3 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x iid " + id.asThing().getIID().toHexString() + ";"));
 
 
-                executeQuery(query, tx, "full");
-                executeQuery(query2, tx, "With specific resource");
-                executeQuery(query3, tx, "Single argument bound");
-                executeQuery(query.limit(limit), tx, "limit " + limit);
+                Util.executeQuery(query, tx, "full");
+                Util.executeQuery(query2, tx, "With specific resource");
+                Util.executeQuery(query3, tx, "Single argument bound");
+                Util.executeQuery(query.limit(limit), tx, "limit " + limit);
             }
         }
 
@@ -338,8 +331,8 @@ public class BenchmarkSmallIT {
 
 
                 TypeQLMatch.Unfiltered query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa diagonal;"));
-                executeQuery(query, tx, "full");
-                executeQuery(query.limit(limit), tx, "limit " + limit);
+                Util.executeQuery(query, tx, "full");
+                Util.executeQuery(query.limit(limit), tx, "limit " + limit);
             }
         }
     }
@@ -398,21 +391,9 @@ public class BenchmarkSmallIT {
                 "$x has index 'a0,0';" +
                 "get $y; limit " + answers + ";";
 
-                assertEquals(executeQuery(queryString, tx, "tree").size(), answers);
+                assertEquals(Util.executeQuery(queryString, tx, "tree").size(), answers);
             }
         }
-    }
-
-    private List<ConceptMap> executeQuery(String queryString, TypeDB.Transaction transaction, String msg){
-        return executeQuery(TypeQL.parseQuery(queryString).asMatch(), transaction, msg);
-    }
-
-    private List<ConceptMap> executeQuery(TypeQLMatch query, TypeDB.Transaction transaction, String msg){
-        final long startTime = System.currentTimeMillis();
-        List<ConceptMap> results = (List<ConceptMap>) transaction.query().match(query).toList();
-        final long answerTime = System.currentTimeMillis() - startTime;
-        System.out.println(msg + " results = " + results.size() + " answerTime: " + answerTime);
-        return results;
     }
 
 }

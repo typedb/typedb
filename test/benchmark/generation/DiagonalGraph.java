@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
-import com.vaticle.typedb.core.test.benchmark.Util;
+import com.vaticle.typedb.core.reasoner.benchmark.Util;
 
 @SuppressWarnings("CheckReturnValue")
 public class DiagonalGraph{
@@ -66,7 +66,7 @@ public class DiagonalGraph{
         long inserts = 0;
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < m; j++) {
-                instanceIds[i][j] = Util.putEntityWithResource(tx, "a" + i + "," + j, entity1, key);
+                instanceIds[i][j] = Util.createEntityWithKey(tx, "a" + i + "," + j, entity1, key);
                 inserts++;
                 if (inserts % 100 == 0) System.out.println("inst inserts: " + inserts);
             }

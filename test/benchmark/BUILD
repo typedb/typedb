@@ -22,8 +22,13 @@ host_compatible_java_test(
     name = "benchmark-small-it",
     size = "large",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.BenchmarkSmallIT",
-    srcs = ["BenchmarkSmallIT.java", "Util.java",
-            "generation/DiagonalGraph.java", "generation/TransitivityMatrixGraph.java", "generation/TransitivityChainGraph.java", "generation/PathTreeGraph.java"],
+    srcs = ["BenchmarkSmallIT.java",
+            "Util.java",
+            "generation/DiagonalGraph.java",
+            "generation/TransitivityMatrixGraph.java",
+            "generation/TransitivityChainGraph.java",
+            "generation/PathTreeGraph.java"
+    ],
     data = [":resources/linearTransitivity.tql", ":resources/quadraticTransitivity.tql", ":resources/diagonalTest.tql", ":resources/pathTest.tql"],
     native_libraries_deps = [
         "//:typedb",
@@ -74,7 +79,7 @@ host_compatible_java_test(
     name = "rule-scaling-it",
     size = "large",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.RuleScalingIT",
-    srcs = ["RuleScalingIT.java"],
+    srcs = ["RuleScalingIT.java", "Util.java"],
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
@@ -91,6 +96,7 @@ host_compatible_java_test(
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/pattern",
+        "@vaticle_typeql//java/query",
     ],
 )
 

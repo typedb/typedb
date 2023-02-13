@@ -26,8 +26,7 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.test.benchmark.Util;
-
+import com.vaticle.typedb.core.reasoner.benchmark.Util;
 
 @SuppressWarnings("CheckReturnValue")
 public abstract class TransitivityMatrixGraph {
@@ -69,10 +68,10 @@ public abstract class TransitivityMatrixGraph {
 
 
         Thing[][] aInstancesIds = new Thing[n+1][m+1];
-        Thing aInst = Util.putEntityWithResource(tx, "a", tx.concepts().getEntityType("entity2"), key);
+        Thing aInst = Util.createEntityWithKey(tx, "a", tx.concepts().getEntityType("entity2"), key);
         for(int i = 1 ; i <= n ;i++) {
             for (int j = 1; j <= m; j++) {
-                aInstancesIds[i][j] = Util.putEntityWithResource(tx, "a" + i + "," + j, aEntity, key);
+                aInstancesIds[i][j] = Util.createEntityWithKey(tx, "a" + i + "," + j, aEntity, key);
             }
         }
 

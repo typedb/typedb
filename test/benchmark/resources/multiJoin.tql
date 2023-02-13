@@ -38,6 +38,7 @@ D2 sub AbstractBaseRelation;
 
 index sub attribute, value long;
 
+# rules
 rule rule-1:
 when {
     (fromRole: $x, toRole: $z) isa B1;

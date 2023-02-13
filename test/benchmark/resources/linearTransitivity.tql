@@ -28,10 +28,9 @@ P sub relation, relates from, relates to;
 Q sub relation, relates from, relates to;
 S sub relation, relates from, relates to;
 
-
 index sub attribute, value string;
 
-
+# rules
 rule r1:
 when { (from: $x, to: $y) isa Q; }
 then { (from: $x, to: $y) isa P; };

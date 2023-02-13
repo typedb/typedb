@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.test.benchmark.Util;
+import com.vaticle.typedb.core.reasoner.benchmark.Util;
 
 /**
  * Defines a Graph based on test 6.10 from Cao p. 82.
@@ -39,7 +39,6 @@ public class PathTreeGraph{
     private final static String schemaPath = "test/benchmark/resources/";
     private final String schemaFile;
     private final static Label key = Label.of("index");
-
 
     public PathTreeGraph(TypeDB.DatabaseManager dbm, String dbName, String schemaFile){
         this.dbm = dbm;
@@ -79,7 +78,7 @@ public class PathTreeGraph{
         RoleType fromRole = arc.getRelates(fromRoleValue);
         RoleType toRole = arc.getRelates(toRoleValue);
 
-        Thing a0 = Util.putEntityWithResource(tx, "a0,0", startVertex, key);
+        Thing a0 = Util.createEntityWithKey(tx, "a0,0", startVertex, key);
 
         int outputThreshold = 500;
 
@@ -92,7 +91,7 @@ public class PathTreeGraph{
             for (int j = 0; j < prevLevel.length; j++) {
                 for (int c = 0; c < children; c++) {
                     int childIdx = (j * children + c);
-                    nextLevel[childIdx] = Util.putEntityWithResource(tx, "a" + i + "," + childIdx, vertex, key);
+                    nextLevel[childIdx] = Util.createEntityWithKey(tx, "a" + i + "," + childIdx, vertex, key);
                     Relation link = arc.create();
                     link.addPlayer(fromRole, prevLevel[j]);
                     link.addPlayer(toRole, nextLevel[childIdx]);
