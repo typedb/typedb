@@ -150,7 +150,6 @@ public class RuleScalingIT {
                             .then(TypeQL.parseVariable("(someRole: $anotherLink, anotherRole: $index) isa indexingRelation").asThing());
 
                     tx.query().define(TypeQL.define(indexingRelationRule));
-
                 }
                 tx.commit();
             }

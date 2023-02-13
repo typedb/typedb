@@ -184,7 +184,6 @@ public class BenchmarkSmallIT {
                 Util.executeQuery(match, tx, "full");
                 Util.executeQuery(match.limit(limit), tx, "limit " + limit);
             }
-
         }
     }
 
@@ -284,7 +283,6 @@ public class BenchmarkSmallIT {
                 Util.executeQuery(query.limit(limit), tx, "limit " + limit);
             }
         }
-
     }
 
     /**
