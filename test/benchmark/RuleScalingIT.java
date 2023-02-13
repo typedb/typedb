@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
-import com.vaticle.typedb.core.reasoner.benchmark.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.schema.Rule;
@@ -41,7 +40,7 @@ import static org.junit.Assert.assertEquals;
 
 public class RuleScalingIT {
 
-    private String database = "rule-scaling-test";
+    private final String database = "rule-scaling-test";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("rule-scaling-test");
     private static final Options.Database options = new Options.Database().dataDir(dataDir)
             .storageDataCacheSize(MB).storageIndexCacheSize(MB);

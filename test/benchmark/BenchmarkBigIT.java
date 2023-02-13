@@ -212,7 +212,7 @@ public class BenchmarkBigIT {
             try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 UnboundVariable entityVar = var("e");
                 Thing[] instances = transaction.query().match(TypeQL.match(entityVar.isa(entityLabel)))
-                        .map(ans -> ans.get(entityVar.name()))
+                        .map(ans -> ans.get(entityVar.name()).asThing())
                         .toList().toArray(new Thing[0]);
 
                 RelationType baseRelation = transaction.concepts().getRelationType(baseRelationLabel);
