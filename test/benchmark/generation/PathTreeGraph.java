@@ -81,9 +81,6 @@ public class PathTreeGraph{
         Thing a0 = Util.createEntityWithKey(tx, "a0,0", startVertex, key);
 
         int outputThreshold = 500;
-
-
-
         Thing[] prevLevel = new Thing[] {a0};
         Thing[] nextLevel;
         for (int i = 1; i <= n; i++) {

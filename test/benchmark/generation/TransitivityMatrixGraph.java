@@ -66,7 +66,6 @@ public abstract class TransitivityMatrixGraph {
         RoleType Qfrom = Q.getRelates("from");
         RoleType Qto = Q.getRelates("to");
 
-
         Thing[][] aInstancesIds = new Thing[n+1][m+1];
         Thing aInst = Util.createEntityWithKey(tx, "a", tx.concepts().getEntityType("entity2"), key);
         for(int i = 1 ; i <= n ;i++) {

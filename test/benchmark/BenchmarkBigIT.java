@@ -111,7 +111,6 @@ public class BenchmarkBigIT {
             RoleType fromRole = relationType.getRelates(fromRoleLabel);
             RoleType toRole = relationType.getRelates(toRoleLabel);
 
-
             Multimap<Integer, Integer> assignmentMap = HashMultimap.create();
             for (int i = 0; i < N; i++) {
                 int from = rand.nextInt(N - 1);

@@ -67,7 +67,6 @@ public class RuleScalingIT {
         return databaseMgr.session(database, Arguments.Session.Type.DATA);
     }
 
-
     @Test
     public void ruleScaling() {
         final int N = 60;
