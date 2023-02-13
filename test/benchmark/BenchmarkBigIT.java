@@ -318,7 +318,7 @@ public class BenchmarkBigIT {
      */
     @Test
     public void testJoinRuleChain() {
-        final int N = 100;  // TODO: Stack-size of 200 causes an overflow
+        final int N = 200;  // Stack-size of 200 causes stack-overflow
         System.out.println(new Object() {
         }.getClass().getEnclosingMethod().getName());
         loadRuleChainData(N);
