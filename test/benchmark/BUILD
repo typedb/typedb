@@ -102,7 +102,7 @@ host_compatible_java_test(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "resources/*"]),
+    include = glob(["*", "*/*"]),
     license_type = "agpl-header",
 )
 
