@@ -769,7 +769,7 @@ public class UnifyHasConcludableTest {
         // filter out invalid value
         concepts = map(
                 pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("n"), instanceOf("first-name", "reasoner@vaticle.com"))
+                pair(Identifier.Variable.name("n"), instanceOf("first-name", "reasoner@grakn.ai"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());
