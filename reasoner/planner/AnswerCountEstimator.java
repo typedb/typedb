@@ -65,7 +65,6 @@ public class AnswerCountEstimator {
     private final Map<ResolvableConjunction, ConjunctionModel> conjunctionModels;
     private final Map<ResolvableConjunction, IncrementalEstimator> fullConjunctionEstimators;
 
-
     public AnswerCountEstimator(LogicManager logicMgr, GraphManager graph, ConjunctionGraph conjunctionGraph) {
         this.logicMgr = logicMgr;
         this.conjunctionModelFactory = new ConjunctionModelFactory(new LocalModelFactory(this, graph));
