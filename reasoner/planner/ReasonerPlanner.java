@@ -18,8 +18,6 @@
 package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.core.common.cache.CommonCache;
-import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
@@ -28,7 +26,6 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
-import com.vaticle.typedb.core.pattern.constraint.Constraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -39,11 +36,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.intersection;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class ReasonerPlanner {
@@ -184,12 +179,15 @@ public abstract class ReasonerPlanner {
 
     public static class Plan {
         private final List<Resolvable<?>> order;
-        private final long cost;
+        private final CallMode callMode;
+        private final long allCallsCost;
+        // fraction of all calls triggered by cycles
         public double cyclicScalingFactor;
 
-        public Plan(List<Resolvable<?>> resolvableOrder, long cost, double cyclicScalingFactor) {
+        public Plan(List<Resolvable<?>> resolvableOrder, CallMode callMode, long allCallsCost, double cyclicScalingFactor) {
             this.order = resolvableOrder;
-            this.cost = cost;
+            this.callMode = callMode;
+            this.allCallsCost = allCallsCost;
             this.cyclicScalingFactor = cyclicScalingFactor;
         }
 
@@ -197,8 +195,8 @@ public abstract class ReasonerPlanner {
             return order;
         }
 
-        public long cost() {
-            return cost;
+        public long allCallsCost() {
+            return allCallsCost;
         }
     }
 }

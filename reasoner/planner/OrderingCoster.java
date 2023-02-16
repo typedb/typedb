@@ -19,41 +19,37 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner.estimateableVariables;
 
-public class OrderingCostEstimator {
+public class OrderingCoster {
     private final ReasonerPlanner planner;
     private final AnswerCountEstimator answerCountEstimator;
     private final ConjunctionGraph conjunctionGraph;
 
-    public OrderingCostEstimator(ReasonerPlanner planner, AnswerCountEstimator answerCountEstimator, ConjunctionGraph conjunctionGraph) {
+    public OrderingCoster(ReasonerPlanner planner, AnswerCountEstimator answerCountEstimator, ConjunctionGraph conjunctionGraph) {
         this.planner = planner;
         this.answerCountEstimator = answerCountEstimator;
         this.conjunctionGraph = conjunctionGraph;
     }
 
-    SingleCallEstimateBuilder createSingleCallSummaryBuilder(ReasonerPlanner.CallMode callMode) {
-        return new SingleCallEstimateBuilder(callMode);
-    }
-
-    SingleCallSummary createSingleCallSummary(ReasonerPlanner.CallMode callMode, List<Resolvable<?>> ordering) {
-        SingleCallEstimateBuilder estimator = createSingleCallSummaryBuilder(callMode);
+    LocalSingleCallCosting createSingleCallCosting(ReasonerPlanner.CallMode callMode, List<Resolvable<?>> ordering) {
+        SingleCallCostingBuilder estimator = new SingleCallCostingBuilder(callMode);
         for (Resolvable<?> resolvable : ordering) {
             estimator.extend(resolvable);
         }
         return estimator.build();
     }
 
-    OrderingChoice createOrderingChoice(SingleCallSummary summary) {
-        ConjunctionGraph.ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(summary.callMode.conjunction);
+    LocalAllCallsCosting createAllCallsCosting(ReasonerPlanner.CallMode callMode, List<Resolvable<?>> ordering, Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes) {
+        ConjunctionGraph.ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(callMode.conjunction);
 
-        Set<Variable> boundVars = new HashSet<>(summary.callMode.mode);  // bound -> in input mode or restricted locally
+        Set<Variable> boundVars = new HashSet<>(callMode.mode);  // bound -> in input mode or restricted locally
         Set<Variable> restrictedVars = new HashSet<>(); // restricted -> Restricted by preceding resolvables
-        Set<Variable> inputConnectedVars = new HashSet<>(summary.callMode.mode);
+        Set<Variable> inputConnectedVars = new HashSet<>(callMode.mode);
         double acyclicCost = 0.0;
-        double unscalableCost = 0.0;
+        double disconnectedCost = 0.0;
 
-        Map<Concludable, Double> scalingFactors = new HashMap<>();
+        Map<Concludable, Double> cylicScalingFactors = new HashMap<>();
         AnswerCountEstimator.IncrementalEstimator estimator = answerCountEstimator.createIncrementalEstimator(conjunctionNode.conjunction());
-        for (Resolvable<?> resolvable : summary.ordering) {
+        for (Resolvable<?> resolvable : ordering) {
             Set<Variable> resolvableVars = estimateableVariables(resolvable.variables());
             Set<Variable> resolvableMode = Collections.intersection(resolvableVars, boundVars);
             Set<Variable> restrictedResolvableVars = Collections.intersection(resolvableVars, restrictedVars);
@@ -64,11 +60,11 @@ public class OrderingCostEstimator {
                 // Question: Do we project onto all the restrictedVars, or only those not in the mode?
                 // Including those in the mode leads to double-scaling. Excluding them leads to an overestimate if the bounds are not restrictive.
                 // I lean towards the overestimate.
-                Set<Variable> projectionVars = iterate(restrictedResolvableVars).filter(v -> !summary.callMode.mode.contains(v)).toSet();
+                Set<Variable> projectionVars = iterate(restrictedResolvableVars).filter(v -> !callMode.mode.contains(v)).toSet();
                 double allAnswersForUnrestrictedMode = answerCountEstimator.localEstimate(conjunctionNode.conjunction(), resolvable, resolvableMode);
                 double cyclicScalingFactor = projectionVars.isEmpty() && allAnswersForUnrestrictedMode != 0 ? 0.0 :
                         (double) estimator.answerEstimate(projectionVars) / allAnswersForUnrestrictedMode;
-                scalingFactors.put(resolvable.asConcludable(), cyclicScalingFactor);
+                cylicScalingFactors.put(resolvable.asConcludable(), cyclicScalingFactor);
             }
 
             estimator.extend(resolvable);
@@ -77,7 +73,7 @@ public class OrderingCostEstimator {
             if (isConnectedToInput) {
                 acyclicCost += resolvableCost;
             } else {
-                unscalableCost += resolvableCost;
+                disconnectedCost += resolvableCost;
             }
 
             if (!resolvable.isNegated()) {
@@ -87,8 +83,8 @@ public class OrderingCostEstimator {
             }
         }
 
-        double answersToMode = answerCountEstimator.estimateAnswers(summary.callMode.conjunction, summary.callMode.mode);
-        return new OrderingChoice(summary.callMode, summary.ordering, summary.cyclicConcludableModes, scalingFactors, acyclicCost, unscalableCost, answersToMode);
+        double answersToMode = answerCountEstimator.estimateAnswers(callMode.conjunction, callMode.mode);
+        return new LocalAllCallsCosting(callMode, ordering, cyclicConcludableModes, cylicScalingFactors, acyclicCost, disconnectedCost, answersToMode);
     }
 
     private double retrievalCost(ResolvableConjunction conjunction, Resolvable<?> resolvable, Set<Variable> mode) {
@@ -126,10 +122,10 @@ public class OrderingCostEstimator {
 
     private double scaledCallCost(double scalingFactor, ReasonerPlanner.CallMode callMode) {
         ReasonerPlanner.Plan plan = planner.getPlan(callMode);
-        return plan.cost() * Math.min(1.0, scalingFactor + plan.cyclicScalingFactor);
+        return plan.allCallsCost() * Math.min(1.0, scalingFactor + plan.cyclicScalingFactor);
     }
 
-    public class SingleCallEstimateBuilder {
+    public class SingleCallCostingBuilder {
         private final ReasonerPlanner.CallMode callMode;
         private final ConjunctionGraph.ConjunctionNode conjunctionNode;
         private final AnswerCountEstimator.IncrementalEstimator estimator;
@@ -141,7 +137,7 @@ public class OrderingCostEstimator {
 
         private boolean finalised;
 
-        SingleCallEstimateBuilder(ReasonerPlanner.CallMode callMode) {
+        SingleCallCostingBuilder(ReasonerPlanner.CallMode callMode) {
             this.callMode = callMode;
             this.conjunctionNode = conjunctionGraph.conjunctionNode(callMode.conjunction);
             this.estimator = answerCountEstimator.createIncrementalEstimator(conjunctionNode.conjunction(), callMode.mode);
@@ -172,47 +168,52 @@ public class OrderingCostEstimator {
             }
         }
 
-        SingleCallSummary build() {
+        LocalSingleCallCosting build() {
             assert !finalised;
             this.finalised = true;
-            return new SingleCallSummary(callMode, ordering, cyclicConcludableModes, singlyBoundCost);
+            return new LocalSingleCallCosting(callMode, ordering, cyclicConcludableModes, singlyBoundCost);
         }
     }
 
-    static class SingleCallSummary {
-        // Created for every resolvable-ordering of a CallMode
+
+    static class LocalSingleCallCosting {
+
         final ReasonerPlanner.CallMode callMode;
         final List<Resolvable<?>> ordering;
         final Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes;
-        final double singlyBoundCost;
+        final double singleCallAcyclicCost;
 
-        SingleCallSummary(ReasonerPlanner.CallMode callMode, List<Resolvable<?>> ordering, Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes, double singlyBoundCost) {
+        LocalSingleCallCosting(ReasonerPlanner.CallMode callMode, List<Resolvable<?>> ordering, Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes, double singleCallAcyclicCost) {
             this.callMode = callMode;
             this.ordering = ordering;
             this.cyclicConcludableModes = cyclicConcludableModes;
-            this.singlyBoundCost = singlyBoundCost;
+            this.singleCallAcyclicCost = singleCallAcyclicCost;
         }
     }
 
-    static class OrderingChoice {
-        // Created for one ordering per (CallMode, CyclicConcludableModes) - the one with lowest SinglyBoundCost.
+    /**
+     * Represents the all-calls cost excluding cycles, and records the local concludables that cause
+     * cycles along with their call modes.
+     * Also records the scaling factors of the local concludables and their call modesl
+     */
+    static class LocalAllCallsCosting {
         final ReasonerPlanner.CallMode callMode;
         final List<Resolvable<?>> ordering;
-        final double acyclicCost;
-        final Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes;
-        final Map<Concludable, Double> scalingFactors;
-        final double unscalableCost;
+        final Set<Pair<Concludable, Set<Variable>>> cyclicModes;
+        final Map<Concludable, Double> cyclicScalingFactors;
+        final double allCallsConnectedAcyclicCost;
+        final double allCallsDisconnectedAcyclicCost;
         final double answersToMode;
 
-        private OrderingChoice(ReasonerPlanner.CallMode callMode, List<Resolvable<?>> ordering,
-                               Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes,
-                               Map<Concludable, Double> scalingFactors, double acyclicCost, double unscalableCost, double answersToMode) {
+        private LocalAllCallsCosting(ReasonerPlanner.CallMode callMode, List<Resolvable<?>> ordering,
+                                     Set<Pair<Concludable, Set<Variable>>> cyclicModes,
+                                     Map<Concludable, Double> cyclicScalingFactors, double allCallsConnectedAcyclicCost, double unscalableCost, double answersToMode) {
             this.callMode = callMode;
             this.ordering = ordering;
-            this.acyclicCost = acyclicCost;
-            this.cyclicConcludableModes = cyclicConcludableModes;
-            this.scalingFactors = scalingFactors;
-            this.unscalableCost = unscalableCost;
+            this.allCallsConnectedAcyclicCost = allCallsConnectedAcyclicCost;
+            this.cyclicModes = cyclicModes;
+            this.cyclicScalingFactors = cyclicScalingFactors;
+            this.allCallsDisconnectedAcyclicCost = unscalableCost;
             this.answersToMode = answersToMode;
         }
     }
