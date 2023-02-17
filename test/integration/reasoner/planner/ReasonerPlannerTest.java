@@ -168,7 +168,7 @@ public class ReasonerPlannerTest {
 
         {
             initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-            RecursivePlanner planner = new RecursivePlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+            ReasonerPlanner planner = ReasonerPlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
             verifyPlan(planner, conjunction, set(), Collections.list("c"));
@@ -177,7 +177,7 @@ public class ReasonerPlannerTest {
 
         {
             initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-            RecursivePlanner planner = new RecursivePlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+            ReasonerPlanner planner = ReasonerPlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $x isa node, has nid 0; (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
             verifyPlan(planner, conjunction, set(), Collections.list("r", "c"));
@@ -186,7 +186,7 @@ public class ReasonerPlannerTest {
 
         {
             initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-            RecursivePlanner planner = new RecursivePlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+            ReasonerPlanner planner = ReasonerPlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $y isa node, has nid 0; (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
             verifyPlan(planner, conjunction, set(), Collections.list("r", "c"));
@@ -195,7 +195,7 @@ public class ReasonerPlannerTest {
 
         {
             initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-            RecursivePlanner planner = new RecursivePlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+            ReasonerPlanner planner = ReasonerPlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $x isa node, has nid 0; $y isa node, has nid 1; (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
             verifyPlan(planner, conjunction, set(), Collections.list("r", "r", "c"));

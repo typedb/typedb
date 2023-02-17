@@ -104,11 +104,11 @@ public class RecursivePlannerTest {
     @Test
     public void test_single_retrieval() {
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = new RecursivePlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
         ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person; }", transaction.logic()));
         planSpaceSearch.plan(conjunction, set());
         ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-        assertEquals(5L, plan.allCallsCost()); // For now the retrieval cost is just the answer-count
+        assertEquals(5.0, plan.allCallsCost()); // For now the retrieval cost is just the answer-count
     }
 
     @Test
@@ -116,26 +116,26 @@ public class RecursivePlannerTest {
         // Still just answer counts. Improve if we have an improved estimate for retrievables
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
 
-        RecursivePlanner planSpaceSearch = new RecursivePlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
         {   // Query only count of $p, where $p isa man;
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa man, has name $n; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(3L, plan.allCallsCost());
+            assertEquals(3.0, plan.allCallsCost());
         }
 
         {   // Query count of both variables $p and $n, where $p isa! person
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa! person, has name $n; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(2L, plan.allCallsCost());
+            assertEquals(2.0, plan.allCallsCost());
         }
 
         {   // Query count of both variables $p and $n, where $p isa person (and subtypes)
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person, has name $n; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(5L, plan.allCallsCost());
+            assertEquals(5.0, plan.allCallsCost());
         }
     }
 
@@ -150,12 +150,12 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = new RecursivePlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(15L, plan.allCallsCost()); // = (10)localCost + (5)costOfRule = 15
+            assertEquals(15.0, plan.allCallsCost()); // = (10)localCost + (5)costOfRule = 15
         }
 
         {
@@ -164,7 +164,7 @@ public class RecursivePlannerTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; (friendor: $p, friendee: $f) isa friendship; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(12L, plan.allCallsCost());
+            assertEquals(12.0, plan.allCallsCost());
         }
     }
 
@@ -187,12 +187,12 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = new RecursivePlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(45L, plan.allCallsCost());
+            assertEquals(45.0, plan.allCallsCost());
             // Answercount($x,$y) = 18
             // Answercount($x) = Answercount($y) = 5
             // Cost = (18) query + (3) rule1{} + (24) rule2{}
@@ -221,13 +221,13 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = new RecursivePlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa friendship; }", transaction.logic()));
 
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(125L, plan.allCallsCost());
+            assertEquals(125.0, plan.allCallsCost());
             // LocalCost = AnswerCount( $_0, $x, $y ) = 25
             // AnswerCount($x) = AnswerCount($y) = 5
             // Cost = (25 + 1 * rule{} + * 5/5 rule{f1}) = 25 + 1 * 50 + 5/5 * 50 = 125     [ = (25 + 1 * rule{} + 5/5 * rule{f2}) ]
@@ -285,7 +285,7 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = new RecursivePlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
@@ -320,12 +320,12 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planner = new RecursivePlanner(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planner = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$x has name \"Jim\"; (friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planner.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
-            assertEquals(18L, plan.allCallsCost());
+            assertEquals(18.0, plan.allCallsCost());
             // Answercount($x) = 1; Answercount($y) = 5
             // Cost = 18 = (1 + 1/5 * 18) query + 1/5 * (3) rule1{$x:1} + min(1, (1/5+3/5) ) * (16) rule2{$x:1}
             //           = 3.6 + 0.6 + 13.8
@@ -336,7 +336,7 @@ public class RecursivePlannerTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$y has name \"Jim\"; (friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planner.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
-            assertEquals(10, plan.allCallsCost());
+            assertEquals(10.0, plan.allCallsCost());
             // Answercount($x,$y) = 5
             // Answercount($x) = 3; Answercount($y) = 1
             // Cost = 15 = (8) query + min(1,5/3) * (3) rule1{$y:1} + (0 + 1/5) * (21) rule2{$y:1}
