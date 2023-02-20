@@ -46,4 +46,3 @@ when {
 rule r3:
 when { (from: $x, to: $y) isa P; }
 then { (from: $x, to: $y) isa S; };
-
