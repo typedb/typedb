@@ -165,7 +165,7 @@ public class BenchmarkBigIT {
                 AttributeType.String index = transaction.concepts().putAttributeType(attributeLabel, AttributeType.ValueType.STRING).asString();
                 EntityType entityType = transaction.concepts().putEntityType(entityLabel);
                 entityType.setOwns(index);
-                //define N relation types
+                // define N relation types
                 for (int i = 1; i <= N; i++) {
                     RelationType relationType = transaction.concepts().putRelationType(genericRelationLabel + i);
                     relationType.setRelates(fromRoleLabel);
@@ -174,7 +174,7 @@ public class BenchmarkBigIT {
                     entityType.setPlays(relationType.getRelates(toRoleLabel));
                 }
 
-                //define N rules
+                // define N rules
                 for (int i = 2; i <= N; i++) {
                     UnboundVariable fromVar = var("from");
                     UnboundVariable intermedVar = var("intermed");
@@ -205,7 +205,7 @@ public class BenchmarkBigIT {
         }
 
         try (TypeDB.Session session = dataSession()) {
-            //insert N + 1 entities
+            // insert N + 1 entities
             loadEntities(entityLabel, N + 1, session);
 
             try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -222,7 +222,7 @@ public class BenchmarkBigIT {
                 RoleType toRole = baseRelation.getRelates(toRoleLabel);
                 for (int i = 1; i < instances.length; i++) {
                     Relation rel = baseRelation.create();
-                    rel.addPlayer(fromRole, instances[i-1]);
+                    rel.addPlayer(fromRole, instances[i - 1]);
                     rel.addPlayer(toRole, instances[i]);
                     instances[i].setHas(index.put(String.valueOf(i)));
                 }
@@ -255,10 +255,10 @@ public class BenchmarkBigIT {
                 String limitedQueryString = "match " + queryPattern +
                         " limit " + limit + ";";
 
-                Util.executeQuery(queryString, tx, "full");
-                Util.executeQuery(subbedQueryString, tx, "first argument bound");
-                Util.executeQuery(subbedQueryString2, tx, "second argument bound");
-                Util.executeQuery(limitedQueryString, tx, "limit " + limit);
+                Util.timeQuery(queryString, tx, "full");
+                Util.timeQuery(subbedQueryString, tx, "first argument bound");
+                Util.timeQuery(subbedQueryString2, tx, "second argument bound");
+                Util.timeQuery(limitedQueryString, tx, "limit " + limit);
             }
         }
     }
@@ -298,10 +298,10 @@ public class BenchmarkBigIT {
                 String limitedQueryString = "match " + queryPattern +
                         " limit " + limit + ";";
 
-                Util.executeQuery(queryString, tx, "full");
-                Util.executeQuery(subbedQueryString, tx, "first argument bound");
-                Util.executeQuery(subbedQueryString2, tx, "second argument bound");
-                Util.executeQuery(limitedQueryString, tx, "limit " + limit);
+                Util.timeQuery(queryString, tx, "full");
+                Util.timeQuery(subbedQueryString, tx, "first argument bound");
+                Util.timeQuery(subbedQueryString2, tx, "second argument bound");
+                Util.timeQuery(limitedQueryString, tx, "limit " + limit);
             }
         }
     }
@@ -335,10 +335,10 @@ public class BenchmarkBigIT {
                         "$y iid " + lastId.getIID().toHexString() + ";";
                 String limitedQueryString = "match " + queryPattern +
                         " limit 1;";
-                assertEquals(1, Util.executeQuery(queryString, tx, "full").size());
-                assertEquals(1, Util.executeQuery(subbedQueryString, tx, "first argument bound").size());
-                assertEquals(1, Util.executeQuery(subbedQueryString2, tx, "second argument bound").size());
-                assertEquals(1, Util.executeQuery(limitedQueryString, tx, "limit ").size());
+                assertEquals(1, Util.timeQuery(queryString, tx, "full").size());
+                assertEquals(1, Util.timeQuery(subbedQueryString, tx, "first argument bound").size());
+                assertEquals(1, Util.timeQuery(subbedQueryString2, tx, "second argument bound").size());
+                assertEquals(1, Util.timeQuery(limitedQueryString, tx, "limit ").size());
             }
         }
     }

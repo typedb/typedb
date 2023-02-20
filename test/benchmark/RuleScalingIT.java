@@ -183,7 +183,7 @@ public class RuleScalingIT {
                         "$r has inferredAttribute $value;" +
                         "$r has anotherInferredAttribute $anotherValue;" +
                         "(someRole: $anotherLink, anotherRole: $index) isa indexingRelation;";
-                List<ConceptMap> answers = Util.executeQuery(query, tx, "RuleScaling query");
+                List<ConceptMap> answers = Util.timeQuery(query, tx, "RuleScaling query");
                 assertEquals(populatedChains, answers.size());
             }
         }

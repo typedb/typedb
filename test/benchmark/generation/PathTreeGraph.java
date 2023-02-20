@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
-import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.reasoner.benchmark.Util;
@@ -32,7 +31,7 @@ import com.vaticle.typedb.core.reasoner.benchmark.Util;
  * Defines a Graph based on test 6.10 from Cao p. 82.
  */
 @SuppressWarnings("CheckReturnValue")
-public class PathTreeGraph{
+public class PathTreeGraph {
     private final TypeDB.DatabaseManager dbm;
     private final String databaseName;
 
@@ -40,13 +39,13 @@ public class PathTreeGraph{
     private final String schemaFile;
     private final static Label key = Label.of("index");
 
-    public PathTreeGraph(TypeDB.DatabaseManager dbm, String dbName, String schemaFile){
+    public PathTreeGraph(TypeDB.DatabaseManager dbm, String dbName, String schemaFile) {
         this.dbm = dbm;
         this.databaseName = dbName;
         this.schemaFile = schemaPath + schemaFile;
     }
 
-    public PathTreeGraph(TypeDB.DatabaseManager dbm, String dbName){
+    public PathTreeGraph(TypeDB.DatabaseManager dbm, String dbName) {
         this(dbm, dbName, "pathTest.tql");
     }
 
@@ -67,28 +66,28 @@ public class PathTreeGraph{
     }
 
     protected void buildExtensionalDB(int n, int children, TypeDB.Transaction tx) {
-        buildTree("from", "to", n , children, tx);
+        buildTree("from", "to", n, children, tx);
     }
 
     void buildTree(String fromRoleValue, String toRoleValue, int n, int children, TypeDB.Transaction tx) {
-        EntityType vertex = tx.concepts().getEntityType("vertex");
-        EntityType startVertex = tx.concepts().getEntityType("start-vertex");
+        Label vertex = Label.of("vertex");
+        Label startVertex = Label.of("start-vertex");
 
         RelationType arc = tx.concepts().getRelationType("arc");
         RoleType fromRole = arc.getRelates(fromRoleValue);
         RoleType toRole = arc.getRelates(toRoleValue);
 
-        Thing a0 = Util.createEntityWithKey(tx, "a0,0", startVertex, key);
+        Thing a0 = Util.createEntityWithKey(tx, startVertex, key, "a0,0");
 
         int outputThreshold = 500;
-        Thing[] prevLevel = new Thing[] {a0};
+        Thing[] prevLevel = new Thing[]{a0};
         Thing[] nextLevel;
         for (int i = 1; i <= n; i++) {
             nextLevel = new Thing[prevLevel.length * children];
             for (int j = 0; j < prevLevel.length; j++) {
                 for (int c = 0; c < children; c++) {
                     int childIdx = (j * children + c);
-                    nextLevel[childIdx] = Util.createEntityWithKey(tx, "a" + i + "," + childIdx, vertex, key);
+                    nextLevel[childIdx] = Util.createEntityWithKey(tx, vertex, key, "a" + i + "," + childIdx);
                     Relation link = arc.create();
                     link.addPlayer(fromRole, prevLevel[j]);
                     link.addPlayer(toRole, nextLevel[childIdx]);

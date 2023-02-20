@@ -23,12 +23,11 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
-import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.reasoner.benchmark.Util;
 
 @SuppressWarnings("CheckReturnValue")
-public class DiagonalGraph{
+public class DiagonalGraph {
 
     private final TypeDB.DatabaseManager dbm;
     private final String databaseName;
@@ -36,7 +35,7 @@ public class DiagonalGraph{
     private static final String schemaFile = "test/benchmark/resources/diagonalTest.tql";
     private static final Label key = Label.of("name");
 
-    public DiagonalGraph(TypeDB.DatabaseManager dbm, String dbName){
+    public DiagonalGraph(TypeDB.DatabaseManager dbm, String dbName) {
         this.dbm = dbm;
         this.databaseName = dbName;
     }
@@ -59,14 +58,14 @@ public class DiagonalGraph{
 
     protected void buildExtensionalDB(int n, int m, TypeDB.Transaction tx) {
 
-        EntityType entity1 = tx.concepts().getEntityType("entity1");
+        Label entityType = Label.of("entity1");
         RelationType horizontal = tx.concepts().getRelationType("horizontal");
         RelationType vertical = tx.concepts().getRelationType("vertical");
         Thing[][] instanceIds = new Thing[n][m];
         long inserts = 0;
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < m; j++) {
-                instanceIds[i][j] = Util.createEntityWithKey(tx, "a" + i + "," + j, entity1, key);
+                instanceIds[i][j] = Util.createEntityWithKey(tx, entityType, key, "a" + i + "," + j);
                 inserts++;
                 if (inserts % 100 == 0) System.out.println("inst inserts: " + inserts);
             }

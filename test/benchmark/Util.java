@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
-import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
@@ -42,23 +41,22 @@ public class Util {
         }
     }
 
-    public static Thing createEntityWithKey(TypeDB.Transaction tx, String id, EntityType type, Label key) {
-        Thing inst = type.create();
-        Attribute attributeInstance = tx.concepts().getAttributeType(key.name()).asString().put(id);
+    public static Thing createEntityWithKey(TypeDB.Transaction tx, Label entityType, Label keyType, String key) {
+        Thing inst = tx.concepts().getEntityType(entityType.name()).create();
+        Attribute attributeInstance = tx.concepts().getAttributeType(keyType.name()).asString().put(key);
         inst.setHas(attributeInstance);
         return inst;
     }
 
-    public static List<ConceptMap> executeQuery(String queryString, TypeDB.Transaction transaction, String msg){
-        return executeQuery(TypeQL.parseQuery(queryString).asMatch(), transaction, msg);
+    public static List<ConceptMap> timeQuery(String queryString, TypeDB.Transaction transaction, String msg) {
+        return timeQuery(TypeQL.parseQuery(queryString).asMatch(), transaction, msg);
     }
 
-    public static List<ConceptMap> executeQuery(TypeQLMatch query, TypeDB.Transaction transaction, String msg){
+    public static List<ConceptMap> timeQuery(TypeQLMatch query, TypeDB.Transaction transaction, String msg) {
         final long startTime = System.currentTimeMillis();
         List<ConceptMap> results = (List<ConceptMap>) transaction.query().match(query).toList();
         final long answerTime = System.currentTimeMillis() - startTime;
         System.out.println(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;
     }
-
 }

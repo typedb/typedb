@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
-import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.reasoner.benchmark.Util;
@@ -37,7 +36,7 @@ public abstract class TransitivityMatrixGraph {
 
     private final static Label key = Label.of("index");
 
-    public TransitivityMatrixGraph(String schemaFile, TypeDB.DatabaseManager dbm, String dbName){
+    public TransitivityMatrixGraph(String schemaFile, TypeDB.DatabaseManager dbm, String dbName) {
         this.dbm = dbm;
         this.databaseName = dbName;
         this.schemaFile = schemaFile;
@@ -59,18 +58,18 @@ public abstract class TransitivityMatrixGraph {
         }
     }
 
-    protected void buildExtensionalDB(int n, int m, TypeDB.Transaction tx){
+    protected void buildExtensionalDB(int n, int m, TypeDB.Transaction tx) {
 
-        EntityType aEntity = tx.concepts().getEntityType("a-entity");
+        Label aEntity = Label.of("a-entity");
         RelationType Q = tx.concepts().getRelationType("Q");
         RoleType Qfrom = Q.getRelates("from");
         RoleType Qto = Q.getRelates("to");
 
-        Thing[][] aInstancesIds = new Thing[n+1][m+1];
-        Thing aInst = Util.createEntityWithKey(tx, "a", tx.concepts().getEntityType("entity2"), key);
-        for(int i = 1 ; i <= n ;i++) {
+        Thing[][] aInstancesIds = new Thing[n + 1][m + 1];
+        Thing aInst = Util.createEntityWithKey(tx, Label.of("entity2"), key, "a");
+        for (int i = 1; i <= n; i++) {
             for (int j = 1; j <= m; j++) {
-                aInstancesIds[i][j] = Util.createEntityWithKey(tx, "a" + i + "," + j, aEntity, key);
+                aInstancesIds[i][j] = Util.createEntityWithKey(tx, aEntity, key, "a" + i + "," + j);
             }
         }
 
@@ -78,9 +77,9 @@ public abstract class TransitivityMatrixGraph {
         rel.addPlayer(Qfrom, aInst);
         rel.addPlayer(Qto, aInstancesIds[1][1]);
 
-        for(int i = 1 ; i <= n ; i++) {
+        for (int i = 1; i <= n; i++) {
             for (int j = 1; j <= m; j++) {
-                if ( i < n ) {
+                if (i < n) {
                     Relation q = Q.create();
                     q.addPlayer(Qfrom, aInstancesIds[i][j]);
                     q.addPlayer(Qto, aInstancesIds[i][j]);
@@ -88,7 +87,7 @@ public abstract class TransitivityMatrixGraph {
                 if (j < m) {
                     Relation q = Q.create();
                     q.addPlayer(Qfrom, aInstancesIds[i][j]);
-                    q.addPlayer(Qto, aInstancesIds[i][j+1]);
+                    q.addPlayer(Qto, aInstancesIds[i][j + 1]);
                 }
             }
         }

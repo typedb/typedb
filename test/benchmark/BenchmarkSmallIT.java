@@ -59,6 +59,7 @@ public class BenchmarkSmallIT {
         databaseMgr = CoreDatabaseManager.open(options);
         databaseMgr.create(database);
     }
+
     @After
     public void tearDown() {
         databaseMgr.close();
@@ -74,16 +75,16 @@ public class BenchmarkSmallIT {
 
     /**
      * Executes a scalability test defined in terms of the number of rules in the system. Creates a simple rule chain:
-     *
+     * <p>
      * R_i(x, y) := R_{i-1}(x, y);     i e [1, N]
-     *
+     * <p>
      * with a single initial relation instance R_0(a ,b)
-     *
      */
     @Test
     public void nonRecursiveChainOfRules() {
         final int N = 200;
-        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
+        System.out.println(new Object() {
+        }.getClass().getEnclosingMethod().getName());
 
         try (TypeDB.Session session = schemaSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
@@ -105,9 +106,9 @@ public class BenchmarkSmallIT {
                 }
 
                 for (int i = 1; i <= N; i++) {
-                    tx.logic().putRule("rule"+i,
-                            TypeQL.parsePattern("{ (fromRole: $f, toRole: $t) isa relation" + (i-1) + "; }").asConjunction(),
-                            TypeQL.parseVariable("(fromRole: $f, toRole: $t) isa relation"+ i).asThing());
+                    tx.logic().putRule("rule" + i,
+                            TypeQL.parsePattern("{ (fromRole: $f, toRole: $t) isa relation" + (i - 1) + "; }").asConjunction(),
+                            TypeQL.parseVariable("(fromRole: $f, toRole: $t) isa relation" + i).asThing());
                 }
                 tx.commit();
             }
@@ -132,8 +133,8 @@ public class BenchmarkSmallIT {
                 String queryString = "match " + queryPattern + " get $x, $y;";
                 String limitedQueryString = "match " + queryPattern + " get $x, $y; limit " + limit + ";";
 
-                assertEquals(limit, Util.executeQuery(queryString, tx, "full").size());
-                assertEquals(limit, Util.executeQuery(limitedQueryString, tx, "limit").size());
+                assertEquals(limit, Util.timeQuery(queryString, tx, "full").size());
+                assertEquals(limit, Util.timeQuery(limitedQueryString, tx, "limit").size());
             }
         }
     }
@@ -141,26 +142,26 @@ public class BenchmarkSmallIT {
     /**
      * 2-rule transitive test with transitivity expressed in terms of two linear rules
      * The rules are defined as:
-     *
+     * <p>
      * (from: $x, to: $y) isa Q;
      * ->
      * (from: $x, to: $y) isa P;
-     *
+     * <p>
      * (from: $x, to: $z) isa Q;
      * (from: $z, to: $y) isa P;
      * ->
      * (from: $z, to: $y) isa P;
-     *
+     * <p>
      * Each pair of neighbouring grid points is related in the following fashion:
-     *
-     *  a_{i  , j} -  Q  - a_{i, j + 1}
-     *       |                    |
-     *       Q                    Q
-     *       |                    |
-     *  a_{i+1, j} -  Q  - a_{i+1, j+1}
-     *
-     *  i e [1, N]
-     *  j e [1, N]
+     * <p>
+     * a_{i  , j} -  Q  - a_{i, j + 1}
+     * |                    |
+     * Q                    Q
+     * |                    |
+     * a_{i+1, j} -  Q  - a_{i+1, j+1}
+     * <p>
+     * i e [1, N]
+     * j e [1, N]
      */
     @Test
     public void testTransitiveMatrixLinear() {
@@ -169,20 +170,16 @@ public class BenchmarkSmallIT {
 
         TransitivityMatrixGraph linearGraph = new TransitivityMatrixGraph.Linear(databaseMgr, database);
 
-        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
+        System.out.println(new Object() {
+        }.getClass().getEnclosingMethod().getName());
 
-        //                         DJ       IC     FO
-        //results @N = 15 14400   3-5s
-        //results @N = 20 44100    15s     8 s      8s
-        //results @N = 25 105625   48s    27 s     31s
-        //results @N = 30 216225  132s    65 s
         linearGraph.load(N, N);
 
         TypeQLMatch.Unfiltered match = TypeQL.match(TypeQL.parsePattern("(from: $x, to: $y) isa P"));
         try (TypeDB.Session session = dataSession()) {
-            try (TypeDB.Transaction tx =  session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
-                Util.executeQuery(match, tx, "full");
-                Util.executeQuery(match.limit(limit), tx, "limit " + limit);
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
+                Util.timeQuery(match, tx, "full");
+                Util.timeQuery(match.limit(limit), tx, "limit " + limit);
             }
         }
     }
@@ -190,41 +187,42 @@ public class BenchmarkSmallIT {
     /**
      * single-rule transitivity test with initial data arranged in a chain of length N
      * The rule is given as:
-     *
+     * <p>
      * (from: $x, to: $z) isa Q;
      * (from: $z, to: $y) isa Q;
      * ->
      * (from: $x, to: $y) isa Q;
-     *
+     * <p>
      * Each neighbouring grid points are related in the following fashion:
-     *
-     *  a_{i} -  Q  - a_{i + 1}
-     *
-     *  i e [0, N)
+     * <p>
+     * a_{i} -  Q  - a_{i + 1}
+     * <p>
+     * i e [0, N)
      */
     @Test
-    public void testTransitiveChain()  {
+    public void testTransitiveChain() {
         int N = 100;
         int limit = 10;
-        int answers = (N+1)*N/2;
+        int answers = (N + 1) * N / 2;
 
-        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
+        System.out.println(new Object() {
+        }.getClass().getEnclosingMethod().getName());
 
         TransitivityChainGraph transitivityChainGraph = new TransitivityChainGraph(databaseMgr, database);
         transitivityChainGraph.load(N);
 
         try (TypeDB.Session session = dataSession()) {
-            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))){
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
 
                 TypeQLMatch.Unfiltered query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;"));
 
                 TypeQLMatch.Unfiltered query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q; $x has index 'a'; "));
 
-                assertEquals(answers, Util.executeQuery(query, tx, "full").size());
-                assertEquals(N, Util.executeQuery(query2, tx, "With specific resource").size());
+                assertEquals(answers, Util.timeQuery(query, tx, "full").size());
+                assertEquals(N, Util.timeQuery(query2, tx, "With specific resource").size());
 
-                Util.executeQuery(query.limit(limit), tx, "limit " + limit);
-                Util.executeQuery(query2.limit(limit), tx, "limit " + limit);
+                Util.timeQuery(query.limit(limit), tx, "limit " + limit);
+                Util.timeQuery(query2.limit(limit), tx, "limit " + limit);
                 tx.close();
                 session.close();
             }
@@ -234,53 +232,48 @@ public class BenchmarkSmallIT {
     /**
      * single-rule transitivity test with initial data arranged in a N x N square grid.
      * The rule is given as:
-     *
+     * <p>
      * (Q-from: $x, Q-to: $z) isa Q;
      * (Q-from: $z, Q-to: $y) isa Q;
      * ->
      * (Q-from: $x, Q-to: $y) isa Q;
-     *
+     * <p>
      * Each pair of neighbouring grid points is related in the following fashion:
-     *
-     *  a_{i  , j} -  Q  - a_{i, j + 1}
-     *       |                    |
-     *       Q                    Q
-     *       |                    |
-     *  a_{i+1, j} -  Q  - a_{i+1, j+1}
-     *
-     *  i e [0, N)
-     *  j e [0, N)
+     * <p>
+     * a_{i  , j} -  Q  - a_{i, j + 1}
+     * |                    |
+     * Q                    Q
+     * |                    |
+     * a_{i+1, j} -  Q  - a_{i+1, j+1}
+     * <p>
+     * i e [0, N)
+     * j e [0, N)
      */
     @Test
-    public void testTransitiveMatrix(){
-        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
+    public void testTransitiveMatrix() {
+        System.out.println(new Object() {
+        }.getClass().getEnclosingMethod().getName());
         int N = 10;
         int limit = 100;
 
         TransitivityMatrixGraph transitivityMatrixGraph = new TransitivityMatrixGraph.Quadratic(databaseMgr, database);
-        //                         DJ       IC     FO
-        //results @N = 15 14400     ?
-        //results @N = 20 44100     ?       ?     12s     4 s
-        //results @N = 25 105625    ?       ?     50s    11 s
-        //results @N = 30 216225    ?       ?      ?     30 s
-        //results @N = 35 396900   ?        ?      ?     76 s
         transitivityMatrixGraph.load(N, N);
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
-                //full result
+                // full result
                 TypeQLMatch.Unfiltered query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;"));
 
-                //with specific resource
+                // with specific resource
                 TypeQLMatch.Unfiltered query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x has index 'a';"));
 
-                //with substitution
+                // with substitution
                 Concept id = tx.query().match(TypeQL.parseQuery("match $x has index 'a';").asMatch()).next().get("x");
                 TypeQLMatch.Unfiltered query3 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x iid " + id.asThing().getIID().toHexString() + ";"));
 
-                Util.executeQuery(query, tx, "full");
-                Util.executeQuery(query2, tx, "With specific resource");
-                Util.executeQuery(query3, tx, "Single argument bound");
-                Util.executeQuery(query.limit(limit), tx, "limit " + limit);
+                Util.timeQuery(query, tx, "full");
+                Util.timeQuery(query2, tx, "With specific resource");
+                Util.timeQuery(query3, tx, "Single argument bound");
+                Util.timeQuery(query.limit(limit), tx, "limit " + limit);
             }
         }
     }
@@ -288,7 +281,7 @@ public class BenchmarkSmallIT {
     /**
      * single-rule mimicking transitivity test rule defined by two-hop relations
      * Initial data arranged in N x N square grid.
-     *
+     * <p>
      * Rule:
      * (rel-from:$x, rel-to:$y) isa horizontal;
      * (rel-from:$y, rel-to:$z) isa horizontal;
@@ -296,36 +289,34 @@ public class BenchmarkSmallIT {
      * (rel-from:$u, rel-to:$v) isa vertical;
      * ->
      * (rel-from:$x, rel-to:$v) isa diagonal;
-     *
+     * <p>
      * Initial data arranged as follows:
-     *
-     *  a_{i  , j} -  horizontal  - a_{i, j + 1}
-     *       |                    |
-     *    vertical             vertical
-     *       |                    |
-     *  a_{i+1, j} -  horizontal  - a_{i+1, j+1}
-     *
-     *  i e [0, N)
-     *  j e [0, N)
+     * <p>
+     * a_{i  , j} -  horizontal  - a_{i, j + 1}
+     * |                    |
+     * vertical             vertical
+     * |                    |
+     * a_{i+1, j} -  horizontal  - a_{i+1, j+1}
+     * <p>
+     * i e [0, N)
+     * j e [0, N)
      */
     @Test
-    public void testDiagonal()  {
+    public void testDiagonal() {
         int N = 10; //9604
         int limit = 10;
 
-        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
+        System.out.println(new Object() {
+        }.getClass().getEnclosingMethod().getName());
 
         DiagonalGraph diagonalGraph = new DiagonalGraph(databaseMgr, database);
         diagonalGraph.load(N, N);
-        //results @N = 40  1444  3.5s
-        //results @N = 50  2304    8s    / 1s
-        //results @N = 100 9604  loading takes ages
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
-                //full result
+                // full result
                 TypeQLMatch.Unfiltered query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa diagonal;"));
-                Util.executeQuery(query, tx, "full");
-                Util.executeQuery(query.limit(limit), tx, "limit " + limit);
+                Util.timeQuery(query, tx, "full");
+                Util.timeQuery(query.limit(limit), tx, "limit " + limit);
             }
         }
     }
@@ -333,37 +324,36 @@ public class BenchmarkSmallIT {
     /**
      * single-rule mimicking transitivity test rule defined by two-hop relations
      * Initial data arranged in N x N square grid.
-     *
+     * <p>
      * Rules:
      * (from: $x, to: $y) isa arc;},
      * ->
      * (from: $x, to: $y) isa path;};
-
-     *
+     * <p>
+     * <p>
      * (from: $x, to: $z) isa path;
      * (from: $z, to: $y) isa path;},
      * ->
      * (from: $x, to: $y) isa path;};
-     *
+     * <p>
      * Initial data arranged as follows:
-     *
+     * <p>
      * N - tree heights
      * l - number of links per entity
-     *
-     *                     a0
-     *               /     .   \
-     *             arc          arc
-     *             /       .       \
-     *           a1,1     ...    a1,1^l
-     *         /   .  \         /    .  \
-     *       arc   .  arc     arc    .  arc
-     *       /     .   \       /     .    \
-     *     a2,1 ...  a2,l  a2,l+1  ...  a2,2^l
-     *            .             .
-     *            .             .
-     *            .             .
-     *   aN,1    ...  ...  ...  ...  ... ... aN,N^l
-     *
+     * <p>
+     * a0
+     * /     .   \
+     * arc          arc
+     * /       .       \
+     * a1,1     ...    a1,1^l
+     * /   .  \         /    .  \
+     * arc   .  arc     arc    .  arc
+     * /     .   \       /     .    \
+     * a2,1 ...  a2,l  a2,l+1  ...  a2,2^l
+     * .             .
+     * .             .
+     * .             .
+     * aN,1    ...  ...  ...  ...  ... ... aN,N^l
      */
     @Test
     public void testPathTree() {
@@ -381,10 +371,10 @@ public class BenchmarkSmallIT {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
 
                 String queryString = "match (from: $x, to: $y) isa path;" +
-                "$x has index 'a0,0';" +
-                "get $y; limit " + answers + ";";
+                        "$x has index 'a0,0';" +
+                        "get $y; limit " + answers + ";";
 
-                assertEquals(Util.executeQuery(queryString, tx, "tree").size(), answers);
+                assertEquals(Util.timeQuery(queryString, tx, "tree").size(), answers);
             }
         }
     }
