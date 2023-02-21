@@ -116,14 +116,15 @@ public abstract class ReasonerPlanner {
         // Add dependency for resolvable to any variables for which it can't (independently) generate all satisfying values
         iterate(resolvables).filter(resolvable -> !resolvable.isNegated())
                 .forEachRemaining(resolvable -> deps.get(resolvable).addAll(
-                        iterate(resolvable.variables()).filter(v -> generatedVars.contains(v) && notGeneratedByResolvable(v)).toSet()
+                        iterate(resolvable.variables()).filter(v -> generatedVars.contains(v) && notGeneratedByResolvable(resolvable, v)).toSet()
                 ));
 
         return deps;
     }
 
-    private static boolean notGeneratedByResolvable(Variable variable) {
-        return Iterators.link(iterate(variable.constraints()), iterate(variable.constraining()))
+    private static boolean notGeneratedByResolvable(Resolvable<?> resolvable, Variable variable) {
+        return !resolvable.generating().map(generating -> generating.equals(variable)).orElse(false) &&
+                Iterators.link(iterate(variable.constraints()), iterate(variable.constraining()))
                 .allMatch(constraint -> constraint.isThing() && constraint.asThing().isValue());
     }
 
