@@ -141,6 +141,9 @@ public class OrderingCoster {
     }
 
     Map<Resolvable<?>, Double> resolvableHeuristics(ReasonerPlanner.CallMode callMode, ConjunctionGraph.ConjunctionNode conjunctionNode, Set<Resolvable<?>> resolvables) {
+        // We use a scaled answer-count as an estimate for cost.
+        // Since the scaling-factor is based on the incrementalEstimator extended with all resolvables,
+        //      we know it is at-most the scaling-factor the plan will have.
         AnswerCountEstimator.IncrementalEstimator singleCallEstimatorForMode = answerCountEstimator.createIncrementalEstimator(callMode.conjunction, callMode.mode);
         resolvables.forEach(singleCallEstimatorForMode::extend);
         Map<Resolvable<?>, Double> resolvableCostForHeuristic = new HashMap<>();
@@ -167,7 +170,7 @@ public class OrderingCoster {
                     double numerator = singleCallEstimatorForMode.answerEstimate(commonVars);
                     double denominator = answerCountEstimator.estimateAnswers(conj, commonVars);
                     double scalingFactor = (denominator == 0) ? 0 : Math.min(1.0, numerator / denominator);
-                    return scalingFactor *  scaledCallCost(scalingFactor, new ReasonerPlanner.CallMode(conj, conjVariables)); // Answer-estimate for ALL variables in the negation
+                    return scalingFactor *  answerCountEstimator.estimateAnswers(conj, conjVariables); // Answer-estimate for ALL variables in the negation
                 }).reduce(0.0, Double::sum);
             } else throw TypeDBException.of(ILLEGAL_STATE);
 
