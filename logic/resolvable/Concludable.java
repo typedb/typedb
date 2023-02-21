@@ -774,7 +774,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                     valueOwnersToSkip.add(val.value());
                 }
             } else {
-                concludables.add(Attribute.of(valueConstraint.owner(), set(valueConstraint)));
+                concludables.add(Attribute.of(valueConstraint.owner(), set(valueConstraint.owner().value())));
             }
             valueOwnersToSkip.add(valueConstraint.owner());
         }
