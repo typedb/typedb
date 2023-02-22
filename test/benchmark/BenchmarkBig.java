@@ -49,7 +49,7 @@ import static com.vaticle.typeql.lang.TypeQL.var;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
-public class BenchmarkBigIT {
+public class BenchmarkBig {
 
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("reasoner-benchmark-big");
     private static final Options.Database options = new Options.Database().dataDir(dataDir)

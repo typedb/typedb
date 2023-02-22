@@ -38,7 +38,7 @@ import java.util.List;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static org.junit.Assert.assertEquals;
 
-public class RuleScalingIT {
+public class RuleScaling {
 
     private final String database = "rule-scaling-test";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("rule-scaling-test");

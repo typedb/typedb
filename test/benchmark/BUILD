@@ -19,10 +19,10 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 host_compatible_java_test(
-    name = "benchmark-small-it",
+    name = "benchmark-small",
     size = "large",
-    test_class = "com.vaticle.typedb.core.reasoner.benchmark.BenchmarkSmallIT",
-    srcs = ["BenchmarkSmallIT.java",
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.BenchmarkSmall",
+    srcs = ["BenchmarkSmall.java",
             "Util.java",
             "generation/DiagonalGraph.java",
             "generation/TransitivityMatrixGraph.java",
@@ -50,10 +50,10 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "benchmark-big-it",
+    name = "benchmark-big",
     size = "large",
-    test_class = "com.vaticle.typedb.core.reasoner.benchmark.BenchmarkBigIT",
-    srcs = ["BenchmarkBigIT.java", "Util.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.BenchmarkBig",
+    srcs = ["BenchmarkBig.java", "Util.java"],
     data = [":resources/linearTransitivity.tql", ":resources/multiJoin.tql"],
     native_libraries_deps = [
         "//:typedb",
@@ -76,10 +76,10 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "rule-scaling-it",
+    name = "rule-scaling",
     size = "large",
-    test_class = "com.vaticle.typedb.core.reasoner.benchmark.RuleScalingIT",
-    srcs = ["RuleScalingIT.java", "Util.java"],
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.RuleScaling",
+    srcs = ["RuleScaling.java", "Util.java"],
     native_libraries_deps = [
         "//:typedb",
         "//database:database",

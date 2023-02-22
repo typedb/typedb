@@ -45,7 +45,7 @@ import java.nio.file.Paths;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static junit.framework.TestCase.assertEquals;
 
-public class BenchmarkSmallIT {
+public class BenchmarkSmall {
     private static final String database = "reasoner-benchmark-small";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("reasoner-benchmark-small");
     private static final Database options = new Database().dataDir(dataDir)
