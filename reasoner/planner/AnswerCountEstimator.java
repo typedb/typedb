@@ -608,8 +608,13 @@ public class AnswerCountEstimator {
                 Label key = LocalModel.RelationModel.getRoleType(rp);
                 rolePlayerCounts.put(key, rolePlayerCounts.getOrDefault(key, 0) + 1);
                 if (!rolePlayerEstimates.containsKey(key)) {
-                    rolePlayerEstimates.put(key, countPersistedRolePlayers(rp) + Double.valueOf(Math.ceil(inferredRelationsEstimate)).longValue());
+                    rolePlayerEstimates.put(key, countPersistedRolePlayers(rp));
                 }
+            }
+
+            for (Label key: rolePlayerCounts.keySet()) {
+                rolePlayerEstimates.put(key, rolePlayerEstimates.get(key) +
+                        rolePlayerCounts.get(key) * Double.valueOf(Math.ceil(inferredRelationsEstimate)).longValue());
             }
 
             return new LocalModel.RelationModel(relationConstraint, inferredRelationsEstimate + persistedRelationEstimate, typeMaximums, rolePlayerEstimates);
