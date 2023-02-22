@@ -32,32 +32,32 @@ import com.vaticle.typedb.core.reasoner.benchmark.Util;
  */
 @SuppressWarnings("CheckReturnValue")
 public class PathTreeGraph {
-    private final TypeDB.DatabaseManager dbm;
+    private final TypeDB.DatabaseManager databaseManager;
     private final String databaseName;
 
     private final static String schemaPath = "test/benchmark/resources/";
     private final String schemaFile;
     private final static Label key = Label.of("index");
 
-    public PathTreeGraph(TypeDB.DatabaseManager dbm, String dbName, String schemaFile) {
-        this.dbm = dbm;
+    public PathTreeGraph(TypeDB.DatabaseManager databaseManager, String dbName, String schemaFile) {
+        this.databaseManager = databaseManager;
         this.databaseName = dbName;
         this.schemaFile = schemaPath + schemaFile;
     }
 
-    public PathTreeGraph(TypeDB.DatabaseManager dbm, String dbName) {
-        this(dbm, dbName, "pathTest.tql");
+    public PathTreeGraph(TypeDB.DatabaseManager databaseManager, String dbName) {
+        this(databaseManager, dbName, "pathTest.tql");
     }
 
     public final void load(int n, int m) {
-        try (TypeDB.Session session = dbm.session(databaseName, Arguments.Session.Type.SCHEMA)) {
+        try (TypeDB.Session session = databaseManager.session(databaseName, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(Util.parseTQL(schemaFile).asDefine());
                 tx.commit();
             }
         }
 
-        try (TypeDB.Session session = dbm.session(databaseName, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseManager.session(databaseName, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 buildExtensionalDB(n, m, tx);
                 tx.commit();

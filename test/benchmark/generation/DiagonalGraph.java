@@ -29,26 +29,26 @@ import com.vaticle.typedb.core.reasoner.benchmark.Util;
 @SuppressWarnings("CheckReturnValue")
 public class DiagonalGraph {
 
-    private final TypeDB.DatabaseManager dbm;
+    private final TypeDB.DatabaseManager databaseManager;
     private final String databaseName;
 
     private static final String schemaFile = "test/benchmark/resources/diagonalTest.tql";
     private static final Label key = Label.of("name");
 
-    public DiagonalGraph(TypeDB.DatabaseManager dbm, String dbName) {
-        this.dbm = dbm;
+    public DiagonalGraph(TypeDB.DatabaseManager databaseManager, String dbName) {
+        this.databaseManager = databaseManager;
         this.databaseName = dbName;
     }
 
     public final void load(int n, int m) {
-        try (TypeDB.Session session = dbm.session(databaseName, Arguments.Session.Type.SCHEMA)) {
+        try (TypeDB.Session session = databaseManager.session(databaseName, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(Util.parseTQL(schemaFile).asDefine());
                 tx.commit();
             }
         }
 
-        try (TypeDB.Session session = dbm.session(databaseName, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseManager.session(databaseName, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 buildExtensionalDB(n, m, tx);
                 tx.commit();

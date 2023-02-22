@@ -30,26 +30,26 @@ import com.vaticle.typedb.core.reasoner.benchmark.Util;
 @SuppressWarnings("CheckReturnValue")
 public class TransitivityChainGraph {
 
-    private final TypeDB.DatabaseManager dbm;
+    private final TypeDB.DatabaseManager databaseManager;
     private final String databaseName;
 
     private final static String schemaFile = "test/benchmark/resources/quadraticTransitivity.tql";
     private final static Label key = Label.of("index");
 
-    public TransitivityChainGraph(TypeDB.DatabaseManager dbm, String dbName) {
-        this.dbm = dbm;
+    public TransitivityChainGraph(TypeDB.DatabaseManager databaseManager, String dbName) {
+        this.databaseManager = databaseManager;
         this.databaseName = dbName;
     }
 
     public final void load(int n) {
-        try (TypeDB.Session session = dbm.session(databaseName, Arguments.Session.Type.SCHEMA)) {
+        try (TypeDB.Session session = databaseManager.session(databaseName, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().define(Util.parseTQL(schemaFile).asDefine());
                 tx.commit();
             }
         }
 
-        try (TypeDB.Session session = dbm.session(databaseName, Arguments.Session.Type.DATA)) {
+        try (TypeDB.Session session = databaseManager.session(databaseName, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 buildExtensionalDB(n, tx);
                 tx.commit();
