@@ -486,6 +486,8 @@ public class AnswerCountEstimator {
             }
 
             private double nPermuteKforSmallK(long n, long k) {
+                assert n >= k;
+                n = Math.max(n,k); // Guard against 0. (Although 0 is the right answer it's not useful)
                 double ans = 1;
                 for (int i = 0; i < k; i++) ans *= n - i;
                 return ans;
