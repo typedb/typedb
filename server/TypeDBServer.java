@@ -280,7 +280,7 @@ public class TypeDBServer implements AutoCloseable {
         server.logger().info("listening to address: {}:{}", server.address().getHostString(), server.address().getPort());
         server.logger().info("data directory configured to: {}", server.dataDir());
         server.logger().info("bootup completed in: {} ms", Duration.between(start, end).toMillis());
-        server.logger().info("...");
+        server.logger().info("");
         server.serve();
     }
 
