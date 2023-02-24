@@ -1,0 +1,46 @@
+#
+# Copyright (C) 2022 Vaticle
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+define
+
+vertex sub entity, owns index,
+    plays arc:from, plays arc:to,
+    plays path:from, plays path:to;
+
+start-vertex sub entity,owns index,
+    plays arc:from, plays path:from;
+
+arc sub relation, relates from, relates to;
+path sub relation, relates from, relates to;
+
+index sub attribute, value string;
+
+# rules
+rule rule-1:
+when {
+    (from: $x, to: $y) isa arc;
+} then {
+    (from: $x, to: $y) isa path;
+};
+
+rule rule-2:
+when {
+    (from: $x, to: $z) isa path;
+    (from: $z, to: $y) isa path;
+} then {
+    (from: $x, to: $y) isa path;
+};
