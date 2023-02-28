@@ -264,10 +264,10 @@ public class YAMLParser {
                     (yaml) -> yaml.asInt().value(),
                     "<int>"
             );
-            public static final Primitive<Float> FLOAT = new Primitive<>(
-                    (yaml) -> yaml.isFloat(),
-                    (yaml) -> yaml.asFloat().value(),
-                    "<float>"
+            public static final Primitive<Double> DOUBLE = new Primitive<>(
+                    (yaml) -> yaml.isDouble(),
+                    (yaml) -> yaml.asDouble().value(),
+                    "<double>"
             );
             public static final Primitive<Boolean> BOOLEAN = new Primitive<>(
                     (yaml) -> yaml.isBoolean(),
