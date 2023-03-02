@@ -423,12 +423,12 @@ public class AnswerCountEstimator {
         private static class RelationModel extends LocalModel {
             private final RelationConstraint relation;
             private final Map<Label, Long> rolePlayerEstimates;
-            private final Map<Label, Long> typeMaximums;
+            private final Map<ThingVariable, Long> typeMaximums;
             private final double relationTypeEstimate;
             private final Map<ThingVariable, Label> rolePlayerTypes;
 
             private RelationModel(RelationConstraint relation, double relationTypeEstimate,
-                                  Map<Label, Long> typeMaximums, Map<Label, Long> rolePlayerEstimates) {
+                                  Map<ThingVariable, Long> typeMaximums, Map<Label, Long> rolePlayerEstimates) {
                 super(iterate(relation.variables()).filter(Variable::isThing).toSet());
                 this.relation = relation;
                 this.relationTypeEstimate = relationTypeEstimate;
@@ -459,14 +459,15 @@ public class AnswerCountEstimator {
             double estimateAnswers(Set<Variable> variableFilter) {
                 double singleRelationEstimate = 1L;
                 Map<Label, Integer> queriedRolePlayerCounts = new HashMap<>();
+                double typeBasedUpperBound = 1L;
                 for (Variable v : variableFilter) {
                     if (v.isThing() && rolePlayerTypes.containsKey(v.asThing())) {
-                        Label vType = this.rolePlayerTypes.get(v);
-                        queriedRolePlayerCounts.put(vType, 1 + queriedRolePlayerCounts.getOrDefault(vType, 0));
+                        Label role = this.rolePlayerTypes.get(v);
+                        queriedRolePlayerCounts.put(role, 1 + queriedRolePlayerCounts.getOrDefault(role, 0));
+                        typeBasedUpperBound *= typeMaximums.get(v);
                     }
                 }
 
-                double typeBasedUpperBound = 1L;
                 double typeBasedUpperBoundFromRelations = relationTypeEstimate;
                 if (relationTypeEstimate > 0) {
                     for (Label key : queriedRolePlayerCounts.keySet()) {
@@ -474,7 +475,6 @@ public class AnswerCountEstimator {
                         long avgRolePlayers = Double.valueOf(Math.ceil((double) rolePlayerEstimates.get(key) / relationTypeEstimate)).longValue();
                         singleRelationEstimate *= nPermuteKforSmallK(avgRolePlayers, queriedRolePlayerCounts.get(key));
                         typeBasedUpperBoundFromRelations *= nPermuteKforSmallK(avgRolePlayers, queriedRolePlayerCounts.get(key));
-                        typeBasedUpperBound *= nPermuteKforSmallK(typeMaximums.get(key), queriedRolePlayerCounts.get(key));
                     }
                 }
 
@@ -582,14 +582,11 @@ public class AnswerCountEstimator {
             Map<Label, Long> rolePlayerEstimates = new HashMap<>();
             Map<Label, Integer> rolePlayerCounts = new HashMap<>();
 
-            Map<Label, Long> typeMaximums = new HashMap<>();
-            double relationUpperBound = 1L;
+            Map<ThingVariable, Long> typeMaximums = new HashMap<>();
+            double typeBasedUpperBound = 1L;
             for (RelationConstraint.RolePlayer rp : rolePlayers) {
-                Label key = LocalModel.RelationModel.getRoleType(rp);
-                if (!typeMaximums.containsKey(key)) {
-                    typeMaximums.put(key, countPersistedThingsMatchingType(rp.player()));
-                }
-                relationUpperBound *= typeMaximums.get(key);
+                typeMaximums.put(rp.player(), countPersistedThingsMatchingType(rp.player()));
+                typeBasedUpperBound *= typeMaximums.get(rp.player());
             }
 
             double persistedRelationEstimate = countPersistedThingsMatchingType(relationConstraint.owner());
@@ -604,7 +601,7 @@ public class AnswerCountEstimator {
                 inferredRelationsEstimate = estimateInferredAnswerCount(correspondingConcludable, new HashSet<>(constrainedVars));
             }
 
-            inferredRelationsEstimate = Math.min(inferredRelationsEstimate, relationUpperBound - persistedRelationEstimate);
+            inferredRelationsEstimate = Math.min(inferredRelationsEstimate, typeBasedUpperBound - persistedRelationEstimate);
 
             for (RelationConstraint.RolePlayer rp : rolePlayers) {
                 Label key = LocalModel.RelationModel.getRoleType(rp);
