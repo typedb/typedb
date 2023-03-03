@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.planner.ConjunctionGraph.ConjunctionNode;
 import com.vaticle.typedb.core.reasoner.planner.OrderingCoster.LocalAllCallsCosting;
-import com.vaticle.typedb.core.reasoner.planner.OrderingCoster.LocalSingleCallCosting;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import java.util.HashMap;
@@ -36,7 +35,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public abstract class RecursivePlanner extends ReasonerPlanner {
+public class RecursivePlanner extends ReasonerPlanner {
     // Inaccuracies:
     //      retrieval costs are treated the same as reasoning-overhead cost (Both approximated as the number of answers retrieved for all variables)
     //      Excess calls are not penalised, since the scaling factor is capped at one (Solve using (calls + scaling-factor * rec-cost?) )
@@ -46,9 +45,9 @@ public abstract class RecursivePlanner extends ReasonerPlanner {
     //
     //      !!! The cost does not depend on the binding mode !!! because of the formulation - Handle this with connectedness restriction when generating orders?
 
-    protected final AnswerCountEstimator answerCountEstimator;
-    protected final ConjunctionGraph conjunctionGraph;
-    protected final OrderingCoster orderingCoster;
+    final AnswerCountEstimator answerCountEstimator;
+    final ConjunctionGraph conjunctionGraph;
+    final OrderingCoster orderingCoster;
     private final Map<CallMode, Set<LocalAllCallsCosting>> callModeCostings;
 
 
@@ -61,7 +60,7 @@ public abstract class RecursivePlanner extends ReasonerPlanner {
     }
 
     public static RecursivePlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
-        return new HybridInformedPlanner(traversalEng, conceptMgr, logicMgr);
+        return new RecursivePlanner(traversalEng, conceptMgr, logicMgr);
     }
 
     @Override
@@ -123,12 +122,11 @@ public abstract class RecursivePlanner extends ReasonerPlanner {
         return bestPlan;
     }
 
-    abstract Set<LocalAllCallsCosting> recursivelyGenerateCostings(CallMode callMode);
-
     private void recursivelyGenerateCostingsWithGuard(CallMode callMode) {
         if (!callModeCostings.containsKey(callMode)) {
             callModeCostings.put(callMode, null); // Guard
-            Set<LocalAllCallsCosting> costings = recursivelyGenerateCostings(callMode);
+            HybridAStarBeamSearch orderingSearch = createOrderingSearch(callMode);
+            Set<LocalAllCallsCosting> costings = orderingSearch.search();
             callModeCostings.put(callMode, costings);
         }
     }
@@ -150,6 +148,10 @@ public abstract class RecursivePlanner extends ReasonerPlanner {
                 plan(callMode);
             });
         }
+    }
+
+    HybridAStarBeamSearch createOrderingSearch(CallMode callMode) {
+        return new HybridAStarBeamSearch(this, callMode);
     }
 
     private static class SubgraphPlan {
