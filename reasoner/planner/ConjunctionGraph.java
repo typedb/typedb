@@ -170,7 +170,6 @@ public class ConjunctionGraph {
             return acyclicDependencies.get(concludable);
         }
 
-
         public ResolvableConjunction conjunction() {
             return conjunction;
         }

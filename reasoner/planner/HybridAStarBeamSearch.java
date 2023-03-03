@@ -68,7 +68,7 @@ class HybridAStarBeamSearch {
         this.cyclicConcludables = conjunctionNode.cyclicConcludables();
         this.dependencies = ReasonerPlanner.dependencies(resolvables);
         this.valueIdentityResolvables = iterate(this.resolvables).filter(resolvable -> !resolvable.isNegated()).filter(r ->
-                Iterators.iterate(ReasonerPlanner.estimateableVariables(r.variables())).flatMap(v -> iterate(v.constraints()))
+                iterate(ReasonerPlanner.estimateableVariables(r.variables())).flatMap(v -> iterate(v.constraints()))
                         .anyMatch(constraint ->
                                 constraint.isThing() && constraint.asThing().isValue() && constraint.asThing().asValue().isValueIdentity())).toSet();
 
@@ -101,8 +101,10 @@ class HybridAStarBeamSearch {
             List<SearchNode> successors = successors(top).toList();
             Set<Variable> currentBoundVars = top.bounds();
             List<SearchNode> connectedSuccessors = iterate(successors)
-                    .filter(node -> valueIdentityResolvables.contains(node.lastResolvable()) ||
-                            Iterators.iterate(ReasonerPlanner.estimateableVariables(node.lastResolvable().variables())).anyMatch(currentBoundVars::contains))
+                    .filter(node ->
+                            valueIdentityResolvables.contains(node.lastResolvable()) ||
+                            iterate(ReasonerPlanner.estimateableVariables(node.lastResolvable().variables()))
+                                    .anyMatch(currentBoundVars::contains))
                     .toList();
 
             if (!connectedSuccessors.isEmpty()) successors = connectedSuccessors;
@@ -136,7 +138,7 @@ class HybridAStarBeamSearch {
                 Set<Variable> currentBoundVars = top.bounds();
                 List<SearchNode> connectedSuccessors = iterate(successors)
                         .filter(node -> valueIdentityResolvables.contains(node.lastResolvable()) ||
-                                Iterators.iterate(ReasonerPlanner.estimateableVariables(node.lastResolvable().variables())).anyMatch(currentBoundVars::contains))
+                                iterate(ReasonerPlanner.estimateableVariables(node.lastResolvable().variables())).anyMatch(currentBoundVars::contains))
                         .toList();
 
                 if (!connectedSuccessors.isEmpty()) successors = connectedSuccessors;
@@ -165,13 +167,12 @@ class HybridAStarBeamSearch {
     private FringeElement initialFringeElement() {
         return new FringeElement(
                 new SearchNode(new ArrayList<>(), new HashSet<>()),
-                planner.orderingCoster.createSingleCallSummaryBuilder(callMode));
+                planner.orderingCoster.createSingleCallCostingBuilder(callMode));
     }
 
     private boolean isCompletePlan(SearchNode node) {
         return node.resolvables.size() == resolvables.size();
     }
-
 
     private FunctionalIterator<SearchNode> successors(FringeElement of) {
         FunctionalIterator<Resolvable<?>> next = iterate(resolvables)
@@ -180,7 +181,6 @@ class HybridAStarBeamSearch {
 
         return next.map(res -> of.node.extend(res, res.isConcludable() && cyclicConcludables.contains(res.asConcludable()), of.bounds()));
     }
-
 
     private boolean checkRedundant(Set<SearchNode> seenNodes, SearchNode searchNode) {
         return seenNodes.contains(searchNode) || completedSignatures.containsKey(searchNode.cyclicConcludableModes);

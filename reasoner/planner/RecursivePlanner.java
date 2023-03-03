@@ -36,20 +36,11 @@ import java.util.Set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class RecursivePlanner extends ReasonerPlanner {
-    // Inaccuracies:
-    //      retrieval costs are treated the same as reasoning-overhead cost (Both approximated as the number of answers retrieved for all variables)
-    //      Excess calls are not penalised, since the scaling factor is capped at one (Solve using (calls + scaling-factor * rec-cost?) )
-    //      Acyclic dependencies are counted once for each occurence
-    //          (Can be fixed by including the optimal plans for the bound in the globalPlan chosenSummaries - The scaling factors will be capped at 1 then)
-    // So far, these are acceptable because the difference in cost is some constant factor, and our aim is to avoid horrible plans.
-    //
-    //      !!! The cost does not depend on the binding mode !!! because of the formulation - Handle this with connectedness restriction when generating orders?
 
     final AnswerCountEstimator answerCountEstimator;
     final ConjunctionGraph conjunctionGraph;
     final OrderingCoster orderingCoster;
     private final Map<CallMode, Set<LocalAllCallsCosting>> callModeCostings;
-
 
     protected RecursivePlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
         super(traversalEng, conceptMgr, logicMgr);

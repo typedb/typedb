@@ -49,7 +49,7 @@ public class OrderingCoster {
         this.conjunctionGraph = conjunctionGraph;
     }
 
-    SingleCallCostingBuilder createSingleCallSummaryBuilder(ReasonerPlanner.CallMode callMode) {
+    SingleCallCostingBuilder createSingleCallCostingBuilder(ReasonerPlanner.CallMode callMode) {
         return new SingleCallCostingBuilder(callMode);
     }
 
@@ -170,7 +170,7 @@ public class OrderingCoster {
                     double numerator = singleCallEstimatorForMode.answerEstimate(commonVars);
                     double denominator = answerCountEstimator.estimateAnswers(conj, commonVars);
                     double scalingFactor = (denominator == 0) ? 0 : Math.min(1.0, numerator / denominator);
-                    return scalingFactor *  answerCountEstimator.estimateAnswers(conj, conjVariables); // Answer-estimate for ALL variables in the negation
+                    return scalingFactor * answerCountEstimator.estimateAnswers(conj, conjVariables); // Answer-estimate for ALL variables in the negation
                 }).reduce(0.0, Double::sum);
             } else throw TypeDBException.of(ILLEGAL_STATE);
 
@@ -200,8 +200,8 @@ public class OrderingCoster {
 
         // Only for clones
         private SingleCallCostingBuilder(ReasonerPlanner.CallMode callMode,
-                                          ConjunctionGraph.ConjunctionNode conjunctionNode, AnswerCountEstimator.IncrementalEstimator estimator,
-                                          List<Resolvable<?>> ordering, Set<Variable> boundVars, Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes, double singlyBoundCost) {
+                                         ConjunctionGraph.ConjunctionNode conjunctionNode, AnswerCountEstimator.IncrementalEstimator estimator,
+                                         List<Resolvable<?>> ordering, Set<Variable> boundVars, Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes, double singlyBoundCost) {
             this.callMode = callMode;
             this.conjunctionNode = conjunctionNode;
             this.estimator = estimator;
@@ -217,7 +217,9 @@ public class OrderingCoster {
             return ordering;
         }
 
-        public Set<Variable> currentBounds() { return boundVars; }
+        public Set<Variable> currentBounds() {
+            return boundVars;
+        }
 
         public double currentCost() {
             return singlyBoundCost;
