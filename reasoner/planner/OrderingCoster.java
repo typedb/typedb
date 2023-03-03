@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.planner;
 import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
@@ -48,12 +49,8 @@ public class OrderingCoster {
         this.conjunctionGraph = conjunctionGraph;
     }
 
-    LocalSingleCallCosting createSingleCallCosting(ReasonerPlanner.CallMode callMode, List<Resolvable<?>> ordering) {
-        SingleCallCostingBuilder estimator = new SingleCallCostingBuilder(callMode);
-        for (Resolvable<?> resolvable : ordering) {
-            estimator.extend(resolvable);
-        }
-        return estimator.build();
+    SingleCallCostingBuilder createSingleCallCostingBuilder(ReasonerPlanner.CallMode callMode) {
+        return new SingleCallCostingBuilder(callMode);
     }
 
     LocalAllCallsCosting createAllCallsCosting(ReasonerPlanner.CallMode callMode, List<Resolvable<?>> ordering, Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes) {
@@ -116,9 +113,9 @@ public class OrderingCoster {
         if (resolvable.isNegated()) {
             return iterate(resolvable.asNegated().disjunction().conjunctions()).map(conj -> {
                 Set<Variable> conjVariables = estimateableVariables(conj.pattern().variables());
-                Set<Variable> nestedMode = Collections.intersection(conjVariables, restrictedResolvableMode);
-                double answersForModeFromPrefix = scaledEstimator.answerEstimate(nestedMode);
-                double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, nestedMode);
+                Set<Variable> commonVars = Collections.intersection(conjVariables, restrictedResolvableMode);
+                double answersForModeFromPrefix = scaledEstimator.answerEstimate(commonVars);
+                double allAnswersForMode = answerCountEstimator.estimateAnswers(conj, commonVars);
                 double scalingFactor = allAnswersForMode != 0 ? Math.min(1, answersForModeFromPrefix / allAnswersForMode) : 0;
                 return scaledCallCost(scalingFactor, new ReasonerPlanner.CallMode(conj, Collections.intersection(conjVariables, resolvableMode)));
             }).reduce(0.0, Double::sum);
@@ -143,6 +140,45 @@ public class OrderingCoster {
         return plan.allCallsCost() * Math.min(1.0, scalingFactor + plan.cyclicScalingFactor);
     }
 
+    Map<Resolvable<?>, Double> resolvableHeuristics(ReasonerPlanner.CallMode callMode, ConjunctionGraph.ConjunctionNode conjunctionNode, Set<Resolvable<?>> resolvables) {
+        // We use a scaled answer-count as an estimate for cost.
+        // Since the scaling-factor is based on the incrementalEstimator extended with all resolvables,
+        //      we know it is at-most the scaling-factor the plan will have.
+        AnswerCountEstimator.IncrementalEstimator singleCallEstimatorForMode = answerCountEstimator.createIncrementalEstimator(callMode.conjunction, callMode.mode);
+        resolvables.forEach(singleCallEstimatorForMode::extend);
+        Map<Resolvable<?>, Double> resolvableCostForHeuristic = new HashMap<>();
+        resolvables.forEach(res -> {
+            // Just use fully-scaled answerCount instead of the actual acyclic-cost
+            Set<Variable> resVars = estimateableVariables(res.variables());
+            double estimate;
+            if (res.isRetrievable()) {
+                estimate = singleCallEstimatorForMode.answerEstimate(estimateableVariables(resVars));
+            } else if (res.isConcludable()) {
+                estimate = singleCallEstimatorForMode.answerEstimate(resVars); // Keep a retrieval-cost, since our has it too.
+
+                double numerator = singleCallEstimatorForMode.answerEstimate(resVars);
+                double denominator = answerCountEstimator.localEstimate(callMode.conjunction, res, resVars);
+                double scalingFactor = (denominator == 0) ? 0 : Math.min(1.0, numerator / denominator);
+                FunctionalIterator<ReasonerPlanner.CallMode> acyclicCalls = iterate(planner.triggeredCalls(res.asConcludable(), resVars, conjunctionNode.acyclicDependencies(res.asConcludable())));
+                estimate += acyclicCalls // Estimating for all variables is a better measure of cost than acyclicCall.mode
+                        .map(acyclicCall -> scalingFactor * answerCountEstimator.estimateAnswers(acyclicCall.conjunction, estimateableVariables(acyclicCall.conjunction.pattern().variables())))
+                        .reduce(0.0, Double::sum);
+            } else if (res.isNegated()) {
+                estimate = iterate(res.asNegated().disjunction().conjunctions()).map(conj -> {
+                    Set<Variable> conjVariables = estimateableVariables(conj.pattern().variables());
+                    Set<Variable> commonVars = Collections.intersection(conjVariables, resVars);
+                    double numerator = singleCallEstimatorForMode.answerEstimate(commonVars);
+                    double denominator = answerCountEstimator.estimateAnswers(conj, commonVars);
+                    double scalingFactor = (denominator == 0) ? 0 : Math.min(1.0, numerator / denominator);
+                    return scalingFactor * answerCountEstimator.estimateAnswers(conj, conjVariables); // Answer-estimate for ALL variables in the negation
+                }).reduce(0.0, Double::sum);
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+
+            resolvableCostForHeuristic.put(res, estimate);
+        });
+        return resolvableCostForHeuristic;
+    }
+
     public class SingleCallCostingBuilder {
         private final ReasonerPlanner.CallMode callMode;
         private final ConjunctionGraph.ConjunctionNode conjunctionNode;
@@ -155,19 +191,45 @@ public class OrderingCoster {
 
         private boolean finalised;
 
-        SingleCallCostingBuilder(ReasonerPlanner.CallMode callMode) {
-            this.callMode = callMode;
-            this.conjunctionNode = conjunctionGraph.conjunctionNode(callMode.conjunction);
-            this.estimator = answerCountEstimator.createIncrementalEstimator(conjunctionNode.conjunction(), callMode.mode);
+        private SingleCallCostingBuilder(ReasonerPlanner.CallMode callMode) {
+            this(callMode,
+                    conjunctionGraph.conjunctionNode(callMode.conjunction),
+                    answerCountEstimator.createIncrementalEstimator(callMode.conjunction, callMode.mode),
+                    new ArrayList<>(), new HashSet<>(callMode.mode), new HashSet<>(), 0.0);
+        }
 
-            this.ordering = new ArrayList<>();
-            this.boundVars = new HashSet<>(callMode.mode);
-            this.cyclicConcludableModes = new HashSet<>();
-            this.singlyBoundCost = 0.0;
+        // Only for clones
+        private SingleCallCostingBuilder(ReasonerPlanner.CallMode callMode,
+                                         ConjunctionGraph.ConjunctionNode conjunctionNode, AnswerCountEstimator.IncrementalEstimator estimator,
+                                         List<Resolvable<?>> ordering, Set<Variable> boundVars, Set<Pair<Concludable, Set<Variable>>> cyclicConcludableModes, double singlyBoundCost) {
+            this.callMode = callMode;
+            this.conjunctionNode = conjunctionNode;
+            this.estimator = estimator;
+
+            this.ordering = ordering;
+            this.boundVars = boundVars;
+            this.cyclicConcludableModes = cyclicConcludableModes;
+            this.singlyBoundCost = singlyBoundCost;
             this.finalised = false;
         }
 
-        void extend(Resolvable<?> resolvable) {
+        public List<Resolvable<?>> currentOrdering() {
+            return ordering;
+        }
+
+        public Set<Variable> currentBounds() {
+            return boundVars;
+        }
+
+        public double currentCost() {
+            return singlyBoundCost;
+        }
+
+        public Set<Pair<Concludable, Set<Variable>>> currentCyclicConcludableModes() {
+            return cyclicConcludableModes;
+        }
+
+        public void extend(Resolvable<?> resolvable) {
             assert !finalised;
             ordering.add(resolvable);
             Set<Variable> resolvableVars = estimateableVariables(resolvable.variables());
@@ -191,8 +253,13 @@ public class OrderingCoster {
             this.finalised = true;
             return new LocalSingleCallCosting(callMode, ordering, cyclicConcludableModes, singlyBoundCost);
         }
-    }
 
+        public SingleCallCostingBuilder clone() {
+            return new SingleCallCostingBuilder(callMode,
+                    conjunctionNode, estimator.clone(),
+                    new ArrayList<>(ordering), new HashSet<>(boundVars), new HashSet<>(cyclicConcludableModes), singlyBoundCost);
+        }
+    }
 
     static class LocalSingleCallCosting {
 

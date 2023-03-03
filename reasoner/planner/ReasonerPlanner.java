@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+
 package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.core.common.cache.CommonCache;
@@ -55,7 +56,7 @@ public abstract class ReasonerPlanner {
     }
 
     public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
-        return new RecursivePlanner(traversalEng, conceptMgr, logicMgr);
+        return RecursivePlanner.create(traversalEng, conceptMgr, logicMgr);
     }
 
     static Set<Variable> estimateableVariables(Set<Variable> variables) {
@@ -115,14 +116,15 @@ public abstract class ReasonerPlanner {
         // Add dependency for resolvable to any variables for which it can't (independently) generate all satisfying values
         iterate(resolvables).filter(resolvable -> !resolvable.isNegated())
                 .forEachRemaining(resolvable -> deps.get(resolvable).addAll(
-                        iterate(resolvable.variables()).filter(v -> generatedVars.contains(v) && notGeneratedByResolvable(v)).toSet()
+                        iterate(resolvable.variables()).filter(v -> generatedVars.contains(v) && notGeneratedByResolvable(resolvable, v)).toSet()
                 ));
 
         return deps;
     }
 
-    private static boolean notGeneratedByResolvable(Variable variable) {
-        return Iterators.link(iterate(variable.constraints()), iterate(variable.constraining()))
+    private static boolean notGeneratedByResolvable(Resolvable<?> resolvable, Variable variable) {
+        return !resolvable.generating().map(generating -> generating.equals(variable)).orElse(false) &&
+                Iterators.link(iterate(variable.constraints()), iterate(variable.constraining()))
                 .allMatch(constraint -> constraint.isThing() && constraint.asThing().isValue());
     }
 
@@ -180,13 +182,13 @@ public abstract class ReasonerPlanner {
     public static class Plan {
         private final List<Resolvable<?>> order;
         private final CallMode callMode;
-        private final long allCallsCost;
+        private final double allCallsCost;
         // fraction of all calls triggered by cycles
         public double cyclicScalingFactor;
 
-        public Plan(List<Resolvable<?>> resolvableOrder, CallMode callMode, long allCallsCost, double cyclicScalingFactor) {
-            this.order = resolvableOrder;
+        public Plan(List<Resolvable<?>> resolvableOrder, CallMode callMode, double allCallsCost, double cyclicScalingFactor) {
             this.callMode = callMode;
+            this.order = resolvableOrder;
             this.allCallsCost = allCallsCost;
             this.cyclicScalingFactor = cyclicScalingFactor;
         }
@@ -195,7 +197,7 @@ public abstract class ReasonerPlanner {
             return order;
         }
 
-        public long allCallsCost() {
+        public double allCallsCost() {
             return allCallsCost;
         }
     }

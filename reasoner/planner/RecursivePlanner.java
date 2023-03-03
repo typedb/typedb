@@ -15,47 +15,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+
 package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.common.collection.Collections;
-import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
-import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.planner.ConjunctionGraph.ConjunctionNode;
 import com.vaticle.typedb.core.reasoner.planner.OrderingCoster.LocalAllCallsCosting;
-import com.vaticle.typedb.core.reasoner.planner.OrderingCoster.LocalSingleCallCosting;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class RecursivePlanner extends ReasonerPlanner {
-    // Inaccuracies:
-    //      retrieval costs are treated the same as reasoning-overhead cost (Both approximated as the number of answers retrieved for all variables)
-    //      Excess calls are not penalised, since the scaling factor is capped at one (Solve using (calls + scaling-factor * rec-cost?) )
-    //      Acyclic dependencies are counted once for each occurence
-    //          (Can be fixed by including the optimal plans for the bound in the globalPlan chosenSummaries - The scaling factors will be capped at 1 then)
-    // So far, these are acceptable because the difference in cost is some constant factor, and our aim is to avoid horrible plans.
-    //
-    //      !!! The cost does not depend on the binding mode !!! because of the formulation - Handle this with connectedness restriction when generating orders?
 
-    private final AnswerCountEstimator answerCountEstimator;
+    final AnswerCountEstimator answerCountEstimator;
+    final ConjunctionGraph conjunctionGraph;
+    final OrderingCoster orderingCoster;
     private final Map<CallMode, Set<LocalAllCallsCosting>> callModeCostings;
-    private final ConjunctionGraph conjunctionGraph;
-    private final OrderingCoster orderingCoster;
 
-    public RecursivePlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
+    protected RecursivePlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
         super(traversalEng, conceptMgr, logicMgr);
         this.conjunctionGraph = new ConjunctionGraph(logicMgr);
         this.answerCountEstimator = new AnswerCountEstimator(logicMgr, traversalEng.graph(), this.conjunctionGraph);
@@ -63,9 +50,13 @@ public class RecursivePlanner extends ReasonerPlanner {
         this.orderingCoster = new OrderingCoster(this, answerCountEstimator, conjunctionGraph);
     }
 
+    public static RecursivePlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
+        return new RecursivePlanner(traversalEng, conceptMgr, logicMgr);
+    }
+
     @Override
     Plan computePlan(CallMode callMode) {
-        recursivelyGenerateCostings(callMode);
+        recursivelyGenerateCostingsWithGuard(callMode);
         planMutuallyRecursiveSubgraph(callMode);
         assert planCache.getIfPresent(callMode) != null;
         return planCache.getIfPresent(callMode);
@@ -122,47 +113,20 @@ public class RecursivePlanner extends ReasonerPlanner {
         return bestPlan;
     }
 
-    private void recursivelyGenerateCostings(CallMode callMode) {
+    private void recursivelyGenerateCostingsWithGuard(CallMode callMode) {
         if (!callModeCostings.containsKey(callMode)) {
             callModeCostings.put(callMode, null); // Guard
-            ConjunctionNode conjunctionNode = conjunctionGraph.conjunctionNode(callMode.conjunction);
-            answerCountEstimator.buildConjunctionModel(callMode.conjunction);
-
-            Map<Set<Pair<Concludable, Set<Variable>>>, LocalSingleCallCosting> bestCostings = new HashMap<>();
-            PartialOrderReductionSearch porSearch = new PartialOrderReductionSearch(logicMgr.compile(callMode.conjunction), callMode.mode);
-            for (List<Resolvable<?>> ordering : porSearch.allOrderings()) {
-                initialiseOrderingDependencies(conjunctionNode, ordering, callMode.mode);
-                LocalSingleCallCosting localSingleCallCosting = orderingCoster.createSingleCallCosting(callMode, ordering);
-
-                // Two orderings for the same CallMode with identical cyclic-concludable modes are interchangeable in the subgraph-plan
-                //      -> We only need to keep the cheaper one.
-                if (!bestCostings.containsKey(localSingleCallCosting.cyclicConcludableModes) ) {
-                    bestCostings.put(localSingleCallCosting.cyclicConcludableModes, localSingleCallCosting);
-                } else {
-                    LocalSingleCallCosting existingSummary = bestCostings.get(localSingleCallCosting.cyclicConcludableModes);
-                    if (localSingleCallCosting.singleCallAcyclicCost < existingSummary.singleCallAcyclicCost) {
-                        bestCostings.put(localSingleCallCosting.cyclicConcludableModes, localSingleCallCosting);
-                    }
-                }
-            }
-            this.callModeCostings.put(callMode, iterate(bestCostings.values()).map(singleCall -> orderingCoster.createAllCallsCosting(singleCall.callMode, singleCall.ordering, singleCall.cyclicConcludableModes)).toSet());
+            HybridAStarBeamSearch orderingSearch = createOrderingSearch(callMode);
+            Set<LocalAllCallsCosting> costings = orderingSearch.search();
+            callModeCostings.put(callMode, costings);
         }
     }
 
-    private void initialiseOrderingDependencies(ConjunctionNode conjunctionNode, List<Resolvable<?>> ordering, Set<Variable> mode) {
-        Set<Variable> currentBoundVars = new HashSet<>(mode);
-        for (Resolvable<?> resolvable : ordering) {
-            Set<Variable> resolvableMode = Collections.intersection(estimateableVariables(resolvable.variables()), currentBoundVars);
-            initialiseResolvableDependencies(conjunctionNode, resolvable, resolvableMode);
-            if (!resolvable.isNegated()) currentBoundVars.addAll(estimateableVariables(resolvable.variables()));
-        }
-    }
-
-    private void initialiseResolvableDependencies(ConjunctionNode conjunctionNode, Resolvable<?> resolvable, Set<Variable> resolvableMode) {
+    void initialiseResolvableDependencies(ConjunctionNode conjunctionNode, Resolvable<?> resolvable, Set<Variable> resolvableMode) {
         if (resolvable.isConcludable()) {
             Set<ResolvableConjunction> cyclicDependencies = conjunctionNode.cyclicDependencies(resolvable.asConcludable());
             for (CallMode callMode : triggeredCalls(resolvable.asConcludable(), resolvableMode, null)) {
-                recursivelyGenerateCostings(callMode);
+                recursivelyGenerateCostingsWithGuard(callMode);
                 if (!cyclicDependencies.contains(callMode.conjunction)) {
                     plan(callMode); // Acyclic dependencies can be fully planned
                 }
@@ -171,10 +135,14 @@ public class RecursivePlanner extends ReasonerPlanner {
             iterate(resolvable.asNegated().disjunction().conjunctions()).forEachRemaining(conjunction -> {
                 Set<Variable> branchVariables = Collections.intersection(estimateableVariables(conjunction.pattern().variables()), resolvableMode);
                 CallMode callMode = new CallMode(conjunction, branchVariables);
-                recursivelyGenerateCostings(callMode);
+                recursivelyGenerateCostingsWithGuard(callMode);
                 plan(callMode);
             });
         }
+    }
+
+    HybridAStarBeamSearch createOrderingSearch(CallMode callMode) {
+        return new HybridAStarBeamSearch(this, callMode);
     }
 
     private static class SubgraphPlan {
@@ -212,86 +180,6 @@ public class RecursivePlanner extends ReasonerPlanner {
                 });
             }
             return new SubgraphPlan(costings, scalingFactorSum);
-        }
-
-    }
-
-    static class PartialOrderReductionSearch {
-        private final Set<Resolvable<?>> resolvables;
-        private final Set<Variable> mode;
-        private final Map<Resolvable<?>, Set<Variable>> dependencies;
-
-        // TODO: Combine these when we fix ReasonerPlanner.dependencies
-        PartialOrderReductionSearch(Set<Resolvable<?>> resolvables, Set<Variable> mode) {
-            this(resolvables, mode, ReasonerPlanner.dependencies(resolvables));
-        }
-
-        PartialOrderReductionSearch(Set<Resolvable<?>> resolvables, Set<Variable> mode, Map<Resolvable<?>, Set<Variable>> dependencies) {
-            this.resolvables = resolvables;
-            this.mode = mode;
-            this.dependencies = dependencies;
-        }
-
-        List<List<Resolvable<?>>> allOrderings() {
-            Set<Resolvable<?>> remaining = new HashSet<>(resolvables);
-            Set<Variable> restrictedVars = new HashSet<>(mode);
-            iterate(resolvables).filter(resolvable -> !resolvable.isNegated()).flatMap(r -> iterate(estimateableVariables(r.variables())))
-                    .filter(v -> iterate(v.constraints()).anyMatch(constraint ->
-                            constraint.isThing() && constraint.asThing().isValue() && constraint.asThing().asValue().isValueIdentity()))
-                    .forEachRemaining(restrictedVars::add);
-
-            List<List<Resolvable<?>>> orderings = new ArrayList<>();
-            porDFS(new Stack<>(), restrictedVars, remaining, new HashSet<>(), orderings);
-            assert !orderings.isEmpty();
-            return orderings; // TODO: If this causes a memory blow-up, POR can "generate" one at a time.
-        }
-
-        private void porDFS(Stack<Resolvable<?>> currentPath, Set<Variable> currentBoundVars,
-                            Set<Resolvable<?>> remaining, Set<Resolvable<?>> sleepSet, List<List<Resolvable<?>>> orderings) {
-            if (remaining.isEmpty()) {
-                orderings.add(new ArrayList<>(currentPath));
-                return;
-            }
-
-            List<Resolvable<?>> enabled = iterate(remaining)
-                    .filter(r -> ReasonerPlanner.dependenciesSatisfied(r, currentBoundVars, dependencies) && !sleepSet.contains(r))
-                    .toList();
-
-            if (enabled.isEmpty()) {
-                return; // All enabled are sleeping
-            }
-
-            // Restrict further to only the connected ones
-            List<Resolvable<?>> connectedEnabled = iterate(enabled)
-                    .filter(r -> iterate(estimateableVariables(r.variables())).anyMatch(currentBoundVars::contains)).toList();
-
-            if (!connectedEnabled.isEmpty()) {
-                enabled = connectedEnabled;
-            } else if (connectedEnabled.isEmpty() && !sleepSet.isEmpty()) {
-                return; // We should have tried the disconnected down a path that's now sleeping.
-            } // else enabled = enabled; and carry on
-
-            Set<Resolvable<?>> newSleepSet = new HashSet<>(sleepSet);
-            for (Resolvable<?> next : enabled) {
-                Set<Resolvable<?>> awaken = iterate(newSleepSet)
-                        .filter(r -> iterate(r.variables()).anyMatch(next.variables()::contains)) // not necessarily newly bound
-                        .toSet();
-
-                Set<Resolvable<?>> nextSleepSet = iterate(newSleepSet).filter(r -> !awaken.contains(r)).toSet();
-                Set<Variable> newlyBoundVars = next.isNegated() ?
-                        new HashSet<>() :
-                        iterate(next.variables()).filter(v -> !currentBoundVars.contains(v)).toSet();
-
-                currentPath.add(next);
-                remaining.remove(next);
-                currentBoundVars.addAll(newlyBoundVars);
-                porDFS(currentPath, currentBoundVars, remaining, nextSleepSet, orderings);
-                currentBoundVars.removeAll(newlyBoundVars);
-                remaining.add(next);
-                currentPath.remove(currentPath.size() - 1);
-
-                newSleepSet.add(next);
-            }
         }
     }
 }
