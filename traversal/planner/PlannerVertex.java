@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.traversal.planner;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.optimiser.OptimiserConstraint;
 import com.vaticle.typedb.core.common.optimiser.OptimiserVariable;
 import com.vaticle.typedb.core.encoding.Encoding;
@@ -80,6 +81,14 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
     public boolean hasOutgoingEdges() {
         return iterate(outs()).anyMatch(PlannerEdge.Directional::isSelected);
+    }
+
+    public FunctionalIterator<PlannerEdge.Directional<?, ?>> selectedIns() {
+        return iterate(ins()).filter(PlannerEdge.Directional::isSelected);
+    }
+
+    public FunctionalIterator<PlannerEdge.Directional<?, ?>> selectedOuts() {
+        return iterate(outs()).filter(PlannerEdge.Directional::isSelected);
     }
 
     public int getOrder() {
