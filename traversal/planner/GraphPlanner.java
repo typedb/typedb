@@ -295,15 +295,17 @@ public class GraphPlanner implements ComponentPlanner {
     }
 
     private void linearise() {
-        Set<PlannerVertex<?>> visited = new HashSet<>();
-        LinkedList<PlannerVertex<?>> toVisit = iterate(vertices.values()).filter(PlannerVertex::isStartingVertex).collect(LinkedList::new);
-        int vertexOrder = 0;
+        Set<PlannerVertex<?>> visited = iterate(modifiers.sorting().variables()).map(vertices::get).collect(HashSet::new);
+        LinkedList<PlannerVertex<?>> toVisit = iterate(vertices.values()).filter(
+                v -> !visited.contains(v) && v.selectedIns().map(PlannerEdge.Directional::from).allMatch(visited::contains)
+        ).collect(LinkedList::new);
+        int vertexOrder = visited.size();
         while (!toVisit.isEmpty()) {
             PlannerVertex<?> vertex = toVisit.removeFirst();
             vertex.setOrder(vertexOrder++);
             visited.add(vertex);
-            for (PlannerVertex<?> v : iterate(vertex.outs()).filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::to).toSet()) {
-                if (iterate(v.ins()).filter(PlannerEdge.Directional::isSelected).map(PlannerEdge.Directional::from).allMatch(visited::contains)) {
+            for (PlannerVertex<?> v : vertex.selectedOuts().map(PlannerEdge.Directional::to).toSet()) {
+                if (v.selectedIns().map(PlannerEdge.Directional::from).allMatch(visited::contains)) {
                     assert !visited.contains(v);
                     toVisit.addFirst(v);
                 }
