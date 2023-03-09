@@ -116,8 +116,8 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph(), new ConjunctionGraph(transaction.logic()));
         ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person; }", transaction.logic()));
 
-        long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p")));
-        assertEquals(5L, answers);
+        double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p")));
+        assertEquals(5.0, answers);
     }
 
     @Test
@@ -127,8 +127,8 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph(), new ConjunctionGraph(transaction.logic()));
         ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa! person; }", transaction.logic()));
 
-        long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p")));
-        assertEquals(3L, answers);
+        double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p")));
+        assertEquals(3.0, answers);
     }
 
     @Test
@@ -139,41 +139,41 @@ public class AnswerCountEstimatorTest {
         {   // Query only count of $p, where $p isa man;
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $m isa man, has name $n; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("m")));
-            assertEquals(2L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("m")));
+            assertEquals(2.0, answers);
         }
 
         {   // Query only count of $p and $n, where $p isa man
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $m isa man, has name $n; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("m", "n")));
-            assertEquals(3L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("m", "n")));
+            assertEquals(3.0, answers);
         }
 
         {   // Query count of both variables $p and $n, where $p isa! person
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa! person, has name $n; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
-            assertEquals(2L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
+            assertEquals(2.0, answers);
         }
 
         {   // Query count of both variables $p and $n, where $p isa person (and subtypes)
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person, has name $n; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
-            assertEquals(5L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
+            assertEquals(5.0, answers);
         }
 
         {   // Value constraint
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person, has name $n; $n \"Steve\"; }", transaction.logic()));
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
-            assertEquals(1L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
+            assertEquals(1.0, answers);
         }
 
         {   // Value constraint
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person, has name $n; $n \"Steve\"; }", transaction.logic()));
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
-            assertEquals(1L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
+            assertEquals(1.0, answers);
         }
     }
 
@@ -185,29 +185,29 @@ public class AnswerCountEstimatorTest {
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $m isa man, has name $n; $p isa! person, has $n; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
-            assertEquals(2L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
+            assertEquals(2.0, answers);
         }
 
         {   // Restrict types
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $m isa man, has  first-name $n; $p isa! person, has $n; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
-            assertEquals(1L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
+            assertEquals(1.0, answers);
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $m isa man, has name $n; $p isa! person, has $n; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("m", "p")));
-            assertEquals(4L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("m", "p")));
+            assertEquals(4.0, answers);
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $m isa man, has first-name $n; $p isa! person, has $n; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("m", "p")));
-            assertEquals(1L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("m", "p")));
+            assertEquals(1.0, answers);
         }
     }
 
@@ -219,50 +219,50 @@ public class AnswerCountEstimatorTest {
         {   // Query a single role-player
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ ($p1) isa household; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
-            assertEquals(4L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
+            assertEquals(4.0, answers);
         }
 
         {   // Two role-players, projected to one
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ ($p1, $p2) isa household; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
-            assertEquals(4L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
+            assertEquals(4.0, answers);
         }
 
         {   // Just the relation
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $r isa household; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r")));
-            assertEquals(2L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r")));
+            assertEquals(2.0, answers);
         }
 
         {   // Project to just the relation
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $r ($p1, $p2) isa household; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r")));
-            assertEquals(2L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r")));
+            assertEquals(2.0, answers);
         }
 
         {   // Relation and one role-player, binary constraints are considered.
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $r ($p1) isa household; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r", "p1")));
-            assertEquals(4L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r", "p1")));
+            assertEquals(4.0, answers);
         }
 
         {   // Two role-players
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ ($p1, $p2) isa household; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2")));
-            assertEquals(4L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2")));
+            assertEquals(4.0, answers);
         }
 
         {   // Two role-players and relation
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $r ($p1, $p2) isa household; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2")));
-            assertEquals(4L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2")));
+            assertEquals(4.0, answers);
         }
     }
 
@@ -281,32 +281,32 @@ public class AnswerCountEstimatorTest {
         {   // The explicit has should add one to the estimate of $n
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
-            assertEquals(6L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
+            assertEquals(6.0, answers);
         }
 
         {   // The explicit has should add 5 has-edges (one per person)
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; }", transaction.logic()));
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
-            assertEquals(10L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
+            assertEquals(10.0, answers);
         }
 
         {   // Value constraint, unifies with rule
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; $n \"Dave\"; }", transaction.logic()));
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
-            assertEquals(1L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
+            assertEquals(1.0, answers);
         }
 
         {   // Value constraint, unifies with rule
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; $n \"Dave\"; }", transaction.logic()));
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
-            assertEquals(2L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
+            assertEquals(2.0, answers);
         }
 
         {   // Value constraint, doesn't unify with rule
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; $n \"Steve\"; }", transaction.logic()));
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
-            assertEquals(1L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p", "n")));
+            assertEquals(1.0, answers);
         }
     }
 
@@ -337,29 +337,29 @@ public class AnswerCountEstimatorTest {
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $f isa symmetric-friendship; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("f")));
-            assertEquals(6L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("f")));
+            assertEquals(6.0, answers);
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $j isa jealous; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("j")));
-            assertEquals(25L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("j")));
+            assertEquals(25.0, answers);
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (who:$x, whom:$y) isa jealous; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(25L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
+            assertEquals(25.0, answers);
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (who:$x, whom:$y) isa jealous; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x")));
-            assertEquals(5L, answers); // The type of x must dominate.
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x")));
+            assertEquals(5.0, answers); // The type of x must dominate.
         }
 
         {   // Is not inferred.
@@ -368,8 +368,8 @@ public class AnswerCountEstimatorTest {
                     "(friendor: $y, friendee: $z) isa friendship; " +
                     "}", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "z")));
-            assertEquals(9L, answers); // TODO: 9 because it's currently at local, disconnected estimates.
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "z")));
+            assertEquals(9.0, answers); // TODO: 9 because it's currently at local, disconnected estimates.
         }
 
         {   // Will work with only the relation-roleplayer and no sibling roleplayer co-constraints
@@ -378,8 +378,8 @@ public class AnswerCountEstimatorTest {
                     "(friendor: $y, friendee: $z) isa symmetric-friendship; " +
                     "}", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "z")));
-            assertEquals(25L, answers); // TODO: 25 because it's currently at local, disconnected estimates.
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "z")));
+            assertEquals(25.0, answers); // TODO: 25 because it's currently at local, disconnected estimates.
         }
 
         {   // Requires sibling roleplayer co-constraints
@@ -388,8 +388,8 @@ public class AnswerCountEstimatorTest {
                     "(friendor: $y, friendee: $z) isa symmetric-friendship; " +
                     "}", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y", "z")));
-            assertEquals(36L, answers); // {x} (or {x,y}) and {y,z} (or {z}) is each covered by the estimate for symmetric-friendship -> 6 * 6 = 36
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y", "z")));
+            assertEquals(36.0, answers); // {x} (or {x,y}) and {y,z} (or {z}) is each covered by the estimate for symmetric-friendship -> 6 * 6 = 36
         }
     }
 
@@ -411,25 +411,25 @@ public class AnswerCountEstimatorTest {
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(first: $p1, second: $p2, third: $p3) isa one-hop-friends; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2", "p3")));
-            assertEquals(9L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1", "p2", "p3")));
+            assertEquals(9.0, answers);
         }
 
         {   // Works without fancy projection
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (first: $p1) isa one-hop-friends; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
-            assertEquals(3L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
+            assertEquals(3.0, answers);
         }
 
         {   // Needs fancy projection
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (first: $p1, second: $p2, third: $p3) isa one-hop-friends; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p1")));
             if (AnswerCountEstimatorTest.FANCY_PROJECTION_IS_IMPLEMENTED) {
-                assertEquals(3L, answers);
+                assertEquals(3.0, answers);
             } else {
-                assertEquals(5L, answers); // type-constraint = 5 is used - the inferredAnswerCount is 9
+                assertEquals(5.0, answers); // type-constraint = 5 is used - the inferredAnswerCount is 9
             }
         }
     }
@@ -464,8 +464,8 @@ public class AnswerCountEstimatorTest {
             Set<Resolvable<?>> resolvables = transaction.logic().compile(conjunction);
             AnswerCountEstimator.IncrementalEstimator incrementalEstimator = answerCountEstimator.createIncrementalEstimator(conjunction);
             resolvables.forEach(incrementalEstimator::extend);
-            long answers = incrementalEstimator.answerEstimate(getVariablesByName(conjunction.pattern(), set("p1", "p2")));
-            assertEquals(3L, answers);
+            double answers = incrementalEstimator.answerEstimate(getVariablesByName(conjunction.pattern(), set("p1", "p2")));
+            assertEquals(3.0, answers);
         }
 
         {   // With just jealous
@@ -475,8 +475,8 @@ public class AnswerCountEstimatorTest {
             Set<Resolvable<?>> justJealous = resolvables.stream().filter(Resolvable::isConcludable).collect(Collectors.toSet());
             AnswerCountEstimator.IncrementalEstimator incrementalEstimator = answerCountEstimator.createIncrementalEstimator(conjunction);
             justJealous.forEach(incrementalEstimator::extend);
-            long answers = incrementalEstimator.answerEstimate(getVariablesByName(conjunction.pattern(), set("p1", "p2")));
-            assertEquals(25L, answers);
+            double answers = incrementalEstimator.answerEstimate(getVariablesByName(conjunction.pattern(), set("p1", "p2")));
+            assertEquals(25.0, answers);
         }
     }
 
@@ -491,9 +491,9 @@ public class AnswerCountEstimatorTest {
                     " not{ (friendor: $host, friendee: $guest) isa friendship;}; " +
                     "}", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("host", "guest")));
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("host", "guest")));
 
-            assertEquals(9L, answers);
+            assertEquals(9.0, answers);
         }
     }
 
@@ -523,8 +523,8 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph(), new ConjunctionGraph(transaction.logic()));
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $f has is-inferred $a; }", transaction.logic()));
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("f")));
-            assertEquals(6L, answers); // TODO: This should be 6L?
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("f")));
+            assertEquals(6.0, answers); // TODO: This should be 6L?
         }
     }
 
@@ -549,21 +549,21 @@ public class AnswerCountEstimatorTest {
         AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph(), new ConjunctionGraph(transaction.logic()));
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
-            long cost = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(18L, cost);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
+            assertEquals(18.0, answers);
             // 18 = 3 + 3 * 5  =  3 from rule-1 (coplayer) +  3 * 5  ($f1.unary(rp) * $f2.unary(type))  from rule-2
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
-            long cost = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x")));
-            assertEquals(5L, cost); // person type dominates actual transitive relations
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x")));
+            assertEquals(5.0, answers); // person type dominates actual transitive relations
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
-            long cost = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("y")));
-            assertEquals(5L, cost);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("y")));
+            assertEquals(5.0, answers);
         }
     }
 
@@ -582,15 +582,15 @@ public class AnswerCountEstimatorTest {
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$r (friendor: $x, friendee: $y) isa friendship; }", transaction.logic()));
 
-            long cost = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(25L, cost);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
+            assertEquals(25.0, answers);
             // 25 = 5 * 5 = $x-unary(type) from ; $y-unary(type);   The multivar estimates aren't used because they are 3 + 25
 
-            long cost1 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r", "x", "y")));
-            assertEquals(25L, cost1); // Still exceeds the types.
+            double answers1 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r", "x", "y")));
+            assertEquals(25.0, answers1); // Still exceeds the types.
 
-            long cost2 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r")));
-            assertEquals(25L, cost2);
+            double answers2 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r")));
+            assertEquals(25.0, answers2);
         }
     }
 
@@ -634,14 +634,14 @@ public class AnswerCountEstimatorTest {
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
 
-            long cost = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(25L, cost);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
+            assertEquals(25.0, answers);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
         }
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(guest: $x, host: $y) isa can-live-with; }", transaction.logic()));
 
-            long cost = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(25L, cost);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
+            assertEquals(25.0, answers);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
         }
     }
 
@@ -655,14 +655,14 @@ public class AnswerCountEstimatorTest {
                     "(friendor: $x, friendee: $y) isa friendship;" +
                     "$y isa person, has last-name $yl;" +
                     "}", transaction.logic()));
-            long cost = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x")));
-            assertEquals(2, cost);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x")));
+            assertEquals(2.0, answers);
 
-            long cost1 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("y")));
-            assertEquals(2L, cost1);
+            double answers1 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("y")));
+            assertEquals(2.0, answers1);
 
-            long cost2 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(2L, cost2);
+            double answers2 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
+            assertEquals(2.0, answers2);
         }
     }
 
@@ -683,17 +683,17 @@ public class AnswerCountEstimatorTest {
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has nick-name $n; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
-            assertEquals(1L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
+            assertEquals(1.0, answers);
 
-            long answers1 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p")));
-            assertEquals(1L, answers1);
+            double answers1 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("p")));
+            assertEquals(1.0, answers1);
         }
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has nick-name $n; (friendor: $p, friendee: $q) isa friendship; }", transaction.logic()));
 
-            long answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
-            assertEquals(1L, answers);
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("n")));
+            assertEquals(1.0, answers);
         }
     }
 

@@ -15,15 +15,32 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@vaticle_dependencies//distribution/artifact:rules.bzl", "native_artifact_files")
-load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
+define
 
-def vaticle_typedb_console_artifact():
-    native_artifact_files(
-        name = "vaticle_typedb_console_artifact",
-        group_name = "vaticle_typedb_console",
-        artifact_name = "typedb-console-{platform}-{version}.{ext}",
-        tag_source = deployment["artifact.release"],
-        commit_source = deployment["artifact.snapshot"],
-        tag = "2.16.1",
-    )
+vertex sub entity, owns index,
+    plays arc:from, plays arc:to,
+    plays path:from, plays path:to;
+
+start-vertex sub entity,owns index,
+    plays arc:from, plays path:from;
+
+arc sub relation, relates from, relates to;
+path sub relation, relates from, relates to;
+
+index sub attribute, value string;
+
+# rules
+rule rule-1:
+when {
+    (from: $x, to: $y) isa arc;
+} then {
+    (from: $x, to: $y) isa path;
+};
+
+rule rule-2:
+when {
+    (from: $x, to: $z) isa path;
+    (from: $z, to: $y) isa path;
+} then {
+    (from: $x, to: $y) isa path;
+};

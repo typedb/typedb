@@ -366,7 +366,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final ThingWrite ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE =
                 new ThingWrite(19, "Illegal anonymous variable in delete query: '%s'.  You can only delete named variables that were matched.");
         public static final ThingWrite INVALID_DELETE_THING =
-                new ThingWrite(20, "The thing '%s' cannot be deleted, as the provided type '%s' is not a valid type or supertype.");
+                new ThingWrite(20, "The thing '%s' cannot be deleted, as the provided type '%s' is not its direct type nor supertype.");
         public static final ThingWrite INVALID_DELETE_THING_DIRECT =
                 new ThingWrite(21, "The thing '%s' cannot be deleted, as the provided direct type '%s' is not valid.");
         public static final ThingWrite INVALID_DELETE_HAS =
