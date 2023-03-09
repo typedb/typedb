@@ -22,6 +22,8 @@ import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter;
+import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
@@ -87,6 +89,10 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter.ALL;
+import static com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter.KEYS;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.PLAYS;
@@ -131,7 +137,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void getSyntaxRecursive(StringBuilder builder) {
         getSyntax(builder);
-        getSubtypesExplicit().stream()
+        getSubtypes(EXPLICIT).stream()
                 .sorted(comparing(x -> x.getLabel().name()))
                 .forEach(x -> x.getSyntaxRecursive(builder));
     }
@@ -172,7 +178,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     protected void writePlays(StringBuilder builder) {
-        getPlaysExplicit().stream().sorted(comparing(x -> x.getLabel().scopedName())).forEach(roleType -> {
+        getPlays(EXPLICIT).stream().sorted(comparing(x -> x.getLabel().scopedName())).forEach(roleType -> {
             builder.append(COMMA).append(TypeQLToken.Constraint.PLAYS).append(SPACE)
                     .append(roleType.getLabel().scopedName());
             RoleType overridden = getPlaysOverridden(roleType);
@@ -187,7 +193,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void setAbstract() {
         if (isAbstract()) return;
         validateIsNotDeleted();
-        if (getInstancesExplicit().first().isPresent()) {
+        if (getInstances(EXPLICIT).first().isPresent()) {
             throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
         }
         vertex.isAbstract(true);
@@ -202,13 +208,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public ThingTypeImpl getSupertype() {
-        return vertex.outs().edge(SUB).to().map(t -> (ThingTypeImpl) conceptMgr.convertThingType(t)).firstOrNull();
-    }
+    public abstract ThingTypeImpl getSupertype();
 
     @Override
-    public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
-        return iterateSorted(graphMgr().schema().getSupertypes(vertex), ASC)
+    public abstract Forwardable<? extends ThingTypeImpl, Order.Asc> getSupertypes();
+
+    @Override
+    public Forwardable<? extends ThingTypeImpl, Order.Asc> getSupertypesWithThing() {
+        return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
                 .mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), t -> t.vertex, ASC);
     }
 
@@ -216,16 +223,18 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public abstract Forwardable<? extends ThingTypeImpl, Order.Asc> getSubtypes();
 
     @Override
-    public abstract Forwardable<? extends ThingTypeImpl, Order.Asc> getSubtypesExplicit();
+    public abstract Forwardable<? extends ThingTypeImpl, Order.Asc> getSubtypes(Transitivity transitivity);
 
     <THING extends ThingImpl> Forwardable<THING, Order.Asc> instances(Function<ThingVertex, THING> thingConstructor) {
-        return getSubtypes().filter(t -> !t.isAbstract())
-                .mergeMapForwardable(t -> graphMgr().data().getReadable(t.vertex, ASC), ASC)
-                .mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
+        return instances(thingConstructor, TRANSITIVE);
     }
 
-    <THING extends ThingImpl> Forwardable<THING, Order.Asc> instancesExplicit(Function<ThingVertex, THING> thingConstructor) {
-        return graphMgr().data().getReadable(vertex, ASC).mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
+    <THING extends ThingImpl> Forwardable<THING, Order.Asc> instances(Function<ThingVertex, THING> thingConstructor, Transitivity transitivity) {
+        Forwardable<ThingVertex, Order.Asc> instances;
+        if (transitivity == EXPLICIT) instances = graphMgr.data().getReadable(vertex, ASC);
+        else instances = getSubtypes().filter(t -> !t.isAbstract())
+                .mergeMapForwardable(t -> graphMgr.data().getReadable(t.vertex, ASC), ASC);
+        return instances.mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
     }
 
     @Override
@@ -273,34 +282,62 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         ((TypeImpl) owner).vertex.outs().edge(encoding, ((TypeImpl) type).vertex).setOverridden(((TypeImpl) overriddenType).vertex);
     }
-
-    @Override
-    public NavigableSet<Owns> getOwns() {
-        if (cache != null) {
-            if (cache.owns == null) cache.owns = fetchOwns();
-            return cache.owns;
-        } else return fetchOwns();
-    }
-
     @Override
     public Optional<Owns> getOwns(AttributeType attributeType) {
         // TODO: optimise for non-cached setting by using point lookups rather than a scan
         return iterate(getOwns()).filter(owns -> owns.attributeType().equals(attributeType)).first();
     }
 
+
     @Override
-    public Forwardable<Owns, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations) {
-        return iterateSorted(getOwns(), ASC).filter(owns -> owns.effectiveAnnotations().containsAll(annotations));
+    public NavigableSet<Owns> getOwns() {
+        return getOwns(TRANSITIVE);
     }
 
     @Override
-    public Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType) {
-        return getOwns(valueType, emptySet());
+    public NavigableSet<Owns> getOwns(Transitivity transitivity) {
+        // TODO: refactor cache
+        if (transitivity == TRANSITIVE) {
+            if (cache != null) {
+                if (cache.owns == null) cache.owns = fetchOwns();
+                return cache.owns;
+            } else return fetchOwns();
+        } else {
+            if (cache != null) {
+                if (cache.ownsExplicit == null) cache.ownsExplicit = fetchOwnsExplicit();
+                return cache.ownsExplicit;
+            } else return fetchOwnsExplicit();
+        }
     }
 
     @Override
-    public Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations) {
-        return getOwns(annotations).filter(owns -> owns.attributeType().getValueType().equals(valueType));
+    public Forwardable<AttributeType, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations) {
+        return getOwns(annotations, TRANSITIVE);
+    }
+
+    @Override
+    public Forwardable<AttributeType, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations, Transitivity transitivity) {
+        return iterateSorted(getOwns(transitivity), ASC).filter(owns -> owns.effectiveAnnotations().containsAll(annotations));
+    }
+
+    @Override
+    public Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType) {
+        return getOwns(valueType, TRANSITIVE);
+    }
+
+    @Override
+    public Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations) {
+        return getOwns(valueType, annotations, TRANSITIVE);
+    }
+
+    @Override
+    public Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, Transitivity transitivity) {
+        return getOwns(transitivity).filter(att -> att.getValueType().equals(valueType));
+    }
+
+    @Override
+    public Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations, Transitivity transitivity) {
+        return getOwns(annotations, transitivity).filter(att -> att.getValueType().equals(valueType));
     }
 
     private NavigableSet<Owns> fetchOwns() {
@@ -309,30 +346,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                 v -> owns.add(OwnsImpl.of(this, (AttributeTypeImpl) conceptMgr.convertAttributeType(v)))
         );
         return owns;
-    }
-
-    @Override
-    public NavigableSet<Owns> getOwnsExplicit() {
-        if (cache != null) {
-            if (cache.ownsExplicit == null) cache.ownsExplicit = fetchOwnsExplicit();
-            return cache.ownsExplicit;
-        } else return fetchOwnsExplicit();
-    }
-
-    @Override
-    public Optional<Owns> getOwnsExplicit(AttributeType attributeType) {
-        // TODO: optimise for non-cached setting by using point lookups rather than a scan
-        return iterate(getOwnsExplicit()).filter(owns -> owns.attributeType().equals(attributeType)).first();
-    }
-
-    @Override
-    public Forwardable<Owns, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType) {
-        return getOwnsExplicit(valueType, emptySet());
-    }
-
-    @Override
-    public Forwardable<Owns, Order.Asc> getOwnsExplicit(Set<TypeQLToken.Annotation> annotations) {
-        return iterateSorted(getOwnsExplicit(), ASC).filter(owns -> owns.effectiveAnnotations().containsAll(annotations));
     }
 
     private NavigableSet<Owns> fetchOwnsExplicit() {
@@ -344,14 +357,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return ownsExplicit;
     }
 
-    @Override
-    public Forwardable<Owns, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations) {
-        return getOwnsExplicit(annotations).filter(owns -> owns.attributeType().getValueType().equals(valueType));
-    }
-
-    @Override
-    public AttributeType getOwnsOverridden(AttributeType attributeType) {
-        TypeVertex attrVertex = graphMgr().schema().getType(attributeType.getLabel());
+    public AttributeTypeImpl getOwnsOverridden(AttributeType attributeType) {
+        TypeVertex attrVertex = graphMgr.schema().getType(attributeType.getLabel());
         if (attrVertex != null) {
             TypeEdge ownsEdge = vertex.outs().edge(OWNS_KEY, attrVertex);
             if (ownsEdge != null && ownsEdge.overridden().isPresent()) {
@@ -408,17 +415,16 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public Forwardable<RoleType, Order.Asc> getPlays() {
-        if (isRoot()) return emptySorted();
-        assert getSupertype() != null;
-        return iterateSorted(graphMgr().schema().playedRoleTypes(vertex), ASC)
-                .mapSorted(conceptMgr::convertRoleType, roleType -> ((RoleTypeImpl) roleType).vertex, ASC);
+        return getPlays(TRANSITIVE);
     }
-
+    
     @Override
-    public Forwardable<RoleType, Order.Asc> getPlaysExplicit() {
+    public Forwardable<RoleType, Order.Asc> getPlays(Transitivity transitivity) {
         if (isRoot()) return emptySorted();
-        return vertex.outs().edge(PLAYS).to()
-                .mapSorted(conceptMgr::convertRoleType, rt -> ((RoleTypeImpl) rt).vertex, ASC);
+        Forwardable<TypeVertex, Order.Asc> plays;
+        if (transitivity == EXPLICIT) plays = vertex.outs().edge(PLAYS).to();
+        else plays = iterateSorted(graphMgr.schema().playedRoleTypes(vertex), ASC);
+        return plays.mapSorted(conceptMgr::convertRoleType, roleType -> ((RoleTypeImpl) roleType).vertex, ASC);
     }
 
     @Override
@@ -540,11 +546,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Forwardable<ThingTypeImpl, Order.Asc> getSubtypes() {
-            return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC).mapSorted(v -> {
+            return getSubtypes(TRANSITIVE);
+        }
+
+        @Override
+        public Forwardable<ThingTypeImpl, Order.Asc> getSubtypes(Transitivity transitivity) {
+            if (transitivity == EXPLICIT) return getSubtypes(EXPLICIT, v -> {
                 switch (v.encoding()) {
-                    case THING_TYPE:
-                        assert vertex == v;
-                        return this;
                     case ENTITY_TYPE:
                         return (ThingTypeImpl) conceptMgr.convertEntityType(v);
                     case ATTRIBUTE_TYPE:
@@ -554,13 +562,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                     default:
                         throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
-            }, thingType -> thingType.vertex, ASC);
-        }
-
-        @Override
-        public Forwardable<ThingTypeImpl, Order.Asc> getSubtypesExplicit() {
-            return getSubtypesExplicit(v -> {
+            });
+            else return getSubtypes(TRANSITIVE, v -> {
                 switch (v.encoding()) {
+                    case THING_TYPE:
+                        assert vertex == v;
+                        return this;
                     case ENTITY_TYPE:
                         return (ThingTypeImpl) conceptMgr.convertEntityType(v);
                     case ATTRIBUTE_TYPE:
@@ -575,24 +582,27 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Forwardable<ThingImpl, Order.Asc> getInstances() {
-            return instances(v -> {
-                switch (v.encoding()) {
-                    case ENTITY:
-                        return EntityImpl.of(conceptMgr, v);
-                    case ATTRIBUTE:
-                        return AttributeImpl.of(conceptMgr, v);
-                    case RELATION:
-                        return RelationImpl.of(conceptMgr, v);
-                    default:
-                        assert false;
-                        throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
-                }
-            });
+            return getInstances(TRANSITIVE);
         }
 
         @Override
-        public Forwardable<ThingImpl, Order.Asc> getInstancesExplicit() {
-            return emptySorted();
+        public Forwardable<ThingImpl, Order.Asc> getInstances(Transitivity transitivity) {
+            if (transitivity == EXPLICIT)
+                return emptySorted();
+            else
+                return instances(v -> {
+                    switch (v.encoding()) {
+                        case ENTITY:
+                            return EntityImpl.of(v);
+                        case ATTRIBUTE:
+                            return AttributeImpl.of(v);
+                        case RELATION:
+                            return RelationImpl.of(v);
+                        default:
+                            assert false;
+                            throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
+                    }
+                });
         }
 
         @Override

@@ -20,6 +20,9 @@ package com.vaticle.typedb.core.concept.type;
 
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
+import com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter;
+import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typeql.lang.common.TypeQLArg;
@@ -36,24 +39,29 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public interface AttributeType extends ThingType {
 
     @Override
+    AttributeType getSupertype();
+
+    @Override
+    Forwardable<? extends AttributeType, Order.Asc> getSupertypes();
+
+    @Override
     Forwardable<? extends AttributeType, Order.Asc> getSubtypes();
 
     @Override
-    Forwardable<? extends AttributeType, Order.Asc> getSubtypesExplicit();
+    Forwardable<? extends AttributeType, Order.Asc> getSubtypes(Transitivity transitivity);
 
     @Override
     Forwardable<? extends Attribute, Order.Asc> getInstances();
 
     @Override
-    Forwardable<? extends Attribute, Order.Asc> getInstancesExplicit();
+    Forwardable<? extends Attribute, Order.Asc> getInstances(Transitivity transitivity);
 
     void setSupertype(AttributeType superType);
 
     ValueType getValueType();
 
-    Forwardable<? extends ThingType, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations);
+    Forwardable<? extends ThingType, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations, Transitivity transitivity);
 
-    Forwardable<? extends ThingType, Order.Asc> getOwnersExplicit(Set<TypeQLToken.Annotation> annotations);
 
     boolean isBoolean();
 
@@ -154,17 +162,17 @@ public interface AttributeType extends ThingType {
         Forwardable<? extends Boolean, Order.Asc> getSubtypes();
 
         @Override
-        Forwardable<? extends Boolean, Order.Asc> getSubtypesExplicit();
+        Forwardable<? extends Boolean, Order.Asc> getSubtypes(Transitivity transitivity);
 
         @Override
         Forwardable<? extends Attribute.Boolean, Order.Asc> getInstances();
 
         @Override
-        Forwardable<? extends Attribute.Boolean, Order.Asc> getInstancesExplicit();
+        Forwardable<? extends Attribute.Boolean, Order.Asc> getInstances(Transitivity transitivity);
 
         Attribute.Boolean put(boolean value);
 
-        Attribute.Boolean put(boolean value, boolean isInferred);
+        Attribute.Boolean put(boolean value, Existence existence);
 
         Attribute.Boolean get(boolean value);
     }
@@ -175,17 +183,17 @@ public interface AttributeType extends ThingType {
         Forwardable<? extends Long, Order.Asc> getSubtypes();
 
         @Override
-        Forwardable<? extends Long, Order.Asc> getSubtypesExplicit();
+        Forwardable<? extends Long, Order.Asc> getSubtypes(Transitivity transitivity);
 
         @Override
         Forwardable<? extends Attribute.Long, Order.Asc> getInstances();
 
         @Override
-        Forwardable<? extends Attribute.Long, Order.Asc> getInstancesExplicit();
+        Forwardable<? extends Attribute.Long, Order.Asc> getInstances(Transitivity transitivity);
 
         Attribute.Long put(long value);
 
-        Attribute.Long put(long value, boolean isInferred);
+        Attribute.Long put(long value, Existence existence);
 
         Attribute.Long get(long value);
     }
@@ -196,17 +204,17 @@ public interface AttributeType extends ThingType {
         Forwardable<? extends Double, Order.Asc> getSubtypes();
 
         @Override
-        Forwardable<? extends Double, Order.Asc> getSubtypesExplicit();
+        Forwardable<? extends Double, Order.Asc> getSubtypes(Transitivity transitivity);
 
         @Override
         Forwardable<? extends Attribute.Double, Order.Asc> getInstances();
 
         @Override
-        Forwardable<? extends Attribute.Double, Order.Asc> getInstancesExplicit();
+        Forwardable<? extends Attribute.Double, Order.Asc> getInstances(Transitivity transitivity);
 
         Attribute.Double put(double value);
 
-        Attribute.Double put(double value, boolean isInferred);
+        Attribute.Double put(double value, Existence existence);
 
         Attribute.Double get(double value);
     }
@@ -217,13 +225,13 @@ public interface AttributeType extends ThingType {
         Forwardable<? extends String, Order.Asc> getSubtypes();
 
         @Override
-        Forwardable<? extends String, Order.Asc> getSubtypesExplicit();
+        Forwardable<? extends String, Order.Asc> getSubtypes(Transitivity transitivity);
 
         @Override
         Forwardable<? extends Attribute.String, Order.Asc> getInstances();
 
         @Override
-        Forwardable<? extends Attribute.String, Order.Asc> getInstancesExplicit();
+        Forwardable<? extends Attribute.String, Order.Asc> getInstances(Transitivity transitivity);
 
         void setRegex(Pattern regex);
 
@@ -233,7 +241,7 @@ public interface AttributeType extends ThingType {
 
         Attribute.String put(java.lang.String value);
 
-        Attribute.String put(java.lang.String value, boolean isInferred);
+        Attribute.String put(java.lang.String value, Existence existence);
 
         Attribute.String get(java.lang.String value);
     }
@@ -244,17 +252,17 @@ public interface AttributeType extends ThingType {
         Forwardable<? extends DateTime, Order.Asc> getSubtypes();
 
         @Override
-        Forwardable<? extends DateTime, Order.Asc> getSubtypesExplicit();
+        Forwardable<? extends DateTime, Order.Asc> getSubtypes(Transitivity transitivity);
 
         @Override
         Forwardable<? extends Attribute.DateTime, Order.Asc> getInstances();
 
         @Override
-        Forwardable<? extends Attribute.DateTime, Order.Asc> getInstancesExplicit();
+        Forwardable<? extends Attribute.DateTime, Order.Asc> getInstances(Transitivity transitivity);
 
         Attribute.DateTime put(LocalDateTime value);
 
-        Attribute.DateTime put(LocalDateTime value, boolean isInferred);
+        Attribute.DateTime put(LocalDateTime value, Existence existence);
 
         Attribute.DateTime get(LocalDateTime value);
     }

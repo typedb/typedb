@@ -26,10 +26,11 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.Storage;
-import com.vaticle.typedb.core.encoding.iid.IndexIID;
 import com.vaticle.typedb.core.encoding.iid.IndexIID.Type.RuleUsage;
+import com.vaticle.typedb.core.encoding.iid.IndexIID;
 import com.vaticle.typedb.core.encoding.iid.StructureIID;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.encoding.key.Key;
@@ -59,6 +60,7 @@ import javax.annotation.Nullable;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeGraph.INVALID_SCHEMA_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
@@ -69,6 +71,8 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.tree;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.merge;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter.ALL;
+import static com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter.KEYS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.PLAYS;
@@ -297,12 +301,12 @@ public class TypeGraph {
         return iterateSorted(getSubtypes(rootRoleType()), order);
     }
 
-    private NavigableSet<TypeVertex> ownedAttributeTypes(TypeVertex owner, boolean isKey) {
+    private NavigableSet<TypeVertex> ownedAttributeTypesImpl(TypeVertex owner, OwnsFilter ownsFilter) {
         Set<TypeVertex> overriddens = new HashSet<>();
         NavigableSet<TypeVertex> ownedAttributeTypes = new TreeSet<>();
         loop(owner, Objects::nonNull, o -> o.outs().edge(SUB).to().firstOrNull())
                 .flatMap(sub -> {
-                    FunctionalIterator<KeyValue<TypeVertex, TypeVertex>> ownsAndOverridden = isKey ?
+                    FunctionalIterator<KeyValue<TypeVertex, TypeVertex>> ownsAndOverridden = (ownsFilter == KEYS) ?
                             sub.outs().edge(OWNS_KEY).toAndOverridden() :
                             sub.outs().edge(OWNS).toAndOverridden().link(sub.outs().edge(OWNS_KEY).toAndOverridden());
                     return ownsAndOverridden.map(e -> {
@@ -314,60 +318,45 @@ public class TypeGraph {
         return ownedAttributeTypes;
     }
 
-    public NavigableSet<TypeVertex> ownedAttributeTypes(TypeVertex owner) {
-        Supplier<NavigableSet<TypeVertex>> fn = () -> ownedAttributeTypes(owner, false);
-        if (isReadOnly) return cache.ownedAttributeTypes.computeIfAbsent(owner, o -> fn.get());
-        else return fn.get();
+    public NavigableSet<TypeVertex> ownedAttributeTypes(TypeVertex owner, OwnsFilter ownsFilter) {
+        if (isReadOnly)
+            switch (ownsFilter) {
+                case ALL: return cache.ownedAttributeTypes.computeIfAbsent(owner, o -> ownedAttributeTypesImpl(owner, ownsFilter));
+                case KEYS: return cache.ownedKeyAttributeTypes.computeIfAbsent(owner, o -> ownedAttributeTypesImpl(owner, ownsFilter));
+                default: throw TypeDBException.of(ILLEGAL_STATE);
+            }
+        else return ownedAttributeTypesImpl(owner, ownsFilter);
     }
 
-    public NavigableSet<TypeVertex> ownedKeyAttributeTypes(TypeVertex owner) {
-        Supplier<NavigableSet<TypeVertex>> fn = () -> ownedAttributeTypes(owner, true);
-        if (isReadOnly) return cache.ownedKeyAttributeTypes.computeIfAbsent(owner, o -> fn.get());
-        else return fn.get();
+    private FunctionalIterator<TypeVertex> overriddenOwns(TypeVertex owner, OwnsFilter ownsFilter) {
+        FunctionalIterator<TypeVertex> overridden = owner.outs().edge(OWNS_KEY).overridden().noNulls();
+        if (ownsFilter == ALL) overridden = overridden.link(owner.outs().edge(OWNS).overridden().noNulls());
+        return overridden;
     }
 
-    private FunctionalIterator<TypeVertex> overriddensOwnsKey(TypeVertex owner) {
-        return owner.outs().edge(OWNS_KEY).overridden().noNulls();
+    private FunctionalIterator<TypeVertex> ownersOfAttType(TypeVertex attType, OwnsFilter ownsFilter) {
+        Forwardable<TypeVertex, Order.Asc> owners = attType.ins().edge(OWNS_KEY).from();
+        if (ownsFilter == ALL) owners = owners.merge(attType.ins().edge(OWNS).from());
+        return owners.flatMap(owner -> tree(owner, o -> o.ins().edge(SUB).from().filter(s ->
+                overriddenOwns(s, ownsFilter).noneMatch(ov -> ov.equals(attType))
+        )));
     }
 
-    private FunctionalIterator<TypeVertex> overriddensOwns(TypeVertex owner) {
-        return owner.outs().edge(OWNS).overridden().noNulls();
+    public NavigableSet<TypeVertex> ownersOfAttributeTypeImpl(TypeVertex attType, OwnsFilter ownsFilter) {
+        TreeSet<TypeVertex> owners = new TreeSet<>();
+        ownersOfAttType(attType, ownsFilter).toSet(owners);
+        if (ownsFilter == ALL) ownersOfAttType(attType, ALL).toSet(owners);
+        return owners;
     }
-
-    private FunctionalIterator<TypeVertex> ownersOfAttTypeNonKey(TypeVertex attType) {
-        return attType.ins().edge(OWNS).from()
-                .flatMap(owner -> tree(owner, o -> o.ins().edge(SUB).from().filter(s ->
-                        overriddensOwns(s).noneMatch(ov -> ov.equals(attType)) &&
-                                overriddensOwnsKey(s).noneMatch(ov -> ov.equals(attType))
-                )));
-    }
-
-    private FunctionalIterator<TypeVertex> ownersOfAttTypeKey(TypeVertex attType) {
-        return attType.ins().edge(OWNS_KEY).from()
-                .flatMap(owner -> tree(owner, o -> o.ins().edge(SUB).from().filter(s ->
-                        overriddensOwnsKey(s).noneMatch(ov -> ov.equals(attType))
-                )));
-    }
-
-    public NavigableSet<TypeVertex> ownersOfAttributeType(TypeVertex attType) {
-        Supplier<NavigableSet<TypeVertex>> fn = () -> {
-            TreeSet<TypeVertex> owners = new TreeSet<>();
-            ownersOfAttTypeNonKey(attType).toSet(owners);
-            ownersOfAttTypeKey(attType).toSet(owners);
-            return owners;
-        };
-        if (isReadOnly) return cache.ownersOfAttributeTypes.computeIfAbsent(attType, a -> fn.get());
-        else return fn.get();
-    }
-
-    public NavigableSet<TypeVertex> ownersOfAttributeTypeKey(TypeVertex attType) {
-        Supplier<NavigableSet<TypeVertex>> fn = () -> {
-            TreeSet<TypeVertex> owners = new TreeSet<>();
-            ownersOfAttTypeKey(attType).toSet(owners);
-            return owners;
-        };
-        if (isReadOnly) return cache.ownersOfKeyAttributeTypes.computeIfAbsent(attType, a -> fn.get());
-        else return fn.get();
+    
+    public NavigableSet<TypeVertex> ownersOfAttributeType(TypeVertex attType, OwnsFilter ownsFilter) {
+        if (isReadOnly)
+            switch (ownsFilter) {
+                case ALL: return cache.ownersOfAttributeTypes.computeIfAbsent(attType, o -> ownersOfAttributeTypeImpl(attType, ownsFilter));
+                case KEYS: return cache.ownersOfKeyAttributeTypes.computeIfAbsent(attType, o -> ownersOfAttributeTypeImpl(attType, ownsFilter));
+                default: throw TypeDBException.of(ILLEGAL_STATE);
+            }
+        else return ownersOfAttributeTypeImpl(attType, ownsFilter);
     }
 
     public NavigableSet<TypeVertex> playedRoleTypes(TypeVertex player) {

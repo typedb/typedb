@@ -37,6 +37,7 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.test.behaviour.config.Parameters.RootLabel;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
@@ -279,7 +280,7 @@ public class ThingTypeSteps {
     public void thing_type_get_owns_explicit_types_with_annotations_contain(
             RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
     ) {
-        Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwnsExplicit(set(annotations)).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
+        Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns(set(annotations), EXPLICIT).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
@@ -287,7 +288,7 @@ public class ThingTypeSteps {
     public void thing_type_get_owns_explicit_attribute_types_with_annotations_do_not_contain(
             RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
     ) {
-        Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwnsExplicit(set(annotations)).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
+        Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns(set(annotations), EXPLICIT).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
         for (String attributeLabel : attributeLabels) {
             assertFalse(actuals.contains(attributeLabel));
         }
@@ -358,13 +359,13 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) get owns explicit attribute types contain:")
     public void thing_type_get_owns_explicit_attribute_types_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
-        Set<String> actuals = iterate(get_thing_type(rootLabel, typeLabel).getOwnsExplicit()).map(owns -> owns.attributeType().getLabel().toString()).toSet();
+        Set<String> actuals = iterate(get_thing_type(rootLabel, typeLabel).getOwns(EXPLICIT)).map(owns -> owns.attributeType().getLabel().toString()).toSet();
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get owns explicit attribute types do not contain:")
     public void thing_type_get_owns_explicit_attribute_types_do_not_contain(RootLabel rootLabel, String typeLabel, List<String> attributeLabels) {
-        Set<String> actuals = iterate(get_thing_type(rootLabel, typeLabel).getOwnsExplicit()).map(owns -> owns.attributeType().getLabel().toString()).toSet();
+        Set<String> actuals = iterate(get_thing_type(rootLabel, typeLabel).getOwns(EXPLICIT)).map(owns -> owns.attributeType().getLabel().toString()).toSet();
         for (String attributeLabel : attributeLabels) {
             assertFalse(actuals.contains(attributeLabel));
         }
@@ -427,7 +428,7 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) get playing roles explicit contain:")
     public void thing_type_get_playing_roles_explicit_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
-        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).getPlaysExplicit().map(
+        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).getPlays(EXPLICIT).map(
                 r -> new Parameters.ScopedLabel(r.getLabel())
         ).toSet();
         assertTrue(actuals.containsAll(roleLabels));
@@ -435,7 +436,7 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) get playing roles explicit do not contain:")
     public void thing_type_get_playing_roles_explicit_do_not_contain(RootLabel rootLabel, String typeLabel, List<Parameters.ScopedLabel> roleLabels) {
-        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).getPlaysExplicit().map(
+        Set<Parameters.ScopedLabel> actuals = get_thing_type(rootLabel, typeLabel).getPlays(EXPLICIT).map(
                 r -> new Parameters.ScopedLabel(r.getLabel())
         ).toSet();
         for (Parameters.ScopedLabel roleLabel : roleLabels) {

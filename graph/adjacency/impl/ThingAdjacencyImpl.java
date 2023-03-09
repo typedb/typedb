@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
@@ -361,11 +362,11 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         }
 
         @Override
-        public ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, boolean isInferred) {
+        public ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, Existence existence) {
             assert !encoding.isOptimisation();
             ThingEdgeImpl.Buffered edge = isOut()
-                    ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, isInferred)
-                    : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, isInferred);
+                    ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, existence)
+                    : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, existence);
             List<IID> infixes = List.of(adjacent.iid().prefix(), adjacent.iid().type());
             put(encoding, edge, infixes, true);
 
@@ -374,11 +375,11 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
         @Override
         public ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, ThingVertex.Write optimised,
-                             boolean isInferred) {
+                             Existence existence) {
             assert encoding.isOptimisation();
             ThingEdgeImpl.Buffered edge = isOut()
-                    ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, optimised, isInferred)
-                    : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, optimised, isInferred);
+                    ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, optimised, existence)
+                    : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, optimised, existence);
             List<IID> infixes = List.of(optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type(), adjacent.iid().key());
             put(encoding, edge, infixes, true);
             return edge;

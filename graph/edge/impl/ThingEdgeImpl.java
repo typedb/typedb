@@ -20,13 +20,14 @@ package com.vaticle.typedb.core.graph.edge.impl;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.graph.ThingGraph;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
 import com.vaticle.typedb.core.encoding.iid.InfixIID;
 import com.vaticle.typedb.core.encoding.iid.KeyIID;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
+import com.vaticle.typedb.core.graph.ThingGraph;
+import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
@@ -37,6 +38,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.encoding.Encoding.Prefix.VERTEX_ROLE;
 import static com.vaticle.typedb.core.encoding.Encoding.Status.PERSISTED;
 import static java.util.Objects.hash;
@@ -48,20 +51,20 @@ public abstract class ThingEdgeImpl implements ThingEdge {
     final View.Forward forward;
     final View.Backward backward;
     final AtomicBoolean deleted;
-    final boolean isInferred;
+    final Existence existence;
 
-    ThingEdgeImpl(ThingGraph graph, Encoding.Edge.Thing encoding, boolean isInferred) {
+    ThingEdgeImpl(ThingGraph graph, Encoding.Edge.Thing encoding, Existence existence) {
         this.graph = graph;
         this.encoding = encoding;
         this.deleted = new AtomicBoolean(false);
-        this.isInferred = isInferred;
+        this.existence = existence;
         this.forward = new View.Forward(this);
         this.backward = new View.Backward(this);
     }
 
     @Override
     public boolean isInferred() {
-        return isInferred;
+        return existence == INFERRED;
     }
 
     @Override
@@ -155,10 +158,10 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param encoding   the edge {@code Encoding}
          * @param from       the tail vertex
          * @param to         the head vertex
-         * @param isInferred
+         * @param existence  whether the edge is stored or inferred
          */
-        public Buffered(Encoding.Edge.Thing encoding, ThingVertex.Write from, ThingVertex.Write to, boolean isInferred) {
-            this(encoding, from, to, null, isInferred);
+        public Buffered(Encoding.Edge.Thing encoding, ThingVertex.Write from, ThingVertex.Write to, Existence existence) {
+            this(encoding, from, to, null, existence);
         }
 
         /**
@@ -170,8 +173,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param optimised vertex that this optimised edge is compressing
          */
         public Buffered(Encoding.Edge.Thing encoding, ThingVertex.Write from, ThingVertex.Write to,
-                        @Nullable ThingVertex.Write optimised, boolean isInferred) {
-            super(from.graph(), encoding, isInferred);
+                        @Nullable ThingVertex.Write optimised, Existence existence) {
+            super(from.graph(), encoding, existence);
             assert this.graph == to.graph();
             assert encoding.isOptimisation() || optimised == null;
             this.from = from;
@@ -314,7 +317,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         private final int hash;
 
         public Target(Encoding.Edge.Thing encoding, ThingVertex from, ThingVertex to, @Nullable TypeVertex optimisedType) {
-            super(from.graph(), encoding, false);
+            super(from.graph(), encoding, STORED);
             assert !encoding.isOptimisation() || optimisedType != null;
             this.from = from;
             this.to = to;
@@ -429,7 +432,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
          * @param iid   the {@code iid} of a persisted edge
          */
         public Persisted(ThingGraph graph, EdgeViewIID.Thing iid) {
-            super(graph, iid.encoding(), false);
+            super(graph, iid.encoding(), STORED);
 
             if (iid.isForward()) {
                 fromIID = iid.start();

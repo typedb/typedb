@@ -21,13 +21,14 @@ package com.vaticle.typedb.core.concept.thing.impl;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
+import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptImpl;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
@@ -57,6 +58,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.T
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
+import static com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter.KEYS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.HAS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.PLAYING;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
@@ -116,11 +119,11 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public void setHas(Attribute attribute) {
-        setHas(attribute, false);
+        setHas(attribute, STORED);
     }
 
     @Override
-    public void setHas(Attribute attribute, boolean isInferred) {
+    public void setHas(Attribute attribute, Existence existence) {
         validateIsNotDeleted();
         AttributeVertex.Write<?> attrVertex = ((AttributeImpl<?>) attribute).writableVertex();
         NavigableSet<ThingType.Owns> owns = getType().getOwns();
@@ -143,7 +146,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             }
             vertex.graph().exclusiveOwnership(((TypeImpl) this.getType()).vertex, attrVertex);
         }
-        writableVertex().outs().put(HAS, attrVertex, isInferred);
+        writableVertex().outs().put(HAS, attrVertex, existence);
     }
 
     @Override

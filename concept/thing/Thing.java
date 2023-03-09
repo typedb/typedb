@@ -20,6 +20,8 @@ package com.vaticle.typedb.core.concept.thing;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
+import com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
@@ -73,7 +75,7 @@ public interface Thing extends Concept, Comparable<Thing> {
      */
     void setHas(Attribute attribute);
 
-    void setHas(Attribute attribute, boolean isInferred);
+    void setHas(Attribute attribute, Existence existence);
 
     /**
      * Remove an {@code Attribute} from being owned by this {@code Thing}.

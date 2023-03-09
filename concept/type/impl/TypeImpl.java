@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.concept.ConceptImpl;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -49,8 +50,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.CY
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_BEEN_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
+import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ROLE_TYPE;
 
 public abstract class TypeImpl extends ConceptImpl implements Type {
 
@@ -71,6 +75,13 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         this.vertex = graphMgr().schema().create(encoding, label, scope);
         TypeVertex superTypeVertex = graphMgr().schema().getType(encoding.root().label(), encoding.root().scope());
         vertex.outs().put(SUB, superTypeVertex);
+    }
+
+    public static TypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
+        if (vertex.encoding() == ROLE_TYPE)
+            return RoleTypeImpl.of(graphMgr, vertex);
+        else
+            return ThingTypeImpl.of(graphMgr, vertex);
     }
 
     @Override
@@ -113,7 +124,14 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     public abstract Forwardable<? extends TypeImpl, Order.Asc> getSubtypes();
 
     @Override
-    public abstract Forwardable<? extends TypeImpl, Order.Asc> getSubtypesExplicit();
+    public abstract Forwardable<? extends TypeImpl, Order.Asc> getSubtypes(Transitivity transitivity);
+
+    <TYPE extends TypeImpl> Forwardable<TYPE, Order.Asc> getSubtypes(Transitivity transitivity, Function<TypeVertex, TYPE> typeConstructor) {
+        if (transitivity == EXPLICIT)
+            return vertex.ins().edge(SUB).from().mapSorted(typeConstructor, type -> type.vertex, ASC);
+        else
+            return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC).mapSorted(typeConstructor, type -> type.vertex, ASC);
+    }
 
     GraphManager graphMgr() {
         return conceptMgr.graph();
@@ -136,10 +154,6 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
                 throw exception(TypeDBException.of(CYCLIC_TYPE_HIERARCHY, hierarchy));
             }
         }
-    }
-
-    <TYPE extends TypeImpl> Forwardable<TYPE, Order.Asc> getSubtypesExplicit(Function<TypeVertex, TYPE> typeConstructor) {
-        return vertex.ins().edge(SUB).from().mapSorted(typeConstructor, type -> type.vertex, ASC);
     }
 
     void validateDelete() {

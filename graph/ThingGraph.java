@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.Storage;
 import com.vaticle.typedb.core.encoding.iid.PartitionedIID;
@@ -63,6 +64,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 import static com.vaticle.typedb.core.encoding.Encoding.Status.BUFFERED;
 import static com.vaticle.typedb.core.encoding.Encoding.Status.PERSISTED;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
@@ -201,11 +203,11 @@ public class ThingGraph {
         return null;
     }
 
-    public ThingVertex.Write create(TypeVertex typeVertex, boolean isInferred) {
+    public ThingVertex.Write create(TypeVertex typeVertex, Existence existence) {
         assert storage.isOpen();
         assert !typeVertex.isAttributeType();
         VertexIID.Thing iid = generate(keyGenerator, typeVertex.iid(), typeVertex.properLabel());
-        ThingVertexImpl.Write vertex = new ThingVertexImpl.Write.Buffered(this, iid, isInferred);
+        ThingVertexImpl.Write vertex = new ThingVertexImpl.Write.Buffered(this, iid, existence);
         thingsByIID.put(iid, vertex);
         thingsByTypeIID.computeIfAbsent(typeVertex.iid(), t -> new ConcurrentSkipListSet<>()).add(vertex);
         vertexCreated(vertex);
@@ -303,7 +305,7 @@ public class ThingGraph {
         );
     }
 
-    public AttributeVertex.Write<Boolean> put(TypeVertex type, boolean value, boolean isInferred) {
+    public AttributeVertex.Write<Boolean> put(TypeVertex type, boolean value, Existence existence) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Boolean.class);
@@ -311,17 +313,17 @@ public class ThingGraph {
         AttributeVertex.Write<Boolean> vertex = attributesByIID.booleans.computeIfAbsent(
                 new VertexIID.Attribute.Boolean(type.iid(), value),
                 iid -> {
-                    AttributeVertexImpl.Write.Boolean v = new AttributeVertexImpl.Write.Boolean(this, iid, isInferred);
+                    AttributeVertexImpl.Write.Boolean v = new AttributeVertexImpl.Write.Boolean(this, iid, existence);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSkipListSet<>()).add(v);
                     vertexCreated(v);
                     return v;
                 }
         );
-        assert isInferred == vertex.isInferred();
+        assert (existence == INFERRED) == vertex.isInferred();
         return vertex;
     }
 
-    public AttributeVertex.Write<Long> put(TypeVertex type, long value, boolean isInferred) {
+    public AttributeVertex.Write<Long> put(TypeVertex type, long value, Existence existence) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Long.class);
@@ -329,17 +331,17 @@ public class ThingGraph {
         AttributeVertex.Write<Long> vertex = attributesByIID.longs.computeIfAbsent(
                 new VertexIID.Attribute.Long(type.iid(), value),
                 iid -> {
-                    AttributeVertexImpl.Write.Long v = new AttributeVertexImpl.Write.Long(this, iid, isInferred);
+                    AttributeVertexImpl.Write.Long v = new AttributeVertexImpl.Write.Long(this, iid, existence);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSkipListSet<>()).add(v);
                     vertexCreated(v);
                     return v;
                 }
         );
-        assert isInferred == vertex.isInferred();
+        assert (existence == INFERRED) == vertex.isInferred();
         return vertex;
     }
 
-    public AttributeVertex.Write<Double> put(TypeVertex type, double value, boolean isInferred) {
+    public AttributeVertex.Write<Double> put(TypeVertex type, double value, Existence existence) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Double.class);
@@ -347,17 +349,17 @@ public class ThingGraph {
         AttributeVertex.Write<Double> vertex = attributesByIID.doubles.computeIfAbsent(
                 new VertexIID.Attribute.Double(type.iid(), value),
                 iid -> {
-                    AttributeVertexImpl.Write.Double v = new AttributeVertexImpl.Write.Double(this, iid, isInferred);
+                    AttributeVertexImpl.Write.Double v = new AttributeVertexImpl.Write.Double(this, iid, existence);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSkipListSet<>()).add(v);
                     vertexCreated(v);
                     return v;
                 }
         );
-        assert isInferred == vertex.isInferred();
+        assert (existence == INFERRED) == vertex.isInferred();
         return vertex;
     }
 
-    public AttributeVertex.Write<String> put(TypeVertex type, String value, boolean isInferred) {
+    public AttributeVertex.Write<String> put(TypeVertex type, String value, Existence existence) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(String.class);
@@ -376,17 +378,17 @@ public class ThingGraph {
 
         AttributeVertex.Write<String> vertex = attributesByIID.strings.computeIfAbsent(
                 attIID, iid -> {
-                    AttributeVertexImpl.Write.String v = new AttributeVertexImpl.Write.String(this, iid, isInferred);
+                    AttributeVertexImpl.Write.String v = new AttributeVertexImpl.Write.String(this, iid, existence);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSkipListSet<>()).add(v);
                     vertexCreated(v);
                     return v;
                 }
         );
-        assert isInferred == vertex.isInferred();
+        assert (existence == INFERRED) == vertex.isInferred();
         return vertex;
     }
 
-    public AttributeVertex.Write<LocalDateTime> put(TypeVertex type, LocalDateTime value, boolean isInferred) {
+    public AttributeVertex.Write<LocalDateTime> put(TypeVertex type, LocalDateTime value, Existence existence) {
         assert storage.isOpen();
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(LocalDateTime.class);
@@ -394,13 +396,13 @@ public class ThingGraph {
         AttributeVertex.Write<LocalDateTime> vertex = attributesByIID.dateTimes.computeIfAbsent(
                 new VertexIID.Attribute.DateTime(type.iid(), value),
                 iid -> {
-                    AttributeVertexImpl.Write.DateTime v = new AttributeVertexImpl.Write.DateTime(this, iid, isInferred);
+                    AttributeVertexImpl.Write.DateTime v = new AttributeVertexImpl.Write.DateTime(this, iid, existence);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSkipListSet<>()).add(v);
                     vertexCreated(v);
                     return v;
                 }
         );
-        assert isInferred == vertex.isInferred();
+        assert (existence == INFERRED) == vertex.isInferred();
         return vertex;
     }
 

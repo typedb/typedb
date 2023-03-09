@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.graph.vertex.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.ThingGraph;
@@ -31,6 +32,8 @@ import java.time.LocalDateTime;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.encoding.Encoding.Status.BUFFERED;
 import static com.vaticle.typedb.core.encoding.Encoding.Status.PERSISTED;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
@@ -270,13 +273,13 @@ public abstract class AttributeVertexImpl {
     public static abstract class Write<VALUE> extends ThingVertexImpl.Write implements AttributeVertex.Write<VALUE> {
 
         private final VertexIID.Attribute<VALUE> attributeIID;
-        private final boolean isInferred;
+        private final Existence existence;
         private java.lang.Boolean isPersisted;
 
-        private Write(ThingGraph graph, VertexIID.Attribute<VALUE> iid, boolean isInferred) {
+        private Write(ThingGraph graph, VertexIID.Attribute<VALUE> iid, Existence existence) {
             super(graph, iid);
             this.attributeIID = iid;
-            this.isInferred = isInferred;
+            this.existence = existence;
             this.isPersisted = null;
         }
 
@@ -333,7 +336,12 @@ public abstract class AttributeVertexImpl {
 
         @Override
         public boolean isInferred() {
-            return isInferred;
+            return existence == INFERRED;
+        }
+
+        @Override
+        public Existence existence() {
+            return existence;
         }
 
         @Override
@@ -453,11 +461,11 @@ public abstract class AttributeVertexImpl {
         public static class Boolean extends AttributeVertexImpl.Write<java.lang.Boolean> {
 
             public Boolean(ThingGraph graph, VertexIID.Attribute<java.lang.Boolean> iid) {
-                this(graph, iid, false);
+                this(graph, iid, STORED);
             }
 
-            public Boolean(ThingGraph graph, VertexIID.Attribute<java.lang.Boolean> iid, boolean isInferred) {
-                super(graph, iid, isInferred);
+            public Boolean(ThingGraph graph, VertexIID.Attribute<java.lang.Boolean> iid, Existence existence) {
+                super(graph, iid, existence);
             }
 
             @Override
@@ -474,11 +482,11 @@ public abstract class AttributeVertexImpl {
         public static class Long extends AttributeVertexImpl.Write<java.lang.Long> {
 
             public Long(ThingGraph graph, VertexIID.Attribute.Long iid) {
-                this(graph, iid, false);
+                this(graph, iid, STORED);
             }
 
-            public Long(ThingGraph graph, VertexIID.Attribute<java.lang.Long> iid, boolean isInferred) {
-                super(graph, iid, isInferred);
+            public Long(ThingGraph graph, VertexIID.Attribute<java.lang.Long> iid, Existence existence) {
+                super(graph, iid, existence);
             }
 
             @Override
@@ -495,11 +503,11 @@ public abstract class AttributeVertexImpl {
         public static class Double extends AttributeVertexImpl.Write<java.lang.Double> {
 
             public Double(ThingGraph graph, VertexIID.Attribute.Double iid) {
-                this(graph, iid, false);
+                this(graph, iid, STORED);
             }
 
-            public Double(ThingGraph graph, VertexIID.Attribute<java.lang.Double> iid, boolean isInferred) {
-                super(graph, iid, isInferred);
+            public Double(ThingGraph graph, VertexIID.Attribute<java.lang.Double> iid, Existence existence) {
+                super(graph, iid, existence);
             }
 
             @Override
@@ -516,11 +524,11 @@ public abstract class AttributeVertexImpl {
         public static class String extends AttributeVertexImpl.Write<java.lang.String> {
 
             public String(ThingGraph graph, VertexIID.Attribute.String iid) {
-                this(graph, iid, false);
+                this(graph, iid, STORED);
             }
 
-            public String(ThingGraph graph, VertexIID.Attribute<java.lang.String> iid, boolean isInferred) {
-                super(graph, iid, isInferred);
+            public String(ThingGraph graph, VertexIID.Attribute<java.lang.String> iid, Existence existence) {
+                super(graph, iid, existence);
             }
 
             @Override
@@ -537,11 +545,11 @@ public abstract class AttributeVertexImpl {
         public static class DateTime extends AttributeVertexImpl.Write<java.time.LocalDateTime> {
 
             public DateTime(ThingGraph graph, VertexIID.Attribute.DateTime iid) {
-                this(graph, iid, false);
+                this(graph, iid, STORED);
             }
 
-            public DateTime(ThingGraph graph, VertexIID.Attribute<LocalDateTime> iid, boolean isInferred) {
-                super(graph, iid, isInferred);
+            public DateTime(ThingGraph graph, VertexIID.Attribute<LocalDateTime> iid, Existence existence) {
+                super(graph, iid, existence);
             }
 
             @Override

@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 import static com.vaticle.typedb.core.traversal.common.Identifier.Variable.anon;
 
 public class Materialiser {
@@ -72,7 +73,7 @@ public class Materialiser {
                 .orElseGet(() -> putAttribute(materialisable.attrType(), materialisable.value()));
         if (materialisable.owner().hasNonInferred(attribute)) return Optional.empty();
         else {
-            materialisable.owner().setHas(attribute, true);
+            materialisable.owner().setHas(attribute, INFERRED);
             return Optional.of(new Materialisation.Has.Explicit(
                     materialisable.owner(), materialisable.attrType(), attribute)
             );
@@ -89,11 +90,11 @@ public class Materialiser {
     }
 
     private static Attribute putAttribute(AttributeType attrType, ValueConstraint<?> value) {
-        if (attrType.isDateTime()) return attrType.asDateTime().put(value.asConstant().asDateTime().value(), true);
-        else if (attrType.isBoolean()) return attrType.asBoolean().put(value.asConstant().asBoolean().value(), true);
-        else if (attrType.isDouble()) return attrType.asDouble().put(value.asConstant().asDouble().value(), true);
-        else if (attrType.isLong()) return attrType.asLong().put(value.asConstant().asLong().value(), true);
-        else if (attrType.isString()) return attrType.asString().put(value.asConstant().asString().value(), true);
+        if (attrType.isDateTime()) return attrType.asDateTime().put(value.asConstant().asDateTime().value(), INFERRED);
+        else if (attrType.isBoolean()) return attrType.asBoolean().put(value.asConstant().asBoolean().value(), INFERRED);
+        else if (attrType.isDouble()) return attrType.asDouble().put(value.asConstant().asDouble().value(), INFERRED);
+        else if (attrType.isLong()) return attrType.asLong().put(value.asConstant().asLong().value(), INFERRED);
+        else if (attrType.isString()) return attrType.asString().put(value.asConstant().asString().value(), INFERRED);
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
@@ -101,7 +102,7 @@ public class Materialiser {
         Thing owner = materialisable.owner();
         Attribute attribute = materialisable.attribute();
         if (owner.hasNonInferred(attribute)) return Optional.empty();
-        else owner.setHas(attribute, true);
+        else owner.setHas(attribute, INFERRED);
         return Optional.of(new Materialisation.Has.Variable(owner, attribute));
     }
 
@@ -158,10 +159,10 @@ public class Materialiser {
     }
 
     private static Relation insert(Conclusion.Relation.Materialisable materialisable) {
-        Relation relation = materialisable.relationType().create(true);
+        Relation relation = materialisable.relationType().create(INFERRED);
         materialisable.players().forEach((rp, numOccurrences) -> {
             for (int i = 1; i <= numOccurrences; i++) {
-                relation.addPlayer(rp.first(), rp.second(), true);
+                relation.addPlayer(rp.first(), rp.second(), INFERRED);
             }
         });
         return relation;

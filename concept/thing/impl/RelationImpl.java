@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.concept.thing.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Relation;
@@ -44,6 +45,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.T
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.PLAYING;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.RELATING;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
@@ -66,12 +69,12 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public void addPlayer(RoleType roleType, Thing player) {
-        addPlayer(roleType, player, false);
+        addPlayer(roleType, player, STORED);
     }
 
     @Override
-    public void addPlayer(RoleType roleType, Thing player, boolean isInferred) {
-        assert isInferred() == isInferred;
+    public void addPlayer(RoleType roleType, Thing player, Existence existence) {
+        assert isInferred() == (existence == INFERRED);
         validateIsNotDeleted();
         if (this.getType().getRelates().noneMatch(t -> t.equals(roleType))) {
             throw exception(TypeDBException.of(RELATION_ROLE_UNRELATED, this.getType().getLabel(), roleType.getLabel()));
@@ -79,9 +82,9 @@ public class RelationImpl extends ThingImpl implements Relation {
             throw exception(TypeDBException.of(THING_ROLE_UNPLAYED, player.getType().getLabel(), roleType.getLabel().toString()));
         }
 
-        RoleImpl role = ((RoleTypeImpl) roleType).create(isInferred);
-        writableVertex().outs().put(RELATING, role.vertex, isInferred);
-        ((ThingImpl) player).writableVertex().outs().put(PLAYING, role.vertex, isInferred);
+        RoleImpl role = ((RoleTypeImpl) roleType).create(existence);
+        writableVertex().outs().put(RELATING, role.vertex, existence);
+        ((ThingImpl) player).writableVertex().outs().put(PLAYING, role.vertex, existence);
         role.optimise();
     }
 

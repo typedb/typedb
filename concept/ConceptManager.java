@@ -24,6 +24,9 @@ import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Entity;
+import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.thing.impl.ThingImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -62,6 +65,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
@@ -214,6 +218,24 @@ public final class ConceptManager {
         else return null;
     }
 
+    public Entity getEntity(ByteArray iid) {
+        Thing thing = getThing(iid);
+        if (thing != null) return thing.asEntity();
+        else return null;
+    }
+
+    public Relation getRelation(ByteArray iid) {
+        Thing thing = getThing(iid);
+        if (thing != null) return thing.asRelation();
+        else return null;
+    }
+
+    public Attribute getAttribute(ByteArray iid) {
+        Thing thing = getThing(iid);
+        if (thing != null) return thing.asAttribute();
+        else return null;
+    }
+
     public ThingType convertThingType(TypeVertex vertex) {
         assert vertex.encoding() != Encoding.Vertex.Type.ROLE_TYPE;
         return thingTypeConverter(vertex.encoding()).apply(vertex);
@@ -324,11 +346,11 @@ public final class ConceptManager {
 
     public String typesSyntax() {
         StringBuilder stringBuilder = new StringBuilder();
-        getRootAttributeType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
+        getRootAttributeType().getSubtypes(EXPLICIT).stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(at -> at.getSyntaxRecursive(stringBuilder));
-        getRootRelationType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
+        getRootRelationType().getSubtypes(EXPLICIT).stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(rt -> rt.getSyntaxRecursive(stringBuilder));
-        getRootEntityType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
+        getRootEntityType().getSubtypes(EXPLICIT).stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(et -> et.getSyntaxRecursive(stringBuilder));
         return stringBuilder.toString();
     }

@@ -20,7 +20,7 @@
 @maven//:com_google_ortools_ortools_linux_x86_64_java_8_0_8283
 @maven//:com_google_ortools_ortools_win32_x86_64_8_0_8283
 @maven//:com_google_ortools_ortools_win32_x86_64_java_8_0_8283
-@maven//:com_google_protobuf_protobuf_java_3_14_0
+@maven//:com_google_protobuf_protobuf_java_3_20_1
 @maven//:commons_codec_commons_codec_1_11
 @maven//:commons_io_commons_io_2_3
 @maven//:commons_logging_commons_logging_1_2

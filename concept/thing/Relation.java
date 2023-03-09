@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.concept.thing;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 
@@ -34,7 +35,7 @@ public interface Relation extends Thing {
 
     void addPlayer(RoleType roleType, Thing player);
 
-    void addPlayer(RoleType roleType, Thing player, boolean isInferred);
+    void addPlayer(RoleType roleType, Thing player, Existence existence);
 
     void removePlayer(RoleType roleType, Thing player);
 

@@ -40,6 +40,7 @@ host_compatible_java_library(
     native_libraries_deps = [
         # Internal dependencies
         "//concept:concept",
+        "//common:common",
         "//common/test:util",
     ],
 )
