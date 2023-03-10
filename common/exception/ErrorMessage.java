@@ -334,7 +334,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final ThingWrite UNENCODABLE_STRING =
                 new ThingWrite(3, "The string '%s' cannot be encoded to bytes using the encoding '%s'.");
         public static final ThingWrite THING_HAS_BEEN_DELETED =
-                new ThingWrite(4, "The thing with iid '%s' has been deleted and cannot be modified any further.");
+                new ThingWrite(4, "Instance '%s' of type '%s' has been deleted and cannot be modified any further.");
         public static final ThingWrite THING_CANNOT_OWN_ATTRIBUTE =
                 new ThingWrite(5, "Attribute of type '%s' is not defined to be owned by type '%s'.");
         public static final ThingWrite THING_KEY_OVER =
