@@ -109,7 +109,7 @@ public class Deleter {
     public void execute() {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
             List<? extends ConceptMap> matches = matcher.execute(context).toList();
-            matches.forEach(matched -> new Operation(matched, variables).execute());
+            matches.forEach(matched -> new Operation(matched, variables).executeInPlace());
         }
     }
 
@@ -127,7 +127,7 @@ public class Deleter {
             this.detached = new HashMap<>();
         }
 
-        void execute() {
+        void executeInPlace() {
             try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
                 variables.forEach(this::delete);
                 variables.forEach(this::deleteIsa);
@@ -183,6 +183,7 @@ public class Deleter {
                         if (type.getSupertypes().anyMatch(t -> t.getLabel().equals(typeLabel))) thing.delete();
                         else throw TypeDBException.of(INVALID_DELETE_THING, var.reference(), typeLabel);
                     }
+                    matched.concepts().remove(var.id());
                 }
             }
         }
