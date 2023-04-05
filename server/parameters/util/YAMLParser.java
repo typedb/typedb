@@ -284,6 +284,11 @@ public class YAMLParser {
                     (yaml) -> Bytes.parse(yaml.asString().value()),
                     "<size>"
             );
+            public static final Primitive<Long> DURATION = new Primitive<>(
+                    (yaml) -> yaml.isString() && Duration.isValidDurationString(yaml.asString().value()),
+                    (yaml) -> Duration.parse(yaml.asString().value()),
+                    "<duration>"
+            );
             public static final Primitive<InetSocketAddress> INET_SOCKET_ADDRESS = new Primitive<>(
                     (yaml) -> {
                         if (!yaml.isString()) return false;
@@ -395,6 +400,39 @@ public class YAMLParser {
 
             private static boolean isValidSizeString(String size) {
                 Matcher matcher = FILE_SIZE_PATTERN.matcher(size);
+                return matcher.matches();
+            }
+        }
+
+        private static class Duration {
+
+            private final static String LENGTH_PART = "(^[0-9]+)";
+            private final static int LENGTH_GROUP = 1;
+            private final static String UNIT_PART = "([wdhms]$)";
+            private final static int UNIT_GROUP = 2;
+            private static final Pattern DURATION_PATTERN = Pattern.compile(LENGTH_PART + UNIT_PART, Pattern.CASE_INSENSITIVE);
+
+            private static long parse(String duration) {
+                Matcher matcher = DURATION_PATTERN.matcher(duration);
+                long coefficient;
+                if (matcher.matches()) {
+                    String lenStr = matcher.group(LENGTH_GROUP);
+                    String unitStr = matcher.group(UNIT_GROUP);
+                    long lenValue = Long.parseLong(lenStr);
+                    if (unitStr.equalsIgnoreCase("w")) coefficient = com.vaticle.typedb.core.common.collection.Duration.WEEK;
+                    else if (unitStr.equalsIgnoreCase("d")) coefficient = com.vaticle.typedb.core.common.collection.Duration.DAY;
+                    else if (unitStr.equalsIgnoreCase("h")) coefficient = com.vaticle.typedb.core.common.collection.Duration.HOUR;
+                    else if (unitStr.equalsIgnoreCase("m")) coefficient = com.vaticle.typedb.core.common.collection.Duration.MINUTE;
+                    else if (unitStr.equalsIgnoreCase("s")) coefficient = com.vaticle.typedb.core.common.collection.Duration.SECOND;
+                    else throw new IllegalStateException("Unexpected duration unit: " + unitStr);
+                    return lenValue * coefficient;
+                } else {
+                    throw new IllegalArgumentException("Duration [" + duration + "] is not in a recognised format.");
+                }
+            }
+
+            private static boolean isValidDurationString(String duration) {
+                Matcher matcher = DURATION_PATTERN.matcher(duration);
                 return matcher.matches();
             }
         }
