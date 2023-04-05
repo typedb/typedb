@@ -25,6 +25,8 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -408,24 +410,23 @@ public class YAMLParser {
 
             private final static String LENGTH_PART = "(^[0-9]+)";
             private final static int LENGTH_GROUP = 1;
-            private final static String UNIT_PART = "([wdhms]$)";
+            private final static String UNIT_PART = "([dhms]$)";
             private final static int UNIT_GROUP = 2;
             private static final Pattern DURATION_PATTERN = Pattern.compile(LENGTH_PART + UNIT_PART, Pattern.CASE_INSENSITIVE);
 
             private static long parse(String duration) {
                 Matcher matcher = DURATION_PATTERN.matcher(duration);
-                long coefficient;
+                long result;
                 if (matcher.matches()) {
                     String lenStr = matcher.group(LENGTH_GROUP);
                     String unitStr = matcher.group(UNIT_GROUP);
                     long lenValue = Long.parseLong(lenStr);
-                    if (unitStr.equalsIgnoreCase("w")) coefficient = com.vaticle.typedb.core.common.collection.Duration.WEEK;
-                    else if (unitStr.equalsIgnoreCase("d")) coefficient = com.vaticle.typedb.core.common.collection.Duration.DAY;
-                    else if (unitStr.equalsIgnoreCase("h")) coefficient = com.vaticle.typedb.core.common.collection.Duration.HOUR;
-                    else if (unitStr.equalsIgnoreCase("m")) coefficient = com.vaticle.typedb.core.common.collection.Duration.MINUTE;
-                    else if (unitStr.equalsIgnoreCase("s")) coefficient = com.vaticle.typedb.core.common.collection.Duration.SECOND;
+                    if (unitStr.equalsIgnoreCase("d")) result = java.time.Duration.of(lenValue, ChronoUnit.DAYS).toSeconds();
+                    else if (unitStr.equalsIgnoreCase("h")) result = java.time.Duration.of(lenValue, ChronoUnit.HOURS).toSeconds();
+                    else if (unitStr.equalsIgnoreCase("m")) result = java.time.Duration.of(lenValue, ChronoUnit.MINUTES).toSeconds();
+                    else if (unitStr.equalsIgnoreCase("s")) result = java.time.Duration.of(lenValue, ChronoUnit.SECONDS).toSeconds();
                     else throw new IllegalStateException("Unexpected duration unit: " + unitStr);
-                    return lenValue * coefficient;
+                    return result;
                 } else {
                     throw new IllegalArgumentException("Duration [" + duration + "] is not in a recognised format.");
                 }
