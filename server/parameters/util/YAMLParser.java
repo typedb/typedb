@@ -416,7 +416,7 @@ public class YAMLParser {
 
             private static long parse(String durationString) {
                 Matcher matcher = DURATION_PATTERN.matcher(durationString);
-                Duration duration;
+                java.time.Duration duration;
                 if (matcher.matches()) {
                     String lenStr = matcher.group(LENGTH_GROUP);
                     String unitStr = matcher.group(UNIT_GROUP);
