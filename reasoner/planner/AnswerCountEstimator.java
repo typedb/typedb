@@ -165,7 +165,7 @@ public class AnswerCountEstimator {
             Variable bestScalingVar = scale.second().orElse(null);
             // Find scaling factor
             for (Variable v : model.variables) {
-                double ans = (double) Math.max(1,model.estimateAnswers(set(v)));
+                double ans = (double) Math.max(1, model.estimateAnswers(set(v)));
                 if (minVariableEstimate.containsKey(v) && minVariableEstimate.get(v) / ans < bestScaler) {
                     bestScaler = minVariableEstimate.get(v) / ans;
                     bestScalingVar = v;
@@ -228,6 +228,10 @@ public class AnswerCountEstimator {
             return Math.round(Math.ceil(answerEstimateFromCover(variables, cover)));
         }
 
+        public double answerSetSize() {
+            return answerEstimate(minVariableEstimate.keySet());
+        }
+
         private static double scaledEstimate(LocalModel model, Pair<Double, Optional<Variable>> scale, Set<Variable> estimateVariables) {
             assert scale.second().isPresent() || scale.first() == 1.0;
             Set<Variable> variables = new HashSet<>();
@@ -253,7 +257,7 @@ public class AnswerCountEstimator {
             IncrementalEstimator cloned = new IncrementalEstimator(conjunctionModel, localModelFactory, set());
             cloned.minVariableEstimate.putAll(this.minVariableEstimate);
             cloned.modelScale.putAll(this.modelScale);
-            this.affectedModels.forEach((k,v) -> cloned.affectedModels.put(k, new HashSet<>(v)));
+            this.affectedModels.forEach((k, v) -> cloned.affectedModels.put(k, new HashSet<>(v)));
             return cloned;
         }
 
@@ -446,8 +450,7 @@ public class AnswerCountEstimator {
             static Label getRoleType(RelationConstraint.RolePlayer player) {
                 if (player.roleType().isPresent() && player.roleType().get().label().isPresent()) {
                     return player.roleType().get().label().get().properLabel();
-                }
-                else if (player.inferredRoleTypes().size()==1) return iterate(player.inferredRoleTypes()).next();
+                } else if (player.inferredRoleTypes().size() == 1) return iterate(player.inferredRoleTypes()).next();
                 else return null;
             }
 
@@ -487,7 +490,7 @@ public class AnswerCountEstimator {
 
             private double nPermuteKforSmallK(long n, long k) {
                 assert n >= k;
-                n = Math.max(n,k); // Guard against 0. (Although 0 is the right answer it's not useful)
+                n = Math.max(n, k); // Guard against 0. (Although 0 is the right answer it's not useful)
                 double ans = 1;
                 for (int i = 0; i < k; i++) ans *= n - i;
                 return ans;
@@ -611,7 +614,7 @@ public class AnswerCountEstimator {
                 }
             }
 
-            for (Label key: rolePlayerCounts.keySet()) {
+            for (Label key : rolePlayerCounts.keySet()) {
                 rolePlayerEstimates.put(key, rolePlayerEstimates.get(key) +
                         rolePlayerCounts.get(key) * Double.valueOf(Math.ceil(inferredRelationsEstimate)).longValue());
             }
@@ -674,11 +677,35 @@ public class AnswerCountEstimator {
                         ruleSideIds = new HashSet<>(rule.conclusion().conjunction().pattern().retrieves());
                     }
 
-                    for (Rule.Condition.ConditionBranch conditionBranch: rule.condition().branches()) {
+                    for (Rule.Condition.ConditionBranch conditionBranch : rule.condition().branches()) {
                         ruleSideVariables = iterate(ruleSideIds)
                                 .filter(id -> conditionBranch.conjunction().pattern().retrieves().contains(id))
                                 .map(id -> conditionBranch.conjunction().pattern().variable(id)).toSet();
-                        inferredEstimate += answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), ruleSideVariables);
+                        double inferredEstimateForThisBranch = answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), ruleSideVariables);
+
+                        if (concludable.isRelation() && inferredEstimateForThisBranch > 0) {
+                            Map<Variable, Double> typeBasedUpperBoundsPerPlayer = new HashMap<>();
+                            iterate(ruleSideVariables).filter(Variable::isThing)
+                                .forEachRemaining(v -> typeBasedUpperBoundsPerPlayer.put(v, (double)countPersistedThingsMatchingType(v.asThing())));
+
+                            // Roughly - We replace the type-based estimate for inferrable role-players with the inferred estimate when doing the heuristic upper bound
+                            Set<Variable> inferredRolePlayers = iterate(ruleSideVariables).filter(Variable::isThing)
+                                    .filter(v -> iterate(v.inferredTypes()).anyMatch(type -> answerCountEstimator.logicMgr.rulesConcluding(type).hasNext()))
+                                    .toSet();
+
+                            iterate(inferredRolePlayers)
+                                .forEachRemaining(inferrableRoleplayer -> {
+                                    if (typeBasedUpperBoundsPerPlayer.getOrDefault(inferrableRoleplayer, 1.0) < inferredEstimateForThisBranch) {
+                                        typeBasedUpperBoundsPerPlayer.merge(inferrableRoleplayer, 1.0, (x,y) -> 1.0);
+                                    }
+                                });
+
+                            double replacementForInferred = typeBasedUpperBoundsPerPlayer.size() < ruleSideVariables.size() ? inferredEstimateForThisBranch : 1.0;
+                            double heuristicUpperBound = Math.ceil(Math.sqrt(iterate(typeBasedUpperBoundsPerPlayer.values()).reduce(replacementForInferred, (x,y) -> x * y)));
+                            inferredEstimate += Math.min(inferredEstimateForThisBranch, heuristicUpperBound);
+                        } else {
+                            inferredEstimate += inferredEstimateForThisBranch;
+                        }
                     }
                 }
             }
