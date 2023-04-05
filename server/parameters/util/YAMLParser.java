@@ -416,17 +416,17 @@ public class YAMLParser {
 
             private static long parse(String duration) {
                 Matcher matcher = DURATION_PATTERN.matcher(duration);
-                long result;
+                Duration duration;
                 if (matcher.matches()) {
                     String lenStr = matcher.group(LENGTH_GROUP);
                     String unitStr = matcher.group(UNIT_GROUP);
                     long lenValue = Long.parseLong(lenStr);
-                    if (unitStr.equalsIgnoreCase("d")) result = java.time.Duration.of(lenValue, ChronoUnit.DAYS).toSeconds();
-                    else if (unitStr.equalsIgnoreCase("h")) result = java.time.Duration.of(lenValue, ChronoUnit.HOURS).toSeconds();
-                    else if (unitStr.equalsIgnoreCase("m")) result = java.time.Duration.of(lenValue, ChronoUnit.MINUTES).toSeconds();
-                    else if (unitStr.equalsIgnoreCase("s")) result = java.time.Duration.of(lenValue, ChronoUnit.SECONDS).toSeconds();
+                    if (unitStr.equalsIgnoreCase("d")) duration = java.time.Duration.of(lenValue, ChronoUnit.DAYS);
+                    else if (unitStr.equalsIgnoreCase("h")) duration = java.time.Duration.of(lenValue, ChronoUnit.HOURS);
+                    else if (unitStr.equalsIgnoreCase("m")) duration = java.time.Duration.of(lenValue, ChronoUnit.MINUTES);
+                    else if (unitStr.equalsIgnoreCase("s")) duration = java.time.Duration.of(lenValue, ChronoUnit.SECONDS);
                     else throw new IllegalStateException("Unexpected duration unit: " + unitStr);
-                    return result;
+                    return duration.toSeconds();
                 } else {
                     throw new IllegalArgumentException("Duration [" + duration + "] is not in a recognised format.");
                 }
