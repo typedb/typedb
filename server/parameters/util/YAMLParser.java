@@ -414,8 +414,8 @@ public class YAMLParser {
             private final static int UNIT_GROUP = 2;
             private static final Pattern DURATION_PATTERN = Pattern.compile(LENGTH_PART + UNIT_PART, Pattern.CASE_INSENSITIVE);
 
-            private static long parse(String duration) {
-                Matcher matcher = DURATION_PATTERN.matcher(duration);
+            private static long parse(String durationString) {
+                Matcher matcher = DURATION_PATTERN.matcher(durationString);
                 Duration duration;
                 if (matcher.matches()) {
                     String lenStr = matcher.group(LENGTH_GROUP);
@@ -428,12 +428,12 @@ public class YAMLParser {
                     else throw new IllegalStateException("Unexpected duration unit: " + unitStr);
                     return duration.toSeconds();
                 } else {
-                    throw new IllegalArgumentException("Duration [" + duration + "] is not in a recognised format.");
+                    throw new IllegalArgumentException("Duration [" + durationString + "] is not in a recognised format.");
                 }
             }
 
-            private static boolean isValidDurationString(String duration) {
-                Matcher matcher = DURATION_PATTERN.matcher(duration);
+            private static boolean isValidDurationString(String durationString) {
+                Matcher matcher = DURATION_PATTERN.matcher(durationString);
                 return matcher.matches();
             }
         }
