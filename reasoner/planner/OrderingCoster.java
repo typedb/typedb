@@ -100,6 +100,8 @@ public class OrderingCoster {
             } else {
                 disconnectedCost += resolvableCost;
             }
+            // TODO: Add permutative traversal cost as below. (Needs to be uncommented and tested)
+            // acyclicCost += estimator.answerEstimate(boundVars);
 
             if (!resolvable.isNegated()) {
                 boundVars.addAll(resolvableVars);
