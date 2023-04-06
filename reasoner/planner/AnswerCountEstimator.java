@@ -683,7 +683,8 @@ public class AnswerCountEstimator {
                                 .map(id -> conditionBranch.conjunction().pattern().variable(id)).toSet();
                         double inferredEstimateForThisBranch = answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), ruleSideVariables);
 
-                        if (concludable.isRelation() && inferredEstimateForThisBranch > 0) {
+                        if (concludable.isRelation() && inferredEstimateForThisBranch > 0 &&
+                                !answerCountEstimator.conjunctionGraph.conjunctionNode(conditionBranch.conjunction()).cyclicConcludables().isEmpty()) {
                             Map<Variable, Double> typeBasedUpperBoundsPerPlayer = new HashMap<>();
                             iterate(ruleSideVariables).filter(Variable::isThing)
                                 .forEachRemaining(v -> typeBasedUpperBoundsPerPlayer.put(v, (double)countPersistedThingsMatchingType(v.asThing())));
