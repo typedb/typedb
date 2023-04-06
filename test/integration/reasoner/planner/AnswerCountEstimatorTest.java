@@ -550,8 +550,10 @@ public class AnswerCountEstimatorTest {
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(18.0, answers);
-            // 18 = 3 + 3 * 5  =  3 from rule-1 (coplayer) +  3 * 5  ($f1.unary(rp) * $f2.unary(type))  from rule-2
+            assertEquals(8.0, answers);
+            // 8 = 3 + min(sqrt(5 * 5),  3 * 5)  =  3 from rule-1 (coplayer) +  min(   from rule-2
+            //                                                                       sqrt(5 * 5), ($f1.unary(type) * f2.unary(type)
+            //                                                                       3 * 5  ($f1.unary(rp) * $f2.unary(type))
         }
 
         {
@@ -583,14 +585,15 @@ public class AnswerCountEstimatorTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$r (friendor: $x, friendee: $y) isa friendship; }", transaction.logic()));
 
             double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(25.0, answers);
-            // 25 = 5 * 5 = $x-unary(type) from ; $y-unary(type);   The multivar estimates aren't used because they are 3 + 25
+            assertEquals(8.0, answers);
+            // 8 = sqrt(5 * 5) + 3  = reachability estimate + retrieved count
 
             double answers1 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r", "x", "y")));
-            assertEquals(25.0, answers1); // Still exceeds the types.
+            assertEquals(8.0, answers1); // Still exceeds the types.
+            // 8 = sqrt(5 * 5) + 3  = reachability estimate + retrieved count
 
             double answers2 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r")));
-            assertEquals(25.0, answers2);
+            assertEquals(8.0, answers2);
         }
     }
 
@@ -635,13 +638,14 @@ public class AnswerCountEstimatorTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
 
             double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(25.0, answers);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
+            assertEquals(13.0, answers);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
+            // 13 = 3 (rule 1) + sqrt(5*5) (rule 2) + sqrt(5*5) (rule 5)
         }
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(guest: $x, host: $y) isa can-live-with; }", transaction.logic()));
 
             double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(25.0, answers);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
+            assertEquals(9.0, answers);  // 4 (rule 3) + (sqrt(5*5) rule 4)
         }
     }
 
