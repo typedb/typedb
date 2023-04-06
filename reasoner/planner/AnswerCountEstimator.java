@@ -703,7 +703,8 @@ public class AnswerCountEstimator {
 
                             double replacementForInferred = typeBasedUpperBoundsPerPlayer.size() < ruleSideVariables.size() ? inferredEstimateForThisBranch : 1.0;
 
-                            // All possible combinations is a terrible overestimate for transitive relations, since everything is unlikely to be connected.
+                            // All possible combinations assumes full-connectivity, producing an unrealistically large/worst-case estimate.
+                            // We take the square root of all possible combinations as a more realistic estimate.
                             double heuristicUpperBound = Math.ceil(Math.sqrt(iterate(typeBasedUpperBoundsPerPlayer.values()).reduce(replacementForInferred, (x,y) -> x * y)));
                             inferredEstimate += Math.min(inferredEstimateForThisBranch, heuristicUpperBound);
                         } else {
