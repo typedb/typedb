@@ -40,9 +40,9 @@ import static com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner.estimatea
 
 public class OrderingCoster {
 
-    // Answer propagation should have a low relative cost
-    //  just be a penalty against permutative combination of cheap to generate answers.
-    private static final double RELATIVE_COST_ANSWER_PROPAGATION = 1.0;
+    // Answer propagation can have a lower relative cost
+    //  since combining the answers involves no reasoning/retrieval but only table lookups.
+    private static final double RELATIVE_COST_ANSWER_COMBINATION = 1.0;
 
     private final ReasonerPlanner planner;
     private final AnswerCountEstimator answerCountEstimator;
@@ -256,7 +256,7 @@ public class OrderingCoster {
             singlyBoundCost += resolvableCost; // Reasoning cost - recursive work
 
             // Traversal cost - DFS style permutative work
-            singlyBoundCost += estimator.answerSetSize() * RELATIVE_COST_ANSWER_PROPAGATION;
+            singlyBoundCost += estimator.answerSetSize() * RELATIVE_COST_ANSWER_COMBINATION;
 
             if (!resolvable.isNegated()) {
                 boundVars.addAll(resolvable.variables()); // We need non-estimateable variables too.
