@@ -28,6 +28,9 @@ host_compatible_java_library(
         "//concept:concept",
     ],
     deps = [
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java/common:common",
+
         # External Maven Dependencies
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java"

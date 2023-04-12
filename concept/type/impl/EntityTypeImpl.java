@@ -29,6 +29,9 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typeql.lang.common.TypeQLToken;
+
+import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
@@ -117,7 +120,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     public void getSyntax(StringBuilder builder) {
         writeSupertype(builder);
         writeAbstract(builder);
-        writeOwnsAttributes(builder);
+        writeOwns(builder);
         writePlays(builder);
         builder.append(SEMICOLON).append(NEW_LINE);
     }
@@ -160,12 +163,12 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 

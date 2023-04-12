@@ -33,6 +33,7 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -135,41 +136,30 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public boolean isKeyable() {
-        return vertex.valueType().isKeyable();
-    }
-
-    @Override
     public abstract ValueType getValueType();
 
     @Override
-    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwners() {
-        return getOwners(false);
-    }
-
-    @Override
-    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwners(boolean onlyKey) {
+    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations) {
         if (isRoot()) return emptySorted();
-        else if (onlyKey) {
-            return iterateSorted(graphMgr.schema().ownersOfAttributeTypeKey(vertex), ASC)
-                    .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
-        } else {
+        else {
             return iterateSorted(graphMgr.schema().ownersOfAttributeType(vertex), ASC)
-                    .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
+                    .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC)
+                    .filter(thingType -> thingType.getOwns(this)
+                            .map(owns -> owns.effectiveAnnotations().containsAll(annotations))
+                            .orElse(false)
+                    );
         }
     }
 
     @Override
-    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwnersExplicit() {
-        return getOwnersExplicit(false);
-    }
-
-    @Override
-    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwnersExplicit(boolean onlyKey) {
+    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwnersExplicit(Set<TypeQLToken.Annotation> annotations) {
         if (isRoot()) return emptySorted();
-        Forwardable<TypeVertex, Order.Asc> iterator = vertex.ins().edge(OWNS_KEY).from();
-        if (!onlyKey) iterator = iterator.merge(vertex.ins().edge(OWNS).from());
-        return iterator.mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
+        Forwardable<TypeVertex, Order.Asc> iterator = vertex.ins().edge(OWNS_KEY).from().merge(vertex.ins().edge(OWNS).from());
+        return iterator.mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC)
+                .filter(thingType -> thingType.getOwnsExplicit(this)
+                        .map(owns -> owns.effectiveAnnotations().containsAll(annotations))
+                        .orElse(false)
+                );
     }
 
     @Override
@@ -228,13 +218,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public AttributeTypeImpl.String asString() {
         throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                                           className(AttributeType.String.class)));
+                className(AttributeType.String.class)));
     }
 
     @Override
     public AttributeTypeImpl.DateTime asDateTime() {
         throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                                           className(AttributeType.DateTime.class)));
+                className(AttributeType.DateTime.class)));
     }
 
     @Override
@@ -252,7 +242,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                         .append(quoteString(escapeRegex(regex.pattern())));
             }
         }
-        writeOwnsAttributes(builder);
+        writeOwns(builder);
         writePlays(builder);
         builder.append(SEMICOLON).append(NEW_LINE);
     }
@@ -376,12 +366,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
@@ -526,12 +516,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
@@ -676,12 +666,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
@@ -826,12 +816,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
@@ -1005,12 +995,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
@@ -1165,12 +1155,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 

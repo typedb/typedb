@@ -29,8 +29,9 @@ host_compatible_java_library(
         "//test/behaviour/concept/type/thingtype:steps",
         "//test/behaviour/connection:steps",
 
-        # Internal Repository Dependencies
-        # "@vaticle_typedb_common//:common",
+        # Vaticle Dependencies
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java/common",
 
         # External Maven Dependencies
         "@maven//:junit_junit",

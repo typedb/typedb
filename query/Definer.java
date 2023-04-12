@@ -240,9 +240,9 @@ public class Definer {
                 AttributeType attributeType = define(owns.attribute()).asAttributeType();
                 if (owns.overridden().isPresent()) {
                     AttributeType overriddenType = define(owns.overridden().get()).asAttributeType();
-                    thingType.setOwns(attributeType, overriddenType, owns.isKey());
+                    thingType.setOwns(attributeType, overriddenType, owns.annotations());
                 } else {
-                    thingType.setOwns(attributeType, owns.isKey());
+                    thingType.setOwns(attributeType, owns.annotations());
                 }
             });
         }

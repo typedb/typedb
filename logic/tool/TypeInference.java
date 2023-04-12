@@ -52,6 +52,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -61,8 +62,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
-import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INCOHERENT_PATTERN_VARIABLE_VALUE;
@@ -71,6 +70,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
+import static java.util.Collections.emptySet;
 
 public class TypeInference {
 
@@ -205,7 +205,7 @@ public class TypeInference {
         private void applyCombination(LogicCache logicCache) {
             Boolean isCoherent = logicCache.queryCoherence().get(
                     traversal,
-                    traversal -> traversalEng.combination(traversal, Collections.emptySet()).isPresent()
+                    traversal -> traversalEng.combination(traversal, emptySet()).isPresent()
             );
             if (isCoherent) {
                 conjunction.setCoherent(true);
@@ -284,7 +284,7 @@ public class TypeInference {
 
         private void registerOwns(TypeVariable inferenceVar, OwnsConstraint ownsConstraint) {
             TypeVariable attrVar = register(ownsConstraint.attribute());
-            traversal.owns(inferenceVar.id(), attrVar.id(), ownsConstraint.isKey());
+            traversal.owns(inferenceVar.id(), attrVar.id(), ownsConstraint.annotations());
         }
 
         private void registerPlays(TypeVariable inferenceVar, PlaysConstraint playsConstraint) {
@@ -377,7 +377,7 @@ public class TypeInference {
 
         private void registerHas(TypeVariable inferenceVar, HasConstraint hasConstraint) {
             TypeVariable attrVar = register(hasConstraint.attribute());
-            traversal.owns(inferenceVar.id(), attrVar.id(), false);
+            traversal.owns(inferenceVar.id(), attrVar.id(), emptySet());
         }
 
         private void registerRelation(TypeVariable inferenceVar, RelationConstraint constraint) {

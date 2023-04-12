@@ -51,6 +51,8 @@ public interface Edge<EDGE_ENCODING extends Encoding.Edge, VERTEX extends Vertex
      */
     void delete();
 
+    boolean isDeleted();
+
     /**
      * Commits the edge to the graph for persistent storage.
      */

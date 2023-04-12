@@ -646,7 +646,7 @@ public class DataImporter {
         enum Prefix {
             ID_MAPPING(0),
             ID_INCOMPLETE(1);
-            ByteArray bytes;
+            final ByteArray bytes;
 
             Prefix(int key) {
                 this.bytes = ByteArray.of(new byte[]{unsignedByte(key)});

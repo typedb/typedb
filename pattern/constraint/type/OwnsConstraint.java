@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -32,26 +33,26 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.OVERRIDDEN_TYPES_IN_TRAVERSAL;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.AT;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.AS;
-import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IS_KEY;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.OWNS;
 
 public class OwnsConstraint extends TypeConstraint {
 
     private final TypeVariable attributeType;
     private final TypeVariable overriddenAttributeType;
-    private final boolean isKey;
+    private final Set<TypeQLToken.Annotation> annotations;
     private final int hash;
 
     public OwnsConstraint(TypeVariable owner, TypeVariable attributeType,
-                          @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
+                          @Nullable TypeVariable overriddenAttributeType, Set<TypeQLToken.Annotation> annotations) {
         super(owner, attributeTypes(attributeType, overriddenAttributeType));
         this.attributeType = attributeType;
         this.overriddenAttributeType = overriddenAttributeType;
-        this.isKey = isKey;
+        this.annotations = annotations;
         this.hash = Objects.hash(OwnsConstraint.class, this.owner, this.attributeType,
-                                 this.overriddenAttributeType, this.isKey);
+                this.overriddenAttributeType, annotations);
         attributeType.constraining(this);
         if (overriddenAttributeType != null) overriddenAttributeType.constraining(this);
     }
@@ -60,13 +61,13 @@ public class OwnsConstraint extends TypeConstraint {
                              VariableRegistry registry) {
         TypeVariable attributeType = registry.register(constraint.attribute());
         TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
-        return new OwnsConstraint(owner, attributeType, overriddenType, constraint.isKey());
+        return new OwnsConstraint(owner, attributeType, overriddenType, set(constraint.annotations()));
     }
 
     static OwnsConstraint of(TypeVariable owner, OwnsConstraint clone, VariableCloner cloner) {
         TypeVariable attributeType = cloner.clone(clone.attribute());
         TypeVariable overriddenType = clone.overridden().map(cloner::clone).orElse(null);
-        return new OwnsConstraint(owner, attributeType, overriddenType, clone.isKey());
+        return new OwnsConstraint(owner, attributeType, overriddenType, clone.annotations());
     }
 
     public TypeVariable attribute() {
@@ -77,14 +78,14 @@ public class OwnsConstraint extends TypeConstraint {
         return Optional.ofNullable(overriddenAttributeType);
     }
 
-    public boolean isKey() {
-        return isKey;
+    public Set<TypeQLToken.Annotation> annotations() {
+        return annotations;
     }
 
     @Override
     public void addTo(GraphTraversal.Thing traversal) {
         if (overridden().isPresent()) throw TypeDBException.of(OVERRIDDEN_TYPES_IN_TRAVERSAL);
-        traversal.owns(owner.id(), attributeType.id(), isKey);
+        traversal.owns(owner.id(), attributeType.id(), annotations);
     }
 
     @Override
@@ -105,7 +106,7 @@ public class OwnsConstraint extends TypeConstraint {
         return (this.owner.equals(that.owner) &&
                 this.attributeType.equals(that.attributeType) &&
                 Objects.equals(this.overriddenAttributeType, that.overriddenAttributeType) &&
-                this.isKey == that.isKey);
+                this.annotations.equals(that.annotations));
     }
 
     @Override
@@ -116,8 +117,8 @@ public class OwnsConstraint extends TypeConstraint {
     @Override
     public String toString() {
         return owner.toString() + SPACE + OWNS + SPACE + attributeType.toString()
-                + (overriddenAttributeType != null ? "" + SPACE + AS + SPACE + overriddenAttributeType.toString() : "")
-                + (isKey ? "" + SPACE + IS_KEY : "");
+                + (overriddenAttributeType != null ? "" + SPACE + AS + SPACE + overriddenAttributeType : "")
+                + (annotations.stream().map(annotation -> AT + annotation.toString()).collect(SPACE.joiner()));
     }
 
     @Override
@@ -125,7 +126,7 @@ public class OwnsConstraint extends TypeConstraint {
         return cloner.cloneVariable(owner).owns(
                 cloner.cloneVariable(attributeType),
                 overriddenAttributeType == null ? null : cloner.cloneVariable(overriddenAttributeType),
-                isKey
+                set(annotations)
         );
     }
 

@@ -29,7 +29,7 @@ import java.util.Optional;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_OUTPUT_UNRECOGNISED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_LOG_OUTPUT_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_REASONER_REQUIRES_DIR_OUTPUT;
 
 public class CoreConfig {
@@ -263,7 +263,7 @@ public class CoreConfig {
                 void validateOutputs(Map<String, Output.Type> outputsAvailable) {
                     outputNames.forEach(name -> {
                         if (!outputsAvailable.containsKey(name)) {
-                            throw TypeDBException.of(CONFIG_OUTPUT_UNRECOGNISED, name);
+                            throw TypeDBException.of(CONFIG_LOG_OUTPUT_UNRECOGNISED, name);
                         }
                     });
                 }
@@ -314,7 +314,7 @@ public class CoreConfig {
                 public void validateAndSetOutputs(Map<String, Output.Type> outputs) {
                     assert output == null;
                     if (!outputs.containsKey(outputName))
-                        throw TypeDBException.of(CONFIG_OUTPUT_UNRECOGNISED, outputName);
+                        throw TypeDBException.of(CONFIG_LOG_OUTPUT_UNRECOGNISED, outputName);
                     else if (!outputs.get(outputName).isFile()) {
                         throw TypeDBException.of(CONFIG_REASONER_REQUIRES_DIR_OUTPUT);
                     }

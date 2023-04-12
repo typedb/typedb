@@ -35,24 +35,24 @@ public abstract class PropertyIID extends PartitionedIID {
         return PARTITION;
     }
 
-    public static class Type extends PropertyIID {
+    public static class TypeVertex extends PropertyIID {
 
         private static final int LENGTH = VertexIID.Type.LENGTH + InfixIID.DEFAULT_LENGTH;
 
-        private Type(ByteArray bytes) {
+        private TypeVertex(ByteArray bytes) {
             super(bytes);
             assert bytes.length() == LENGTH;
         }
 
-        public static Type of(VertexIID.Type typeVertex, Encoding.Property property) {
-            return new Type(ByteArray.join(typeVertex.bytes, property.infix().bytes()));
+        public static TypeVertex of(VertexIID.Type typeVertex, Encoding.Property.Vertex property) {
+            return new TypeVertex(ByteArray.join(typeVertex.bytes, property.infix().bytes()));
         }
 
-        public static Type extract(ByteArray bytes, int from) {
-            return new Type(bytes.view(from, from + LENGTH));
+        public static TypeVertex extract(ByteArray bytes, int from) {
+            return new TypeVertex(bytes.view(from, from + LENGTH));
         }
 
-        public static Key.Prefix<Type> prefix(VertexIID.Type type) {
+        public static Key.Prefix<TypeVertex> prefix(VertexIID.Type type) {
             return new Key.Prefix<>(type.bytes, PARTITION, (bytes) -> extract(bytes, 0));
         }
 
@@ -61,6 +61,35 @@ public abstract class PropertyIID extends PartitionedIID {
             if (readableString == null) {
                 readableString = VertexIID.Type.extract(bytes, 0).toString() +
                         "[" + Encoding.Infix.LENGTH + ": " + Encoding.Infix.of(bytes.get(VertexIID.Type.LENGTH)) + "]" +
+                        "[partition: " + partition() + "]";
+            }
+            return readableString;
+        }
+    }
+
+    public static class TypeEdge extends PropertyIID {
+
+        private static final int LENGTH = VertexIID.Type.LENGTH + Encoding.Infix.LENGTH + VertexIID.Type.LENGTH;
+
+        TypeEdge(ByteArray bytes) {
+            super(bytes);
+            assert bytes.length() == LENGTH;
+        }
+
+        public static TypeEdge of(VertexIID.Type start, VertexIID.Type end, Encoding.Property.Edge property) {
+            return new TypeEdge(ByteArray.join(start.bytes, property.infix().bytes(), end.bytes));
+        }
+
+        public static TypeEdge extract(ByteArray bytes, int from) {
+            return new TypeEdge(bytes.view(from, from + LENGTH));
+        }
+
+        @Override
+        public String toString() {
+            if (readableString == null) {
+                readableString = VertexIID.Type.of(bytes.view(0, VertexIID.Type.LENGTH)) +
+                        "[" + Encoding.Infix.LENGTH + ": " + Encoding.Infix.of(bytes.get(EdgeViewIID.Type.LENGTH)) + "]" +
+                        VertexIID.Type.of(bytes.view(VertexIID.Type.LENGTH + Encoding.Infix.LENGTH, LENGTH)) +
                         "[partition: " + partition() + "]";
             }
             return readableString;
@@ -76,7 +105,7 @@ public abstract class PropertyIID extends PartitionedIID {
             assert bytes.length() == LENGTH;
         }
 
-        public static Structure of(StructureIID structure, Encoding.Property property) {
+        public static Structure of(StructureIID structure, Encoding.Property.Structure property) {
             return new Structure(ByteArray.join(structure.bytes, property.infix().bytes()));
         }
 
