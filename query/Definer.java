@@ -195,7 +195,7 @@ public class Definer {
                 else if (!supertype.isRoot()) valueType = supertype.asAttributeType().getValueType();
                 else throw TypeDBException.of(ATTRIBUTE_VALUE_TYPE_MISSING, labelConstraint.label());
                 if (thingType == null) thingType = conceptMgr.putAttributeType(labelConstraint.label(), valueType);
-                else if (supertype.isRoot() && !valueType.equals(thingType.asAttributeType().getValueType())) {
+                else if (!valueType.equals(thingType.asAttributeType().getValueType())) {
                     throw TypeDBException.of(ATTRIBUTE_VALUE_TYPE_MODIFIED, valueType, labelConstraint.label());
                 }
                 thingType.asAttributeType().setSupertype(supertype.asAttributeType());
