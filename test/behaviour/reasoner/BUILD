@@ -43,10 +43,6 @@ host_compatible_java_library(
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
     ],
-    runtime_deps = [
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/transaction:steps",
-    ],
     visibility = ["//visibility:public"],
 )
 

@@ -30,8 +30,6 @@ java_test(
         "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
-        "//test/behaviour/connection:steps",
-        "//test/behaviour/connection/session:steps",
         "//test/behaviour/config:parameters",
         "//test/behaviour/reasoner:steps",
     ],
