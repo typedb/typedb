@@ -530,13 +530,9 @@ user sub entity,
     plays repo-owner:owner,
     plays team-member:member;
 
-rule performance-trace-rule:
-    when
-    {
-        (analysis: $x, trace: $y) isa performance-trace;
-        (parent: $y, child: $z) isa trace-tree;
-    }
-    then
-    {
-        (analysis: $x, trace: $z) isa performance-trace;
-    };
+rule performance-trace-rule: when {
+    (analysis: $x, trace: $y) isa performance-trace;
+    (parent: $y, child: $z) isa trace-tree;
+} then {
+    (analysis: $x, trace: $z) isa performance-trace;
+};
