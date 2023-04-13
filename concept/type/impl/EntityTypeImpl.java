@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -31,14 +30,14 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
-import java.util.List;
-
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ENTITY_TYPE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ENTITY;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.NEW_LINE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SEMICOLON;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
@@ -120,7 +119,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         writeAbstract(builder);
         writeOwnsAttributes(builder);
         writePlays(builder);
-        builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
+        builder.append(SEMICOLON).append(NEW_LINE);
     }
 
     private static class Root extends EntityTypeImpl {
