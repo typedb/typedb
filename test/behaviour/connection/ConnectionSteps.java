@@ -68,14 +68,6 @@ public class ConnectionSteps {
         return sessionsToTransactions.get(sessions.get(0)).get(0);
     }
 
-    @Before
-    public synchronized void before() throws IOException {
-        assertNull(databaseMgr);
-        resetDirectory();
-        System.out.println("Connecting to TypeDB ...");
-        databaseMgr = CoreDatabaseManager.open(options);
-    }
-
     @After
     public synchronized void after() {
         System.out.println("ConnectionSteps.after");
@@ -97,6 +89,19 @@ public class ConnectionSteps {
         databaseMgr.close();
         assertFalse(databaseMgr.isOpen());
         databaseMgr = null;
+    }
+
+    @Given("typedb starts")
+    public void typedb_starts() throws IOException {
+        assertNull(databaseMgr);
+        resetDirectory();
+        System.out.println("Connecting to TypeDB ...");
+        databaseMgr = CoreDatabaseManager.open(options);
+    }
+
+    @Given("open connection")
+    public void open_connection() {
+        // no-op for embedded server
     }
 
     @Given("connection has been opened")
