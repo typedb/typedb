@@ -247,14 +247,10 @@ public class LogicManager {
     static class RuleExporter {
 
         static void writeRule(StringBuilder builder, Rule rule) {
-            builder.append(String.format("rule %s:\n", rule.getLabel()))
-                    .append(StringBuilders.indent(1))
-                    .append("when\n")
-                    .append(getPatternString(wrapConjunction(rule.getWhenPreNormalised()), 1))
-                    .append("\n")
-                    .append(StringBuilders.indent(1))
-                    .append("then\n")
-                    .append(getPatternString(wrapConjunction(rule.getThenPreNormalised()), 1))
+            builder.append(String.format("rule %s: when ", rule.getLabel()))
+                    .append(getPatternString(wrapConjunction(rule.getWhenPreNormalised()), 0))
+                    .append(" then ")
+                    .append(getPatternString(wrapConjunction(rule.getThenPreNormalised()), 0))
                     .append(StringBuilders.SEMICOLON_NEWLINE_X2);
         }
 
@@ -268,8 +264,8 @@ public class LogicManager {
                 pattern.asConjunction().patterns().forEach(p -> builder
                         .append(getPatternString(p, indent + 1))
                         .append(";\n"));
-                builder.append(StringBuilders.indent(indent))
-                        .append("}");
+                builder.append(StringBuilders.indent(indent));
+                builder.append("}");
                 return builder.toString();
             } else if (pattern.isDisjunction()) {
                 return pattern.asDisjunction().patterns().stream()
