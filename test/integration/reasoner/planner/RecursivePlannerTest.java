@@ -211,7 +211,7 @@ public class RecursivePlannerTest {
 
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(429.0, plan.allCallsCost());
+            assertEquals(1377.0, plan.allCallsCost());
         }
     }
 
