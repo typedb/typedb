@@ -685,27 +685,36 @@ public class AnswerCountEstimator {
 
                         if (concludable.isRelation() && inferredEstimateForThisBranch > 0 &&
                                 !answerCountEstimator.conjunctionGraph.conjunctionNode(conditionBranch.conjunction()).cyclicConcludables().isEmpty()) {
-                            Map<Variable, Double> typeBasedUpperBoundsPerPlayer = new HashMap<>();
-                            iterate(ruleSideVariables).filter(Variable::isThing)
-                                .forEachRemaining(v -> typeBasedUpperBoundsPerPlayer.put(v, (double)countPersistedThingsMatchingType(v.asThing())));
+                            Set<Variable> recursivePlayers = iterate(answerCountEstimator.conjunctionGraph.conjunctionNode(conditionBranch.conjunction()).cyclicConcludables())
+                                    .flatMap(c -> iterate(c.variables()))
+                                    .filter(v -> rule.conclusion().pattern().variables().contains(v))
+                                    .toSet();
+
+                            Map<Variable, Double> typeBasedEstimateForRecursivePlayer = new HashMap<>();
+                            iterate(recursivePlayers).filter(Variable::isThing)
+                                .forEachRemaining(v -> typeBasedEstimateForRecursivePlayer.put(v, (double)countPersistedThingsMatchingType(v.asThing())));
 
                             // Roughly - We replace the type-based estimate for inferrable role-players with the inferred estimate when doing the heuristic upper bound
-                            Set<Variable> inferredRolePlayers = iterate(ruleSideVariables).filter(Variable::isThing)
+                            Set<Variable> inferredRolePlayers = iterate(recursivePlayers).filter(Variable::isThing)
                                     .filter(v -> iterate(v.inferredTypes()).anyMatch(type -> answerCountEstimator.logicMgr.rulesConcluding(type).hasNext()))
                                     .toSet();
 
                             iterate(inferredRolePlayers)
                                 .forEachRemaining(inferrableRoleplayer -> {
-                                    if (typeBasedUpperBoundsPerPlayer.getOrDefault(inferrableRoleplayer, 1.0) < inferredEstimateForThisBranch) {
-                                        typeBasedUpperBoundsPerPlayer.merge(inferrableRoleplayer, 1.0, (x,y) -> 1.0);
+                                    if (typeBasedEstimateForRecursivePlayer.getOrDefault(inferrableRoleplayer, 1.0) < inferredEstimateForThisBranch) {
+                                        typeBasedEstimateForRecursivePlayer.merge(inferrableRoleplayer, 1.0, (x,y) -> 1.0);
                                     }
                                 });
 
-                            double replacementForInferred = typeBasedUpperBoundsPerPlayer.size() < ruleSideVariables.size() ? inferredEstimateForThisBranch : 1.0;
+                            double replacementForInferred = !inferredRolePlayers.isEmpty() ? inferredEstimateForThisBranch : 1.0;
 
-                            // All possible combinations assumes full-connectivity, producing an unrealistically large/worst-case estimate.
+                            // All possible combinations (of non-recursive players) assumes full-connectivity, producing an unrealistically large/worst-case estimate.
                             // We take the square root of all possible combinations as a more realistic estimate.
-                            double heuristicUpperBound = Math.ceil(Math.sqrt(iterate(typeBasedUpperBoundsPerPlayer.values()).reduce(replacementForInferred, (x,y) -> x * y)));
+                            Set<Variable> nonRecursivePlayers = iterate(ruleSideVariables).filter(v -> !recursivePlayers.contains(v)).toSet();
+                            double estimateForNonRecursivePlayers = answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), nonRecursivePlayers);
+                            double rootOfAll = Math.max(1.0, Math.sqrt(iterate(typeBasedEstimateForRecursivePlayer.values()).reduce(replacementForInferred, (x,y) -> x * y)));
+                            double recursivelyConnectedEstimate = iterate(typeBasedEstimateForRecursivePlayer.values()).map(x -> rootOfAll * Math.max(1.0, Math.sqrt(x))).reduce(0.0, Double::sum);
+                            double heuristicUpperBound = Math.ceil(estimateForNonRecursivePlayers * recursivelyConnectedEstimate);
                             inferredEstimate += Math.min(inferredEstimateForThisBranch, heuristicUpperBound);
                         } else {
                             inferredEstimate += inferredEstimateForThisBranch;
