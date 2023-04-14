@@ -101,7 +101,7 @@ public class OrderingCoster {
                 disconnectedCost += resolvableCost;
             }
             // Traversal cost - DFS style permutative work
-            acyclicCost += estimator.answerSetSize() * RELATIVE_COST_ANSWER_COMBINATION;;
+            acyclicCost += estimator.answerSetSize() * RELATIVE_COST_ANSWER_COMBINATION;
 
             if (!resolvable.isNegated()) {
                 boundVars.addAll(resolvableVars);
