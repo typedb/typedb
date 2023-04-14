@@ -136,18 +136,19 @@ public abstract class RuleStructureImpl implements RuleStructure {
     }
 
     FunctionalIterator<TypeVertex> types() {
-        com.vaticle.typeql.lang.pattern.Conjunction<Conjunctable> whenNormalised = when().normalise().patterns().get(0);
-        FunctionalIterator<BoundVariable> positiveVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isVariable)
-                .map(Conjunctable::asVariable);
-        FunctionalIterator<BoundVariable> negativeVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isNegation)
-                .flatMap(p -> negationVariables(p.asNegation()));
-        FunctionalIterator<Label> whenPositiveLabels = getTypeLabels(positiveVariables);
-        FunctionalIterator<Label> whenNegativeLabels = getTypeLabels(negativeVariables);
-        FunctionalIterator<Label> thenLabels = getTypeLabels(iterate(then().variables().iterator()));
-        // filter out invalid labels as if they were truly invalid (eg. not relation:friend) we will catch it validation
-        // this lets us index only types the user can actually retrieve as a concept
-        return link(whenPositiveLabels, whenNegativeLabels, thenLabels)
-                .filter(label -> graph.getType(label) != null).map(graph::getType);
+        return iterate(when().normalise().patterns()).flatMap(whenNormalised -> {
+            FunctionalIterator<BoundVariable> positiveVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isVariable)
+                    .map(Conjunctable::asVariable);
+            FunctionalIterator<BoundVariable> negativeVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isNegation)
+                    .flatMap(p -> negationVariables(p.asNegation()));
+            FunctionalIterator<Label> whenPositiveLabels = getTypeLabels(positiveVariables);
+            FunctionalIterator<Label> whenNegativeLabels = getTypeLabels(negativeVariables);
+            FunctionalIterator<Label> thenLabels = getTypeLabels(iterate(then().variables().iterator()));
+            // filter out invalid labels as if they were truly invalid (eg. not relation:friend) we will catch it validation
+            // this lets us index only types the user can actually retrieve as a concept
+            return link(whenPositiveLabels, whenNegativeLabels, thenLabels)
+                    .filter(label -> graph.getType(label) != null).map(graph::getType);
+        });
     }
 
     private FunctionalIterator<BoundVariable> negationVariables(Negation<?> ruleNegation) {

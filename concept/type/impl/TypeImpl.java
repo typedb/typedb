@@ -151,7 +151,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     void validateDelete() {
         FunctionalIterator<RuleStructure> rules = graphMgr.schema().rules().references().get(vertex);
         if (rules.hasNext()) {
-            throw exception(TypeDBException.of(TYPE_REFERENCED_IN_RULES, getLabel(), rules.toList()));
+            throw exception(TypeDBException.of(TYPE_REFERENCED_IN_RULES, getLabel(), rules.map(RuleStructure::label).toList()));
         }
     }
 
