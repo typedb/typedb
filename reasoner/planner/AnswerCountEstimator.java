@@ -229,7 +229,8 @@ public class AnswerCountEstimator {
         }
 
         public double answerSetSize() {
-            return answerEstimate(iterate(minVariableEstimate.keySet()).filter(v -> !v.reference().isAnonymous()).toSet());
+            // TODO: ignore the anonymous variables iff/when ConjunctionController can ignore them when branching CompoundStreams
+            return answerEstimate(minVariableEstimate.keySet());
         }
 
         private static double scaledEstimate(LocalModel model, Pair<Double, Optional<Variable>> scale, Set<Variable> estimateVariables) {
