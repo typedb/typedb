@@ -709,7 +709,7 @@ public class AnswerCountEstimator {
                             double replacementForInferred = !inferredRolePlayers.isEmpty() ? inferredEstimateForThisBranch : 1.0;
 
                             // All possible combinations (of non-recursive players) assumes full-connectivity, producing an unrealistically large/worst-case estimate.
-                            // We take the square root of all possible combinations as a more realistic estimate.
+                            // Instead, we model each role-player as being recursively related to sqrt(|r_i|) instances of each other role-player r_i.
                             Set<Variable> nonRecursivePlayers = iterate(ruleSideVariables).filter(v -> !recursivePlayers.contains(v)).toSet();
                             double estimateForNonRecursivePlayers = answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), nonRecursivePlayers);
                             double rootOfAll = Math.max(1.0, Math.sqrt(iterate(typeBasedEstimateForRecursivePlayer.values()).reduce(replacementForInferred, (x,y) -> x * y)));
