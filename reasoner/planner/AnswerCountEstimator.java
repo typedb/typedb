@@ -229,7 +229,7 @@ public class AnswerCountEstimator {
         }
 
         public double answerSetSize() {
-            return answerEstimate(minVariableEstimate.keySet());
+            return answerEstimate(iterate(minVariableEstimate.keySet()).filter(v -> !v.reference().isAnonymous()).toSet());
         }
 
         private static double scaledEstimate(LocalModel model, Pair<Double, Optional<Variable>> scale, Set<Variable> estimateVariables) {
