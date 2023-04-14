@@ -550,10 +550,8 @@ public class AnswerCountEstimatorTest {
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(8.0, answers);
-            // 8 = 3 + min(sqrt(5 * 5),  3 * 5)  =  3 from rule-1 (coplayer) +  min(   from rule-2
-            //                                                                       sqrt(5 * 5), ($f1.unary(type) * f2.unary(type)
-            //                                                                       3 * 5  ($f1.unary(rp) * $f2.unary(type))
+            assertEquals(18.0, answers);
+            // 18 = 3 + 3 * 5  =  3 from rule-1 (coplayer) +  3 * 5  ($f1.unary(rp) * $f2.unary(type))  from rule-2
         }
 
         {
@@ -573,27 +571,51 @@ public class AnswerCountEstimatorTest {
     public void test_cycles_same_type_transitive() {
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
         transaction.query().define(TypeQL.parseQuery("define " +
-                "rule friendship-iteself-is-transitive: " +
+                "rule friendship-itself-is-transitive: " +
                 "when { (friendor: $f1, friendee: $f2) isa friendship; (friendor: $f2, friendee: $f3) isa friendship;  } " +
                 "then { (friendor: $f1, friendee: $f3) isa friendship; };"));
         transaction.commit();
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph(), new ConjunctionGraph(transaction.logic()));
         {
+            AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph(), new ConjunctionGraph(transaction.logic()));
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$r (friendor: $x, friendee: $y) isa friendship; }", transaction.logic()));
 
             double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(8.0, answers);
-            // 8 = sqrt(5 * 5) + 3  = reachability estimate + retrieved count
+            assertEquals(25.0, answers);
+            // 25 = 5 * 5 = $x-unary(type) from ; $y-unary(type);   The multivar estimates aren't used because they are 3 + 25
 
             double answers1 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r", "x", "y")));
-            assertEquals(8.0, answers1); // Still exceeds the types.
-            // 8 = sqrt(5 * 5) + 3  = reachability estimate + retrieved count
+            assertEquals(25.0, answers1); // Still exceeds the types.
 
             double answers2 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r")));
-            assertEquals(8.0, answers2);
+            assertEquals(25.0, answers2);
+        }
+        transaction.close();
+
+        // Add a friendship and verify the upper bound kicks in.
+        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.WRITE);
+        transaction.query().insert(TypeQL.parseQuery("insert " +
+                "$p5 isa person, has first-name \"p5_f\";\n" +
+                "$p6 isa person, has first-name \"p6_f\";\n" +
+                "(friendor: $p5, friendee: $p6) isa friendship;"));
+        transaction.commit();
+
+        initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
+        {
+            AnswerCountEstimator answerCountEstimator = new AnswerCountEstimator(transaction.logic(), transaction.traversal().graph(), new ConjunctionGraph(transaction.logic()));
+            ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$r (friendor: $x, friendee: $y) isa friendship; }", transaction.logic()));
+
+            double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
+            assertEquals(42.0, answers);
+            //  = 4 + 6 * sqrt(6) ; from persisted + inferred-upper-bounded
+
+            double answers1 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r", "x", "y")));
+            assertEquals(42.0, answers1);
+
+            double answers2 = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("r")));
+            assertEquals(42.0, answers2);
         }
     }
 
@@ -638,14 +660,13 @@ public class AnswerCountEstimatorTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
 
             double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(13.0, answers);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
-            // 13 = 3 (rule 1) + sqrt(5*5) (rule 2) + sqrt(5*5) (rule 5)
+             assertEquals(25.0, answers);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
         }
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(guest: $x, host: $y) isa can-live-with; }", transaction.logic()));
 
             double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(9.0, answers);  // 4 (rule 3) + (sqrt(5*5) rule 4)
+            assertEquals(25.0, answers);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
         }
     }
 

@@ -229,6 +229,7 @@ public class AnswerCountEstimator {
         }
 
         public double answerSetSize() {
+            // TODO: ignore the anonymous variables iff/when ConjunctionController can ignore them when branching CompoundStreams
             return answerEstimate(minVariableEstimate.keySet());
         }
 
@@ -670,7 +671,6 @@ public class AnswerCountEstimator {
                 for (Unifier unifier : unifiers.get(rule)) {
                     Set<Identifier.Variable> ruleSideIds = iterate(variableFilter).filter(v -> v.id().isRetrievable())
                             .flatMap(v -> iterate(unifier.mapping().get(v.id().asRetrievable()))).toSet();
-                    Set<Variable> ruleSideVariables;
                     if ((concludable.isRelation() || concludable.isIsa())
                             && rule.conclusion().generating().isPresent() && ruleSideIds.contains(rule.conclusion().generating().get().id())) {
                         // There is one generated variable per combination of ALL variables in the conclusion
@@ -678,34 +678,29 @@ public class AnswerCountEstimator {
                     }
 
                     for (Rule.Condition.ConditionBranch conditionBranch : rule.condition().branches()) {
-                        ruleSideVariables = iterate(ruleSideIds)
+                        Set<Variable> ruleSideVariables = iterate(ruleSideIds)
                                 .filter(id -> conditionBranch.conjunction().pattern().retrieves().contains(id))
                                 .map(id -> conditionBranch.conjunction().pattern().variable(id)).toSet();
                         double inferredEstimateForThisBranch = answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), ruleSideVariables);
 
-                        if (concludable.isRelation() && inferredEstimateForThisBranch > 0 &&
-                                !answerCountEstimator.conjunctionGraph.conjunctionNode(conditionBranch.conjunction()).cyclicConcludables().isEmpty()) {
-                            Map<Variable, Double> typeBasedUpperBoundsPerPlayer = new HashMap<>();
-                            iterate(ruleSideVariables).filter(Variable::isThing)
-                                .forEachRemaining(v -> typeBasedUpperBoundsPerPlayer.put(v, (double)countPersistedThingsMatchingType(v.asThing())));
-
-                            // Roughly - We replace the type-based estimate for inferrable role-players with the inferred estimate when doing the heuristic upper bound
-                            Set<Variable> inferredRolePlayers = iterate(ruleSideVariables).filter(Variable::isThing)
-                                    .filter(v -> iterate(v.inferredTypes()).anyMatch(type -> answerCountEstimator.logicMgr.rulesConcluding(type).hasNext()))
+                        Set<Concludable> cyclicConcludables = answerCountEstimator.conjunctionGraph.conjunctionNode(conditionBranch.conjunction()).cyclicConcludables();
+                        if (concludable.isRelation() && inferredEstimateForThisBranch > 0 && !cyclicConcludables.isEmpty()) {
+                            Set<Variable> recursivePlayers = iterate(cyclicConcludables).flatMap(c -> iterate(c.variables()))
+                                    .filter(v -> v.isThing() && ruleSideVariables.contains(v))
                                     .toSet();
+                            Set<Variable> nonRecursivePlayers = iterate(ruleSideVariables).filter(v -> v.isThing() && !recursivePlayers.contains(v)).toSet();
 
-                            iterate(inferredRolePlayers)
-                                .forEachRemaining(inferrableRoleplayer -> {
-                                    if (typeBasedUpperBoundsPerPlayer.getOrDefault(inferrableRoleplayer, 1.0) < inferredEstimateForThisBranch) {
-                                        typeBasedUpperBoundsPerPlayer.merge(inferrableRoleplayer, 1.0, (x,y) -> 1.0);
-                                    }
-                                });
+                            Map<Variable, Double> estimateForRecursivePlayer = new HashMap<>();
+                            // TODO: we might get better estimates by only considering non-recursive cases, but getting it right may be more complicated.
+                            recursivePlayers.forEach(v -> estimateForRecursivePlayer.put(v, answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), set(v))));
 
-                            double replacementForInferred = typeBasedUpperBoundsPerPlayer.size() < ruleSideVariables.size() ? inferredEstimateForThisBranch : 1.0;
+                            // All possible combinations (of non-recursive players) assumes full-connectivity, producing an unrealistically large/worst-case estimate.
+                            // Instead, we model each role-player as being recursively related to sqrt(|r_i|) instances of each other role-player r_i.
+                            double rootOfAll = Math.max(1.0, Math.sqrt(iterate(estimateForRecursivePlayer.values()).reduce(1.0, (x,y) -> x * y)));
+                            double recursivelyConnectedEstimate = iterate(estimateForRecursivePlayer.values()).map(x -> rootOfAll * Math.max(1.0, Math.sqrt(x))).reduce(0.0, Double::sum);
 
-                            // All possible combinations assumes full-connectivity, producing an unrealistically large/worst-case estimate.
-                            // We take the square root of all possible combinations as a more realistic estimate.
-                            double heuristicUpperBound = Math.ceil(Math.sqrt(iterate(typeBasedUpperBoundsPerPlayer.values()).reduce(replacementForInferred, (x,y) -> x * y)));
+                            double estimateForNonRecursivePlayers = answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), nonRecursivePlayers);
+                            double heuristicUpperBound = Math.ceil(estimateForNonRecursivePlayers * recursivelyConnectedEstimate);
                             inferredEstimate += Math.min(inferredEstimateForThisBranch, heuristicUpperBound);
                         } else {
                             inferredEstimate += inferredEstimateForThisBranch;

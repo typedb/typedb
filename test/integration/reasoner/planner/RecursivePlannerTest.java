@@ -30,7 +30,6 @@ import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -109,7 +108,7 @@ public class RecursivePlannerTest {
         ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person; }", transaction.logic()));
         planSpaceSearch.plan(conjunction, set());
         ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-        assertEquals(5.0, plan.allCallsCost()); // For now the retrieval cost is just the answer-count
+        assertEquals(10.0, plan.allCallsCost()); // For now the retrieval cost is just the answer-count
     }
 
     @Test
@@ -122,21 +121,21 @@ public class RecursivePlannerTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa man, has name $n; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(3.0, plan.allCallsCost());
+            assertEquals(6.0, plan.allCallsCost());
         }
 
         {   // Query count of both variables $p and $n, where $p isa! person
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa! person, has name $n; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(2.0, plan.allCallsCost());
+            assertEquals(4.0, plan.allCallsCost());
         }
 
         {   // Query count of both variables $p and $n, where $p isa person (and subtypes)
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person, has name $n; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(5.0, plan.allCallsCost());
+            assertEquals(10.0, plan.allCallsCost());
         }
     }
 
@@ -156,16 +155,14 @@ public class RecursivePlannerTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(15.0, plan.allCallsCost()); // = (10)localCost + (5)costOfRule = 15
+            assertEquals(30.0, plan.allCallsCost());
         }
 
         {
-            // Plan: {$p has name $n} -> { (...) isa friendship;} } :  1 * (10 + 5) + min(1,5/3) * 3 = 18
-            // Plan: { (...) isa friendship;} -> {$p has name $n} } :  1 * 3  + min(1, 3/5) * (10 + 5) = 12
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; (friendor: $p, friendee: $f) isa friendship; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertEquals(12.0, plan.allCallsCost());
+            assertEquals(36.0, plan.allCallsCost());
         }
     }
 
@@ -193,22 +190,7 @@ public class RecursivePlannerTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            assertTrue(45.0 > plan.allCallsCost());
-            // TODO: Update or delete. For now, we assert the cost is less than the cost we calculated with the n^2 transitivity
-            // Answercount($x,$y) = 18
-            // Answercount($x) = Answercount($y) = 5
-            // Cost = (18) query + (3) rule1{} + (24) rule2{}
-            // rule1{}: Acyclic-cost = 3 regardless of plan, (Acyclic -> added into the acyclic costs of callers)
-            // rule2{}:
-            //      Plan: {(...) isa friendship;} -> {(...) isa transitive-friendship;}
-            //          Acyclic-cost : 1 * 3 + (3/5) * 21 = 15.6;
-            //          CyclicConcludables -> ScalingFactor: { rule2{$f1}: : 3/5}
-            //      Plan: {(...) isa transitive-friendship;} -> {(...) isa friendship;}
-            //          Acyclic-cost : 1 * 21 + min(1, 5/3) * 3 = 24
-            //          CyclicConcludables -> ScalingFactor: { rule2{}: 1 }
-            //      Both candidate orderings)
-            //      (rule2 used to be 21 when we didn't discern between acyclic/cyclic dependencies
-
+            assertEquals(120.0, plan.allCallsCost());
         }
     }
 
@@ -216,7 +198,7 @@ public class RecursivePlannerTest {
     public void test_cycles_same_type_transitive() {
         initialise(Arguments.Session.Type.SCHEMA, Arguments.Transaction.Type.WRITE);
         transaction.query().define(TypeQL.parseQuery("define " +
-                "rule friendship-iteself-is-transitive: " +
+                "rule friendship-itself-is-transitive: " +
                 "when { (friendor: $f1, friendee: $f2) isa friendship; (friendor: $f2, friendee: $f3) isa friendship;  } " +
                 "then { (friendor: $f1, friendee: $f3) isa friendship; };"));
         transaction.commit();
@@ -229,30 +211,10 @@ public class RecursivePlannerTest {
 
             planSpaceSearch.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
-            // TODO: Update or delete. For now, we assert the cost is less than the cost we calculated with the n^2 transitivity
-            assertTrue(125.0 > plan.allCallsCost());
-            // LocalCost = AnswerCount( $_0, $x, $y ) = 25
-            // AnswerCount($x) = AnswerCount($y) = 5
-            // Cost = (25 + 1 * rule{} + * 5/5 rule{f1}) = 25 + 1 * 50 + 5/5 * 50 = 125     [ = (25 + 1 * rule{} + 5/5 * rule{f2}) ]
-            // rule{}:
-            //      Plan: f12 -> f23
-            //          AcyclicCost: 1 * 25 + 5/5 * 25 = 50
-            //          CyclicConcludables: { rule{}: 1, rule{f1}: 1 }
-            //      Plan: f23 -> f12
-            //          AcyclicCost: 1 * 25 + 5/5 * 25 = 50
-            //          CyclicConcludables: { rule{}: 1, rule{f2}: 1 }
-            // rule{f1}:
-            //      Plan: f12 -> f23
-            //          AcyclicCost: 1 * 25 + 5/5 * 25 = 50
-            //          CyclicConcludables: { rule{f1}: 1}
-            // rule{f2}:
-            //      Plan: f23 -> f12
-            //          AcyclicCost: 1 * 25 + 5/5 * 25 = 50
-            //          CyclicConcludables: { rule{f2}: 1}
+            assertEquals(1377.0, plan.allCallsCost());
         }
     }
 
-    @Ignore
     @Test
     public void test_nested_cycles() {
         // the example may not make sense.
@@ -329,24 +291,14 @@ public class RecursivePlannerTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$x has name \"Jim\"; (friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planner.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
-            // TODO: Update or delete. For now, we assert the cost is less than the cost we calculated with the n^2 transitivity
-            assertTrue(18.0 > plan.allCallsCost());
-            // Answercount($x) = 1; Answercount($y) = 5
-            // Cost = 18 = (1 + 1/5 * 18) query + 1/5 * (3) rule1{$x:1} + min(1, (1/5+3/5) ) * (16) rule2{$x:1}
-            //           = 3.6 + 0.6 + 13.8
-            // With plan(rule2{$x}) = { (...) isa friendship; } -> { (...) isa transitive-friendship; }
+            assertEquals(46.0, plan.allCallsCost());
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$y has name \"Jim\"; (friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planner.plan(conjunction, set());
             ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
-            // TODO: Update or delete. For now, we assert the cost is less than the cost we calculated with the n^2 transitivity
-            assertTrue(10.0 > plan.allCallsCost());
-            // Answercount($x,$y) = 5
-            // Answercount($x) = 3; Answercount($y) = 1
-            // Cost = 15 = (8) query + min(1,5/3) * (3) rule1{$y:1} + (0 + 1/5) * (21) rule2{$y:1}
-            // With plan(rule2{$x}) = { (...) isa transitive-friendship; } -> { (...) isa friendship; }
+            assertEquals(27.0, plan.allCallsCost());
         }
     }
 
