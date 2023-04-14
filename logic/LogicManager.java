@@ -45,13 +45,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.logic.LogicManager.RuleExporter.writeRule;
-import static com.vaticle.typeql.lang.common.TypeQLToken.Char.NEW_LINE;
-import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SEMICOLON;
 import static java.util.Comparator.comparing;
 
 public class LogicManager {
@@ -215,7 +210,7 @@ public class LogicManager {
 
     public String rulesSyntax() {
         StringBuilder builder = new StringBuilder();
-        rules().stream().sorted(comparing(Rule::getLabel)).forEach(x -> writeRule(builder, x));
+        rules().stream().sorted(comparing(Rule::getLabel)).forEach(rule -> rule.getSyntax(builder));
         return builder.toString();
     }
 
@@ -244,43 +239,6 @@ public class LogicManager {
         @Override
         public int hashCode() {
             return Objects.hash(recursiveRule, triggeringRule);
-        }
-    }
-
-    // TODO: This class should be dissolved and its logic should be moved to Rules and Patterns
-    static class RuleExporter {
-
-        static void writeRule(StringBuilder builder, Rule rule) {
-            builder.append(String.format("\nrule %s: when ", rule.getLabel()))
-                    .append(getPatternString(wrapConjunction(rule.getWhenPreNormalised())))
-                    .append(" then ")
-                    .append(getPatternString(wrapConjunction(rule.getThenPreNormalised())))
-                    .append(SEMICOLON).append(NEW_LINE);
-        }
-
-        static String getPatternString(Pattern pattern) {
-            if (pattern.isVariable()) {
-                return "  " + pattern.asVariable().toString();
-            } else if (pattern.isConjunction()) {
-                StringBuilder builder = new StringBuilder().append("{\n");
-                pattern.asConjunction().patterns().forEach(p -> builder
-                        .append("  ").append(getPatternString(p))
-                        .append(";\n"));
-                builder.append("}");
-                return builder.toString();
-            } else if (pattern.isDisjunction()) {
-                return pattern.asDisjunction().patterns().stream()
-                        .map(p -> "  " + getPatternString(wrapConjunction(p)))
-                        .collect(Collectors.joining("\n  " + "or\n"));
-            } else if (pattern.isNegation()) {
-                return "not\n" + getPatternString(wrapConjunction(pattern.asNegation().pattern()));
-            } else {
-                throw TypeDBException.of(ILLEGAL_STATE);
-            }
-        }
-
-        static Pattern wrapConjunction(Pattern pattern) {
-            return pattern.isConjunction() ? pattern : new Conjunction<>(list(pattern));
         }
     }
 }

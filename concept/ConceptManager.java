@@ -142,7 +142,9 @@ public final class ConceptManager {
 
     public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
         if (valueType == null) throw exception(TypeDBException.of(ATTRIBUTE_VALUE_TYPE_MISSING, label));
-        if (!valueType.isWritable()) throw exception(TypeDBException.of(UNSUPPORTED_OPERATION, "putAttributeType", valueType.name()));
+        if (!valueType.isWritable()) {
+            throw exception(TypeDBException.of(UNSUPPORTED_OPERATION, "putAttributeType", valueType.name()));
+        }
 
         TypeVertex vertex = graphMgr.schema().getType(label);
         switch (valueType) {
@@ -218,13 +220,10 @@ public final class ConceptManager {
         StringBuilder stringBuilder = new StringBuilder();
         getRootAttributeType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(at -> at.getSyntaxRecursive(stringBuilder));
-        stringBuilder.append("\n");
         getRootRelationType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(rt -> rt.getSyntaxRecursive(stringBuilder));
-        stringBuilder.append("\n");
         getRootEntityType().getSubtypesExplicit().stream().sorted(comparing(x -> x.getLabel().name()))
                 .forEach(et -> et.getSyntaxRecursive(stringBuilder));
-        stringBuilder.append("\n");
         return stringBuilder.toString();
     }
 

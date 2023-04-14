@@ -211,6 +211,15 @@ public class Rule {
         return conj;
     }
 
+    public void getSyntax(StringBuilder builder) {
+        builder.append(NEW_LINE).append(RULE).append(SPACE)
+                .append(getLabel()).append(COLON).append(SPACE).append(WHEN)
+                .append(getWhenPreNormalised())
+                .append(SPACE).append(THEN).append(SPACE)
+                .append(new com.vaticle.typeql.lang.pattern.Conjunction<>(list(getThenPreNormalised())))
+                .append(SEMICOLON).append(NEW_LINE);
+    }
+
     @Override
     public String toString() {
         return "" + RULE + SPACE + getLabel() + COLON + NEW_LINE + WHEN + SPACE + CURLY_OPEN + NEW_LINE + when + NEW_LINE +
