@@ -660,7 +660,7 @@ public class AnswerCountEstimatorTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
 
             double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("x", "y")));
-            assertEquals(25.0, answers);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
+             assertEquals(25.0, answers);  // Costs are dominated by types. This test mainly tests the ability to handle nested loops
         }
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(guest: $x, host: $y) isa can-live-with; }", transaction.logic()));
