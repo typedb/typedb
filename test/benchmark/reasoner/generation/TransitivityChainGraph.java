@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.reasoner.benchmark.Util;
+import com.vaticle.typedb.core.reasoner.benchmark.reasoner.Util;
 
 @SuppressWarnings("CheckReturnValue")
 public class TransitivityChainGraph {
@@ -33,7 +33,7 @@ public class TransitivityChainGraph {
     private final TypeDB.DatabaseManager databaseManager;
     private final String databaseName;
 
-    private final static String schemaFile = "test/benchmark/resources/quadraticTransitivity.tql";
+    private final static String schemaFile = "reasoner/resources/quadraticTransitivity.tql";
     private final static Label key = Label.of("index");
 
     public TransitivityChainGraph(TypeDB.DatabaseManager databaseManager, String dbName) {

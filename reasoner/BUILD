@@ -26,7 +26,7 @@ package(default_visibility = [
     "//server:__pkg__",
     "//test/integration/reasoner:__pkg__",
     "//test/behaviour/reasoner:__subpackages__",
-    "//test/benchmark:__pkg__",
+    "//test/benchmark/reasoner:__pkg__",
 ])
 
 native_java_libraries(

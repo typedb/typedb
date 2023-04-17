@@ -24,22 +24,20 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RelationType;
-import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.reasoner.benchmark.Util;
+import com.vaticle.typedb.core.reasoner.benchmark.reasoner.Util;
 
 @SuppressWarnings("CheckReturnValue")
-public abstract class TransitivityMatrixGraph {
+public class DiagonalGraph {
 
     private final TypeDB.DatabaseManager databaseManager;
     private final String databaseName;
-    private final String schemaFile;
 
-    private final static Label key = Label.of("index");
+    private static final String schemaFile = "reasoner/resources/diagonalTest.tql";
+    private static final Label key = Label.of("name");
 
-    public TransitivityMatrixGraph(String schemaFile, TypeDB.DatabaseManager databaseManager, String dbName) {
+    public DiagonalGraph(TypeDB.DatabaseManager databaseManager, String dbName) {
         this.databaseManager = databaseManager;
         this.databaseName = dbName;
-        this.schemaFile = schemaFile;
     }
 
     public final void load(int n, int m) {
@@ -60,52 +58,35 @@ public abstract class TransitivityMatrixGraph {
 
     protected void buildExtensionalDB(int n, int m, TypeDB.Transaction tx) {
 
-        Label aEntity = Label.of("a-entity");
-        RelationType Q = tx.concepts().getRelationType("Q");
-        RoleType Qfrom = Q.getRelates("from");
-        RoleType Qto = Q.getRelates("to");
-
-        Thing[][] aInstancesIds = new Thing[n + 1][m + 1];
-        Thing aInst = Util.createEntityWithKey(tx, Label.of("entity2"), key, "a");
-        for (int i = 1; i <= n; i++) {
-            for (int j = 1; j <= m; j++) {
-                aInstancesIds[i][j] = Util.createEntityWithKey(tx, aEntity, key, "a" + i + "," + j);
+        Label entityType = Label.of("entity1");
+        RelationType horizontal = tx.concepts().getRelationType("horizontal");
+        RelationType vertical = tx.concepts().getRelationType("vertical");
+        Thing[][] instanceIds = new Thing[n][m];
+        long inserts = 0;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                instanceIds[i][j] = Util.createEntityWithKey(tx, entityType, key, "a" + i + "," + j);
+                inserts++;
+                if (inserts % 100 == 0) System.out.println("inst inserts: " + inserts);
             }
         }
 
-        Relation rel = Q.create();
-        rel.addPlayer(Qfrom, aInst);
-        rel.addPlayer(Qto, aInstancesIds[1][1]);
-
-        for (int i = 1; i <= n; i++) {
-            for (int j = 1; j <= m; j++) {
-                if (i < n) {
-                    Relation q = Q.create();
-                    q.addPlayer(Qfrom, aInstancesIds[i][j]);
-                    q.addPlayer(Qto, aInstancesIds[i][j]);
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (i < n - 1) {
+                    Relation v = vertical.create();
+                    v.addPlayer(vertical.getRelates("from"), instanceIds[i][j]);
+                    v.addPlayer(vertical.getRelates("to"), instanceIds[i + 1][j]);
+                    inserts++;
                 }
-                if (j < m) {
-                    Relation q = Q.create();
-                    q.addPlayer(Qfrom, aInstancesIds[i][j]);
-                    q.addPlayer(Qto, aInstancesIds[i][j + 1]);
+                if (j < m - 1) {
+                    Relation h = horizontal.create();
+                    h.addPlayer(horizontal.getRelates("from"), instanceIds[i][j]);
+                    h.addPlayer(horizontal.getRelates("to"), instanceIds[i][j + 1]);
+                    inserts++;
                 }
+                if (inserts % 100 == 0) System.out.println("rel inserts: " + inserts);
             }
-        }
-    }
-
-    public static class Linear extends TransitivityMatrixGraph {
-        private static final String schemaFile = "test/benchmark/resources/linearTransitivity.tql";
-
-        public Linear(TypeDB.DatabaseManager dbm, String dbName) {
-            super(schemaFile, dbm, dbName);
-        }
-    }
-
-    public static class Quadratic extends TransitivityMatrixGraph {
-        private static final String schemaFile = "test/benchmark/resources/linearTransitivity.tql";
-
-        public Quadratic(TypeDB.DatabaseManager dbm, String dbName) {
-            super(schemaFile, dbm, dbName);
         }
     }
 }
