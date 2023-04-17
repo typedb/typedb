@@ -55,7 +55,6 @@ public abstract class AbstractProcessor<
     private final Map<Identifier, OutputPort<OUTPUT>> outputPorts;
     private final Map<Pair<Identifier, Identifier>, Runnable> pullRetries;
     private Stream<OUTPUT,OUTPUT> hubReactive;
-    private boolean terminated;
     private long reactiveCounter;
 
     protected AbstractProcessor(Driver<PROCESSOR> driver,
@@ -103,12 +102,10 @@ public abstract class AbstractProcessor<
     }
 
     protected void requestConnection(REQ req) {
-        if (isTerminated()) return;
         controller.execute(actor -> actor.routeConnectionRequest(req));
     }
 
     public <RECEIVED_REQ extends AbstractRequest<?, ?, OUTPUT>> void establishConnection(RECEIVED_REQ request) {
-        if (isTerminated()) return;
         OutputPort<OUTPUT> outputPort = createOutputPort();
         outputPort.setInputPort(request.inputPortId(), request.requestingProcessor());
         request.connectViaTransforms(hubReactive(), outputPort);
@@ -160,23 +157,14 @@ public abstract class AbstractProcessor<
             String code = ((TypeDBException) e).code().get();
             if (code.equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Processor interrupted by resource close: {}", e.getMessage());
-                controller.execute(actor -> actor.exception(e));
+                controller.terminate(e);
                 return;
             } else {
                 LOG.debug("Processor interrupted by TypeDB exception: {}", e.getMessage());
             }
         }
         LOG.error("Actor exception", e);
-        controller.execute(actor -> actor.exception(e));
-    }
-
-    public void terminate(Throwable cause) {
-        LOG.debug("Actor terminated.", cause);
-        this.terminated = true;
-    }
-
-    private boolean isTerminated() {
-        return terminated;
+        controller.terminate(e);
     }
 
     private long incrementReactiveCounter() {

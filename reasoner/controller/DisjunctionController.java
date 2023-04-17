@@ -70,7 +70,6 @@ public abstract class DisjunctionController<
 
     @Override
     public void routeConnectionRequest(Request req) {
-        if (isTerminated()) return;
         getConjunctionController(req.controllerId())
                 .execute(actor -> actor.establishProcessorConnection(req.withMap(c -> merge(c, req.bounds()))));
     }

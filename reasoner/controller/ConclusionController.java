@@ -78,7 +78,6 @@ public abstract class ConclusionController<
 
     @Override
     public void routeConnectionRequest(Request<?, ?> req) {
-        if (isTerminated()) return;
         if (req.isCondition()) {
             conditionController.execute(actor -> actor.establishProcessorConnection(req.asCondition()));
         } else if (req.isMaterialiser()) {

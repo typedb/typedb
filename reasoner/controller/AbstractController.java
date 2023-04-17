@@ -48,14 +48,12 @@ public abstract class AbstractController<
     private static final Logger LOG = LoggerFactory.getLogger(AbstractController.class);
     private final Context context;
 
-    private boolean terminated;
     private final Map<PROCESSOR_ID, Actor.Driver<PROCESSOR>> processors;
 
     AbstractController(Driver<CONTROLLER> driver, Context context, Supplier<String> debugName) {
         super(driver, debugName);
         this.context = context;
         this.processors = new HashMap<>();
-        this.terminated = false;
     }
 
     public void initialise() {
@@ -89,7 +87,6 @@ public abstract class AbstractController<
      * Called on the target controller
      */
     <RECEIVED_REQ extends AbstractRequest<?, PROCESSOR_ID, OUTPUT>> void establishProcessorConnection(RECEIVED_REQ req) {
-        if (isTerminated()) return;
         getOrCreateProcessor(req.bounds()).execute(actor -> actor.establishConnection(req));
     }
 
@@ -124,14 +121,11 @@ public abstract class AbstractController<
         context.registry().terminate(e);
     }
 
+    @Override
     public void terminate(Throwable cause) {
-        LOG.debug("Actor terminated.", cause);
-        terminated = true;
-        processors.values().forEach(p -> p.execute(actor -> actor.terminate(cause)));
-    }
-
-    boolean isTerminated() {
-        return terminated;
+        super.terminate(cause);
+        LOG.debug("Controller terminated.", cause);
+        processors.values().forEach(p -> p.terminate(cause));
     }
 
     public static class Context {
@@ -169,7 +163,9 @@ public abstract class AbstractController<
             return monitor;
         }
 
-        public ReasonerPlanner planner() { return planner; }
+        public ReasonerPlanner planner() {
+            return planner;
+        }
 
         Optional<Tracer> tracer() {
             return Optional.ofNullable(tracer);

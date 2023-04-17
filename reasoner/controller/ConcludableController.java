@@ -83,7 +83,6 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
     @Override
     public void routeConnectionRequest(REQ req) {
-        if (isTerminated()) return;
         conclusionControllers.get(req.controllerId()).execute(actor -> actor.establishProcessorConnection(req));
     }
 

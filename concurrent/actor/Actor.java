@@ -17,6 +17,10 @@
 
 package com.vaticle.typedb.core.concurrent.actor;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -29,21 +33,27 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
     private static final String ERROR_ACTOR_DRIVER_IS_NULL = "driver() must not be null.";
     private final Driver<ACTOR> driver;
     private final Supplier<String> debugName;
+    boolean isTerminated;
 
     public static <A extends Actor<A>> Driver<A> driver(Function<Driver<A>, A> actorFn, ActorExecutorGroup service) {
         return new Driver<>(actorFn, service);
     }
 
-    protected abstract void exception(Throwable e);
-
     protected Actor(Driver<ACTOR> driver, Supplier<String> debugName) {
         this.driver = driver;
         this.debugName = debugName;
+        this.isTerminated = false;
     }
 
     public Driver<ACTOR> driver() {
         assert this.driver != null : ERROR_ACTOR_DRIVER_IS_NULL;
         return this.driver;
+    }
+
+    protected abstract void exception(Throwable e);
+
+    public void terminate(@Nullable Throwable cause) {
+        this.isTerminated = true;
     }
 
     public Supplier<String> debugName() {
@@ -52,11 +62,13 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
 
     public static class Driver<ACTOR extends Actor<ACTOR>> {
 
+        private static final Logger LOG = LoggerFactory.getLogger(Driver.class);
+
         private static final String ERROR_ACTOR_NOT_SETUP =
                 "Attempting to access the Actor, but it is not yet setup. " +
                         "Are you trying to send a message to yourself within the constructor?";
 
-        private ACTOR actor;
+        private final ACTOR actor;
         private final ActorExecutorGroup executorService;
         private final ActorExecutor executor;
 
@@ -66,18 +78,25 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
             this.executor = executorService.nextExecutor();
         }
 
-        // TODO: do not use this method - any usages should be removed ASAP
-        public ACTOR actor() {
-            return actor;
-        }
-
         public Supplier<String> debugName() {
             return actor.debugName();
         }
 
+        public void terminate(@Nullable Throwable cause) {
+            if (!actor.isTerminated) {
+                executor.submitPreemptive(() -> actor.terminate(cause), (error) -> {
+                    LOG.error("Exception while terminating actor", error);
+                });
+            }
+        }
+
         public void execute(Consumer<ACTOR> consumer) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
-            executor.submit(() -> consumer.accept(actor), actor::exception);
+            if (!actor.isTerminated) {
+                executor.submit(() -> {
+                    if (!actor.isTerminated) consumer.accept(actor);
+                }, actor::exception);
+            }
         }
 
         public CompletableFuture<Void> complete(Consumer<ACTOR> consumer) {
@@ -89,20 +108,28 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
 
         public <ANSWER> CompletableFuture<ANSWER> compute(Function<ACTOR, ANSWER> function) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
-            CompletableFuture<ANSWER> future = new CompletableFuture<>();
-            executor.submit(
-                    () -> future.complete(function.apply(actor)),
-                    e -> {
-                        actor.exception(e);
-                        future.completeExceptionally(e);
-                    }
-            );
-            return future;
+            if (!actor.isTerminated) {
+                CompletableFuture<ANSWER> future = new CompletableFuture<>();
+                executor.submit(
+                        () -> {
+                            if (!actor.isTerminated) future.complete(function.apply(actor));
+                        },
+                        e -> {
+                            actor.exception(e);
+                            future.completeExceptionally(e);
+                        }
+                );
+                return future;
+            } else return null;
         }
 
         public ActorExecutor.FutureTask schedule(Consumer<ACTOR> consumer, long scheduleMillis) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
-            return executor.schedule(() -> consumer.accept(actor), scheduleMillis, actor::exception);
+            if (!actor.isTerminated) {
+                return executor.schedule(() -> {
+                    if (!actor.isTerminated) consumer.accept(actor);
+                }, scheduleMillis, actor::exception);
+            } else return null;
         }
 
         public ActorExecutorGroup executorService() {
