@@ -19,17 +19,13 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 host_compatible_java_test(
-    name = "benchmark-small",
+    name = "large-data-test",
     size = "large",
-    test_class = "com.vaticle.typedb.core.reasoner.benchmark.BenchmarkSmall",
-    srcs = ["BenchmarkSmall.java",
-            "Util.java",
-            "generation/DiagonalGraph.java",
-            "generation/TransitivityMatrixGraph.java",
-            "generation/TransitivityChainGraph.java",
-            "generation/PathTreeGraph.java"
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.LargeDataTest",
+    srcs = ["LargeDataTest.java",
+            "Benchmark.java",
     ],
-    data = [":resources/linearTransitivity.tql", ":resources/quadraticTransitivity.tql", ":resources/diagonalTest.tql", ":resources/pathTest.tql"],
+    data = [":resources/data.tql", ":resources/schema_types.tql", ":schema/schema_rules.tql"],
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
@@ -50,11 +46,13 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "benchmark-big",
+    name = "complex-rule-graph-test",
     size = "large",
-    test_class = "com.vaticle.typedb.core.reasoner.benchmark.BenchmarkBig",
-    srcs = ["BenchmarkBig.java", "Util.java"],
-    data = [":resources/linearTransitivity.tql", ":resources/multiJoin.tql"],
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.ComplexRuleGraphTest",
+    srcs = ["ComplexRuleGraphTest.java",
+            "Benchmark.java",
+    ],
+    data = [":resources/data.tql", ":resources/schema_types.tql", ":schema/schema_rules.tql"],
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
@@ -71,15 +69,16 @@ host_compatible_java_test(
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
-        "@vaticle_typeql//java/pattern",
     ],
 )
 
 host_compatible_java_test(
-    name = "rule-scaling",
-    size = "large",
-    test_class = "com.vaticle.typedb.core.reasoner.benchmark.RuleScaling",
-    srcs = ["RuleScaling.java", "Util.java"],
+    name = "complex-conjunctions-test",
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.ComplexConjunctionsTest",
+    srcs = ["ComplexConjunctionsTest.java",
+            "Benchmark.java",
+    ],
+    data = [":resources/data.tql", ":resources/schema_types.tql", ":resources/schema_rules.tql"],
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
@@ -95,7 +94,6 @@ host_compatible_java_test(
         "//test/integration/util:util",
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
-        "@vaticle_typeql//java/pattern",
         "@vaticle_typeql//java/query",
     ],
 )

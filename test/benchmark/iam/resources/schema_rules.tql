@@ -1,0 +1,126 @@
+define
+
+rule attribute-parent-company:
+    when {
+        (company: $c, member: $t) isa company-membership;
+        $c has name $c-name;
+        $pc isa parent-company-name;
+        $c-name = $pc;
+    } then {
+        $t has $pc;
+    };
+
+rule automatic-member-collection:
+    when {
+        $c isa resource-collection;
+        (member: $c) isa collection-membership;
+    } then {
+        $c has root-collection false;
+    };
+
+rule automatic-root-collection:
+    when {
+        $c isa resource-collection;
+        not {
+            $c has root-collection false;
+        };
+    } then {
+        $c has root-collection true;
+    };
+
+rule transitive-membership-groups:
+when {
+        (group: $p, member: $t) isa group-membership;
+        (group: $t, member: $m) isa group-membership;
+} then {
+        (group: $p, member: $m) isa group-membership;
+};
+
+
+rule transitive-membership-sets:
+when {
+        (set: $p, member: $t) isa set-membership;
+        (set: $t, member: $m) isa set-membership;
+} then {
+        (set: $p, member: $m) isa set-membership;
+};
+
+
+rule transitive-membership-collections:
+when {
+        (collection: $p, member: $t) isa collection-membership;
+        (collection: $t, member: $m) isa collection-membership;
+} then {
+        (collection: $p, member: $m) isa collection-membership;
+};
+
+rule subject-permission-inheritance:
+    when {
+        $s isa subject;
+        (group: $g, member: $s) isa group-membership;
+        (subject: $g, access: $ac) isa permission;
+    } then {
+        (subject: $s, access: $ac) isa inherited-permission;
+    };
+
+rule object-permission-inheritance:
+    when {
+        $o isa object;
+        (collection: $c, member: $o) isa collection-membership;
+        $ac-c(object: $c, action: $a) isa access;
+        $ac-o(object: $o, action: $a) isa access;
+        (subject: $s, access: $ac-c) isa permission;
+    } then {
+        (subject: $s, access: $ac-o) isa inherited-permission;
+    };
+
+rule action-permission-inheritance:
+    when {
+        $a isa action;
+        (set: $se, member: $a) isa set-membership;
+        $ac-s(object: $o, action: $se) isa access;
+        $ac-a(object: $o, action: $a) isa access;
+        (subject: $s, access: $ac-s) isa permission;
+    } then {
+        (subject: $s, access: $ac-a) isa inherited-permission;
+    };
+
+rule segregation-violation-detection:
+    when {
+        $po(action: $a1, action: $a2) isa segregation-policy;
+        $ac1(object: $o, action: $a1) isa access;
+        $ac2(object: $o, action: $a2) isa access;
+        $p1(subject: $s, access: $ac1) isa permission;
+        $p2(subject: $s, access: $ac2) isa permission;
+    } then {
+        (subject: $s, object: $o, policy: $po) isa segregation-violation;
+    };
+
+rule permission-maximisation-violation-detection:
+    when {
+        $p-d(subject: $s, access: $ac) isa direct-permission;
+        $p-i(subject: $s, access: $ac) isa inherited-permission;
+    } then {
+        (permission: $p-d, permission: $p-i) isa permission-maximisation-violation;
+    };
+
+rule automatic-permission-invalidity:
+    when {
+        $po(action: $a1, action: $a2) isa segregation-policy;
+        $ac1(object: $o, action: $a1) isa access;
+        $ac2(object: $o, action: $a2) isa access;
+        $p1(subject: $s, access: $ac1) isa permission;
+        $p2(subject: $s, access: $ac2) isa permission;
+    } then {
+        $p1 has validity false;
+    };
+
+rule automatic-permission-validity:
+    when {
+        $p isa permission;
+        not {
+            $p has validity false;
+        };
+    } then {
+        $p has validity true;
+    };
