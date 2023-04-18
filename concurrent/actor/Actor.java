@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -100,14 +101,14 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
             }
         }
 
-        public CompletableFuture<Void> complete(Consumer<ACTOR> consumer) {
+        public Optional<CompletableFuture<Void>> complete(Consumer<ACTOR> consumer) {
             return compute(actor -> {
                 consumer.accept(actor);
                 return null;
             });
         }
 
-        public <ANSWER> CompletableFuture<ANSWER> compute(Function<ACTOR, ANSWER> function) {
+        public <ANSWER> Optional<CompletableFuture<ANSWER>> compute(Function<ACTOR, ANSWER> function) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
             if (!actor.isTerminated) {
                 CompletableFuture<ANSWER> future = new CompletableFuture<>();
@@ -120,17 +121,17 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
                             future.completeExceptionally(e);
                         }
                 );
-                return future;
-            } else return null;
+                return Optional.of(future);
+            } else return Optional.empty();
         }
 
-        public ActorExecutor.FutureTask schedule(Consumer<ACTOR> consumer, long scheduleMillis) {
+        public Optional<ActorExecutor.FutureTask> schedule(Consumer<ACTOR> consumer, long scheduleMillis) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
             if (!actor.isTerminated) {
-                return executor.schedule(() -> {
+                return Optional.of(executor.schedule(() -> {
                     if (!actor.isTerminated) consumer.accept(actor);
-                }, scheduleMillis, actor::exception);
-            } else return null;
+                }, scheduleMillis, actor::exception));
+            } else return Optional.empty();
         }
 
         public ActorExecutorGroup executorService() {
