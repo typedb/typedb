@@ -41,6 +41,7 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Source;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -149,7 +150,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         }
 
         @Override
-        public void terminate(Throwable cause) {
+        public void terminate(@Nullable Throwable cause) {
             super.terminate(cause);
             reasonerConsumer.exception(cause);
         }

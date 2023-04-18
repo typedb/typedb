@@ -82,18 +82,19 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
             return actor.debugName();
         }
 
-        public void terminate(@Nullable Throwable cause) {
-            if (!actor.isTerminated) {
-                executor.submitPreemptive(() -> actor.terminate(cause), (error) -> {
-                    LOG.error("Exception while terminating actor", error);
-                });
-            }
-        }
-
         public void execute(Consumer<ACTOR> consumer) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
             if (!actor.isTerminated) {
                 executor.submit(() -> {
+                    if (!actor.isTerminated) consumer.accept(actor);
+                }, actor::exception);
+            }
+        }
+
+        public void executePreemptive(Consumer<ACTOR> consumer) {
+            assert actor != null : ERROR_ACTOR_NOT_SETUP;
+            if (!actor.isTerminated) {
+                executor.submitPreemptive(() -> {
                     if (!actor.isTerminated) consumer.accept(actor);
                 }, actor::exception);
             }
