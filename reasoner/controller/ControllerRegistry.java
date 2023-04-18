@@ -118,9 +118,9 @@ public class ControllerRegistry {
     public void terminate(Throwable cause) {
         if (terminated.compareAndSet(false, true)) {
             terminationCause = TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, cause);
-            controllers.forEach(actor -> actor.executePreemptive(a -> a.terminate(cause)));
-            materialisationController.executePreemptive(a -> a.terminate(cause));
-            controllerContext.processor().monitor().executePreemptive(a -> a.terminate(cause));
+            controllers.forEach(actor -> actor.executeNext(a -> a.terminate(terminationCause)));
+            materialisationController.executeNext(a -> a.terminate(terminationCause));
+            controllerContext.processor().monitor().executeNext(a -> a.terminate(terminationCause));
         }
     }
 

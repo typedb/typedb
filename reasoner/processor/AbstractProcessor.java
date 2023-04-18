@@ -41,7 +41,6 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
 
 public abstract class AbstractProcessor<
         INPUT, OUTPUT, REQ extends AbstractRequest<?, ?, INPUT>,
@@ -153,7 +152,7 @@ public abstract class AbstractProcessor<
 
     @Override
     public void exception(Throwable e) {
-        controller.executePreemptive(controller -> controller.exception(e));
+        controller.executeNext(controller -> controller.exception(e));
     }
 
     private long incrementReactiveCounter() {

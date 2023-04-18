@@ -27,7 +27,6 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,7 +80,7 @@ public class ActorExecutor {
         submittedTasks.offer(new Task(runnable, errorHandler));
     }
 
-    public void submitPreemptive(Runnable runnable, Consumer<Throwable> errorHandler) {
+    public void submitFirst(Runnable runnable, Consumer<Throwable> errorHandler) {
         assert active;
         submittedTasks.addFirst(new Task(runnable, errorHandler));
     }
@@ -99,7 +98,7 @@ public class ActorExecutor {
 
     public void stop() throws InterruptedException {
         if (isStopped.compareAndSet(false, true)) {
-            submitPreemptive(() -> active = false, e -> LOG.error("Unexpected error at stopping an ActorExecutor", e));
+            submitFirst(() -> active = false, e -> LOG.error("Unexpected error at stopping an ActorExecutor", e));
             await();
         }
     }
@@ -168,7 +167,7 @@ public class ActorExecutor {
         }
 
         public void cancel() {
-            ActorExecutor.this.submitPreemptive(task::cancel, task.errorHandler);
+            ActorExecutor.this.submitFirst(task::cancel, task.errorHandler);
         }
     }
 

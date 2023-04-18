@@ -91,10 +91,10 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
             }
         }
 
-        public void executePreemptive(Consumer<ACTOR> consumer) {
+        public void executeNext(Consumer<ACTOR> consumer) {
             assert actor != null : ERROR_ACTOR_NOT_SETUP;
             if (!actor.isTerminated) {
-                executor.submitPreemptive(() -> {
+                executor.submitFirst(() -> {
                     if (!actor.isTerminated) consumer.accept(actor);
                 }, actor::exception);
             }

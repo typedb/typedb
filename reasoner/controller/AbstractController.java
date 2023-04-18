@@ -125,7 +125,7 @@ public abstract class AbstractController<
     public void terminate(Throwable cause) {
         super.terminate(cause);
         LOG.debug("Controller terminated.", cause);
-        processors.values().forEach(p -> p.executePreemptive(a -> a.terminate(cause)));
+        processors.values().forEach(p -> p.executeNext(a -> a.terminate(cause)));
     }
 
     public static class Context {
