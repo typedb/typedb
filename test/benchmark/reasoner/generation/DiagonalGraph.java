@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RelationType;
-import com.vaticle.typedb.core.reasoner.benchmark.reasoner.Util;
+import com.vaticle.typedb.core.reasoner.benchmark.Util;
 
 @SuppressWarnings("CheckReturnValue")
 public class DiagonalGraph {
@@ -32,7 +32,7 @@ public class DiagonalGraph {
     private final TypeDB.DatabaseManager databaseManager;
     private final String databaseName;
 
-    private static final String schemaFile = "reasoner/resources/diagonalTest.tql";
+    private static final String schemaFile = "test/benchmark/reasoner/resources/diagonalTest.tql";
     private static final Label key = Label.of("name");
 
     public DiagonalGraph(TypeDB.DatabaseManager databaseManager, String dbName) {

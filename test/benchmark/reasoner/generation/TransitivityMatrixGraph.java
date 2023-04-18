@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.reasoner.benchmark.reasoner.Util;
+import com.vaticle.typedb.core.reasoner.benchmark.Util;
 
 @SuppressWarnings("CheckReturnValue")
 public abstract class TransitivityMatrixGraph {
@@ -94,7 +94,7 @@ public abstract class TransitivityMatrixGraph {
     }
 
     public static class Linear extends TransitivityMatrixGraph {
-        private static final String schemaFile = "reasoner/resources/linearTransitivity.tql";
+        private static final String schemaFile = "test/benchmark/reasoner/resources/linearTransitivity.tql";
 
         public Linear(TypeDB.DatabaseManager dbm, String dbName) {
             super(schemaFile, dbm, dbName);
@@ -102,7 +102,7 @@ public abstract class TransitivityMatrixGraph {
     }
 
     public static class Quadratic extends TransitivityMatrixGraph {
-        private static final String schemaFile = "reasoner/resources/linearTransitivity.tql";
+        private static final String schemaFile = "test/benchmark/reasoner/resources/linearTransitivity.tql";
 
         public Quadratic(TypeDB.DatabaseManager dbm, String dbName) {
             super(schemaFile, dbm, dbName);
