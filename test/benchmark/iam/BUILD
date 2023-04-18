@@ -25,7 +25,7 @@ host_compatible_java_test(
     srcs = ["LargeDataTest.java",
             "Benchmark.java",
     ],
-    data = [":resources/data.tql", ":resources/schema_types.tql", ":schema/schema_rules.tql"],
+    data = [":resources/data.tql", ":resources/schema_types.tql", ":resources/schema_rules.tql"],
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
@@ -52,7 +52,7 @@ host_compatible_java_test(
     srcs = ["ComplexRuleGraphTest.java",
             "Benchmark.java",
     ],
-    data = [":resources/data.tql", ":resources/schema_types.tql", ":schema/schema_rules.tql"],
+    data = [":resources/data.tql", ":resources/schema_types.tql", ":resources/schema_rules.tql"],
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
