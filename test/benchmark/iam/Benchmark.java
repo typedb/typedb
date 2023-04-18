@@ -21,7 +21,9 @@ package com.vaticle.typedb.core.reasoner.benchmark.iam;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.common.perfcounter.PerfCounterSet;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
+import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
@@ -34,6 +36,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -109,7 +112,7 @@ public class Benchmark {
                 Instant start = Instant.now();
                 long nAnswers = tx.query().match(TypeQL.parseQuery(query).asMatch()).count();
                 Duration timeTaken = Duration.between(start, Instant.now());
-                run = new BenchmarkRun(nAnswers, timeTaken);
+                run = new BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction)tx).reasoner().controllerRegistry().perfCounters().toMapUnsynchronised());
             }
         }
 
@@ -117,20 +120,23 @@ public class Benchmark {
         return run;
     }
 
-    private static class BenchmarkRun {
+    static class BenchmarkRun {
         final long answerCount;
         final Duration timeTaken;
+        private final Map<PerfCounterSet.Key, Long> reasonerPerfCounters;
 
-        public BenchmarkRun(long answerCount, Duration timeTaken) {
+        public BenchmarkRun(long answerCount, Duration timeTaken, Map<PerfCounterSet.Key, Long> reasonerPerfCounters) {
             this.answerCount = answerCount;
             this.timeTaken = timeTaken;
+            this.reasonerPerfCounters = reasonerPerfCounters;
         }
 
         @Override
         public String toString() {
             return  "Benchmark run:\n" +
-                    "\tTimeTaken:\t" +  timeTaken + "\n" +
-                    "\tAnswers:\t" + answerCount + "\n";
+                    "\tTimeTaken :\t" +  timeTaken.toMillis() + " ms\n" +
+                    "\tAnswers   :\t" + answerCount + "\n" +
+                    PerfCounterSet.prettyPrint(reasonerPerfCounters);
         }
     }
 }

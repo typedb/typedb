@@ -76,7 +76,7 @@ public abstract class ReasonerPlanner {
 
     public void planAllDependencies(Concludable concludable, Set<Variable> mode) {
         triggeredCalls(concludable, estimateableVariables(mode), null)
-                .forEach(callMode -> plan(callMode.conjunction, callMode.mode));
+                .forEach(callMode -> plan(callMode));
     }
 
     public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> mode) {

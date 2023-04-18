@@ -18,10 +18,12 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.core.common.perfcounter.PerfCounterSet;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
@@ -49,7 +51,9 @@ public class RootConjunctionController
 
     @Override
     public void initialise() {
-        planner().plan(conjunction, new HashSet<>());
+        try (PerfCounterSet.TimeCounterMillis _timer = processorContext().perfCounters().addTimerMillis(ReasonerPerfCounters.Key.TIME_PLANNING_MS)) {
+            planner().plan(conjunction, new HashSet<>());
+        }
         setUpUpstreamControllers();
         getOrCreateProcessor(new ConceptMap());
     }

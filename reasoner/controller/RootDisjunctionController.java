@@ -18,9 +18,11 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.core.common.perfcounter.PerfCounterSet;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
@@ -48,7 +50,9 @@ public class RootDisjunctionController
 
     @Override
     public void initialise() {
-        disjunction.conjunctions().forEach(conjunction -> planner().plan(conjunction, new HashSet<>()));
+        try (PerfCounterSet.TimeCounterMillis _timer = processorContext().perfCounters().addTimerMillis(ReasonerPerfCounters.Key.TIME_PLANNING_MS)) {
+            disjunction.conjunctions().forEach(conjunction -> planner().plan(conjunction, new HashSet<>()));
+        }
         setUpUpstreamControllers();
         getOrCreateProcessor(new ConceptMap());
     }

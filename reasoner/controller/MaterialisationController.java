@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.Materialiser;
 import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
 import com.vaticle.typedb.core.logic.Rule.Conclusion.Materialisable;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Source;
@@ -59,6 +60,7 @@ public class MaterialisationController extends AbstractController<
     protected Processor createProcessorFromDriver(
             Driver<Processor> processorDriver, Materialisable materialisable
     ) {
+        processorContext().perfCounters().add(ReasonerPerfCounters.Key.COUNT_MATERIALISATIONS, 1);
         return new Processor(
                 processorDriver, driver(), processorContext(), materialisable, traversalEng, conceptMgr,
                 () -> Processor.class.getSimpleName() + "(Materialisable: " + materialisable + ")"

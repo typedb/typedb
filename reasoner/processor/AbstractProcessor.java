@@ -20,7 +20,9 @@ package com.vaticle.typedb.core.reasoner.processor;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.perfcounter.PerfCounterSet;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.controller.AbstractController;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
@@ -54,6 +56,7 @@ public abstract class AbstractProcessor<
     private final Map<Identifier, OutputPort<OUTPUT>> outputPorts;
     private final Map<Pair<Identifier, Identifier>, Runnable> pullRetries;
     private Stream<OUTPUT, OUTPUT> hubReactive;
+    private boolean terminated;
     private long reactiveCounter;
 
     protected AbstractProcessor(Driver<PROCESSOR> driver,
@@ -168,10 +171,12 @@ public abstract class AbstractProcessor<
 
         private final Driver<Monitor> monitor;
         private final Tracer tracer;
+        private final ReasonerPerfCounters perfCounters;
 
-        public Context(Driver<Monitor> monitor, @Nullable Tracer tracer) {
+        public Context(Driver<Monitor> monitor, @Nullable Tracer tracer, ReasonerPerfCounters perfCounters) {
             this.monitor = monitor;
             this.tracer = tracer;
+            this.perfCounters = perfCounters;
         }
 
         public Optional<Tracer> tracer() {
@@ -180,6 +185,10 @@ public abstract class AbstractProcessor<
 
         public Driver<Monitor> monitor() {
             return monitor;
+        }
+
+        public ReasonerPerfCounters perfCounters() {
+            return perfCounters;
         }
 
     }

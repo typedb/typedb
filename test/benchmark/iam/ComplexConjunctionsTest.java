@@ -48,6 +48,7 @@ public class ComplexConjunctionsTest {
                 "$o isa operation, has name \"edit file\";\n" +
                 "$a (object: $f, action: $o) isa access;\n" +
                 "$pe (subject: $p, access: $a) isa permission, has validity true;";
-        benchmarker.benchmarkMatchQuery(query);
+        Benchmark.BenchmarkRun run = benchmarker.benchmarkMatchQuery(query);
+        System.out.println(run.toString());
     }
 }
