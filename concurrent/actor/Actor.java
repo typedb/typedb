@@ -17,9 +17,6 @@
 
 package com.vaticle.typedb.core.concurrent.actor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Optional;
@@ -62,8 +59,6 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
     }
 
     public static class Driver<ACTOR extends Actor<ACTOR>> {
-
-        private static final Logger LOG = LoggerFactory.getLogger(Driver.class);
 
         private static final String ERROR_ACTOR_NOT_SETUP =
                 "Attempting to access the Actor, but it is not yet setup. " +
