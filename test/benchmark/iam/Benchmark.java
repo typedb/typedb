@@ -18,12 +18,16 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonArray;
+import com.eclipsesource.json.JsonObject;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.common.perfcounter.PerfCounterSet;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreTransaction;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
@@ -35,11 +39,13 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class Benchmark {
@@ -47,11 +53,9 @@ public class Benchmark {
     private static final String RESOURCE_DIRECTORY = "test/benchmark/iam/resources/";
     private static CoreDatabaseManager databaseMgr;
     private final String database;
-    private final List<BenchmarkRun> runs;
 
     Benchmark(String database) {
         this.database = database;
-        this.runs = new ArrayList<>();
     }
 
     void setUp() throws IOException {
@@ -76,14 +80,14 @@ public class Benchmark {
     void loadSchema(String... filenames) {
         try (TypeDB.Session session = schemaSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                    iterate(filenames).forEachRemaining(filename -> {
-                        try {
-                            TypeQLDefine defineQuery = TypeQL.parseQuery(Files.readString(Paths.get(RESOURCE_DIRECTORY + filename))).asDefine();
-                            tx.query().define(defineQuery);
-                        } catch (IOException e) {
-                            fail("IOException when loading schema: " + e.getMessage());
-                        }
-                    });
+                iterate(filenames).forEachRemaining(filename -> {
+                    try {
+                        TypeQLDefine defineQuery = TypeQL.parseQuery(Files.readString(Paths.get(RESOURCE_DIRECTORY + filename))).asDefine();
+                        tx.query().define(defineQuery);
+                    } catch (IOException e) {
+                        fail("IOException when loading schema: " + e.getMessage());
+                    }
+                });
                 tx.commit();
             }
         }
@@ -105,19 +109,67 @@ public class Benchmark {
         }
     }
 
-    BenchmarkRun benchmarkMatchQuery(String query) {
+    BenchmarkSummary benchmarkMatchQuery(String name, String query, int expectedAnswers, int nRuns) {
+        BenchmarkSummary summary = new BenchmarkSummary(name, query, expectedAnswers);
+        for (int i = 0; i < nRuns; i++) {
+            summary.addRun(runMatchQuery(query));
+        }
+        return summary;
+    }
+
+    BenchmarkRun runMatchQuery(String query) {
         BenchmarkRun run;
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
                 Instant start = Instant.now();
                 long nAnswers = tx.query().match(TypeQL.parseQuery(query).asMatch()).count();
                 Duration timeTaken = Duration.between(start, Instant.now());
-                run = new BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction)tx).reasoner().controllerRegistry().perfCounters().toMapUnsynchronised());
+                run = new BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters().toMapUnsynchronised());
             }
         }
 
-        runs.add(run);
         return run;
+    }
+
+    class BenchmarkSummary {
+
+        final String name;
+        final String query;
+        final long expectedAnswers;
+        final List<BenchmarkRun> runs;
+
+        BenchmarkSummary(String name, String query, long expectedAnswers) {
+            this.name = name;
+            this.query = query;
+            this.expectedAnswers = expectedAnswers;
+            this.runs = new ArrayList<>();
+        }
+
+        void addRun(BenchmarkRun run) {
+            runs.add(run);
+        }
+
+        public List<BenchmarkRun> runs() {
+            return runs;
+        }
+
+        public JsonObject toJson() {
+            return toJson(ReasonerPerfCounters.Key.values());
+        }
+
+        public JsonObject toJson(ReasonerPerfCounters.Key[] values) {
+            JsonArray jsonRuns = Json.array();
+            runs.forEach(run -> jsonRuns.add(run.toJSON(values)));
+            return Json.object()
+                    .add("name", Json.value(name))
+                    .add("query", Json.value(query))
+                    .add("expected_answers", Json.value(expectedAnswers))
+                    .add("runs", jsonRuns);
+        }
+
+        public void assertAnswerCountCorrect() {
+            assertEquals(iterate(runs).map(run -> expectedAnswers).toList(), iterate(runs()).map(run -> run.answerCount).toList());
+        }
     }
 
     static class BenchmarkRun {
@@ -131,10 +183,22 @@ public class Benchmark {
             this.reasonerPerfCounters = reasonerPerfCounters;
         }
 
+        public JsonObject toJSON(ReasonerPerfCounters.Key[] values) {
+            JsonObject json = Json.object()
+                    .add("answer_count", Json.value(answerCount))
+                    .add("time_taken_ms", Json.value(timeTaken.toMillis()));
+
+            Arrays.stream(values).forEach(key -> {
+                json.add(key.name(), Json.value(reasonerPerfCounters.get(key)));
+            });
+
+            return json;
+        }
+
         @Override
         public String toString() {
-            return  "Benchmark run:\n" +
-                    "\tTimeTaken :\t" +  timeTaken.toMillis() + " ms\n" +
+            return "Benchmark run:\n" +
+                    "\tTimeTaken :\t" + timeTaken.toMillis() + " ms\n" +
                     "\tAnswers   :\t" + answerCount + "\n" +
                     PerfCounterSet.prettyPrint(reasonerPerfCounters);
         }

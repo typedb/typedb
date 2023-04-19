@@ -23,6 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+
+
 public class ComplexConjunctionsTest {
     private static final String database = "iam-benchmark-conjunctions";
     private Benchmark benchmarker;
@@ -48,7 +50,8 @@ public class ComplexConjunctionsTest {
                 "$o isa operation, has name \"edit file\";\n" +
                 "$a (object: $f, action: $o) isa access;\n" +
                 "$pe (subject: $p, access: $a) isa permission, has validity true;";
-        Benchmark.BenchmarkRun run = benchmarker.benchmarkMatchQuery(query);
-        System.out.println(run.toString());
+        Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("check-permission", query, 1, 3);
+        System.out.println(summary.toJson());
+        summary.assertAnswerCountCorrect();
     }
 }

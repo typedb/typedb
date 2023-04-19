@@ -20,10 +20,13 @@ package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 
+
 public class LargeDataTest {
+
     private static final String database = "iam-benchmark-data";
     private Benchmark benchmarker;
 
@@ -38,5 +41,14 @@ public class LargeDataTest {
     @After
     public void tearDown() {
         benchmarker.tearDown();
+    }
+
+    @Test
+    public void testSegregationViolation() {
+        String query = "match\n" +
+                "   (subject: $s, object: $o, policy: $po) isa segregation-violation;\n";
+        Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("segregation-violation", query, 1, 3);
+        System.out.println(summary.toJson());
+        summary.assertAnswerCountCorrect();
     }
 }
