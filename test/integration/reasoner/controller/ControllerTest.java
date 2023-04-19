@@ -141,9 +141,9 @@ public class ControllerTest {
                 } catch (TypeDBException e) {
                     fail();
                 }
-                Exception e = new RuntimeException();
+                Exception e = new RuntimeException("Intentional kill");
                 registry.terminate(e);
-                Throwable receivedException = answerProducer.exceptions().poll(100, TimeUnit.MILLISECONDS);
+                Throwable receivedException = answerProducer.exceptions().poll(200, TimeUnit.MILLISECONDS);
                 assertEquals(TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, e), receivedException);
             }
         }

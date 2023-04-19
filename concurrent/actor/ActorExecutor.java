@@ -26,8 +26,8 @@ import javax.annotation.concurrent.NotThreadSafe;
 import javax.annotation.concurrent.ThreadSafe;
 import java.util.Optional;
 import java.util.PriorityQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -42,7 +42,7 @@ public class ActorExecutor {
 
     private static final Logger LOG = LoggerFactory.getLogger(ActorExecutor.class);
 
-    private final BlockingQueue<Task> submittedTasks;
+    private final BlockingDeque<Task> submittedTasks;
     private final ScheduledTaskQueue scheduledTasks;
     private final AtomicBoolean isStopped;
     private final Supplier<Long> clock;
@@ -52,8 +52,7 @@ public class ActorExecutor {
     public ActorExecutor(ThreadFactory threadFactory, Supplier<Long> clock) {
         this.thread = threadFactory.newThread(this::run);
         this.clock = clock;
-        // TODO: Benchmark and verify that LinkedTransferQueue is actually most performant
-        submittedTasks = new LinkedTransferQueue<>();
+        submittedTasks = new LinkedBlockingDeque<>();
         scheduledTasks = new ScheduledTaskQueue();
         isStopped = new AtomicBoolean(false);
         active = true;
@@ -81,6 +80,11 @@ public class ActorExecutor {
         submittedTasks.offer(new Task(runnable, errorHandler));
     }
 
+    public void submitFirst(Runnable runnable, Consumer<Throwable> errorHandler) {
+        assert active;
+        submittedTasks.addFirst(new Task(runnable, errorHandler));
+    }
+
     public FutureTask schedule(Runnable runnable, long scheduleMillis, Consumer<Throwable> errorHandler) {
         assert active;
         FutureTask task = new FutureTask(runnable, scheduleMillis, errorHandler);
@@ -94,7 +98,7 @@ public class ActorExecutor {
 
     public void stop() throws InterruptedException {
         if (isStopped.compareAndSet(false, true)) {
-            submit(() -> active = false, e -> LOG.error("Unexpected error at stopping an ActorExecutor", e));
+            submitFirst(() -> active = false, e -> LOG.error("Unexpected error at stopping an ActorExecutor", e));
             await();
         }
     }
@@ -163,7 +167,7 @@ public class ActorExecutor {
         }
 
         public void cancel() {
-            ActorExecutor.this.submit(task::cancel, task.errorHandler);
+            ActorExecutor.this.submitFirst(task::cancel, task.errorHandler);
         }
     }
 

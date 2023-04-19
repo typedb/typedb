@@ -115,12 +115,12 @@ public class ControllerRegistry {
         return logicMgr;
     }
 
-    public void terminate(Throwable e) {
+    public void terminate(Throwable cause) {
         if (terminated.compareAndSet(false, true)) {
-            terminationCause = TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, e);
-            controllers.forEach(actor -> actor.execute(r -> r.terminate(terminationCause)));
-            materialisationController.execute(actor -> actor.terminate(terminationCause));
-            controllerContext.processor().monitor().execute(actor -> actor.terminate(terminationCause));
+            terminationCause = TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, cause);
+            controllers.forEach(actor -> actor.executeNext(a -> a.terminate(terminationCause)));
+            materialisationController.executeNext(a -> a.terminate(terminationCause));
+            controllerContext.processor().monitor().executeNext(a -> a.terminate(terminationCause));
         }
     }
 

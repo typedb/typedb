@@ -113,7 +113,6 @@ public abstract class ConjunctionController<
 
     @Override
     public void routeConnectionRequest(Request<?> connectionRequest) {
-        if (isTerminated()) return;
         if (connectionRequest.isRetrievable()) {
             RetrievableRequest req = connectionRequest.asRetrievable();
             FilteredRetrievable controllerView = retrievableControllers.get(req.controllerId());
