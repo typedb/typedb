@@ -49,9 +49,13 @@ public abstract class PerfCounterSet<KEY_TYPE extends PerfCounterSet.Key> {
 
     public static String prettyPrint(Map<Key, Long> counterMap) {
         StringBuilder sb = new StringBuilder();
-        counterMap.keySet().stream().sorted().forEach( key -> {
+        counterMap.keySet().stream().sorted((o1, o2) -> {
+            int first =  Integer.compare(o1.ordinal(), o2.ordinal());
+            return first == 0 ? String.CASE_INSENSITIVE_ORDER.compare(o1.name(), o2.name()) : first;
+        }).forEach(key -> {
             sb.append(String.format("%-48s: %-20d\n", key, counterMap.get(key)));
         });
+
         return sb.toString();
     }
 
@@ -87,10 +91,15 @@ public abstract class PerfCounterSet<KEY_TYPE extends PerfCounterSet.Key> {
         for (KEY_TYPE key: keys()) {
             unsynchronisedMap.put(key, get(key));
         }
+
+        for (CustomCounter customCounter: customCounters.values()) {
+            unsynchronisedMap.put(customCounter, customCounter.get());
+        }
+
         return unsynchronisedMap;
     }
 
-    public class CustomCounter {
+    public class CustomCounter implements Key {
         private final String name;
         private final AtomicLong counter;
 
@@ -111,7 +120,17 @@ public abstract class PerfCounterSet<KEY_TYPE extends PerfCounterSet.Key> {
             return counter;
         }
 
+        @Override
+        public int ordinal() {
+            return Integer.MAX_VALUE;
+        }
+
         public String name() {
+            return name;
+        }
+
+        @Override
+        public String toString() {
             return name;
         }
     }
