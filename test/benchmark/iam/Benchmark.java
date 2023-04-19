@@ -33,6 +33,7 @@ import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
 import junit.framework.AssertionFailedError;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,6 +42,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -65,7 +68,11 @@ public class Benchmark {
 
     void setUp() throws IOException {
         Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("iam-benchmark-conjunctions");
-        com.vaticle.typedb.core.test.integration.util.Util.resetDirectory(dataDir);
+        if (Files.exists(dataDir)) {
+            Files.walk(dataDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        }
+        Files.createDirectory(dataDir);
+
         databaseMgr = CoreDatabaseManager.open(new Options.Database().dataDir(dataDir).storageDataCacheSize(MB).storageIndexCacheSize(MB));
         databaseMgr.create(database);
     }
@@ -176,7 +183,8 @@ public class Benchmark {
                     .add("name", Json.value(name))
                     .add("query", Json.value(query))
                     .add("expected_answers", Json.value(expectedAnswers))
-                    .add("runs", jsonRuns);
+                    .add("runs", jsonRuns)
+                    .add("all_correct", Json.value(allCorrect()));
         }
 
         public void assertAnswerCountCorrect() {
@@ -184,7 +192,7 @@ public class Benchmark {
             assertEquals(nRuns, runs.size());
         }
 
-        public boolean isCorrect() {
+        public boolean allCorrect() {
             try {
                 assertAnswerCountCorrect();
                 return true;
@@ -243,10 +251,11 @@ public class Benchmark {
 
     public abstract static class ReasonerBenchmarkSuite {
         final Benchmark benchmarker;
-        private Exception exception;
+        private final Map<String,Exception> exceptions;
 
         ReasonerBenchmarkSuite(String database, boolean collectResults) {
             benchmarker = new Benchmark(database, collectResults);
+            exceptions = new HashMap<>();
         }
         abstract void setUp() throws IOException;
 
@@ -257,20 +266,24 @@ public class Benchmark {
         }
 
         public JsonObject jsonSummary() {
-            JsonObject root = new JsonObject();
+            JsonObject root = Json.object();
             iterate(results()).forEachRemaining(summary -> {
                 root.add(summary.name, summary.toJson());
             });
-            if (exception != null) root.add("exception", Json.value(exception.toString()));
+            JsonArray exceptionsJson = Json.array();
+            exceptions.forEach((method, exception) -> {
+                exceptionsJson.add(Json.object().add("method", method).add("exception", exception.toString()));
+            });
+            root.add("exception", exceptionsJson);
             return root;
         }
 
-        public void exception(Exception e) {
-            this.exception = e;
+        public void exception(String method, Exception e) {
+            this.exceptions.put(method, e);
         }
 
-        public Exception exception() {
-            return this.exception;
+        public Map<String, Exception> exception() {
+            return this.exceptions;
         }
     }
 }
