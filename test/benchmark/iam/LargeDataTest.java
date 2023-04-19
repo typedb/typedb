@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 
-public class LargeDataTest {
+public class LargeDataTest extends Benchmark.ReasonerBenchmarkSuite {
 
     private static final String database = "iam-benchmark-data";
     private Benchmark benchmarker;

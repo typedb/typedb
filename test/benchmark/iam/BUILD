@@ -16,7 +16,7 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test", "native_java_libraries")
 
 host_compatible_java_test(
     name = "large-data-test",
@@ -28,7 +28,6 @@ host_compatible_java_test(
     data = [
         ":resources/data.tql",
         ":resources/schema_types.tql",
-        ":resources/schema_rules.tql",
         ":resources/schema_rules_optimised.tql"
     ],
     native_libraries_deps = [
@@ -50,7 +49,7 @@ host_compatible_java_test(
 
         # External dependencies from Maven
         "@maven//:com_eclipsesource_minimal_json_minimal_json",
-    ],
+    ]
 )
 
 host_compatible_java_test(
@@ -63,8 +62,7 @@ host_compatible_java_test(
     data = [
         ":resources/data.tql",
         ":resources/schema_types.tql",
-        ":resources/schema_rules.tql",
-        ":resources/schema_rules_optimised.tql"
+        ":resources/schema_rules.tql"
     ],
     native_libraries_deps = [
         "//:typedb",
@@ -85,7 +83,7 @@ host_compatible_java_test(
 
         # External dependencies from Maven
         "@maven//:com_eclipsesource_minimal_json_minimal_json",
-    ],
+    ]
 )
 
 host_compatible_java_test(
@@ -97,7 +95,6 @@ host_compatible_java_test(
     data = [
         ":resources/data.tql",
         ":resources/schema_types.tql",
-        ":resources/schema_rules.tql",
         ":resources/schema_rules_optimised.tql"
     ],
     native_libraries_deps = [
@@ -119,7 +116,58 @@ host_compatible_java_test(
 
         # External dependencies from Maven
         "@maven//:com_eclipsesource_minimal_json_minimal_json",
+    ]
+)
+
+
+native_java_libraries(
+    name = "all-benchmarks",
+    srcs = glob(["*.java"]),
+    native_libraries_deps = [
+        "//:typedb",
+        "//database:database",
+        "//concept:concept",
+        "//common:common",
+        "//concurrent:concurrent",
+        "//logic:logic",
+        "//reasoner:reasoner",
+        "//traversal:traversal",
     ],
+    deps = [
+        # Internal dependencies
+        "//test/integration/util:util",
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/query",
+
+        # External dependencies from Maven
+        "@maven//:com_eclipsesource_minimal_json_minimal_json",
+        "@maven//:junit_junit",
+    ]
+)
+
+java_binary(
+    name = "run-mac",
+    main_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.Runner",
+    srcs = ["Runner.java"],
+    data = glob(["resources/*"]),
+    deps = [":all-benchmarks-mac",    "@maven//:junit_junit",],
+)
+
+java_binary(
+    name = "run-linux",
+    main_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.Runner",
+    srcs = ["Runner.java"],
+    data = glob(["resources/*"]),
+    deps = [":all-benchmarks-linux",    "@maven//:junit_junit",],
+)
+
+java_binary(
+    name = "run-windows",
+    main_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.Runner",
+    srcs = ["Runner.java"],
+    data = glob(["resources/*"]),
+    deps = [":all-benchmarks-windows",    "@maven//:junit_junit",],
 )
 
 checkstyle_test(

@@ -203,4 +203,11 @@ public class Benchmark {
                     PerfCounterSet.prettyPrint(reasonerPerfCounters);
         }
     }
+
+    public abstract static class ReasonerBenchmarkSuite {
+
+        abstract void setUp() throws IOException;
+
+        abstract void tearDown();
+    }
 }

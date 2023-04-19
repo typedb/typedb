@@ -24,8 +24,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-
-public class ComplexConjunctionsTest {
+public class ComplexConjunctionsTest extends Benchmark.ReasonerBenchmarkSuite {
     private static final String database = "iam-benchmark-conjunctions";
     private Benchmark benchmarker;
 

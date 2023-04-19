@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class ComplexRuleGraphTest {
+public class ComplexRuleGraphTest extends Benchmark.ReasonerBenchmarkSuite {
     private static final String database = "iam-benchmark-rules";
     private Benchmark benchmarker;
 
