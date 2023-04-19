@@ -1,11 +1,15 @@
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
+import com.eclipsesource.json.WriterConfig;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.List;
 
 public class Runner {
 
@@ -30,6 +34,9 @@ public class Runner {
     }
 
     public static void main(String[] args) {
+        Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        root.setLevel(Level.INFO);
+
         Benchmark.ReasonerBenchmarkSuite[] testClasses = new Benchmark.ReasonerBenchmarkSuite[]{
                 new ComplexConjunctionsTest(true),
                 new LargeDataTest(true),
@@ -38,7 +45,7 @@ public class Runner {
         Runner runner = new Runner();
         for (Benchmark.ReasonerBenchmarkSuite testClass : testClasses) {
             runner.runTestSuite(testClass);
-            System.out.println(testClass.jsonSummary());
+            System.out.println(testClass.jsonSummary().toString(WriterConfig.PRETTY_PRINT));
         }
 
         // You know we should be done here. I'm probably forgetting to close something

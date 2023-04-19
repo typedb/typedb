@@ -122,7 +122,7 @@ host_compatible_java_test(
 
 native_java_libraries(
     name = "all-benchmarks",
-    srcs = glob(["*.java"]),
+    srcs = glob(["*.java"], exclude=["Runner.java"]),
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
@@ -151,7 +151,14 @@ java_binary(
     main_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.Runner",
     srcs = ["Runner.java"],
     data = glob(["resources/*"]),
-    deps = [":all-benchmarks-mac",    "@maven//:junit_junit",],
+    deps = [
+        ":all-benchmarks-mac",
+
+        "@maven//:com_eclipsesource_minimal_json_minimal_json",
+        "@maven//:junit_junit",
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:ch_qos_logback_logback_classic"
+    ],
 )
 
 java_binary(
@@ -159,7 +166,14 @@ java_binary(
     main_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.Runner",
     srcs = ["Runner.java"],
     data = glob(["resources/*"]),
-    deps = [":all-benchmarks-linux",    "@maven//:junit_junit",],
+    deps = [
+        ":all-benchmarks-linux",
+
+        "@maven//:com_eclipsesource_minimal_json_minimal_json",
+        "@maven//:junit_junit",
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:ch_qos_logback_logback_classic"
+    ]
 )
 
 java_binary(
@@ -167,7 +181,14 @@ java_binary(
     main_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.Runner",
     srcs = ["Runner.java"],
     data = glob(["resources/*"]),
-    deps = [":all-benchmarks-windows",    "@maven//:junit_junit",],
+    deps = [
+        ":all-benchmarks-windows",
+
+        "@maven//:com_eclipsesource_minimal_json_minimal_json",
+        "@maven//:junit_junit",
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:ch_qos_logback_logback_classic"
+    ]
 )
 
 checkstyle_test(

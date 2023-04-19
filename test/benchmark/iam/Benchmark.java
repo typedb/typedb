@@ -128,9 +128,13 @@ public class Benchmark {
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
                 Instant start = Instant.now();
-                long nAnswers = tx.query().match(TypeQL.parseQuery(query).asMatch()).count();
-                Duration timeTaken = Duration.between(start, Instant.now());
-                run = new BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters().toMapUnsynchronised());
+                try {
+                    long nAnswers = tx.query().match(TypeQL.parseQuery(query).asMatch()).count();
+                    Duration timeTaken = Duration.between(start, Instant.now());
+                    run = new BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters().toMapUnsynchronised());
+                } catch (Exception e) {
+                    run = new BenchmarkRun(e);
+                }
             }
         }
 
