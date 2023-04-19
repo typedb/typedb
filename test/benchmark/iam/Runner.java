@@ -1,5 +1,6 @@
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
+import com.eclipsesource.json.Json;
 import com.eclipsesource.json.WriterConfig;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -54,12 +55,14 @@ public class Runner {
         };
 
         Runner runner = new Runner();
+        runner.updateStream.println(String.format("/* %s */", (args.length >= 1) ? args[0] : " start runner "));
+
         for (Benchmark.ReasonerBenchmarkSuite testClass : testClasses) {
             runner.updateStream.println("/* Running test class " + testClass.getClass().getSimpleName() + " */");
             runner.runTestSuite(testClass);
             runner.outputStream.println(testClass.jsonSummary().toString(WriterConfig.PRETTY_PRINT));
         }
-
+        runner.updateStream.println("/* End runner */");
         // You know we should be done here. I'm probably forgetting to close something
         System.exit(0);
     }
