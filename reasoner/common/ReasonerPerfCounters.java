@@ -30,7 +30,9 @@ public class ReasonerPerfCounters extends PerfCounterSet<ReasonerPerfCounters.Ke
         TIME_PLANNING_MS,
 
         COUNT_MATERIALISATIONS,
-
+        COUNT_CONJUNCTION_PROCESSORS,
+        COUNT_COMPOUND_STREAMS,
+        
         END_MARKER;
     }
 
