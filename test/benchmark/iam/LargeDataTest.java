@@ -24,15 +24,20 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-
 public class LargeDataTest extends Benchmark.ReasonerBenchmarkSuite {
 
     private static final String database = "iam-benchmark-data";
-    private Benchmark benchmarker;
+
+    LargeDataTest() {
+        this(false);
+    }
+
+    LargeDataTest(boolean collectResults) {
+        super(database, collectResults);
+    }
 
     @Before
     public void setUp() throws IOException {
-        benchmarker = new Benchmark(database);
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadData("data.tql");
@@ -49,7 +54,6 @@ public class LargeDataTest extends Benchmark.ReasonerBenchmarkSuite {
                 "   (subject: $s, object: $o, policy: $po) isa segregation-violation;\n";
         benchmarker.loadSchema("schema_rules_optimised.tql");
         Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("segregation-violation-optimised", query, 1, 3);
-        System.out.println(summary.toJson());
         summary.assertAnswerCountCorrect();
     }
 }

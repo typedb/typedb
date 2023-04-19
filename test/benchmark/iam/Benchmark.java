@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
+import junit.framework.AssertionFailedError;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,9 +54,13 @@ public class Benchmark {
     private static final String RESOURCE_DIRECTORY = "test/benchmark/iam/resources/";
     private static CoreDatabaseManager databaseMgr;
     private final String database;
+    private final boolean collectResults;
+    private final List<BenchmarkSummary> results;
 
-    Benchmark(String database) {
+    Benchmark(String database, boolean collectResults) {
         this.database = database;
+        this.collectResults = collectResults;
+        this.results = new ArrayList<>();
     }
 
     void setUp() throws IOException {
@@ -110,10 +115,11 @@ public class Benchmark {
     }
 
     BenchmarkSummary benchmarkMatchQuery(String name, String query, int expectedAnswers, int nRuns) {
-        BenchmarkSummary summary = new BenchmarkSummary(name, query, expectedAnswers);
+        BenchmarkSummary summary = new BenchmarkSummary(name, query, expectedAnswers, nRuns);
         for (int i = 0; i < nRuns; i++) {
             summary.addRun(runMatchQuery(query));
         }
+        if (collectResults) results.add(summary);
         return summary;
     }
 
@@ -136,12 +142,14 @@ public class Benchmark {
         final String name;
         final String query;
         final long expectedAnswers;
+        private final int nRuns;
         final List<BenchmarkRun> runs;
 
-        BenchmarkSummary(String name, String query, long expectedAnswers) {
+        BenchmarkSummary(String name, String query, long expectedAnswers, int nRuns) {
             this.name = name;
             this.query = query;
             this.expectedAnswers = expectedAnswers;
+            this.nRuns = nRuns;
             this.runs = new ArrayList<>();
         }
 
@@ -169,28 +177,53 @@ public class Benchmark {
 
         public void assertAnswerCountCorrect() {
             assertEquals(iterate(runs).map(run -> expectedAnswers).toList(), iterate(runs()).map(run -> run.answerCount).toList());
+            assertEquals(nRuns, runs.size());
+        }
+
+        public boolean isCorrect() {
+            try {
+                assertAnswerCountCorrect();
+                return true;
+            } catch (AssertionFailedError e) {
+                return false;
+            }
         }
     }
 
     static class BenchmarkRun {
         final long answerCount;
         final Duration timeTaken;
+        final Exception exception;
         private final Map<PerfCounterSet.Key, Long> reasonerPerfCounters;
 
-        public BenchmarkRun(long answerCount, Duration timeTaken, Map<PerfCounterSet.Key, Long> reasonerPerfCounters) {
+        public BenchmarkRun(Exception e) {
+            this(-1, null, null, e);
+        }
+
+        public  BenchmarkRun(long answerCount, Duration timeTaken, Map<PerfCounterSet.Key, Long> reasonerPerfCounters) {
+            this(answerCount, timeTaken, reasonerPerfCounters, null);
+        }
+
+        private BenchmarkRun(long answerCount, Duration timeTaken, Map<PerfCounterSet.Key, Long> reasonerPerfCounters, Exception e) {
             this.answerCount = answerCount;
             this.timeTaken = timeTaken;
             this.reasonerPerfCounters = reasonerPerfCounters;
+            this.exception = e;
         }
 
         public JsonObject toJSON(ReasonerPerfCounters.Key[] values) {
-            JsonObject json = Json.object()
-                    .add("answer_count", Json.value(answerCount))
-                    .add("time_taken_ms", Json.value(timeTaken.toMillis()));
+            JsonObject json;
+            if (exception == null) {
+                json = Json.object()
+                        .add("answer_count", Json.value(answerCount))
+                        .add("time_taken_ms", Json.value(timeTaken.toMillis()));
 
-            Arrays.stream(values).forEach(key -> {
-                json.add(key.name(), Json.value(reasonerPerfCounters.get(key)));
-            });
+                Arrays.stream(values).forEach(key -> {
+                    json.add(key.name(), Json.value(reasonerPerfCounters.get(key)));
+                });
+            } else {
+                json = Json.object().add("exception", Json.value(exception.toString()));
+            }
 
             return json;
         }
@@ -205,9 +238,35 @@ public class Benchmark {
     }
 
     public abstract static class ReasonerBenchmarkSuite {
+        final Benchmark benchmarker;
+        private Exception exception;
 
+        ReasonerBenchmarkSuite(String database, boolean collectResults) {
+            benchmarker = new Benchmark(database, collectResults);
+        }
         abstract void setUp() throws IOException;
 
         abstract void tearDown();
+
+        public List<BenchmarkSummary> results() {
+            return benchmarker.results;
+        }
+
+        public JsonObject jsonSummary() {
+            JsonObject root = new JsonObject();
+            iterate(results()).forEachRemaining(summary -> {
+                root.add(summary.name, summary.toJson());
+            });
+            if (exception != null) root.add("exception", Json.value(exception.toString()));
+            return root;
+        }
+
+        public void exception(Exception e) {
+            this.exception = e;
+        }
+
+        public Exception exception() {
+            return this.exception;
+        }
     }
 }

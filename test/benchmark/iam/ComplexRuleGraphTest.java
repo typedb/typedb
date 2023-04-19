@@ -26,11 +26,17 @@ import java.io.IOException;
 
 public class ComplexRuleGraphTest extends Benchmark.ReasonerBenchmarkSuite {
     private static final String database = "iam-benchmark-rules";
-    private Benchmark benchmarker;
+
+    ComplexRuleGraphTest() {
+        this(false);
+    }
+
+    ComplexRuleGraphTest(boolean collectResults) {
+        super(database, collectResults);
+    }
 
     @Before
     public void setUp() throws IOException {
-        benchmarker = new Benchmark(database);
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadData("data.tql");
@@ -51,7 +57,6 @@ public class ComplexRuleGraphTest extends Benchmark.ReasonerBenchmarkSuite {
                 "$pe (subject: $p, access: $a) isa permission, has validity true;";
         benchmarker.loadSchema("schema_rules.tql");
         Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("check-permission", query, 1, 3);
-        System.out.println(summary.toJson());
         summary.assertAnswerCountCorrect();
     }
 
@@ -61,7 +66,6 @@ public class ComplexRuleGraphTest extends Benchmark.ReasonerBenchmarkSuite {
                 "   (subject: $s, object: $o, policy: $po) isa segregation-violation;\n";
         benchmarker.loadSchema("schema_rules.tql");
         Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("segregation-violation", query, 1, 3);
-        System.out.println(summary.toJson());
         summary.assertAnswerCountCorrect();
     }
 }

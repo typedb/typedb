@@ -25,12 +25,19 @@ import org.junit.Test;
 import java.io.IOException;
 
 public class ComplexConjunctionsTest extends Benchmark.ReasonerBenchmarkSuite {
+
     private static final String database = "iam-benchmark-conjunctions";
-    private Benchmark benchmarker;
+
+    ComplexConjunctionsTest() {
+        this(false);
+    }
+
+    ComplexConjunctionsTest(boolean collectResults) {
+        super(database, collectResults);
+    }
 
     @Before
     public void setUp() throws IOException {
-        benchmarker = new Benchmark(database);
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadData("data.tql");
@@ -51,7 +58,6 @@ public class ComplexConjunctionsTest extends Benchmark.ReasonerBenchmarkSuite {
                 "$pe (subject: $p, access: $a) isa permission, has validity true;";
         benchmarker.loadSchema("schema_rules_optimised.tql");
         Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("check-permission", query, 1, 3);
-        System.out.println(summary.toJson());
         summary.assertAnswerCountCorrect();
     }
 }
