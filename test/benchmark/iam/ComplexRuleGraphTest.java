@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 
 import java.io.IOException;
 
@@ -31,12 +32,36 @@ public class ComplexRuleGraphTest {
     public void setUp() throws IOException {
         benchmarker = new Benchmark(database);
         benchmarker.setUp();
-        benchmarker.loadSchema("schema_types.tql", "schema_rules.tql");
+        benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadData("data.tql");
     }
 
     @After
     public void tearDown() {
         benchmarker.tearDown();
+    }
+
+    @Test
+    public void testCheckPermission() {
+        String query = "match\n" +
+                "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
+                "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
+                "$o isa operation, has name \"edit file\";\n" +
+                "$a (object: $f, action: $o) isa access;\n" +
+                "$pe (subject: $p, access: $a) isa permission, has validity true;";
+        benchmarker.loadSchema("schema_rules.tql");
+        Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("check-permission", query, 1, 3);
+        System.out.println(summary.toJson());
+        summary.assertAnswerCountCorrect();
+    }
+
+    @Test
+    public void testSegregationViolation() {
+        String query = "match\n" +
+                "   (subject: $s, object: $o, policy: $po) isa segregation-violation;\n";
+        benchmarker.loadSchema("schema_rules.tql");
+        Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("segregation-violation", query, 1, 3);
+        System.out.println(summary.toJson());
+        summary.assertAnswerCountCorrect();
     }
 }

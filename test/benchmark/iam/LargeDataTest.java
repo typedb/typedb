@@ -34,7 +34,7 @@ public class LargeDataTest {
     public void setUp() throws IOException {
         benchmarker = new Benchmark(database);
         benchmarker.setUp();
-        benchmarker.loadSchema("schema_types.tql", "schema_rules.tql");
+        benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadData("data.tql");
     }
 
@@ -44,18 +44,10 @@ public class LargeDataTest {
     }
 
     @Test
-    public void testSegregationViolation() {
-        String query = "match\n" +
-                "   (subject: $s, object: $o, policy: $po) isa segregation-violation;\n";
-        Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("segregation-violation", query, 1, 3);
-        System.out.println(summary.toJson());
-        summary.assertAnswerCountCorrect();
-    }
-
-    @Test
     public void testSegregationViolationOptimised() {
         String query = "match\n" +
                 "   (subject: $s, object: $o, policy: $po) isa segregation-violation;\n";
+        benchmarker.loadSchema("schema_rules_optimised.tql");
         Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("segregation-violation-optimised", query, 1, 3);
         System.out.println(summary.toJson());
         summary.assertAnswerCountCorrect();
