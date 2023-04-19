@@ -54,4 +54,18 @@ public class ComplexConjunctionsTest {
         System.out.println(summary.toJson());
         summary.assertAnswerCountCorrect();
     }
+
+
+    @Test
+    public void testCheckPermissionOptimised() {
+        String query = "match\n" +
+                "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
+                "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
+                "$o isa operation, has name \"edit file\";\n" +
+                "$a (object: $f, action: $o) isa access;\n" +
+                "$pe (subject: $p, access: $a) isa permission, has validity true;";
+        Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("check-permission", query, 1, 3);
+        System.out.println(summary.toJson());
+        summary.assertAnswerCountCorrect();
+    }
 }

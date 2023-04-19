@@ -72,6 +72,9 @@ host_compatible_java_test(
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
+
+        # External dependencies from Maven
+        "@maven//:com_eclipsesource_minimal_json_minimal_json",
     ],
 )
 
@@ -98,6 +101,9 @@ host_compatible_java_test(
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
+
+        # External dependencies from Maven
+        "@maven//:com_eclipsesource_minimal_json_minimal_json",
     ],
 )
 

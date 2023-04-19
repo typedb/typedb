@@ -51,4 +51,13 @@ public class LargeDataTest {
         System.out.println(summary.toJson());
         summary.assertAnswerCountCorrect();
     }
+
+    @Test
+    public void testSegregationViolationOptimised() {
+        String query = "match\n" +
+                "   (subject: $s, object: $o, policy: $po) isa segregation-violation;\n";
+        Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("segregation-violation-optimised", query, 1, 3);
+        System.out.println(summary.toJson());
+        summary.assertAnswerCountCorrect();
+    }
 }
