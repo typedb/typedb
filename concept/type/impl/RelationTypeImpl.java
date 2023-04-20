@@ -312,6 +312,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
 
         @Override
+        public void delete() {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
+
+        @Override
         public void setLabel(String label) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
