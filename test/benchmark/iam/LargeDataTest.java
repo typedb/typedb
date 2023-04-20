@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class LargeDataTest extends Benchmark.ReasonerBenchmarkSuite {
+public class LargeDataTest extends ReasonerBenchmarkSuite {
 
     private static final String database = "iam-benchmark-data";
 
@@ -53,7 +53,8 @@ public class LargeDataTest extends Benchmark.ReasonerBenchmarkSuite {
         String query = "match\n" +
                 "   (subject: $s, object: $o, policy: $po) isa segregation-violation;\n";
         benchmarker.loadSchema("schema_rules_optimised.tql");
-        Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("segregation-violation-optimised", query, 1, 3);
-        summary.assertAnswerCountCorrect();
+        Benchmark benchmark = new Benchmark("segregation-violation-optimised", query, 1, 3);
+        runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
     }
 }

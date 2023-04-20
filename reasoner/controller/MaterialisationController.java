@@ -60,7 +60,7 @@ public class MaterialisationController extends AbstractController<
     protected Processor createProcessorFromDriver(
             Driver<Processor> processorDriver, Materialisable materialisable
     ) {
-        processorContext().perfCounters().add(ReasonerPerfCounters.Key.COUNT_MATERIALISATIONS, 1);
+        processorContext().perfCounters().COUNT_MATERIALISATIONS.add(1);
         return new Processor(
                 processorDriver, driver(), processorContext(), materialisable, traversalEng, conceptMgr,
                 () -> Processor.class.getSimpleName() + "(Materialisable: " + materialisable + ")"

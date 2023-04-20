@@ -97,7 +97,7 @@ public class ControllerRegistry {
         Tracer finalTracer = tracer;
         this.controllerContext = new AbstractController.Context(
                 executorService, this, Actor.driver(driver -> new Monitor(driver, finalTracer), executorService),
-                reasonerPlanner, new ReasonerPerfCounters(), tracer
+                reasonerPlanner, new ReasonerPerfCounters(true), tracer
         );
         this.materialisationController = Actor.driver(driver -> new MaterialisationController(
                 driver, controllerContext, traversalEngine(), conceptManager()), executorService
@@ -123,6 +123,10 @@ public class ControllerRegistry {
             materialisationController.executeNext(a -> a.terminate(terminationCause));
             controllerContext.processor().monitor().executeNext(a -> a.terminate(terminationCause));
         }
+    }
+
+    public ReasonerPlanner planner() {
+        return controllerContext.planner();
     }
 
     public ReasonerPerfCounters perfCounters() {

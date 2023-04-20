@@ -18,26 +18,21 @@
 
 package com.vaticle.typedb.core.reasoner.common;
 
-import com.vaticle.typedb.core.common.perfcounter.PerfCounterSet;
+import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 
-public class ReasonerPerfCounters extends PerfCounterSet<ReasonerPerfCounters.Key> {
+public class ReasonerPerfCounters extends PerfCounters {
+    public final Counter TIME_PLANNING_MS;
 
-    public ReasonerPerfCounters() {
-        super(Key.END_MARKER.ordinal() + 1);
+    public final Counter COUNT_MATERIALISATIONS;
+    public final Counter COUNT_CONJUNCTION_PROCESSORS;
+    public final Counter COUNT_COMPOUND_STREAMS;
+
+    public ReasonerPerfCounters(boolean enabled) {
+        super( enabled ? ATOMICLONG_CREATOR : NOOP_CREATOR);
+        TIME_PLANNING_MS = register("time_planning_ms");
+        COUNT_MATERIALISATIONS = register("count_materialisations");
+        COUNT_CONJUNCTION_PROCESSORS = register("count_conjunction_processors");
+        COUNT_COMPOUND_STREAMS = register("count_compound_streams");
     }
 
-    public enum Key implements PerfCounterSet.Key {
-        TIME_PLANNING_MS,
-
-        COUNT_MATERIALISATIONS,
-        COUNT_CONJUNCTION_PROCESSORS,
-        COUNT_COMPOUND_STREAMS,
-        
-        END_MARKER;
-    }
-
-    @Override
-    public Key[] keys() {
-        return Key.values();
-    }
 }

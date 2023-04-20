@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class ComplexRuleGraphTest extends Benchmark.ReasonerBenchmarkSuite {
+public class ComplexRuleGraphTest extends ReasonerBenchmarkSuite {
     private static final String database = "iam-benchmark-rules";
 
     ComplexRuleGraphTest() {
@@ -39,6 +39,7 @@ public class ComplexRuleGraphTest extends Benchmark.ReasonerBenchmarkSuite {
     public void setUp() throws IOException {
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
+        benchmarker.loadSchema("schema_rules.tql");
         benchmarker.loadData("data.tql");
     }
 
@@ -55,17 +56,17 @@ public class ComplexRuleGraphTest extends Benchmark.ReasonerBenchmarkSuite {
                 "$o isa operation, has name \"edit file\";\n" +
                 "$a (object: $f, action: $o) isa access;\n" +
                 "$pe (subject: $p, access: $a) isa permission, has validity true;";
-        benchmarker.loadSchema("schema_rules.tql");
-        Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("check-permission", query, 1, 3);
-        summary.assertAnswerCountCorrect();
+        Benchmark benchmark = new Benchmark("check-permission", query, 1, 3);
+        runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
     }
 
     @Test
     public void testSegregationViolation() {
         String query = "match\n" +
                 "   (subject: $s, object: $o, policy: $po) isa segregation-violation;\n";
-        benchmarker.loadSchema("schema_rules.tql");
-        Benchmark.BenchmarkSummary summary = benchmarker.benchmarkMatchQuery("segregation-violation", query, 1, 3);
-        summary.assertAnswerCountCorrect();
+        Benchmark benchmark = new Benchmark("segregation-violation", query, 1, 3);
+        runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
     }
 }

@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.benchmark.iam;
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.WriterConfig;
+import junit.framework.AssertionFailedError;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -27,7 +28,9 @@ import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 
+import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
@@ -40,7 +43,7 @@ public class Runner {
         this.outputStream = System.out;
     }
 
-    public void runTestSuite(Benchmark.ReasonerBenchmarkSuite testClass) {
+    public void runTestSuite(ReasonerBenchmarkSuite testClass) throws IOException, InvocationTargetException, IllegalAccessException {
         Method[] testMethods = Arrays.stream(testClass.getClass().getDeclaredMethods())
                 .filter(m -> m.isAnnotationPresent(Test.class) && !m.isAnnotationPresent(Ignore.class))
                 .toArray(size -> new Method[size]);
@@ -50,23 +53,20 @@ public class Runner {
                 LOG.info("Running test method {}::{}", testClass.getClass().getSimpleName(), testMethod.getName());
                 testClass.setUp();
                 testMethod.invoke(testClass);
-            } catch (AssertionError e) {
-                // Nothing, we good.
-            } catch (Exception e) {
-                testClass.exception(testMethod.getName(), e);
-                e.printStackTrace();
+            } catch (AssertionFailedError e) {
+                // We're ok with junit assertions failing. Everything else falls through
             } finally {
                 testClass.tearDown();
             }
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, InvocationTargetException, IllegalAccessException {
         Logger root = (Logger)LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         root.setLevel(Level.INFO);
 
-        Benchmark.ReasonerBenchmarkSuite[] testClasses = new Benchmark.ReasonerBenchmarkSuite[]{
-                new ComplexConjunctionsTest(true),
+        ReasonerBenchmarkSuite[] testClasses = new ReasonerBenchmarkSuite[]{
+                new ComplexConjunctionTest(true),
                 new LargeDataTest(true),
                 new ComplexRuleGraphTest(true)
         };
@@ -77,7 +77,7 @@ public class Runner {
 
         Runner runner = new Runner();
 
-        for (Benchmark.ReasonerBenchmarkSuite testClass : testClasses) {
+        for (ReasonerBenchmarkSuite testClass : testClasses) {
             LOG.info("Running test class {}", testClass.getClass().getSimpleName());
             runner.runTestSuite(testClass);
             JsonObject testClassSummary = testClass.jsonSummary();

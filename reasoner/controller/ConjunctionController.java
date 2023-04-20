@@ -194,7 +194,7 @@ public abstract class ConjunctionController<
             super(driver, controller, context, debugName);
             this.bounds = bounds;
             this.plan = plan;
-            context.perfCounters().add(ReasonerPerfCounters.Key.COUNT_CONJUNCTION_PROCESSORS, 1);
+            context.perfCounters().COUNT_CONJUNCTION_PROCESSORS.add(1);
         }
 
         public class CompoundStream extends TransformationStream<ConceptMap, ConceptMap> {
@@ -215,7 +215,7 @@ public abstract class ConjunctionController<
                 this.publisherPackets = new HashMap<>();
                 this.leadingPublisher = nextCompoundLeader(this.remainingPlan.remove(0), initialPacket);
                 this.leadingPublisher.registerSubscriber(this);
-                processor().context().perfCounters().add(ReasonerPerfCounters.Key.COUNT_COMPOUND_STREAMS, 1);
+                processor().context().perfCounters().COUNT_COMPOUND_STREAMS.add(1);
             }
 
             @Override

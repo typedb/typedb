@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.core.common.perfcounter.PerfCounterSet;
+import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
@@ -50,9 +50,9 @@ public class RootDisjunctionController
 
     @Override
     public void initialise() {
-        try (PerfCounterSet.TimeCounterMillis _timer = processorContext().perfCounters().addTimerMillis(ReasonerPerfCounters.Key.TIME_PLANNING_MS)) {
-            disjunction.conjunctions().forEach(conjunction -> planner().plan(conjunction, new HashSet<>()));
-        }
+        long start = PerfCounters.getNanos();
+        disjunction.conjunctions().forEach(conjunction -> planner().plan(conjunction, new HashSet<>()));
+        processorContext().perfCounters().TIME_PLANNING_MS.add((PerfCounters.getNanos() - start) / 1_000_000);
         setUpUpstreamControllers();
         getOrCreateProcessor(new ConceptMap());
     }

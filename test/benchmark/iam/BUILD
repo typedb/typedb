@@ -23,7 +23,7 @@ host_compatible_java_test(
     size = "large",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.LargeDataTest",
     srcs = ["LargeDataTest.java",
-            "Benchmark.java",
+            "BenchmarkRunner.java",
     ],
     data = [
         ":resources/data.tql",
@@ -56,7 +56,7 @@ host_compatible_java_test(
     size = "large",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.ComplexRuleGraphTest",
     srcs = ["ComplexRuleGraphTest.java",
-            "Benchmark.java",
+            "BenchmarkRunner.java",
     ],
     data = [
         ":resources/data.tql",
@@ -87,8 +87,8 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "complex-conjunctions-test",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.ComplexConjunctionsTest",
-    srcs = ["ComplexConjunctionsTest.java",
-            "Benchmark.java",
+    srcs = ["ComplexConjunctionTest.java",
+            "BenchmarkRunner.java",
     ],
     data = [
         ":resources/data.tql",
