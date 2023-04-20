@@ -39,8 +39,8 @@ public class ComplexRuleGraphTest extends ReasonerBenchmarkSuite {
     public void setUp() throws IOException {
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
-        benchmarker.loadSchema("schema_rules.tql");
-        benchmarker.loadData("data.tql");
+        benchmarker.loadSchema("schema_rules_naive.tql");
+        benchmarker.loadData("data_small.typedb");
     }
 
     @After

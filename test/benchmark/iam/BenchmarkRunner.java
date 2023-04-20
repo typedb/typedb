@@ -26,6 +26,8 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreTransaction;
+import com.vaticle.typedb.core.migrator.data.DataImporter;
+import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
@@ -99,20 +101,8 @@ public class BenchmarkRunner {
         }
     }
 
-    void loadData(String... filenames) {
-        try (TypeDB.Session session = dataSession()) {
-            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                iterate(filenames).forEachRemaining(filename -> {
-                    try {
-                        TypeQLInsert insertQuery = TypeQL.parseQuery(Files.readString(Paths.get(RESOURCE_DIRECTORY + filename))).asInsert();
-                        tx.query().insert(insertQuery);
-                    } catch (IOException e) {
-                        fail("IOException when loading data: " + e.getMessage());
-                    }
-                });
-                tx.commit();
-            }
-        }
+    void loadData(String filename) {
+        new DataImporter(databaseMgr, database, Paths.get(RESOURCE_DIRECTORY + filename), Version.VERSION).run();
     }
 
     BenchmarkRun runMatchQuery(String query) {

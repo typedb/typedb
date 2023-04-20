@@ -41,7 +41,7 @@ public class ComplexConjunctionTest extends ReasonerBenchmarkSuite {
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadSchema("schema_rules_optimised.tql");
-        benchmarker.loadData("data.tql");
+        benchmarker.loadData("data_small.typedb");
     }
 
     @After

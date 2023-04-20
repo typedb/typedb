@@ -26,7 +26,7 @@ host_compatible_java_test(
             "BenchmarkRunner.java",
     ],
     data = [
-        ":resources/data.tql",
+        ":resources/data_small.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_optimised.tql"
     ],
@@ -37,10 +37,13 @@ host_compatible_java_test(
         "//common:common",
         "//concurrent:concurrent",
         "//logic:logic",
+        "//migrator:migrator",
         "//reasoner:reasoner",
         "//traversal:traversal",
     ],
     deps = [
+        "//server:version",
+
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
@@ -59,9 +62,9 @@ host_compatible_java_test(
             "BenchmarkRunner.java",
     ],
     data = [
-        ":resources/data.tql",
+        ":resources/data_small.typedb",
         ":resources/schema_types.tql",
-        ":resources/schema_rules.tql"
+        ":resources/schema_rules_naive.tql"
     ],
     native_libraries_deps = [
         "//:typedb",
@@ -70,10 +73,13 @@ host_compatible_java_test(
         "//common:common",
         "//concurrent:concurrent",
         "//logic:logic",
+        "//migrator:migrator",
         "//reasoner:reasoner",
         "//traversal:traversal",
     ],
     deps = [
+        "//server:version",
+
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
@@ -91,7 +97,7 @@ host_compatible_java_test(
             "BenchmarkRunner.java",
     ],
     data = [
-        ":resources/data.tql",
+        ":resources/data_small.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_optimised.tql"
     ],
@@ -102,10 +108,13 @@ host_compatible_java_test(
         "//common:common",
         "//concurrent:concurrent",
         "//logic:logic",
+        "//migrator:migrator",
         "//reasoner:reasoner",
         "//traversal:traversal",
     ],
     deps = [
+        "//server:version",
+
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
@@ -127,10 +136,13 @@ native_java_libraries(
         "//common:common",
         "//concurrent:concurrent",
         "//logic:logic",
+        "//migrator:migrator",
         "//reasoner:reasoner",
         "//traversal:traversal",
     ],
     deps = [
+        "//server:version",
+
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",

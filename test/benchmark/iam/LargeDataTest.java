@@ -40,7 +40,7 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
     public void setUp() throws IOException {
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
-        benchmarker.loadData("data.tql");
+        benchmarker.loadData("data_small.typedb");
     }
 
     @After
