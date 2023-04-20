@@ -28,12 +28,8 @@ public class ComplexConjunctionTest extends ReasonerBenchmarkSuite {
 
     private static final String database = "iam-benchmark-conjunctions";
 
-    ComplexConjunctionTest() {
-        this(false);
-    }
-
-    ComplexConjunctionTest(boolean collectResults) {
-        super(database, collectResults);
+    public ComplexConjunctionTest() {
+        super(database);
     }
 
     @Before
@@ -50,7 +46,7 @@ public class ComplexConjunctionTest extends ReasonerBenchmarkSuite {
     }
 
     @Test
-    public void testCheckPermissionOptimised() {
+    public void testCheckPermission() {
         String query = "match\n" +
                 "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
                 "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +

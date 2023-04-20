@@ -28,12 +28,8 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
 
     private static final String database = "iam-benchmark-data";
 
-    LargeDataTest() {
-        this(false);
-    }
-
-    LargeDataTest(boolean collectResults) {
-        super(database, collectResults);
+    public LargeDataTest() {
+        super(database);
     }
 
     @Before
@@ -49,7 +45,7 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
     }
 
     @Test
-    public void testSegregationViolationOptimised() {
+    public void testSegregationViolation() {
         String query = "match\n" +
                 "   (subject: $s, object: $o, policy: $po) isa segregation-violation;\n";
         benchmarker.loadSchema("schema_rules_optimised.tql");

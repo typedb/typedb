@@ -30,7 +30,6 @@ import com.vaticle.typedb.core.migrator.data.DataImporter;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
-import com.vaticle.typeql.lang.query.TypeQLInsert;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,9 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
@@ -53,13 +50,9 @@ public class BenchmarkRunner {
     private static final String RESOURCE_DIRECTORY = "test/benchmark/iam/resources/";
     private static CoreDatabaseManager databaseMgr;
     private final String database;
-    private final boolean collectResults;
-    private final List<Benchmark> results;
 
-    BenchmarkRunner(String database, boolean collectResults) {
+    BenchmarkRunner(String database) {
         this.database = database;
-        this.collectResults = collectResults;
-        this.results = new ArrayList<>();
     }
 
     void setUp() throws IOException {

@@ -23,7 +23,9 @@ host_compatible_java_test(
     size = "large",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.LargeDataTest",
     srcs = ["LargeDataTest.java",
+            "ReasonerBenchmarkSuite.java",
             "BenchmarkRunner.java",
+            "Benchmark.java",
     ],
     data = [
         ":resources/data_small.typedb",
@@ -59,7 +61,9 @@ host_compatible_java_test(
     size = "large",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.ComplexRuleGraphTest",
     srcs = ["ComplexRuleGraphTest.java",
+            "ReasonerBenchmarkSuite.java",
             "BenchmarkRunner.java",
+            "Benchmark.java",
     ],
     data = [
         ":resources/data_small.typedb",
@@ -92,9 +96,11 @@ host_compatible_java_test(
 
 host_compatible_java_test(
     name = "complex-conjunctions-test",
-    test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.ComplexConjunctionsTest",
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.ComplexConjunctionTest",
     srcs = ["ComplexConjunctionTest.java",
+            "ReasonerBenchmarkSuite.java",
             "BenchmarkRunner.java",
+            "Benchmark.java",
     ],
     data = [
         ":resources/data_small.typedb",
@@ -201,6 +207,6 @@ java_binary(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*"]),
+    include = glob(["*", "*/*"], exclude=["resources/data_small.typedb"]),
     license_type = "agpl-header",
 )

@@ -27,12 +27,8 @@ import java.io.IOException;
 public class ComplexRuleGraphTest extends ReasonerBenchmarkSuite {
     private static final String database = "iam-benchmark-rules";
 
-    ComplexRuleGraphTest() {
-        this(false);
-    }
-
-    ComplexRuleGraphTest(boolean collectResults) {
-        super(database, collectResults);
+    public ComplexRuleGraphTest() {
+        super(database);
     }
 
     @Before
@@ -49,7 +45,7 @@ public class ComplexRuleGraphTest extends ReasonerBenchmarkSuite {
     }
 
     @Test
-    public void testCheckPermission() {
+    public void testCheckPermissionNaiveRules() {
         String query = "match\n" +
                 "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
                 "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
@@ -62,7 +58,7 @@ public class ComplexRuleGraphTest extends ReasonerBenchmarkSuite {
     }
 
     @Test
-    public void testSegregationViolation() {
+    public void testSegregationViolationNaiveRules() {
         String query = "match\n" +
                 "   (subject: $s, object: $o, policy: $po) isa segregation-violation;\n";
         Benchmark benchmark = new Benchmark("segregation-violation", query, 1, 3);

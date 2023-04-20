@@ -66,9 +66,9 @@ public class Runner {
         root.setLevel(Level.INFO);
 
         ReasonerBenchmarkSuite[] testClasses = new ReasonerBenchmarkSuite[]{
-                new ComplexConjunctionTest(true),
-                new LargeDataTest(true),
-                new ComplexRuleGraphTest(true)
+                new ComplexConjunctionTest(),
+                new LargeDataTest(),
+                new ComplexRuleGraphTest()
         };
 
         String runId = (args.length >= 1) ? args[0] : "reasoner benchmark";

@@ -36,8 +36,8 @@ public abstract class ReasonerBenchmarkSuite {
     protected final BenchmarkRunner benchmarker;
     final List<Benchmark> benchmarks;
 
-    ReasonerBenchmarkSuite(String database, boolean collectResults) {
-        this.benchmarker = new BenchmarkRunner(database, collectResults);
+    ReasonerBenchmarkSuite(String database) {
+        this.benchmarker = new BenchmarkRunner(database);
         this.benchmarks = new ArrayList<>();
     }
 
