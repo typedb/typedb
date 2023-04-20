@@ -41,8 +41,6 @@ host_compatible_java_test(
         "//traversal:traversal",
     ],
     deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
@@ -76,8 +74,6 @@ host_compatible_java_test(
         "//traversal:traversal",
     ],
     deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
@@ -110,8 +106,6 @@ host_compatible_java_test(
         "//traversal:traversal",
     ],
     deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
@@ -137,8 +131,6 @@ native_java_libraries(
         "//traversal:traversal",
     ],
     deps = [
-        # Internal dependencies
-        "//test/integration/util:util",
         # External dependencies from Vaticle
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
