@@ -49,6 +49,7 @@ host_compatible_java_test(
 
         # External dependencies from Maven
         "@maven//:com_eclipsesource_minimal_json_minimal_json",
+        "@maven//:org_slf4j_slf4j_api"
     ]
 )
 
@@ -83,6 +84,7 @@ host_compatible_java_test(
 
         # External dependencies from Maven
         "@maven//:com_eclipsesource_minimal_json_minimal_json",
+        "@maven//:org_slf4j_slf4j_api"
     ]
 )
 
@@ -116,6 +118,7 @@ host_compatible_java_test(
 
         # External dependencies from Maven
         "@maven//:com_eclipsesource_minimal_json_minimal_json",
+        "@maven//:org_slf4j_slf4j_api"
     ]
 )
 
@@ -143,6 +146,7 @@ native_java_libraries(
         # External dependencies from Maven
         "@maven//:com_eclipsesource_minimal_json_minimal_json",
         "@maven//:junit_junit",
+        "@maven//:org_slf4j_slf4j_api"
     ]
 )
 

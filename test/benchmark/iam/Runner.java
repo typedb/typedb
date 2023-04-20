@@ -1,6 +1,7 @@
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
 import com.eclipsesource.json.WriterConfig;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -15,12 +16,11 @@ import java.util.Arrays;
 
 public class Runner {
 
+    static final org.slf4j.Logger LOG = LoggerFactory.getLogger(Runner.class);
     private final PrintStream outputStream;
-    private final PrintStream updateStream;
 
     private Runner() {
         this.outputStream = System.out;
-        this.updateStream = System.out;
     }
 
     public void runTestSuite(Benchmark.ReasonerBenchmarkSuite testClass) {
@@ -30,7 +30,7 @@ public class Runner {
 
         for (Method testMethod : testMethods) {
             try {
-                updateStream.println("/* - - Running test method " + testClass.getClass().getSimpleName() + "::" + testMethod.getName() + " */");
+                LOG.info("Running test method {}::{}", testClass.getClass().getSimpleName(), testMethod.getName());
                 testClass.setUp();
                 testMethod.invoke(testClass);
             } catch (AssertionError e) {
@@ -54,15 +54,23 @@ public class Runner {
                 new ComplexRuleGraphTest(true)
         };
 
+        String runId = (args.length >= 1) ? args[0] : "reasoner benchmark";
+        JsonObject fullSummary = Json.object();
+        fullSummary.add("run_id", runId);
+
         Runner runner = new Runner();
-        runner.updateStream.println(String.format("/* %s */", (args.length >= 1) ? args[0] : " start runner "));
 
         for (Benchmark.ReasonerBenchmarkSuite testClass : testClasses) {
-            runner.updateStream.println("/* Running test class " + testClass.getClass().getSimpleName() + " */");
+            LOG.info("Running test class {}", testClass.getClass().getSimpleName());
             runner.runTestSuite(testClass);
-            runner.outputStream.println(testClass.jsonSummary().toString(WriterConfig.PRETTY_PRINT));
+            JsonObject testClassSummary = testClass.jsonSummary();
+            fullSummary.add(testClass.getClass().getSimpleName(), testClassSummary);
         }
-        runner.updateStream.println("/* End runner */");
+        LOG.info("Finished running all test classes");
+
+        runner.outputStream.println("/* Printing full result */");
+        runner.outputStream.println(fullSummary.toString(WriterConfig.PRETTY_PRINT));
+
         // You know we should be done here. I'm probably forgetting to close something
         System.exit(0);
     }

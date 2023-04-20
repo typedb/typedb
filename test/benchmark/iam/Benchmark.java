@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.benchmark.iam;
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonArray;
 import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.WriterConfig;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -32,6 +33,7 @@ import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
 import junit.framework.AssertionFailedError;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,6 +56,7 @@ import static org.junit.Assert.fail;
 
 public class Benchmark {
 
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(Benchmark.class);
     private static final String RESOURCE_DIRECTORY = "test/benchmark/iam/resources/";
     private static CoreDatabaseManager databaseMgr;
     private final String database;
@@ -124,7 +127,10 @@ public class Benchmark {
     BenchmarkSummary benchmarkMatchQuery(String name, String query, int expectedAnswers, int nRuns) {
         BenchmarkSummary summary = new BenchmarkSummary(name, query, expectedAnswers, nRuns);
         for (int i = 0; i < nRuns; i++) {
-            summary.addRun(runMatchQuery(query));
+            BenchmarkRun run = runMatchQuery(query);
+            summary.addRun(run);
+            LOG.info("Completed run in {} ms. answersDiff: {}", run.timeTaken.toMillis(), run.answerCount - expectedAnswers);
+            LOG.info("perf_counters:\n{}", run.toJSON(ReasonerPerfCounters.Key.values()).toString(WriterConfig.PRETTY_PRINT));
         }
         if (collectResults) results.add(summary);
         return summary;
