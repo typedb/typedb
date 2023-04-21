@@ -135,6 +135,11 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
 
         @Override
+        public void delete() {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
+
+        @Override
         public void setLabel(String label) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }

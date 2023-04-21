@@ -33,6 +33,7 @@ import io.cucumber.java.en.When;
 import java.util.List;
 import java.util.Set;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.test.behaviour.config.Parameters.RootLabel;
@@ -55,6 +56,8 @@ public class ThingTypeSteps {
                 return tx().concepts().getAttributeType(typeLabel);
             case RELATION:
                 return tx().concepts().getRelationType(typeLabel);
+            case THING:
+                return tx().concepts().getThingType(typeLabel);
             default:
                 throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
@@ -98,7 +101,7 @@ public class ThingTypeSteps {
                 tx().concepts().putRelationType(typeLabel);
                 break;
             default:
-                throw TypeDBException.of(UNRECOGNISED_VALUE);
+                throw TypeDBException.of(ILLEGAL_ARGUMENT);
         }
     }
 
@@ -159,6 +162,8 @@ public class ThingTypeSteps {
                 RelationType relationSuperType = tx().concepts().getRelationType(superLabel);
                 tx().concepts().getRelationType(typeLabel).setSupertype(relationSuperType);
                 break;
+            default:
+                throw TypeDBException.of(ILLEGAL_ARGUMENT);
         }
     }
 
@@ -177,6 +182,8 @@ public class ThingTypeSteps {
                 RelationType relationSuperType = tx().concepts().getRelationType(superLabel);
                 assertThrows(() -> tx().concepts().getRelationType(typeLabel).setSupertype(relationSuperType));
                 break;
+            default:
+                throw TypeDBException.of(ILLEGAL_ARGUMENT);
         }
     }
 

@@ -588,6 +588,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
+        public void delete() {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
+
+        @Override
         public void setLabel(String label) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }

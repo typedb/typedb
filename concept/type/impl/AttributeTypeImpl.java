@@ -312,6 +312,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
+        public void delete() {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
+
+        @Override
         public void setLabel(java.lang.String label) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
@@ -501,6 +506,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
+            public void delete() {
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+            }
+
+            @Override
             public void setLabel(java.lang.String label) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
@@ -646,6 +656,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
+            public void delete() {
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+            }
+
+            @Override
             public void setLabel(java.lang.String label) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
@@ -788,6 +803,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public Forwardable<AttributeTypeImpl.Double, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(DOUBLE)
                         .mapSorted(v -> AttributeTypeImpl.Double.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+            }
+
+            @Override
+            public void delete() {
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
@@ -965,6 +985,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
+            public void delete() {
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+            }
+
+            @Override
             public void setLabel(java.lang.String label) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
@@ -1117,6 +1142,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public Forwardable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(DATETIME)
                         .mapSorted(v -> AttributeTypeImpl.DateTime.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+            }
+
+            @Override
+            public void delete() {
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
