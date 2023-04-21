@@ -55,6 +55,8 @@ public class ThingTypeSteps {
                 return tx().concepts().getAttributeType(typeLabel);
             case RELATION:
                 return tx().concepts().getRelationType(typeLabel);
+            case THING:
+                return tx().concepts().getThingType(typeLabel);
             default:
                 throw TypeDBException.of(UNRECOGNISED_VALUE);
         }
@@ -98,7 +100,7 @@ public class ThingTypeSteps {
                 tx().concepts().putRelationType(typeLabel);
                 break;
             default:
-                throw TypeDBException.of(UNRECOGNISED_VALUE);
+                throw TypeDBException.of(ILLEGAL_ARGUMENT);
         }
     }
 
@@ -159,6 +161,10 @@ public class ThingTypeSteps {
                 RelationType relationSuperType = tx().concepts().getRelationType(superLabel);
                 tx().concepts().getRelationType(typeLabel).setSupertype(relationSuperType);
                 break;
+            case THING:
+                ThingType thingSuperType = tx().concepts().getThingType(superLabel);
+                tx().concepts().getThingType(typeLabel).setSupertype(thingSuperType);
+                break;
         }
     }
 
@@ -176,6 +182,10 @@ public class ThingTypeSteps {
             case RELATION:
                 RelationType relationSuperType = tx().concepts().getRelationType(superLabel);
                 assertThrows(() -> tx().concepts().getRelationType(typeLabel).setSupertype(relationSuperType));
+                break;
+            case THING:
+                ThingType thingSuperType = tx().concepts().getThingType(superLabel);
+                assertThrows(() -> tx().concepts().getThingType(typeLabel).setSupertype(thingSuperType));
                 break;
         }
     }
