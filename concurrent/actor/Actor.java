@@ -74,6 +74,11 @@ public abstract class Actor<ACTOR extends Actor<ACTOR>> {
             this.executor = executorService.nextExecutor();
         }
 
+        // TODO: do not use this method - any usages should be removed ASAP
+        public ACTOR actor() {
+            return actor;
+        }
+
         public Supplier<String> debugName() {
             return actor.debugName();
         }
