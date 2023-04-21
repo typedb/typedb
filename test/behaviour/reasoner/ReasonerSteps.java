@@ -109,7 +109,7 @@ public class ReasonerSteps {
         databaseMgr.create(DATABASE);
     }
 
-    @Given("open connection")
+    @Given("connection opens without authentication")
     public void open_connection() {
         // noop
     }
