@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,11 +27,17 @@ import java.io.IOException;
 
 public class LargeDataTest {
 
+    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
     private static final String database = "iam-benchmark-data";
     private final BenchmarkRunner benchmarker;
 
     public LargeDataTest() {
         benchmarker = new BenchmarkRunner(database);
+    }
+
+    @AfterClass
+    public static void mayPrintResults() {
+        if (printTo != null) printTo.flush();
     }
 
     @Before
@@ -57,7 +64,7 @@ public class LargeDataTest {
         Benchmark benchmark = new Benchmark("high-selectivity", query, 4);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.mayPrintResults();
+        benchmark.mayPrintResults(printTo);
     }
 
     @Test
@@ -68,7 +75,7 @@ public class LargeDataTest {
         Benchmark benchmark = new Benchmark("combinatorial-results", query, 1);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.mayPrintResults();
+        benchmark.mayPrintResults(printTo);
     }
 
     @Test
@@ -89,6 +96,6 @@ public class LargeDataTest {
                 Benchmark benchmark = new Benchmark("large-negation", query, 1);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.mayPrintResults();
+        benchmark.mayPrintResults(printTo);
     }
 }

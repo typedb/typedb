@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,11 +27,17 @@ import java.io.IOException;
 
 public class LanguageFeatureTest{
 
+    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
     private static final String database = "iam-benchmark-language-features";
     private final BenchmarkRunner benchmarker;
 
     public LanguageFeatureTest() {
         benchmarker = new BenchmarkRunner(database);
+    }
+
+    @AfterClass
+    public static void mayPrintResults() {
+        if (printTo != null) printTo.flush();
     }
 
     @Before

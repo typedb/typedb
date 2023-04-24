@@ -29,7 +29,6 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static org.junit.Assert.assertEquals;
 
 class Benchmark {
-    private static final PrintStream printTo = System.out;
     final String name;
     final String query;
     final long expectedAnswers;
@@ -57,28 +56,44 @@ class Benchmark {
         assertEquals(nRuns, runs.size());
     }
 
-    void mayPrintResults() {
+    void mayPrintResults(CSVResults printTo) {
         if (printTo != null) {
-            printTo.println(toCSV());
+            printTo.append(this);
         }
     }
 
-    public String toCSV() {
-        List<String> fields = new ArrayList<>();
-        Arrays.stream(new String[] {
-                "name", "expectedAnswers", "actualAnswers", "total_time_ms",
-        }).forEach(fields::add);
-        List<String> perfCounterKeys = new ArrayList<>(new ReasonerPerfCounters(false).toMapUnsynchronised().keySet());
-        fields.addAll(perfCounterKeys);
+    static class CSVResults {
 
-        StringBuilder sb = new StringBuilder();
-        appendCSVLine(sb, fields);
-        runs.forEach(run ->  appendCSVLine(sb, run.toCSV(this, perfCounterKeys)));
-        return sb.toString();
-    }
+        private final PrintStream out;
+        private final StringBuilder sb;
+        private final ArrayList<String> perfCounterKeys;
 
-    private static void appendCSVLine(StringBuilder sb, List<String> entries) {
-        entries.forEach(entry -> sb.append(entry).append(","));
-        sb.append("\n");
+        CSVResults(PrintStream out) {
+            this.out = out;
+            sb = new StringBuilder();
+            List<String> fields = new ArrayList<>();
+            Arrays.stream(new String[]{
+                    "name", "expectedAnswers", "actualAnswers", "total_time_ms",
+            }).forEach(fields::add);
+            perfCounterKeys = new ArrayList<>(new ReasonerPerfCounters(false).toMapUnsynchronised().keySet());
+            fields.addAll(perfCounterKeys);
+            appendLine(fields);
+        }
+
+        public void append(Benchmark benchmark) {
+            if (out == null) return;
+            benchmark.runs.forEach(run -> appendLine(run.toCSV(benchmark, perfCounterKeys)));
+        }
+
+        private void appendLine(List<String> entries) {
+            entries.forEach(entry -> sb.append(entry).append(","));
+            sb.append("\n");
+        }
+
+        public void flush() {
+            if (out == null) return;
+            out.print(sb.toString());
+            out.println();
+        }
     }
 }

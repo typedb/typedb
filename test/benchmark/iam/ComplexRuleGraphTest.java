@@ -19,17 +19,25 @@
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 
 public class ComplexRuleGraphTest {
+
+    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
     private static final String database = "iam-benchmark-rules";
     private final BenchmarkRunner benchmarker;
 
     public ComplexRuleGraphTest() {
         benchmarker = new BenchmarkRunner(database);
+    }
+
+    @AfterClass
+    public static void mayPrintResults() {
+        if (printTo != null) printTo.flush();
     }
 
     @Before
@@ -56,7 +64,7 @@ public class ComplexRuleGraphTest {
         Benchmark benchmark = new Benchmark("combinatorial-proofs-single", query, 1);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.mayPrintResults();
+        benchmark.mayPrintResults(printTo);
     }
 
     @Test
@@ -70,6 +78,6 @@ public class ComplexRuleGraphTest {
         Benchmark benchmark = new Benchmark("combinatorial-proofs-all", query, 67);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.mayPrintResults();
+        benchmark.mayPrintResults(printTo);
     }
 }

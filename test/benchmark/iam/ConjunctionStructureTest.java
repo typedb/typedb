@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,11 +27,17 @@ import java.io.IOException;
 
 public class ConjunctionStructureTest {
 
+    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
     private static final String database = "iam-benchmark-conjunctions";
     private final BenchmarkRunner benchmarker;
 
     public ConjunctionStructureTest() {
         benchmarker = new BenchmarkRunner(database);
+    }
+
+    @AfterClass
+    public static void mayPrintResults() {
+        if (printTo != null) printTo.flush();
     }
 
     @Before
@@ -64,7 +71,7 @@ public class ConjunctionStructureTest {
         Benchmark benchmark = new Benchmark("multiple-starting-points", query, 1);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.mayPrintResults();
+        benchmark.mayPrintResults(printTo);
     }
 
     @Test
@@ -80,6 +87,6 @@ public class ConjunctionStructureTest {
         Benchmark benchmark = new Benchmark("high-arity-bounds", query, 1);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.mayPrintResults();
+        benchmark.mayPrintResults(printTo);
     }
 }

@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,11 +27,17 @@ import java.io.IOException;
 
 public class RealQueriesTest {
 
+    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
     private static final String database = "iam-benchmark-real-queries";
     private final BenchmarkRunner benchmarker;
 
     public RealQueriesTest() {
         benchmarker = new BenchmarkRunner(database);
+    }
+
+    @AfterClass
+    public static void mayPrintResults() {
+        if (printTo != null) printTo.flush();
     }
 
     @Before
@@ -57,7 +64,7 @@ public class RealQueriesTest {
         Benchmark benchmark = new Benchmark("check-permission", query, 1);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.mayPrintResults();
+        benchmark.mayPrintResults(printTo);
     }
 
     @Test
@@ -71,7 +78,7 @@ public class RealQueriesTest {
         Benchmark benchmark = new Benchmark("list-subject-permissions", query, 67);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.mayPrintResults();
+        benchmark.mayPrintResults(printTo);
     }
 
     @Test
@@ -84,6 +91,6 @@ public class RealQueriesTest {
         Benchmark benchmark = new Benchmark("list-segregation-violations", query, 1);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.mayPrintResults();
+        benchmark.mayPrintResults(printTo);
     }
 }
