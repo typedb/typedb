@@ -67,6 +67,7 @@ public class ConjunctionStructureTest extends ReasonerBenchmarkSuite {
 
     @Test
     public void testHighArityBounds() {
+        benchmarker.loadSchema("schema_rules_test_specific.tql");
         String query = "match\n" +
                 "   $a1 isa action, has name \"submit pull request\";\n" +
                 "   $a2 isa action, has name \"approve pull request\";\n" +

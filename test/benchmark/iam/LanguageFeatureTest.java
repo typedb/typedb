@@ -73,7 +73,13 @@ public class LanguageFeatureTest extends ReasonerBenchmarkSuite {
     }
 
     @Test
-    public void testQueriesWithTypeVariables() {
-        // TODO
+    public void variabilisedRules() {
+        benchmarker.loadSchema("schema_rules_test_specific.tql");
+        String query = "match\n" +
+                "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
+                "(group: $g, member: $p) isa variabilised-group-membership;\n";
+        Benchmark benchmark = new Benchmark("variabilised-rules", query, 3);
+        runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
     }
 }

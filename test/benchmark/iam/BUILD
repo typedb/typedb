@@ -30,7 +30,7 @@ host_compatible_java_test(
     data = [
         ":resources/data_small.typedb",
         ":resources/schema_types.tql",
-        ":resources/schema_rules_optimised.tql"
+        ":resources/schema_rules_optimised.tql",
     ],
     native_libraries_deps = [
         "//:typedb",
@@ -103,7 +103,8 @@ host_compatible_java_test(
     data = [
         ":resources/data_small.typedb",
         ":resources/schema_types.tql",
-        ":resources/schema_rules_optimised.tql"
+        ":resources/schema_rules_optimised.tql",
+        ":resources/schema_rules_test_specific.tql",
     ],
     native_libraries_deps = [
         "//:typedb",
@@ -139,7 +140,8 @@ host_compatible_java_test(
     data = [
         ":resources/data_small.typedb",
         ":resources/schema_types.tql",
-        ":resources/schema_rules_optimised.tql"
+        ":resources/schema_rules_optimised.tql",
+        ":resources/schema_rules_test_specific.tql",
     ],
     native_libraries_deps = [
         "//:typedb",
