@@ -31,15 +31,6 @@ commands:
       - run: curl -OL https://raw.githubusercontent.com/vaticle/dependencies/master/tool/bazelinstall/mac.sh
       - run: bash ./mac.sh && rm ./mac.sh
 
-  run-bazel:
-    parameters:
-      command:
-        type: string
-    steps:
-      - run:
-          command: bazel run @vaticle_dependencies//tool/bazelrun:rbe -- << parameters.command >>
-          no_output_timeout: 120m
-
 jobs:
   test-assembly-mac-zip:
     macos:
@@ -48,8 +39,7 @@ jobs:
     steps:
       - checkout
       - install-bazel-mac
-      - run-bazel:
-          command: bazel test //test/assembly:assembly --test_output=errors
+      - run: bazel test //test/assembly:assembly --test_output=errors
 
   test-assembly-windows-zip:
     executor:
