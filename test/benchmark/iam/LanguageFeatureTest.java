@@ -52,8 +52,10 @@ public class LanguageFeatureTest extends ReasonerBenchmarkSuite {
                 "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
                 "$o isa operation, has name \"edit file\";\n" +
                 "$a (object: $f, action: $o) isa access;\n" +
+                "$pe isa permission;\n" +
                 "$pe (subject: $p, access: $a) isa permission;\n" +
-                "$pe (subject: $other-p, access: $other-a) isa permission;\n";
+                "$pe is $pe-same;\n" +
+                "$pe-same (subject: $other-p, access: $other-a) isa permission;\n";
         Benchmark benchmark = new Benchmark("bound-relation", query, 1);
         runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
