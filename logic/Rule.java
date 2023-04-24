@@ -196,6 +196,12 @@ public class Rule {
                     thenVar.retainInferredTypes(whenVarInferredTypes);
                     if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
                 });
+        then.variables().stream()
+                .filter(thenVar -> thenVar.isThing() && thenVar.asThing().isa().isPresent() && when.conjunctions().stream().noneMatch(conj -> conj.variable(thenVar.id()) != null))
+                .forEach(thenVar -> {
+                    thenVar.retainInferredTypes(thenVar.asThing().isa().get().type().inferredTypes());
+                    if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
+                });
     }
 
     private Disjunction whenPattern(com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> conjunction,
