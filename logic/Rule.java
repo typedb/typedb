@@ -197,7 +197,8 @@ public class Rule {
                     if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
                 });
         then.variables().stream()
-                .filter(thenVar -> thenVar.isThing() && thenVar.asThing().isa().isPresent() && when.conjunctions().stream().noneMatch(conj -> conj.variable(thenVar.id()) != null))
+                .filter(thenVar -> thenVar.isThing() && thenVar.asThing().isa().isPresent() &&
+                        when.conjunctions().stream().noneMatch(conj -> conj.variable(thenVar.id()) != null))
                 .forEach(thenVar -> {
                     thenVar.retainInferredTypes(thenVar.asThing().isa().get().type().inferredTypes());
                     if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
