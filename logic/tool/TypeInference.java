@@ -100,7 +100,7 @@ public class TypeInference {
         applyCombination(conjunction, new HashMap<>(), insertable);
     }
 
-    private void applyCombination(Conjunction conjunction, Map<Identifier.Variable.Name, Set<Label>> bounds, boolean insertable) {
+    public void applyCombination(Conjunction conjunction, Map<Identifier.Variable.Name, Set<Label>> bounds, boolean insertable) {
         propagateLabels(conjunction);
         if (!bounds.isEmpty()) applyBounds(conjunction, bounds);
         Map<Retrievable.Name, Set<Label>> inferredTypes = new HashMap<>(bounds);
