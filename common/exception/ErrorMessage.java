@@ -334,7 +334,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final ThingWrite UNENCODABLE_STRING =
                 new ThingWrite(3, "The string '%s' cannot be encoded to bytes using the encoding '%s'.");
         public static final ThingWrite THING_HAS_BEEN_DELETED =
-                new ThingWrite(4, "The thing with iid '%s' has been deleted and cannot be modified any further.");
+                new ThingWrite(4, "Instance '%s' of type '%s' has been deleted and cannot be modified any further.");
         public static final ThingWrite THING_CANNOT_OWN_ATTRIBUTE =
                 new ThingWrite(5, "Attribute of type '%s' is not defined to be owned by type '%s'.");
         public static final ThingWrite THING_KEY_OVER =
@@ -472,7 +472,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MISSING =
                 new TypeWrite(14, "The attribute type '%s' is missing a value type.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MODIFIED =
-                new TypeWrite(15, "An attribute value type (in this case '%s') can only be set onto an attribute type (in this case '%s') when it was defined for the first time.");
+                new TypeWrite(15, "An attribute value type (in this case '%s') can only be set onto an attribute type (in this case '%s') when it is defined for the first time.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_UNDEFINED =
                 new TypeWrite(16, "An attribute value type (in this case '%s') cannot be undefined. You can only undefine the attribute type (in this case '%s') itself.");
         public static final TypeWrite ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES =

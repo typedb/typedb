@@ -165,7 +165,7 @@ public class AnswerCountEstimator {
             Variable bestScalingVar = scale.second().orElse(null);
             // Find scaling factor
             for (Variable v : model.variables) {
-                double ans = (double) Math.max(1,model.estimateAnswers(set(v)));
+                double ans = (double) Math.max(1, model.estimateAnswers(set(v)));
                 if (minVariableEstimate.containsKey(v) && minVariableEstimate.get(v) / ans < bestScaler) {
                     bestScaler = minVariableEstimate.get(v) / ans;
                     bestScalingVar = v;
@@ -228,6 +228,11 @@ public class AnswerCountEstimator {
             return Math.round(Math.ceil(answerEstimateFromCover(variables, cover)));
         }
 
+        public double answerSetSize() {
+            // TODO: ignore the anonymous variables iff/when ConjunctionController can ignore them when branching CompoundStreams
+            return answerEstimate(minVariableEstimate.keySet());
+        }
+
         private static double scaledEstimate(LocalModel model, Pair<Double, Optional<Variable>> scale, Set<Variable> estimateVariables) {
             assert scale.second().isPresent() || scale.first() == 1.0;
             Set<Variable> variables = new HashSet<>();
@@ -253,7 +258,7 @@ public class AnswerCountEstimator {
             IncrementalEstimator cloned = new IncrementalEstimator(conjunctionModel, localModelFactory, set());
             cloned.minVariableEstimate.putAll(this.minVariableEstimate);
             cloned.modelScale.putAll(this.modelScale);
-            this.affectedModels.forEach((k,v) -> cloned.affectedModels.put(k, new HashSet<>(v)));
+            this.affectedModels.forEach((k, v) -> cloned.affectedModels.put(k, new HashSet<>(v)));
             return cloned;
         }
 
@@ -446,8 +451,7 @@ public class AnswerCountEstimator {
             static Label getRoleType(RelationConstraint.RolePlayer player) {
                 if (player.roleType().isPresent() && player.roleType().get().label().isPresent()) {
                     return player.roleType().get().label().get().properLabel();
-                }
-                else if (player.inferredRoleTypes().size()==1) return iterate(player.inferredRoleTypes()).next();
+                } else if (player.inferredRoleTypes().size() == 1) return iterate(player.inferredRoleTypes()).next();
                 else return null;
             }
 
@@ -487,7 +491,7 @@ public class AnswerCountEstimator {
 
             private double nPermuteKforSmallK(long n, long k) {
                 assert n >= k;
-                n = Math.max(n,k); // Guard against 0. (Although 0 is the right answer it's not useful)
+                n = Math.max(n, k); // Guard against 0. (Although 0 is the right answer it's not useful)
                 double ans = 1;
                 for (int i = 0; i < k; i++) ans *= n - i;
                 return ans;
@@ -611,7 +615,7 @@ public class AnswerCountEstimator {
                 }
             }
 
-            for (Label key: rolePlayerCounts.keySet()) {
+            for (Label key : rolePlayerCounts.keySet()) {
                 rolePlayerEstimates.put(key, rolePlayerEstimates.get(key) +
                         rolePlayerCounts.get(key) * Double.valueOf(Math.ceil(inferredRelationsEstimate)).longValue());
             }
@@ -667,18 +671,40 @@ public class AnswerCountEstimator {
                 for (Unifier unifier : unifiers.get(rule)) {
                     Set<Identifier.Variable> ruleSideIds = iterate(variableFilter).filter(v -> v.id().isRetrievable())
                             .flatMap(v -> iterate(unifier.mapping().get(v.id().asRetrievable()))).toSet();
-                    Set<Variable> ruleSideVariables;
                     if ((concludable.isRelation() || concludable.isIsa())
                             && rule.conclusion().generating().isPresent() && ruleSideIds.contains(rule.conclusion().generating().get().id())) {
                         // There is one generated variable per combination of ALL variables in the conclusion
                         ruleSideIds = new HashSet<>(rule.conclusion().conjunction().pattern().retrieves());
                     }
 
-                    for (Rule.Condition.ConditionBranch conditionBranch: rule.condition().branches()) {
-                        ruleSideVariables = iterate(ruleSideIds)
+                    for (Rule.Condition.ConditionBranch conditionBranch : rule.condition().branches()) {
+                        Set<Variable> ruleSideVariables = iterate(ruleSideIds)
                                 .filter(id -> conditionBranch.conjunction().pattern().retrieves().contains(id))
                                 .map(id -> conditionBranch.conjunction().pattern().variable(id)).toSet();
-                        inferredEstimate += answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), ruleSideVariables);
+                        double inferredEstimateForThisBranch = answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), ruleSideVariables);
+
+                        Set<Concludable> cyclicConcludables = answerCountEstimator.conjunctionGraph.conjunctionNode(conditionBranch.conjunction()).cyclicConcludables();
+                        if (concludable.isRelation() && inferredEstimateForThisBranch > 0 && !cyclicConcludables.isEmpty()) {
+                            Set<Variable> recursivePlayers = iterate(cyclicConcludables).flatMap(c -> iterate(c.variables()))
+                                    .filter(v -> v.isThing() && ruleSideVariables.contains(v))
+                                    .toSet();
+                            Set<Variable> nonRecursivePlayers = iterate(ruleSideVariables).filter(v -> v.isThing() && !recursivePlayers.contains(v)).toSet();
+
+                            Map<Variable, Double> estimateForRecursivePlayer = new HashMap<>();
+                            // TODO: we might get better estimates by only considering non-recursive cases, but getting it right may be more complicated.
+                            recursivePlayers.forEach(v -> estimateForRecursivePlayer.put(v, answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), set(v))));
+
+                            // All possible combinations (of non-recursive players) assumes full-connectivity, producing an unrealistically large/worst-case estimate.
+                            // Instead, we model each role-player as being recursively related to sqrt(|r_i|) instances of each other role-player r_i.
+                            double rootOfAll = Math.max(1.0, Math.sqrt(iterate(estimateForRecursivePlayer.values()).reduce(1.0, (x,y) -> x * y)));
+                            double recursivelyConnectedEstimate = iterate(estimateForRecursivePlayer.values()).map(x -> rootOfAll * Math.max(1.0, Math.sqrt(x))).reduce(0.0, Double::sum);
+
+                            double estimateForNonRecursivePlayers = answerCountEstimator.estimateAnswers(conditionBranch.conjunction(), nonRecursivePlayers);
+                            double heuristicUpperBound = Math.ceil(estimateForNonRecursivePlayers * recursivelyConnectedEstimate);
+                            inferredEstimate += Math.min(inferredEstimateForThisBranch, heuristicUpperBound);
+                        } else {
+                            inferredEstimate += inferredEstimateForThisBranch;
+                        }
                     }
                 }
             }

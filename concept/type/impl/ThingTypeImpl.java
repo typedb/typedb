@@ -79,11 +79,11 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
-import static com.vaticle.typedb.core.common.util.StringBuilders.COMMA_NEWLINE_INDENT;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static java.util.Comparator.comparing;
 
@@ -136,7 +136,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     protected void writeAbstract(StringBuilder builder) {
-        if (isAbstract()) builder.append(COMMA_NEWLINE_INDENT).append(TypeQLToken.Constraint.ABSTRACT);
+        if (isAbstract()) builder.append(COMMA).append(SPACE).append(TypeQLToken.Constraint.ABSTRACT);
     }
 
     protected void writeOwnsAttributes(StringBuilder builder) {
@@ -154,7 +154,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private void writeOwnsAttribute(StringBuilder builder, AttributeType attributeType) {
-        builder.append(COMMA_NEWLINE_INDENT)
+        builder.append(COMMA).append(SPACE)
                 .append(TypeQLToken.Constraint.OWNS).append(SPACE)
                 .append(attributeType.getLabel().name());
         AttributeType ownsOverridden = getOwnsOverridden(attributeType);
@@ -166,8 +166,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     protected void writePlays(StringBuilder builder) {
         getPlaysExplicit().stream().sorted(comparing(x -> x.getLabel().scopedName())).forEach(roleType -> {
-            builder.append(COMMA_NEWLINE_INDENT)
-                    .append(TypeQLToken.Constraint.PLAYS).append(SPACE)
+            builder.append(COMMA).append(TypeQLToken.Constraint.PLAYS).append(SPACE)
                     .append(roleType.getLabel().scopedName());
             RoleType overridden = getPlaysOverridden(roleType);
             if (overridden != null) {
@@ -586,6 +585,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         @Override
         public boolean isRoot() {
             return true;
+        }
+
+        @Override
+        public void delete() {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override

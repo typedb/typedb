@@ -71,7 +71,6 @@ public class NegationController extends AbstractController<
 
     @Override
     public void routeConnectionRequest(Request req) {
-        if (isTerminated()) return;
         disjunctionContoller.execute(actor -> actor.establishProcessorConnection(req));
     }
 

@@ -45,6 +45,7 @@ native_java_libraries(
     deps = [
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql-lang",
 
         # External dependencies from Maven
         "@maven//:com_google_code_findbugs_jsr305",

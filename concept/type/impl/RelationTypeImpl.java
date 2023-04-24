@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -51,6 +50,9 @@ import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.RELATION_TYPE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.RELATION;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.NEW_LINE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SEMICOLON;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static java.util.Comparator.comparing;
 
@@ -281,12 +283,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         writeOwnsAttributes(builder);
         writeRelates(builder);
         writePlays(builder);
-        builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
+        builder.append(SEMICOLON).append(NEW_LINE);
     }
 
     private void writeRelates(StringBuilder builder) {
         getRelatesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(roleType -> {
-            builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
+            builder.append(COMMA).append(SPACE)
                     .append(TypeQLToken.Constraint.RELATES).append(SPACE)
                     .append(roleType.getLabel().name());
             RoleType overridden = getRelatesOverridden(roleType.getLabel().name());
@@ -307,6 +309,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         @Override
         public boolean isRoot() {
             return true;
+        }
+
+        @Override
+        public void delete() {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override

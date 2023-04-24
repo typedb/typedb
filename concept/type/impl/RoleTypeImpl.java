@@ -227,6 +227,11 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         }
 
         @Override
+        public void delete() {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
+
+        @Override
         public void setLabel(String label) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }

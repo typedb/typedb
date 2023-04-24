@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.logic;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
@@ -36,6 +35,7 @@ import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -44,13 +44,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.CONTRADICTORY_RULE_CYCLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.logic.LogicManager.RuleExporter.writeRule;
 import static java.util.Comparator.comparing;
 
 public class LogicManager {
@@ -69,7 +65,9 @@ public class LogicManager {
         this.compiledConjunctions = new HashMap<>();
     }
 
-    GraphManager graph() { return graphMgr; }
+    GraphManager graph() {
+        return graphMgr;
+    }
 
     public TypeInference typeInference() {
         return typeInference;
@@ -117,7 +115,7 @@ public class LogicManager {
     public Set<Resolvable<?>> compile(ResolvableConjunction conjunction) {
         if (!compiledConjunctions.containsKey(conjunction)) {
             synchronized (compiledConjunctions) {
-                if (!compiledConjunctions.containsKey(conjunction)){
+                if (!compiledConjunctions.containsKey(conjunction)) {
                     Set<Concludable> concludablesTriggeringRules = iterate(conjunction.positiveConcludables())
                             .filter(concludable -> !applicableRules(concludable).isEmpty())
                             .toSet();
@@ -131,6 +129,7 @@ public class LogicManager {
         }
         return compiledConjunctions.get(conjunction);
     }
+
     /**
      * On commit we must clear the rule cache and revalidate rules - this will force re-running type inference
      * when we re-load the Rule objects
@@ -211,7 +210,7 @@ public class LogicManager {
 
     public String rulesSyntax() {
         StringBuilder builder = new StringBuilder();
-        rules().stream().sorted(comparing(Rule::getLabel)).forEach(x -> writeRule(builder, x));
+        rules().stream().sorted(comparing(Rule::getLabel)).forEach(rule -> rule.getSyntax(builder));
         return builder.toString();
     }
 
@@ -240,50 +239,6 @@ public class LogicManager {
         @Override
         public int hashCode() {
             return Objects.hash(recursiveRule, triggeringRule);
-        }
-    }
-
-    // TODO: This class should be dissolved and its logic should be moved to Rules and Patterns
-    static class RuleExporter {
-
-        static void writeRule(StringBuilder builder, Rule rule) {
-            builder.append(String.format("rule %s:\n", rule.getLabel()))
-                    .append(StringBuilders.indent(1))
-                    .append("when\n")
-                    .append(getPatternString(wrapConjunction(rule.getWhenPreNormalised()), 1))
-                    .append("\n")
-                    .append(StringBuilders.indent(1))
-                    .append("then\n")
-                    .append(getPatternString(wrapConjunction(rule.getThenPreNormalised()), 1))
-                    .append(StringBuilders.SEMICOLON_NEWLINE_X2);
-        }
-
-        static String getPatternString(Pattern pattern, int indent) {
-            if (pattern.isVariable()) {
-                return StringBuilders.indent(indent) + pattern.asVariable().toString();
-            } else if (pattern.isConjunction()) {
-                StringBuilder builder = new StringBuilder()
-                        .append(StringBuilders.indent(indent))
-                        .append("{\n");
-                pattern.asConjunction().patterns().forEach(p -> builder
-                        .append(getPatternString(p, indent + 1))
-                        .append(";\n"));
-                builder.append(StringBuilders.indent(indent))
-                        .append("}");
-                return builder.toString();
-            } else if (pattern.isDisjunction()) {
-                return pattern.asDisjunction().patterns().stream()
-                        .map(p -> getPatternString(wrapConjunction(p), indent))
-                        .collect(Collectors.joining("\n" + StringBuilders.indent(indent) + "or\n"));
-            } else if (pattern.isNegation()) {
-                return StringBuilders.indent(indent) + "not\n" + getPatternString(wrapConjunction(pattern.asNegation().pattern()), indent);
-            } else {
-                throw TypeDBException.of(ILLEGAL_STATE);
-            }
-        }
-
-        static Pattern wrapConjunction(Pattern pattern) {
-            return pattern.isConjunction() ? pattern : new Conjunction<>(list(pattern));
         }
     }
 }

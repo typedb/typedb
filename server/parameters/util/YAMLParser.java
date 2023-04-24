@@ -25,6 +25,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -284,6 +285,11 @@ public class YAMLParser {
                     (yaml) -> Bytes.parse(yaml.asString().value()),
                     "<size>"
             );
+            public static final Primitive<Long> DURATION = new Primitive<>(
+                    (yaml) -> yaml.isString() && Duration.isValidDurationString(yaml.asString().value()),
+                    (yaml) -> Duration.parse(yaml.asString().value()),
+                    "<duration>"
+            );
             public static final Primitive<InetSocketAddress> INET_SOCKET_ADDRESS = new Primitive<>(
                     (yaml) -> {
                         if (!yaml.isString()) return false;
@@ -395,6 +401,38 @@ public class YAMLParser {
 
             private static boolean isValidSizeString(String size) {
                 Matcher matcher = FILE_SIZE_PATTERN.matcher(size);
+                return matcher.matches();
+            }
+        }
+
+        private static class Duration {
+
+            private final static String LENGTH_PART = "(^[0-9]+)";
+            private final static int LENGTH_GROUP = 1;
+            private final static String UNIT_PART = "([dhms]$)";
+            private final static int UNIT_GROUP = 2;
+            private static final Pattern DURATION_PATTERN = Pattern.compile(LENGTH_PART + UNIT_PART, Pattern.CASE_INSENSITIVE);
+
+            private static long parse(String durationString) {
+                Matcher matcher = DURATION_PATTERN.matcher(durationString);
+                java.time.Duration duration;
+                if (matcher.matches()) {
+                    String lenStr = matcher.group(LENGTH_GROUP);
+                    String unitStr = matcher.group(UNIT_GROUP);
+                    long lenValue = Long.parseLong(lenStr);
+                    if (unitStr.equalsIgnoreCase("d")) duration = java.time.Duration.of(lenValue, ChronoUnit.DAYS);
+                    else if (unitStr.equalsIgnoreCase("h")) duration = java.time.Duration.of(lenValue, ChronoUnit.HOURS);
+                    else if (unitStr.equalsIgnoreCase("m")) duration = java.time.Duration.of(lenValue, ChronoUnit.MINUTES);
+                    else if (unitStr.equalsIgnoreCase("s")) duration = java.time.Duration.of(lenValue, ChronoUnit.SECONDS);
+                    else throw new IllegalStateException("Unexpected duration unit: " + unitStr);
+                    return duration.toSeconds();
+                } else {
+                    throw new IllegalArgumentException("Duration [" + durationString + "] is not in a recognised format.");
+                }
+            }
+
+            private static boolean isValidDurationString(String durationString) {
+                Matcher matcher = DURATION_PATTERN.matcher(durationString);
                 return matcher.matches();
             }
         }

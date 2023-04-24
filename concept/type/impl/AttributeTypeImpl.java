@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.common.util.StringBuilders;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -33,8 +32,6 @@ import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,7 +46,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.AT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_SUPERTYPE_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
@@ -66,6 +62,10 @@ import static com.vaticle.typedb.core.encoding.Encoding.ValueType.OBJECT;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ATTRIBUTE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.NEW_LINE;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SEMICOLON;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static com.vaticle.typeql.lang.common.util.Strings.escapeRegex;
 import static com.vaticle.typeql.lang.common.util.Strings.quoteString;
 
@@ -242,19 +242,19 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         writeSupertype(builder);
         writeAbstract(builder);
         if (!isRoot()) {
-            builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
-                    .append(TypeQLToken.Constraint.VALUE_TYPE).append(TypeQLToken.Char.SPACE)
+            builder.append(COMMA).append(SPACE)
+                    .append(TypeQLToken.Constraint.VALUE_TYPE).append(SPACE)
                     .append(getValueType().syntax());
             if (isString()) {
                 java.util.regex.Pattern regex = asString().getRegex();
-                if (regex != null) builder.append(StringBuilders.COMMA_NEWLINE_INDENT)
-                        .append(TypeQLToken.Constraint.REGEX).append(TypeQLToken.Char.SPACE)
+                if (regex != null) builder.append(COMMA).append(SPACE)
+                        .append(TypeQLToken.Constraint.REGEX).append(SPACE)
                         .append(quoteString(escapeRegex(regex.pattern())));
             }
         }
         writeOwnsAttributes(builder);
         writePlays(builder);
-        builder.append(StringBuilders.SEMICOLON_NEWLINE_X2);
+        builder.append(SEMICOLON).append(NEW_LINE);
     }
 
     @Override
@@ -309,6 +309,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public boolean isRoot() {
             return true;
+        }
+
+        @Override
+        public void delete() {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
@@ -501,6 +506,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
+            public void delete() {
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+            }
+
+            @Override
             public void setLabel(java.lang.String label) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
@@ -646,6 +656,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
+            public void delete() {
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+            }
+
+            @Override
             public void setLabel(java.lang.String label) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
@@ -788,6 +803,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public Forwardable<AttributeTypeImpl.Double, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(DOUBLE)
                         .mapSorted(v -> AttributeTypeImpl.Double.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+            }
+
+            @Override
+            public void delete() {
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
@@ -965,6 +985,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
+            public void delete() {
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+            }
+
+            @Override
             public void setLabel(java.lang.String label) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
@@ -1117,6 +1142,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public Forwardable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(DATETIME)
                         .mapSorted(v -> AttributeTypeImpl.DateTime.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+            }
+
+            @Override
+            public void delete() {
+                throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override

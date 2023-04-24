@@ -39,6 +39,11 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner.estimateableVariables;
 
 public class OrderingCoster {
+
+    // Answer propagation can have a lower relative cost
+    //  since combining the answers involves no reasoning/retrieval but only table lookups.
+    private static final double RELATIVE_COST_ANSWER_COMBINATION = 1.0;
+
     private final ReasonerPlanner planner;
     private final AnswerCountEstimator answerCountEstimator;
     private final ConjunctionGraph conjunctionGraph;
@@ -79,6 +84,11 @@ public class OrderingCoster {
                 double allAnswersForUnrestrictedMode = answerCountEstimator.localEstimate(conjunctionNode.conjunction(), resolvable, resolvableMode);
                 double cyclicScalingFactor = projectionVars.isEmpty() && allAnswersForUnrestrictedMode != 0 ? 0.0 :
                         (double) estimator.answerEstimate(projectionVars) / allAnswersForUnrestrictedMode;
+
+                // Terrible overestimate. Let's take the square-root to be more realistic.
+                if (allAnswersForUnrestrictedMode != 0) {
+                    cyclicScalingFactor = Math.min(cyclicScalingFactor, Math.sqrt(allAnswersForUnrestrictedMode) / allAnswersForUnrestrictedMode);
+                }
                 cylicScalingFactors.put(resolvable.asConcludable(), cyclicScalingFactor);
             }
 
@@ -90,6 +100,8 @@ public class OrderingCoster {
             } else {
                 disconnectedCost += resolvableCost;
             }
+            // Traversal cost - DFS style permutative work
+            acyclicCost += estimator.answerSetSize() * RELATIVE_COST_ANSWER_COMBINATION;
 
             if (!resolvable.isNegated()) {
                 boundVars.addAll(resolvableVars);
@@ -241,7 +253,10 @@ public class OrderingCoster {
             }
 
             estimator.extend(resolvable);
-            singlyBoundCost += resolvableCost;
+            singlyBoundCost += resolvableCost; // Reasoning cost - recursive work
+
+            // Traversal cost - DFS style permutative work
+            singlyBoundCost += estimator.answerSetSize() * RELATIVE_COST_ANSWER_COMBINATION;
 
             if (!resolvable.isNegated()) {
                 boundVars.addAll(resolvable.variables()); // We need non-estimateable variables too.

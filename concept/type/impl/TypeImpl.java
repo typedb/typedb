@@ -47,6 +47,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.I
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_BEEN_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_REFERENCED_IN_RULES;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
@@ -149,9 +150,10 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     }
 
     void validateDelete() {
+        if (isRoot()) throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         FunctionalIterator<RuleStructure> rules = graphMgr.schema().rules().references().get(vertex);
         if (rules.hasNext()) {
-            throw exception(TypeDBException.of(TYPE_REFERENCED_IN_RULES, getLabel(), rules.toList()));
+            throw exception(TypeDBException.of(TYPE_REFERENCED_IN_RULES, getLabel(), rules.map(RuleStructure::label).toList()));
         }
     }
 

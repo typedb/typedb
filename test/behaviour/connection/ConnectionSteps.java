@@ -68,41 +68,71 @@ public class ConnectionSteps {
         return sessionsToTransactions.get(sessions.get(0)).get(0);
     }
 
-    @Before
-    public synchronized void before() throws IOException {
+    @After
+    public synchronized void after() {
+        if (databaseMgr.isOpen()) {
+            System.out.println("ConnectionSteps.after");
+            sessionsToTransactions.values().forEach(l -> l.forEach(TypeDB.Transaction::close));
+            sessionsToTransactions.clear();
+            sessionsToTransactionsParallel.values().forEach(l -> l.forEach(c -> {
+                try {
+                    c.get().close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }));
+            sessionsToTransactionsParallel.clear();
+            sessionsParallelToTransactionsParallel.values().forEach(l -> l.forEach(c -> {
+                try {
+                    c.get().close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }));
+            sessionsParallelToTransactionsParallel.clear();
+            sessions.forEach(TypeDB.Session::close);
+            sessions.clear();
+            sessionsParallel.forEach(c -> c.thenAccept(TypeDB.Session::close));
+            sessionsParallel.clear();
+            databaseMgr.all().forEach(CoreDatabase::delete);
+            databaseMgr.close();
+            assertFalse(databaseMgr.isOpen());
+            databaseMgr = null;
+        }
+    }
+
+    @Given("typedb starts")
+    public void typedb_starts() throws IOException {
         assertNull(databaseMgr);
         resetDirectory();
         System.out.println("Connecting to TypeDB ...");
         databaseMgr = CoreDatabaseManager.open(options);
     }
 
-    @After
-    public synchronized void after() {
-        System.out.println("ConnectionSteps.after");
-        sessionsToTransactions.values().forEach(l -> l.forEach(TypeDB.Transaction::close));
-        sessionsToTransactions.clear();
-        sessionsToTransactionsParallel.values().forEach(l -> l.forEach(c -> {
-            try { c.get().close(); } catch (Exception e) { e.printStackTrace(); }
-        }));
-        sessionsToTransactionsParallel.clear();
-        sessionsParallelToTransactionsParallel.values().forEach(l -> l.forEach(c -> {
-            try { c.get().close(); } catch (Exception e) { e.printStackTrace(); }
-        }));
-        sessionsParallelToTransactionsParallel.clear();
-        sessions.forEach(TypeDB.Session::close);
-        sessions.clear();
-        sessionsParallel.forEach(c -> c.thenAccept(TypeDB.Session::close));
-        sessionsParallel.clear();
-        databaseMgr.all().forEach(CoreDatabase::delete);
-        databaseMgr.close();
-        assertFalse(databaseMgr.isOpen());
-        databaseMgr = null;
+    @Given("typedb stops")
+    public void typedb_stops() {
+        after();
+    }
+
+    @Given("connection opens without authentication")
+    public void connection_opens_without_authentication() {
+        // no-op for embedded server
+    }
+
+    @Given("connection opens with authentication: {word}, {word}")
+    public void connection_opens_with_authentication(String usernamne, String password) {
+        // no-op for embedded server
     }
 
     @Given("connection has been opened")
     public void connection_has_been_opened() {
         assertNotNull(databaseMgr);
         assertTrue(databaseMgr.isOpen());
+    }
+
+    @Given("connection closes")
+    public void connection_closes() {
+        // no-op for embedded server
     }
 
     @Given("connection does not have any database")

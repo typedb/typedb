@@ -253,7 +253,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     void validateIsNotDeleted() {
         if (writableVertex().isDeleted())
-            throw exception(TypeDBException.of(THING_HAS_BEEN_DELETED, getIIDForPrinting()));
+            throw exception(TypeDBException.of(THING_HAS_BEEN_DELETED, getIIDForPrinting(), getType().getLabel()));
     }
 
     @Override

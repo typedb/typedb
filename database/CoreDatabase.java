@@ -39,6 +39,7 @@ import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.traversal.TraversalCache;
+import com.vaticle.typeql.lang.TypeQL;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.OptimisticTransactionDB;
@@ -433,21 +434,21 @@ public class CoreDatabase implements TypeDB.Database {
     @Override
     public String schema() {
         try (TypeDB.Session session = databaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
-            return "define\n\n" + tx.concepts().typesSyntax() + tx.logic().rulesSyntax();
+            return TypeQL.parseQuery("define\n\n" + tx.concepts().typesSyntax() + tx.logic().rulesSyntax()).toString(true);
         }
     }
 
     @Override
     public String typeSchema() {
         try (TypeDB.Session session = databaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
-            return "define\n\n" + tx.concepts().typesSyntax();
+            return TypeQL.parseQuery("define\n\n" + tx.concepts().typesSyntax()).toString(true);
         }
     }
 
     @Override
     public String ruleSchema() {
         try (TypeDB.Session session = databaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
-            return "define\n\n" + tx.logic().rulesSyntax();
+            return TypeQL.parseQuery("define\n\n" + tx.logic().rulesSyntax()).toString(true);
         }
     }
 

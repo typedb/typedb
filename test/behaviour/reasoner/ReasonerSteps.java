@@ -66,15 +66,6 @@ public class ReasonerSteps {
     private static TypeQLMatch typeQLQuery;
     private static List<? extends ConceptMap> answers;
 
-    @Before
-    public synchronized void before() throws IOException {
-        assertNull(databaseMgr);
-        resetDirectory();
-        System.out.println("Connecting to TypeDB ...");
-        databaseMgr = CoreDatabaseManager.open(options);
-        databaseMgr.create(DATABASE);
-    }
-
     @After
     public synchronized void after() {
         if (reasoningTx != null) reasoningTx.close();
@@ -107,6 +98,20 @@ public class ReasonerSteps {
             if (reasoningTx.isOpen()) reasoningTx.close();
             reasoningTx = null;
         }
+    }
+
+    @Given("typedb starts")
+    public void typedb_starts() throws IOException {
+        assertNull(databaseMgr);
+        resetDirectory();
+        System.out.println("Connecting to TypeDB ...");
+        databaseMgr = CoreDatabaseManager.open(options);
+        databaseMgr.create(DATABASE);
+    }
+
+    @Given("connection opens without authentication")
+    public void open_connection() {
+        // noop
     }
 
     @Given("reasoning schema")
