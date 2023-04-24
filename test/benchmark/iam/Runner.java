@@ -17,9 +17,6 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.WriterConfig;
 import junit.framework.AssertionFailedError;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -29,19 +26,15 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Runner {
 
     static final org.slf4j.Logger LOG = LoggerFactory.getLogger(Runner.class);
-    private final PrintStream outputStream;
-
-    private Runner() {
-        this.outputStream = System.out;
-    }
 
     public void runTestSuite(ReasonerBenchmarkSuite testClass) throws IOException, InvocationTargetException, IllegalAccessException {
         Method[] testMethods = Arrays.stream(testClass.getClass().getDeclaredMethods())
@@ -71,22 +64,17 @@ public class Runner {
                 new ComplexRuleGraphTest()
         };
 
-        String runId = (args.length >= 1) ? args[0] : "reasoner benchmark";
-        JsonObject fullSummary = Json.object();
-        fullSummary.add("run_id", runId);
-
+        String runId = (args.length >= 1) ? args[0] : "reasoner_benchmark";
         Runner runner = new Runner();
 
+        List<Benchmark> results = new ArrayList<>();
         for (ReasonerBenchmarkSuite testClass : testClasses) {
             LOG.info("Running test class {}", testClass.getClass().getSimpleName());
             runner.runTestSuite(testClass);
-            JsonObject testClassSummary = testClass.jsonSummary();
-            fullSummary.add(testClass.getClass().getSimpleName(), testClassSummary);
+            results.addAll(testClass.results());
         }
         LOG.info("Finished running all test classes");
-
-        runner.outputStream.println("/* Printing full result */");
-        runner.outputStream.println(fullSummary.toString(WriterConfig.PRETTY_PRINT));
+        System.out.println(Benchmark.toCSV(results));
 
         // You know we should be done here. I'm probably forgetting to close something
         System.exit(0);

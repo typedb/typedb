@@ -51,7 +51,6 @@ host_compatible_java_test(
         "@vaticle_typeql//java/query",
 
         # External dependencies from Maven
-        "@maven//:com_eclipsesource_minimal_json_minimal_json",
         "@maven//:org_slf4j_slf4j_api"
     ]
 )
@@ -89,7 +88,6 @@ host_compatible_java_test(
         "@vaticle_typeql//java/query",
 
         # External dependencies from Maven
-        "@maven//:com_eclipsesource_minimal_json_minimal_json",
         "@maven//:org_slf4j_slf4j_api"
     ]
 )
@@ -126,7 +124,6 @@ host_compatible_java_test(
         "@vaticle_typeql//java/query",
 
         # External dependencies from Maven
-        "@maven//:com_eclipsesource_minimal_json_minimal_json",
         "@maven//:org_slf4j_slf4j_api"
     ]
 )
@@ -154,7 +151,6 @@ native_java_libraries(
         "@vaticle_typeql//java/query",
 
         # External dependencies from Maven
-        "@maven//:com_eclipsesource_minimal_json_minimal_json",
         "@maven//:junit_junit",
         "@maven//:org_slf4j_slf4j_api"
     ]
@@ -168,7 +164,6 @@ java_binary(
     deps = [
         ":all-benchmarks-mac",
 
-        "@maven//:com_eclipsesource_minimal_json_minimal_json",
         "@maven//:junit_junit",
         "@maven//:org_slf4j_slf4j_api",
         "@maven//:ch_qos_logback_logback_classic"
@@ -183,7 +178,6 @@ java_binary(
     deps = [
         ":all-benchmarks-linux",
 
-        "@maven//:com_eclipsesource_minimal_json_minimal_json",
         "@maven//:junit_junit",
         "@maven//:org_slf4j_slf4j_api",
         "@maven//:ch_qos_logback_logback_classic"
@@ -198,7 +192,6 @@ java_binary(
     deps = [
         ":all-benchmarks-windows",
 
-        "@maven//:com_eclipsesource_minimal_json_minimal_json",
         "@maven//:junit_junit",
         "@maven//:org_slf4j_slf4j_api",
         "@maven//:ch_qos_logback_logback_classic"

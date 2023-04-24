@@ -18,9 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
-import com.eclipsesource.json.WriterConfig;
+import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -54,16 +52,12 @@ public abstract class ReasonerBenchmarkSuite {
             BenchmarkRunner.BenchmarkRun run = benchmarker.runMatchQuery(benchmark.query);
             benchmark.addRun(run);
             LOG.info("Completed run in {} ms. answersDiff: {}", run.timeTaken.toMillis(), run.answerCount - benchmark.expectedAnswers);
-            LOG.info("perf_counters:\n{}", run.toJSON().toString(WriterConfig.PRETTY_PRINT));
+            LOG.info("perf_counters:\n{}", PerfCounters.prettyPrint(run.reasonerPerfCounters));
         }
         benchmarks.add(benchmark);
     }
 
-    public JsonObject jsonSummary() {
-        JsonObject root = Json.object();
-        iterate(benchmarks).forEachRemaining(summary -> {
-            root.add(summary.name, summary.toJson());
-        });
-        return root;
+    public List<Benchmark> results() {
+        return benchmarks;
     }
 }

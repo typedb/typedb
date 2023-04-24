@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -38,7 +36,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
@@ -122,15 +122,14 @@ public class BenchmarkRunner {
             this.reasonerPerfCounters = reasonerPerfCounters;
         }
 
-        public JsonObject toJSON() {
-            JsonObject json;
-            json = Json.object()
-                    .add("answer_count", Json.value(answerCount))
-                    .add("time_taken_ms", Json.value(timeTaken.toMillis()));
-            reasonerPerfCounters.keySet().stream().sorted(String::compareTo)
-                    .forEach(name -> json.add(name, Json.value(reasonerPerfCounters.get(name))));
-
-            return json;
+        public List<String> toCSV(Benchmark benchmark, List<String> perfCounterKeys) {
+            List<String> entries = new ArrayList<>();
+            entries.add(benchmark.name);
+            entries.add(Long.toString(benchmark.expectedAnswers));
+            entries.add(Long.toString(answerCount));
+            entries.add(Long.toString(timeTaken.toMillis()));
+            perfCounterKeys.forEach(key -> entries.add(Long.toString(reasonerPerfCounters.get(key))));
+            return entries;
         }
 
         @Override

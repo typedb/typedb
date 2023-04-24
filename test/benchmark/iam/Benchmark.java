@@ -18,21 +18,17 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonArray;
-import com.eclipsesource.json.JsonObject;
-import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
-import junit.framework.AssertionFailedError;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 
-import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static org.junit.Assert.assertEquals;
 
 class Benchmark {
+
     final String name;
     final String query;
     final long expectedAnswers;
@@ -47,6 +43,27 @@ class Benchmark {
         this.runs = new ArrayList<>();
     }
 
+    public static String toCSV(List<Benchmark> benchmarks) {
+        List<String> fields = new ArrayList<>();
+        Arrays.stream(new String[] {
+                "name", "expectedAnswers", "actualAnswers", "total_time_ms",
+        }).forEach(fields::add);
+        List<String> perfCounterKeys = new ArrayList<>(new ReasonerPerfCounters(false).toMapUnsynchronised().keySet());
+        fields.addAll(perfCounterKeys);
+
+        StringBuilder sb = new StringBuilder();
+        appendCSVLine(sb, fields);
+        benchmarks.forEach(benchmark -> {
+            benchmark.runs().forEach(run ->  appendCSVLine(sb, run.toCSV(benchmark, perfCounterKeys)));
+        });
+        return sb.toString();
+    }
+
+    private static void appendCSVLine(StringBuilder sb, List<String> entries) {
+        entries.forEach(entry -> sb.append(entry).append(","));
+        sb.append("\n");
+    }
+
     void addRun(BenchmarkRunner.BenchmarkRun run) {
         runs.add(run);
     }
@@ -58,25 +75,5 @@ class Benchmark {
     public void assertAnswerCountCorrect() {
         assertEquals(iterate(runs).map(run -> expectedAnswers).toList(), iterate(runs()).map(run -> run.answerCount).toList());
         assertEquals(nRuns, runs.size());
-    }
-
-    public boolean allCorrect() {
-        try {
-            assertAnswerCountCorrect();
-            return true;
-        } catch (AssertionFailedError e) {
-            return false;
-        }
-    }
-
-    public JsonObject toJson() {
-        JsonArray jsonRuns = Json.array();
-        runs.forEach(run -> jsonRuns.add(run.toJSON()));
-        return Json.object()
-                .add("name", Json.value(name))
-                .add("query", Json.value(query))
-                .add("expected_answers", Json.value(expectedAnswers))
-                .add("runs", jsonRuns)
-                .add("all_correct", Json.value(allCorrect()));
     }
 }
