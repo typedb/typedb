@@ -24,11 +24,11 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class LargeDataTest extends ReasonerBenchmarkSuite {
+public class ConjunctionStructureTest extends ReasonerBenchmarkSuite {
 
-    private static final String database = "iam-benchmark-data";
+    private static final String database = "iam-benchmark-conjunctions";
 
-    public LargeDataTest() {
+    public ConjunctionStructureTest() {
         super(database);
     }
 
@@ -36,6 +36,7 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
     public void setUp() throws IOException {
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
+        benchmarker.loadSchema("schema_rules_optimised.tql");
         benchmarker.loadData("data_small.typedb");
     }
 
@@ -45,28 +46,21 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
     }
 
     @Test
-    public void testLargeIntermediateResultHighSelectivity() {
+    public void testMultipleStartingPoints() {
+        // Stresses resolvable ordering planner by having many candidate orderings
         String query = "match\n" +
-                "   $po (action: $a1, action: $a2) isa segregation-policy;\n" +
-                "   $ac1 (object: $o, action: $a1) isa access;\n" +
-                "   $ac2 (object: $o, action: $a2) isa access;\n" +
-                "   $p1 (subject: $s, access: $ac1) isa permission;\n" +
-                "   $p2 (subject: $s, access: $ac2) isa permission;\n";
-        benchmarker.loadSchema("schema_rules_optimised.tql");
-        Benchmark benchmark = new Benchmark("segregation-violation-optimised", query, 1, 1);
+                "   $a1 isa action, has name \"submit pull request\";\n" +
+                "   $a2 isa action, has name \"approve pull request\";\n" +
+                "   $s isa subject, has email \"genevieve.gallegos@vaticle.com\";\n" +
+                "   $parent isa directory, has path \"root/engineering\";\n" +
+                "   $policy (action: $a1, action: $a2) isa segregation-policy;\n" +
+                "   (collection: $parent, member:$o) isa collection-membership;\n" +
+                "   $ac1(object: $o, action: $a1) isa access;\n" +
+                "   $ac2(object: $o, action: $a2) isa access;\n" +
+                "   $p1(subject: $s, access: $ac1) isa permission;\n" +
+                "   $p2(subject: $s, access: $ac2) isa permission;\n";
+        Benchmark benchmark = new Benchmark("many-starting-points-segregation-violation", query, 4, 3);
         runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
     }
-
-    @Test
-    public void testCombinatorialResults() {
-        String query = "match\n" +
-        "   $p1 (subject: $s1, access: $ac1) isa permission;\n" +
-        "   $p2 (subject: $s2, access: $ac2) isa permission;\n";
-        benchmarker.loadSchema("schema_rules_optimised.tql");
-        Benchmark benchmark = new Benchmark("segregation-violation-optimised", query, 1, 1);
-        runBenchmark(benchmark);
-        benchmark.assertAnswerCountCorrect();
-    }
-
 }

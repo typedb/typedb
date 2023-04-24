@@ -59,7 +59,7 @@ public class Runner {
         root.setLevel(Level.INFO);
 
         ReasonerBenchmarkSuite[] testClasses = new ReasonerBenchmarkSuite[]{
-                new ComplexConjunctionTest(),
+                new ConjunctionStructureTest(),
                 new LargeDataTest(),
                 new ComplexRuleGraphTest()
         };

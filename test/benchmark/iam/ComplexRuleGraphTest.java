@@ -45,24 +45,33 @@ public class ComplexRuleGraphTest extends ReasonerBenchmarkSuite {
     }
 
     @Test
-    public void testCheckPermissionNaiveRules() {
+    public void testCombinatorialProofsSingle() {
         String query = "match\n" +
                 "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
                 "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
                 "$o isa operation, has name \"edit file\";\n" +
                 "$a (object: $f, action: $o) isa access;\n" +
-                "$pe (subject: $p, access: $a) isa permission, has validity true;";
+                "$pe (subject: $p, access: $a) isa permission;";
         Benchmark benchmark = new Benchmark("check-permission", query, 1, 3);
         runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
     }
 
     @Test
-    public void testSegregationViolationNaiveRules() {
+    public void testCombinatorialProofsAll() {
         String query = "match\n" +
-                "   (subject: $s, object: $o, policy: $po) isa segregation-violation;\n";
-        Benchmark benchmark = new Benchmark("segregation-violation", query, 1, 3);
+                "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
+                "$o isa object, has id $o-id;\n" +
+                "$a isa action, has name $an;\n" +
+                "$ac (object: $o, action: $a) isa access;\n" +
+                "$pe (subject: $p, access: $ac) isa permission;";
+        Benchmark benchmark = new Benchmark("check-permission", query, 67, 3);
         runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
+    }
+
+    @Test
+    public void testHighArityBounds() {
+        // TODO
     }
 }

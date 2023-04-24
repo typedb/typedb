@@ -93,9 +93,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "complex-conjunctions-test",
-    test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.ComplexConjunctionTest",
-    srcs = ["ComplexConjunctionTest.java",
+    name = "conjunction-structure-test",
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.ConjunctionStructureTest",
+    srcs = ["ConjunctionStructureTest.java",
             "ReasonerBenchmarkSuite.java",
             "BenchmarkRunner.java",
             "Benchmark.java",
@@ -128,6 +128,77 @@ host_compatible_java_test(
     ]
 )
 
+host_compatible_java_test(
+    name = "language-feature-test",
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.LanguageFeatureTest",
+    srcs = ["LanguageFeatureTest.java",
+            "ReasonerBenchmarkSuite.java",
+            "BenchmarkRunner.java",
+            "Benchmark.java",
+    ],
+    data = [
+        ":resources/data_small.typedb",
+        ":resources/schema_types.tql",
+        ":resources/schema_rules_optimised.tql"
+    ],
+    native_libraries_deps = [
+        "//:typedb",
+        "//database:database",
+        "//concept:concept",
+        "//common:common",
+        "//concurrent:concurrent",
+        "//logic:logic",
+        "//migrator:migrator",
+        "//reasoner:reasoner",
+        "//traversal:traversal",
+    ],
+    deps = [
+        "//server:version",
+
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/query",
+
+        # External dependencies from Maven
+        "@maven//:org_slf4j_slf4j_api"
+    ]
+)
+
+host_compatible_java_test(
+    name = "real-queries-test",
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.RealQueriesTest",
+    srcs = ["RealQueriesTest.java",
+            "ReasonerBenchmarkSuite.java",
+            "BenchmarkRunner.java",
+            "Benchmark.java",
+    ],
+    data = [
+        ":resources/data_small.typedb",
+        ":resources/schema_types.tql",
+        ":resources/schema_rules_optimised.tql"
+    ],
+    native_libraries_deps = [
+        "//:typedb",
+        "//database:database",
+        "//concept:concept",
+        "//common:common",
+        "//concurrent:concurrent",
+        "//logic:logic",
+        "//migrator:migrator",
+        "//reasoner:reasoner",
+        "//traversal:traversal",
+    ],
+    deps = [
+        "//server:version",
+
+        # External dependencies from Vaticle
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/query",
+
+        # External dependencies from Maven
+        "@maven//:org_slf4j_slf4j_api"
+    ]
+)
 
 native_java_libraries(
     name = "all-benchmarks",
