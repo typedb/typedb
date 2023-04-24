@@ -45,7 +45,10 @@ public class Runner {
                 LOG.info("Running test method {}::{}", testClass.getClass().getSimpleName(), testMethod.getName());
                 testClass.setUp();
                 testMethod.invoke(testClass);
-            } catch (AssertionError e) {
+            } catch (InvocationTargetException e) {
+                if (!e.getCause().getClass().equals(AssertionError.class)) {
+                    throw e;
+                }
                 // We're ok with junit assertions failing. Everything else falls through
             } finally {
                 testClass.tearDown();

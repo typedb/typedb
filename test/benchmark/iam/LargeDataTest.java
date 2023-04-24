@@ -53,7 +53,7 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
                 "   $ac2 (object: $o, action: $a2) isa access;\n" +
                 "   $p1 (subject: $s, access: $ac1) isa permission;\n" +
                 "   $p2 (subject: $s, access: $ac2) isa permission;\n";
-        Benchmark benchmark = new Benchmark("high-selectivity", query, 1);
+        Benchmark benchmark = new Benchmark("high-selectivity", query, 4);
         runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
     }
