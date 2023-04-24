@@ -53,8 +53,35 @@ public class RealQueriesTest extends ReasonerBenchmarkSuite {
                 "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
                 "$o isa operation, has name \"edit file\";\n" +
                 "$a (object: $f, action: $o) isa access;\n" +
-                "$pe (subject: $p, access: $a) isa permission, has validity true;";
-        Benchmark benchmark = new Benchmark("check-permission", query, 1, 3);
+                "$pe (subject: $p, access: $a) isa permission, has validity true;\n";
+        Benchmark benchmark = new Benchmark("check-permission", query, 1);
+        runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
+    }
+
+    @Test
+    public void testListSubjectPermissions() {
+        // Simple, but needs to pick the right plan.
+        String query = "match\n" +
+                "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
+                "$o isa object, has id $id;\n" +
+                "$a isa action, has name $n;\n" +
+                "$ac (object: $o, action: $a) isa access;\n" +
+                "$pe (subject: $p, access: $ac) isa permission, has validity $v;\n";
+        Benchmark benchmark = new Benchmark("list-subject-permissions", query, 67);
+        runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
+    }
+
+    @Test
+    public void testListSegregationViolations() {
+        // Simple, but needs to pick the right plan.
+        String query = "match\n" +
+                "$s isa subject, has id $s-id;\n" +
+                "$o isa object, has id $o-id;\n" +
+                "$p isa segregation-policy, has name $n;\n" +
+                "(subject: $s, object: $o, policy: $p) isa segregation-violation;\n";
+        Benchmark benchmark = new Benchmark("list-segregation-violations", query, 1);
         runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
     }

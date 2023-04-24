@@ -46,13 +46,32 @@ public class LanguageFeatureTest extends ReasonerBenchmarkSuite {
     }
 
     @Test
-    public void testLargeNegations() {
-        // TODO
+    public void testBoundedRelation() {
+        // Simple, but needs to pick the right plan.
+        String query = "match\n" +
+                "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
+                "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
+                "$o isa operation, has name \"edit file\";\n" +
+                "$a (object: $f, action: $o) isa access;\n" +
+                "$pe (subject: $p, access: $a) isa permission;\n" +
+                "$pe (subject: $other-p, access: $other-a) isa permission;\n";
+        Benchmark benchmark = new Benchmark("check-permission", query, 1);
+        runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
     }
 
     @Test
     public void testValuePredicateFiltering() {
-        // TODO
+        // Simple, but needs to pick the right plan.
+        String query = "match\n" +
+                "$p isa person, has $email; $email = \"douglas.schmidt@vaticle.com\";\n" +
+                "$f isa file, has $path; $path = \"root/engineering/typedb-studio/src/README.md\";\n" +
+                "$o isa operation, has $operation; $operation = \"edit file\";\n" +
+                "$a (object: $f, action: $o) isa access;\n" +
+                "$pe (subject: $p, access: $a) isa permission, has validity true;\n";
+        Benchmark benchmark = new Benchmark("value-predicate-filtering", query, 1);
+        runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
     }
 
     @Test

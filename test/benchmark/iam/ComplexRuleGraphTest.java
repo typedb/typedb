@@ -51,8 +51,8 @@ public class ComplexRuleGraphTest extends ReasonerBenchmarkSuite {
                 "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
                 "$o isa operation, has name \"edit file\";\n" +
                 "$a (object: $f, action: $o) isa access;\n" +
-                "$pe (subject: $p, access: $a) isa permission;";
-        Benchmark benchmark = new Benchmark("check-permission", query, 1, 3);
+                "$pe (subject: $p, access: $a) isa permission;\n";
+        Benchmark benchmark = new Benchmark("combinatorial-proofs-single", query, 1);
         runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
     }
@@ -64,14 +64,9 @@ public class ComplexRuleGraphTest extends ReasonerBenchmarkSuite {
                 "$o isa object, has id $o-id;\n" +
                 "$a isa action, has name $an;\n" +
                 "$ac (object: $o, action: $a) isa access;\n" +
-                "$pe (subject: $p, access: $ac) isa permission;";
-        Benchmark benchmark = new Benchmark("check-permission", query, 67, 3);
+                "$pe (subject: $p, access: $ac) isa permission;\n";
+        Benchmark benchmark = new Benchmark("combinatorial-proofs-all", query, 67);
         runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-    }
-
-    @Test
-    public void testHighArityBounds() {
-        // TODO
     }
 }

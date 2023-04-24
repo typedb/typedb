@@ -17,7 +17,6 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
-import junit.framework.AssertionFailedError;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -46,7 +45,7 @@ public class Runner {
                 LOG.info("Running test method {}::{}", testClass.getClass().getSimpleName(), testMethod.getName());
                 testClass.setUp();
                 testMethod.invoke(testClass);
-            } catch (AssertionFailedError e) {
+            } catch (AssertionError e) {
                 // We're ok with junit assertions failing. Everything else falls through
             } finally {
                 testClass.tearDown();
@@ -61,6 +60,8 @@ public class Runner {
         ReasonerBenchmarkSuite[] testClasses = new ReasonerBenchmarkSuite[]{
                 new ConjunctionStructureTest(),
                 new LargeDataTest(),
+                new ComplexRuleGraphTest(),
+                new LanguageFeatureTest(),
                 new ComplexRuleGraphTest()
         };
 
@@ -76,7 +77,7 @@ public class Runner {
         LOG.info("Finished running all test classes");
         System.out.println(Benchmark.toCSV(results));
 
-        // You know we should be done here. I'm probably forgetting to close something
+        // We should be done here. I'm probably forgetting to close something
         System.exit(0);
     }
 }

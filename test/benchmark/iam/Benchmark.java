@@ -35,6 +35,10 @@ class Benchmark {
     final int nRuns;
     final List<BenchmarkRunner.BenchmarkRun> runs;
 
+    Benchmark(String name, String query, long expectedAnswers) {
+        this(name, query, expectedAnswers, 1);
+    }
+
     Benchmark(String name, String query, long expectedAnswers, int nRuns) {
         this.name = name;
         this.query = query;

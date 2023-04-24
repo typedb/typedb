@@ -36,6 +36,7 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
     public void setUp() throws IOException {
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
+        benchmarker.loadSchema("schema_rules_optimised.tql");
         benchmarker.loadData("data_small.typedb");
     }
 
@@ -45,15 +46,14 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
     }
 
     @Test
-    public void testLargeIntermediateResultHighSelectivity() {
+    public void testHighSelectivity() {
         String query = "match\n" +
                 "   $po (action: $a1, action: $a2) isa segregation-policy;\n" +
                 "   $ac1 (object: $o, action: $a1) isa access;\n" +
                 "   $ac2 (object: $o, action: $a2) isa access;\n" +
                 "   $p1 (subject: $s, access: $ac1) isa permission;\n" +
                 "   $p2 (subject: $s, access: $ac2) isa permission;\n";
-        benchmarker.loadSchema("schema_rules_optimised.tql");
-        Benchmark benchmark = new Benchmark("segregation-violation-optimised", query, 1, 1);
+        Benchmark benchmark = new Benchmark("high-selectivity", query, 1);
         runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
     }
@@ -63,10 +63,13 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
         String query = "match\n" +
         "   $p1 (subject: $s1, access: $ac1) isa permission;\n" +
         "   $p2 (subject: $s2, access: $ac2) isa permission;\n";
-        benchmarker.loadSchema("schema_rules_optimised.tql");
-        Benchmark benchmark = new Benchmark("segregation-violation-optimised", query, 1, 1);
+        Benchmark benchmark = new Benchmark("combinatorial-results", query, 1);
         runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
     }
 
+    @Test
+    public void testLargeNegations() {
+        // TODO
+    }
 }

@@ -59,7 +59,22 @@ public class ConjunctionStructureTest extends ReasonerBenchmarkSuite {
                 "   $ac2(object: $o, action: $a2) isa access;\n" +
                 "   $p1(subject: $s, access: $ac1) isa permission;\n" +
                 "   $p2(subject: $s, access: $ac2) isa permission;\n";
-        Benchmark benchmark = new Benchmark("many-starting-points-segregation-violation", query, 4, 3);
+        Benchmark benchmark = new Benchmark("multiple-starting-points", query, 2);
+        runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
+    }
+
+    @Test
+    public void testHighArityBounds() {
+        // Stresses resolvable ordering planner by having many candidate orderings
+        String query = "match\n" +
+                "   $a1 isa action, has name \"submit pull request\";\n" +
+                "   $a2 isa action, has name \"approve pull request\";\n" +
+                "   $s isa subject, has email \"genevieve.gallegos@vaticle.com\";\n" +
+                "   $parent isa directory, has path \"root/engineering\";\n" +
+                "   (collection: $parent, member:$o) isa collection-membership;\n" +
+                "   (subject: $s, object: $o, action: $a1, action: $a2) isa high-arity-test-segregation-violation;\n";
+        Benchmark benchmark = new Benchmark("multiple-starting-points", query, 1);
         runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
     }
