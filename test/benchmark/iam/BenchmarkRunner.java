@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.migrator.data.DataImporter;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +47,8 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static org.junit.Assert.fail;
 
 public class BenchmarkRunner {
-
+    
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(BenchmarkRunner.class);
     private static final String RESOURCE_DIRECTORY = "test/benchmark/iam/resources/";
     private static CoreDatabaseManager databaseMgr;
     private final String database;
@@ -98,7 +100,16 @@ public class BenchmarkRunner {
         new DataImporter(databaseMgr, database, Paths.get(RESOURCE_DIRECTORY + filename), Version.VERSION).run();
     }
 
-    BenchmarkRun runMatchQuery(String query) {
+    void runBenchmark(Benchmark benchmark) {
+        for (int i = 0; i < benchmark.nRuns; i++) {
+            BenchmarkRunner.BenchmarkRun run = runMatchQuery(benchmark.query);
+            benchmark.addRun(run);
+            LOG.info("Completed run in {} ms. answersDiff: {}", run.timeTaken.toMillis(), run.answerCount - benchmark.expectedAnswers);
+            LOG.info("perf_counters:\n{}", PerfCounters.prettyPrint(run.reasonerPerfCounters));
+        }
+    }
+
+    private BenchmarkRun runMatchQuery(String query) {
         BenchmarkRun run;
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {

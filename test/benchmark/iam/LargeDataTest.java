@@ -24,12 +24,13 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class LargeDataTest extends ReasonerBenchmarkSuite {
+public class LargeDataTest {
 
     private static final String database = "iam-benchmark-data";
+    private final BenchmarkRunner benchmarker;
 
     public LargeDataTest() {
-        super(database);
+        benchmarker = new BenchmarkRunner(database);
     }
 
     @Before
@@ -54,8 +55,9 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
                 "   $p1 (subject: $s, access: $ac1) isa permission;\n" +
                 "   $p2 (subject: $s, access: $ac2) isa permission;\n";
         Benchmark benchmark = new Benchmark("high-selectivity", query, 4);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
+        benchmark.mayPrintResults();
     }
 
     @Test
@@ -64,8 +66,9 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
         "   $p1 (subject: $s1, access: $ac1) isa permission;\n" +
         "   $p2 (subject: $s2, access: $ac2) isa permission;\n";
         Benchmark benchmark = new Benchmark("combinatorial-results", query, 1);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
+        benchmark.mayPrintResults();
     }
 
     @Test
@@ -84,7 +87,8 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
                 " };\n" +
                 "get $oid, $aid;";
                 Benchmark benchmark = new Benchmark("large-negation", query, 1);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
+        benchmark.mayPrintResults();
     }
 }

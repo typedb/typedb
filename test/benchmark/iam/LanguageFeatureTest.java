@@ -24,12 +24,13 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class LanguageFeatureTest extends ReasonerBenchmarkSuite {
+public class LanguageFeatureTest{
 
     private static final String database = "iam-benchmark-language-features";
+    private final BenchmarkRunner benchmarker;
 
     public LanguageFeatureTest() {
-        super(database);
+        benchmarker = new BenchmarkRunner(database);
     }
 
     @Before
@@ -57,7 +58,7 @@ public class LanguageFeatureTest extends ReasonerBenchmarkSuite {
                 "$pe is $pe-same;\n" +
                 "$pe-same (subject: $other-p, access: $other-a) isa permission;\n";
         Benchmark benchmark = new Benchmark("bound-relation", query, 1);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
     }
 
@@ -70,7 +71,7 @@ public class LanguageFeatureTest extends ReasonerBenchmarkSuite {
                 "$a (object: $f, action: $o) isa access;\n" +
                 "$pe (subject: $p, access: $a) isa permission, has validity true;\n";
         Benchmark benchmark = new Benchmark("value-predicate-filtering", query, 1);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
     }
 
@@ -81,7 +82,7 @@ public class LanguageFeatureTest extends ReasonerBenchmarkSuite {
                 "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
                 "(group: $g, member: $p) isa variabilised-group-membership;\n";
         Benchmark benchmark = new Benchmark("variabilised-rules", query, 3);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
     }
 }

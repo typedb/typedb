@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +29,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static org.junit.Assert.assertEquals;
 
 class Benchmark {
-
+    private static final PrintStream printTo = System.out;
     final String name;
     final String query;
     final long expectedAnswers;
@@ -47,7 +48,22 @@ class Benchmark {
         this.runs = new ArrayList<>();
     }
 
-    public static String toCSV(List<Benchmark> benchmarks) {
+    void addRun(BenchmarkRunner.BenchmarkRun run) {
+        runs.add(run);
+    }
+
+    public void assertAnswerCountCorrect() {
+        assertEquals(iterate(runs).map(run -> expectedAnswers).toList(), iterate(runs).map(run -> run.answerCount).toList());
+        assertEquals(nRuns, runs.size());
+    }
+
+    void mayPrintResults() {
+        if (printTo != null) {
+            printTo.println(toCSV());
+        }
+    }
+
+    public String toCSV() {
         List<String> fields = new ArrayList<>();
         Arrays.stream(new String[] {
                 "name", "expectedAnswers", "actualAnswers", "total_time_ms",
@@ -57,27 +73,12 @@ class Benchmark {
 
         StringBuilder sb = new StringBuilder();
         appendCSVLine(sb, fields);
-        benchmarks.forEach(benchmark -> {
-            benchmark.runs().forEach(run ->  appendCSVLine(sb, run.toCSV(benchmark, perfCounterKeys)));
-        });
+        runs.forEach(run ->  appendCSVLine(sb, run.toCSV(this, perfCounterKeys)));
         return sb.toString();
     }
 
     private static void appendCSVLine(StringBuilder sb, List<String> entries) {
         entries.forEach(entry -> sb.append(entry).append(","));
         sb.append("\n");
-    }
-
-    void addRun(BenchmarkRunner.BenchmarkRun run) {
-        runs.add(run);
-    }
-
-    public List<BenchmarkRunner.BenchmarkRun> runs() {
-        return runs;
-    }
-
-    public void assertAnswerCountCorrect() {
-        assertEquals(iterate(runs).map(run -> expectedAnswers).toList(), iterate(runs()).map(run -> run.answerCount).toList());
-        assertEquals(nRuns, runs.size());
     }
 }

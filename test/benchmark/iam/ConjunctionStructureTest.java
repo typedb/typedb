@@ -24,12 +24,13 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class ConjunctionStructureTest extends ReasonerBenchmarkSuite {
+public class ConjunctionStructureTest {
 
     private static final String database = "iam-benchmark-conjunctions";
+    private final BenchmarkRunner benchmarker;
 
     public ConjunctionStructureTest() {
-        super(database);
+        benchmarker = new BenchmarkRunner(database);
     }
 
     @Before
@@ -61,8 +62,9 @@ public class ConjunctionStructureTest extends ReasonerBenchmarkSuite {
                 "   $p2 (subject: $s, access: $ac2) isa permission;\n" +
                 "get $oid;";
         Benchmark benchmark = new Benchmark("multiple-starting-points", query, 1);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
+        benchmark.mayPrintResults();
     }
 
     @Test
@@ -76,7 +78,8 @@ public class ConjunctionStructureTest extends ReasonerBenchmarkSuite {
                 "   (collection: $parent, member:$o) isa collection-membership;\n" +
                 "   (subject: $s, object: $o, action: $a1, action: $a2) isa high-arity-test-segregation-violation;\n";
         Benchmark benchmark = new Benchmark("high-arity-bounds", query, 1);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
+        benchmark.mayPrintResults();
     }
 }

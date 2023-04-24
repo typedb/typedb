@@ -24,12 +24,13 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class RealQueriesTest extends ReasonerBenchmarkSuite {
+public class RealQueriesTest {
 
     private static final String database = "iam-benchmark-real-queries";
+    private final BenchmarkRunner benchmarker;
 
     public RealQueriesTest() {
-        super(database);
+        benchmarker = new BenchmarkRunner(database);
     }
 
     @Before
@@ -54,8 +55,9 @@ public class RealQueriesTest extends ReasonerBenchmarkSuite {
                 "$a (object: $f, action: $o) isa access;\n" +
                 "$pe (subject: $p, access: $a) isa permission, has validity true;\n";
         Benchmark benchmark = new Benchmark("check-permission", query, 1);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
+        benchmark.mayPrintResults();
     }
 
     @Test
@@ -67,8 +69,9 @@ public class RealQueriesTest extends ReasonerBenchmarkSuite {
                 "$ac (object: $o, action: $a) isa access;\n" +
                 "$pe (subject: $p, access: $ac) isa permission, has validity $v;\n";
         Benchmark benchmark = new Benchmark("list-subject-permissions", query, 67);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
+        benchmark.mayPrintResults();
     }
 
     @Test
@@ -79,7 +82,8 @@ public class RealQueriesTest extends ReasonerBenchmarkSuite {
                 "$p isa segregation-policy, has name $n;\n" +
                 "(subject: $s, object: $o, policy: $p) isa segregation-violation;\n";
         Benchmark benchmark = new Benchmark("list-segregation-violations", query, 1);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
+        benchmark.mayPrintResults();
     }
 }

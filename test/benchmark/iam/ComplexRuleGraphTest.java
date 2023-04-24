@@ -24,11 +24,12 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class ComplexRuleGraphTest extends ReasonerBenchmarkSuite {
+public class ComplexRuleGraphTest {
     private static final String database = "iam-benchmark-rules";
+    private final BenchmarkRunner benchmarker;
 
     public ComplexRuleGraphTest() {
-        super(database);
+        benchmarker = new BenchmarkRunner(database);
     }
 
     @Before
@@ -53,8 +54,9 @@ public class ComplexRuleGraphTest extends ReasonerBenchmarkSuite {
                 "$a (object: $f, action: $o) isa access;\n" +
                 "$pe (subject: $p, access: $a) isa permission;\n";
         Benchmark benchmark = new Benchmark("combinatorial-proofs-single", query, 1);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
+        benchmark.mayPrintResults();
     }
 
     @Test
@@ -66,7 +68,8 @@ public class ComplexRuleGraphTest extends ReasonerBenchmarkSuite {
                 "$ac (object: $o, action: $a) isa access;\n" +
                 "$pe (subject: $p, access: $ac) isa permission;\n";
         Benchmark benchmark = new Benchmark("combinatorial-proofs-all", query, 67);
-        runBenchmark(benchmark);
+        benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
+        benchmark.mayPrintResults();
     }
 }
