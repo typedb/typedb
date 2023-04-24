@@ -46,8 +46,7 @@ public class LanguageFeatureTest extends ReasonerBenchmarkSuite {
     }
 
     @Test
-    public void testBoundedRelation() {
-        // Simple, but needs to pick the right plan.
+    public void testBoundRelation() {
         String query = "match\n" +
                 "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
                 "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
@@ -55,14 +54,13 @@ public class LanguageFeatureTest extends ReasonerBenchmarkSuite {
                 "$a (object: $f, action: $o) isa access;\n" +
                 "$pe (subject: $p, access: $a) isa permission;\n" +
                 "$pe (subject: $other-p, access: $other-a) isa permission;\n";
-        Benchmark benchmark = new Benchmark("check-permission", query, 1);
+        Benchmark benchmark = new Benchmark("bound-relation", query, 1);
         runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
     }
 
     @Test
     public void testValuePredicateFiltering() {
-        // Simple, but needs to pick the right plan.
         String query = "match\n" +
                 "$p isa person, has $email; $email = \"douglas.schmidt@vaticle.com\";\n" +
                 "$f isa file, has $path; $path = \"root/engineering/typedb-studio/src/README.md\";\n" +

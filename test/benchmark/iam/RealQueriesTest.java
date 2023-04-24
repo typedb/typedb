@@ -47,7 +47,6 @@ public class RealQueriesTest extends ReasonerBenchmarkSuite {
 
     @Test
     public void testCheckPermission() {
-        // Simple, but needs to pick the right plan.
         String query = "match\n" +
                 "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
                 "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
@@ -61,7 +60,6 @@ public class RealQueriesTest extends ReasonerBenchmarkSuite {
 
     @Test
     public void testListSubjectPermissions() {
-        // Simple, but needs to pick the right plan.
         String query = "match\n" +
                 "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
                 "$o isa object, has id $id;\n" +
@@ -75,7 +73,6 @@ public class RealQueriesTest extends ReasonerBenchmarkSuite {
 
     @Test
     public void testListSegregationViolations() {
-        // Simple, but needs to pick the right plan.
         String query = "match\n" +
                 "$s isa subject, has id $s-id;\n" +
                 "$o isa object, has id $o-id;\n" +

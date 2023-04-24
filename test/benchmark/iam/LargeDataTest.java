@@ -69,7 +69,22 @@ public class LargeDataTest extends ReasonerBenchmarkSuite {
     }
 
     @Test
-    public void testLargeNegations() {
-        // TODO
+    public void testLargeNegation() {
+        String query = "match\n" +
+                "   $p isa person, has email \"genevieve.gallegos@vaticle.com\";\n" +
+                "   $dir isa directory, has path \"root/engineering\";\n" +
+                "   $o isa object, has id $oid;\n" +
+                "   $a isa action, has name $aid;\n" +
+                "   $ac (object: $o, action: $a) isa access;\n" +
+                "   $pe (subject: $p, access: $ac) isa permission;\n" +
+                "   not {\n" +
+                "           $pe-other (subject: $other, access: $ac) isa permission;\n" +
+                "           not { $other is $p; };\n" +
+                "           $p has email $email; # just to bind $p\n" +
+                " };\n" +
+                "get $oid, $aid;";
+                Benchmark benchmark = new Benchmark("large-negation", query, 1);
+        runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
     }
 }
