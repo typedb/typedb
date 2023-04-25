@@ -20,6 +20,8 @@
 
 # Bazel
 bazel-*
+.bazel-remote-cache.rc
+.bazel-cache-credential.json
 
 # IDE
 .idea/

@@ -253,6 +253,8 @@ checkstyle_test(
         "docs/*",
     ]) + [
         ".bazelversion",
+        ".bazel-remote-cache.rc",
+        ".bazel-cache-credential.json",
         "LICENSE",
         "VERSION",
         "typedb.iml",  # TODO remove when checkstyle_test has .gitignore support
@@ -272,6 +274,7 @@ filegroup(
     data = [
         "@vaticle_dependencies//factory/analysis:dependency-analysis",
         "@vaticle_dependencies//library/maven:update",
+        "@vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh",
         "@vaticle_dependencies//tool/release/notes:create",
         "@vaticle_dependencies//tool/checkstyle:test-coverage",
         "@vaticle_dependencies//tool/sonarcloud:code-analysis",

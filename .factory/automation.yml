@@ -45,6 +45,7 @@ build:
     build:
       image: vaticle-ubuntu-22.04
       command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel build //...
         bazel run @vaticle_dependencies//tool/checkstyle:test-coverage
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
@@ -56,43 +57,59 @@ build:
         bazel run @vaticle_dependencies//tool/unuseddeps:unused-deps -- list
     test-unit:
       image: vaticle-ubuntu-22.04
+      dependencies: [build],
       command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //common/... --test_output=streamed
         bazel test //pattern/... --test_output=streamed
         bazel test //logic/... --test_output=streamed
         bazel test //reasoner/... --test_output=streamed
     test-integration:
       image: vaticle-ubuntu-22.04
+      dependencies: [build],
       command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/integration/... --test_output=streamed
     test-behaviour-connection:
       image: vaticle-ubuntu-22.04
+      dependencies: [build],
       command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/behaviour/connection/... --test_output=streamed
     test-behaviour-concept:
       image: vaticle-ubuntu-22.04
+      dependencies: [build],
       command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/behaviour/concept/... --test_output=streamed
     test-behaviour-match:
       image: vaticle-ubuntu-22.04
+      dependencies: [build],
       command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/behaviour/typeql/language/match/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/get/... --test_output=streamed
     test-behaviour-writable:
       image: vaticle-ubuntu-22.04
+      dependencies: [build],
       command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/behaviour/typeql/language/insert/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/delete/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/update/... --test_output=streamed
     test-behaviour-definable:
       image: vaticle-ubuntu-22.04
+      dependencies: [build],
       command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/behaviour/typeql/language/define/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/undefine/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/rule_validation/... --test_output=streamed
     test-behaviour-reasoner:
       image: vaticle-ubuntu-22.04
+      dependencies: [build],
       command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/behaviour/reasoner/tests/attribute_attachment:test --test_output=streamed
         bazel test //test/behaviour/reasoner/tests/compound_queries:test --test_output=streamed
         bazel test //test/behaviour/reasoner/tests/concept_inequality:test --test_output=streamed
@@ -111,6 +128,7 @@ build:
         branch: [master, development]
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable, test-behaviour-reasoner]
       command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/assembly:assembly --test_output=streamed
     test-assembly-docker:
       image: vaticle-ubuntu-22.04
@@ -119,6 +137,7 @@ build:
         branch: [master, development]
       dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-match, test-behaviour-writable, test-behaviour-definable, test-behaviour-reasoner]
       command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
       image: vaticle-ubuntu-22.04
@@ -129,6 +148,7 @@ build:
       command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-linux-targz -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-mac-zip -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-windows-zip -- snapshot
@@ -150,6 +170,7 @@ build:
         sudo ln -s /usr/share/pyshared/lsb_release.py /opt/pyenv/versions/3.7.9/lib/python3.7/site-packages/lsb_release.py
         export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel run --define version=$(git rev-parse HEAD) //server:deploy-apt -- snapshot
         bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
     test-deployment-apt:
