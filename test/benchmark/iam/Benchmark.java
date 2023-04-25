@@ -18,17 +18,23 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
+import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 class Benchmark {
+    static final ReasonerPerfCounters PERF_KEYS = new ReasonerPerfCounters(false);
+
     final String name;
     final String query;
     final long expectedAnswers;
@@ -42,8 +48,8 @@ class Benchmark {
     Benchmark(String name, String query, long expectedAnswers, int nRuns) {
         this.name = name;
         this.query = query;
-        this.expectedAnswers = expectedAnswers;
         this.nRuns = nRuns;
+        this.expectedAnswers = expectedAnswers;
         this.runs = new ArrayList<>();
     }
 
@@ -54,6 +60,18 @@ class Benchmark {
     public void assertAnswerCountCorrect() {
         assertEquals(iterate(runs).map(run -> expectedAnswers).toList(), iterate(runs).map(run -> run.answerCount).toList());
         assertEquals(nRuns, runs.size());
+    }
+
+    public void assertRunningTime(long maxTimeMs) {
+        runs.forEach(run -> assertTrue(
+                String.format("Time taken: %d <= %d", run.timeTaken.toMillis(), maxTimeMs),
+                run.timeTaken.toMillis() <= maxTimeMs));
+    }
+
+    public void assertCounter(PerfCounters.Counter counter, long maxValue) {
+        runs.forEach(run -> assertTrue(
+                String.format("%s: %d <= %d", counter.name(), run.reasonerPerfCounters.get(counter.name()), maxValue),
+                run.reasonerPerfCounters.get(counter.name()) <= maxValue));
     }
 
     void mayPrintResults(CSVResults printTo) {
@@ -96,4 +114,5 @@ class Benchmark {
             out.println();
         }
     }
+
 }

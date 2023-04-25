@@ -34,5 +34,4 @@ public class ReasonerPerfCounters extends PerfCounters {
         COUNT_CONJUNCTION_PROCESSORS = register("count_conjunction_processors");
         COUNT_COMPOUND_STREAMS = register("count_compound_streams");
     }
-
 }
