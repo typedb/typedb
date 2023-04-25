@@ -109,9 +109,9 @@ public class ReasonerSteps {
         databaseMgr.create(DATABASE);
     }
 
-    @Given("connection opens without authentication")
-    public void open_connection() {
-        // noop
+    @Given("connection opens with default authentication")
+    public void connection_opens_with_default_authentication() {
+        // no-op for embedded server
     }
 
     @Given("reasoning schema")

@@ -114,8 +114,8 @@ public class ConnectionSteps {
         after();
     }
 
-    @Given("connection opens without authentication")
-    public void connection_opens_without_authentication() {
+    @Given("connection opens with default authentication")
+    public void connection_opens_with_default_authentication() {
         // no-op for embedded server
     }
 
