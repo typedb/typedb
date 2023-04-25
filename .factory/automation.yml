@@ -52,6 +52,7 @@ build:
     build-dependency:
       image: vaticle-ubuntu-22.04
       command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         dependencies/maven/update.sh
         git diff --exit-code dependencies/maven/artifacts.snapshot
         bazel run @vaticle_dependencies//tool/unuseddeps:unused-deps -- list
