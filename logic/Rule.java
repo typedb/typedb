@@ -94,9 +94,8 @@ public class Rule {
 
     private Rule(RuleStructure structure, LogicManager logicMgr) {
         this.structure = structure;
-        this.then = thenPattern(structure.then(), logicMgr);
         this.when = whenPattern(structure.when(), structure.then(), logicMgr);
-        pruneThenResolvedTypes();
+        this.then = thenPattern(structure.then(), logicMgr);
         this.conclusion = Conclusion.create(this);
         this.condition = Condition.create(this);
     }
@@ -186,18 +185,6 @@ public class Rule {
         if (!then.isAnswerable()) throw TypeDBException.of(RULE_THEN_UNANSWERABLE, structure.label(), then);
     }
 
-    /**
-     * Remove inferred types in the `then` pattern that are not valid in the `when` pattern
-     */
-    private void pruneThenResolvedTypes() {
-        then.variables().stream().filter(variable -> variable.id().isName())
-                .forEach(thenVar -> {
-                    Set<Label> whenVarInferredTypes = iterate(when.conjunctions()).flatMap(conj -> iterate(conj.variable(thenVar.id()).inferredTypes())).toSet();
-                    thenVar.retainInferredTypes(whenVarInferredTypes);
-                    if (thenVar.inferredTypes().isEmpty()) then.setCoherent(false);
-                });
-    }
-
     private Disjunction whenPattern(com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> conjunction,
                                     com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> then, LogicManager logicMgr) {
         Disjunction when = Disjunction.create(conjunction.normalise(), VariableRegistry.createFromThings(list(then)));
@@ -207,7 +194,12 @@ public class Rule {
 
     private Conjunction thenPattern(com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), list());
-        logicMgr.typeInference().applyCombination(conj, true);
+        Map<Identifier.Variable.Name, Set<Label>> whenTypes = new HashMap<>();
+        iterate(conj.variables()).map(Variable::id).filter(Identifier::isName).forEachRemaining(thenVar -> {
+            Set<Label> whenTypesForVar = iterate(when.conjunctions()).flatMap(cj -> iterate(cj.variable(thenVar).inferredTypes())).toSet();
+            whenTypes.put(thenVar.asName(), whenTypesForVar);
+        });
+        logicMgr.typeInference().applyCombination(conj, whenTypes, true);
         return conj;
     }
 

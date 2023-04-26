@@ -770,4 +770,34 @@ public class RuleTest {
             }
         }
     }
+
+    @Test
+    public void rule_vars_in_conclusion_with_variable_isa_constraints_have_types_pruned_from_when() throws IOException {
+        Util.resetDirectory(dataDir);
+
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+
+                    txn.query().define(TypeQL.parseQuery("define " +
+                            "rel1 sub relation, relates some-role;" +
+                            "rel2 sub relation, relates some-role;" +
+                            "ent1 sub entity, plays rel1:some-role, plays rel2:some-role;" +
+                            "rule variabilised-relation: when {" +
+                            "  $x isa ent1;" +
+                            "  $reltype sub rel1;" +
+                            "} then {" +
+                            "  (some-role: $x) isa $reltype;" +
+                            "};").asDefine());
+                    txn.commit();
+                }
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    Set<Label> relationInferredTypes = txn.logic().getRule("variabilised-relation").conclusion()
+                            .asRelation().relation().owner().inferredTypes();
+                    assertEquals(set(Label.of("rel1")), relationInferredTypes);
+                }
+            }
+        }
+    }
 }
