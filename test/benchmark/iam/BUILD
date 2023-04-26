@@ -199,6 +199,7 @@ host_compatible_java_test(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*"], exclude=["resources/data_small.typedb"]),
+    include = glob(["*", "*/*"]),
+    exclude = ["resources/data_small.typedb"],
     license_type = "agpl-header",
 )
