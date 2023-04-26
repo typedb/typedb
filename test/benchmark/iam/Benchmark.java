@@ -24,9 +24,7 @@ import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static org.junit.Assert.assertEquals;
@@ -48,8 +46,8 @@ class Benchmark {
     Benchmark(String name, String query, long expectedAnswers, int nRuns) {
         this.name = name;
         this.query = query;
-        this.nRuns = nRuns;
         this.expectedAnswers = expectedAnswers;
+        this.nRuns = nRuns;
         this.runs = new ArrayList<>();
     }
 
@@ -114,5 +112,4 @@ class Benchmark {
             out.println();
         }
     }
-
 }
