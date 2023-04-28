@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.reasoner.benchmark.iam;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -29,28 +30,27 @@ public class LanguageFeatureTest{
 
     private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
     private static final String database = "iam-benchmark-language-features";
-    private final BenchmarkRunner benchmarker;
+    private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
 
-    public LanguageFeatureTest() {
-        benchmarker = new BenchmarkRunner(database);
-    }
+    public LanguageFeatureTest() { }
 
-    @AfterClass
-    public static void mayPrintResults() {
-        if (printTo != null) printTo.flush();
-    }
-
-    @Before
-    public void setUp() throws IOException {
+    @BeforeClass
+    public static void setup() throws IOException {
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadSchema("schema_rules_optimised.tql");
         benchmarker.loadData("data.typedb");
     }
 
-    @After
-    public void tearDown() {
+    @AfterClass
+    public static void tearDown() {
+        if (printTo != null) printTo.flush();
         benchmarker.tearDown();
+    }
+
+    @After
+    public void reset() {
+        benchmarker.reset();
     }
 
     @Test

@@ -122,6 +122,10 @@ public class BenchmarkRunner {
         return run;
     }
 
+    public void reset() {
+
+    }
+
     public static class BenchmarkRun {
         final long answerCount;
         final Duration timeTaken;
