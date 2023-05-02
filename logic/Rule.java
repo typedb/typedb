@@ -50,6 +50,8 @@ import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -84,6 +86,9 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Schema.WHEN;
 
 
 public class Rule {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Rule.class);
+
 
     // note: as `Rule` is cached between transactions, we cannot hold any transaction-bound objects such as Managers
     private final RuleStructure structure;
@@ -178,11 +183,11 @@ public class Rule {
         for (Conjunction whenBranch : when.conjunctions()) {
             if (!whenBranch.isAnswerable()) {
                 ErrorMessage errorMessage = when.conjunctions().size() > 1 ? RULE_WHEN_UNANSWERABLE_BRANCH : RULE_WHEN_UNANSWERABLE;
-                throw TypeDBException.of(errorMessage, structure.label(), whenBranch);
+                LOG.warn(errorMessage.toString());
             }
         }
         if (!then.isCoherent()) throw TypeDBException.of(RULE_THEN_INCOHERENT, structure.label(), then);
-        if (!then.isAnswerable()) throw TypeDBException.of(RULE_THEN_UNANSWERABLE, structure.label(), then);
+        if (!then.isAnswerable()) LOG.warn(RULE_THEN_UNANSWERABLE.message(structure.label(), then));
     }
 
     private Disjunction whenPattern(com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> conjunction,
