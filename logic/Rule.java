@@ -187,7 +187,7 @@ public class Rule {
             }
         }
         if (!then.isCoherent()) throw TypeDBException.of(RULE_THEN_INCOHERENT, structure.label(), then);
-        if (!then.isAnswerable()) LOG.warn(RULE_THEN_UNANSWERABLE.message(structure.label(), then));
+        if (!then.isAnswerable()) throw TypeDBException.of(RULE_THEN_UNANSWERABLE, structure.label(), then);
     }
 
     private Disjunction whenPattern(com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> conjunction,
