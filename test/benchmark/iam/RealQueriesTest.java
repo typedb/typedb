@@ -93,4 +93,20 @@ public class RealQueriesTest {
         benchmark.assertAnswerCountCorrect();
         benchmark.mayPrintResults(printTo);
     }
+
+    @Test
+    public void testListChangeRequests() {
+        String query = "match\n" +
+                "\n" +
+                "$o isa object, has parent-company-name \"Vaticle\", has id $oid;\n" +
+                "$a isa action, has parent-company-name \"Vaticle\", has name $a-name ;\n" +
+                "$ac(object: $o, action: $a) isa access;\n" +
+                "$s-requesting isa subject, has parent-company-name \"Vaticle\", has id $s-requesting-id;\n" +
+                "$s-requested isa subject, has parent-company-name \"Vaticle\", has id $s-requested-id;\n" +
+                "(requester: $s-requesting, requestee: $s-requested, change: $ac) isa change-request;\n";
+        Benchmark benchmark = new Benchmark("list-change-requests", query, -1);
+        benchmarker.runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
+        benchmark.mayPrintResults(printTo);
+    }
 }
