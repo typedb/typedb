@@ -54,13 +54,59 @@ public class LanguageFeatureTest{
     }
 
     @Test
+    public void testHas() {
+        String query = "match\n" +
+                "$x has parent-company-name $n;\n";
+        Benchmark benchmark = new Benchmark("ownership", query, -1); // TODO: Data only exists in the full data-set
+        benchmarker.runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
+    }
+
+    @Test
+    public void testAttributeWithoutHas() {
+        String query = "match\n" +
+                "$n isa parent-company-name;\n";
+        Benchmark benchmark = new Benchmark("attribute-without-ownership", query, -1); // TODO: Data only exists in the full data-set
+        benchmarker.runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
+    }
+
+    @Test
+    public void testRelation() {
+        String query = "match\n" +
+                "$ac iid 0x8470801080000000000001f3;\n" +
+                "$p (subject: $s, access: $ac) isa permission;\n";
+        Benchmark benchmark = new Benchmark("relation-with-role-players", query, 5);
+        benchmarker.runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
+    }
+
+    @Test
+    public void testRelationWithoutRolePlayer() {
+        String query = "match\n" +
+                "$p isa permission;\n";
+        Benchmark benchmark = new Benchmark("relation-without-role-players", query, 2783);
+        benchmarker.runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
+    }
+
+    @Test
+    public void testInferredRelationAndOwnership() {
+        String query = "match\n" +
+                "$p (subject: $s, access: $ac) isa permission, has validity $v\n";
+        Benchmark benchmark = new Benchmark("inferred-relation-and-ownership", query, 1);
+        benchmarker.runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
+    }
+    // Less common features
+
+    @Test
     public void testBoundRelation() {
         String query = "match\n" +
                 "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
                 "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
                 "$o isa operation, has name \"edit file\";\n" +
                 "$a (object: $f, action: $o) isa access;\n" +
-                "$pe isa permission;\n" +
                 "$pe (subject: $p, access: $a) isa permission;\n" +
                 "$pe is $pe-same;\n" +
                 "$pe-same (subject: $other-p, access: $other-a) isa permission;\n";
