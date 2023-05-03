@@ -183,7 +183,7 @@ public class Rule {
         for (Conjunction whenBranch : when.conjunctions()) {
             if (!whenBranch.isAnswerable()) {
                 ErrorMessage errorMessage = when.conjunctions().size() > 1 ? RULE_WHEN_UNANSWERABLE_BRANCH : RULE_WHEN_UNANSWERABLE;
-                LOG.warn(errorMessage.toString());
+                LOG.warn(errorMessage.message(structure.label(), whenBranch));
             }
         }
         if (!then.isCoherent()) throw TypeDBException.of(RULE_THEN_INCOHERENT, structure.label(), then);
