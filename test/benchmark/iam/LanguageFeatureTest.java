@@ -45,7 +45,7 @@ public class LanguageFeatureTest{
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadSchema("schema_rules_optimised.tql");
-        benchmarker.loadData("data_small.typedb");
+        benchmarker.loadData("data.typedb");
     }
 
     @After

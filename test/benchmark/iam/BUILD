@@ -27,7 +27,7 @@ host_compatible_java_test(
             "Benchmark.java",
     ],
     data = [
-        ":resources/data_small.typedb",
+        ":resources/data.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_optimised.tql",
     ],
@@ -63,7 +63,7 @@ host_compatible_java_test(
             "Benchmark.java",
     ],
     data = [
-        ":resources/data_small.typedb",
+        ":resources/data.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_naive.tql"
     ],
@@ -98,7 +98,7 @@ host_compatible_java_test(
             "Benchmark.java",
     ],
     data = [
-        ":resources/data_small.typedb",
+        ":resources/data.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_optimised.tql",
         ":resources/schema_rules_test_specific.tql",
@@ -134,7 +134,7 @@ host_compatible_java_test(
             "Benchmark.java",
     ],
     data = [
-        ":resources/data_small.typedb",
+        ":resources/data.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_optimised.tql",
         ":resources/schema_rules_test_specific.tql",
@@ -170,7 +170,7 @@ host_compatible_java_test(
             "Benchmark.java",
     ],
     data = [
-        ":resources/data_small.typedb",
+        ":resources/data.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_optimised.tql"
     ],
@@ -200,6 +200,6 @@ host_compatible_java_test(
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*"]),
-    exclude = ["resources/data_small.typedb"],
+    exclude = ["resources/data.typedb"],
     license_type = "agpl-header",
 )
