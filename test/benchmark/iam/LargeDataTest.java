@@ -28,7 +28,7 @@ import java.io.IOException;
 
 public class LargeDataTest {
 
-    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(System.out);
+    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
     private static final String database = "iam-benchmark-large-data";
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
 
