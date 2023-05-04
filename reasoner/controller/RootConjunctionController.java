@@ -23,7 +23,6 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
@@ -53,7 +52,7 @@ public class RootConjunctionController
     public void initialise() {
         long start = PerfCounters.getNanos();
         planner().plan(conjunction, new HashSet<>());
-        processorContext().perfCounters().TIME_PLANNING_MS.add((PerfCounters.getNanos() - start) / 1_000_000);
+        processorContext().perfCounters().timePlanningMs.add((PerfCounters.getNanos() - start) / 1_000_000);
         setUpUpstreamControllers();
         getOrCreateProcessor(new ConceptMap());
     }

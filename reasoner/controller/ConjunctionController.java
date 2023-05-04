@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.reasoner.answer.Mapping;
-import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.ConcludableRequest;
 import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.NegatedRequest;
 import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Processor.RetrievableRequest;
@@ -194,7 +193,7 @@ public abstract class ConjunctionController<
             super(driver, controller, context, debugName);
             this.bounds = bounds;
             this.plan = plan;
-            context.perfCounters().COUNT_CONJUNCTION_PROCESSORS.add(1);
+            context.perfCounters().countConjunctionProcessors.add(1);
         }
 
         public class CompoundStream extends TransformationStream<ConceptMap, ConceptMap> {
@@ -215,7 +214,7 @@ public abstract class ConjunctionController<
                 this.publisherPackets = new HashMap<>();
                 this.leadingPublisher = nextCompoundLeader(this.remainingPlan.remove(0), initialPacket);
                 this.leadingPublisher.registerSubscriber(this);
-                processor().context().perfCounters().COUNT_COMPOUND_STREAMS.add(1);
+                processor().context().perfCounters().countCompoundStreams.add(1);
             }
 
             @Override

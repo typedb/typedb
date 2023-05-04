@@ -24,7 +24,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class PerfCounters {
+public class PerfCounters {
     interface CounterCreator {
         Counter create(String name);
     }
@@ -43,8 +43,8 @@ public abstract class PerfCounters {
     private final CounterCreator counterCreator;
     private final Queue<Counter> counters;
 
-    public PerfCounters(CounterCreator counterCreator) {
-        this.counterCreator = counterCreator;
+    public PerfCounters(boolean enabled) {
+        this.counterCreator = enabled ? ATOMICLONG_CREATOR : NOOP_CREATOR;
         this.counters = new ConcurrentLinkedQueue<>();
     }
 
@@ -60,7 +60,7 @@ public abstract class PerfCounters {
         return counter;
     }
 
-    public Map<String, Long> toMapUnsynchronised() {
+    public Map<String, Long> snapshotUnsynchronised() {
         Map<String, Long> unsynchronisedMap = new HashMap<>();
         counters.forEach(c -> unsynchronisedMap.put(c.name(), c.get()));
         return unsynchronisedMap;

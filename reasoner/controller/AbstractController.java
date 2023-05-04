@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
 import com.vaticle.typedb.core.concurrent.actor.ActorExecutorGroup;
-import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
@@ -139,7 +138,7 @@ public abstract class AbstractController<
         private final Tracer tracer;
 
         Context(ActorExecutorGroup executorService, ControllerRegistry registry, Driver<Monitor> monitor,
-                ReasonerPlanner planner, ReasonerPerfCounters perfCounters, @Nullable Tracer tracer) {
+                ReasonerPlanner planner, AbstractProcessor.Context.ReasonerPerfCounters perfCounters, @Nullable Tracer tracer) {
             this.executorService = executorService;
             this.registry = registry;
             this.monitor = monitor;

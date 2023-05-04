@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
-import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -32,7 +32,7 @@ import static org.junit.Assert.assertTrue;
 
 class Benchmark {
     private static final double COUNTER_MARGIN = 1.5;
-    static final ReasonerPerfCounters PERF_KEYS = new ReasonerPerfCounters(false);
+    static final AbstractProcessor.Context.ReasonerPerfCounters PERF_KEYS = new AbstractProcessor.Context.ReasonerPerfCounters(false);
 
     final String name;
     final String query;
@@ -74,10 +74,10 @@ class Benchmark {
     }
 
     public void assertCounters(long timePlanningMs, long countMaterialisations, long countConjunctionProcessors, long countCompoundStreams) {
-        assertCounter(PERF_KEYS.TIME_PLANNING_MS, Math.round(timePlanningMs * COUNTER_MARGIN));
-        assertCounter(PERF_KEYS.COUNT_MATERIALISATIONS, Math.round(countMaterialisations * COUNTER_MARGIN));
-        assertCounter(PERF_KEYS.COUNT_CONJUNCTION_PROCESSORS, Math.round(countConjunctionProcessors * COUNTER_MARGIN));
-        assertCounter(PERF_KEYS.COUNT_COMPOUND_STREAMS, Math.round(countCompoundStreams * COUNTER_MARGIN));
+        assertCounter(PERF_KEYS.timePlanningMs, Math.round(timePlanningMs * COUNTER_MARGIN));
+        assertCounter(PERF_KEYS.countMaterialisations, Math.round(countMaterialisations * COUNTER_MARGIN));
+        assertCounter(PERF_KEYS.countConjunctionProcessors, Math.round(countConjunctionProcessors * COUNTER_MARGIN));
+        assertCounter(PERF_KEYS.countCompoundStreams, Math.round(countCompoundStreams * COUNTER_MARGIN));
     }
 
     void mayPrintResults(CSVResults printTo) {
@@ -99,7 +99,7 @@ class Benchmark {
             Arrays.stream(new String[]{
                     "name", "expectedAnswers", "actualAnswers", "total_time_ms",
             }).forEach(fields::add);
-            perfCounterKeys = new ArrayList<>(new ReasonerPerfCounters(false).toMapUnsynchronised().keySet());
+            perfCounterKeys = new ArrayList<>(PERF_KEYS.snapshotUnsynchronised().keySet());
             fields.addAll(perfCounterKeys);
             appendLine(fields);
         }

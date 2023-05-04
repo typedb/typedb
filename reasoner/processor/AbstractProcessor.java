@@ -20,8 +20,8 @@ package com.vaticle.typedb.core.reasoner.processor;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
-import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.controller.AbstractController;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
@@ -190,6 +190,27 @@ public abstract class AbstractProcessor<
             return perfCounters;
         }
 
+        public static class ReasonerPerfCounters {
+
+            private final PerfCounters perfCounters;
+
+            public final PerfCounters.Counter timePlanningMs;
+            public final PerfCounters.Counter countMaterialisations;
+            public final PerfCounters.Counter countConjunctionProcessors;
+            public final PerfCounters.Counter countCompoundStreams;
+
+            public ReasonerPerfCounters(boolean enabled) {
+                perfCounters = new PerfCounters(enabled);
+                timePlanningMs = perfCounters.register("time_planning_ms");
+                countMaterialisations = perfCounters.register("count_materialisations");
+                countConjunctionProcessors = perfCounters.register("count_conjunction_processors");
+                countCompoundStreams = perfCounters.register("count_compound_streams");
+            }
+
+            public Map<String, Long> snapshotUnsynchronised() {
+                return perfCounters.snapshotUnsynchronised();
+            }
+        }
     }
 
 }

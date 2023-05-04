@@ -38,9 +38,9 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
-import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -97,7 +97,7 @@ public class ControllerRegistry {
         Tracer finalTracer = tracer;
         this.controllerContext = new AbstractController.Context(
                 executorService, this, Actor.driver(driver -> new Monitor(driver, finalTracer), executorService),
-                reasonerPlanner, new ReasonerPerfCounters(true), tracer
+                reasonerPlanner, new AbstractProcessor.Context.ReasonerPerfCounters(true), tracer
         );
         this.materialisationController = Actor.driver(driver -> new MaterialisationController(
                 driver, controllerContext, traversalEngine(), conceptManager()), executorService
@@ -129,7 +129,7 @@ public class ControllerRegistry {
         return controllerContext.planner();
     }
 
-    public ReasonerPerfCounters perfCounters() {
+    public AbstractProcessor.Context.ReasonerPerfCounters perfCounters() {
         return controllerContext.processor().perfCounters();
     }
 
