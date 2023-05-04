@@ -69,8 +69,11 @@ public class ConjunctionStructureTest {
                 "get $oid;";
         Benchmark benchmark = new Benchmark("multiple-starting-points", query, 1);
         benchmarker.runBenchmark(benchmark);
-        benchmark.assertAnswerCountCorrect();
         benchmark.mayPrintResults(printTo);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1000);
+        benchmark.assertCounters(500, 20, 100, 200);
     }
 
     @Test
@@ -85,7 +88,11 @@ public class ConjunctionStructureTest {
                 "   (subject: $s, object: $o, action: $a1, action: $a2) isa high-arity-test-segregation-violation;\n";
         Benchmark benchmark = new Benchmark("high-arity-bounds", query, 1);
         benchmarker.runBenchmark(benchmark);
-        benchmark.assertAnswerCountCorrect();
         benchmark.mayPrintResults(printTo);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1000);
+        benchmark.assertCounters(500, 100, 400, 1500);
+
     }
 }

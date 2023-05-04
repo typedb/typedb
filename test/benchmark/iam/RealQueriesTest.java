@@ -63,8 +63,11 @@ public class RealQueriesTest {
                 "$pe (subject: $p, access: $a) isa permission, has validity true;\n";
         Benchmark benchmark = new Benchmark("check-permission", query, 1);
         benchmarker.runBenchmark(benchmark);
-        benchmark.assertAnswerCountCorrect();
         benchmark.mayPrintResults(printTo);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1000);
+        benchmark.assertCounters(500, 185, 233, 443);
     }
 
     @Test
@@ -77,8 +80,11 @@ public class RealQueriesTest {
                 "$pe (subject: $p, access: $ac) isa permission, has validity $v;\n";
         Benchmark benchmark = new Benchmark("list-subject-permissions", query, 67);
         benchmarker.runBenchmark(benchmark);
-        benchmark.assertAnswerCountCorrect();
         benchmark.mayPrintResults(printTo);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1500);
+        benchmark.assertCounters(500, 251, 448, 740);
     }
 
     @Test
@@ -90,8 +96,11 @@ public class RealQueriesTest {
                 "(subject: $s, object: $o, policy: $p) isa segregation-violation;\n";
         Benchmark benchmark = new Benchmark("list-segregation-violations", query, 1);
         benchmarker.runBenchmark(benchmark);
-        benchmark.assertAnswerCountCorrect();
         benchmark.mayPrintResults(printTo);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(500);
+        benchmark.assertCounters(200, 37, 251, 507);
     }
 
     @Test
@@ -104,9 +113,12 @@ public class RealQueriesTest {
                 "$s-requesting isa subject, has parent-company-name \"Vaticle\", has id $s-requesting-id;\n" +
                 "$s-requested isa subject, has parent-company-name \"Vaticle\", has id $s-requested-id;\n" +
                 "(requester: $s-requesting, requestee: $s-requested, change: $ac) isa change-request;\n";
-        Benchmark benchmark = new Benchmark("list-change-requests", query, -1);
+        Benchmark benchmark = new Benchmark("list-change-requests", query, 0); // TODO: Generate and keep in dataset
         benchmarker.runBenchmark(benchmark);
-        benchmark.assertAnswerCountCorrect();
         benchmark.mayPrintResults(printTo);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(500);
+        benchmark.assertCounters(200, 37, 251, 507);
     }
 }

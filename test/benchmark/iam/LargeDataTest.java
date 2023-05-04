@@ -28,8 +28,8 @@ import java.io.IOException;
 
 public class LargeDataTest {
 
-    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
-    private static final String database = "iam-benchmark-data";
+    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(System.out);
+    private static final String database = "iam-benchmark-large-data";
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
 
     public LargeDataTest() { }
@@ -63,8 +63,11 @@ public class LargeDataTest {
                 "   $p2 (subject: $s, access: $ac2) isa permission;\n";
         Benchmark benchmark = new Benchmark("high-selectivity", query, 4);
         benchmarker.runBenchmark(benchmark);
-        benchmark.assertAnswerCountCorrect();
         benchmark.mayPrintResults(printTo);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1500);
+        benchmark.assertCounters(500, 36, 250, 504);
     }
 
     @Test
@@ -72,10 +75,11 @@ public class LargeDataTest {
         String query = "match\n" +
         "   $p1 (subject: $s1, access: $ac1) isa permission;\n" +
         "   $p2 (subject: $s2, access: $ac2) isa permission;\n";
-        Benchmark benchmark = new Benchmark("combinatorial-results", query, 1);
+        Benchmark benchmark = new Benchmark("combinatorial-results", query, -1); // TODO: Add asserts once this runs
         benchmarker.runBenchmark(benchmark);
-        benchmark.assertAnswerCountCorrect();
         benchmark.mayPrintResults(printTo);
+
+        benchmark.assertAnswerCountCorrect();
     }
 
     @Test
@@ -95,7 +99,10 @@ public class LargeDataTest {
                 "get $oid, $aid;";
                 Benchmark benchmark = new Benchmark("large-negation", query, 1);
         benchmarker.runBenchmark(benchmark);
-        benchmark.assertAnswerCountCorrect();
         benchmark.mayPrintResults(printTo);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(2500);
+        benchmark.assertCounters(500, 600, 1000, 4000);
     }
 }

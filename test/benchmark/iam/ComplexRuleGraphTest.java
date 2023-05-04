@@ -62,6 +62,8 @@ public class ComplexRuleGraphTest {
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
         benchmark.mayPrintResults(printTo);
+        benchmark.assertRunningTime(1000);
+        benchmark.assertCounters(200, 149, 301, 1658);
     }
 
     @Test
@@ -76,5 +78,7 @@ public class ComplexRuleGraphTest {
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
         benchmark.mayPrintResults(printTo);
+        benchmark.assertRunningTime(1000);
+        benchmark.assertCounters(100, 265, 342, 837);
     }
 }

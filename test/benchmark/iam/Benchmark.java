@@ -31,6 +31,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 class Benchmark {
+    private static final double COUNTER_MARGIN = 1.5;
     static final ReasonerPerfCounters PERF_KEYS = new ReasonerPerfCounters(false);
 
     final String name;
@@ -40,7 +41,7 @@ class Benchmark {
     final List<BenchmarkRunner.BenchmarkRun> runs;
 
     Benchmark(String name, String query, long expectedAnswers) {
-        this(name, query, expectedAnswers, 1);
+        this(name, query, expectedAnswers, 3);// 1);
     }
 
     Benchmark(String name, String query, long expectedAnswers, int nRuns) {
@@ -70,6 +71,13 @@ class Benchmark {
         runs.forEach(run -> assertTrue(
                 String.format("%s: %d <= %d", counter.name(), run.reasonerPerfCounters.get(counter.name()), maxValue),
                 run.reasonerPerfCounters.get(counter.name()) <= maxValue));
+    }
+
+    public void assertCounters(long timePlanningMs, long countMaterialisations, long countConjunctionProcessors, long countCompoundStreams) {
+        assertCounter(PERF_KEYS.TIME_PLANNING_MS, Math.round(timePlanningMs * COUNTER_MARGIN));
+        assertCounter(PERF_KEYS.COUNT_MATERIALISATIONS, Math.round(countMaterialisations * COUNTER_MARGIN));
+        assertCounter(PERF_KEYS.COUNT_CONJUNCTION_PROCESSORS, Math.round(countConjunctionProcessors * COUNTER_MARGIN));
+        assertCounter(PERF_KEYS.COUNT_COMPOUND_STREAMS, Math.round(countCompoundStreams * COUNTER_MARGIN));
     }
 
     void mayPrintResults(CSVResults printTo) {

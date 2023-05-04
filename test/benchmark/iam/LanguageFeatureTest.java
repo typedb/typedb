@@ -54,31 +54,45 @@ public class LanguageFeatureTest{
     }
 
     @Test
-    public void testHas() {
+    public void testOwnership() {
         String query = "match\n" +
                 "$x has parent-company-name $n;\n";
-        Benchmark benchmark = new Benchmark("ownership", query, -1); // TODO: Data only exists in the full data-set
+        Benchmark benchmark = new Benchmark("ownership", query, 0); // TODO: Data only exists in the full data-set
         benchmarker.runBenchmark(benchmark);
+        benchmark.mayPrintResults(printTo);
+
         benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(100);
+        benchmark.assertCounters(50, 0, 2, 2);
     }
 
     @Test
-    public void testAttributeWithoutHas() {
+    public void testAttributeWithoutOwnership() {
         String query = "match\n" +
                 "$n isa parent-company-name;\n";
-        Benchmark benchmark = new Benchmark("attribute-without-ownership", query, -1); // TODO: Data only exists in the full data-set
+        Benchmark benchmark = new Benchmark("attribute-without-ownership", query, 0); // TODO: Data only exists in the full data-set
         benchmarker.runBenchmark(benchmark);
+        benchmark.mayPrintResults(printTo);
+
         benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(100);
+        benchmark.assertCounters(50, 0, 1, 1);
     }
 
     @Test
-    public void testRelation() {
+    public void testRelationWithRolePlayers() {
         String query = "match\n" +
-                "$ac iid 0x8470801080000000000001f3;\n" +
+                "$ac (object: $obj, action: $action) isa access; \n" +
+                "$obj has id \"root/engineering/typedb/src\";" +
+                "$action has name \"delete file\";\n" +
                 "$p (subject: $s, access: $ac) isa permission;\n";
-        Benchmark benchmark = new Benchmark("relation-with-role-players", query, 5);
+        Benchmark benchmark = new Benchmark("relation-with-role-players", query, 10);
         benchmarker.runBenchmark(benchmark);
+        benchmark.mayPrintResults(printTo);
+
         benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1000);
+        benchmark.assertCounters(500, 22, 30, 72);
     }
 
     @Test
@@ -87,16 +101,24 @@ public class LanguageFeatureTest{
                 "$p isa permission;\n";
         Benchmark benchmark = new Benchmark("relation-without-role-players", query, 2783);
         benchmarker.runBenchmark(benchmark);
+        benchmark.mayPrintResults(printTo);
+
         benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(5000);
+        benchmark.assertCounters(100, 2894, 800, 2500);
     }
 
     @Test
     public void testInferredRelationAndOwnership() {
         String query = "match\n" +
-                "$p (subject: $s, access: $ac) isa permission, has validity $v\n";
-        Benchmark benchmark = new Benchmark("inferred-relation-and-ownership", query, 1);
+                "$p (subject: $s, access: $ac) isa permission, has validity $v;\n";
+        Benchmark benchmark = new Benchmark("inferred-relation-and-ownership", query, 2783);
         benchmarker.runBenchmark(benchmark);
+        benchmark.mayPrintResults(printTo);
+
         benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(10_000);
+        benchmark.assertCounters(500, 5677, 10000, 15000);
     }
     // Less common features
 
@@ -112,7 +134,11 @@ public class LanguageFeatureTest{
                 "$pe-same (subject: $other-p, access: $other-a) isa permission;\n";
         Benchmark benchmark = new Benchmark("bound-relation", query, 1);
         benchmarker.runBenchmark(benchmark);
+        benchmark.mayPrintResults(printTo);
+
         benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(500);
+        benchmark.assertCounters(200, 23, 30, 83);
     }
 
     @Test
@@ -125,7 +151,11 @@ public class LanguageFeatureTest{
                 "$pe (subject: $p, access: $a) isa permission, has validity true;\n";
         Benchmark benchmark = new Benchmark("value-predicate-filtering", query, 1);
         benchmarker.runBenchmark(benchmark);
+        benchmark.mayPrintResults(printTo);
+
         benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1000);
+        benchmark.assertCounters(300, 200, 500, 1500);
     }
 
     @Test
@@ -136,6 +166,10 @@ public class LanguageFeatureTest{
                 "(group: $g, member: $p) isa variabilised-group-membership;\n";
         Benchmark benchmark = new Benchmark("variabilised-rules", query, 3);
         benchmarker.runBenchmark(benchmark);
+        benchmark.mayPrintResults(printTo);
+
         benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1000);
+        benchmark.assertCounters(200, 9, 29, 104);
     }
 }
