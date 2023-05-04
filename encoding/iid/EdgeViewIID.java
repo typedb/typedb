@@ -86,7 +86,7 @@ public abstract class EdgeViewIID<
 
     public static class Type extends EdgeViewIID<Encoding.Edge.Type, InfixIID.Type, VertexIID.Type> {
 
-        private static final int LENGTH = 2 * VertexIID.Type.LENGTH + InfixIID.Type.DEFAULT_LENGTH;
+        public static final int LENGTH = 2 * VertexIID.Type.LENGTH + InfixIID.Type.DEFAULT_LENGTH;
 
         Type(ByteArray bytes) {
             super(bytes);

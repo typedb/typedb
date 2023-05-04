@@ -46,9 +46,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
-import static com.vaticle.typedb.core.encoding.Encoding.Property.LABEL;
-import static com.vaticle.typedb.core.encoding.Encoding.Property.THEN;
-import static com.vaticle.typedb.core.encoding.Encoding.Property.WHEN;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.Structure.LABEL;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.Structure.THEN;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.Structure.WHEN;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING_ENCODING;
 
 public abstract class RuleStructureImpl implements RuleStructure {

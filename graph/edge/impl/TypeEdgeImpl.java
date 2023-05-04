@@ -21,16 +21,23 @@ package com.vaticle.typedb.core.graph.edge.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
+import com.vaticle.typedb.core.encoding.iid.PropertyIID;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import javax.annotation.Nullable;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.UNIQUE;
 import static java.util.Objects.hash;
 
 /**
@@ -69,6 +76,22 @@ public abstract class TypeEdgeImpl implements TypeEdge {
 
     abstract VertexIID.Type toIID();
 
+    void writeAnnotations(Set<TypeQLToken.Annotation> annotations) {
+        for (TypeQLToken.Annotation annotation : annotations) {
+            switch (annotation) {
+                case KEY:
+                    // TODO: put KEY property once the OWNS_KEY edge is removed as a separate edge type
+                    // graph.storage().putUntracked(PropertyIID.TypeEdge.of(from.iid(), to.iid(), Encoding.Property.Edge.OWNS_PROPERTY_ANNOTATION_KEY));
+                    break;
+                case UNIQUE:
+                    graph.storage().putUntracked(PropertyIID.TypeEdge.of(fromIID(), toIID(), Encoding.Property.Edge.OWNS_PROPERTY_ANNOTATION_UNIQUE));
+                    break;
+                default:
+                    throw TypeDBException.of(ILLEGAL_STATE);
+            }
+        }
+    }
+
     @Override
     public final boolean equals(Object object) {
         if (this == object) return true;
@@ -76,12 +99,13 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         TypeEdgeImpl that = (TypeEdgeImpl) object;
         return (this.encoding.equals(that.encoding) &&
                 this.fromIID().equals(that.fromIID()) &&
-                this.toIID().equals(that.toIID()));
+                this.toIID().equals(that.toIID()) &&
+                this.annotations().equals(that.annotations()));
     }
 
     @Override
     public final int hashCode() {
-        if (hash == 0) hash = hash(encoding, fromIID().hashCode(), toIID().hashCode());
+        if (hash == 0) hash = hash(encoding, fromIID().hashCode(), toIID().hashCode(), annotations());
         return hash;
     }
 
@@ -158,6 +182,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         private final AtomicBoolean committed;
         private final AtomicBoolean deleted;
         private TypeVertex overridden;
+        private Set<TypeQLToken.Annotation> annotations;
 
         /**
          * Default constructor for {@code EdgeImpl.Buffered}.
@@ -171,6 +196,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             assert this.graph == to.graph();
             this.from = from;
             this.to = to;
+            this.annotations = new HashSet<>();
             committed = new AtomicBoolean(false);
             deleted = new AtomicBoolean(false);
         }
@@ -225,9 +251,19 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             this.overridden = null;
         }
 
+        @Override
+        public Set<TypeQLToken.Annotation> annotations() {
+            return annotations;
+        }
+
+        @Override
+        public void setAnnotations(Set<TypeQLToken.Annotation> annotations) {
+            this.annotations = annotations;
+        }
+
         /**
          * Deletes this {@code Edge} from connecting between two {@code Vertex}.
-         *
+         * <p>
          * A {@code TypeEdgeImpl.Buffered} can only exist in the adjacency cache of
          * each {@code Vertex}, and does not exist in storage.
          */
@@ -243,9 +279,14 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             }
         }
 
+        @Override
+        public boolean isDeleted() {
+            return deleted.get();
+        }
+
         /**
          * Commit operation of a buffered type edge.
-         *
+         * <p>
          * This operation can only be performed once, and thus protected by {@code committed} boolean.
          * Then we check for each direction of this edge, whether they need to be persisted to storage.
          * It's possible that an edge only has a {@code encoding.out()} (most likely an optimisation edge)
@@ -254,18 +295,19 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         @Override
         public void commit() {
             if (committed.compareAndSet(false, true)) {
-                // compute IID because vertices could have been committed
+                // re-compute IID since new vertices change IID on commit, so a cached edge IID may not be valid anymore
                 if (overridden != null) {
+                    // TODO: Store overridden as an edge property instead in 3.0
                     graph.storage().putUntracked(computeForwardIID(), overridden.iid().bytes());
                     graph.storage().putUntracked(computeBackwardIID(), overridden.iid().bytes());
                 } else {
                     graph.storage().putUntracked(computeForwardIID());
                     graph.storage().putUntracked(computeBackwardIID());
                 }
+                writeAnnotations(annotations);
             }
         }
     }
-
 
     public static class Target extends TypeEdgeImpl implements TypeEdge {
 
@@ -329,7 +371,22 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
+        public Set<TypeQLToken.Annotation> annotations() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public void setAnnotations(Set<TypeQLToken.Annotation> annotations) {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
         public void delete() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public boolean isDeleted() {
             throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
@@ -352,16 +409,17 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         private TypeVertex to;
         private VertexIID.Type overriddenIID;
         private TypeVertex overridden;
+        private Set<TypeQLToken.Annotation> annotations;
 
         /**
          * Default constructor for {@code Edge.Persisted}.
-         *
+         * <p>
          * The edge can be constructed from an {@code iid} that represents
          * either an inwards or outwards pointing edge. Thus, we extract the
          * {@code start} and {@code end} of it, and use the {@code infix} of the
          * edge {@code iid} to determine the direction, and which vertex becomes
          * {@code fromIID} or {@code toIID}.
-         *
+         * <p>
          * The head of this edge may or may not be overriding another vertex.
          * If it does the {@code overriddenIID} will not be null.
          *
@@ -381,6 +439,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             encoding = iid.encoding();
             deleted = new AtomicBoolean(false);
             if (overriddenIID != null) this.overriddenIID = overriddenIID;
+            annotations = null;
         }
 
         @Override
@@ -433,7 +492,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
 
         /**
          * Set the head type vertex of this type edge to override a given type vertex.
-         *
+         * <p>
          * Once the property has been set, we write to storage immediately as this type edge
          * does not buffer information in memory before being persisted.
          *
@@ -455,9 +514,59 @@ public abstract class TypeEdgeImpl implements TypeEdge {
             graph.storage().putUntracked(computeBackwardIID());
         }
 
+        @Override
+        public Set<TypeQLToken.Annotation> annotations() {
+            if (annotations == null) annotations = fetchAnnotations();
+            return annotations;
+        }
+
+        private Set<TypeQLToken.Annotation> fetchAnnotations() {
+            Set<TypeQLToken.Annotation> annotations = new HashSet<>();
+            for (Encoding.Property.Edge encoding : Encoding.Property.Edge.values()) {
+                if (encoding.isAnnotation() && graph.storage().get(PropertyIID.TypeEdge.of(fromIID(), toIID(), encoding)) != null) {
+                    if (encoding == Encoding.Property.Edge.OWNS_PROPERTY_ANNOTATION_UNIQUE) {
+                        annotations.add(UNIQUE);
+                        // TODO: read KEY property once the OWNS_KEY edge is removed as a separate edge type
+//                    } else if (encoding == Encoding.Property.Edge.OWNS_PROPERTY_ANNOTATION_KEY) {
+//                        annotations.add(KEY)
+//                    }
+                    } else {
+                        throw TypeDBException.of(ILLEGAL_STATE);
+                    }
+                }
+            }
+            // backwards-compatible annotation
+            if (encoding == Encoding.Edge.Type.OWNS_KEY) annotations.add(KEY);
+            return annotations;
+        }
+
+        @Override
+        public void setAnnotations(Set<TypeQLToken.Annotation> annotations) {
+            deleteAnnotations();
+            writeAnnotations(annotations);
+            this.annotations = annotations;
+        }
+
+        private void deleteAnnotations() {
+            Set<TypeQLToken.Annotation> persistedAnnotations = annotations();
+            for (TypeQLToken.Annotation annotation : persistedAnnotations) {
+                switch (annotation) {
+                    case KEY:
+                        // TODO: delete KEY property once the OWNS_KEY edge is removed as a separate edge type
+                        // graph.storage().deleteUntracked(PropertyIID.TypeEdge.of(from.iid(), to.iid(), Encoding.Property.Edge.OWNS_PROPERTY_ANNOTATION_KEY));
+                        break;
+                    case UNIQUE:
+                        graph.storage().deleteUntracked(PropertyIID.TypeEdge.of(from.iid(), to.iid(), Encoding.Property.Edge.OWNS_PROPERTY_ANNOTATION_UNIQUE));
+                        break;
+                    default:
+                        throw TypeDBException.of(ILLEGAL_STATE);
+                }
+            }
+        }
+
         /**
          * Delete operation of a persisted edge.
-         *
+         * <p>
          * This operation can only be performed once, and thus protected by
          * {@code isDelete} atomic boolean. We mark both from and to vertices
          * as modified, and delete both directions of this edge from the graph storage.
@@ -469,12 +578,18 @@ public abstract class TypeEdgeImpl implements TypeEdge {
                 to().ins().remove(this);
                 graph.storage().deleteUntracked(forwardView().iid());
                 graph.storage().deleteUntracked(backwardView().iid());
+                deleteAnnotations();
             }
+        }
+
+        @Override
+        public boolean isDeleted() {
+            return deleted.get();
         }
 
         /**
          * No-op commit operation of a persisted edge.
-         *
+         * <p>
          * Persisted edges do not need to be committed back to the graph storage.
          * The only property of a persisted edge that can be changed is only the
          * {@code overriddenIID}, and that is immediately written to storage when changed.

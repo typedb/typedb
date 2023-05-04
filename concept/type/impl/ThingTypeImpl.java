@@ -21,10 +21,10 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
@@ -40,14 +40,19 @@ import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
-import java.util.Collections;
+import javax.annotation.Nullable;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
+import java.util.NavigableSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_OWNS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_INHERITED_PLAYS;
@@ -59,13 +64,16 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OV
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ABSTRACT_ATTRIBUTE_TYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATT_NOT_AVAILABLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_NOT_AVAILABLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_NO_INSTANCES;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ANNOTATION_REDECLARATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATTRIBUTE_REDECLARATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_ATTRIBUTE_WAS_OVERRIDDEN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_PRECONDITION_UNIQUENESS;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_KEY_VALUE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_UNIQUE_PRECONDITION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OWNS_VALUE_TYPE_NO_EXACT_EQUALITY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ABSTRACT_ROLE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED;
@@ -75,7 +83,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TY
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_SUBTYPES;
 import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
-import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
@@ -83,18 +91,33 @@ import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.UNIQUE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Comparator.comparing;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
+    private final Cache cache;
+
+    private static class Cache {
+        private NavigableSet<Owns> owns = null;
+        private NavigableSet<Owns> ownsExplicit = null;
+    }
+
     ThingTypeImpl(GraphManager graphMgr, TypeVertex vertex) {
         super(graphMgr, vertex);
+        if (graphMgr.schema().isReadOnly()) cache = new Cache();
+        else cache = null;
     }
 
     ThingTypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding) {
         super(graphMgr, label, encoding);
+        if (graphMgr.schema().isReadOnly()) this.cache = new Cache();
+        else cache = null;
     }
 
     public static ThingTypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
@@ -139,29 +162,27 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (isAbstract()) builder.append(COMMA).append(SPACE).append(TypeQLToken.Constraint.ABSTRACT);
     }
 
-    protected void writeOwnsAttributes(StringBuilder builder) {
-        Set<String> keys = getOwnsExplicit(true).map(x -> x.getLabel().name()).toSet();
-        List<? extends AttributeType> attributeTypes = getOwnsExplicit().toList();
-        attributeTypes.stream().filter(x -> keys.contains(x.getLabel().name()))
-                .sorted(comparing(x -> x.getLabel().name()))
-                .forEach(attributeType -> {
-                    writeOwnsAttribute(builder, attributeType);
-                    builder.append(SPACE).append(TypeQLToken.Constraint.IS_KEY);
-                });
-        attributeTypes.stream().filter(x -> !keys.contains(x.getLabel().name()))
-                .sorted(comparing(x -> x.getLabel().name()))
-                .forEach(attributeType -> writeOwnsAttribute(builder, attributeType));
-    }
-
-    private void writeOwnsAttribute(StringBuilder builder, AttributeType attributeType) {
-        builder.append(COMMA).append(SPACE)
-                .append(TypeQLToken.Constraint.OWNS).append(SPACE)
-                .append(attributeType.getLabel().name());
-        AttributeType ownsOverridden = getOwnsOverridden(attributeType);
-        if (ownsOverridden != null) {
-            builder.append(SPACE).append(TypeQLToken.Constraint.AS).append(SPACE)
-                    .append(ownsOverridden.getLabel().name());
-        }
+    protected void writeOwns(StringBuilder builder) {
+        Comparator<Owns> hasKey = (first, second) -> {
+            boolean firstContainsKey = first.effectiveAnnotations().contains(KEY);
+            boolean secondContainsKey = second.effectiveAnnotations().contains(KEY);
+            if (firstContainsKey && !secondContainsKey) return -1;
+            else if (secondContainsKey && !firstContainsKey) return 1;
+            else return 0;
+        };
+        Comparator<Owns> hasUnique = (first, second) -> {
+            boolean firstContainsUnique = first.effectiveAnnotations().contains(UNIQUE);
+            boolean secondContainsUnique = second.effectiveAnnotations().contains(UNIQUE);
+            if (firstContainsUnique && !secondContainsUnique) return -1;
+            else if (secondContainsUnique && !firstContainsUnique) return 1;
+            else return 0;
+        };
+        getOwnsExplicit().stream().sorted(
+                hasKey.thenComparing(hasUnique).thenComparing(owns -> owns.attributeType().getLabel().name())
+        ).forEach(owns -> {
+            builder.append(COMMA);
+            owns.getSyntax(builder);
+        });
     }
 
     protected void writePlays(StringBuilder builder) {
@@ -223,208 +244,127 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public void setOwns(AttributeType attributeType) {
-        validateIsNotDeleted();
-        setOwns(attributeType, false);
+        setOwns(attributeType, emptySet());
     }
 
     @Override
-    public void setOwns(AttributeType attributeType, boolean isKey) {
-        validateIsNotDeleted();
-        if (isKey) ownsKey((AttributeTypeImpl) attributeType);
-        else ownsAttribute((AttributeTypeImpl) attributeType);
+    public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
+        setOwns(attributeType, null, annotations);
     }
 
     @Override
     public void setOwns(AttributeType attributeType, AttributeType overriddenType) {
-        setOwns(attributeType, overriddenType, false);
+        setOwns(attributeType, overriddenType, emptySet());
     }
 
     @Override
-    public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+    public void setOwns(AttributeType attributeType, @Nullable AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
         validateIsNotDeleted();
-        if (isKey) ownsKey((AttributeTypeImpl) attributeType, (AttributeTypeImpl) overriddenType);
-        else ownsAttribute((AttributeTypeImpl) attributeType, (AttributeTypeImpl) overriddenType);
+        OwnsImpl.of(this, (AttributeTypeImpl) attributeType, overriddenType, annotations);
     }
 
     @Override
     public void unsetOwns(AttributeType attributeType) {
         validateIsNotDeleted();
-        TypeEdge edge;
-        TypeVertex attVertex = ((AttributeTypeImpl) attributeType).vertex;
-        if (getInstances().anyMatch(thing -> thing.getHas(attributeType).first().isPresent())) {
-            throw exception(TypeDBException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, vertex.label(), attVertex.label()));
-        }
-        if ((edge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) edge.delete();
-        else if ((edge = vertex.outs().edge(OWNS, attVertex)) != null) edge.delete();
-        else if (this.getOwns().findFirst(attributeType).isPresent()) {
-            throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS,
-                    this.getLabel().toString(), attributeType.getLabel().toString()));
+        Optional<Owns> owns = getOwnsExplicit(attributeType);
+        if (owns.isPresent()) owns.get().delete();
+        else if (getOwns(attributeType).isPresent()) {
+            throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS, getLabel(), attributeType.getLabel()));
         } else {
-            throw exception(TypeDBException.of(INVALID_UNDEFINE_NONEXISTENT_OWNS,
-                    this.getLabel().toString(), attributeType.getLabel().toString()));
+            throw exception(TypeDBException.of(INVALID_UNDEFINE_NONEXISTENT_OWNS, getLabel(), attributeType.getLabel()));
         }
     }
 
-    private <T extends Type> void override(Encoding.Edge.Type encoding, T type, T overriddenType,
-                                           Forwardable<? extends Type, Order.Asc> overridable,
-                                           Forwardable<? extends Type, Order.Asc> notOverridable,
-                                           ErrorMessage message) {
+    private static <T extends Type> void override(T owner, Encoding.Edge.Type encoding, T type, T overriddenType,
+                                                  Forwardable<? extends Type, Order.Asc> overridable,
+                                                  Forwardable<? extends Type, Order.Asc> notOverridable, // because the child can override the same type as parent but with annotations
+                                                  ErrorMessage message) {
         if (type.getSupertypes().noneMatch(t -> t.equals(overriddenType))) {
-            throw exception(TypeDBException.of(message, getLabel(), type.getLabel(), overriddenType.getLabel()));
+            throw owner.exception(TypeDBException.of(message, owner.getLabel(), type.getLabel(), overriddenType.getLabel()));
         } else if (notOverridable.anyMatch(t -> t.equals(overriddenType)) || overridable.noneMatch(t -> t.equals(overriddenType))) {
-            throw exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, type.getLabel(), overriddenType.getLabel()));
+            throw owner.exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, type.getLabel(), overriddenType.getLabel()));
         }
 
-        vertex.outs().edge(encoding, ((TypeImpl) type).vertex).setOverridden(((TypeImpl) overriddenType).vertex);
-    }
-
-    private void ownsKey(AttributeTypeImpl attributeType) {
-        TypeVertex attVertex = attributeType.vertex;
-        TypeEdge ownsEdge, ownsKeyEdge;
-
-        if (vertex.outs().edge(OWNS_KEY, attVertex) != null) return;
-
-        if (attributeType.isRoot()) {
-            throw exception(TypeDBException.of(ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED));
-        } else if (!attributeType.isKeyable()) {
-            throw exception(TypeDBException.of(OWNS_KEY_VALUE_TYPE, attributeType.getLabel(), attributeType.getValueType().name()));
-        } else if (link(getSupertype().getOwns(attributeType.getValueType(), true),
-                getSupertype().overriddenOwns(false, true)).anyMatch(a -> a.equals(attributeType))) {
-            throw exception(TypeDBException.of(OWNS_KEY_NOT_AVAILABLE, attributeType.getLabel()));
-        }
-
-        if ((ownsEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
-            // TODO: These ownership and uniqueness checks should be parallelised to scale better
-            getInstances().forEachRemaining(thing -> {
-                FunctionalIterator<? extends Attribute> attrs = thing.getHas(attributeType);
-                if (!attrs.hasNext())
-                    throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, vertex.label(), attVertex.label()));
-                Attribute attr = attrs.next();
-                if (attrs.hasNext())
-                    throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, vertex.label(), attVertex.label()));
-                else if (compareSize(attr.getOwners(this), 1) != 0) {
-                    throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attVertex.label(), vertex.label()));
-                }
-            });
-            ownsEdge.delete();
-        } else if (getInstances().first().isPresent()) {
-            throw exception(TypeDBException.of(OWNS_KEY_PRECONDITION_NO_INSTANCES, vertex.label(), attVertex.label()));
-        }
-        ownsKeyEdge = vertex.outs().put(OWNS_KEY, attVertex);
-        if (getSupertype().declaredOwns(false).findFirst(attributeType).isPresent()) {
-            ownsKeyEdge.setOverridden(attVertex);
-        } else ownsKeyEdge.unsetOverridden();
-    }
-
-    private void ownsKey(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
-        ownsKey(attributeType);
-        override(OWNS_KEY, attributeType, overriddenType,
-                getSupertype().getOwns(attributeType.getValueType()),
-                declaredOwns(false),
-                OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE);
-    }
-
-    private void ownsAttribute(AttributeTypeImpl attributeType) {
-        Forwardable<AttributeType, Order.Asc> owns = getSupertypes().filter(t -> !t.equals(this))
-                .mergeMapForwardable(ThingType::getOwns, ASC);
-        if (attributeType.isRoot()) {
-            throw exception(TypeDBException.of(ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED));
-        } else if (owns.findFirst(attributeType).isPresent()) {
-            throw exception(TypeDBException.of(OWNS_ATT_NOT_AVAILABLE, attributeType.getLabel()));
-        }
-
-        TypeVertex attVertex = attributeType.vertex;
-        TypeEdge existingEdge;
-        if ((existingEdge = vertex.outs().edge(OWNS, attVertex)) != null) {
-            existingEdge.unsetOverridden();
-        } else {
-            if ((existingEdge = vertex.outs().edge(OWNS_KEY, attVertex)) != null) existingEdge.delete();
-            vertex.outs().put(OWNS, attVertex);
-        }
-    }
-
-    private void ownsAttribute(AttributeTypeImpl attributeType, AttributeTypeImpl overriddenType) {
-        this.ownsAttribute(attributeType);
-        override(OWNS, attributeType, overriddenType,
-                getSupertype().getOwns(attributeType.getValueType()),
-                getSupertype().getOwns(true).merge(declaredOwns(false)),
-                OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE);
-    }
-
-    private Forwardable<AttributeType, Order.Asc> declaredOwns(boolean onlyKey) {
-        if (isRoot()) return emptySorted();
-        Forwardable<TypeVertex, Order.Asc> iterator;
-        if (onlyKey) iterator = vertex.outs().edge(OWNS_KEY).to();
-        else iterator = vertex.outs().edge(OWNS_KEY).to().merge(vertex.outs().edge(OWNS).to());
-        return iterator.mapSorted(v -> AttributeTypeImpl.of(graphMgr, v), attr -> ((AttributeTypeImpl) attr).vertex, ASC);
-    }
-
-    FunctionalIterator<AttributeTypeImpl> overriddenOwns(boolean onlyKey, boolean transitive) {
-        if (isRoot()) return Iterators.empty();
-        FunctionalIterator<AttributeTypeImpl> overriddenOwns;
-        if (onlyKey) {
-            overriddenOwns = vertex.outs().edge(OWNS_KEY).overridden().filter(Objects::nonNull)
-                    .map(v -> AttributeTypeImpl.of(graphMgr, v));
-        } else {
-            overriddenOwns = link(
-                    vertex.outs().edge(OWNS_KEY).overridden(),
-                    vertex.outs().edge(OWNS).overridden()
-            ).filter(Objects::nonNull).distinct().map(v -> AttributeTypeImpl.of(graphMgr, v));
-        }
-
-        if (transitive) return link(overriddenOwns, getSupertype().overriddenOwns(onlyKey, true));
-        else return overriddenOwns;
+        ((TypeImpl) owner).vertex.outs().edge(encoding, ((TypeImpl) type).vertex).setOverridden(((TypeImpl) overriddenType).vertex);
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwns() {
-        return getOwns(false);
+    public NavigableSet<Owns> getOwns() {
+        if (cache != null) {
+            if (cache.owns == null) cache.owns = fetchOwns();
+            return cache.owns;
+        } else return fetchOwns();
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwnsExplicit() {
-        return getOwnsExplicit(false);
+    public Optional<Owns> getOwns(AttributeType attributeType) {
+        // TODO: optimise for non-cached setting by using point lookups rather than a scan
+        return iterate(getOwns()).filter(owns -> owns.attributeType().equals(attributeType)).first();
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType) {
-        return getOwns(valueType, false);
+    public Forwardable<Owns, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations) {
+        return iterateSorted(getOwns(), ASC).filter(owns -> owns.effectiveAnnotations().containsAll(annotations));
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType) {
-        return getOwnsExplicit(valueType, false);
+    public Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType) {
+        return getOwns(valueType, emptySet());
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwns(boolean onlyKey) {
-        if (onlyKey) {
-            return iterateSorted(graphMgr.schema().ownedKeyAttributeTypes(vertex), ASC)
-                    .mapSorted(v -> AttributeTypeImpl.of(graphMgr, v), attr -> ((AttributeTypeImpl) attr).vertex, ASC);
-        } else {
-            return iterateSorted(graphMgr.schema().ownedAttributeTypes(vertex), ASC)
-                    .mapSorted(v -> AttributeTypeImpl.of(graphMgr, v), attr -> ((AttributeTypeImpl) attr).vertex, ASC);
-        }
+    public Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations) {
+        return getOwns(annotations).filter(owns -> owns.attributeType().getValueType().equals(valueType));
+    }
+
+    private NavigableSet<Owns> fetchOwns() {
+        NavigableSet<Owns> owns = new TreeSet<>();
+        graphMgr.schema().ownedAttributeTypes(vertex).forEach(
+                v -> owns.add(OwnsImpl.of(this, AttributeTypeImpl.of(graphMgr, v)))
+        );
+        return owns;
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwnsExplicit(boolean onlyKey) {
-        if (isRoot()) return emptySorted();
-        return declaredOwns(onlyKey);
+    public NavigableSet<Owns> getOwnsExplicit() {
+        if (cache != null) {
+            if (cache.ownsExplicit == null) cache.ownsExplicit = fetchOwnsExplicit();
+            return cache.ownsExplicit;
+        } else return fetchOwnsExplicit();
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, boolean onlyKey) {
-        return getOwns(onlyKey).filter(att -> att.getValueType().equals(valueType));
+    public Optional<Owns> getOwnsExplicit(AttributeType attributeType) {
+        // TODO: optimise for non-cached setting by using point lookups rather than a scan
+        return iterate(getOwnsExplicit()).filter(owns -> owns.attributeType().equals(attributeType)).first();
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType, boolean onlyKey) {
-        return getOwnsExplicit(onlyKey).filter(att -> att.getValueType().equals(valueType));
+    public Forwardable<Owns, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType) {
+        return getOwnsExplicit(valueType, emptySet());
     }
 
     @Override
-    public AttributeType getOwnsOverridden(AttributeType attributeType) {
+    public Forwardable<Owns, Order.Asc> getOwnsExplicit(Set<TypeQLToken.Annotation> annotations) {
+        return iterateSorted(getOwnsExplicit(), ASC).filter(owns -> owns.effectiveAnnotations().containsAll(annotations));
+    }
+
+    private NavigableSet<Owns> fetchOwnsExplicit() {
+        if (isRoot()) return new TreeSet<>();
+        NavigableSet<Owns> ownsExplicit = new TreeSet<>();
+        vertex.outs().edge(OWNS_KEY).to().link(vertex.outs().edge(OWNS).to()).forEachRemaining(v ->
+                ownsExplicit.add(OwnsImpl.of(this, AttributeTypeImpl.of(graphMgr, v)))
+        );
+        return ownsExplicit;
+    }
+
+    @Override
+    public Forwardable<Owns, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations) {
+        return getOwnsExplicit(annotations).filter(owns -> owns.attributeType().getValueType().equals(valueType));
+    }
+
+    @Override
+    public AttributeTypeImpl getOwnsOverridden(AttributeType attributeType) {
         TypeVertex attrVertex = graphMgr.schema().getType(attributeType.getLabel());
         if (attrVertex != null) {
             TypeEdge ownsEdge = vertex.outs().edge(OWNS_KEY, attrVertex);
@@ -456,7 +396,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public void setPlays(RoleType roleType, RoleType overriddenType) {
         validateIsNotDeleted();
         setPlays(roleType);
-        override(PLAYS, roleType, overriddenType, getSupertype().getPlays(),
+        override(this, PLAYS, roleType, overriddenType, getSupertype().getPlays(),
                 vertex.outs().edge(PLAYS).to().mapSorted(v -> RoleTypeImpl.of(graphMgr, v), rt -> rt.vertex, ASC),
                 OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE);
     }
@@ -534,25 +474,25 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     private List<TypeDBException> validateIsAbstractOrOwnedAttributeTypesNotAbstract() {
-        if (isAbstract()) return Collections.emptyList();
-        else return getOwns().filter(Type::isAbstract).map(
+        if (isAbstract()) return emptyList();
+        else return iterate(getOwns()).map(ThingType.Owns::attributeType).filter(Type::isAbstract).map(
                 attType -> TypeDBException.of(OWNS_ABSTRACT_ATTRIBUTE_TYPE, getLabel(), attType.getLabel())
         ).toList();
     }
 
     private List<TypeDBException> validateIsAbstractOrPlayedRoleTypesNotAbstract() {
-        if (isAbstract()) return Collections.emptyList();
+        if (isAbstract()) return emptyList();
         else return getPlays().filter(Type::isAbstract).map(
                 roleType -> TypeDBException.of(PLAYS_ABSTRACT_ROLE_TYPE, getLabel(), roleType.getLabel())
         ).toList();
     }
 
     private List<TypeDBException> validateOverriddenOwnedAttributeTypesAreSupertypes() {
-        return getOwns().map(at -> pair(at, getOwnsOverridden(at)))
-                .filter(p -> p.second() != null)
-                .filter(p -> p.first().getSupertypes().noneMatch(s -> s.equals(p.second()))).map(
+        return iterate(getOwns())
+                .filter(owns -> owns.overridden().isPresent())
+                .filter(owns -> owns.attributeType().getSupertypes().noneMatch(s -> s.equals(owns.overridden().get()))).map(
                         p -> TypeDBException.of(OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE,
-                                getLabel(), p.first().getLabel(), p.second().getLabel())
+                                getLabel(), p.attributeType().getLabel(), p.overridden().get().getLabel())
                 ).toList();
     }
 
@@ -670,12 +610,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
@@ -706,7 +646,257 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
          */
         @Override
         public List<TypeDBException> exceptions() {
-            return Collections.emptyList();
+            return emptyList();
+        }
+    }
+
+    private static class OwnsImpl implements Owns {
+
+        private final ThingTypeImpl owner;
+        private final AttributeTypeImpl attributeType;
+        private TypeEdge edge;
+        private AttributeType overridden;
+        private Set<TypeQLToken.Annotation> effectiveAnnotationsCache;
+
+        private OwnsImpl(ThingTypeImpl owner, AttributeTypeImpl attributeType, TypeEdge edge) {
+            this.owner = owner;
+            this.attributeType = attributeType;
+            this.edge = edge;
+            this.overridden = edge.overridden().map(v -> AttributeTypeImpl.of(owner.graphMgr, v)).orElse(null);
+        }
+
+        private static OwnsImpl of(ThingTypeImpl owner, AttributeTypeImpl attributeType) {
+            TypeVertex attVertex = attributeType.vertex;
+            TypeEdge edge = null;
+            ThingTypeImpl sup = owner;
+            while (sup.getSupertype() != null && edge == null) {
+                if ((edge = sup.vertex.outs().edge(OWNS, attVertex)) == null &&
+                        (edge = sup.vertex.outs().edge(OWNS_KEY, attVertex)) == null) {
+                    sup = sup.getSupertype();
+                }
+            }
+            if (edge == null) throw TypeDBException.of(ILLEGAL_STATE);
+            return new OwnsImpl(owner, attributeType, edge);
+        }
+
+        private static OwnsImpl of(ThingTypeImpl owner, AttributeTypeImpl attributeType,
+                                   @Nullable AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
+            validateSchema(owner, attributeType, overriddenType, annotations);
+
+            Optional<Owns> existingOrInherited = iterate(owner.getOwns()).filter(owns -> owns.attributeType().equals(attributeType)).first();
+            validateData(owner, attributeType, annotations, existingOrInherited.orElse(null));
+
+            Optional<Owns> existingExplicit = iterate(owner.getOwnsExplicit())
+                    .filter(ownsExplicit -> ownsExplicit.attributeType().equals(attributeType)).first();
+            if (existingExplicit.isPresent()) {
+                OwnsImpl existingOwnsImpl = ((OwnsImpl) existingExplicit.get());
+                existingOwnsImpl.edge.delete();
+                existingOwnsImpl.edge = createEdge(owner, attributeType, overriddenType, annotations);
+                existingOwnsImpl.overridden = overriddenType;
+                return existingOwnsImpl;
+            } else {
+                TypeEdge edge = createEdge(owner, attributeType, overriddenType, annotations);
+                return new OwnsImpl(owner, attributeType, edge);
+            }
+        }
+
+        private static TypeEdge createEdge(
+                ThingTypeImpl owner, AttributeTypeImpl attributeType, AttributeType overriddenType,
+                Set<TypeQLToken.Annotation> annotations
+        ) {
+            TypeVertex ownerVertex = owner.vertex;
+            TypeVertex attVertex = attributeType.vertex;
+            TypeEdge edge;
+            // TODO: once we have one type of owns edge, update the ownership edge rather than deleting & creating it
+            if (annotations.contains(KEY)) edge = ownerVertex.outs().put(OWNS_KEY, attVertex);
+            else edge = ownerVertex.outs().put(OWNS, attVertex);
+
+            if (overriddenType == null) {
+                Optional<Owns> parentOwns = iterate(owner.getSupertype().getOwns())
+                        .filter(owns -> owns.attributeType().equals(attributeType)).first();
+                if (parentOwns.isPresent()) edge.setOverridden(attVertex);
+            } else edge.setOverridden(((TypeImpl) overriddenType).vertex);
+            edge.setAnnotations(annotations);
+            return edge;
+        }
+
+        private static void validateSchema(
+                ThingTypeImpl owner, AttributeTypeImpl attributeType, @Nullable AttributeType overriddenType,
+                Set<TypeQLToken.Annotation> annotations
+        ) {
+            if (attributeType.isRoot()) {
+                throw owner.exception(TypeDBException.of(ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED));
+            } else if (annotations.contains(KEY) && annotations.contains(UNIQUE)) {
+                throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE, owner.getLabel(), attributeType.getLabel(), KEY, UNIQUE));
+            }
+
+            Set<Owns> superOwns = owner.getSupertype().getOwns();
+            if (overriddenType != null) {
+                if (attributeType.getSupertypes().noneMatch(overriddenType::equals)) {
+                    throw owner.exception(TypeDBException.of(
+                            OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE, owner.getLabel(), attributeType.getLabel(),
+                            overriddenType.getLabel()
+                    ));
+                }
+                Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(overriddenType)).first();
+                if (parentOwns.isEmpty()) {
+                    throw owner.exception(TypeDBException.of(OVERRIDE_NOT_AVAILABLE, owner.getLabel(), overriddenType.getLabel()));
+                } else {
+                    validateAgainstParent(parentOwns.get(), owner, attributeType, annotations);
+                }
+            } else {
+                Optional<Owns> parentOwns = iterate(superOwns).filter(owns -> owns.attributeType().equals(attributeType)).first();
+                parentOwns.ifPresent(owns -> {
+                    if (annotations.isEmpty())
+                        throw TypeDBException.of(OWNS_ATTRIBUTE_REDECLARATION, owner.getLabel(), attributeType.getLabel());
+                    validateAgainstParent(owns, owner, attributeType, annotations);
+                });
+            }
+
+            FunctionalIterator<AttributeType> hiddenByOverride = owner.getSupertypes().flatMap(t -> iterate(t.getOwns()))
+                    .filter(owns -> owns.overridden().map(t -> !t.equals(owns.attributeType())).orElse(false))
+                    .map(owns -> owns.overridden().get());
+            if (hiddenByOverride.filter(t -> t.equals(attributeType)).first().isPresent()) {
+                throw owner.exception(TypeDBException.of(OWNS_ATTRIBUTE_WAS_OVERRIDDEN, owner.getLabel(), attributeType.getLabel()));
+            }
+
+            if ((annotations.contains(KEY) || annotations.contains(UNIQUE)) && !attributeType.getValueType().hasExactEquality()) {
+                throw owner.exception(TypeDBException.of(OWNS_VALUE_TYPE_NO_EXACT_EQUALITY, owner.getLabel(), attributeType.getLabel(), annotations, attributeType.getValueType().name()));
+            }
+        }
+
+        private static void validateAgainstParent(
+                Owns parent, Type owner, AttributeType attribute, Set<TypeQLToken.Annotation> annotations
+        ) {
+            Set<TypeQLToken.Annotation> inheritedAnnotations = parent.effectiveAnnotations();
+            boolean inheritedKey = inheritedAnnotations.contains(KEY);
+            boolean childUnique = annotations.contains(UNIQUE);
+            if (inheritedKey && childUnique) {
+                throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT, owner.getLabel(), attribute.getLabel(), annotations, parent.toString()));
+            }
+            Set<TypeQLToken.Annotation> redeclared = new HashSet<>(annotations);
+            redeclared.retainAll(inheritedAnnotations);
+            if (!redeclared.isEmpty()) {
+                throw owner.exception(TypeDBException.of(OWNS_ANNOTATION_REDECLARATION, owner.getLabel(), attribute.getLabel(), redeclared));
+            }
+        }
+
+        private static void validateData(ThingTypeImpl owner, AttributeTypeImpl attributeType,
+                                         Set<TypeQLToken.Annotation> annotations, @Nullable Owns existingOwns) {
+            if (annotations.contains(KEY)) {
+                if (existingOwns == null || existingOwns.effectiveAnnotations().isEmpty()) {
+                    owner.getInstances().forEachRemaining(instance -> validateDataKey(owner, instance, attributeType));
+                } else if (existingOwns.effectiveAnnotations().contains(UNIQUE)) {
+                    owner.getInstances().forEachRemaining(instance -> validateDataKeyCardinality(owner, instance, attributeType));
+                } else {
+                    assert existingOwns.effectiveAnnotations().contains(KEY);
+                }
+            } else if (annotations.contains(UNIQUE)) {
+                if (existingOwns == null || existingOwns.effectiveAnnotations().isEmpty()) {
+                    owner.getInstances().forEachRemaining(instance -> validateDataUnique(owner, instance, attributeType));
+                } else {
+                    assert existingOwns.effectiveAnnotations().contains(KEY) || existingOwns.effectiveAnnotations().contains(UNIQUE);
+                }
+            }
+        }
+
+        private static void validateDataKey(ThingType ownerType, Thing owner, AttributeType attributeType) {
+            FunctionalIterator<? extends Attribute> attrs = owner.getHas(attributeType);
+            if (!attrs.hasNext()) {
+                throw ownerType.exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, ownerType.getLabel(), attributeType.getLabel()));
+            }
+            Attribute key = attrs.next();
+            if (attrs.hasNext()) {
+                throw ownerType.exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, ownerType.getLabel(), attributeType.getLabel()));
+            } else if (compareSize(key.getOwners(ownerType), 1) != 0) {
+                throw ownerType.exception(TypeDBException.of(OWNS_KEY_PRECONDITION_UNIQUENESS, attributeType.getLabel(), ownerType.getLabel()));
+            }
+        }
+
+        private static void validateDataKeyCardinality(ThingTypeImpl ownerType, Thing owner, AttributeTypeImpl attributeType) {
+            FunctionalIterator<? extends Attribute> attrs = owner.getHas(attributeType);
+            if (!attrs.hasNext()) {
+                throw ownerType.exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY, ownerType.getLabel(), attributeType.getLabel()));
+            }
+            Attribute key = attrs.next();
+            if (attrs.hasNext()) {
+                throw ownerType.exception(TypeDBException.of(OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING, ownerType.getLabel(), attributeType.getLabel()));
+            }
+        }
+
+        private static void validateDataUnique(ThingTypeImpl ownerType, Thing instance, AttributeTypeImpl attributeType) {
+            instance.getHas(attributeType).forEachRemaining(attr -> {
+                if (compareSize(attr.getOwners(ownerType), 1) != 0) {
+                    throw ownerType.exception(TypeDBException.of(OWNS_UNIQUE_PRECONDITION, attributeType.getLabel(), ownerType.getLabel()));
+                }
+            });
+        }
+
+        @Override
+        public AttributeType attributeType() {
+            return attributeType;
+        }
+
+        @Override
+        public Set<TypeQLToken.Annotation> effectiveAnnotations() {
+            if (owner.graphMgr.schema().isReadOnly()) {
+                if (effectiveAnnotationsCache == null) effectiveAnnotationsCache = computeEffectiveAnnotations();
+                return effectiveAnnotationsCache;
+            } else return computeEffectiveAnnotations();
+        }
+
+        private Set<TypeQLToken.Annotation> computeEffectiveAnnotations() {
+            Set<TypeQLToken.Annotation> annotations = new HashSet<>(explicitAnnotations());
+            owner.getSupertype().getOwns(attributeType)
+                    .or(() -> overridden().flatMap(overridden -> owner.getSupertype().getOwns(overridden)))
+                    .ifPresent(owns -> annotations.addAll(owns.effectiveAnnotations()));
+            // in the future, we will collapse parametrised annotations of the same type to the strictest (child) annotation
+            // for example, @card(0,10) from the parent should not be kept if @card(1,5) is defined on the child
+            return annotations;
+        }
+
+        private Set<TypeQLToken.Annotation> explicitAnnotations() {
+            return edge.annotations();
+        }
+
+        @Override
+        public Optional<AttributeType> overridden() {
+            return Optional.ofNullable(overridden);
+        }
+
+        @Override
+        public void delete() {
+            if (!edge.isDeleted()) {
+                if (owner.getInstances().anyMatch(thing -> thing.getHas(attributeType).first().isPresent())) {
+                    throw owner.exception(TypeDBException.of(INVALID_UNDEFINE_OWNS_HAS_INSTANCES, owner.getLabel(), attributeType.getLabel()));
+                }
+                this.edge.delete();
+            }
+        }
+
+        @Override
+        public int compareTo(Owns o) {
+            return attributeType.compareTo(o.attributeType());
+        }
+
+        @Override
+        public void getSyntax(StringBuilder builder) {
+            builder.append(TypeQLToken.Constraint.OWNS).append(SPACE)
+                    .append(attributeType().getLabel().name());
+            overridden().ifPresent(ownsOverridden ->
+                    builder.append(SPACE).append(TypeQLToken.Constraint.AS).append(SPACE)
+                            .append(ownsOverridden.getLabel().name())
+            );
+            explicitAnnotations().stream().sorted(Comparator.comparing(TypeQLToken.Annotation::toString))
+                    .forEach(annotation -> builder.append(SPACE).append(annotation));
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append(owner.getLabel());
+            getSyntax(builder);
+            return builder.toString();
         }
     }
 }

@@ -38,10 +38,10 @@ import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.ISA;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.HAS;
@@ -52,7 +52,9 @@ import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.SubString.LIKE;
+import static java.util.Collections.emptySet;
 
 // TODO: We should not use this object as a builder, as the hash and equality functions would change
 //       We should introduce a separate "builder pattern" to Traversal, such that users of this library will build
@@ -88,21 +90,24 @@ public abstract class GraphTraversal extends Traversal {
         structure.equalEdge(structure.typeVertex(type1), structure.typeVertex(type2));
     }
 
-    public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, boolean isKey) {
-        // TODO: Something smells here. We should really just have one encoding for OWNS, and a flag for @key
-        structure.nativeEdge(structure.typeVertex(thingType), structure.typeVertex(attributeType), isKey ? OWNS_KEY : OWNS);
+    public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, Set<TypeQLToken.Annotation> annotations) {
+        if (annotations.contains(KEY)) {
+            structure.nativeEdge(structure.typeVertex(thingType), structure.typeVertex(attributeType), OWNS_KEY, annotations);
+        } else {
+            structure.nativeEdge(structure.typeVertex(thingType), structure.typeVertex(attributeType), OWNS, annotations);
+        }
     }
 
     public void plays(Identifier.Variable thingType, Identifier.Variable roleType) {
-        structure.nativeEdge(structure.typeVertex(thingType), structure.typeVertex(roleType), PLAYS);
+        structure.nativeEdge(structure.typeVertex(thingType), structure.typeVertex(roleType), PLAYS, emptySet());
     }
 
     public void relates(Identifier.Variable relationType, Identifier.Variable roleType) {
-        structure.nativeEdge(structure.typeVertex(relationType), structure.typeVertex(roleType), RELATES);
+        structure.nativeEdge(structure.typeVertex(relationType), structure.typeVertex(roleType), RELATES, emptySet());
     }
 
     public void sub(Identifier.Variable subtype, Identifier.Variable supertype, boolean isTransitive) {
-        structure.nativeEdge(structure.typeVertex(subtype), structure.typeVertex(supertype), SUB, isTransitive);
+        structure.nativeEdge(structure.typeVertex(subtype), structure.typeVertex(supertype), SUB, isTransitive, emptySet());
     }
 
     public void isAbstract(Identifier.Variable type) {
@@ -185,7 +190,7 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         public void has(Identifier.Variable thing, Identifier.Variable attribute) {
-            structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(attribute), HAS);
+            structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(attribute), HAS, emptySet());
         }
 
         public void isa(Identifier thing, Identifier.Variable type) {
@@ -193,15 +198,15 @@ public abstract class GraphTraversal extends Traversal {
         }
 
         public void isa(Identifier thing, Identifier.Variable type, boolean isTransitive) {
-            structure.nativeEdge(structure.thingVertex(thing), structure.typeVertex(type), ISA, isTransitive);
+            structure.nativeEdge(structure.thingVertex(thing), structure.typeVertex(type), ISA, isTransitive, emptySet());
         }
 
         public void relating(Identifier.Variable relation, Identifier.Scoped role) {
-            structure.nativeEdge(structure.thingVertex(relation), structure.thingVertex(role), RELATING);
+            structure.nativeEdge(structure.thingVertex(relation), structure.thingVertex(role), RELATING, emptySet());
         }
 
         public void playing(Identifier.Variable thing, Identifier.Scoped role) {
-            structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(role), PLAYING);
+            structure.nativeEdge(structure.thingVertex(thing), structure.thingVertex(role), PLAYING, emptySet());
         }
 
         public void rolePlayer(Identifier.Variable relation, Identifier.Variable player, Set<Label> roleTypes, int repetition) {

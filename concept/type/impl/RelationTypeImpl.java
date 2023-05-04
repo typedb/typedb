@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RELATION_ABSTRACT_ROLE;
@@ -280,7 +281,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void getSyntax(StringBuilder builder) {
         writeSupertype(builder);
         writeAbstract(builder);
-        writeOwnsAttributes(builder);
+        writeOwns(builder);
         writeRelates(builder);
         writePlays(builder);
         builder.append(SEMICOLON).append(NEW_LINE);
@@ -347,12 +348,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 

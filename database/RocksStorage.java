@@ -171,9 +171,13 @@ public abstract class RocksStorage implements Storage {
     @Override
     public TypeDBException exception(Exception exception) {
         TypeDBException e;
-        if (exception instanceof TypeDBException) e = (TypeDBException) exception;
-        else e = TypeDBException.of(exception);
-        logger().debug(e.getMessage(), e);
+        if (exception instanceof TypeDBException) {
+            e = (TypeDBException) exception;
+            logger().debug(e.getMessage(), e);
+        } else {
+            e = TypeDBException.of(exception);
+            logger().error("", exception);
+        }
         return e;
     }
 

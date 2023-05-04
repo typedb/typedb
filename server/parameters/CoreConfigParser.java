@@ -33,7 +33,7 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_SECTION_MUST_BE_MAP;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_YAML_MUST_BE_MAP;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CONFIGURATION_OPTIONS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIGS_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.KeyValue.Dynamic;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.KeyValue.Predefined;
@@ -463,7 +463,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
         predefinedParsers.forEach(parser -> unrecognisedKeys.remove(parser.key()));
         if (!unrecognisedKeys.isEmpty()) {
             Set<String> childPaths = iterate(unrecognisedKeys).map(key -> YAMLParser.concatenate(path, key)).toSet();
-            throw TypeDBException.of(UNRECOGNISED_CONFIGURATION_OPTIONS, childPaths);
+            throw TypeDBException.of(CONFIGS_UNRECOGNISED, childPaths);
         }
     }
 }

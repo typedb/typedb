@@ -33,11 +33,13 @@ import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.server.TransactionService;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.TransactionProto.Transaction;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -151,7 +153,7 @@ public class ThingService {
     private void getHas(Thing thing, ConceptProto.Thing.GetHas.Req getHasRequest, UUID reqID) {
         List<ConceptProto.Type> types = getHasRequest.getAttributeTypesList();
         FunctionalIterator<? extends Attribute> attributes = types.isEmpty()
-                ? thing.getHas(getHasRequest.getKeysOnly())
+                ? thing.getHas(TypeService.getAnnotations(getHasRequest.getAnnotationsList()))
                 : thing.getHas(types.stream().map(t -> notNull(getThingType(t)).asAttributeType()).toArray(AttributeType[]::new));
         transactionSvc.stream(attributes, reqID, atts -> getHasResPart(reqID, atts));
     }

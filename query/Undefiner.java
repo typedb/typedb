@@ -48,7 +48,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleRead.RUL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_UNDEFINE_RULE_BODY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_UNDEFINED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_KEY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_ANNOTATIONS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_OWNS_OVERRIDE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_OVERRIDE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_OVERRIDE;
@@ -56,6 +56,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.IN
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IS;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.OWNS;
 
 public class Undefiner {
 
@@ -216,13 +217,8 @@ public class Undefiner {
                     throw TypeDBException.of(INVALID_UNDEFINE_OWNS_OVERRIDE,
                                              owns.overridden().get().label().get().label(),
                                              owns.attribute().label().get());
-                } else if (owns.isKey()) {
-                    throw TypeDBException.of(INVALID_UNDEFINE_OWNS_KEY,
-                                             owns.attribute().label().get(),
-                                             owns.attribute().label().get());
-                } else if (attributeType != null) {
-                    thingType.unsetOwns(attributeType.asAttributeType());
-                }
+                } else if (!owns.annotations().isEmpty()) throw TypeDBException.of(INVALID_UNDEFINE_ANNOTATIONS, owns);
+                else if (attributeType != null) thingType.unsetOwns(attributeType.asAttributeType());
             });
         }
     }

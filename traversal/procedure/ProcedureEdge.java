@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.PrefixIID;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -44,6 +45,7 @@ import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Objects;
@@ -73,6 +75,7 @@ import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.PLAYING;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.RELATING;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
@@ -80,6 +83,7 @@ import static com.vaticle.typedb.core.encoding.Encoding.Prefix.VERTEX_ATTRIBUTE;
 import static com.vaticle.typedb.core.encoding.Encoding.Prefix.VERTEX_ROLE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.RELATION;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
 
 public abstract class ProcedureEdge<
         VERTEX_FROM extends ProcedureVertex<?, ?>, VERTEX_TO extends ProcedureVertex<?, ?>
@@ -410,8 +414,8 @@ public abstract class ProcedureEdge<
                     if (isForward) return new Sub.Forward(from, to, isTransitive);
                     else return new Sub.Backward(from, to, isTransitive);
                 } else if (edge.isOwns()) {
-                    if (isForward) return new Owns.Forward(from, to, edge.asOwns().isKey());
-                    else return new Owns.Backward(from, to, edge.asOwns().isKey());
+                    if (isForward) return new Owns.Forward(from, to, edge.annotations());
+                    else return new Owns.Backward(from, to, edge.annotations());
                 } else if (edge.isPlays()) {
                     if (isForward) return new Plays.Forward(from, to);
                     else return new Plays.Backward(from, to);
@@ -431,11 +435,11 @@ public abstract class ProcedureEdge<
                         if (isForward) return new Sub.Forward(from, to, edge.isTransitive());
                         else return new Sub.Backward(from, to, edge.isTransitive());
                     case OWNS:
-                        if (isForward) return new Owns.Forward(from, to, false);
-                        else return new Owns.Backward(from, to, false);
+                        if (isForward) return new Owns.Forward(from, to, edge.annotations());
+                        else return new Owns.Backward(from, to, edge.annotations());
                     case OWNS_KEY:
-                        if (isForward) return new Owns.Forward(from, to, true);
-                        else return new Owns.Backward(from, to, true);
+                        if (isForward) return new Owns.Forward(from, to, edge.annotations());
+                        else return new Owns.Backward(from, to, edge.annotations());
                     case PLAYS:
                         if (isForward) return new Plays.Forward(from, to);
                         else return new Plays.Backward(from, to);
@@ -536,27 +540,27 @@ public abstract class ProcedureEdge<
 
             static abstract class Owns extends Type {
 
-                final boolean isKey;
+                final Set<TypeQLToken.Annotation> annotations;
 
-                private Owns(ProcedureVertex.Type from, ProcedureVertex.Type to, Encoding.Direction.Edge direction, boolean isKey) {
+                private Owns(ProcedureVertex.Type from, ProcedureVertex.Type to, Encoding.Direction.Edge direction, Set<TypeQLToken.Annotation> annotations) {
                     super(from, to, direction, OWNS);
-                    this.isKey = isKey;
+                    this.annotations = annotations;
                 }
 
                 @Override
                 public boolean equals(Object o) {
-                    return super.equals(o) && ((Owns) o).isKey == isKey;
+                    return super.equals(o) && ((Owns) o).annotations.equals(annotations);
                 }
 
                 @Override
                 public String toString() {
-                    return super.toString() + String.format(" { isKey: %s }", isKey);
+                    return super.toString() + String.format(" { annotations: %s }", annotations);
                 }
 
                 static class Forward extends Owns {
 
-                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, boolean isKey) {
-                        super(from, to, FORWARD, isKey);
+                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, Set<TypeQLToken.Annotation> annotations) {
+                        super(from, to, FORWARD, annotations);
                     }
 
                     @Override
@@ -565,7 +569,7 @@ public abstract class ProcedureEdge<
                     }
 
                     private NavigableSet<TypeVertex> ownedAttributeTypes(GraphManager graphMgr, TypeVertex fromVertex) {
-                        return isKey ?
+                        return annotations.contains(KEY) ?
                                 graphMgr.schema().ownedKeyAttributeTypes(fromVertex) :
                                 graphMgr.schema().ownedAttributeTypes(fromVertex);
                     }
@@ -575,7 +579,8 @@ public abstract class ProcedureEdge<
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isType();
-                        return to.filter(iterateSorted(ownedAttributeTypes(graphMgr, fromVertex.asType()), ASC));
+                        Forwardable<TypeVertex, Order.Asc> owned = ownedWithAnnotations(graphMgr, fromVertex);
+                        return to.filter(owned);
                     }
 
                     @Override
@@ -583,19 +588,47 @@ public abstract class ProcedureEdge<
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isType() && toVertex.isType();
-                        return ownedAttributeTypes(graphMgr, fromVertex.asType()).contains(toVertex.asType());
+                        return ownedWithAnnotations(graphMgr, fromVertex.asType()).filter(toVertex::equals).first().isPresent();
+                    }
+
+                    private Forwardable<TypeVertex, Order.Asc> ownedWithAnnotations(GraphManager graphMgr, Vertex<?, ?> fromVertex) {
+                        Forwardable<TypeVertex, Order.Asc> owned = iterateSorted(ownedAttributeTypes(graphMgr, fromVertex.asType()), ASC);
+                        if ((annotations.contains(KEY) && annotations.size() > 1) || !annotations.isEmpty()) {
+                            owned = owned.filter(attr -> {
+                                Set<TypeQLToken.Annotation> ownershipAnnotations = new HashSet<>();
+                                FunctionalIterator<Vertex<?, ?>> superTypes = loop(
+                                        fromVertex, Objects::nonNull,
+                                        v -> v.asType().outs().edge(SUB).to().firstOrNull()
+                                );
+                                TypeVertex targetAttr = attr;
+                                TypeVertex superType;
+                                while (superTypes.hasNext()) {
+                                    superType = superTypes.next().asType();
+                                    TypeEdge edge;
+                                    if ((edge = superType.outs().edge(OWNS, targetAttr)) != null ||
+                                            (edge = superType.asType().outs().edge(OWNS_KEY, targetAttr)) != null) {
+                                        ownershipAnnotations.addAll(edge.annotations());
+                                        if (edge.overridden().isPresent()) {
+                                            targetAttr = edge.overridden().get();
+                                        }
+                                    }
+                                }
+                                return ownershipAnnotations.containsAll(annotations);
+                            });
+                        }
+                        return owned;
                     }
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Owns.Backward(to, from, isKey);
+                        return new Owns.Backward(to, from, annotations);
                     }
                 }
 
                 static class Backward extends Owns {
 
-                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, boolean isKey) {
-                        super(from, to, BACKWARD, isKey);
+                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, Set<TypeQLToken.Annotation> annotations) {
+                        super(from, to, BACKWARD, annotations);
                     }
 
                     @Override
@@ -604,7 +637,7 @@ public abstract class ProcedureEdge<
                     }
 
                     private NavigableSet<TypeVertex> ownersOfAttributeType(GraphManager graphMgr, TypeVertex attType) {
-                        return isKey ?
+                        return annotations.contains(KEY) ?
                                 graphMgr.schema().ownersOfAttributeTypeKey(attType) :
                                 graphMgr.schema().ownersOfAttributeType(attType);
                     }
@@ -614,19 +647,47 @@ public abstract class ProcedureEdge<
                             GraphManager graphMgr, Vertex<?, ?> fromVertex, Traversal.Parameters params
                     ) {
                         assert fromVertex.isType();
-                        return to.filter(iterateSorted(ownersOfAttributeType(graphMgr, fromVertex.asType()), ASC));
+                        return to.filter(ownerWithAnnotations(graphMgr, fromVertex));
                     }
 
                     @Override
                     public boolean isClosure(GraphManager graphMgr, Vertex<?, ?> fromVertex, Vertex<?, ?> toVertex,
                                              Traversal.Parameters params) {
                         assert fromVertex.isType() && toVertex.isType();
-                        return ownersOfAttributeType(graphMgr, fromVertex.asType()).contains(toVertex.asType());
+                        return ownerWithAnnotations(graphMgr, fromVertex.asType()).filter(toVertex::equals).first().isPresent();
+                    }
+
+                    private Forwardable<TypeVertex, Order.Asc> ownerWithAnnotations(GraphManager graphMgr, Vertex<?, ?> attrVertex) {
+                        Forwardable<TypeVertex, Order.Asc> owners = iterateSorted(ownersOfAttributeType(graphMgr, attrVertex.asType()), ASC);
+                        if ((annotations.contains(KEY) && annotations.size() > 1) || !annotations.isEmpty()) {
+                            owners = owners.filter(owner -> {
+                                Set<TypeQLToken.Annotation> ownershipAnnotations = new HashSet<>();
+                                FunctionalIterator<Vertex<?, ?>> ownerSupers = loop(
+                                        owner, Objects::nonNull,
+                                        v -> v.asType().outs().edge(SUB).to().firstOrNull()
+                                );
+                                TypeVertex targetAttr = attrVertex.asType();
+                                TypeVertex ownerSuper;
+                                while (ownerSupers.hasNext()) {
+                                    ownerSuper = ownerSupers.next().asType();
+                                    TypeEdge edge;
+                                    if ((edge = ownerSuper.asType().outs().edge(OWNS, targetAttr)) != null ||
+                                            (edge = ownerSuper.asType().outs().edge(OWNS_KEY, targetAttr)) != null) {
+                                        ownershipAnnotations.addAll(edge.annotations());
+                                        if (edge.overridden().isPresent()) {
+                                            targetAttr = edge.overridden().get();
+                                        }
+                                    }
+                                }
+                                return ownershipAnnotations.containsAll(annotations);
+                            });
+                        }
+                        return owners;
                     }
 
                     @Override
                     public ProcedureEdge<?, ?> reverse() {
-                        return new Owns.Forward(to, from, isKey);
+                        return new Owns.Forward(to, from, annotations);
                     }
                 }
             }
@@ -882,7 +943,7 @@ public abstract class ProcedureEdge<
                         } else {
                             Optional<Value<?, ?>> eq = iterate(to.props().predicates()).filter(p -> p.operator().equals(EQ)).first();
                             if (eq.isPresent()) {
-                                return to.iterateAndFilterPredicates(branchToEq(graphMgr, params, owner, eq.get()), params, ASC );
+                                return to.iterateAndFilterPredicates(branchToEq(graphMgr, params, owner, eq.get()), params, ASC);
                             } else {
                                 return to.mergeAndFilterPredicatesOnVertices(graphMgr, branchToTypes(graphMgr, owner), params, ASC);
                             }

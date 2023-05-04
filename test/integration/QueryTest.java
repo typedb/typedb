@@ -46,6 +46,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.test.integration.util.Util.assertNotNulls;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
@@ -92,12 +93,12 @@ public class QueryTest {
                     EntityType commit = tx.concepts().getEntityType("commit");
                     assertNotNulls(organisation, team, user, repository, branchRule, commit);
 
-                    assertTrue(organisation.getOwns().anyMatch(a -> a.equals(name)));
-                    assertTrue(team.getOwns().anyMatch(a -> a.equals(symbol)));
-                    assertTrue(user.getOwns().anyMatch(a -> a.equals(name)));
-                    assertTrue(repository.getOwns().anyMatch(a -> a.equals(active)));
-                    assertTrue(branchRule.getOwns().anyMatch(a -> a.equals(priority)));
-                    assertTrue(commit.getOwns().anyMatch(a -> a.equals(symbol)));
+                    assertTrue(iterate(organisation.getOwns()).anyMatch(owns -> owns.attributeType().equals(name)));
+                    assertTrue(iterate(team.getOwns()).anyMatch(owns -> owns.attributeType().equals(symbol)));
+                    assertTrue(iterate(user.getOwns()).anyMatch(owns -> owns.attributeType().equals(name)));
+                    assertTrue(iterate(repository.getOwns()).anyMatch(owns -> owns.attributeType().equals(active)));
+                    assertTrue(iterate(branchRule.getOwns()).anyMatch(owns -> owns.attributeType().equals(priority)));
+                    assertTrue(iterate(commit.getOwns()).anyMatch(owns -> owns.attributeType().equals(symbol)));
 
                     RelationType orgTeam = tx.concepts().getRelationType("org-team");
                     RelationType teamMember = tx.concepts().getRelationType("team-member");
@@ -189,7 +190,7 @@ public class QueryTest {
                     assertNotNulls(analysis, performanceTracker, commitAnalysisAnalysis, created, email);
 
                     assertFalse(analysis.isAbstract());
-                    assertTrue(analysis.getOwns().noneMatch(att -> att.equals(created)));
+                    assertTrue(iterate(analysis.getOwns()).noneMatch(owns -> owns.attributeType().equals(created)));
                     assertTrue(analysis.getPlays().noneMatch(rol -> rol.equals(commitAnalysisAnalysis)));
                     assertTrue(performanceTracker.getRelates().noneMatch(rol -> rol.getLabel().name().equals("tracker")));
                     assertNull(email.getRegex());

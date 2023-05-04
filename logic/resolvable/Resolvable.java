@@ -31,7 +31,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVA
 
 public abstract class Resolvable<T extends Pattern> {
 
-    private T pattern;
+    private final T pattern;
 
     public Resolvable(T pattern) {this.pattern = pattern;}
 
@@ -67,5 +67,10 @@ public abstract class Resolvable<T extends Pattern> {
 
     public Negated asNegated() {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Negated.class));
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[ " + pattern.toString() + " ]";
     }
 }

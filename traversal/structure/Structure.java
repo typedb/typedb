@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,6 +36,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 
 public class Structure {
 
@@ -87,17 +89,17 @@ public class Structure {
         recordEdge(edge);
     }
 
-    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding) {
-        nativeEdge(from, to, encoding, false);
+    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, Set<TypeQLToken.Annotation> annotations) {
+        nativeEdge(from, to, encoding, false, annotations);
     }
 
-    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, boolean isTransitive) {
-        StructureEdge.Native<?, ?> edge = new StructureEdge.Native<>(from, to, encoding, isTransitive);
+    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, boolean isTransitive, Set<TypeQLToken.Annotation> annotations) {
+        StructureEdge.Native<?, ?> edge = new StructureEdge.Native<>(from, to, encoding, isTransitive, annotations);
         recordEdge(edge);
     }
 
     public void rolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes, int repetition) {
-        StructureEdge.Native.RolePlayer edge = new StructureEdge.Native.RolePlayer(from, to, roleTypes, repetition);
+        StructureEdge.Native.RolePlayer edge = new StructureEdge.Native.RolePlayer(from, to, roleTypes, repetition, emptySet());
         recordEdge(edge);
     }
 

@@ -143,13 +143,15 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
 
         protected final Encoding.Edge encoding;
         private final boolean isTransitive;
+        private final Set<TypeQLToken.Annotation> annotations;
         private final int hash;
 
-        public Native(VERTEX_FROM from, VERTEX_TO to, Encoding.Edge encoding, boolean isTransitive) {
+        public Native(VERTEX_FROM from, VERTEX_TO to, Encoding.Edge encoding, boolean isTransitive, Set<TypeQLToken.Annotation> annotations) {
             super(from, to, encoding.name());
             this.encoding = encoding;
             this.isTransitive = isTransitive;
-            this.hash = Objects.hash(getClass(), from, to, this.encoding, this.isTransitive);
+            this.annotations = annotations;
+            this.hash = Objects.hash(getClass(), from, to, this.encoding, this.isTransitive, this.annotations);
         }
 
         public Encoding.Edge encoding() {
@@ -158,6 +160,10 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
 
         public boolean isTransitive() {
             return isTransitive;
+        }
+
+        public Set<TypeQLToken.Annotation> annotations() {
+            return this.annotations;
         }
 
         @Override
@@ -187,6 +193,7 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
             return (this.from.equals(that.from) &&
                     this.to.equals(that.to) &&
                     this.encoding.equals(that.encoding) &&
+                    this.annotations.equals(that.annotations) &&
                     this.isTransitive == that.isTransitive);
         }
 
@@ -201,8 +208,9 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
             private final int repetition;
             private final int hash;
 
-            RolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes, int repetition) {
-                super(from, to, ROLEPLAYER, false);
+            RolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes, int repetition,
+                       Set<TypeQLToken.Annotation> annotations) {
+                super(from, to, ROLEPLAYER, false, annotations);
                 this.roleTypes = roleTypes;
                 this.repetition = repetition;
                 this.hash = Objects.hash(this.getClass(), from, to, encoding, roleTypes, repetition);
