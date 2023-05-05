@@ -18,11 +18,9 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
-import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;

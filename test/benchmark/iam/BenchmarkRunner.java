@@ -39,7 +39,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -179,9 +178,7 @@ public class BenchmarkRunner {
         CSVBuilder() {
             sb = new StringBuilder();
             List<String> fields = new ArrayList<>();
-            Arrays.stream(new String[]{
-                    "name", "expectedAnswers", "actualAnswers", "total_time_ms",
-            }).forEach(fields::add);
+            fields.addAll(list("name", "expectedAnswers", "actualAnswers", "total_time_ms"));
             fields.addAll(perfCounterKeys);
             appendLine(fields);
         }
