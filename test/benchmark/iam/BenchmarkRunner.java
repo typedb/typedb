@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.migrator.data.DataImporter;
+import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
@@ -43,18 +44,19 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static org.junit.Assert.fail;
 
 public class BenchmarkRunner {
-    
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(BenchmarkRunner.class);
-    private static final String RESOURCE_DIRECTORY = "test/benchmark/iam/resources/";
-    private static CoreDatabaseManager databaseMgr;
-    private final String database;
 
     private static final boolean PRINT_RESULTS = true;
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(BenchmarkRunner.class);
+    private static final String RESOURCE_DIRECTORY = "test/benchmark/iam/resources/";
+
+    private static CoreDatabaseManager databaseMgr;
+    private final String database;
     private final CSVBuilder csvBuilder;
 
     BenchmarkRunner(String database) {
@@ -165,8 +167,14 @@ public class BenchmarkRunner {
 
     static class CSVBuilder {
 
+        private static final List<String> perfCounterKeys = list(
+                AbstractProcessor.Context.ReasonerPerfCounters.KEY_TIME_PLANNING_MS,
+                AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_MATERIALISATIONS,
+                AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_COMPOUND_STREAMS,
+                AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_COMPOUND_STREAMS
+        );
+
         private final StringBuilder sb;
-        private final ArrayList<String> perfCounterKeys;
 
         CSVBuilder() {
             sb = new StringBuilder();
@@ -174,7 +182,6 @@ public class BenchmarkRunner {
             Arrays.stream(new String[]{
                     "name", "expectedAnswers", "actualAnswers", "total_time_ms",
             }).forEach(fields::add);
-            perfCounterKeys = new ArrayList<>(Benchmark.PERF_KEYS.snapshotUnsynchronised().keySet());
             fields.addAll(perfCounterKeys);
             appendLine(fields);
         }

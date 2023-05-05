@@ -31,7 +31,6 @@ import static org.junit.Assert.assertTrue;
 
 class Benchmark {
     private static final double COUNTER_MARGIN = 1.5;
-    static final AbstractProcessor.Context.ReasonerPerfCounters PERF_KEYS = new AbstractProcessor.Context.ReasonerPerfCounters(false);
 
     final String name;
     final String query;
@@ -66,16 +65,16 @@ class Benchmark {
                 run.timeTaken.toMillis() <= maxTimeMs));
     }
 
-    public void assertCounter(PerfCounters.Counter counter, long maxValue) {
+    public void assertCounter(String counter, long maxValue) {
         runs.forEach(run -> assertTrue(
-                String.format("%s: %d <= %d", counter.name(), run.reasonerPerfCounters.get(counter.name()), maxValue),
-                run.reasonerPerfCounters.get(counter.name()) <= maxValue));
+                String.format("%s: %d <= %d", counter, run.reasonerPerfCounters.get(counter), maxValue),
+                run.reasonerPerfCounters.get(counter) <= maxValue));
     }
 
     public void assertCounters(long timePlanningMs, long countMaterialisations, long countConjunctionProcessors, long countCompoundStreams) {
-        assertCounter(PERF_KEYS.timePlanningMs, Math.round(timePlanningMs * COUNTER_MARGIN));
-        assertCounter(PERF_KEYS.countMaterialisations, Math.round(countMaterialisations * COUNTER_MARGIN));
-        assertCounter(PERF_KEYS.countConjunctionProcessors, Math.round(countConjunctionProcessors * COUNTER_MARGIN));
-        assertCounter(PERF_KEYS.countCompoundStreams, Math.round(countCompoundStreams * COUNTER_MARGIN));
+        assertCounter(AbstractProcessor.Context.ReasonerPerfCounters.KEY_TIME_PLANNING_MS, Math.round(timePlanningMs * COUNTER_MARGIN));
+        assertCounter(AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_MATERIALISATIONS, Math.round(countMaterialisations * COUNTER_MARGIN));
+        assertCounter(AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_CONJUNCTION_PROCESSORS, Math.round(countConjunctionProcessors * COUNTER_MARGIN));
+        assertCounter(AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_COMPOUND_STREAMS, Math.round(countCompoundStreams * COUNTER_MARGIN));
     }
 }

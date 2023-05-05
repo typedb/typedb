@@ -46,6 +46,7 @@ host_compatible_java_test(
         "//server:version",
 
         # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
 
@@ -82,6 +83,7 @@ host_compatible_java_test(
         "//server:version",
 
         # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
 
@@ -118,6 +120,7 @@ host_compatible_java_test(
         "//server:version",
 
         # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
 
@@ -154,6 +157,7 @@ host_compatible_java_test(
         "//server:version",
 
         # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
 
@@ -189,6 +193,7 @@ host_compatible_java_test(
         "//server:version",
 
         # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
 

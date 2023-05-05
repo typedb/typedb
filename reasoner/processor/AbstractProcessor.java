@@ -192,6 +192,11 @@ public abstract class AbstractProcessor<
 
         public static class ReasonerPerfCounters {
 
+            public static final String KEY_TIME_PLANNING_MS = "time_planning_ms";
+            public static final String KEY_COUNT_MATERIALISATIONS = "count_materialisations";
+            public static final String KEY_COUNT_CONJUNCTION_PROCESSORS = "count_conjunction_processors";
+            public static final String KEY_COUNT_COMPOUND_STREAMS = "count_compound_streams";
+
             private final PerfCounters perfCounters;
 
             public final PerfCounters.Counter timePlanningMs;
@@ -201,10 +206,10 @@ public abstract class AbstractProcessor<
 
             public ReasonerPerfCounters(boolean enabled) {
                 perfCounters = new PerfCounters(enabled);
-                timePlanningMs = perfCounters.register("time_planning_ms");
-                countMaterialisations = perfCounters.register("count_materialisations");
-                countConjunctionProcessors = perfCounters.register("count_conjunction_processors");
-                countCompoundStreams = perfCounters.register("count_compound_streams");
+                timePlanningMs = perfCounters.register(KEY_TIME_PLANNING_MS);
+                countMaterialisations = perfCounters.register(KEY_COUNT_MATERIALISATIONS);
+                countConjunctionProcessors = perfCounters.register(KEY_COUNT_CONJUNCTION_PROCESSORS);
+                countCompoundStreams = perfCounters.register(KEY_COUNT_COMPOUND_STREAMS);
             }
 
             public Map<String, Long> snapshotUnsynchronised() {
