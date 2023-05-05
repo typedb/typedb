@@ -30,7 +30,7 @@ load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "co
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
 
 exports_files(
-    ["VERSION", "deployment.bzl", "RELEASE_TEMPLATE.md", "LICENSE", "README.md"],
+    ["VERSION", "deployment.bzl", "LATEST_RELEASE_NOTES.md", "LICENSE", "README.md"],
 )
 
 native_java_libraries(
@@ -159,7 +159,7 @@ deploy_github(
     repository = deployment_github['github.repository'],
     title = "TypeDB",
     title_append_version = True,
-    release_description = "//:RELEASE_TEMPLATE.md",
+    release_description = "//:LATEST_RELEASE_NOTES.md",
     archive = ":assemble-versioned-all",
     draft = False
 )
