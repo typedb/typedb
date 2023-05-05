@@ -73,13 +73,16 @@ public class LargeDataTest {
     @Test
     public void testCombinatorialResults() {
         String query = "match\n" +
-        "   $p1 (subject: $s1, access: $ac1) isa permission;\n" +
-        "   $p2 (subject: $s2, access: $ac2) isa permission;\n";
-        Benchmark benchmark = new Benchmark("combinatorial-results", query, -1); // TODO: Add asserts once this runs
+        "   $c isa collection-membership;\n" +
+        "   $s isa set-membership;\n" +
+        "   $g isa group-membership;\n";
+        Benchmark benchmark = new Benchmark("combinatorial-results", query, 133000);
         benchmarker.runBenchmark(benchmark);
         benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(5000);
+        benchmark.assertCounters(200, 128, 4, 29);
     }
 
     @Test
