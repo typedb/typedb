@@ -28,7 +28,6 @@ import java.io.IOException;
 public class ConjunctionStructureTest {
 
     private static final String database = "iam-benchmark-conjunctions";
-    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
 
     public ConjunctionStructureTest() { }
@@ -43,7 +42,6 @@ public class ConjunctionStructureTest {
 
     @AfterClass
     public static void tearDown() {
-        if (printTo != null) printTo.flush();
         benchmarker.tearDown();
     }
 
@@ -69,7 +67,6 @@ public class ConjunctionStructureTest {
                 "get $oid;";
         Benchmark benchmark = new Benchmark("multiple-starting-points", query, 1);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
@@ -88,7 +85,6 @@ public class ConjunctionStructureTest {
                 "   (subject: $s, object: $o, action: $a1, action: $a2) isa high-arity-test-segregation-violation;\n";
         Benchmark benchmark = new Benchmark("high-arity-bounds", query, 1);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);

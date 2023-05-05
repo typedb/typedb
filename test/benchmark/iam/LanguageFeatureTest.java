@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -28,7 +27,6 @@ import java.io.IOException;
 
 public class LanguageFeatureTest{
 
-    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
     private static final String database = "iam-benchmark-language-features";
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
 
@@ -44,7 +42,6 @@ public class LanguageFeatureTest{
 
     @AfterClass
     public static void tearDown() {
-        if (printTo != null) printTo.flush();
         benchmarker.tearDown();
     }
 
@@ -59,7 +56,6 @@ public class LanguageFeatureTest{
                 "$x has parent-company-name $n;\n";
         Benchmark benchmark = new Benchmark("ownership", query, 0); // TODO: Data only exists in the full data-set
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(100);
@@ -72,7 +68,6 @@ public class LanguageFeatureTest{
                 "$n isa parent-company-name;\n";
         Benchmark benchmark = new Benchmark("attribute-without-ownership", query, 0); // TODO: Data only exists in the full data-set
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(100);
@@ -88,7 +83,6 @@ public class LanguageFeatureTest{
                 "$p (subject: $s, access: $ac) isa permission;\n";
         Benchmark benchmark = new Benchmark("relation-with-role-players", query, 10);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
@@ -101,7 +95,6 @@ public class LanguageFeatureTest{
                 "$p isa permission;\n";
         Benchmark benchmark = new Benchmark("relation-without-role-players", query, 2783);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(5000);
@@ -114,7 +107,6 @@ public class LanguageFeatureTest{
                 "$p (subject: $s, access: $ac) isa permission, has validity $v;\n";
         Benchmark benchmark = new Benchmark("inferred-relation-and-ownership", query, 2783);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(10_000);
@@ -134,7 +126,6 @@ public class LanguageFeatureTest{
                 "$pe-same (subject: $other-p, access: $other-a) isa permission;\n";
         Benchmark benchmark = new Benchmark("bound-relation", query, 1);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(500);
@@ -151,7 +142,6 @@ public class LanguageFeatureTest{
                 "$pe (subject: $p, access: $a) isa permission, has validity true;\n";
         Benchmark benchmark = new Benchmark("value-predicate-filtering", query, 1);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
@@ -166,7 +156,6 @@ public class LanguageFeatureTest{
                 "(group: $g, member: $p) isa variabilised-group-membership;\n";
         Benchmark benchmark = new Benchmark("variabilised-rules", query, 3);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);

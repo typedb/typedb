@@ -38,6 +38,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -53,8 +54,12 @@ public class BenchmarkRunner {
     private static CoreDatabaseManager databaseMgr;
     private final String database;
 
+    private static final boolean PRINT_RESULTS = true;
+    private final CSVBuilder csvBuilder;
+
     BenchmarkRunner(String database) {
         this.database = database;
+        this.csvBuilder = PRINT_RESULTS ? new CSVBuilder() : null;
     }
 
     void setUp() throws IOException {
@@ -70,6 +75,7 @@ public class BenchmarkRunner {
 
     void tearDown() {
         databaseMgr.close();
+        if (this.csvBuilder != null) System.out.println(csvBuilder.build());
     }
 
     private TypeDB.Session schemaSession() {
@@ -107,6 +113,7 @@ public class BenchmarkRunner {
             LOG.info("Completed run in {} ms. answersDiff: {}", run.timeTaken.toMillis(), run.answerCount - benchmark.expectedAnswers);
             LOG.info("perf_counters:\n{}", PerfCounters.prettyPrint(run.reasonerPerfCounters));
         }
+        if (csvBuilder != null) csvBuilder.append(benchmark);
     }
 
     private BenchmarkRun runMatchQuery(String query) {
@@ -153,6 +160,36 @@ public class BenchmarkRunner {
                     "\tTimeTaken :\t" + timeTaken.toMillis() + " ms\n" +
                     "\tAnswers   :\t" + answerCount + "\n" +
                     PerfCounters.prettyPrint(reasonerPerfCounters);
+        }
+    }
+
+    static class CSVBuilder {
+
+        private final StringBuilder sb;
+        private final ArrayList<String> perfCounterKeys;
+
+        CSVBuilder() {
+            sb = new StringBuilder();
+            List<String> fields = new ArrayList<>();
+            Arrays.stream(new String[]{
+                    "name", "expectedAnswers", "actualAnswers", "total_time_ms",
+            }).forEach(fields::add);
+            perfCounterKeys = new ArrayList<>(Benchmark.PERF_KEYS.snapshotUnsynchronised().keySet());
+            fields.addAll(perfCounterKeys);
+            appendLine(fields);
+        }
+
+        public void append(Benchmark benchmark) {
+            benchmark.runs.forEach(run -> appendLine(run.toCSV(benchmark, perfCounterKeys)));
+        }
+
+        private void appendLine(List<String> entries) {
+            entries.forEach(entry -> sb.append(entry).append(","));
+            sb.append("\n");
+        }
+
+        public String build() {
+            return sb.toString();
         }
     }
 }

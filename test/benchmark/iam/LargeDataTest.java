@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -28,7 +27,6 @@ import java.io.IOException;
 
 public class LargeDataTest {
 
-    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
     private static final String database = "iam-benchmark-large-data";
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
 
@@ -44,7 +42,6 @@ public class LargeDataTest {
 
     @AfterClass
     public static void tearDown() {
-        if (printTo != null) printTo.flush();
         benchmarker.tearDown();
     }
 
@@ -63,7 +60,6 @@ public class LargeDataTest {
                 "   $p2 (subject: $s, access: $ac2) isa permission;\n";
         Benchmark benchmark = new Benchmark("high-selectivity", query, 4);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1500);
@@ -78,7 +74,6 @@ public class LargeDataTest {
         "   $g isa group-membership;\n";
         Benchmark benchmark = new Benchmark("combinatorial-results", query, 133000);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(5000);
@@ -102,7 +97,6 @@ public class LargeDataTest {
                 "get $oid, $aid;";
                 Benchmark benchmark = new Benchmark("large-negation", query, 1);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(2500);

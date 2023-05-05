@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -28,7 +27,6 @@ import java.io.IOException;
 
 public class RealQueriesTest {
 
-    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
     private static final String database = "iam-benchmark-real-queries";
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
 
@@ -44,7 +42,6 @@ public class RealQueriesTest {
 
     @AfterClass
     public static void tearDown() {
-        if (printTo != null) printTo.flush();
         benchmarker.tearDown();
     }
 
@@ -63,7 +60,6 @@ public class RealQueriesTest {
                 "$pe (subject: $p, access: $a) isa permission, has validity true;\n";
         Benchmark benchmark = new Benchmark("check-permission", query, 1);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
@@ -80,7 +76,6 @@ public class RealQueriesTest {
                 "$pe (subject: $p, access: $ac) isa permission, has validity $v;\n";
         Benchmark benchmark = new Benchmark("list-subject-permissions", query, 67);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1500);
@@ -96,7 +91,6 @@ public class RealQueriesTest {
                 "(subject: $s, object: $o, policy: $p) isa segregation-violation;\n";
         Benchmark benchmark = new Benchmark("list-segregation-violations", query, 1);
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(500);
@@ -115,7 +109,6 @@ public class RealQueriesTest {
                 "(requester: $s-requesting, requestee: $s-requested, change: $ac) isa change-request;\n";
         Benchmark benchmark = new Benchmark("list-change-requests", query, 0); // TODO: Generate and keep in dataset
         benchmarker.runBenchmark(benchmark);
-        benchmark.mayPrintResults(printTo);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(500);

@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.benchmark.iam;
 import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -78,46 +77,5 @@ class Benchmark {
         assertCounter(PERF_KEYS.countMaterialisations, Math.round(countMaterialisations * COUNTER_MARGIN));
         assertCounter(PERF_KEYS.countConjunctionProcessors, Math.round(countConjunctionProcessors * COUNTER_MARGIN));
         assertCounter(PERF_KEYS.countCompoundStreams, Math.round(countCompoundStreams * COUNTER_MARGIN));
-    }
-
-    void mayPrintResults(CSVResults printTo) {
-        if (printTo != null) {
-            printTo.append(this);
-        }
-    }
-
-    static class CSVResults {
-
-        private final PrintStream out;
-        private final StringBuilder sb;
-        private final ArrayList<String> perfCounterKeys;
-
-        CSVResults(PrintStream out) {
-            this.out = out;
-            sb = new StringBuilder();
-            List<String> fields = new ArrayList<>();
-            Arrays.stream(new String[]{
-                    "name", "expectedAnswers", "actualAnswers", "total_time_ms",
-            }).forEach(fields::add);
-            perfCounterKeys = new ArrayList<>(PERF_KEYS.snapshotUnsynchronised().keySet());
-            fields.addAll(perfCounterKeys);
-            appendLine(fields);
-        }
-
-        public void append(Benchmark benchmark) {
-            if (out == null) return;
-            benchmark.runs.forEach(run -> appendLine(run.toCSV(benchmark, perfCounterKeys)));
-        }
-
-        private void appendLine(List<String> entries) {
-            entries.forEach(entry -> sb.append(entry).append(","));
-            sb.append("\n");
-        }
-
-        public void flush() {
-            if (out == null) return;
-            out.print(sb.toString());
-            out.println();
-        }
     }
 }

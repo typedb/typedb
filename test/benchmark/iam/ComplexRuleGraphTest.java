@@ -27,7 +27,6 @@ import java.io.IOException;
 
 public class ComplexRuleGraphTest {
 
-    private static final Benchmark.CSVResults printTo = new Benchmark.CSVResults(null);
     private static final String database = "iam-benchmark-rules";
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
 
@@ -41,7 +40,6 @@ public class ComplexRuleGraphTest {
 
     @AfterClass
     public static void tearDown() {
-        if (printTo != null) printTo.flush();
         benchmarker.tearDown();
     }
 
@@ -61,7 +59,6 @@ public class ComplexRuleGraphTest {
         Benchmark benchmark = new Benchmark("combinatorial-proofs-single", query, 1);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.mayPrintResults(printTo);
         benchmark.assertRunningTime(1000);
         benchmark.assertCounters(200, 149, 301, 1658);
     }
@@ -77,7 +74,6 @@ public class ComplexRuleGraphTest {
         Benchmark benchmark = new Benchmark("combinatorial-proofs-all", query, 67);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.mayPrintResults(printTo);
         benchmark.assertRunningTime(1000);
         benchmark.assertCounters(100, 265, 342, 837);
     }
