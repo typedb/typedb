@@ -21,7 +21,6 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
@@ -49,10 +48,11 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
-import static com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter.ALL;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Attribute.getOwnersResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Attribute.getTypeRes;
@@ -139,7 +139,7 @@ public class ThingService {
                     .map(t -> notNull(getAttributeType(t))).toArray(AttributeType[]::new)
             );
         else
-            attributes = thing.getHas(getHasRequest.hasOwnsFilter() ? OwnsFilter.of(getHasRequest.getOwnsFilter()) : ALL);
+            attributes = thing.getHas(getAnnotations(getHasRequest.getAnnotationFilter().getAnnotationsList()));
         transactionSvc.stream(attributes, reqID, atts -> getHasResPart(reqID, atts));
     }
 
@@ -295,5 +295,18 @@ public class ThingService {
 
     private Attribute getAttribute(ConceptProto.Attribute protoThing) {
         return conceptMgr.getAttribute(ByteArray.of(protoThing.getIid().toByteArray()));
+    }
+
+    private Set<TypeQLToken.Annotation> getAnnotations(List<ConceptProto.Type.Annotation> protoAnnotations) {
+        Set<TypeQLToken.Annotation> annotations = set();
+        for (ConceptProto.Type.Annotation annotation: protoAnnotations) {
+            switch (annotation) {
+                case KEY: annotations.add(TypeQLToken.Annotation.KEY); break;
+                case UNIQUE: annotations.add(TypeQLToken.Annotation.UNIQUE); break;
+                case UNRECOGNIZED:
+                default: throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            }
+        }
+        return annotations;
     }
 }

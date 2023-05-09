@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable
 import com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
@@ -89,8 +90,6 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
-import static com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter.ALL;
-import static com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter.KEYS;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
@@ -169,7 +168,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             else if (secondContainsUnique && !firstContainsUnique) return 1;
             else return 0;
         };
-        getOwnsExplicit().stream().sorted(
+        getOwns(EXPLICIT).stream().sorted(
                 hasKey.thenComparing(hasUnique).thenComparing(owns -> owns.attributeType().getLabel().name())
         ).forEach(owns -> {
             builder.append(COMMA);
@@ -261,7 +260,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void unsetOwns(AttributeType attributeType) {
         validateIsNotDeleted();
-        Optional<Owns> owns = getOwnsExplicit(attributeType);
+        Optional<Owns> owns = getOwns(attributeType, EXPLICIT);
         if (owns.isPresent()) owns.get().delete();
         else if (getOwns(attributeType).isPresent()) {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS, getLabel(), attributeType.getLabel()));
@@ -282,12 +281,17 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         ((TypeImpl) owner).vertex.outs().edge(encoding, ((TypeImpl) type).vertex).setOverridden(((TypeImpl) overriddenType).vertex);
     }
+
     @Override
     public Optional<Owns> getOwns(AttributeType attributeType) {
-        // TODO: optimise for non-cached setting by using point lookups rather than a scan
-        return iterate(getOwns()).filter(owns -> owns.attributeType().equals(attributeType)).first();
+        return getOwns(attributeType, TRANSITIVE);
     }
 
+    @Override
+    public Optional<Owns> getOwns(AttributeType attributeType, Transitivity transitivity) {
+        // TODO: optimise for non-cached setting by using point lookups rather than a scan
+        return iterate(getOwns(transitivity)).filter(owns -> owns.attributeType().equals(attributeType)).first();
+    }
 
     @Override
     public NavigableSet<Owns> getOwns() {
@@ -311,38 +315,38 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations) {
+    public Forwardable<Owns, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations) {
         return getOwns(annotations, TRANSITIVE);
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations, Transitivity transitivity) {
+    public Forwardable<Owns, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations, Transitivity transitivity) {
         return iterateSorted(getOwns(transitivity), ASC).filter(owns -> owns.effectiveAnnotations().containsAll(annotations));
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType) {
+    public Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType) {
         return getOwns(valueType, TRANSITIVE);
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations) {
+    public Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations) {
         return getOwns(valueType, annotations, TRANSITIVE);
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, Transitivity transitivity) {
-        return getOwns(transitivity).filter(att -> att.getValueType().equals(valueType));
+    public Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Transitivity transitivity) {
+        return getOwns(valueType, emptySet(), transitivity);
     }
 
     @Override
-    public Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations, Transitivity transitivity) {
-        return getOwns(annotations, transitivity).filter(att -> att.getValueType().equals(valueType));
+    public Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations, Transitivity transitivity) {
+        return getOwns(annotations, transitivity).filter(owns -> owns.attributeType().getValueType().equals(valueType));
     }
 
     private NavigableSet<Owns> fetchOwns() {
         NavigableSet<Owns> owns = new TreeSet<>();
-        graphMgr().schema().ownedAttributeTypes(vertex).forEach(
+        graphMgr.schema().ownedAttributeTypes(vertex, emptySet()).forEach(
                 v -> owns.add(OwnsImpl.of(this, (AttributeTypeImpl) conceptMgr.convertAttributeType(v)))
         );
         return owns;
@@ -682,7 +686,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             Optional<Owns> existingOrInherited = iterate(owner.getOwns()).filter(owns -> owns.attributeType().equals(attributeType)).first();
             validateData(owner, attributeType, annotations, existingOrInherited.orElse(null));
 
-            Optional<Owns> existingExplicit = iterate(owner.getOwnsExplicit())
+            Optional<Owns> existingExplicit = iterate(owner.getOwns(EXPLICIT))
                     .filter(ownsExplicit -> ownsExplicit.attributeType().equals(attributeType)).first();
             if (existingExplicit.isPresent()) {
                 OwnsImpl existingOwnsImpl = ((OwnsImpl) existingExplicit.get());

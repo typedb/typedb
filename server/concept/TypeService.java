@@ -19,10 +19,7 @@ package com.vaticle.typedb.core.server.concept;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
-import com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
-import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -39,7 +36,6 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -48,7 +44,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_FIELD;
@@ -211,176 +207,10 @@ public class TypeService {
         transactionSvc.respond(ResponseBuilder.Type.RoleType.getSupertypeRes(reqID, getRoleType(roleTypeReq).getSupertype()));
     }
 
-<<<<<<< HEAD
-    private void setLabel(Type type, String label, UUID reqID) {
-        type.setLabel(label);
-        transactionSvc.respond(setLabelRes(reqID));
-    }
-
-    private void setAbstract(ThingType thingType, UUID reqID) {
-        thingType.setAbstract();
-        transactionSvc.respond(setAbstractRes(reqID));
-    }
-
-    private void unsetAbstract(ThingType thingType, UUID reqID) {
-        thingType.unsetAbstract();
-        transactionSvc.respond(unsetAbstractRes(reqID));
-    }
-
-    private void getSupertype(Type type, UUID reqID) {
-        transactionSvc.respond(getSupertypeRes(reqID, type.getSupertype()));
-    }
-
-    private void setSupertype(Type type, ConceptProto.Type supertype, UUID reqID) {
-        Type sup = getThingType(supertype);
-
-        if (type.isEntityType()) {
-            type.asEntityType().setSupertype(sup.asEntityType());
-        } else if (type.isRelationType()) {
-            type.asRelationType().setSupertype(sup.asRelationType());
-        } else if (type.isAttributeType()) {
-            type.asAttributeType().setSupertype(sup.asAttributeType());
-        } else {
-            throw TypeDBException.of(ILLEGAL_SUPERTYPE_ENCODING, className(type.getClass()));
-        }
-
-        transactionSvc.respond(setSupertypeRes(reqID));
-    }
-
-    private void getSupertypes(Type type, UUID reqID) {
-        transactionSvc.stream(type.getSupertypes(), reqID, types -> getSupertypesResPart(reqID, types));
-    }
-
-    private void getSubtypes(Type type, UUID reqID) {
-        transactionSvc.stream(type.getSubtypes(), reqID, types -> getSubtypesResPart(reqID, types));
-    }
-
-    private void getSubtypesExplicit(Type type, UUID reqID) {
-        transactionSvc.stream(type.getSubtypesExplicit(), reqID, types -> getSubtypesExplicitResPart(reqID, types));
-    }
-
-    private void getInstances(ThingType thingType, UUID reqID) {
-        transactionSvc.stream(thingType.getInstances(), reqID, things -> getInstancesResPart(reqID, things));
-    }
-
-    private void getInstancesExplicit(ThingType thingType, UUID reqID) {
-        transactionSvc.stream(thingType.getInstancesExplicit(), reqID, things -> getInstancesExplicitResPart(reqID, things));
-    }
-
-    private void getOwns(ThingType thingType, ConceptProto.ThingType.GetOwns.Req getOwnsReq, UUID reqID) {
-        Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnsReq.getAnnotationsList());
-        if (getOwnsReq.getFilterCase() == ConceptProto.ThingType.GetOwns.Req.FilterCase.VALUE_TYPE) {
-            getOwnsStream(reqID, thingType.getOwns(
-                    valueType(getOwnsReq.getValueType()),
-                    annotations
-            ).map(ThingType.Owns::attributeType));
-        } else getOwnsStream(reqID, thingType.getOwns(annotations).map(ThingType.Owns::attributeType));
-    }
-
-    private void getOwnsStream(UUID reqID, FunctionalIterator<AttributeType> atts) {
-        transactionSvc.stream(atts, reqID, attributeTypes -> getOwnsResPart(reqID, attributeTypes));
-    }
-
-    private void getOwnsExplicit(ThingType thingType, ConceptProto.ThingType.GetOwnsExplicit.Req getOwnsExplicitReq,
-                                 UUID reqID) {
-        Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnsExplicitReq.getAnnotationsList());
-        if (getOwnsExplicitReq.getFilterCase() == ConceptProto.ThingType.GetOwnsExplicit.Req.FilterCase.VALUE_TYPE) {
-            getOwnsStream(reqID, thingType.getOwnsExplicit(
-                    valueType(getOwnsExplicitReq.getValueType()),
-                    annotations
-            ).map(ThingType.Owns::attributeType));
-        } else getOwnsExplicitStream(reqID, thingType.getOwnsExplicit(annotations).map(ThingType.Owns::attributeType));
-    }
-
-    private void getOwnsExplicitStream(UUID reqID, FunctionalIterator<AttributeType> atts) {
-        transactionSvc.stream(atts, reqID, attributeTypes -> getOwnsExplicitResPart(reqID, attributeTypes));
-    }
-
-    private void getOwnsOverridden(ThingType thingType, ConceptProto.ThingType.GetOwnsOverridden.Req getOwnsOverriddenReq, UUID reqID) {
-        AttributeType attributeType = getThingType(getOwnsOverriddenReq.getAttributeType()).asAttributeType();
-        transactionSvc.respond(getOwnsOverriddenRes(reqID, thingType.getOwnsOverridden(attributeType)));
-    }
-
-    private void setOwns(ThingType thingType, ConceptProto.ThingType.SetOwns.Req setOwnsRequest, UUID reqID) {
-        AttributeType attributeType = getThingType(setOwnsRequest.getAttributeType()).asAttributeType();
-        Set<TypeQLToken.Annotation> annotations = getAnnotations(setOwnsRequest.getAnnotationsList());
-        if (setOwnsRequest.hasOverriddenType()) {
-            AttributeType overriddenType = getThingType(setOwnsRequest.getOverriddenType()).asAttributeType();
-            thingType.setOwns(attributeType, overriddenType, annotations);
-        } else {
-            thingType.setOwns(attributeType, annotations);
-        }
-        transactionSvc.respond(setOwnsRes(reqID));
-    }
-
-    private void unsetOwns(ThingType thingType, ConceptProto.Type protoAttributeType, UUID reqID) {
-        thingType.unsetOwns(getThingType(protoAttributeType).asAttributeType());
-        transactionSvc.respond(unsetOwnsRes(reqID));
-    }
-
-    private void getPlays(ThingType thingType, UUID reqID) {
-        transactionSvc.stream(thingType.getPlays(), reqID, roleTypes -> getPlaysResPart(reqID, roleTypes));
-    }
-
-    private void getPlaysExplicit(ThingType thingType, UUID reqID) {
-        transactionSvc.stream(thingType.getPlaysExplicit(), reqID, roleTypes -> getPlaysExplicitResPart(reqID, roleTypes));
-    }
-
-    private void getPlaysOverridden(ThingType thingType, ConceptProto.ThingType.GetPlaysOverridden.Req getPlaysOverriddenReq, UUID reqID) {
-        RoleType roleType = getRoleType(getPlaysOverriddenReq.getRoleType());
-        transactionSvc.respond(getPlaysOverriddenRes(reqID, thingType.getPlaysOverridden(roleType)));
-    }
-
-    private void setPlays(ThingType thingType, ConceptProto.ThingType.SetPlays.Req setPlaysRequest, UUID reqID) {
-        RoleType role = getRoleType(setPlaysRequest.getRoleType());
-        if (setPlaysRequest.hasOverriddenType()) {
-            RoleType overriddenRole = getRoleType(setPlaysRequest.getOverriddenType());
-            thingType.setPlays(role, overriddenRole);
-        } else thingType.setPlays(role);
-        transactionSvc.respond(setPlaysRes(reqID));
-    }
-
-    private void unsetPlays(ThingType thingType, ConceptProto.Type protoRoleType, UUID reqID) {
-        thingType.unsetPlays(notNull(getRoleType(protoRoleType)));
-        transactionSvc.respond(unsetPlaysRes(reqID));
-    }
-
-    private void getSyntax(ThingType thingType, UUID reqID) {
-        transactionSvc.respond(getSyntaxRes(reqID, thingType.getSyntax()));
-    }
-
-    static Set<TypeQLToken.Annotation> getAnnotations(List<ConceptProto.Type.Annotation> annotationsProto) {
-        Set<TypeQLToken.Annotation> annotations = new HashSet<>(annotationsProto.size());
-        for (ConceptProto.Type.Annotation annotation : annotationsProto) {
-            switch (annotation.getAnnotationCase()) {
-                case KEY:
-                    annotations.add(TypeQLToken.Annotation.KEY);
-                    break;
-                case UNIQUE:
-                    annotations.add(TypeQLToken.Annotation.UNIQUE);
-                    break;
-                case ANNOTATION_NOT_SET:
-                default:
-                    throw TypeDBException.of(MISSING_FIELD, annotation.getKey());
-            }
-        }
-        return annotations;
-    }
-
-    private void getOwners(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations, UUID reqID) {
-        transactionSvc.stream(attributeType.getOwners(annotations), reqID, owners -> getOwnersResPart(reqID, owners));
-    }
-
-    private void getOwnersExplicit(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations, UUID reqID) {
-        transactionSvc.stream(
-                attributeType.getOwnersExplicit(annotations), reqID,
-                owners -> getOwnersExplicitResPart(reqID, owners)
-=======
     private void roleTypeGetSupertypes(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
         transactionSvc.stream(
                 getRoleType(roleTypeReq).getSupertypes(), reqID,
                 types -> ResponseBuilder.Type.RoleType.getSupertypesResPart(reqID, types)
->>>>>>> 419425a51 (api rearchitecture: squashed)
         );
     }
 
@@ -448,12 +278,14 @@ public class TypeService {
 
     private void thingTypeGetOwns(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.ThingType.GetOwns.Req getOwnsReq = thingTypeReq.getThingTypeGetOwnsReq();
-        SortedIterator.Forwardable<AttributeType, Order.Asc> attributes;
-        OwnsFilter ownsFilter = OwnsFilter.of(getOwnsReq.getOwnsFilter());
+        FunctionalIterator<AttributeType> attributes;
+        Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnsReq.getAnnotationsList());
         Transitivity transitivity = Transitivity.of(getOwnsReq.getTransitivity());
         if (getOwnsReq.hasFilter())
-            attributes = getThingType(thingTypeReq).getOwns(valueType(getOwnsReq.getFilter()), ownsFilter, transitivity);
-        else attributes = getThingType(thingTypeReq).getOwns(ownsFilter, transitivity);
+            attributes = getThingType(thingTypeReq).getOwns(valueType(getOwnsReq.getFilter()), annotations, transitivity)
+                    .map(ThingType.Owns::attributeType);
+        else
+            attributes = getThingType(thingTypeReq).getOwns(annotations, transitivity).map(ThingType.Owns::attributeType);
         transactionSvc.stream(attributes, reqID, attributeTypes -> ResponseBuilder.Type.ThingType.getOwnsResPart(reqID, attributeTypes));
     }
 
@@ -466,13 +298,13 @@ public class TypeService {
     private void thingTypeSetOwns(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.ThingType.SetOwns.Req setOwnsReq = thingTypeReq.getThingTypeSetOwnsReq();
         AttributeType attributeType = getAttributeType(setOwnsReq.getAttributeType());
-        boolean isKey = setOwnsReq.getIsKey();
+        Set<TypeQLToken.Annotation> annotations = getAnnotations(setOwnsReq.getAnnotationsList());
 
         if (setOwnsReq.hasOverriddenType()) {
             AttributeType overriddenType = getAttributeType(setOwnsReq.getOverriddenType());
-            getThingType(thingTypeReq).setOwns(attributeType, overriddenType, isKey);
+            getThingType(thingTypeReq).setOwns(attributeType, overriddenType, annotations);
         } else {
-            getThingType(thingTypeReq).setOwns(attributeType, isKey);
+            getThingType(thingTypeReq).setOwns(attributeType, annotations);
         }
         transactionSvc.respond(ResponseBuilder.Type.ThingType.setOwnsRes(reqID));
     }
@@ -484,7 +316,7 @@ public class TypeService {
     }
 
     private void thingTypeGetPlays(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        var getPlaysReq = thingTypeReq.getThingTypeGetPlaysReq();
+        ConceptProto.ThingType.GetPlays.Req getPlaysReq = thingTypeReq.getThingTypeGetPlaysReq();
         transactionSvc.stream(
                 getThingType(thingTypeReq).getPlays(Transitivity.of(getPlaysReq.getTransitivity())), reqID,
                 roleTypes -> ResponseBuilder.Type.ThingType.getPlaysResPart(reqID, roleTypes)
@@ -702,7 +534,7 @@ public class TypeService {
     }
 
     private void attributeTypeGetSubtypes(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        var attributeType = getAttributeType(thingTypeReq);
+        AttributeType attributeType = getAttributeType(thingTypeReq);
         switch (thingTypeReq.getAttributeTypeGetSubtypesReq().getValueType()) {
             // FIXME barf
             case BOOLEAN: attributeType = attributeType.asBoolean(); break;
@@ -740,10 +572,10 @@ public class TypeService {
 
     private void attributeTypeGetOwners(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.AttributeType.GetOwners.Req getOwnersReq = thingTypeReq.getAttributeTypeGetOwnersReq();
-        OwnsFilter ownsFilter = OwnsFilter.of(getOwnersReq.getOwnsFilter());
+        Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnersReq.getAnnotationsList());
         Transitivity transitivity = Transitivity.of(getOwnersReq.getTransitivity());
         transactionSvc.stream(
-                getAttributeType(thingTypeReq).getOwners(ownsFilter, transitivity), reqID,
+                getAttributeType(thingTypeReq).getOwners(annotations, transitivity), reqID,
                 owners -> ResponseBuilder.Type.AttributeType.getOwnersResPart(reqID, owners)
         );
     }
@@ -793,5 +625,18 @@ public class TypeService {
         RelationType relationType = conceptMgr.getRelationType(protoRoleType.getScope());
         if (relationType != null) return relationType.getRelates(protoRoleType.getLabel());
         else return null;
+    }
+
+    private Set<TypeQLToken.Annotation> getAnnotations(List<ConceptProto.Type.Annotation> protoAnnotations) {
+        Set<TypeQLToken.Annotation> annotations = set();
+        for (ConceptProto.Type.Annotation annotation: protoAnnotations) {
+            switch (annotation) {
+                case KEY: annotations.add(TypeQLToken.Annotation.KEY); break;
+                case UNIQUE: annotations.add(TypeQLToken.Annotation.UNIQUE); break;
+                case UNRECOGNIZED:
+                default: throw TypeDBException.of(ILLEGAL_ARGUMENT);
+            }
+        }
+        return annotations;
     }
 }

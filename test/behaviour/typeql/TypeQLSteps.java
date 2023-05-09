@@ -65,7 +65,6 @@ import java.util.stream.Collectors;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Double.equalsApproximate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter.KEYS;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;

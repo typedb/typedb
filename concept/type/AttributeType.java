@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.concept.type;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.common.parameters.Concept.Existence;
-import com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.encoding.Encoding;
@@ -60,8 +59,9 @@ public interface AttributeType extends ThingType {
 
     ValueType getValueType();
 
-    Forwardable<? extends ThingType, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations, Transitivity transitivity);
+    Forwardable<? extends ThingType, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations);
 
+    Forwardable<? extends ThingType, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations, Transitivity transitivity);
 
     boolean isBoolean();
 

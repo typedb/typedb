@@ -67,8 +67,6 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.loop;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
-import static com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter.ALL;
-import static com.vaticle.typedb.core.common.parameters.Concept.OwnsFilter.KEYS;
 import static com.vaticle.typedb.core.encoding.Encoding.Direction.Edge.BACKWARD;
 import static com.vaticle.typedb.core.encoding.Encoding.Direction.Edge.FORWARD;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.ISA;
@@ -571,9 +569,7 @@ public abstract class ProcedureEdge<
                     }
 
                     private NavigableSet<TypeVertex> ownedAttributeTypes(GraphManager graphMgr, TypeVertex fromVertex) {
-                        return annotations.contains(KEY) ?
-                                graphMgr.schema().ownedKeyAttributeTypes(fromVertex) :
-                                graphMgr.schema().ownedAttributeTypes(fromVertex);
+                        return graphMgr.schema().ownedAttributeTypes(fromVertex, annotations);
                     }
 
                     @Override
@@ -639,9 +635,7 @@ public abstract class ProcedureEdge<
                     }
 
                     private NavigableSet<TypeVertex> ownersOfAttributeType(GraphManager graphMgr, TypeVertex attType) {
-                        return annotations.contains(KEY) ?
-                                graphMgr.schema().ownersOfAttributeTypeKey(attType) :
-                                graphMgr.schema().ownersOfAttributeType(attType);
+                        return graphMgr.schema().ownersOfAttributeType(attType, annotations);
                     }
 
                     @Override
@@ -972,7 +966,7 @@ public abstract class ProcedureEdge<
                     private List<Pair<TypeVertex, Forwardable<ThingVertex, Order.Asc>>> branchToTypes(
                             GraphManager graphMgr, ThingVertex owner
                     ) {
-                        Set<TypeVertex> types = graphMgr.schema().ownedAttributeTypes(owner.type(), ALL);
+                        Set<TypeVertex> types = graphMgr.schema().ownedAttributeTypes(owner.type(), set());
                         return iterate(types)
                                 .filter(t -> to.props().types().contains(t.properLabel()))
                                 .map(t -> new Pair<>(t, owner.outs().edge(HAS, PrefixIID.of(VERTEX_ATTRIBUTE), t.iid()).to()))
@@ -1009,7 +1003,7 @@ public abstract class ProcedureEdge<
                             if (toVertex.isPresent()) return to.iterateAndFilterPredicates(toVertex.get(), params, ASC);
                             else return emptySorted();
                         } else {
-                            Set<TypeVertex> owners = graphMgr.schema().ownersOfAttributeType(att.type(), ALL);
+                            Set<TypeVertex> owners = graphMgr.schema().ownersOfAttributeType(att.type(), set());
                             return to.mergeAndFilterPredicatesOnVertices(
                                     graphMgr,
                                     iterate(owners).filter(owner -> to.props().types().contains(owner.properLabel()))

@@ -154,7 +154,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         Forwardable<TypeVertex, Order.Asc> owners;
         if (transitivity == EXPLICIT) owners = vertex.ins().edge(OWNS_KEY).from().merge(vertex.ins().edge(OWNS).from());
-        else owners = iterateSorted(graphMgr.schema().ownersOfAttributeType(vertex), ASC);
+        else owners = iterateSorted(graphMgr.schema().ownersOfAttributeType(vertex, annotations), ASC);
 
         return owners.mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), thingType -> thingType.vertex, ASC)
                 .filter(thingType -> thingType.getOwnsExplicit(this)

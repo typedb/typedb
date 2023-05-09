@@ -38,21 +38,6 @@ public class Concept {
         }
     }
 
-    public enum OwnsFilter {
-        KEYS,
-        ALL;
-
-        public static OwnsFilter of(ConceptProto.Type.OwnsFilter proto) {
-            switch (proto) {
-                case KEYS_ONLY: return KEYS;
-                case ALL: return ALL;
-                case UNRECOGNIZED:
-                default:
-                    throw TypeDBException.of(ErrorMessage.Server.BAD_VALUE_TYPE, proto);
-            }
-        }
-    }
-
     public enum Existence {
         STORED, INFERRED,
     }
