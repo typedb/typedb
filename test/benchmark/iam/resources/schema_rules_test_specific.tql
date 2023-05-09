@@ -72,3 +72,30 @@ when {
 } then {
         ($parent: $p, $member: $m) isa $membership;
 };
+
+chain sub relation, relates start, relates end;
+resource-collection plays chain:start;
+object plays chain:end;
+length-1-chain sub chain;
+length-4-chain sub chain;
+rule length-1-chain:
+when {
+    $a isa resource-collection; $b isa object;
+    (collection: $a, member: $b) isa! collection-membership;
+} then {
+    (start: $a, end: $b) isa length-1-chain;
+};
+rule length-4-chain:
+when {
+        $a isa resource-collection;
+        $b isa resource-collection;
+        $c isa resource-collection;
+        $d isa resource-collection;
+        $e isa object;
+        (start: $a, end: $b) isa length-1-chain;
+        (start: $b, end: $c) isa length-1-chain;
+        (start: $c, end: $d) isa length-1-chain;
+        (start: $d, end: $e) isa length-1-chain;
+} then {
+    (start: $a, end: $e) isa length-4-chain;
+};

@@ -37,6 +37,7 @@ public class ConjunctionStructureTest {
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadSchema("schema_rules_optimised.tql");
+        benchmarker.loadSchema("schema_rules_test_specific.tql");
         benchmarker.loadData("data.typedb");
     }
 
@@ -75,7 +76,6 @@ public class ConjunctionStructureTest {
 
     @Test
     public void testHighArityBounds() {
-        benchmarker.loadSchema("schema_rules_test_specific.tql");
         String query = "match\n" +
                 "   $a1 isa action, has name \"submit pull request\";\n" +
                 "   $a2 isa action, has name \"approve pull request\";\n" +
@@ -89,6 +89,18 @@ public class ConjunctionStructureTest {
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
         benchmark.assertCounters(500, 100, 400, 1500);
+    }
 
+    @Test
+    public void testLength4Chains() {
+        String query = "match\n" +
+                "$a isa object, has id \"root\";\n" +
+                "(start: $a, end: $b) isa length-4-chain;\n";
+        Benchmark benchmark = new Benchmark("high-arity-bounds", query, 24);
+        benchmarker.runBenchmark(benchmark);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1000);
+        benchmark.assertCounters(200, 71, 60, 60);
     }
 }

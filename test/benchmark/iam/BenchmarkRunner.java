@@ -64,7 +64,7 @@ public class BenchmarkRunner {
     }
 
     void setUp() throws IOException {
-        Path dataDir = Paths.get(System.getProperty("user.dir")).resolve("iam-benchmark-conjunctions");
+        Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
         if (Files.exists(dataDir)) {
             Files.walk(dataDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
         }
