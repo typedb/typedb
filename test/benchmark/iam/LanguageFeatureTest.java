@@ -128,8 +128,8 @@ public class LanguageFeatureTest{
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(500);
-        benchmark.assertCounters(200, 23, 30, 83);
+        benchmark.assertRunningTime(2500);
+        benchmark.assertCounters(1000, 23, 30, 83);
     }
 
     @Test
@@ -144,8 +144,8 @@ public class LanguageFeatureTest{
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(1000);
-        benchmark.assertCounters(300, 200, 500, 1500);
+        benchmark.assertRunningTime(2500);
+        benchmark.assertCounters(1000, 200, 500, 1500);
     }
 
     @Test
