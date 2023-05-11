@@ -169,7 +169,7 @@ public class BenchmarkRunner {
         private static final List<String> perfCounterKeys = list(
                 AbstractProcessor.Context.ReasonerPerfCounters.KEY_TIME_PLANNING_MS,
                 AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_MATERIALISATIONS,
-                AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_COMPOUND_STREAMS,
+                AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_CONJUNCTION_PROCESSORS,
                 AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_COMPOUND_STREAMS
         );
 
