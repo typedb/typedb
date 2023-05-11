@@ -46,17 +46,19 @@ public abstract class ReasonerPlanner {
     final ConceptManager conceptMgr;
     final TraversalEngine traversalEng;
     final LogicManager logicMgr;
+    private final boolean explain;
     final CommonCache<CallMode, Plan> planCache;
 
-    public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
+    public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, boolean explain) {
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
+        this.explain = explain;
         this.planCache = new CommonCache<>();
     }
 
-    public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
-        return RecursivePlanner.create(traversalEng, conceptMgr, logicMgr);
+    public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, boolean explain) {
+        return RecursivePlanner.create(traversalEng, conceptMgr, logicMgr, explain);
     }
 
     static Set<Variable> estimateableVariables(Set<Variable> variables) {
@@ -132,7 +134,7 @@ public abstract class ReasonerPlanner {
         Set<CallMode> calls = new HashSet<>();
 
         // Don't trigger reasoning if we can just look it up
-        if (!concludable.isHas() && concludable.generating().isPresent() && mode.contains(concludable.generating().get())) {
+        if (!explain && !concludable.isHas() && concludable.generating().isPresent() && mode.contains(concludable.generating().get())) {
             return calls;
         }
 

@@ -86,7 +86,7 @@ public class Reasoner {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
-        this.planner = ReasonerPlanner.create(traversalEng, conceptMgr, logicMgr);
+        this.planner = ReasonerPlanner.create(traversalEng, conceptMgr, logicMgr, context.options().explain());
         this.controllerRegistry = new ControllerRegistry(actor(), traversalEng, conceptMgr, logicMgr, planner, context);
         this.explainablesManager = new ExplainablesManager();
     }
