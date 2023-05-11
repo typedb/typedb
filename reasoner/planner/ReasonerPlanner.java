@@ -131,7 +131,7 @@ public abstract class ReasonerPlanner {
     public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> mode, @Nullable Set<ResolvableConjunction> dependencyFilter) {
         Set<CallMode> calls = new HashSet<>();
 
-        // We don't trigger reasoning if the relation variable is bound
+        // Don't trigger reasoning if we can just look it up
         if (!concludable.isHas() && concludable.generating().isPresent() && mode.contains(concludable.generating().get())) {
             return calls;
         }
