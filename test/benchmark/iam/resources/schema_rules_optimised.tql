@@ -45,6 +45,52 @@ rule automatic-root-collection:
         $c has root-collection true;
     };
 
+# memberships
+inferred-group-membership sub group-membership;
+inferred-set-membership sub set-membership;
+inferred-collection-membership sub collection-membership;
+
+rule optimised-transitive-membership-groups:
+when {
+        (group: $p, member: $t) isa! group-membership;
+        (group: $t, member: $m) isa group-membership;
+} then {
+        (group: $p, member: $m) isa  inferred-group-membership;
+};
+
+rule optimised-transitive-membership-sets:
+when {
+        (set: $p, member: $t) isa! set-membership;
+        (set: $t, member: $m) isa set-membership;
+} then {
+        (set: $p, member: $m) isa inferred-set-membership;
+};
+
+rule optimised-transitive-membership-collections:
+when {
+        (collection: $p, member: $t) isa! collection-membership;
+        (collection: $t, member: $m) isa collection-membership;
+} then {
+        (collection: $p, member: $m) isa inferred-collection-membership;
+};
+
+# permissions
+rule unified-permission-inheritance:
+when {
+    $access (object: $object, action: $action) isa access;
+    $subject isa subject;
+
+    {(group: $granting-subject, member: $subject) isa group-membership;}  or { $granting-subject is $subject; };
+    {(set: $granting-action, member: $action) isa set-membership;} or { $granting-action is $action; };
+    {(collection: $granting-object, member: $object) isa collection-membership;} or { $granting-object is $object; };
+
+    $granting-access (object: $granting-object, action: $granting-action) isa access;
+    (subject: $granting-subject, access: $granting-access) isa direct-permission;
+} then {
+    (subject: $subject, access: $access) isa inherited-permission;
+};
+
+# violations
 rule segregation-violation-detection:
     when {
         $po(action: $a1, action: $a2) isa segregation-policy;
@@ -84,50 +130,3 @@ rule automatic-permission-validity:
     } then {
         $p has validity true;
     };
-
-
-rule unified-permission-inheritance:
-when {
-    $access (object: $object, action: $action) isa access;
-    $subject isa subject;
-
-    {(group: $granting-subject, member: $subject) isa group-membership;}  or { $granting-subject is $subject; };
-    {(set: $granting-action, member: $action) isa set-membership;} or { $granting-action is $action; };
-    {(collection: $granting-object, member: $object) isa collection-membership;} or { $granting-object is $object; };
-
-    $granting-access (object: $granting-object, action: $granting-action) isa access;
-    (subject: $granting-subject, access: $granting-access) isa direct-permission;
-} then {
-    (subject: $subject, access: $access) isa inherited-permission;
-};
-
-
-inferred-group-membership sub group-membership;
-inferred-set-membership sub set-membership;
-inferred-collection-membership sub collection-membership;
-
-rule optimised-transitive-membership-groups:
-when {
-        (group: $p, member: $t) isa! group-membership;
-        (group: $t, member: $m) isa group-membership;
-} then {
-        (group: $p, member: $m) isa  inferred-group-membership;
-};
-
-
-rule optimised-transitive-membership-sets:
-when {
-        (set: $p, member: $t) isa! set-membership;
-        (set: $t, member: $m) isa set-membership;
-} then {
-        (set: $p, member: $m) isa inferred-set-membership;
-};
-
-
-rule optimised-transitive-membership-collections:
-when {
-        (collection: $p, member: $t) isa! collection-membership;
-        (collection: $t, member: $m) isa collection-membership;
-} then {
-        (collection: $p, member: $m) isa inferred-collection-membership;
-};

@@ -45,6 +45,7 @@ rule automatic-root-collection:
         $c has root-collection true;
     };
 
+# memberships
 rule transitive-membership-groups:
 when {
         (group: $p, member: $t) isa group-membership;
@@ -52,7 +53,6 @@ when {
 } then {
         (group: $p, member: $m) isa group-membership;
 };
-
 
 rule transitive-membership-sets:
 when {
@@ -62,7 +62,6 @@ when {
         (set: $p, member: $m) isa set-membership;
 };
 
-
 rule transitive-membership-collections:
 when {
         (collection: $p, member: $t) isa collection-membership;
@@ -71,6 +70,7 @@ when {
         (collection: $p, member: $m) isa collection-membership;
 };
 
+# permissions
 rule subject-permission-inheritance:
     when {
         $s isa subject;
@@ -102,6 +102,7 @@ rule action-permission-inheritance:
         (subject: $s, access: $ac-a) isa inherited-permission;
     };
 
+# violations
 rule segregation-violation-detection:
     when {
         $po(action: $a1, action: $a2) isa segregation-policy;

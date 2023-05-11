@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-
 # Ensure none of the new rules are triggered by only creating rules which conclude test-specific types
 define
 
@@ -35,7 +34,6 @@ when {
     (subject: $s, object: $o, action: $a1, action: $a2) isa high-arity-test-segregation-violation;
 };
 
-
 variabilised-membership sub relation, relates parent, relates member; # abstract
 variabilised-collection-membership sub variabilised-membership, relates collection as parent;
 variabilised-set-membership sub variabilised-membership, relates set as parent;
@@ -47,7 +45,6 @@ resource-collection plays variabilised-collection-membership:collection;
 object plays variabilised-collection-membership:member;
 operation-set plays variabilised-set-membership:set;
 action plays variabilised-set-membership:member;
-
 
 rule copy-collection-memberships:
 when { (collection: $c, member:$m) isa collection-membership; }
