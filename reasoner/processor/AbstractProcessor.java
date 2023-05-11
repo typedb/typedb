@@ -55,7 +55,6 @@ public abstract class AbstractProcessor<
     private final Map<Identifier, OutputPort<OUTPUT>> outputPorts;
     private final Map<Pair<Identifier, Identifier>, Runnable> pullRetries;
     private Stream<OUTPUT, OUTPUT> hubReactive;
-    private boolean terminated;
     private long reactiveCounter;
 
     protected AbstractProcessor(Driver<PROCESSOR> driver,

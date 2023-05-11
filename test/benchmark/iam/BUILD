@@ -34,13 +34,10 @@ host_compatible_java_test(
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
-        "//concept:concept",
         "//common:common",
         "//concurrent:concurrent",
-        "//logic:logic",
         "//migrator:migrator",
         "//reasoner:reasoner",
-        "//traversal:traversal",
     ],
     deps = [
         "//server:version",
@@ -71,13 +68,10 @@ host_compatible_java_test(
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
-        "//concept:concept",
         "//common:common",
         "//concurrent:concurrent",
-        "//logic:logic",
         "//migrator:migrator",
         "//reasoner:reasoner",
-        "//traversal:traversal",
     ],
     deps = [
         "//server:version",
@@ -108,13 +102,10 @@ host_compatible_java_test(
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
-        "//concept:concept",
         "//common:common",
         "//concurrent:concurrent",
-        "//logic:logic",
         "//migrator:migrator",
         "//reasoner:reasoner",
-        "//traversal:traversal",
     ],
     deps = [
         "//server:version",
@@ -145,13 +136,10 @@ host_compatible_java_test(
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
-        "//concept:concept",
         "//common:common",
         "//concurrent:concurrent",
-        "//logic:logic",
         "//migrator:migrator",
         "//reasoner:reasoner",
-        "//traversal:traversal",
     ],
     deps = [
         "//server:version",
@@ -181,13 +169,10 @@ host_compatible_java_test(
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
-        "//concept:concept",
         "//common:common",
         "//concurrent:concurrent",
-        "//logic:logic",
         "//migrator:migrator",
         "//reasoner:reasoner",
-        "//traversal:traversal",
     ],
     deps = [
         "//server:version",
