@@ -21,6 +21,7 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
@@ -53,6 +54,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Attribute.getOwnersResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Attribute.getTypeRes;
@@ -298,15 +300,15 @@ public class ThingService {
     }
 
     private Set<TypeQLToken.Annotation> getAnnotations(List<ConceptProto.Type.Annotation> protoAnnotations) {
-        Set<TypeQLToken.Annotation> annotations = set();
-        for (ConceptProto.Type.Annotation annotation: protoAnnotations) {
-            switch (annotation) {
-                case KEY: annotations.add(TypeQLToken.Annotation.KEY); break;
-                case UNIQUE: annotations.add(TypeQLToken.Annotation.UNIQUE); break;
-                case UNRECOGNIZED:
-                default: throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            }
-        }
-        return annotations;
+        return iterate(protoAnnotations).map(
+                annotation -> {
+                    switch (annotation) {
+                        case KEY: return TypeQLToken.Annotation.KEY;
+                        case UNIQUE: return TypeQLToken.Annotation.UNIQUE;
+                        case UNRECOGNIZED:
+                        default: throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                    }
+                }
+        ).toSet();
     }
 }

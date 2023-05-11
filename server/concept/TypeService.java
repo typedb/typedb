@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.server.concept;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
@@ -36,6 +37,7 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -49,6 +51,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_V
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_FIELD;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.RequestReader.valueType;
 import static com.vaticle.typedb.protocol.ConceptProto.RoleType.Req.ReqCase.ROLE_TYPE_DELETE_REQ;
@@ -628,15 +631,15 @@ public class TypeService {
     }
 
     private Set<TypeQLToken.Annotation> getAnnotations(List<ConceptProto.Type.Annotation> protoAnnotations) {
-        Set<TypeQLToken.Annotation> annotations = set();
-        for (ConceptProto.Type.Annotation annotation: protoAnnotations) {
-            switch (annotation) {
-                case KEY: annotations.add(TypeQLToken.Annotation.KEY); break;
-                case UNIQUE: annotations.add(TypeQLToken.Annotation.UNIQUE); break;
-                case UNRECOGNIZED:
-                default: throw TypeDBException.of(ILLEGAL_ARGUMENT);
-            }
-        }
-        return annotations;
+        return iterate(protoAnnotations).map(
+                annotation -> {
+                    switch (annotation) {
+                        case KEY: return TypeQLToken.Annotation.KEY;
+                        case UNIQUE: return TypeQLToken.Annotation.UNIQUE;
+                        case UNRECOGNIZED:
+                        default: throw TypeDBException.of(ILLEGAL_ARGUMENT);
+                    }
+                }
+        ).toSet();
     }
 }
