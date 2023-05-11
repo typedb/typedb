@@ -145,16 +145,6 @@ public class BenchmarkRunner {
             this.reasonerPerfCounters = reasonerPerfCounters;
         }
 
-        public List<String> toCSV(Benchmark benchmark, List<String> perfCounterKeys) {
-            List<String> entries = new ArrayList<>();
-            entries.add(benchmark.name);
-            entries.add(Long.toString(benchmark.expectedAnswers));
-            entries.add(Long.toString(answerCount));
-            entries.add(Long.toString(timeTaken.toMillis()));
-            perfCounterKeys.forEach(key -> entries.add(Long.toString(reasonerPerfCounters.get(key))));
-            return entries;
-        }
-
         @Override
         public String toString() {
             return "Benchmark run:\n" +
@@ -184,7 +174,15 @@ public class BenchmarkRunner {
         }
 
         public void append(Benchmark benchmark) {
-            benchmark.runs.forEach(run -> appendLine(run.toCSV(benchmark, perfCounterKeys)));
+            iterate(benchmark.runs).map(run -> {
+                List<String> entries = new ArrayList<>();
+                entries.add(benchmark.name);
+                entries.add(Long.toString(benchmark.expectedAnswers));
+                entries.add(Long.toString(run.answerCount));
+                entries.add(Long.toString(run.timeTaken.toMillis()));
+                perfCounterKeys.forEach(key -> entries.add(Long.toString(run.reasonerPerfCounters.get(key))));
+                return entries;
+            }).forEachRemaining(this::appendLine);
         }
 
         private void appendLine(List<String> entries) {

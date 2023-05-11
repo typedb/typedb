@@ -149,6 +149,19 @@ public class LanguageFeatureTest{
     }
 
     @Test
+    public void testDiamondTransitivity() {
+        String query = "match\n" +
+                "(collection: $x, member: $y) isa collection-membership;\n" +
+                "(collection: $x, member: $y) isa collection-membership;\n";
+        Benchmark benchmark = new Benchmark("value-predicate-filtering", query, 152);
+        benchmarker.runBenchmark(benchmark);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1000);
+        benchmark.assertCounters(500, 105, 201, 201);
+    }
+
+    @Test
     public void variabilisedRules() {
         benchmarker.loadSchema("schema_rules_test_specific.tql");
         String query = "match\n" +
