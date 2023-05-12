@@ -37,7 +37,6 @@ public class ConjunctionStructureTest {
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadSchema("schema_rules_optimised.tql");
-        benchmarker.loadSchema("schema_rules_test_specific.tql");
         benchmarker.loadData("data.typedb");
     }
 
@@ -92,15 +91,15 @@ public class ConjunctionStructureTest {
     }
 
     @Test
-    public void testLength4Chains() {
+    public void testDiamondTransitivity() {
         String query = "match\n" +
-                "$a isa object, has id \"root\";\n" +
-                "(start: $a, end: $b) isa length-4-chain;\n";
-        Benchmark benchmark = new Benchmark("high-arity-bounds", query, 24);
+                "(collection: $x, member: $y) isa collection-membership;\n" +
+                "(collection: $x, member: $y) isa collection-membership;\n";
+        Benchmark benchmark = new Benchmark("value-predicate-filtering", query, 152);
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
-        benchmark.assertCounters(200, 71, 60, 60);
+        benchmark.assertCounters(500, 105, 201, 201);
     }
 }

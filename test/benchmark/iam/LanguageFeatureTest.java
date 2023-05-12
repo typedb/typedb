@@ -37,6 +37,7 @@ public class LanguageFeatureTest{
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadSchema("schema_rules_optimised.tql");
+        benchmarker.loadSchema("schema_rules_test_specific.tql");
         benchmarker.loadData("data.typedb");
     }
 
@@ -148,22 +149,9 @@ public class LanguageFeatureTest{
         benchmark.assertCounters(1000, 200, 500, 1500);
     }
 
-    @Test
-    public void testDiamondTransitivity() {
-        String query = "match\n" +
-                "(collection: $x, member: $y) isa collection-membership;\n" +
-                "(collection: $x, member: $y) isa collection-membership;\n";
-        Benchmark benchmark = new Benchmark("value-predicate-filtering", query, 152);
-        benchmarker.runBenchmark(benchmark);
-
-        benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(1000);
-        benchmark.assertCounters(500, 105, 201, 201);
-    }
 
     @Test
     public void variabilisedRules() {
-        benchmarker.loadSchema("schema_rules_test_specific.tql");
         String query = "match\n" +
                 "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
                 "(group: $g, member: $p) isa variabilised-group-membership;\n";
@@ -173,5 +161,18 @@ public class LanguageFeatureTest{
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
         benchmark.assertCounters(200, 9, 29, 104);
+    }
+
+    @Test
+    public void testTripleJoin() {
+        String query = "match\n" +
+                "$a isa object, has id \"root\";\n" +
+                "(start: $a, end: $b) isa triple-join;\n";
+        Benchmark benchmark = new Benchmark("triple-join", query, 52);
+        benchmarker.runBenchmark(benchmark);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1000);
+        benchmark.assertCounters(200, 71, 60, 60);
     }
 }

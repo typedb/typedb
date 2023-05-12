@@ -70,29 +70,25 @@ when {
         ($parent: $p, $member: $m) isa $membership;
 };
 
-chain sub relation, relates start, relates end;
-resource-collection plays chain:start;
-object plays chain:end;
-length-1-chain sub chain;
-length-4-chain sub chain;
-rule length-1-chain:
+object-join sub relation, relates start, relates end;
+object plays object-join:start, plays object-join:end;
+object-cartesian sub object-join;
+triple-join sub object-join;
+rule object-cartesian:
 when {
-    $a isa resource-collection; $b isa object;
-    (collection: $a, member: $b) isa! collection-membership;
+    $a isa object; $b isa object;
 } then {
-    (start: $a, end: $b) isa length-1-chain;
+    (start: $a, end: $b) isa object-cartesian; # produce all pairs for the heck of it
 };
-rule length-4-chain:
+rule triple-join:
 when {
-        $a isa resource-collection;
-        $b isa resource-collection;
-        $c isa resource-collection;
-        $d isa resource-collection;
-        $e isa object;
-        (start: $a, end: $b) isa length-1-chain;
-        (start: $b, end: $c) isa length-1-chain;
-        (start: $c, end: $d) isa length-1-chain;
-        (start: $d, end: $e) isa length-1-chain;
+        $a isa object;
+        $b isa object;
+        $c isa object;
+        $d isa object;
+        (start: $a, end: $b) isa object-cartesian;
+        (start: $b, end: $c) isa object-cartesian;
+        (start: $c, end: $d) isa object-cartesian;
 } then {
-    (start: $a, end: $e) isa length-4-chain;
+    (start: $a, end: $d) isa triple-join;
 };
