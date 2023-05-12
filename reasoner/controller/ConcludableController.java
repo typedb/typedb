@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.answer.PartialExplanation;
 import com.vaticle.typedb.core.reasoner.common.Traversal;
+import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest.Identifier;
@@ -262,7 +263,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                             (attribute = bounds.get(concludable.asHas().attribute().id())) != null &&
                             (owner.asThing().hasInferred(attribute.asAttribute()) || owner.asThing().hasNonInferred(attribute.asAttribute()));
                 } else {
-                    return bounds.contains(concludable.generating().get().id());
+                    return ReasonerPlanner.canBypassReasoning(concludable, bounds.concepts().keySet(), false);
                 }
             }
 

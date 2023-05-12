@@ -130,11 +130,16 @@ public abstract class ReasonerPlanner {
                 .allMatch(constraint -> constraint.isThing() && constraint.asThing().isValue());
     }
 
+    public static boolean canBypassReasoning(Concludable concludable, Set<com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable> boundVariables, boolean isExplainEnabled) {
+        return !isExplainEnabled && !concludable.isHas() &&
+                concludable.generating().isPresent() && boundVariables.contains(concludable.generating().get().id());
+    }
+
     public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> mode, @Nullable Set<ResolvableConjunction> dependencyFilter) {
         Set<CallMode> calls = new HashSet<>();
 
         // Don't trigger reasoning if we can just look it up
-        if (!explain && !concludable.isHas() && concludable.generating().isPresent() && mode.contains(concludable.generating().get())) {
+        if (canBypassReasoning(concludable, iterate(mode).map(v -> v.id().asRetrievable()).toSet(), explain)) {
             return calls;
         }
 
