@@ -82,13 +82,9 @@ when {
 };
 rule triple-join:
 when {
-        $a isa object;
-        $b isa object;
-        $c isa object;
-        $d isa object;
-        (start: $a, end: $b) isa object-cartesian;
-        (start: $b, end: $c) isa object-cartesian;
-        (start: $c, end: $d) isa object-cartesian;
+        (start: $w, end: $x) isa object-cartesian;
+        (start: $x, end: $y) isa object-cartesian;
+        (start: $y, end: $z) isa object-cartesian;
 } then {
-    (start: $a, end: $d) isa triple-join;
+    (start: $w, end: $z) isa triple-join;
 };

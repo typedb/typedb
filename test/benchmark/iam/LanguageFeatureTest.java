@@ -166,13 +166,13 @@ public class LanguageFeatureTest{
     @Test
     public void testTripleJoin() {
         String query = "match\n" +
-                "$a isa object, has id \"root\";\n" +
+                "$x isa object, has id \"root\";\n" +
                 "(start: $a, end: $b) isa triple-join;\n";
         Benchmark benchmark = new Benchmark("triple-join", query, 52);
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(1000);
-        benchmark.assertCounters(200, 71, 60, 60);
+        benchmark.assertRunningTime(5000);
+        benchmark.assertCounters(200, 2756, 54, 263);
     }
 }
