@@ -633,10 +633,10 @@ public class TypeService {
     private Set<TypeQLToken.Annotation> getAnnotations(List<ConceptProto.Type.Annotation> protoAnnotations) {
         return iterate(protoAnnotations).map(
                 annotation -> {
-                    switch (annotation) {
+                    switch (annotation.getAnnotationCase()) {
                         case KEY: return TypeQLToken.Annotation.KEY;
                         case UNIQUE: return TypeQLToken.Annotation.UNIQUE;
-                        case UNRECOGNIZED:
+                        case ANNOTATION_NOT_SET:
                         default: throw TypeDBException.of(ILLEGAL_ARGUMENT);
                     }
                 }
