@@ -146,7 +146,7 @@ public class AttributeTypeSteps {
     }
 
     @Then("attribute\\( ?{type_label} ?) get owners explicit with annotations: {annotations}; contain:")
-    public void attribute_type_get_owners_explicit_as_key_contain(
+    public void attribute_type_get_owners_explicit_with_annotations_contain(
             String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> ownerLabels
     ) {
         AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
@@ -155,7 +155,7 @@ public class AttributeTypeSteps {
     }
 
     @Then("attribute\\( ?{type_label} ?) get owners explicit with annotations: {annotations}; do not contain:")
-    public void attribute_type_get_owners_explicit_as_key_do_not_contain(
+    public void attribute_type_get_owners_explicit_with_annotations_do_not_contain(
             String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> ownerLabels
     ) {
         AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);

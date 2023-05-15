@@ -258,7 +258,7 @@ public class ThingTypeSteps {
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get owns attribute types with annotations: {annotations}; contain:")
-    public void thing_type_get_owns_key_types_contain(
+    public void thing_type_get_owns_attribute_types_with_annotations_contain(
             RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
     ) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns(set(annotations)).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
@@ -266,7 +266,7 @@ public class ThingTypeSteps {
     }
 
     @Then("{root_label}\\( ?{type_label} ?) get owns attribute types with annotations: {annotations}; do not contain:")
-    public void thing_type_get_owns_key_types_do_not_contain(
+    public void thing_type_get_owns_attribute_types_with_annotations_do_not_contain(
             RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
     ) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns(set(annotations)).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
@@ -275,16 +275,16 @@ public class ThingTypeSteps {
         }
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) get owns explicit types with annotations: {annotations}; contain:")
-    public void thing_type_get_owns_explicit_key_types_contain(
+    @Then("{root_label}\\( ?{type_label} ?) get owns explicit attribute types with annotations: {annotations}; contain:")
+    public void thing_type_get_owns_explicit_types_with_annotations_contain(
             RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
     ) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwnsExplicit(set(annotations)).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) get owns explicit types with annotations: {annotations}; do not contain:")
-    public void thing_type_get_owns_explicit_key_types_do_not_contain(
+    @Then("{root_label}\\( ?{type_label} ?) get owns explicit attribute types with annotations: {annotations}; do not contain:")
+    public void thing_type_get_owns_explicit_attribute_types_with_annotations_do_not_contain(
             RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
     ) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwnsExplicit(set(annotations)).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
