@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.test.behaviour.concept.type.thingtype;
 
-import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -28,7 +27,6 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.test.behaviour.config.Parameters;
 import com.vaticle.typeql.lang.common.TypeQLToken;
-import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -232,12 +230,6 @@ public class ThingTypeSteps {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         assertThrows(() -> get_thing_type(rootLabel, typeLabel).setOwns(attributeType, set(annotations)));
     }
-
-    @Given("Test annotations: {annotations}")
-    public void test(List<TypeQLToken.Annotation> annotations){
-        System.out.println(annotations);
-    }
-
 
     @When("{root_label}\\( ?{type_label} ?) set owns attribute type: {type_label}, with annotations: {annotations}")
     public void thing_type_set_owns_attribute_type_with_annotations(
