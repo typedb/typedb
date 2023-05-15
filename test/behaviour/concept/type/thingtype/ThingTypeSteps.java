@@ -257,7 +257,7 @@ public class ThingTypeSteps {
         assertThrows(() -> get_thing_type(rootLabel, typeLabel).setOwns(attributeType, overriddenType, set(annotations)));
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) get owns types with annotations: {annotations}; contain:")
+    @Then("{root_label}\\( ?{type_label} ?) get owns attribute types with annotations: {annotations}; contain:")
     public void thing_type_get_owns_key_types_contain(
             RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
     ) {
@@ -265,7 +265,7 @@ public class ThingTypeSteps {
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
-    @Then("{root_label}\\( ?{type_label} ?) get owns types with annotations: {annotations}; do not contain:")
+    @Then("{root_label}\\( ?{type_label} ?) get owns attribute types with annotations: {annotations}; do not contain:")
     public void thing_type_get_owns_key_types_do_not_contain(
             RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
     ) {
