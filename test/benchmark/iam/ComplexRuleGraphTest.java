@@ -36,6 +36,7 @@ public class ComplexRuleGraphTest {
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadSchema("schema_rules_naive.tql");
         benchmarker.loadData("data.typedb");
+        benchmarker.warmUp();
     }
 
     @AfterClass

@@ -25,6 +25,8 @@ import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.migrator.data.DataImporter;
+import com.vaticle.typedb.core.reasoner.planner.AnswerCountEstimator;
+import com.vaticle.typedb.core.reasoner.planner.ConjunctionGraph;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typeql.lang.TypeQL;
@@ -105,6 +107,18 @@ public class BenchmarkRunner {
 
     void loadData(String filename) {
         new DataImporter(databaseMgr, database, Paths.get(RESOURCE_DIRECTORY + filename), Version.VERSION).run();
+    }
+
+    void warmUp() {
+        long start = System.nanoTime();
+        try (TypeDB.Session session = dataSession()) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
+                AnswerCountEstimator estimator = new AnswerCountEstimator(tx.logic(), tx.concepts().graph(), new ConjunctionGraph(tx.logic()));
+                tx.logic().rules().flatMap(rule -> iterate(rule.condition().disjunction().conjunctions()))
+                        .forEachRemaining(conjunction -> estimator.buildConjunctionModel(conjunction));
+            }
+        }
+        LOG.info("Warmup took: {} ms", (System.nanoTime() - start)/1_000_000);
     }
 
     void runBenchmark(Benchmark benchmark) {

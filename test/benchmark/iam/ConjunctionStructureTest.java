@@ -38,6 +38,7 @@ public class ConjunctionStructureTest {
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadSchema("schema_rules_optimised.tql");
         benchmarker.loadData("data.typedb");
+        benchmarker.warmUp();
     }
 
     @AfterClass
@@ -75,6 +76,7 @@ public class ConjunctionStructureTest {
 
     @Test
     public void testHighArityBounds() {
+        benchmarker.loadSchema("schema_rules_test_specific.tql");
         String query = "match\n" +
                 "   $a1 isa action, has name \"submit pull request\";\n" +
                 "   $a2 isa action, has name \"approve pull request\";\n" +
@@ -95,7 +97,7 @@ public class ConjunctionStructureTest {
         String query = "match\n" +
                 "(collection: $x, member: $y) isa collection-membership;\n" +
                 "(collection: $x, member: $y) isa collection-membership;\n";
-        Benchmark benchmark = new Benchmark("value-predicate-filtering", query, 152);
+        Benchmark benchmark = new Benchmark("diamond-transitivity", query, 152);
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();

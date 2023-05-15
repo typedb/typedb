@@ -38,8 +38,8 @@ public class LargeDataTest {
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadSchema("schema_rules_optimised.tql");
         benchmarker.loadData("data.typedb");
+        benchmarker.warmUp();
     }
-
     @AfterClass
     public static void tearDown() {
         benchmarker.tearDown();
