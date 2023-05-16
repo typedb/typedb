@@ -21,7 +21,6 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
@@ -49,7 +48,6 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
@@ -57,13 +55,10 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNO
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Attribute.getOwnersResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Attribute.getTypeRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Entity.getTypeRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.addPlayerRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.getPlayersByRoleTypeResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.getPlayersResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.getRelatingResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.getTypeRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.removePlayerRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.deleteRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.getHasResPart;
@@ -72,13 +67,10 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.getRel
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.setHasRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.unsetHasRes;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.ATTRIBUTE_GET_OWNERS_REQ;
-import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.ATTRIBUTE_GET_TYPE_REQ;
-import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.ENTITY_GET_TYPE_REQ;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_ADD_PLAYER_REQ;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_GET_PLAYERS_BY_ROLE_TYPE_REQ;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_GET_PLAYERS_REQ;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_GET_RELATING_REQ;
-import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_GET_TYPE_REQ;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_REMOVE_PLAYER_REQ;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.REQ_NOT_SET;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.THING_DELETE_REQ;
@@ -106,14 +98,11 @@ public class ThingService {
         handlers.put(THING_UNSET_HAS_REQ, this::unsetHas);
         handlers.put(THING_GET_RELATIONS_REQ, this::getRelations);
         handlers.put(THING_GET_PLAYING_REQ, this::getPlaying);
-        handlers.put(ENTITY_GET_TYPE_REQ, this::entityGetType);
-        handlers.put(RELATION_GET_TYPE_REQ, this::relationGetType);
         handlers.put(RELATION_ADD_PLAYER_REQ, this::relationAddPlayer);
         handlers.put(RELATION_REMOVE_PLAYER_REQ, this::relationRemovePlayer);
         handlers.put(RELATION_GET_PLAYERS_REQ, this::relationGetPlayers);
         handlers.put(RELATION_GET_PLAYERS_BY_ROLE_TYPE_REQ, this::relationGetPlayersByRoleType);
         handlers.put(RELATION_GET_RELATING_REQ, this::relationGetRelating);
-        handlers.put(ATTRIBUTE_GET_TYPE_REQ, this::attributeGetType);
         handlers.put(ATTRIBUTE_GET_OWNERS_REQ, this::attributeGetOwners);
         handlers.put(REQ_NOT_SET, this::requestNotSet);
         assert handlers.size() == ConceptProto.Thing.Req.ReqCase.class.getEnumConstants().length;
@@ -172,14 +161,6 @@ public class ThingService {
         transactionSvc.stream(roleTypes, reqID, rols -> getPlayingResPart(reqID, rols));
     }
 
-    private void entityGetType(ConceptProto.Thing.Req thingReq, UUID reqID) {
-        transactionSvc.respond(getTypeRes(reqID, getThing(thingReq).asEntity().getType()));
-    }
-
-    private void relationGetType(ConceptProto.Thing.Req thingReq, UUID reqID) {
-        transactionSvc.respond(getTypeRes(reqID, getThing(thingReq).asRelation().getType()));
-    }
-
     private void relationAddPlayer(ConceptProto.Thing.Req thingReq, UUID reqID) {
         Relation relation = getThing(thingReq).asRelation();
         ConceptProto.Relation.AddPlayer.Req addPlayerReq = thingReq.getRelationAddPlayerReq();
@@ -219,10 +200,6 @@ public class ThingService {
 
     private void relationGetRelating(ConceptProto.Thing.Req thingReq, UUID reqID) {
         transactionSvc.stream(getThing(thingReq).asRelation().getRelating(), reqID, roleTypes -> getRelatingResPart(reqID, roleTypes));
-    }
-
-    private void attributeGetType(ConceptProto.Thing.Req thingReq, UUID reqID) {
-        transactionSvc.respond(getTypeRes(reqID, getThing(thingReq).asAttribute().getType()));
     }
 
     private void attributeGetOwners(ConceptProto.Thing.Req thingReq, UUID reqID) {

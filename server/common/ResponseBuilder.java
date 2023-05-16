@@ -909,22 +909,7 @@ public class ResponseBuilder {
             ));
         }
 
-        public static class Entity {
-
-            public static TransactionProto.Transaction.Res getTypeRes(UUID reqID, EntityType thingType) {
-                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setEntityGetTypeRes(
-                        ConceptProto.Entity.GetType.Res.newBuilder().setEntityType(protoEntityType(thingType))
-                ));
-            }
-        }
-
         public static class Relation {
-
-            public static TransactionProto.Transaction.Res getTypeRes(UUID reqID, RelationType thingType) {
-                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationGetTypeRes(
-                        ConceptProto.Relation.GetType.Res.newBuilder().setRelationType(protoRelationType(thingType))
-                ));
-            }
 
             public static TransactionProto.Transaction.Res addPlayerRes(UUID reqID) {
                 return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationAddPlayerRes(
@@ -964,12 +949,6 @@ public class ResponseBuilder {
         }
 
         public static class Attribute {
-
-            public static TransactionProto.Transaction.Res getTypeRes(UUID reqID, AttributeType thingType) {
-                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setAttributeGetTypeRes(
-                        ConceptProto.Attribute.GetType.Res.newBuilder().setAttributeType(protoAttributeType(thingType))
-                ));
-            }
 
             public static ConceptProto.Attribute.Value attributeValue(com.vaticle.typedb.core.concept.thing.Attribute attribute) {
                 ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
