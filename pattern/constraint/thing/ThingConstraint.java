@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import java.util.Collections;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.concatToSet;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -40,7 +41,7 @@ public abstract class ThingConstraint extends Constraint {
 
     ThingConstraint(ThingVariable owner, Set<Variable> additionalVariables) {
         this.owner = owner;
-        variables = Collections.unmodifiableSet(set(additionalVariables, set(owner)));
+        variables = Collections.unmodifiableSet(concatToSet(additionalVariables, set(owner)));
     }
 
     public static ThingConstraint of(ThingVariable owner, com.vaticle.typeql.lang.pattern.constraint.ThingConstraint constraint,

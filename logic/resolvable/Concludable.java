@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.concatToSet;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -742,13 +743,13 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         public void fromConstraint(RelationConstraint relationConstraint) {
-            Set<LabelConstraint> labelConstraints = set(labelConstraints(relationConstraint), relationConstraint.owner().isa().map(Extractor::labelConstraints).orElse(set()));
+            Set<LabelConstraint> labelConstraints = concatToSet(labelConstraints(relationConstraint), relationConstraint.owner().isa().map(Extractor::labelConstraints).orElse(set()));
             concludables.add(Relation.of(relationConstraint, relationConstraint.owner().isa().orElse(null), labelConstraints));
             isaOwnersToSkip.add(relationConstraint.owner());
         }
 
         private void fromConstraint(HasConstraint hasConstraint) {
-            Set<LabelConstraint> labelConstraints = set(labelConstraints(hasConstraint), hasConstraint.attribute().isa().map(Extractor::labelConstraints).orElse(set()));
+            Set<LabelConstraint> labelConstraints = concatToSet(labelConstraints(hasConstraint), hasConstraint.attribute().isa().map(Extractor::labelConstraints).orElse(set()));
             Set<ValueConstraint<?>> valueConstraints = Iterators.iterate(hasConstraint.attribute().value()).filter(v -> !v.isVariable()).toSet();
             concludables.add(Has.of(hasConstraint, hasConstraint.attribute().isa().orElse(null), valueConstraints, labelConstraints));
             isaOwnersToSkip.add(hasConstraint.attribute());

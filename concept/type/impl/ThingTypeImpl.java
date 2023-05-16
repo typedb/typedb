@@ -50,7 +50,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.concatToList;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
@@ -465,7 +465,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public List<TypeDBException> exceptions() {
-        return list(
+        return concatToList(
                 validateIsAbstractOrOwnedAttributeTypesNotAbstract(),
                 validateIsAbstractOrPlayedRoleTypesNotAbstract(),
                 validateOverriddenOwnedAttributeTypesAreSupertypes(),

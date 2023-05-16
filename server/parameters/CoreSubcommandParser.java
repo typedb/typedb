@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.concatToList;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CLI_OPTION_REQUIRED;
@@ -96,7 +97,7 @@ public class CoreSubcommandParser {
         @Override
         public List<Help> helpList() {
             List<Help> aux = list(help.help(), version.help(), debug.help(), configPath.help());
-            return list(aux, configParser.helpList(""));
+            return concatToList(aux, configParser.helpList(""));
         }
     }
 
