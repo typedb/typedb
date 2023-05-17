@@ -111,7 +111,9 @@ public class BenchmarkRunner {
     }
 
     void warmUp() {
+        // Best effort warm-up
         long start = System.nanoTime();
+        // Populate LogicManager caches
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
                 tx.logic().rules().flatMap(rule -> iterate(rule.condition().disjunction().conjunctions()))
@@ -119,7 +121,17 @@ public class BenchmarkRunner {
                         .forEachRemaining(concludable -> tx.logic().applicableRules(concludable));
             }
         }
+        // A dummy reasoning query
         runMatchQuery("match $wr isa warm-up-relation, has warm-up-attribute $wa;");
+        // Warm up all persisted data
+        try (TypeDB.Session session = dataSession()) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
+                tx.query().match(TypeQL.parseQuery("match $x isa thing;").asMatch()).count();
+                tx.query().match(TypeQL.parseQuery("match $r ($x) isa relation;").asMatch()).count();
+                tx.query().match(TypeQL.parseQuery("match $x has $a;").asMatch()).count();
+            }
+        }
+
         LOG.info("Warmup took: {} ms", (System.nanoTime() - start)/1_000_000);
     }
 
@@ -168,11 +180,11 @@ public class BenchmarkRunner {
         @Override
         public String toString() {
             StringBuilder perfCounterStr = new StringBuilder();
-            reasonerPerfCounters.forEach((k,v) -> perfCounterStr.append(String.format(" - %s\t:\t%d\n", k, v)));
+            reasonerPerfCounters.forEach((k,v) -> perfCounterStr.append(String.format("|-- %-40s :\t%d\n", k, v)));
             return "Benchmark run:\n" +
-                    "\tTimeTaken :\t" + timeTaken.toMillis() + " ms\n" +
-                    "\tAnswers   :\t" + answerCount + "\n" +
-                    perfCounterStr;
+                    "- TimeTaken      :\t" + timeTaken.toMillis() + " ms\n" +
+                    "- Answers        :\t" + answerCount + "\n" +
+                    "- PerfCounters   :\t\n" + perfCounterStr + "\n";
         }
     }
 
