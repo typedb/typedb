@@ -125,10 +125,6 @@ public class ControllerRegistry {
         }
     }
 
-    public ReasonerPlanner planner() {
-        return controllerContext.planner();
-    }
-
     public ReasonerPerfCounters perfCounters() {
         return controllerContext.processor().perfCounters();
     }
