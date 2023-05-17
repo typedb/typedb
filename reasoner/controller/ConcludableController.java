@@ -31,7 +31,6 @@ import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.answer.PartialExplanation;
 import com.vaticle.typedb.core.reasoner.common.Traversal;
-import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest.Identifier;
@@ -86,6 +85,11 @@ public abstract class ConcludableController<INPUT, OUTPUT,
     @Override
     public void routeConnectionRequest(REQ req) {
         conclusionControllers.get(req.controllerId()).execute(actor -> actor.establishProcessorConnection(req));
+    }
+
+    public static boolean canBypassReasoning(Concludable concludable, Set<com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable> boundVariables, boolean isExplainEnabled) {
+        return !isExplainEnabled && !concludable.isHas() &&
+                concludable.generating().isPresent() && boundVariables.contains(concludable.generating().get().id());
     }
 
     public static class Match extends ConcludableController<Map<Variable, Concept>, ConceptMap, Processor.Match.Request,
@@ -263,7 +267,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                             (attribute = bounds.get(concludable.asHas().attribute().id())) != null &&
                             (owner.asThing().hasInferred(attribute.asAttribute()) || owner.asThing().hasNonInferred(attribute.asAttribute()));
                 } else {
-                    return ReasonerPlanner.canBypassReasoning(concludable, bounds.concepts().keySet(), false);
+                    return ConcludableController.canBypassReasoning(concludable, bounds.concepts().keySet(), false);
                 }
             }
 

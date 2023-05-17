@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import javax.annotation.Nullable;
@@ -63,10 +64,6 @@ public abstract class ReasonerPlanner {
 
     static Set<Variable> estimateableVariables(Set<Variable> variables) {
         return iterate(variables).filter(Variable::isThing).toSet();
-    }
-
-    static Set<Variable> retrievedVariables(Resolvable<?> resolvable) {
-        return iterate(resolvable.variables()).filter(v -> v.id().isRetrievable()).toSet();
     }
 
     static boolean dependenciesSatisfied(Resolvable<?> resolvable, Set<Variable> boundVars, Map<Resolvable<?>, Set<Variable>> dependencies) {
@@ -130,16 +127,10 @@ public abstract class ReasonerPlanner {
                 .allMatch(constraint -> constraint.isThing() && constraint.asThing().isValue());
     }
 
-    public static boolean canBypassReasoning(Concludable concludable, Set<com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable> boundVariables, boolean isExplainEnabled) {
-        return !isExplainEnabled && !concludable.isHas() &&
-                concludable.generating().isPresent() && boundVariables.contains(concludable.generating().get().id());
-    }
-
     public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> mode, @Nullable Set<ResolvableConjunction> dependencyFilter) {
         Set<CallMode> calls = new HashSet<>();
 
-        // Don't trigger reasoning if we can just look it up
-        if (canBypassReasoning(concludable, iterate(mode).map(v -> v.id().asRetrievable()).toSet(), explain)) {
+        if (ConcludableController.canBypassReasoning(concludable, iterate(mode).map(v -> v.id().asRetrievable()).toSet(), explain)) {
             return calls;
         }
 
