@@ -201,8 +201,7 @@ public class BenchmarkRunner {
                 entries.add(Long.toString(benchmark.expectedAnswers));
                 entries.add(Long.toString(run.answerCount));
                 entries.add(Long.toString(run.timeTaken.toMillis()));
-                Map<String, Long> counterValues = new HashMap<>();
-                perfCounterKeys.forEach(key -> entries.add(Long.toString(counterValues.get(key))));
+                perfCounterKeys.forEach(key -> entries.add(Long.toString(run.reasonerPerfCounters.get(key))));
                 return entries;
             }).forEachRemaining(this::appendLine);
         }

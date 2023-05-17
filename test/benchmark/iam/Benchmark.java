@@ -70,7 +70,7 @@ class Benchmark {
     }
 
     public void assertCounters(long timePlanningMs, long countMaterialisations, long countConjunctionProcessors, long countCompoundStreams) {
-        assertCounter(ReasonerPerfCounters.KEY_TIME_PLANNING, Math.round(timePlanningMs * COUNTER_MARGIN));
+        assertCounter(ReasonerPerfCounters.KEY_TIME_PLANNING, Math.round(timePlanningMs * 1_000_000 * COUNTER_MARGIN));
         assertCounter(ReasonerPerfCounters.KEY_COUNT_MATERIALISATIONS, Math.round(countMaterialisations * COUNTER_MARGIN));
         assertCounter(ReasonerPerfCounters.KEY_COUNT_CONJUNCTION_PROCESSORS, Math.round(countConjunctionProcessors * COUNTER_MARGIN));
         assertCounter(ReasonerPerfCounters.KEY_COUNT_COMPOUND_STREAMS, Math.round(countCompoundStreams * COUNTER_MARGIN));
