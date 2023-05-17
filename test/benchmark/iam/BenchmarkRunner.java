@@ -114,11 +114,12 @@ public class BenchmarkRunner {
         long start = System.nanoTime();
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
-                AnswerCountEstimator estimator = new AnswerCountEstimator(tx.logic(), tx.concepts().graph(), new ConjunctionGraph(tx.logic()));
                 tx.logic().rules().flatMap(rule -> iterate(rule.condition().disjunction().conjunctions()))
-                        .forEachRemaining(conjunction -> estimator.buildConjunctionModel(conjunction));
+                        .flatMap(resolvableConjunction -> resolvableConjunction.allConcludables())
+                        .forEachRemaining(concludable -> tx.logic().applicableRules(concludable));
             }
         }
+        runMatchQuery("match $wr isa warm-up-relation, has warm-up-attribute $wa;");
         LOG.info("Warmup took: {} ms", (System.nanoTime() - start)/1_000_000);
     }
 

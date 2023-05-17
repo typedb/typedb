@@ -228,3 +228,16 @@ full-name sub attribute,
 
 size-kb sub attribute,
     value long;
+
+# Fake types & rules for warm-up
+warm-up-attribute sub attribute, value string;
+warm-up-relation sub relation, relates warm-up, owns warm-up-attribute;
+warm-up-attribute plays warm-up-relation:warm-up;
+
+rule warm-up-rule-1:
+when { $wr isa warm-up-relation, has warm-up-attribute $wa; }
+then { (warm-up: $wa) isa warm-up-relation; };
+
+rule warm-up-rule-2:
+when { $wr isa warm-up-relation; $wa isa warm-up-attribute; }
+then { $wr has $wa; };
