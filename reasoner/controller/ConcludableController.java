@@ -70,6 +70,11 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         this.conclusionUnifiers = new HashMap<>();
     }
 
+    public static boolean canBypassReasoning(Concludable concludable, Set<com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable> boundVariables, boolean isExplainEnabled) {
+        return !isExplainEnabled && !concludable.isHas() &&
+                concludable.generating().isPresent() && boundVariables.contains(concludable.generating().get().id());
+    }
+
     @Override
     public void setUpUpstreamControllers() {
         iterate(registry().logicManager().applicableRules(concludable).entrySet()).forEachRemaining(ruleAndUnifiers -> {
@@ -85,11 +90,6 @@ public abstract class ConcludableController<INPUT, OUTPUT,
     @Override
     public void routeConnectionRequest(REQ req) {
         conclusionControllers.get(req.controllerId()).execute(actor -> actor.establishProcessorConnection(req));
-    }
-
-    public static boolean canBypassReasoning(Concludable concludable, Set<com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable> boundVariables, boolean isExplainEnabled) {
-        return !isExplainEnabled && !concludable.isHas() &&
-                concludable.generating().isPresent() && boundVariables.contains(concludable.generating().get().id());
     }
 
     public static class Match extends ConcludableController<Map<Variable, Concept>, ConceptMap, Processor.Match.Request,
