@@ -21,12 +21,12 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.impl.EntityImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken;
@@ -44,27 +44,27 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SEMICOLON;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
-    private EntityTypeImpl(GraphManager graphMgr, TypeVertex vertex) {
-        super(graphMgr, vertex);
+    private EntityTypeImpl(ConceptManager conceptMgr, TypeVertex vertex) {
+        super(conceptMgr, vertex);
         if (vertex.encoding() != ENTITY_TYPE) {
             throw exception(TypeDBException.of(TYPE_ROOT_MISMATCH, vertex.label(),
                     ENTITY_TYPE.root().label(), vertex.encoding().root().label()));
         }
     }
 
-    private EntityTypeImpl(GraphManager graphMgr, String label) {
-        super(graphMgr, label, ENTITY_TYPE);
+    private EntityTypeImpl(ConceptManager conceptMgr, String label) {
+        super(conceptMgr, label, ENTITY_TYPE);
         assert !label.equals(ENTITY.label());
     }
 
-    public static EntityTypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
+    public static EntityTypeImpl of(ConceptManager conceptMgr, TypeVertex vertex) {
         if (vertex.label().equals(ENTITY.label())) {
-            return new EntityTypeImpl.Root(graphMgr, vertex);
-        } else return new EntityTypeImpl(graphMgr, vertex);
+            return new EntityTypeImpl.Root(conceptMgr, vertex);
+        } else return new EntityTypeImpl(conceptMgr, vertex);
     }
 
-    public static EntityTypeImpl of(GraphManager graphMgr, String label) {
-        return new EntityTypeImpl(graphMgr, label);
+    public static EntityTypeImpl of(ConceptManager conceptMgr, String label) {
+        return new EntityTypeImpl(conceptMgr, label);
     }
 
     @Override
@@ -75,23 +75,23 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public Forwardable<EntityTypeImpl, Order.Asc> getSubtypes() {
-        return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
-                .mapSorted(v -> of(graphMgr, v), entityType -> entityType.vertex, ASC);
+        return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
+                .mapSorted(v -> of(conceptMgr, v), entityType -> entityType.vertex, ASC);
     }
 
     @Override
     public Forwardable<EntityTypeImpl, Order.Asc> getSubtypesExplicit() {
-        return super.getSubtypesExplicit(v -> of(graphMgr, v));
+        return super.getSubtypesExplicit(v -> of(conceptMgr, v));
     }
 
     @Override
     public Forwardable<EntityImpl, Order.Asc> getInstances() {
-        return instances(EntityImpl::of);
+        return instances(v -> EntityImpl.of(conceptMgr, v));
     }
 
     @Override
     public Forwardable<EntityImpl, Order.Asc> getInstancesExplicit() {
-        return instancesExplicit(EntityImpl::of);
+        return instancesExplicit(v -> EntityImpl.of(conceptMgr, v));
     }
 
     @Override
@@ -102,8 +102,8 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public EntityImpl create(boolean isInferred) {
         validateCanHaveInstances(Entity.class);
-        ThingVertex.Write instance = graphMgr.data().create(vertex, isInferred);
-        return EntityImpl.of(instance);
+        ThingVertex.Write instance = graphMgr().data().create(vertex, isInferred);
+        return EntityImpl.of(conceptMgr, instance);
     }
 
     @Override
@@ -127,8 +127,8 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     private static class Root extends EntityTypeImpl {
 
-        private Root(GraphManager graphMgr, TypeVertex vertex) {
-            super(graphMgr, vertex);
+        private Root(ConceptManager conceptMgr, TypeVertex vertex) {
+            super(conceptMgr, vertex);
             assert vertex.label().equals(ENTITY.label());
         }
 

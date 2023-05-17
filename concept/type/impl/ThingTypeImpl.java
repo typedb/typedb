@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
@@ -34,7 +35,6 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -96,6 +96,7 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.UNIQUE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SPACE;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyNavigableSet;
 import static java.util.Collections.emptySet;
 import static java.util.Comparator.comparing;
 
@@ -108,30 +109,30 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         private NavigableSet<Owns> ownsExplicit = null;
     }
 
-    ThingTypeImpl(GraphManager graphMgr, TypeVertex vertex) {
-        super(graphMgr, vertex);
-        if (graphMgr.schema().isReadOnly()) cache = new Cache();
+    ThingTypeImpl(ConceptManager conceptMgr, TypeVertex vertex) {
+        super(conceptMgr, vertex);
+        if (graphMgr().schema().isReadOnly()) cache = new Cache();
         else cache = null;
     }
 
-    ThingTypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding) {
-        super(graphMgr, label, encoding);
-        if (graphMgr.schema().isReadOnly()) this.cache = new Cache();
+    ThingTypeImpl(ConceptManager conceptMgr, String label, Encoding.Vertex.Type encoding) {
+        super(conceptMgr, label, encoding);
+        if (graphMgr().schema().isReadOnly()) this.cache = new Cache();
         else cache = null;
     }
 
-    public static ThingTypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
+    public static ThingTypeImpl of(ConceptManager conceptMgr, TypeVertex vertex) {
         switch (vertex.encoding()) {
             case ENTITY_TYPE:
-                return EntityTypeImpl.of(graphMgr, vertex);
+                return EntityTypeImpl.of(conceptMgr, vertex);
             case ATTRIBUTE_TYPE:
-                return AttributeTypeImpl.of(graphMgr, vertex);
+                return AttributeTypeImpl.of(conceptMgr, vertex);
             case RELATION_TYPE:
-                return RelationTypeImpl.of(graphMgr, vertex);
+                return RelationTypeImpl.of(conceptMgr, vertex);
             case THING_TYPE:
-                return new ThingTypeImpl.Root(graphMgr, vertex);
+                return new ThingTypeImpl.Root(conceptMgr, vertex);
             default:
-                throw graphMgr.exception(TypeDBException.of(UNRECOGNISED_VALUE));
+                throw conceptMgr.exception(TypeDBException.of(UNRECOGNISED_VALUE));
         }
     }
 
@@ -217,13 +218,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public ThingTypeImpl getSupertype() {
-        return vertex.outs().edge(SUB).to().map(t -> ThingTypeImpl.of(graphMgr, t)).firstOrNull();
+        return vertex.outs().edge(SUB).to().map(t -> ThingTypeImpl.of(conceptMgr,  t)).firstOrNull();
     }
 
     @Override
     public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
-        return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
-                .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), t -> t.vertex, ASC);
+        return iterateSorted(graphMgr().schema().getSupertypes(vertex), ASC)
+                .mapSorted(v -> ThingTypeImpl.of(conceptMgr,  v), t -> t.vertex, ASC);
     }
 
     @Override
@@ -234,12 +235,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     <THING extends ThingImpl> Forwardable<THING, Order.Asc> instances(Function<ThingVertex, THING> thingConstructor) {
         return getSubtypes().filter(t -> !t.isAbstract())
-                .mergeMapForwardable(t -> graphMgr.data().getReadable(t.vertex, ASC), ASC)
+                .mergeMapForwardable(t -> graphMgr().data().getReadable(t.vertex, ASC), ASC)
                 .mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
     }
 
     <THING extends ThingImpl> Forwardable<THING, Order.Asc> instancesExplicit(Function<ThingVertex, THING> thingConstructor) {
-        return graphMgr.data().getReadable(vertex, ASC).mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
+        return graphMgr().data().getReadable(vertex, ASC).mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
     }
 
     @Override
@@ -291,7 +292,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public NavigableSet<Owns> getOwns() {
         if (cache != null) {
-            if (cache.owns == null) cache.owns = fetchOwns();
+            if (cache.owns == null && !isAbstract()) cache.owns = fetchOwns();
+            else if (cache.owns == null) cache.owns = emptyNavigableSet();
             return cache.owns;
         } else return fetchOwns();
     }
@@ -319,8 +321,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     private NavigableSet<Owns> fetchOwns() {
         NavigableSet<Owns> owns = new TreeSet<>();
-        graphMgr.schema().ownedAttributeTypes(vertex).forEach(
-                v -> owns.add(OwnsImpl.of(this, AttributeTypeImpl.of(graphMgr, v)))
+        graphMgr().schema().ownedAttributeTypes(vertex).forEach(
+                v -> owns.add(OwnsImpl.of(this, AttributeTypeImpl.of(conceptMgr,  v)))
         );
         return owns;
     }
@@ -353,7 +355,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (isRoot()) return new TreeSet<>();
         NavigableSet<Owns> ownsExplicit = new TreeSet<>();
         vertex.outs().edge(OWNS_KEY).to().link(vertex.outs().edge(OWNS).to()).forEachRemaining(v ->
-                ownsExplicit.add(OwnsImpl.of(this, AttributeTypeImpl.of(graphMgr, v)))
+                ownsExplicit.add(OwnsImpl.of(this, AttributeTypeImpl.of(conceptMgr,  v)))
         );
         return ownsExplicit;
     }
@@ -365,15 +367,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public AttributeTypeImpl getOwnsOverridden(AttributeType attributeType) {
-        TypeVertex attrVertex = graphMgr.schema().getType(attributeType.getLabel());
+        TypeVertex attrVertex = graphMgr().schema().getType(attributeType.getLabel());
         if (attrVertex != null) {
             TypeEdge ownsEdge = vertex.outs().edge(OWNS_KEY, attrVertex);
             if (ownsEdge != null && ownsEdge.overridden().isPresent()) {
-                return AttributeTypeImpl.of(graphMgr, ownsEdge.overridden().get());
+                return AttributeTypeImpl.of(conceptMgr,  ownsEdge.overridden().get());
             }
             ownsEdge = vertex.outs().edge(OWNS, attrVertex);
             if (ownsEdge != null && ownsEdge.overridden().isPresent()) {
-                return AttributeTypeImpl.of(graphMgr, ownsEdge.overridden().get());
+                return AttributeTypeImpl.of(conceptMgr,  ownsEdge.overridden().get());
             }
         }
         return null;
@@ -397,7 +399,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         setPlays(roleType);
         override(this, PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                vertex.outs().edge(PLAYS).to().mapSorted(v -> RoleTypeImpl.of(graphMgr, v), rt -> rt.vertex, ASC),
+                vertex.outs().edge(PLAYS).to().mapSorted(v -> RoleTypeImpl.of(conceptMgr,  v), rt -> rt.vertex, ASC),
                 OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE);
     }
 
@@ -424,24 +426,24 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public Forwardable<RoleType, Order.Asc> getPlays() {
         if (isRoot()) return emptySorted();
         assert getSupertype() != null;
-        return iterateSorted(graphMgr.schema().playedRoleTypes(vertex), ASC)
-                .mapSorted(v -> RoleTypeImpl.of(graphMgr, v), roleType -> ((RoleTypeImpl) roleType).vertex, ASC);
+        return iterateSorted(graphMgr().schema().playedRoleTypes(vertex), ASC)
+                .mapSorted(v -> RoleTypeImpl.of(conceptMgr,  v), roleType -> ((RoleTypeImpl) roleType).vertex, ASC);
     }
 
     @Override
     public Forwardable<RoleType, Order.Asc> getPlaysExplicit() {
         if (isRoot()) return emptySorted();
         return vertex.outs().edge(PLAYS).to()
-                .mapSorted(v -> RoleTypeImpl.of(graphMgr, v), rt -> ((RoleTypeImpl) rt).vertex, ASC);
+                .mapSorted(v -> RoleTypeImpl.of(conceptMgr,  v), rt -> ((RoleTypeImpl) rt).vertex, ASC);
     }
 
     @Override
     public RoleType getPlaysOverridden(RoleType roleType) {
-        TypeVertex roleVertex = graphMgr.schema().getType(roleType.getLabel());
+        TypeVertex roleVertex = graphMgr().schema().getType(roleType.getLabel());
         if (roleVertex != null) {
             TypeEdge playsEdge = vertex.outs().edge(PLAYS, roleVertex);
             if (playsEdge != null && playsEdge.overridden().isPresent()) {
-                return RoleTypeImpl.of(graphMgr, playsEdge.overridden().get());
+                return RoleTypeImpl.of(conceptMgr,  playsEdge.overridden().get());
             }
         }
         return null;
@@ -517,8 +519,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     public static class Root extends ThingTypeImpl {
 
-        public Root(GraphManager graphMgr, TypeVertex vertex) {
-            super(graphMgr, vertex);
+        public Root(ConceptManager conceptMgr, TypeVertex vertex) {
+            super(conceptMgr, vertex);
             assert vertex.label().equals(Encoding.Vertex.Type.Root.THING.label());
         }
 
@@ -554,17 +556,17 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Forwardable<ThingTypeImpl, Order.Asc> getSubtypes() {
-            return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC).mapSorted(v -> {
+            return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC).mapSorted(v -> {
                 switch (v.encoding()) {
                     case THING_TYPE:
                         assert vertex == v;
                         return this;
                     case ENTITY_TYPE:
-                        return EntityTypeImpl.of(graphMgr, v);
+                        return EntityTypeImpl.of(conceptMgr,  v);
                     case ATTRIBUTE_TYPE:
-                        return AttributeTypeImpl.of(graphMgr, v);
+                        return AttributeTypeImpl.of(conceptMgr,  v);
                     case RELATION_TYPE:
-                        return RelationTypeImpl.of(graphMgr, v);
+                        return RelationTypeImpl.of(conceptMgr,  v);
                     default:
                         throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
@@ -576,11 +578,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             return getSubtypesExplicit(v -> {
                 switch (v.encoding()) {
                     case ENTITY_TYPE:
-                        return EntityTypeImpl.of(graphMgr, v);
+                        return EntityTypeImpl.of(conceptMgr,  v);
                     case ATTRIBUTE_TYPE:
-                        return AttributeTypeImpl.of(graphMgr, v);
+                        return AttributeTypeImpl.of(conceptMgr,  v);
                     case RELATION_TYPE:
-                        return RelationTypeImpl.of(graphMgr, v);
+                        return RelationTypeImpl.of(conceptMgr,  v);
                     default:
                         throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
@@ -592,11 +594,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             return instances(v -> {
                 switch (v.encoding()) {
                     case ENTITY:
-                        return EntityImpl.of(v);
+                        return EntityImpl.of(conceptMgr, v);
                     case ATTRIBUTE:
-                        return AttributeImpl.of(v);
+                        return AttributeImpl.of(conceptMgr, v);
                     case RELATION:
-                        return RelationImpl.of(v);
+                        return RelationImpl.of(conceptMgr, v);
                     default:
                         assert false;
                         throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
@@ -662,7 +664,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             this.owner = owner;
             this.attributeType = attributeType;
             this.edge = edge;
-            this.overridden = edge.overridden().map(v -> AttributeTypeImpl.of(owner.graphMgr, v)).orElse(null);
+            this.overridden = edge.overridden().map(v -> AttributeTypeImpl.of(owner.conceptMgr, v)).orElse(null);
         }
 
         private static OwnsImpl of(ThingTypeImpl owner, AttributeTypeImpl attributeType) {
@@ -839,7 +841,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Set<TypeQLToken.Annotation> effectiveAnnotations() {
-            if (owner.graphMgr.schema().isReadOnly()) {
+            if (owner.graphMgr().schema().isReadOnly()) {
                 if (effectiveAnnotationsCache == null) effectiveAnnotationsCache = computeEffectiveAnnotations();
                 return effectiveAnnotationsCache;
             } else return computeEffectiveAnnotations();

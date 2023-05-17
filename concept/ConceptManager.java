@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.EntityTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.RelationTypeImpl;
@@ -45,6 +46,8 @@ import com.vaticle.typedb.core.traversal.common.VertexMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -65,9 +68,12 @@ public final class ConceptManager {
     private static final int PARALLELISATION_SPLIT_MINIMUM = 128;
 
     private final GraphManager graphMgr;
+    private final ConcurrentMap<TypeVertex, Type> schemaCache;
 
     public ConceptManager(GraphManager graphMgr) {
         this.graphMgr = graphMgr;
+        if (graphMgr.schema().isReadOnly()) schemaCache = new ConcurrentHashMap<>();
+        else schemaCache = null;
     }
 
     public ConceptMap conceptMap(VertexMap vertexMap) {
@@ -81,8 +87,8 @@ public final class ConceptManager {
     private Map<Retrievable, Concept> toConcepts(VertexMap vertexMap) {
         Map<Retrievable, Concept> map = new HashMap<>();
         vertexMap.forEach((id, vertex) -> {
-            if (vertex.isThing()) map.put(id, ThingImpl.of(vertex.asThing()));
-            else if (vertex.isType()) map.put(id, TypeImpl.of(graphMgr, vertex.asType()));
+            if (vertex.isThing()) map.put(id, ThingImpl.of(this, vertex.asThing()));
+            else if (vertex.isType()) map.put(id, TypeImpl.of(this, graphMgr, vertex.asType()));
             else throw exception(TypeDBException.of(ILLEGAL_STATE));
         });
         return map;
@@ -94,50 +100,72 @@ public final class ConceptManager {
 
     public ThingType getRootThingType() {
         TypeVertex vertex = graphMgr.schema().rootThingType();
-        if (vertex != null) return new ThingTypeImpl.Root(graphMgr, vertex);
-        else throw exception(TypeDBException.of(ILLEGAL_STATE));
+        if (vertex != null) {
+            if (schemaCache == null) return new ThingTypeImpl.Root(this, vertex);
+            else {
+                return schemaCache.computeIfAbsent(vertex, v -> new ThingTypeImpl.Root(this, v)).asThingType();
+            }
+        } else throw exception(TypeDBException.of(ILLEGAL_STATE));
     }
 
     public EntityType getRootEntityType() {
         TypeVertex vertex = graphMgr.schema().rootEntityType();
-        if (vertex != null) return EntityTypeImpl.of(graphMgr, vertex);
-        else throw exception(TypeDBException.of(ILLEGAL_STATE));
+        if (vertex != null) {
+            if (schemaCache == null) return EntityTypeImpl.of(this, vertex);
+            else {
+                return schemaCache.computeIfAbsent(vertex, v -> EntityTypeImpl.of(this, v)).asEntityType();
+            }
+        } else throw exception(TypeDBException.of(ILLEGAL_STATE));
     }
 
     public RelationType getRootRelationType() {
         TypeVertex vertex = graphMgr.schema().rootRelationType();
-        if (vertex != null) return RelationTypeImpl.of(graphMgr, vertex);
-        else throw exception(TypeDBException.of(ILLEGAL_STATE));
+        if (vertex != null) {
+            if (schemaCache == null) return RelationTypeImpl.of(this, vertex);
+            else {
+                return schemaCache.computeIfAbsent(vertex, v -> RelationTypeImpl.of(this, v)).asRelationType();
+            }
+        } else throw exception(TypeDBException.of(ILLEGAL_STATE));
     }
 
     public AttributeType getRootAttributeType() {
         TypeVertex vertex = graphMgr.schema().rootAttributeType();
-        if (vertex != null) return AttributeTypeImpl.of(graphMgr, vertex);
-        else throw exception(TypeDBException.of(ILLEGAL_STATE));
+        if (vertex != null) {
+            if (schemaCache == null) return AttributeTypeImpl.of(this, vertex);
+            else {
+                return schemaCache.computeIfAbsent(vertex, v -> AttributeTypeImpl.of(this, v)).asAttributeType();
+            }
+        } else throw exception(TypeDBException.of(ILLEGAL_STATE));
     }
 
     public EntityType putEntityType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return EntityTypeImpl.of(graphMgr, vertex);
-        else return EntityTypeImpl.of(graphMgr, label);
+        if (vertex != null) return EntityTypeImpl.of(this, vertex);
+        else return EntityTypeImpl.of(this, label);
     }
 
     public EntityType getEntityType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return EntityTypeImpl.of(graphMgr, vertex);
-        else return null;
+        if (vertex != null) {
+            if (schemaCache == null) return EntityTypeImpl.of(this, vertex);
+            else return schemaCache.computeIfAbsent(vertex, v -> EntityTypeImpl.of(this, v)).asEntityType();
+        } else return null;
     }
 
     public RelationType putRelationType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return RelationTypeImpl.of(graphMgr, vertex);
-        else return RelationTypeImpl.of(graphMgr, label);
+        if (vertex != null) return RelationTypeImpl.of(this, vertex);
+        else return RelationTypeImpl.of(this, label);
     }
 
     public RelationType getRelationType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return RelationTypeImpl.of(graphMgr, vertex);
-        else return null;
+        if (vertex != null) {
+            if (schemaCache == null) return RelationTypeImpl.of(this, vertex);
+            else {
+                return schemaCache.computeIfAbsent(vertex, v -> RelationTypeImpl.of(this, v)).asRelationType();
+            }
+        } else return null;
     }
 
     public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
@@ -149,20 +177,20 @@ public final class ConceptManager {
         TypeVertex vertex = graphMgr.schema().getType(label);
         switch (valueType) {
             case BOOLEAN:
-                if (vertex != null) return AttributeTypeImpl.Boolean.of(graphMgr, vertex);
-                else return new AttributeTypeImpl.Boolean(graphMgr, label);
+                if (vertex != null) return AttributeTypeImpl.Boolean.of(this, vertex);
+                else return new AttributeTypeImpl.Boolean(this, label);
             case LONG:
-                if (vertex != null) return AttributeTypeImpl.Long.of(graphMgr, vertex);
-                else return new AttributeTypeImpl.Long(graphMgr, label);
+                if (vertex != null) return AttributeTypeImpl.Long.of(this, vertex);
+                else return new AttributeTypeImpl.Long(this, label);
             case DOUBLE:
-                if (vertex != null) return AttributeTypeImpl.Double.of(graphMgr, vertex);
-                else return new AttributeTypeImpl.Double(graphMgr, label);
+                if (vertex != null) return AttributeTypeImpl.Double.of(this, vertex);
+                else return new AttributeTypeImpl.Double(this, label);
             case STRING:
-                if (vertex != null) return AttributeTypeImpl.String.of(graphMgr, vertex);
-                else return new AttributeTypeImpl.String(graphMgr, label);
+                if (vertex != null) return AttributeTypeImpl.String.of(this, vertex);
+                else return new AttributeTypeImpl.String(this, label);
             case DATETIME:
-                if (vertex != null) return AttributeTypeImpl.DateTime.of(graphMgr, vertex);
-                else return new AttributeTypeImpl.DateTime(graphMgr, label);
+                if (vertex != null) return AttributeTypeImpl.DateTime.of(this, vertex);
+                else return new AttributeTypeImpl.DateTime(this, label);
             default:
                 throw exception(TypeDBException.of(UNSUPPORTED_OPERATION, "putAttributeType", valueType.name()));
         }
@@ -170,19 +198,23 @@ public final class ConceptManager {
 
     public AttributeType getAttributeType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return AttributeTypeImpl.of(graphMgr, vertex);
-        else return null;
+        if (vertex != null) {
+            if (schemaCache == null) return AttributeTypeImpl.of(this, vertex);
+            else return schemaCache.computeIfAbsent(vertex, v -> AttributeTypeImpl.of(this, v)).asAttributeType();
+        } else return null;
     }
 
     public ThingType getThingType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return ThingTypeImpl.of(graphMgr, vertex);
-        else return null;
+        if (vertex != null) {
+            if (schemaCache == null) return ThingTypeImpl.of(this, vertex);
+            else return schemaCache.computeIfAbsent(vertex, v -> ThingTypeImpl.of(this, vertex)).asThingType();
+        } else return null;
     }
 
     public Thing getThing(ByteArray iid) {
         ThingVertex thingVertex = graphMgr.data().getReadable(VertexIID.Thing.of(iid));
-        if (thingVertex != null) return ThingImpl.of(thingVertex);
+        if (thingVertex != null) return ThingImpl.of(this, thingVertex);
         else return null;
     }
 
@@ -201,7 +233,7 @@ public final class ConceptManager {
     public void validateThings() {
         List<List<Thing>> lists = graphMgr.data().vertices().filter(
                 v -> !v.isInferred() && v.isModified() && !v.encoding().equals(ROLE)
-        ).<Thing>map(ThingImpl::of).toLists(PARALLELISATION_SPLIT_MINIMUM, PARALLELISATION_FACTOR);
+        ).<Thing>map(v -> ThingImpl.of(this, v)).toLists(PARALLELISATION_SPLIT_MINIMUM, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         if (lists.size() == 1) {
             iterate(lists.get(0)).forEachRemaining(Thing::validate);

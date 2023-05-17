@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.concept.thing.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
@@ -44,18 +45,18 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     AttributeVertex<VALUE> attributeVertex;
     AttributeTypeImpl attributeType;
 
-    private AttributeImpl(AttributeVertex<VALUE> vertex) {
-        super(vertex);
+    private AttributeImpl(ConceptManager conceptMgr, AttributeVertex<VALUE> vertex) {
+        super(conceptMgr, vertex);
         this.attributeVertex = vertex;
     }
 
-    public static AttributeImpl<?> of(AttributeVertex<?> vertex) {
+    public static AttributeImpl<?> of(ConceptManager conceptMgr, AttributeVertex<?> vertex) {
         Encoding.ValueType<?> valueType = vertex.valueType();
-        if (valueType == BOOLEAN) return new Boolean(vertex.asBoolean());
-        else if (valueType == LONG) return new Long(vertex.asLong());
-        else if (valueType == DOUBLE) return new Double(vertex.asDouble());
-        else if (valueType == STRING) return new String(vertex.asString());
-        else if (valueType == DATETIME) return new DateTime(vertex.asDateTime());
+        if (valueType == BOOLEAN) return new Boolean(conceptMgr, vertex.asBoolean());
+        else if (valueType == LONG) return new Long(conceptMgr, vertex.asLong());
+        else if (valueType == DOUBLE) return new Double(conceptMgr, vertex.asDouble());
+        else if (valueType == STRING) return new String(conceptMgr, vertex.asString());
+        else if (valueType == DATETIME) return new DateTime(conceptMgr, vertex.asDateTime());
         assert false;
         return null;
     }
@@ -76,21 +77,21 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     @Override
     public AttributeTypeImpl getType() {
         if (attributeType == null) {
-            attributeType = AttributeTypeImpl.of(readableVertex().graphs(), readableVertex().type());
+            attributeType = AttributeTypeImpl.of(conceptMgr, readableVertex().type());
         }
         return attributeType;
     }
 
     @Override
     public FunctionalIterator<ThingImpl> getOwners() {
-        return readableVertex().ins().edge(HAS).from().map(ThingImpl::of);
+        return readableVertex().ins().edge(HAS).from().map(v -> ThingImpl.of(conceptMgr, v));
     }
 
     @Override
     public FunctionalIterator<ThingImpl> getOwners(ThingType ownerType) {
         return ownerType.getSubtypes().map(ot -> ((ThingTypeImpl) ot).vertex).flatMap(
                 v -> readableVertex().ins().edge(HAS, (PrefixIID.of(v.encoding().instance())), v.iid()).from()
-        ).map(ThingImpl::of);
+        ).map(v -> ThingImpl.of(conceptMgr, v));
     }
 
     @Override
@@ -160,8 +161,8 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class Boolean extends AttributeImpl<java.lang.Boolean> implements Attribute.Boolean {
 
-        public Boolean(AttributeVertex<java.lang.Boolean> vertex) {
-            super(vertex);
+        public Boolean(ConceptManager conceptMgr, AttributeVertex<java.lang.Boolean> vertex) {
+            super(conceptMgr, vertex);
             assert vertex.type().valueType().equals(BOOLEAN);
         }
 
@@ -183,8 +184,8 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class Long extends AttributeImpl<java.lang.Long> implements Attribute.Long {
 
-        public Long(AttributeVertex<java.lang.Long> vertex) {
-            super(vertex);
+        public Long(ConceptManager conceptMgr, AttributeVertex<java.lang.Long> vertex) {
+            super(conceptMgr, vertex);
             assert vertex.type().valueType().equals(LONG);
         }
 
@@ -206,8 +207,8 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class Double extends AttributeImpl<java.lang.Double> implements Attribute.Double {
 
-        public Double(AttributeVertex<java.lang.Double> vertex) {
-            super(vertex);
+        public Double(ConceptManager conceptMgr, AttributeVertex<java.lang.Double> vertex) {
+            super(conceptMgr, vertex);
             assert vertex.type().valueType().equals(DOUBLE);
         }
 
@@ -229,8 +230,8 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class String extends AttributeImpl<java.lang.String> implements Attribute.String {
 
-        public String(AttributeVertex<java.lang.String> vertex) {
-            super(vertex);
+        public String(ConceptManager conceptMgr, AttributeVertex<java.lang.String> vertex) {
+            super(conceptMgr, vertex);
             assert vertex.type().valueType().equals(STRING);
         }
 
@@ -252,8 +253,8 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
 
     public static class DateTime extends AttributeImpl<java.time.LocalDateTime> implements Attribute.DateTime {
 
-        public DateTime(AttributeVertex<LocalDateTime> vertex) {
-            super(vertex);
+        public DateTime(ConceptManager conceptMgr, AttributeVertex<LocalDateTime> vertex) {
+            super(conceptMgr, vertex);
             assert vertex.type().valueType().equals(DATETIME);
         }
 

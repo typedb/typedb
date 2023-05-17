@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.concept.thing.impl;
 
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.type.impl.EntityTypeImpl;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
@@ -26,18 +27,18 @@ import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ENTITY;
 
 public class EntityImpl extends ThingImpl implements Entity {
 
-    private EntityImpl(ThingVertex vertex) {
-        super(vertex);
+    private EntityImpl(ConceptManager conceptMgr, ThingVertex vertex) {
+        super(conceptMgr, vertex);
         assert vertex.encoding().equals(ENTITY);
     }
 
-    public static EntityImpl of(ThingVertex vertex) {
-        return new EntityImpl(vertex);
+    public static EntityImpl of(ConceptManager conceptMgr, ThingVertex vertex) {
+        return new EntityImpl(conceptMgr, vertex);
     }
 
     @Override
     public EntityTypeImpl getType() {
-        return EntityTypeImpl.of(readableVertex().graphs(), readableVertex().type());
+        return EntityTypeImpl.of(conceptMgr, readableVertex().type());
     }
 
     @Override

@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.ConceptImpl;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -66,18 +67,19 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     private ThingVertex vertex;
 
-    ThingImpl(ThingVertex vertex) {
+    ThingImpl(ConceptManager conceptMgr, ThingVertex vertex) {
+        super(conceptMgr);
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    public static ThingImpl of(ThingVertex vertex) {
+    public static ThingImpl of(ConceptManager conceptMgr, ThingVertex vertex) {
         switch (vertex.encoding()) {
             case ENTITY:
-                return EntityImpl.of(vertex);
+                return EntityImpl.of(conceptMgr, vertex);
             case ATTRIBUTE:
-                return AttributeImpl.of(vertex.asAttribute());
+                return AttributeImpl.of(conceptMgr, vertex.asAttribute());
             case RELATION:
-                return RelationImpl.of(vertex);
+                return RelationImpl.of(conceptMgr, vertex);
             default:
                 throw vertex.graphs().exception(TypeDBException.of(UNRECOGNISED_VALUE));
         }
@@ -159,36 +161,40 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public FunctionalIterator<AttributeImpl.Boolean> getHas(AttributeType.Boolean attributeType) {
-        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asBoolean());
+        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(conceptMgr, v).asBoolean());
     }
 
     @Override
     public FunctionalIterator<AttributeImpl.Long> getHas(AttributeType.Long attributeType) {
-        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asLong());
+        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(conceptMgr, v).asLong());
     }
 
     @Override
     public FunctionalIterator<AttributeImpl.Double> getHas(AttributeType.Double attributeType) {
-        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asDouble());
+        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(conceptMgr, v).asDouble());
     }
 
     @Override
     public FunctionalIterator<AttributeImpl.String> getHas(AttributeType.String attributeType) {
-        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asString());
+        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(conceptMgr, v).asString());
     }
 
     @Override
     public FunctionalIterator<AttributeImpl.DateTime> getHas(AttributeType.DateTime attributeType) {
-        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asDateTime());
+        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(conceptMgr, v).asDateTime());
     }
 
     @Override
     public FunctionalIterator<AttributeImpl<?>> getHas(AttributeType... attributeTypes) {
-        if (attributeTypes.length == 0) return getAttributeVertices(Collections.emptyList()).map(AttributeImpl::of);
-        return getAttributeVertices(Arrays.asList(attributeTypes)).map(AttributeImpl::of);
+        if (attributeTypes.length == 0) {
+            return getAttributeVertices(Collections.emptyList()).map(v -> AttributeImpl.of(conceptMgr, v));
+        } else {
+            return getAttributeVertices(Arrays.asList(attributeTypes)).map(v -> AttributeImpl.of(conceptMgr, v));
+        }
     }
 
-    private FunctionalIterator<? extends AttributeVertex<?>> getAttributeVertices(List<? extends AttributeType> attributeTypes) {
+    private FunctionalIterator<? extends AttributeVertex<?>> getAttributeVertices(List<? extends
+            AttributeType> attributeTypes) {
         if (!attributeTypes.isEmpty()) {
             return iterate(attributeTypes)
                     .flatMap(AttributeType::getSubtypes).distinct()
@@ -215,7 +221,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     @Override
     public FunctionalIterator<? extends RoleType> getPlaying() {
         return readableVertex().outs().edge(PLAYING).to().map(ThingVertex::type)
-                .map(v -> RoleTypeImpl.of(readableVertex().graphs(), v));
+                .map(v -> RoleTypeImpl.of(conceptMgr, v));
     }
 
     @Override
@@ -225,24 +231,24 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
                 throw exception(TypeDBException.of(INVALID_ROLE_TYPE_LABEL, scopedLabel));
             }
             String[] label = scopedLabel.split(":");
-            return RoleTypeImpl.of(readableVertex().graphs(), readableVertex().graph().type().getType(label[1], label[0]));
+            return RoleTypeImpl.of(conceptMgr, readableVertex().graph().type().getType(label[1], label[0]));
         }).stream().toArray(RoleType[]::new));
     }
 
     @Override
     public FunctionalIterator<RelationImpl> getRelations(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
-            return readableVertex().ins().edge(ROLEPLAYER).from().map(RelationImpl::of);
+            return readableVertex().ins().edge(ROLEPLAYER).from().map(v -> RelationImpl.of(conceptMgr, v));
         } else {
             return iterate(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(
                     rt -> readableVertex().ins().edge(ROLEPLAYER, ((RoleTypeImpl) rt).vertex).from()
-            ).map(RelationImpl::of);
+            ).map(v -> RelationImpl.of(conceptMgr, v));
         }
     }
 
     @Override
     public void delete() {
-        Set<RelationImpl> relations = writableVertex().ins().edge(ROLEPLAYER).from().map(RelationImpl::of).toSet();
+        Set<RelationImpl> relations = writableVertex().ins().edge(ROLEPLAYER).from().map(v -> RelationImpl.of(conceptMgr, v)).toSet();
         writableVertex().outs().edge(PLAYING).to().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
         writableVertex().delete();
         relations.forEach(RelationImpl::deleteIfNoPlayer);

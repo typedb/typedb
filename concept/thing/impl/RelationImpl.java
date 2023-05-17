@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RoleType;
@@ -50,17 +51,17 @@ import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ROLE;
 
 public class RelationImpl extends ThingImpl implements Relation {
 
-    private RelationImpl(ThingVertex vertex) {
-        super(vertex);
+    private RelationImpl(ConceptManager conceptMgr, ThingVertex vertex) {
+        super(conceptMgr, vertex);
     }
 
-    public static RelationImpl of(ThingVertex vertex) {
-        return new RelationImpl(vertex);
+    public static RelationImpl of(ConceptManager conceptMgr, ThingVertex vertex) {
+        return new RelationImpl(conceptMgr, vertex);
     }
 
     @Override
     public RelationTypeImpl getType() {
-        return RelationTypeImpl.of(readableVertex().graphs(), readableVertex().type());
+        return RelationTypeImpl.of(conceptMgr, readableVertex().type());
     }
 
     @Override
@@ -110,8 +111,9 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public FunctionalIterator<Thing> getPlayers(String... roleTypes) {
-        if (roleTypes.length == 0) return readableVertex().outs().edge(ROLEPLAYER).to().map(ThingImpl::of);
-        else {
+        if (roleTypes.length == 0) {
+            return readableVertex().outs().edge(ROLEPLAYER).to().map(v -> ThingImpl.of(conceptMgr, v));
+        } else {
             return getPlayers(iterate(roleTypes).map(label -> getType().getRelates(label)).map(rt -> rt.vertex));
         }
     }
@@ -124,7 +126,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     private Forwardable<Thing, Order.Asc> getPlayers(FunctionalIterator<TypeVertex> roleTypeVertices) {
         assert roleTypeVertices.hasNext();
         return roleTypeVertices.mergeMapForwardable(v -> readableVertex().outs().edge(ROLEPLAYER, v).to(), ASC)
-                .mapSorted(ThingImpl::of, thing -> ((ThingImpl) thing).readableVertex(), ASC);
+                .mapSorted(v -> ThingImpl.of(conceptMgr, v), thing -> ((ThingImpl) thing).readableVertex(), ASC);
     }
 
     @Override
@@ -140,7 +142,7 @@ public class RelationImpl extends ThingImpl implements Relation {
     @Override
     public FunctionalIterator<? extends RoleType> getRelating() {
         return readableVertex().outs().edge(RELATING).to().map(ThingVertex::type)
-                .map(v -> RoleTypeImpl.of(readableVertex().graphs(), v))
+                .map(v -> RoleTypeImpl.of(conceptMgr, v))
                 .distinct();
     }
 
