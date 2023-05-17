@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -112,12 +111,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public Forwardable<RelationTypeImpl, Order.Asc> getSubtypes() {
         return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
-                .mapSorted(v -> of(conceptMgr, v), relationType -> relationType.vertex, ASC);
+                .mapSorted(v -> (RelationTypeImpl) conceptMgr.convertRelationType(v), relationType -> relationType.vertex, ASC);
     }
 
     @Override
     public Forwardable<RelationTypeImpl, Order.Asc> getSubtypesExplicit() {
-        return super.getSubtypesExplicit(v -> of(conceptMgr, v));
+        return super.getSubtypesExplicit(v -> (RelationTypeImpl) conceptMgr.convertRelationType(v));
     }
 
     @Override
@@ -145,11 +144,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
                 if (this.isAbstract()) roleType.setAbstract();
                 vertex.outs().put(RELATES, roleType.vertex);
             } else {
-                roleType = RoleTypeImpl.of(conceptMgr, roleTypeVertex);
-                roleType.setSupertype(RoleTypeImpl.of(conceptMgr, graphMgr().schema().rootRoleType()));
+                roleType = (RoleTypeImpl) conceptMgr.convertRoleType(roleTypeVertex);
+                roleType.setSupertype(conceptMgr.convertRoleType(graphMgr().schema().rootRoleType()));
             }
             assert roleType.getSupertype() != null;
-            vertex.outs().edge(RELATES, roleType.vertex).setOverridden(roleType.getSupertype().vertex);
+            vertex.outs().edge(RELATES, roleType.vertex).setOverridden(((RoleTypeImpl) roleType.getSupertype()).vertex);
         }
     }
 
@@ -157,7 +156,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public void setRelates(String roleLabel, String overriddenLabel) {
         validateIsNotDeleted();
         setRelates(roleLabel);
-        RoleTypeImpl roleType = this.getRelates(roleLabel);
+        RoleTypeImpl roleType = (RoleTypeImpl) this.getRelates(roleLabel);
 
         Optional<RoleTypeImpl> inherited;
         assert getSupertype() != null;
@@ -165,7 +164,9 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
                 !(inherited = getSupertype().asRelationType().getRelates()
                         .filter(role -> role.getLabel().name().equals(overriddenLabel)).first()
                 ).isPresent()
-        ) { throw exception(TypeDBException.of(RELATION_RELATES_ROLE_NOT_AVAILABLE, roleLabel, overriddenLabel)); }
+        ) {
+            throw exception(TypeDBException.of(RELATION_RELATES_ROLE_NOT_AVAILABLE, roleLabel, overriddenLabel));
+        }
 
         roleType.setSupertype(inherited.get());
         vertex.outs().edge(RELATES, roleType.vertex).setOverridden(inherited.get().vertex);
@@ -180,13 +181,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public Forwardable<RoleTypeImpl, Order.Asc> getRelates() {
         return iterateSorted(graphMgr().schema().relatedRoleTypes(vertex), ASC)
-                .mapSorted(v -> RoleTypeImpl.of(conceptMgr, v), roleType -> roleType.vertex, ASC);
+                .mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), roleType -> roleType.vertex, ASC);
     }
 
     @Override
     public Forwardable<RoleTypeImpl, Order.Asc> getRelatesExplicit() {
         return vertex.outs().edge(RELATES).to()
-                .mapSorted(v -> RoleTypeImpl.of(conceptMgr, v), roleType -> roleType.vertex, ASC);
+                .mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), roleType -> roleType.vertex, ASC);
     }
 
     @Override
@@ -197,22 +198,23 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
             if (relatesEdge != null &&
                     relatesEdge.overridden().isPresent() &&
                     !relatesEdge.overridden().get().equals(graphMgr().schema().rootRoleType()))
-                return RoleTypeImpl.of(conceptMgr, relatesEdge.overridden().get());
+                return conceptMgr.convertRoleType(relatesEdge.overridden().get());
         }
         return null;
     }
 
     FunctionalIterator<RoleTypeImpl> overriddenRoles() {
-        return vertex.outs().edge(RELATES).overridden().filter(Objects::nonNull).map(v -> RoleTypeImpl.of(conceptMgr, v));
+        return vertex.outs().edge(RELATES).overridden().filter(Objects::nonNull)
+                .map(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v));
     }
 
     private FunctionalIterator<RoleTypeImpl> declaredRoles() {
-        return vertex.outs().edge(RELATES).to().map(v -> RoleTypeImpl.of(conceptMgr, v));
+        return vertex.outs().edge(RELATES).to().map(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v));
     }
 
     /**
      * Get the role type with a given {@code roleLabel} related by this relation type.
-     *
+     * <p>
      * First, look up the role type by the given label and it's scope: the relation label.
      * If the role type vertex do not exist, then call {@code role()} to get the inherited role types,
      * and see if the any of them has the {@code roleLabel} of interest.
@@ -221,20 +223,20 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
      * @return the role type related in this relation
      */
     @Override
-    public RoleTypeImpl getRelates(String roleLabel) {
+    public RoleType getRelates(String roleLabel) {
         Optional<RoleTypeImpl> roleType;
         TypeVertex roleTypeVertex = graphMgr().schema().getType(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
-            return RoleTypeImpl.of(conceptMgr, roleTypeVertex);
+            return conceptMgr.convertRoleType(vertex);
         } else if ((roleType = getRelates().filter(role -> role.getLabel().name().equals(roleLabel)).first()).isPresent()) {
             return roleType.get();
         } else return null;
     }
 
     @Override
-    public RoleTypeImpl getRelatesExplicit(String roleLabel) {
+    public RoleType getRelatesExplicit(String roleLabel) {
         TypeVertex roleTypeVertex = graphMgr().schema().getType(roleLabel, vertex.label());
-        if (roleTypeVertex != null) return RoleTypeImpl.of(conceptMgr, roleTypeVertex);
+        if (roleTypeVertex != null) return conceptMgr.convertRoleType(vertex);
         else return null;
     }
 

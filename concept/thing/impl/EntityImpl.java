@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.concept.thing.impl;
 
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Entity;
+import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.impl.EntityTypeImpl;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 
@@ -37,8 +38,8 @@ public class EntityImpl extends ThingImpl implements Entity {
     }
 
     @Override
-    public EntityTypeImpl getType() {
-        return EntityTypeImpl.of(conceptMgr, readableVertex().type());
+    public EntityType getType() {
+        return conceptMgr.convertThingType(readableVertex().type()).asEntityType();
     }
 
     @Override

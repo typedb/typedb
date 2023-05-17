@@ -27,7 +27,6 @@ import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken;
@@ -144,7 +143,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         if (isRoot()) return emptySorted();
         else {
             return iterateSorted(graphMgr().schema().ownersOfAttributeType(vertex), ASC)
-                    .mapSorted(v -> ThingTypeImpl.of(conceptMgr, v), thingType -> thingType.vertex, ASC)
+                    .mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), thingType -> thingType.vertex, ASC)
                     .filter(thingType -> thingType.getOwns(this)
                             .map(owns -> owns.effectiveAnnotations().containsAll(annotations))
                             .orElse(false)
@@ -156,7 +155,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwnersExplicit(Set<TypeQLToken.Annotation> annotations) {
         if (isRoot()) return emptySorted();
         Forwardable<TypeVertex, Order.Asc> iterator = vertex.ins().edge(OWNS_KEY).from().merge(vertex.ins().edge(OWNS).from());
-        return iterator.mapSorted(v -> ThingTypeImpl.of(conceptMgr, v), thingType -> thingType.vertex, ASC)
+        return iterator.mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), thingType -> thingType.vertex, ASC)
                 .filter(thingType -> thingType.getOwnsExplicit(this)
                         .map(owns -> owns.effectiveAnnotations().containsAll(annotations))
                         .orElse(false)

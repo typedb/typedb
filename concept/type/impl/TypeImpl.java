@@ -73,15 +73,6 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         vertex.outs().put(SUB, superTypeVertex);
     }
 
-    public static TypeImpl of(ConceptManager conceptMgr, GraphManager graphMgr, TypeVertex vertex) {
-        switch (vertex.encoding()) {
-            case ROLE_TYPE:
-                return RoleTypeImpl.of(conceptMgr, vertex);
-            default:
-                return ThingTypeImpl.of(conceptMgr, vertex);
-        }
-    }
-
     @Override
     public boolean isDeleted() {
         return vertex.isDeleted();
@@ -204,7 +195,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
 
     @Override
     public TypeDBException exception(TypeDBException exception) {
-        return graphMgr().exception(exception);
+        return conceptMgr.exception(exception);
     }
 
     @Override

@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
@@ -43,7 +44,7 @@ import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
 public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribute {
 
     AttributeVertex<VALUE> attributeVertex;
-    AttributeTypeImpl attributeType;
+    AttributeType attributeType;
 
     private AttributeImpl(ConceptManager conceptMgr, AttributeVertex<VALUE> vertex) {
         super(conceptMgr, vertex);
@@ -75,10 +76,8 @@ public abstract class AttributeImpl<VALUE> extends ThingImpl implements Attribut
     }
 
     @Override
-    public AttributeTypeImpl getType() {
-        if (attributeType == null) {
-            attributeType = AttributeTypeImpl.of(conceptMgr, readableVertex().type());
-        }
+    public AttributeType getType() {
+        if (attributeType == null) attributeType = conceptMgr.convertAttributeType(readableVertex().type());
         return attributeType;
     }
 

@@ -25,8 +25,8 @@ import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.concept.type.impl.RelationTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
 import com.vaticle.typedb.core.encoding.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
@@ -60,8 +60,8 @@ public class RelationImpl extends ThingImpl implements Relation {
     }
 
     @Override
-    public RelationTypeImpl getType() {
-        return RelationTypeImpl.of(conceptMgr, readableVertex().type());
+    public RelationType getType() {
+        return conceptMgr.convertRelationType(readableVertex().type());
     }
 
     @Override
@@ -114,7 +114,7 @@ public class RelationImpl extends ThingImpl implements Relation {
         if (roleTypes.length == 0) {
             return readableVertex().outs().edge(ROLEPLAYER).to().map(v -> ThingImpl.of(conceptMgr, v));
         } else {
-            return getPlayers(iterate(roleTypes).map(label -> getType().getRelates(label)).map(rt -> rt.vertex));
+            return getPlayers(iterate(roleTypes).map(label -> getType().getRelates(label)).map(rt -> ((RoleTypeImpl) rt).vertex));
         }
     }
 
@@ -134,15 +134,15 @@ public class RelationImpl extends ThingImpl implements Relation {
         Map<RoleTypeImpl, List<Thing>> playersByRole = new HashMap<>();
         getType().getRelates().forEachRemaining(rt -> {
             List<Thing> players = getPlayers(rt).toList();
-            if (!players.isEmpty()) playersByRole.put(rt, players);
+            if (!players.isEmpty()) playersByRole.put((RoleTypeImpl) rt, players);
         });
         return playersByRole;
     }
 
     @Override
-    public FunctionalIterator<? extends RoleType> getRelating() {
+    public FunctionalIterator<RoleType> getRelating() {
         return readableVertex().outs().edge(RELATING).to().map(ThingVertex::type)
-                .map(v -> RoleTypeImpl.of(conceptMgr, v))
+                .map(conceptMgr::convertRoleType)
                 .distinct();
     }
 

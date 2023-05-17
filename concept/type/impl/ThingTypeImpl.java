@@ -218,13 +218,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public ThingTypeImpl getSupertype() {
-        return vertex.outs().edge(SUB).to().map(t -> ThingTypeImpl.of(conceptMgr,  t)).firstOrNull();
+        return vertex.outs().edge(SUB).to().map(t -> (ThingTypeImpl) conceptMgr.convertThingType(t)).firstOrNull();
     }
 
     @Override
     public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
         return iterateSorted(graphMgr().schema().getSupertypes(vertex), ASC)
-                .mapSorted(v -> ThingTypeImpl.of(conceptMgr,  v), t -> t.vertex, ASC);
+                .mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), t -> t.vertex, ASC);
     }
 
     @Override
@@ -322,7 +322,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     private NavigableSet<Owns> fetchOwns() {
         NavigableSet<Owns> owns = new TreeSet<>();
         graphMgr().schema().ownedAttributeTypes(vertex).forEach(
-                v -> owns.add(OwnsImpl.of(this, AttributeTypeImpl.of(conceptMgr,  v)))
+                v -> owns.add(OwnsImpl.of(this, (AttributeTypeImpl) conceptMgr.convertAttributeType(v)))
         );
         return owns;
     }
@@ -355,7 +355,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (isRoot()) return new TreeSet<>();
         NavigableSet<Owns> ownsExplicit = new TreeSet<>();
         vertex.outs().edge(OWNS_KEY).to().link(vertex.outs().edge(OWNS).to()).forEachRemaining(v ->
-                ownsExplicit.add(OwnsImpl.of(this, AttributeTypeImpl.of(conceptMgr,  v)))
+                ownsExplicit.add(OwnsImpl.of(this, (AttributeTypeImpl) conceptMgr.convertAttributeType(v)))
         );
         return ownsExplicit;
     }
@@ -366,16 +366,16 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
-    public AttributeTypeImpl getOwnsOverridden(AttributeType attributeType) {
+    public AttributeType getOwnsOverridden(AttributeType attributeType) {
         TypeVertex attrVertex = graphMgr().schema().getType(attributeType.getLabel());
         if (attrVertex != null) {
             TypeEdge ownsEdge = vertex.outs().edge(OWNS_KEY, attrVertex);
             if (ownsEdge != null && ownsEdge.overridden().isPresent()) {
-                return AttributeTypeImpl.of(conceptMgr,  ownsEdge.overridden().get());
+                return conceptMgr.convertAttributeType(ownsEdge.overridden().get());
             }
             ownsEdge = vertex.outs().edge(OWNS, attrVertex);
             if (ownsEdge != null && ownsEdge.overridden().isPresent()) {
-                return AttributeTypeImpl.of(conceptMgr,  ownsEdge.overridden().get());
+                return conceptMgr.convertAttributeType(ownsEdge.overridden().get());
             }
         }
         return null;
@@ -399,7 +399,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         setPlays(roleType);
         override(this, PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                vertex.outs().edge(PLAYS).to().mapSorted(v -> RoleTypeImpl.of(conceptMgr,  v), rt -> rt.vertex, ASC),
+                vertex.outs().edge(PLAYS).to().mapSorted(v ->  (RoleTypeImpl) conceptMgr.convertRoleType(v), rt -> rt.vertex, ASC),
                 OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE);
     }
 
@@ -427,14 +427,14 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (isRoot()) return emptySorted();
         assert getSupertype() != null;
         return iterateSorted(graphMgr().schema().playedRoleTypes(vertex), ASC)
-                .mapSorted(v -> RoleTypeImpl.of(conceptMgr,  v), roleType -> ((RoleTypeImpl) roleType).vertex, ASC);
+                .mapSorted(conceptMgr::convertRoleType, roleType -> ((RoleTypeImpl) roleType).vertex, ASC);
     }
 
     @Override
     public Forwardable<RoleType, Order.Asc> getPlaysExplicit() {
         if (isRoot()) return emptySorted();
         return vertex.outs().edge(PLAYS).to()
-                .mapSorted(v -> RoleTypeImpl.of(conceptMgr,  v), rt -> ((RoleTypeImpl) rt).vertex, ASC);
+                .mapSorted(conceptMgr::convertRoleType, rt -> ((RoleTypeImpl) rt).vertex, ASC);
     }
 
     @Override
@@ -443,7 +443,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (roleVertex != null) {
             TypeEdge playsEdge = vertex.outs().edge(PLAYS, roleVertex);
             if (playsEdge != null && playsEdge.overridden().isPresent()) {
-                return RoleTypeImpl.of(conceptMgr,  playsEdge.overridden().get());
+                return conceptMgr.convertRoleType(playsEdge.overridden().get());
             }
         }
         return null;
@@ -562,11 +562,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         assert vertex == v;
                         return this;
                     case ENTITY_TYPE:
-                        return EntityTypeImpl.of(conceptMgr,  v);
+                        return (ThingTypeImpl) conceptMgr.convertEntityType(v);
                     case ATTRIBUTE_TYPE:
-                        return AttributeTypeImpl.of(conceptMgr,  v);
+                        return (ThingTypeImpl) conceptMgr.convertAttributeType(v);
                     case RELATION_TYPE:
-                        return RelationTypeImpl.of(conceptMgr,  v);
+                        return (ThingTypeImpl) conceptMgr.convertRelationType(v);
                     default:
                         throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
@@ -578,11 +578,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             return getSubtypesExplicit(v -> {
                 switch (v.encoding()) {
                     case ENTITY_TYPE:
-                        return EntityTypeImpl.of(conceptMgr,  v);
+                        return (ThingTypeImpl) conceptMgr.convertEntityType(v);
                     case ATTRIBUTE_TYPE:
-                        return AttributeTypeImpl.of(conceptMgr,  v);
+                        return (ThingTypeImpl) conceptMgr.convertAttributeType(v);
                     case RELATION_TYPE:
-                        return RelationTypeImpl.of(conceptMgr,  v);
+                        return (ThingTypeImpl) conceptMgr.convertRelationType(v);
                     default:
                         throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
@@ -664,7 +664,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
             this.owner = owner;
             this.attributeType = attributeType;
             this.edge = edge;
-            this.overridden = edge.overridden().map(v -> AttributeTypeImpl.of(owner.conceptMgr, v)).orElse(null);
+            this.overridden = edge.overridden().map(owner.conceptMgr::convertAttributeType).orElse(null);
         }
 
         private static OwnsImpl of(ThingTypeImpl owner, AttributeTypeImpl attributeType) {

@@ -28,14 +28,16 @@ import com.vaticle.typedb.core.concept.thing.impl.ThingImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
+import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.type.impl.AttributeTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.EntityTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.RelationTypeImpl;
+import com.vaticle.typedb.core.concept.type.impl.RoleTypeImpl;
 import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
-import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
 import com.vaticle.typedb.core.concurrent.producer.ProducerIterator;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
@@ -88,7 +90,7 @@ public final class ConceptManager {
         Map<Retrievable, Concept> map = new HashMap<>();
         vertexMap.forEach((id, vertex) -> {
             if (vertex.isThing()) map.put(id, ThingImpl.of(this, vertex.asThing()));
-            else if (vertex.isType()) map.put(id, TypeImpl.of(this, graphMgr, vertex.asType()));
+            else if (vertex.isType()) map.put(id, convertType(vertex.asType()));
             else throw exception(TypeDBException.of(ILLEGAL_STATE));
         });
         return map;
@@ -216,6 +218,45 @@ public final class ConceptManager {
         ThingVertex thingVertex = graphMgr.data().getReadable(VertexIID.Thing.of(iid));
         if (thingVertex != null) return ThingImpl.of(this, thingVertex);
         else return null;
+    }
+
+    public Type convertType(TypeVertex vertex) {
+        switch (vertex.encoding()) {
+            case ROLE_TYPE:
+                return convertRoleType(vertex);
+            default:
+                return convertThingType(vertex);
+        }
+    }
+
+    public ThingType convertThingType(TypeVertex vertex) {
+        assert vertex.encoding() != Encoding.Vertex.Type.ROLE_TYPE;
+        if (schemaCache == null) return ThingTypeImpl.of(this, vertex);
+        else return schemaCache.computeIfAbsent(vertex, v -> ThingTypeImpl.of(this, v)).asThingType();
+    }
+
+    public EntityType convertEntityType(TypeVertex vertex) {
+        assert vertex.encoding() == Encoding.Vertex.Type.ENTITY_TYPE;
+        if (schemaCache == null) return EntityTypeImpl.of(this, vertex);
+        else return schemaCache.computeIfAbsent(vertex, v -> EntityTypeImpl.of(this, v)).asEntityType();
+    }
+
+    public RelationType convertRelationType(TypeVertex vertex) {
+        assert vertex.encoding() == Encoding.Vertex.Type.RELATION_TYPE;
+        if (schemaCache == null) return RelationTypeImpl.of(this, vertex);
+        else return schemaCache.computeIfAbsent(vertex, v -> RelationTypeImpl.of(this, v)).asRelationType();
+    }
+
+    public RoleType convertRoleType(TypeVertex vertex) {
+        assert vertex.encoding() == Encoding.Vertex.Type.ROLE_TYPE;
+        if (schemaCache == null) return RoleTypeImpl.of(this, vertex);
+        else return schemaCache.computeIfAbsent(vertex, v -> RoleTypeImpl.of(this, v)).asRoleType();
+    }
+
+    public AttributeType convertAttributeType(TypeVertex vertex) {
+        assert vertex.encoding() == Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+        if (schemaCache == null) return AttributeTypeImpl.of(this, vertex);
+        else return schemaCache.computeIfAbsent(vertex, v -> AttributeTypeImpl.of(this, v)).asAttributeType();
     }
 
     public void validateTypes() {

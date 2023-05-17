@@ -140,7 +140,7 @@ public interface Thing extends Concept, Comparable<Thing> {
      *
      * @return an iterator stream of {@code RoleType} types that this {@code Thing} plays.
      */
-    FunctionalIterator<? extends RoleType> getPlaying();
+    FunctionalIterator<RoleType> getPlaying();
 
     /**
      * Get all {@code Relation} instances that this {@code Thing} is playing any of the specified roles in.

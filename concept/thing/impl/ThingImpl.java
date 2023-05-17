@@ -219,9 +219,9 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public FunctionalIterator<? extends RoleType> getPlaying() {
+    public FunctionalIterator<RoleType> getPlaying() {
         return readableVertex().outs().edge(PLAYING).to().map(ThingVertex::type)
-                .map(v -> RoleTypeImpl.of(conceptMgr, v));
+                .map(conceptMgr::convertRoleType);
     }
 
     @Override
@@ -231,7 +231,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
                 throw exception(TypeDBException.of(INVALID_ROLE_TYPE_LABEL, scopedLabel));
             }
             String[] label = scopedLabel.split(":");
-            return RoleTypeImpl.of(conceptMgr, readableVertex().graph().type().getType(label[1], label[0]));
+            return conceptMgr.convertRoleType(readableVertex().graph().type().getType(label[1], label[0]));
         }).stream().toArray(RoleType[]::new));
     }
 

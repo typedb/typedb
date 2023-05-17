@@ -27,14 +27,15 @@ import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.thing.impl.RoleImpl;
 import com.vaticle.typedb.core.concept.thing.impl.ThingImpl;
+import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
@@ -85,48 +86,48 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Nullable
     @Override
-    public RoleTypeImpl getSupertype() {
-        return vertex.outs().edge(SUB).to().map(t -> RoleTypeImpl.of(conceptMgr, t)).firstOrNull();
+    public RoleType getSupertype() {
+        return vertex.outs().edge(SUB).to().map(conceptMgr::convertRoleType).firstOrNull();
     }
 
     @Override
     public Forwardable<RoleTypeImpl, Order.Asc> getSupertypes() {
         return iterateSorted(graphMgr().schema().getSupertypes(vertex), ASC)
-                .mapSorted(v -> of(conceptMgr, v), rt -> rt.vertex, ASC);
+                .mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), rt -> rt.vertex, ASC);
     }
 
     @Override
     public Forwardable<RoleTypeImpl, Order.Asc> getSubtypes() {
         return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
-                .mapSorted(v -> of(conceptMgr, v), rt -> rt.vertex, ASC);
+                .mapSorted(v ->  (RoleTypeImpl) conceptMgr.convertRoleType(v), rt -> rt.vertex, ASC);
     }
 
     @Override
     public Forwardable<RoleTypeImpl, Order.Asc> getSubtypesExplicit() {
-        return super.getSubtypesExplicit(v -> of(conceptMgr, v));
+        return super.getSubtypesExplicit(v ->  (RoleTypeImpl) conceptMgr.convertRoleType(v));
     }
 
     @Override
-    public RelationTypeImpl getRelationType() {
-        return RelationTypeImpl.of(conceptMgr, vertex.ins().edge(Encoding.Edge.Type.RELATES).from().first().get());
+    public RelationType getRelationType() {
+        return conceptMgr.convertRelationType(vertex.ins().edge(Encoding.Edge.Type.RELATES).from().first().get());
     }
 
     @Override
     public Forwardable<RelationTypeImpl, Order.Asc> getRelationTypes() {
         return iterateSorted(graphMgr().schema().relationsOfRoleType(vertex), ASC)
-                .mapSorted(v -> RelationTypeImpl.of(conceptMgr, v), relType -> relType.vertex, ASC);
+                .mapSorted(v -> (RelationTypeImpl) conceptMgr.convertRelationType(v), relType -> relType.vertex, ASC);
     }
 
     @Override
     public Forwardable<ThingTypeImpl, Order.Asc> getPlayerTypes() {
         return iterateSorted(graphMgr().schema().playersOfRoleType(vertex), ASC)
-                .mapSorted(v -> ThingTypeImpl.of(conceptMgr, v), roleType -> roleType.vertex, ASC);
+                .mapSorted(v -> (ThingTypeImpl) conceptMgr.convertType(v), roleType -> roleType.vertex, ASC);
     }
 
     @Override
     public Forwardable<ThingTypeImpl, Order.Asc> getPlayerTypesExplicit() {
         return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from()
-                .mapSorted(v -> ThingTypeImpl.of(conceptMgr, v), thingType -> thingType.vertex, ASC);
+                .mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), thingType -> thingType.vertex, ASC);
     }
 
     @Override
@@ -185,7 +186,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     private List<TypeDBException> validateOverriddenTypesAreInheritedFromRelationType() {
-        RoleTypeImpl superType = getSupertype();
+        RoleType superType = getSupertype();
         assert !isRoot() || superType != null;
         if (superType.isRoot()) return list();
         else if (getRelationType().getSupertype().asRelationType().getRelates().noneMatch(rt -> rt.equals(superType))) {
