@@ -40,6 +40,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.Negation;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry;
 import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -80,14 +81,16 @@ public class Reasoner {
     private final ControllerRegistry controllerRegistry;
     private final ExplainablesManager explainablesManager;
     private final ReasonerPlanner planner;
+    private final ReasonerPerfCounters perfCounters;
 
     public Reasoner(ConceptManager conceptMgr, LogicManager logicMgr,
                     TraversalEngine traversalEng, Context.Transaction context) {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
-        this.planner = ReasonerPlanner.create(traversalEng, conceptMgr, logicMgr, context.options().explain());
-        this.controllerRegistry = new ControllerRegistry(actor(), traversalEng, conceptMgr, logicMgr, planner, context);
+        this.perfCounters = new ReasonerPerfCounters(true);
+        this.planner = ReasonerPlanner.create(traversalEng, conceptMgr, logicMgr, perfCounters, context.options().explain());
+        this.controllerRegistry = new ControllerRegistry(actor(), traversalEng, conceptMgr, logicMgr, planner, perfCounters, context);
         this.explainablesManager = new ExplainablesManager();
     }
 

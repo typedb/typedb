@@ -18,17 +18,13 @@
 
 package com.vaticle.typedb.core.common.perfcounter;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Queue;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 public class PerfCounters {
-    interface CounterCreator {
-        Counter create(String name);
-    }
-
     public interface Counter {
         String name();
 
@@ -37,11 +33,11 @@ public class PerfCounters {
         long get();
     }
 
-    public static final CounterCreator NOOP_CREATOR = name -> new NoOpCounter(name);
-    public static final CounterCreator ATOMICLONG_CREATOR = name -> new AtomicLongCounter(name);
+    public static final Function<String, Counter> NOOP_CREATOR = NoOpCounter::new;
+    public static final Function<String, Counter> ATOMICLONG_CREATOR = AtomicLongCounter::new;
 
-    private final CounterCreator counterCreator;
-    private final Queue<Counter> counters;
+    private final Function<String, Counter> counterCreator;
+    private final Collection<Counter> counters;
 
     public PerfCounters(boolean enabled) {
         this.counterCreator = enabled ? ATOMICLONG_CREATOR : NOOP_CREATOR;
@@ -49,7 +45,7 @@ public class PerfCounters {
     }
 
     public Counter register(String name) {
-        Counter ctr = counterCreator.create(name);
+        Counter ctr = counterCreator.apply(name);
         this.counters.add(ctr);
         return ctr;
     }
@@ -60,20 +56,22 @@ public class PerfCounters {
         return counter;
     }
 
-    public Map<String, Long> snapshotUnsynchronised() {
-        Map<String, Long> unsynchronisedMap = new HashMap<>();
-        counters.forEach(c -> unsynchronisedMap.put(c.name(), c.get()));
-        return unsynchronisedMap;
+    public Collection<Counter> counters() {
+        return counters;
     }
 
-    public static long getNanos() {
-        return System.nanoTime();
+    public PerfCounters cloneUnsynchronised() {
+        if (counterCreator == NOOP_CREATOR) return new PerfCounters(false);
+
+        PerfCounters cloned = new PerfCounters(true);
+        counters.forEach(counter -> cloned.register(counter.name(), counter.get()));
+        return cloned;
     }
 
-    public static String prettyPrint(Map<String, Long> counters) {
+    public String prettyPrintUnsynchronised() {
         StringBuilder sb = new StringBuilder();
-        counters.keySet().stream().sorted(String::compareTo).forEach(name -> {
-            sb.append(String.format("%-48s: %-20d\n", name, counters.get(name)));
+        counters.stream().sorted(Comparator.comparing(Counter::name)).forEach(counter -> {
+            sb.append(String.format("%-48s: %-20d\n", counter.name(), counter.get()));
         });
         return sb.toString();
     }

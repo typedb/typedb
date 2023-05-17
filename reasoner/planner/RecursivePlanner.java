@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.planner.ConjunctionGraph.ConjunctionNode;
 import com.vaticle.typedb.core.reasoner.planner.OrderingCoster.LocalAllCallsCosting;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -42,16 +43,16 @@ public class RecursivePlanner extends ReasonerPlanner {
     final OrderingCoster orderingCoster;
     private final Map<CallMode, Set<LocalAllCallsCosting>> callModeCostings;
 
-    protected RecursivePlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, boolean explain) {
-        super(traversalEng, conceptMgr, logicMgr, explain);
+    protected RecursivePlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, ReasonerPerfCounters perfCounters, boolean explain) {
+        super(traversalEng, conceptMgr, logicMgr, perfCounters, explain);
         this.conjunctionGraph = new ConjunctionGraph(logicMgr);
         this.answerCountEstimator = new AnswerCountEstimator(logicMgr, traversalEng.graph(), this.conjunctionGraph);
         this.callModeCostings = new HashMap<>();
         this.orderingCoster = new OrderingCoster(this, answerCountEstimator, conjunctionGraph);
     }
 
-    public static RecursivePlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, boolean explain) {
-        return new RecursivePlanner(traversalEng, conceptMgr, logicMgr, explain);
+    public static RecursivePlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, ReasonerPerfCounters perfCounters, boolean explain) {
+        return new RecursivePlanner(traversalEng, conceptMgr, logicMgr, perfCounters, explain);
     }
 
     @Override

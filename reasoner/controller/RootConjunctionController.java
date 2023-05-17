@@ -50,9 +50,7 @@ public class RootConjunctionController
 
     @Override
     public void initialise() {
-        long start = PerfCounters.getNanos();
         planner().plan(conjunction, new HashSet<>());
-        processorContext().perfCounters().timePlanningMs.add((PerfCounters.getNanos() - start) / 1_000_000);
         setUpUpstreamControllers();
         getOrCreateProcessor(new ConceptMap());
     }

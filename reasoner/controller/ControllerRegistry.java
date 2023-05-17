@@ -38,9 +38,9 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
-import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
@@ -79,7 +79,7 @@ public class ControllerRegistry {
     private TypeDBException terminationCause;
 
     public ControllerRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                              LogicManager logicMgr, ReasonerPlanner reasonerPlanner, Context.Transaction context) {
+                              LogicManager logicMgr, ReasonerPlanner reasonerPlanner, ReasonerPerfCounters perfCounters, Context.Transaction context) {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
@@ -97,7 +97,7 @@ public class ControllerRegistry {
         Tracer finalTracer = tracer;
         this.controllerContext = new AbstractController.Context(
                 executorService, this, Actor.driver(driver -> new Monitor(driver, finalTracer), executorService),
-                reasonerPlanner, new AbstractProcessor.Context.ReasonerPerfCounters(true), tracer
+                reasonerPlanner, perfCounters, tracer
         );
         this.materialisationController = Actor.driver(driver -> new MaterialisationController(
                 driver, controllerContext, traversalEngine(), conceptManager()), executorService
@@ -129,7 +129,7 @@ public class ControllerRegistry {
         return controllerContext.planner();
     }
 
-    public AbstractProcessor.Context.ReasonerPerfCounters perfCounters() {
+    public ReasonerPerfCounters perfCounters() {
         return controllerContext.processor().perfCounters();
     }
 

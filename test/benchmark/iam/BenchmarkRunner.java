@@ -25,9 +25,9 @@ import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.migrator.data.DataImporter;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.planner.AnswerCountEstimator;
 import com.vaticle.typedb.core.reasoner.planner.ConjunctionGraph;
-import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
@@ -42,6 +42,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -126,7 +127,7 @@ public class BenchmarkRunner {
             BenchmarkRunner.BenchmarkRun run = runMatchQuery(benchmark.query);
             benchmark.addRun(run);
             LOG.info("Completed run in {} ms. answersDiff: {}", run.timeTaken.toMillis(), run.answerCount - benchmark.expectedAnswers);
-            LOG.info("perf_counters:\n{}", PerfCounters.prettyPrint(run.reasonerPerfCounters));
+            LOG.info("Summary:\n{}", run);
         }
         if (csvBuilder != null) csvBuilder.append(benchmark);
     }
@@ -138,7 +139,7 @@ public class BenchmarkRunner {
                 Instant start = Instant.now();
                 long nAnswers = tx.query().match(TypeQL.parseQuery(query).asMatch()).count();
                 Duration timeTaken = Duration.between(start, Instant.now());
-                run = new BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters().snapshotUnsynchronised());
+                run = new BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters().cloneUnsynchronised());
             }
         }
         return run;
@@ -153,28 +154,34 @@ public class BenchmarkRunner {
         final Duration timeTaken;
         final Map<String, Long> reasonerPerfCounters;
 
-        public BenchmarkRun(long answerCount, Duration timeTaken, Map<String, Long> reasonerPerfCounters) {
+        public BenchmarkRun(long answerCount, Duration timeTaken, PerfCounters reasonerPerfCounters) {
             this.answerCount = answerCount;
             this.timeTaken = timeTaken;
-            this.reasonerPerfCounters = reasonerPerfCounters;
+            this.reasonerPerfCounters = new HashMap<>();
+            iterate(reasonerPerfCounters.counters())
+                    .filter(counter -> CSVBuilder.perfCounterKeys.contains(counter.name()))
+                    .forEachRemaining(counter -> this.reasonerPerfCounters.put(counter.name(), counter.get()));
+
         }
 
         @Override
         public String toString() {
+            StringBuilder perfCounterStr = new StringBuilder();
+            reasonerPerfCounters.forEach((k,v) -> perfCounterStr.append(String.format(" - %s\t:\t%d\n", k, v)));
             return "Benchmark run:\n" +
                     "\tTimeTaken :\t" + timeTaken.toMillis() + " ms\n" +
                     "\tAnswers   :\t" + answerCount + "\n" +
-                    PerfCounters.prettyPrint(reasonerPerfCounters);
+                    perfCounterStr;
         }
     }
 
     static class CSVBuilder {
 
         private static final List<String> perfCounterKeys = list(
-                AbstractProcessor.Context.ReasonerPerfCounters.KEY_TIME_PLANNING_MS,
-                AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_MATERIALISATIONS,
-                AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_CONJUNCTION_PROCESSORS,
-                AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_COMPOUND_STREAMS
+                ReasonerPerfCounters.KEY_TIME_PLANNING,
+                ReasonerPerfCounters.KEY_COUNT_MATERIALISATIONS,
+                ReasonerPerfCounters.KEY_COUNT_CONJUNCTION_PROCESSORS,
+                ReasonerPerfCounters.KEY_COUNT_COMPOUND_STREAMS
         );
 
         private final StringBuilder sb;
@@ -194,7 +201,8 @@ public class BenchmarkRunner {
                 entries.add(Long.toString(benchmark.expectedAnswers));
                 entries.add(Long.toString(run.answerCount));
                 entries.add(Long.toString(run.timeTaken.toMillis()));
-                perfCounterKeys.forEach(key -> entries.add(Long.toString(run.reasonerPerfCounters.get(key))));
+                Map<String, Long> counterValues = new HashMap<>();
+                perfCounterKeys.forEach(key -> entries.add(Long.toString(counterValues.get(key))));
                 return entries;
             }).forEachRemaining(this::appendLine);
         }

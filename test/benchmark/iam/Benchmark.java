@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
-import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,9 +70,9 @@ class Benchmark {
     }
 
     public void assertCounters(long timePlanningMs, long countMaterialisations, long countConjunctionProcessors, long countCompoundStreams) {
-        assertCounter(AbstractProcessor.Context.ReasonerPerfCounters.KEY_TIME_PLANNING_MS, Math.round(timePlanningMs * COUNTER_MARGIN));
-        assertCounter(AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_MATERIALISATIONS, Math.round(countMaterialisations * COUNTER_MARGIN));
-        assertCounter(AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_CONJUNCTION_PROCESSORS, Math.round(countConjunctionProcessors * COUNTER_MARGIN));
-        assertCounter(AbstractProcessor.Context.ReasonerPerfCounters.KEY_COUNT_COMPOUND_STREAMS, Math.round(countCompoundStreams * COUNTER_MARGIN));
+        assertCounter(ReasonerPerfCounters.KEY_TIME_PLANNING, Math.round(timePlanningMs * COUNTER_MARGIN));
+        assertCounter(ReasonerPerfCounters.KEY_COUNT_MATERIALISATIONS, Math.round(countMaterialisations * COUNTER_MARGIN));
+        assertCounter(ReasonerPerfCounters.KEY_COUNT_CONJUNCTION_PROCESSORS, Math.round(countConjunctionProcessors * COUNTER_MARGIN));
+        assertCounter(ReasonerPerfCounters.KEY_COUNT_COMPOUND_STREAMS, Math.round(countCompoundStreams * COUNTER_MARGIN));
     }
 }

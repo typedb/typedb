@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.concurrent.actor.Actor;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.controller.AbstractController;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
@@ -187,33 +188,6 @@ public abstract class AbstractProcessor<
 
         public ReasonerPerfCounters perfCounters() {
             return perfCounters;
-        }
-
-        public static class ReasonerPerfCounters {
-
-            public static final String KEY_TIME_PLANNING_MS = "time_planning_ms";
-            public static final String KEY_COUNT_MATERIALISATIONS = "count_materialisations";
-            public static final String KEY_COUNT_CONJUNCTION_PROCESSORS = "count_conjunction_processors";
-            public static final String KEY_COUNT_COMPOUND_STREAMS = "count_compound_streams";
-
-            private final PerfCounters perfCounters;
-
-            public final PerfCounters.Counter timePlanningMs;
-            public final PerfCounters.Counter countMaterialisations;
-            public final PerfCounters.Counter countConjunctionProcessors;
-            public final PerfCounters.Counter countCompoundStreams;
-
-            public ReasonerPerfCounters(boolean enabled) {
-                perfCounters = new PerfCounters(enabled);
-                timePlanningMs = perfCounters.register(KEY_TIME_PLANNING_MS);
-                countMaterialisations = perfCounters.register(KEY_COUNT_MATERIALISATIONS);
-                countConjunctionProcessors = perfCounters.register(KEY_COUNT_CONJUNCTION_PROCESSORS);
-                countCompoundStreams = perfCounters.register(KEY_COUNT_COMPOUND_STREAMS);
-            }
-
-            public Map<String, Long> snapshotUnsynchronised() {
-                return perfCounters.snapshotUnsynchronised();
-            }
         }
     }
 
