@@ -37,7 +37,7 @@ class Benchmark {
     final List<BenchmarkRunner.BenchmarkRun> runs;
 
     Benchmark(String name, String query, long expectedAnswers) {
-        this(name, query, expectedAnswers, 1);
+        this(name, query, expectedAnswers, 5);
     }
 
     Benchmark(String name, String query, long expectedAnswers, int nRuns) {

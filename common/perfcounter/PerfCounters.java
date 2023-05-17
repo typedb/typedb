@@ -33,14 +33,13 @@ public class PerfCounters {
         long get();
     }
 
-    public static final Function<String, Counter> NOOP_CREATOR = NoOpCounter::new;
-    public static final Function<String, Counter> ATOMICLONG_CREATOR = AtomicLongCounter::new;
-
     private final Function<String, Counter> counterCreator;
     private final Collection<Counter> counters;
+    private final boolean enabled;
 
     public PerfCounters(boolean enabled) {
-        this.counterCreator = enabled ? ATOMICLONG_CREATOR : NOOP_CREATOR;
+        this.enabled = enabled;
+        this.counterCreator = enabled ? AtomicLongCounter::new : NoOpCounter::new;
         this.counters = new ConcurrentLinkedQueue<>();
     }
 
@@ -61,9 +60,7 @@ public class PerfCounters {
     }
 
     public PerfCounters cloneUnsynchronised() {
-        if (counterCreator == NOOP_CREATOR) return new PerfCounters(false);
-
-        PerfCounters cloned = new PerfCounters(true);
+        PerfCounters cloned = new PerfCounters(enabled);
         counters.forEach(counter -> cloned.register(counter.name(), counter.get()));
         return cloned;
     }
