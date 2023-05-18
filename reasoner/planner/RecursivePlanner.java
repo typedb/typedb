@@ -42,16 +42,16 @@ public class RecursivePlanner extends ReasonerPlanner {
     final OrderingCoster orderingCoster;
     private final Map<CallMode, Set<LocalAllCallsCosting>> callModeCostings;
 
-    protected RecursivePlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
-        super(traversalEng, conceptMgr, logicMgr);
+    protected RecursivePlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, boolean explain) {
+        super(traversalEng, conceptMgr, logicMgr, explain);
         this.conjunctionGraph = new ConjunctionGraph(logicMgr);
         this.answerCountEstimator = new AnswerCountEstimator(logicMgr, traversalEng.graph(), this.conjunctionGraph);
         this.callModeCostings = new HashMap<>();
         this.orderingCoster = new OrderingCoster(this, answerCountEstimator, conjunctionGraph);
     }
 
-    public static RecursivePlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
-        return new RecursivePlanner(traversalEng, conceptMgr, logicMgr);
+    public static RecursivePlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, boolean explain) {
+        return new RecursivePlanner(traversalEng, conceptMgr, logicMgr, explain);
     }
 
     @Override

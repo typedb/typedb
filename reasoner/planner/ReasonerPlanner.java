@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import javax.annotation.Nullable;
@@ -46,25 +47,23 @@ public abstract class ReasonerPlanner {
     final ConceptManager conceptMgr;
     final TraversalEngine traversalEng;
     final LogicManager logicMgr;
+    private final boolean explain;
     final CommonCache<CallMode, Plan> planCache;
 
-    public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
+    public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, boolean explain) {
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
+        this.explain = explain;
         this.planCache = new CommonCache<>();
     }
 
-    public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
-        return RecursivePlanner.create(traversalEng, conceptMgr, logicMgr);
+    public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, boolean explain) {
+        return RecursivePlanner.create(traversalEng, conceptMgr, logicMgr, explain);
     }
 
     static Set<Variable> estimateableVariables(Set<Variable> variables) {
         return iterate(variables).filter(Variable::isThing).toSet();
-    }
-
-    static Set<Variable> retrievedVariables(Resolvable<?> resolvable) {
-        return iterate(resolvable.variables()).filter(v -> v.id().isRetrievable()).toSet();
     }
 
     static boolean dependenciesSatisfied(Resolvable<?> resolvable, Set<Variable> boundVars, Map<Resolvable<?>, Set<Variable>> dependencies) {
@@ -130,6 +129,11 @@ public abstract class ReasonerPlanner {
 
     public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> mode, @Nullable Set<ResolvableConjunction> dependencyFilter) {
         Set<CallMode> calls = new HashSet<>();
+
+        if (ConcludableController.canBypassReasoning(concludable, iterate(mode).map(v -> v.id().asRetrievable()).toSet(), explain)) {
+            return calls;
+        }
+
         for (Map.Entry<Rule, Set<Unifier>> entry : logicMgr.applicableRules(concludable).entrySet()) {
             for (Rule.Condition.ConditionBranch conditionBranch : entry.getKey().condition().branches()) {
                 ResolvableConjunction ruleConjunction = conditionBranch.conjunction();

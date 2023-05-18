@@ -104,7 +104,7 @@ public class RecursivePlannerTest {
     @Test
     public void test_single_retrieval() {
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), false);
         ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person; }", transaction.logic()));
         planSpaceSearch.plan(conjunction, set());
         ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
@@ -116,7 +116,7 @@ public class RecursivePlannerTest {
         // Still just answer counts. Improve if we have an improved estimate for retrievables
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
 
-        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), false);
         {   // Query only count of $p, where $p isa man;
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa man, has name $n; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
@@ -150,7 +150,7 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), false);
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
@@ -185,7 +185,7 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), false);
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
@@ -205,7 +205,7 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), false);
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa friendship; }", transaction.logic()));
 
@@ -251,7 +251,7 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), false);
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planSpaceSearch.plan(conjunction, set());
@@ -286,7 +286,7 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planner = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planner = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), false);
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$x has name \"Jim\"; (friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planner.plan(conjunction, set());

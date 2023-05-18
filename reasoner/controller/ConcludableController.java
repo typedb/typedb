@@ -70,6 +70,11 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         this.conclusionUnifiers = new HashMap<>();
     }
 
+    public static boolean canBypassReasoning(Concludable concludable, Set<com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable> boundVariables, boolean isExplainEnabled) {
+        return !isExplainEnabled && !concludable.isHas() &&
+                concludable.generating().isPresent() && boundVariables.contains(concludable.generating().get().id());
+    }
+
     @Override
     public void setUpUpstreamControllers() {
         iterate(registry().logicManager().applicableRules(concludable).entrySet()).forEachRemaining(ruleAndUnifiers -> {
@@ -262,7 +267,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                             (attribute = bounds.get(concludable.asHas().attribute().id())) != null &&
                             (owner.asThing().hasInferred(attribute.asAttribute()) || owner.asThing().hasNonInferred(attribute.asAttribute()));
                 } else {
-                    return bounds.contains(concludable.generating().get().id());
+                    return ConcludableController.canBypassReasoning(concludable, bounds.concepts().keySet(), false);
                 }
             }
 
