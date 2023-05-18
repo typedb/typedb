@@ -69,22 +69,3 @@ when {
 } then {
         ($parent: $p, $member: $m) isa $membership;
 };
-
-object-join sub relation, relates start, relates end;
-object plays object-join:start, plays object-join:end;
-object-cartesian sub object-join;
-triple-join sub object-join;
-rule object-cartesian:
-when {
-    $a isa object; $b isa object;
-} then {
-    (start: $a, end: $b) isa object-cartesian; # produce all pairs for the heck of it
-};
-rule triple-join:
-when {
-        (start: $w, end: $x) isa object-cartesian;
-        (start: $x, end: $y) isa object-cartesian;
-        (start: $y, end: $z) isa object-cartesian;
-} then {
-    (start: $w, end: $z) isa triple-join;
-};
