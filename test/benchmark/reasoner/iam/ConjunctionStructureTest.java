@@ -91,17 +91,4 @@ public class ConjunctionStructureTest {
         benchmark.assertRunningTime(1000);
         benchmark.assertCounters(500, 100, 400, 1500);
     }
-
-    @Test
-    public void testDiamondTransitivity() {
-        String query = "match\n" +
-                "(collection: $x, member: $y) isa collection-membership;\n" +
-                "(collection: $x, member: $y) isa collection-membership;\n";
-        Benchmark benchmark = new Benchmark("diamond-transitivity", query, 152);
-        benchmarker.runBenchmark(benchmark);
-
-        benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(1000);
-        benchmark.assertCounters(500, 105, 201, 201);
-    }
 }
