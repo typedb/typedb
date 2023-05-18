@@ -50,7 +50,7 @@ public class BenchmarkRunner {
 
     private static final boolean PRINT_RESULTS = true;
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(BenchmarkRunner.class);
-    private static final Path RESOURCE_DIRECTORY = Paths.get("test", "benchmark", "iam", "resources");
+    private static final Path RESOURCE_DIRECTORY = Paths.get("test", "benchmark", "reasoner", "iam", "resources");
 
     private static CoreDatabaseManager databaseMgr;
     private final String database;

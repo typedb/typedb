@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.benchmark;
+package com.vaticle.typedb.core.reasoner.benchmark.synthetic;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -28,10 +28,10 @@ import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
-import com.vaticle.typedb.core.test.benchmark.generation.DiagonalGraph;
-import com.vaticle.typedb.core.test.benchmark.generation.PathTreeGraph;
-import com.vaticle.typedb.core.test.benchmark.generation.TransitivityChainGraph;
-import com.vaticle.typedb.core.test.benchmark.generation.TransitivityMatrixGraph;
+import com.vaticle.typedb.core.reasoner.benchmark.synthetic.generation.DiagonalGraph;
+import com.vaticle.typedb.core.reasoner.benchmark.synthetic.generation.PathTreeGraph;
+import com.vaticle.typedb.core.reasoner.benchmark.synthetic.generation.TransitivityChainGraph;
+import com.vaticle.typedb.core.reasoner.benchmark.synthetic.generation.TransitivityMatrixGraph;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.After;
