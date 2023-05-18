@@ -39,7 +39,7 @@ public class EntityImpl extends ThingImpl implements Entity {
 
     @Override
     public EntityType getType() {
-        return conceptMgr.convertThingType(readableVertex().type()).asEntityType();
+        return conceptMgr.convertEntityType(readableVertex().type()).asEntityType();
     }
 
     @Override

@@ -44,7 +44,7 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Char.SEMICOLON;
 
 public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
-    private EntityTypeImpl(ConceptManager conceptMgr, TypeVertex vertex) {
+    public EntityTypeImpl(ConceptManager conceptMgr, TypeVertex vertex) {
         super(conceptMgr, vertex);
         if (vertex.encoding() != ENTITY_TYPE) {
             throw exception(TypeDBException.of(TYPE_ROOT_MISMATCH, vertex.label(),
@@ -55,12 +55,6 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     private EntityTypeImpl(ConceptManager conceptMgr, String label) {
         super(conceptMgr, label, ENTITY_TYPE);
         assert !label.equals(ENTITY.label());
-    }
-
-    public static EntityTypeImpl of(ConceptManager conceptMgr, TypeVertex vertex) {
-        if (vertex.label().equals(ENTITY.label())) {
-            return new EntityTypeImpl.Root(conceptMgr, vertex);
-        } else return new EntityTypeImpl(conceptMgr, vertex);
     }
 
     public static EntityTypeImpl of(ConceptManager conceptMgr, String label) {
@@ -77,14 +71,14 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     public Forwardable<EntityTypeImpl, Order.Asc> getSubtypes() {
         return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
                 .mapSorted(
-                        v -> (EntityTypeImpl) conceptMgr.convertThingType(v).asEntityType(),
+                        v -> (EntityTypeImpl) conceptMgr.convertEntityType(v).asEntityType(),
                         entityType -> entityType.vertex, ASC
                 );
     }
 
     @Override
     public Forwardable<EntityTypeImpl, Order.Asc> getSubtypesExplicit() {
-        return super.getSubtypesExplicit(v -> (EntityTypeImpl) conceptMgr.convertThingType(v).asEntityType());
+        return super.getSubtypesExplicit(v -> (EntityTypeImpl) conceptMgr.convertEntityType(v).asEntityType());
     }
 
     @Override
@@ -128,9 +122,9 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         builder.append(SEMICOLON).append(NEW_LINE);
     }
 
-    private static class Root extends EntityTypeImpl {
+    public static class Root extends EntityTypeImpl {
 
-        private Root(ConceptManager conceptMgr, TypeVertex vertex) {
+        public Root(ConceptManager conceptMgr, TypeVertex vertex) {
             super(conceptMgr, vertex);
             assert vertex.label().equals(ENTITY.label());
         }

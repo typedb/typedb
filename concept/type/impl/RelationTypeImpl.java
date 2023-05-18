@@ -59,7 +59,7 @@ import static java.util.Comparator.comparing;
 
 public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
-    private RelationTypeImpl(ConceptManager conceptMgr, TypeVertex vertex) {
+    public RelationTypeImpl(ConceptManager conceptMgr, TypeVertex vertex) {
         super(conceptMgr, vertex);
         if (vertex.encoding() != RELATION_TYPE) {
             throw exception(TypeDBException.of(TYPE_ROOT_MISMATCH, vertex.label(),
@@ -69,11 +69,6 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     private RelationTypeImpl(ConceptManager conceptMgr, String label) {
         super(conceptMgr, label, RELATION_TYPE);
-    }
-
-    public static RelationTypeImpl of(ConceptManager conceptMgr, TypeVertex vertex) {
-        if (vertex.label().equals(RELATION.label())) return new RelationTypeImpl.Root(conceptMgr, vertex);
-        else return new RelationTypeImpl(conceptMgr, vertex);
     }
 
     public static RelationType of(ConceptManager conceptMgr, String label) {
@@ -227,7 +222,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         Optional<RoleTypeImpl> roleType;
         TypeVertex roleTypeVertex = graphMgr().schema().getType(roleLabel, vertex.label());
         if (roleTypeVertex != null) {
-            return conceptMgr.convertRoleType(vertex);
+            return conceptMgr.convertRoleType(roleTypeVertex);
         } else if ((roleType = getRelates().filter(role -> role.getLabel().name().equals(roleLabel)).first()).isPresent()) {
             return roleType.get();
         } else return null;
@@ -305,7 +300,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     public static class Root extends RelationTypeImpl {
 
-        Root(ConceptManager conceptMgr, TypeVertex vertex) {
+        public Root(ConceptManager conceptMgr, TypeVertex vertex) {
             super(conceptMgr, vertex);
             assert vertex.label().equals(RELATION.label());
         }

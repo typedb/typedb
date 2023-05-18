@@ -121,21 +121,6 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         else cache = null;
     }
 
-    public static ThingTypeImpl of(ConceptManager conceptMgr, TypeVertex vertex) {
-        switch (vertex.encoding()) {
-            case ENTITY_TYPE:
-                return EntityTypeImpl.of(conceptMgr, vertex);
-            case ATTRIBUTE_TYPE:
-                return AttributeTypeImpl.of(conceptMgr, vertex);
-            case RELATION_TYPE:
-                return RelationTypeImpl.of(conceptMgr, vertex);
-            case THING_TYPE:
-                return new ThingTypeImpl.Root(conceptMgr, vertex);
-            default:
-                throw conceptMgr.exception(TypeDBException.of(UNRECOGNISED_VALUE));
-        }
-    }
-
     @Override
     public java.lang.String getSyntax() {
         StringBuilder builder = new StringBuilder();
@@ -399,7 +384,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         validateIsNotDeleted();
         setPlays(roleType);
         override(this, PLAYS, roleType, overriddenType, getSupertype().getPlays(),
-                vertex.outs().edge(PLAYS).to().mapSorted(v ->  (RoleTypeImpl) conceptMgr.convertRoleType(v), rt -> rt.vertex, ASC),
+                vertex.outs().edge(PLAYS).to().mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), rt -> rt.vertex, ASC),
                 OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE);
     }
 

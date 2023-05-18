@@ -50,7 +50,7 @@ import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ROLE;
 
 public class RoleTypeImpl extends TypeImpl implements RoleType {
 
-    private RoleTypeImpl(ConceptManager conceptMgr, TypeVertex vertex) {
+    public RoleTypeImpl(ConceptManager conceptMgr, TypeVertex vertex) {
         super(conceptMgr, vertex);
         assert vertex.encoding() == ROLE_TYPE;
         if (vertex.encoding() != ROLE_TYPE) {
@@ -61,11 +61,6 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     private RoleTypeImpl(ConceptManager conceptMgr, String label, String relation) {
         super(conceptMgr, label, ROLE_TYPE, relation);
-    }
-
-    public static RoleTypeImpl of(ConceptManager conceptMgr, TypeVertex vertex) {
-        if (vertex.label().equals(ROLE.label())) return new RoleTypeImpl.Root(conceptMgr, vertex);
-        else return new RoleTypeImpl(conceptMgr, vertex);
     }
 
     public static RoleTypeImpl of(ConceptManager conceptMgr, String label, String relation) {
@@ -121,7 +116,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Override
     public Forwardable<ThingTypeImpl, Order.Asc> getPlayerTypes() {
         return iterateSorted(graphMgr().schema().playersOfRoleType(vertex), ASC)
-                .mapSorted(v -> (ThingTypeImpl) conceptMgr.convertType(v), roleType -> roleType.vertex, ASC);
+                .mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), roleType -> roleType.vertex, ASC);
     }
 
     @Override
@@ -217,7 +212,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     public static class Root extends RoleTypeImpl {
 
-        Root(ConceptManager conceptMgr, TypeVertex vertex) {
+        public Root(ConceptManager conceptMgr, TypeVertex vertex) {
             super(conceptMgr, vertex);
             assert vertex.label().equals(ROLE.label());
         }

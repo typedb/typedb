@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.thing.impl.ThingImpl;
@@ -50,9 +51,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -61,6 +66,12 @@ import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISAT
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.OBJECT;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ROLE;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -90,7 +101,8 @@ public final class ConceptManager {
         Map<Retrievable, Concept> map = new HashMap<>();
         vertexMap.forEach((id, vertex) -> {
             if (vertex.isThing()) map.put(id, ThingImpl.of(this, vertex.asThing()));
-            else if (vertex.isType()) map.put(id, convertType(vertex.asType()));
+            else if (vertex.isType() && vertex.asType().isRoleType()) map.put(id, convertRoleType(vertex.asType()));
+            else if (vertex.isType()) map.put(id, convertThingType(vertex.asType()));
             else throw exception(TypeDBException.of(ILLEGAL_STATE));
         });
         return map;
@@ -102,20 +114,24 @@ public final class ConceptManager {
 
     public ThingType getRootThingType() {
         TypeVertex vertex = graphMgr.schema().rootThingType();
-        if (vertex != null) {
-            if (schemaCache == null) return new ThingTypeImpl.Root(this, vertex);
-            else {
-                return schemaCache.computeIfAbsent(vertex, v -> new ThingTypeImpl.Root(this, v)).asThingType();
-            }
-        } else throw exception(TypeDBException.of(ILLEGAL_STATE));
+        if (vertex != null) return convertRootThingType(vertex);
+        else throw exception(TypeDBException.of(ILLEGAL_STATE));
+    }
+
+    private ThingType convertRootThingType(TypeVertex vertex) {
+        assert vertex.encoding() == Encoding.Vertex.Type.THING_TYPE;
+        if (schemaCache == null) return new ThingTypeImpl.Root(this, vertex);
+        else {
+            return schemaCache.computeIfAbsent(vertex, v -> new ThingTypeImpl.Root(this, v)).asThingType();
+        }
     }
 
     public EntityType getRootEntityType() {
         TypeVertex vertex = graphMgr.schema().rootEntityType();
         if (vertex != null) {
-            if (schemaCache == null) return EntityTypeImpl.of(this, vertex);
+            if (schemaCache == null) return new EntityTypeImpl.Root(this, vertex);
             else {
-                return schemaCache.computeIfAbsent(vertex, v -> EntityTypeImpl.of(this, v)).asEntityType();
+                return schemaCache.computeIfAbsent(vertex, v -> new EntityTypeImpl.Root(this, v)).asEntityType();
             }
         } else throw exception(TypeDBException.of(ILLEGAL_STATE));
     }
@@ -123,9 +139,9 @@ public final class ConceptManager {
     public RelationType getRootRelationType() {
         TypeVertex vertex = graphMgr.schema().rootRelationType();
         if (vertex != null) {
-            if (schemaCache == null) return RelationTypeImpl.of(this, vertex);
+            if (schemaCache == null) return new RelationTypeImpl.Root(this, vertex);
             else {
-                return schemaCache.computeIfAbsent(vertex, v -> RelationTypeImpl.of(this, v)).asRelationType();
+                return schemaCache.computeIfAbsent(vertex, v -> new RelationTypeImpl.Root(this, v)).asRelationType();
             }
         } else throw exception(TypeDBException.of(ILLEGAL_STATE));
     }
@@ -133,41 +149,35 @@ public final class ConceptManager {
     public AttributeType getRootAttributeType() {
         TypeVertex vertex = graphMgr.schema().rootAttributeType();
         if (vertex != null) {
-            if (schemaCache == null) return AttributeTypeImpl.of(this, vertex);
+            if (schemaCache == null) return new AttributeTypeImpl.Root(this, vertex);
             else {
-                return schemaCache.computeIfAbsent(vertex, v -> AttributeTypeImpl.of(this, v)).asAttributeType();
+                return schemaCache.computeIfAbsent(vertex, v -> new AttributeTypeImpl.Root(this, v)).asAttributeType();
             }
         } else throw exception(TypeDBException.of(ILLEGAL_STATE));
     }
 
     public EntityType putEntityType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return EntityTypeImpl.of(this, vertex);
+        if (vertex != null) return new EntityTypeImpl(this, vertex);
         else return EntityTypeImpl.of(this, label);
     }
 
     public EntityType getEntityType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) {
-            if (schemaCache == null) return EntityTypeImpl.of(this, vertex);
-            else return schemaCache.computeIfAbsent(vertex, v -> EntityTypeImpl.of(this, v)).asEntityType();
-        } else return null;
+        if (vertex != null) return convertEntityType(vertex);
+        else return null;
     }
 
     public RelationType putRelationType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return RelationTypeImpl.of(this, vertex);
+        if (vertex != null) return new RelationTypeImpl(this, vertex);
         else return RelationTypeImpl.of(this, label);
     }
 
     public RelationType getRelationType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) {
-            if (schemaCache == null) return RelationTypeImpl.of(this, vertex);
-            else {
-                return schemaCache.computeIfAbsent(vertex, v -> RelationTypeImpl.of(this, v)).asRelationType();
-            }
-        } else return null;
+        if (vertex != null) return convertRelationType(vertex);
+        else return null;
     }
 
     public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
@@ -179,19 +189,19 @@ public final class ConceptManager {
         TypeVertex vertex = graphMgr.schema().getType(label);
         switch (valueType) {
             case BOOLEAN:
-                if (vertex != null) return AttributeTypeImpl.Boolean.of(this, vertex);
+                if (vertex != null) return new AttributeTypeImpl.Boolean(this, vertex);
                 else return new AttributeTypeImpl.Boolean(this, label);
             case LONG:
-                if (vertex != null) return AttributeTypeImpl.Long.of(this, vertex);
+                if (vertex != null) return new AttributeTypeImpl.Long(this, vertex);
                 else return new AttributeTypeImpl.Long(this, label);
             case DOUBLE:
-                if (vertex != null) return AttributeTypeImpl.Double.of(this, vertex);
+                if (vertex != null) return new AttributeTypeImpl.Double(this, vertex);
                 else return new AttributeTypeImpl.Double(this, label);
             case STRING:
-                if (vertex != null) return AttributeTypeImpl.String.of(this, vertex);
+                if (vertex != null) return new AttributeTypeImpl.String(this, vertex);
                 else return new AttributeTypeImpl.String(this, label);
             case DATETIME:
-                if (vertex != null) return AttributeTypeImpl.DateTime.of(this, vertex);
+                if (vertex != null) return new AttributeTypeImpl.DateTime(this, vertex);
                 else return new AttributeTypeImpl.DateTime(this, label);
             default:
                 throw exception(TypeDBException.of(UNSUPPORTED_OPERATION, "putAttributeType", valueType.name()));
@@ -200,18 +210,14 @@ public final class ConceptManager {
 
     public AttributeType getAttributeType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) {
-            if (schemaCache == null) return AttributeTypeImpl.of(this, vertex);
-            else return schemaCache.computeIfAbsent(vertex, v -> AttributeTypeImpl.of(this, v)).asAttributeType();
-        } else return null;
+        if (vertex != null) return convertAttributeType(vertex);
+        else return null;
     }
 
     public ThingType getThingType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) {
-            if (schemaCache == null) return ThingTypeImpl.of(this, vertex);
-            else return schemaCache.computeIfAbsent(vertex, v -> ThingTypeImpl.of(this, vertex)).asThingType();
-        } else return null;
+        if (vertex != null) return convertThingType(vertex);
+        else return null;
     }
 
     public Thing getThing(ByteArray iid) {
@@ -220,43 +226,68 @@ public final class ConceptManager {
         else return null;
     }
 
-    public Type convertType(TypeVertex vertex) {
-        switch (vertex.encoding()) {
-            case ROLE_TYPE:
-                return convertRoleType(vertex);
-            default:
-                return convertThingType(vertex);
-        }
-    }
-
     public ThingType convertThingType(TypeVertex vertex) {
         assert vertex.encoding() != Encoding.Vertex.Type.ROLE_TYPE;
-        if (schemaCache == null) return ThingTypeImpl.of(this, vertex);
-        else return schemaCache.computeIfAbsent(vertex, v -> ThingTypeImpl.of(this, v)).asThingType();
+        return thingTypeConverter(vertex.encoding()).apply(vertex);
+    }
+
+    private Function<TypeVertex, ThingType> thingTypeConverter(Encoding.Vertex.Type encoding) {
+        switch (encoding) {
+            case THING_TYPE:
+                return this::convertRootThingType;
+            case ENTITY_TYPE:
+                return this::convertEntityType;
+            case ATTRIBUTE_TYPE:
+                return this::convertAttributeType;
+            case RELATION_TYPE:
+                return this::convertRelationType;
+            default:
+                throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
+        }
     }
 
     public EntityType convertEntityType(TypeVertex vertex) {
         assert vertex.encoding() == Encoding.Vertex.Type.ENTITY_TYPE;
-        if (schemaCache == null) return EntityTypeImpl.of(this, vertex);
-        else return schemaCache.computeIfAbsent(vertex, v -> EntityTypeImpl.of(this, v)).asEntityType();
+        if (schemaCache == null) return new EntityTypeImpl(this, vertex);
+        else return schemaCache.computeIfAbsent(vertex, v -> new EntityTypeImpl(this, v)).asEntityType();
     }
 
     public RelationType convertRelationType(TypeVertex vertex) {
         assert vertex.encoding() == Encoding.Vertex.Type.RELATION_TYPE;
-        if (schemaCache == null) return RelationTypeImpl.of(this, vertex);
-        else return schemaCache.computeIfAbsent(vertex, v -> RelationTypeImpl.of(this, v)).asRelationType();
+        if (schemaCache == null) return new RelationTypeImpl(this, vertex);
+        else return schemaCache.computeIfAbsent(vertex, v -> new RelationTypeImpl(this, v)).asRelationType();
     }
 
     public RoleType convertRoleType(TypeVertex vertex) {
         assert vertex.encoding() == Encoding.Vertex.Type.ROLE_TYPE;
-        if (schemaCache == null) return RoleTypeImpl.of(this, vertex);
-        else return schemaCache.computeIfAbsent(vertex, v -> RoleTypeImpl.of(this, v)).asRoleType();
+        if (schemaCache == null) return roleTypeConstructor(vertex.properLabel()).apply(this, vertex);
+        else {
+            return schemaCache.computeIfAbsent(vertex, v -> roleTypeConstructor(vertex.properLabel()).apply(this, v)).asRoleType();
+        }
+    }
+
+    private BiFunction<ConceptManager, TypeVertex, RoleType> roleTypeConstructor(Label label) {
+        if (label.equals(Encoding.Vertex.Type.Root.ROLE.properLabel())) {
+            return RoleTypeImpl.Root::new;
+        } else return RoleTypeImpl::new;
     }
 
     public AttributeType convertAttributeType(TypeVertex vertex) {
         assert vertex.encoding() == Encoding.Vertex.Type.ATTRIBUTE_TYPE;
-        if (schemaCache == null) return AttributeTypeImpl.of(this, vertex);
-        else return schemaCache.computeIfAbsent(vertex, v -> AttributeTypeImpl.of(this, v)).asAttributeType();
+        if (schemaCache == null) return attributeTypeConstructor(vertex.valueType()).apply(this, vertex);
+        else {
+            return schemaCache.computeIfAbsent(vertex, v -> attributeTypeConstructor(vertex.valueType()).apply(this, vertex)).asAttributeType();
+        }
+    }
+
+    private BiFunction<ConceptManager, TypeVertex, AttributeType> attributeTypeConstructor(Encoding.ValueType<?> valueType) {
+        if (valueType == OBJECT) return AttributeTypeImpl.Root::new;
+        else if (valueType == BOOLEAN) return AttributeTypeImpl.Boolean::new;
+        else if (valueType == LONG) return AttributeTypeImpl.Long::new;
+        else if (valueType == DOUBLE) return AttributeTypeImpl.Double::new;
+        else if (valueType == STRING) return AttributeTypeImpl.String::new;
+        else if (valueType == DATETIME) return AttributeTypeImpl.DateTime::new;
+        throw exception(TypeDBException.of(BAD_VALUE_TYPE, valueType));
     }
 
     public void validateTypes() {
