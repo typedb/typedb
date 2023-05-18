@@ -277,8 +277,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public NavigableSet<Owns> getOwns() {
         if (cache != null) {
-            if (cache.owns == null && !isAbstract()) cache.owns = fetchOwns();
-            else if (cache.owns == null) cache.owns = emptyNavigableSet();
+            if (cache.owns == null) cache.owns = fetchOwns();
             return cache.owns;
         } else return fetchOwns();
     }
@@ -881,7 +880,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
-            builder.append(owner.getLabel());
+            builder.append(owner.getLabel()).append(SPACE);
             getSyntax(builder);
             return builder.toString();
         }

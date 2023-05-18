@@ -114,8 +114,8 @@ public final class ConceptManager {
 
     public ThingType getRootThingType() {
         TypeVertex vertex = graphMgr.schema().rootThingType();
-        if (vertex != null) return convertRootThingType(vertex);
-        else throw exception(TypeDBException.of(ILLEGAL_STATE));
+        assert vertex != null;
+        return convertRootThingType(vertex);
     }
 
     private ThingType convertRootThingType(TypeVertex vertex) {
@@ -128,32 +128,20 @@ public final class ConceptManager {
 
     public EntityType getRootEntityType() {
         TypeVertex vertex = graphMgr.schema().rootEntityType();
-        if (vertex != null) {
-            if (schemaCache == null) return new EntityTypeImpl.Root(this, vertex);
-            else {
-                return schemaCache.computeIfAbsent(vertex, v -> new EntityTypeImpl.Root(this, v)).asEntityType();
-            }
-        } else throw exception(TypeDBException.of(ILLEGAL_STATE));
+        assert vertex != null;
+        return convertEntityType(vertex);
     }
 
     public RelationType getRootRelationType() {
         TypeVertex vertex = graphMgr.schema().rootRelationType();
-        if (vertex != null) {
-            if (schemaCache == null) return new RelationTypeImpl.Root(this, vertex);
-            else {
-                return schemaCache.computeIfAbsent(vertex, v -> new RelationTypeImpl.Root(this, v)).asRelationType();
-            }
-        } else throw exception(TypeDBException.of(ILLEGAL_STATE));
+        assert vertex != null;
+        return convertRelationType(vertex);
     }
 
     public AttributeType getRootAttributeType() {
         TypeVertex vertex = graphMgr.schema().rootAttributeType();
-        if (vertex != null) {
-            if (schemaCache == null) return new AttributeTypeImpl.Root(this, vertex);
-            else {
-                return schemaCache.computeIfAbsent(vertex, v -> new AttributeTypeImpl.Root(this, v)).asAttributeType();
-            }
-        } else throw exception(TypeDBException.of(ILLEGAL_STATE));
+        assert vertex != null;
+        return convertAttributeType(vertex);
     }
 
     public EntityType putEntityType(String label) {
@@ -248,14 +236,28 @@ public final class ConceptManager {
 
     public EntityType convertEntityType(TypeVertex vertex) {
         assert vertex.encoding() == Encoding.Vertex.Type.ENTITY_TYPE;
-        if (schemaCache == null) return new EntityTypeImpl(this, vertex);
-        else return schemaCache.computeIfAbsent(vertex, v -> new EntityTypeImpl(this, v)).asEntityType();
+        if (schemaCache == null) return entityTypeConstructor(vertex.properLabel()).apply(this, vertex);
+        else {
+            return schemaCache.computeIfAbsent(vertex, v -> entityTypeConstructor(vertex.properLabel()).apply(this, v)).asEntityType();
+        }
+    }
+
+    private BiFunction<ConceptManager, TypeVertex, EntityType> entityTypeConstructor(Label label) {
+        if (label.equals(Encoding.Vertex.Type.Root.ENTITY.properLabel())) return EntityTypeImpl.Root::new;
+        else return EntityTypeImpl::new;
     }
 
     public RelationType convertRelationType(TypeVertex vertex) {
         assert vertex.encoding() == Encoding.Vertex.Type.RELATION_TYPE;
-        if (schemaCache == null) return new RelationTypeImpl(this, vertex);
-        else return schemaCache.computeIfAbsent(vertex, v -> new RelationTypeImpl(this, v)).asRelationType();
+        if (schemaCache == null) return relationTypeConstructor(vertex.properLabel()).apply(this, vertex);
+        else {
+            return schemaCache.computeIfAbsent(vertex, v -> relationTypeConstructor(vertex.properLabel()).apply(this, v)).asRelationType();
+        }
+    }
+
+    private BiFunction<ConceptManager, TypeVertex, RelationType> relationTypeConstructor(Label label) {
+        if (label.equals(Encoding.Vertex.Type.Root.RELATION.properLabel())) return RelationTypeImpl.Root::new;
+        else return RelationTypeImpl::new;
     }
 
     public RoleType convertRoleType(TypeVertex vertex) {
