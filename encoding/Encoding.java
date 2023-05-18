@@ -633,6 +633,11 @@ public class Encoding {
             if (sourceEncoding.equals(DATETIME)) return (LocalDateTime) sourceValue;
             else throw TypeDBException.of(ILLEGAL_STATE);
         }
+
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 
     public interface Structure {
@@ -735,6 +740,7 @@ public class Encoding {
 
                 private final String label;
                 private final String scope;
+                private final Label properLabel;
 
                 Root(String label) {
                     this(label, null);
@@ -743,6 +749,7 @@ public class Encoding {
                 Root(String label, @Nullable String scope) {
                     this.label = label;
                     this.scope = scope;
+                    this.properLabel = Label.of(label, scope);
                 }
 
                 public String label() {
@@ -754,7 +761,7 @@ public class Encoding {
                 }
 
                 public Label properLabel() {
-                    return Label.of(label, scope);
+                    return properLabel;
                 }
             }
         }

@@ -46,6 +46,12 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.INV
 
 public abstract class ConceptImpl implements Concept {
 
+    protected final ConceptManager conceptMgr;
+
+    protected ConceptImpl(ConceptManager conceptMgr) {
+        this.conceptMgr = conceptMgr;
+    }
+
     @Override
     public boolean isType() {
         return false;

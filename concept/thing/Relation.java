@@ -45,5 +45,5 @@ public interface Relation extends Thing {
     // TODO: This method should just return FunctionalIterator<Pair<RoleType, Thing>>
     Map<? extends RoleType, List<Thing>> getPlayersByRoleType();
 
-    FunctionalIterator<? extends RoleType> getRelating();
+    FunctionalIterator<RoleType> getRelating();
 }
