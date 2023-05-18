@@ -33,18 +33,18 @@ public class PerfCounters {
         long get();
     }
 
-    private final Function<String, Counter> counterCreator;
+    private final Function<String, Counter> counterConstructor;
     private final Collection<Counter> counters;
     private final boolean enabled;
 
     public PerfCounters(boolean enabled) {
         this.enabled = enabled;
-        this.counterCreator = enabled ? AtomicLongCounter::new : NoOpCounter::new;
+        this.counterConstructor = enabled ? AtomicLongCounter::new : NoOpCounter::new;
         this.counters = new ConcurrentLinkedQueue<>();
     }
 
     public Counter register(String name) {
-        Counter ctr = counterCreator.apply(name);
+        Counter ctr = counterConstructor.apply(name);
         this.counters.add(ctr);
         return ctr;
     }

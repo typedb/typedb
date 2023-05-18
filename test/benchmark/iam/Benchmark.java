@@ -18,10 +18,14 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
+import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static org.junit.Assert.assertEquals;
@@ -34,10 +38,10 @@ class Benchmark {
     final String query;
     final long expectedAnswers;
     final int nRuns;
-    final List<BenchmarkRunner.BenchmarkRun> runs;
+    final List<BenchmarkRun> runs;
 
     Benchmark(String name, String query, long expectedAnswers) {
-        this(name, query, expectedAnswers, 5);
+        this(name, query, expectedAnswers, 1);
     }
 
     Benchmark(String name, String query, long expectedAnswers, int nRuns) {
@@ -48,7 +52,7 @@ class Benchmark {
         this.runs = new ArrayList<>();
     }
 
-    void addRun(BenchmarkRunner.BenchmarkRun run) {
+    void addRun(BenchmarkRun run) {
         runs.add(run);
     }
 
@@ -69,10 +73,36 @@ class Benchmark {
                 run.reasonerPerfCounters.get(counter) <= maxValue));
     }
 
-    public void assertCounters(long timePlanningMs, long countMaterialisations, long countConjunctionProcessors, long countCompoundStreams) {
-        assertCounter(ReasonerPerfCounters.KEY_TIME_PLANNING, Math.round(timePlanningMs * 1_000_000 * COUNTER_MARGIN));
-        assertCounter(ReasonerPerfCounters.KEY_COUNT_MATERIALISATIONS, Math.round(countMaterialisations * COUNTER_MARGIN));
-        assertCounter(ReasonerPerfCounters.KEY_COUNT_CONJUNCTION_PROCESSORS, Math.round(countConjunctionProcessors * COUNTER_MARGIN));
-        assertCounter(ReasonerPerfCounters.KEY_COUNT_COMPOUND_STREAMS, Math.round(countCompoundStreams * COUNTER_MARGIN));
+    public void assertCounters(long planningTimeMillis, long materialisations, long conjunctionProcessors, long compoundStreams) {
+        assertCounter(ReasonerPerfCounters.PLANNING_TIME_NS, Math.round(planningTimeMillis * 1_000_000 * COUNTER_MARGIN));
+        assertCounter(ReasonerPerfCounters.MATERIALISATIONS, Math.round(materialisations * COUNTER_MARGIN));
+        assertCounter(ReasonerPerfCounters.CONJUNCTION_PROCESSORS, Math.round(conjunctionProcessors * COUNTER_MARGIN));
+        assertCounter(ReasonerPerfCounters.COMPOUND_STREAMS, Math.round(compoundStreams * COUNTER_MARGIN));
+    }
+
+    public static class BenchmarkRun {
+        final long answerCount;
+        final Duration timeTaken;
+        final Map<String, Long> reasonerPerfCounters;
+
+        public BenchmarkRun(long answerCount, Duration timeTaken, PerfCounters reasonerPerfCounters) {
+            this.answerCount = answerCount;
+            this.timeTaken = timeTaken;
+            this.reasonerPerfCounters = new HashMap<>();
+            iterate(reasonerPerfCounters.counters())
+                    .filter(counter -> BenchmarkRunner.CSVBuilder.perfCounterKeys.contains(counter.name()))
+                    .forEachRemaining(counter -> this.reasonerPerfCounters.put(counter.name(), counter.get()));
+
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder perfCounterStr = new StringBuilder();
+            reasonerPerfCounters.forEach((k,v) -> perfCounterStr.append(String.format("|-- %-40s :\t%d\n", k, v)));
+            return "Benchmark run:\n" +
+                    "- TimeTaken      :\t" + timeTaken.toMillis() + " ms\n" +
+                    "- Answers        :\t" + answerCount + "\n" +
+                    "- PerfCounters   :\t\n" + perfCounterStr + "\n";
+        }
     }
 }

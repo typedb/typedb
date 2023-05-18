@@ -21,13 +21,10 @@ package com.vaticle.typedb.core.reasoner.benchmark.iam;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.migrator.data.DataImporter;
 import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
-import com.vaticle.typedb.core.reasoner.planner.AnswerCountEstimator;
-import com.vaticle.typedb.core.reasoner.planner.ConjunctionGraph;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
@@ -42,9 +39,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
@@ -55,7 +50,7 @@ public class BenchmarkRunner {
 
     private static final boolean PRINT_RESULTS = true;
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(BenchmarkRunner.class);
-    private static final String RESOURCE_DIRECTORY = "test/benchmark/iam/resources/";
+    private static final Path RESOURCE_DIRECTORY = Paths.get("test", "benchmark", "iam", "resources");
 
     private static CoreDatabaseManager databaseMgr;
     private final String database;
@@ -95,7 +90,7 @@ public class BenchmarkRunner {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 iterate(filenames).forEachRemaining(filename -> {
                     try {
-                        TypeQLDefine defineQuery = TypeQL.parseQuery(Files.readString(Paths.get(RESOURCE_DIRECTORY + filename))).asDefine();
+                        TypeQLDefine defineQuery = TypeQL.parseQuery(Files.readString(RESOURCE_DIRECTORY.resolve(filename))).asDefine();
                         tx.query().define(defineQuery);
                     } catch (IOException e) {
                         fail("IOException when loading schema: " + e.getMessage());
@@ -106,8 +101,8 @@ public class BenchmarkRunner {
         }
     }
 
-    void loadData(String filename) {
-        new DataImporter(databaseMgr, database, Paths.get(RESOURCE_DIRECTORY + filename), Version.VERSION).run();
+    void importData(String filename) {
+        new DataImporter(databaseMgr, database, RESOURCE_DIRECTORY.resolve(filename), Version.VERSION).run();
     }
 
     void warmUp() {
@@ -137,22 +132,21 @@ public class BenchmarkRunner {
 
     void runBenchmark(Benchmark benchmark) {
         for (int i = 0; i < benchmark.nRuns; i++) {
-            BenchmarkRunner.BenchmarkRun run = runMatchQuery(benchmark.query);
+            Benchmark.BenchmarkRun run = runMatchQuery(benchmark.query);
             benchmark.addRun(run);
-            LOG.info("Completed run in {} ms. answersDiff: {}", run.timeTaken.toMillis(), run.answerCount - benchmark.expectedAnswers);
-            LOG.info("Summary:\n{}", run);
+            LOG.info("Completed run in {} ms; Summary:\n{}", run.timeTaken.toMillis(), run);
         }
         if (csvBuilder != null) csvBuilder.append(benchmark);
     }
 
-    private BenchmarkRun runMatchQuery(String query) {
-        BenchmarkRun run;
+    private Benchmark.BenchmarkRun runMatchQuery(String query) {
+        Benchmark.BenchmarkRun run;
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
                 Instant start = Instant.now();
                 long nAnswers = tx.query().match(TypeQL.parseQuery(query).asMatch()).count();
                 Duration timeTaken = Duration.between(start, Instant.now());
-                run = new BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters().cloneUnsynchronised());
+                run = new Benchmark.BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters());
             }
         }
         return run;
@@ -162,39 +156,13 @@ public class BenchmarkRunner {
 
     }
 
-    public static class BenchmarkRun {
-        final long answerCount;
-        final Duration timeTaken;
-        final Map<String, Long> reasonerPerfCounters;
-
-        public BenchmarkRun(long answerCount, Duration timeTaken, PerfCounters reasonerPerfCounters) {
-            this.answerCount = answerCount;
-            this.timeTaken = timeTaken;
-            this.reasonerPerfCounters = new HashMap<>();
-            iterate(reasonerPerfCounters.counters())
-                    .filter(counter -> CSVBuilder.perfCounterKeys.contains(counter.name()))
-                    .forEachRemaining(counter -> this.reasonerPerfCounters.put(counter.name(), counter.get()));
-
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder perfCounterStr = new StringBuilder();
-            reasonerPerfCounters.forEach((k,v) -> perfCounterStr.append(String.format("|-- %-40s :\t%d\n", k, v)));
-            return "Benchmark run:\n" +
-                    "- TimeTaken      :\t" + timeTaken.toMillis() + " ms\n" +
-                    "- Answers        :\t" + answerCount + "\n" +
-                    "- PerfCounters   :\t\n" + perfCounterStr + "\n";
-        }
-    }
-
     static class CSVBuilder {
 
-        private static final List<String> perfCounterKeys = list(
-                ReasonerPerfCounters.KEY_TIME_PLANNING,
-                ReasonerPerfCounters.KEY_COUNT_MATERIALISATIONS,
-                ReasonerPerfCounters.KEY_COUNT_CONJUNCTION_PROCESSORS,
-                ReasonerPerfCounters.KEY_COUNT_COMPOUND_STREAMS
+        static final List<String> perfCounterKeys = list(
+                ReasonerPerfCounters.PLANNING_TIME_NS,
+                ReasonerPerfCounters.MATERIALISATIONS,
+                ReasonerPerfCounters.CONJUNCTION_PROCESSORS,
+                ReasonerPerfCounters.COMPOUND_STREAMS
         );
 
         private final StringBuilder sb;

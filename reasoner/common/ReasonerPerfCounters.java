@@ -22,21 +22,21 @@ import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 
 public class ReasonerPerfCounters extends PerfCounters {
 
-    public static final String KEY_TIME_PLANNING = "time_planning_ms";
-    public static final String KEY_COUNT_MATERIALISATIONS = "count_materialisations";
-    public static final String KEY_COUNT_CONJUNCTION_PROCESSORS = "count_conjunction_processors";
-    public static final String KEY_COUNT_COMPOUND_STREAMS = "count_compound_streams";
+    public static final String PLANNING_TIME_NS = "planner_time_planning_ns";
+    public static final String MATERIALISATIONS = "processor_materialisations";
+    public static final String CONJUNCTION_PROCESSORS = "processors_conjunction_processors";
+    public static final String COMPOUND_STREAMS = "streams_compound_streams";
 
     public final PerfCounters.Counter timePlanning;
-    public final PerfCounters.Counter countMaterialisations;
-    public final PerfCounters.Counter countConjunctionProcessors;
-    public final PerfCounters.Counter countCompoundStreams;
+    public final PerfCounters.Counter materialisations;
+    public final PerfCounters.Counter conjunctionProcessors;
+    public final PerfCounters.Counter compoundStreams;
 
     public ReasonerPerfCounters(boolean enabled) {
         super(enabled);
-        timePlanning = register(KEY_TIME_PLANNING);
-        countMaterialisations = register(KEY_COUNT_MATERIALISATIONS);
-        countConjunctionProcessors = register(KEY_COUNT_CONJUNCTION_PROCESSORS);
-        countCompoundStreams = register(KEY_COUNT_COMPOUND_STREAMS);
+        timePlanning = register(PLANNING_TIME_NS);
+        materialisations = register(MATERIALISATIONS);
+        conjunctionProcessors = register(CONJUNCTION_PROCESSORS);
+        compoundStreams = register(COMPOUND_STREAMS);
     }
 }

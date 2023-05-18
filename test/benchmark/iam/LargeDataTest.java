@@ -37,7 +37,7 @@ public class LargeDataTest {
         benchmarker.setUp();
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadSchema("schema_rules_optimised.tql");
-        benchmarker.loadData("data.typedb");
+        benchmarker.importData("data.typedb");
         benchmarker.warmUp();
     }
     @AfterClass

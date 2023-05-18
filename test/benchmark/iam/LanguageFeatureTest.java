@@ -38,7 +38,7 @@ public class LanguageFeatureTest{
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadSchema("schema_rules_optimised.tql");
         benchmarker.loadSchema("schema_rules_test_specific.tql");
-        benchmarker.loadData("data.typedb");
+        benchmarker.importData("data.typedb");
         benchmarker.warmUp();
     }
 
@@ -149,7 +149,6 @@ public class LanguageFeatureTest{
         benchmark.assertRunningTime(2500);
         benchmark.assertCounters(1000, 200, 500, 1500);
     }
-
 
     @Test
     public void variabilisedRules() {
