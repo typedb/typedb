@@ -50,7 +50,7 @@ public class BenchmarkRunner {
 
     private static final boolean PRINT_RESULTS = true;
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(BenchmarkRunner.class);
-    private static final Path RESOURCE_DIRECTORY = Paths.get("test", "benchmark", "reasoner", "iam", "resources");
+    static final Path RESOURCE_DIRECTORY = Paths.get("test", "benchmark", "reasoner", "iam", "resources");
 
     private static CoreDatabaseManager databaseMgr;
     private final String database;
@@ -62,12 +62,12 @@ public class BenchmarkRunner {
     }
 
     void setUp() throws IOException {
+        QueryParams.load();
         Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
         if (Files.exists(dataDir)) {
             Files.walk(dataDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
         }
         Files.createDirectory(dataDir);
-
         databaseMgr = CoreDatabaseManager.open(new Options.Database().dataDir(dataDir).storageDataCacheSize(MB).storageIndexCacheSize(MB));
         databaseMgr.create(database);
     }

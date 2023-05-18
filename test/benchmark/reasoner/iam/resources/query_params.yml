@@ -1,0 +1,11 @@
+permission_email: douglas.schmidt@vaticle.com
+permission_object: root/engineering/typedb-studio/src/README.md
+permission_action: edit file
+
+segregation_email: genevieve.gallegos@vaticle.com
+segregation_object: root/engineering
+segregation_action1: submit pull request
+segregation_action2: approve pull request
+
+largeNegation_email: genevieve.gallegos@vaticle.com
+basicTest_object: root

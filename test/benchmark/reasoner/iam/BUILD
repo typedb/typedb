@@ -24,8 +24,10 @@ host_compatible_java_test(
     srcs = ["BasicTest.java",
             "BenchmarkRunner.java",
             "Benchmark.java",
+            "QueryParams.java",
     ],
     data = [
+        ":resources/query_params.yml",
         ":resources/data.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_basic_test.tql",
@@ -58,8 +60,10 @@ host_compatible_java_test(
     srcs = ["LargeDataTest.java",
             "BenchmarkRunner.java",
             "Benchmark.java",
+            "QueryParams.java",
     ],
     data = [
+        ":resources/query_params.yml",
         ":resources/data.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_optimised.tql",
@@ -92,8 +96,10 @@ host_compatible_java_test(
     srcs = ["ComplexRuleGraphTest.java",
             "BenchmarkRunner.java",
             "Benchmark.java",
+            "QueryParams.java",
     ],
     data = [
+        ":resources/query_params.yml",
         ":resources/data.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_naive.tql"
@@ -125,8 +131,10 @@ host_compatible_java_test(
     srcs = ["ConjunctionStructureTest.java",
             "BenchmarkRunner.java",
             "Benchmark.java",
+            "QueryParams.java",
     ],
     data = [
+        ":resources/query_params.yml",
         ":resources/data.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_optimised.tql",
@@ -159,8 +167,10 @@ host_compatible_java_test(
     srcs = ["LanguageFeatureTest.java",
             "BenchmarkRunner.java",
             "Benchmark.java",
+            "QueryParams.java",
     ],
     data = [
+        ":resources/query_params.yml",
         ":resources/data.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_optimised.tql",
@@ -193,8 +203,10 @@ host_compatible_java_test(
     srcs = ["RealQueriesTest.java",
             "BenchmarkRunner.java",
             "Benchmark.java",
+            "QueryParams.java",
     ],
     data = [
+        ":resources/query_params.yml",
         ":resources/data.typedb",
         ":resources/schema_types.tql",
         ":resources/schema_rules_optimised.tql"

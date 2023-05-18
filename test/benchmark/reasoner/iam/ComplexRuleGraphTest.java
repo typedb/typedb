@@ -24,11 +24,19 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ComplexRuleGraphTest {
 
     private static final String database = "iam-benchmark-rules";
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
+    private final QueryParams queryParams;
+
+    public ComplexRuleGraphTest() {
+        queryParams = QueryParams.load();
+    }
 
     @BeforeClass
     public static void setup() throws IOException {
@@ -51,12 +59,14 @@ public class ComplexRuleGraphTest {
 
     @Test
     public void testCombinatorialProofsSingle() {
-        String query = "match\n" +
-                "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
-                "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
-                "$o isa operation, has name \"edit file\";\n" +
-                "$a (object: $f, action: $o) isa access;\n" +
-                "$pe (subject: $p, access: $a) isa permission;\n";
+        String query = String.format(
+                "match\n" +
+                        "$p isa person, has email \"%s\";\n" +
+                        "$f isa file, has path \"%s\";\n" +
+                        "$o isa operation, has name \"%s\";\n" +
+                        "$a (object: $f, action: $o) isa access;\n" +
+                        "$pe (subject: $p, access: $a) isa permission;\n",
+                queryParams.permissionEmail, queryParams.permissionObject, queryParams.permissionAction);
         Benchmark benchmark = new Benchmark("combinatorial-proofs-single", query, 1);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
@@ -66,12 +76,15 @@ public class ComplexRuleGraphTest {
 
     @Test
     public void testCombinatorialProofsAll() {
-        String query = "match\n" +
-                "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
-                "$o isa object, has id $o-id;\n" +
-                "$a isa action, has name $an;\n" +
-                "$ac (object: $o, action: $a) isa access;\n" +
-                "$pe (subject: $p, access: $ac) isa permission;\n";
+        String query = String.format(
+                "match\n" +
+                        "$p isa person, has email \"%s\";\n" +
+                        "$o isa object, has id $o-id;\n" +
+                        "$a isa action, has name $an;\n" +
+                        "$ac (object: $o, action: $a) isa access;\n" +
+                        "$pe (subject: $p, access: $ac) isa permission;\n",
+                queryParams.permissionEmail);
+
         Benchmark benchmark = new Benchmark("combinatorial-proofs-all", query, 67);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();

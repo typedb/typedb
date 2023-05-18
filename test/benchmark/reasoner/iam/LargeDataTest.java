@@ -29,8 +29,11 @@ public class LargeDataTest {
 
     private static final String database = "iam-benchmark-large-data";
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
+    private final QueryParams queryParams;
 
-    public LargeDataTest() { }
+    public LargeDataTest() {
+        queryParams = QueryParams.load();
+    }
 
     @BeforeClass
     public static void setup() throws IOException {
@@ -40,6 +43,7 @@ public class LargeDataTest {
         benchmarker.importData("data.typedb");
         benchmarker.warmUp();
     }
+
     @AfterClass
     public static void tearDown() {
         benchmarker.tearDown();
@@ -69,9 +73,9 @@ public class LargeDataTest {
     @Test
     public void testCombinatorialResults() {
         String query = "match\n" +
-        "   $c isa collection-membership;\n" +
-        "   $s isa set-membership;\n" +
-        "   $g isa group-membership;\n";
+                "   $c isa collection-membership;\n" +
+                "   $s isa set-membership;\n" +
+                "   $g isa group-membership;\n";
         Benchmark benchmark = new Benchmark("combinatorial-results", query, 133000);
         benchmarker.runBenchmark(benchmark);
 
@@ -82,20 +86,21 @@ public class LargeDataTest {
 
     @Test
     public void testLargeNegation() {
-        String query = "match\n" +
-                "   $p isa person, has email \"genevieve.gallegos@vaticle.com\";\n" +
-                "   $dir isa directory, has path \"root/engineering\";\n" +
-                "   $o isa object, has id $oid;\n" +
-                "   $a isa action, has name $aid;\n" +
-                "   $ac (object: $o, action: $a) isa access;\n" +
-                "   $pe (subject: $p, access: $ac) isa permission;\n" +
-                "   not {\n" +
-                "           $pe-other (subject: $other, access: $ac) isa permission;\n" +
-                "           not { $other is $p; };\n" +
-                "           $p has email $email; # just to bind $p\n" +
-                " };\n" +
-                "get $oid, $aid;";
-                Benchmark benchmark = new Benchmark("large-negation", query, 1);
+        String query = String.format(
+                "match\n" +
+                        "   $p isa person, has email \"%s\";\n" +
+                        "   $o isa object, has id $oid;\n" +
+                        "   $a isa action, has name $aid;\n" +
+                        "   $ac (object: $o, action: $a) isa access;\n" +
+                        "   $pe (subject: $p, access: $ac) isa permission;\n" +
+                        "   not {\n" +
+                        "           $pe-other (subject: $other, access: $ac) isa permission;\n" +
+                        "           not { $other is $p; };\n" +
+                        "           $p has email $email; # just to bind $p\n" +
+                        " };\n" +
+                        "get $oid, $aid;",
+                queryParams.largeNegationEmail);
+        Benchmark benchmark = new Benchmark("large-negation", query, 1);
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();

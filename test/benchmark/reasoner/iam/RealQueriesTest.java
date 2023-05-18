@@ -29,8 +29,11 @@ public class RealQueriesTest {
 
     private static final String database = "iam-benchmark-real-queries";
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
+    private final QueryParams queryParams;
 
-    public RealQueriesTest() { }
+    public RealQueriesTest() {
+        queryParams = QueryParams.load();
+    }
 
     @BeforeClass
     public static void setup() throws IOException {
@@ -52,12 +55,14 @@ public class RealQueriesTest {
 
     @Test
     public void testCheckPermission() {
-        String query = "match\n" +
-                "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
-                "$f isa file, has path \"root/engineering/typedb-studio/src/README.md\";\n" +
-                "$o isa operation, has name \"edit file\";\n" +
-                "$a (object: $f, action: $o) isa access;\n" +
-                "$pe (subject: $p, access: $a) isa permission, has validity true;\n";
+        String query = String.format(
+                "match\n" +
+                        "$p isa person, has email \"%s\";\n" +
+                        "$f isa file, has path \"%s\";\n" +
+                        "$o isa operation, has name \"%s\";\n" +
+                        "$a (object: $f, action: $o) isa access;\n" +
+                        "$pe (subject: $p, access: $a) isa permission, has validity true;\n",
+                queryParams.permissionEmail, queryParams.permissionObject, queryParams.permissionAction);
         Benchmark benchmark = new Benchmark("check-permission", query, 1);
         benchmarker.runBenchmark(benchmark);
 
@@ -68,12 +73,14 @@ public class RealQueriesTest {
 
     @Test
     public void testListSubjectPermissions() {
-        String query = "match\n" +
-                "$p isa person, has email \"douglas.schmidt@vaticle.com\";\n" +
-                "$o isa object, has id $id;\n" +
-                "$a isa action, has name $n;\n" +
-                "$ac (object: $o, action: $a) isa access;\n" +
-                "$pe (subject: $p, access: $ac) isa permission, has validity $v;\n";
+        String query = String.format(
+                "match\n" +
+                        "$p isa person, has email \"%s\";\n" +
+                        "$o isa object, has id $id;\n" +
+                        "$a isa action, has name $n;\n" +
+                        "$ac (object: $o, action: $a) isa access;\n" +
+                        "$pe (subject: $p, access: $ac) isa permission, has validity $v;\n",
+                queryParams.permissionEmail);
         Benchmark benchmark = new Benchmark("list-subject-permissions", query, 67);
         benchmarker.runBenchmark(benchmark);
 
