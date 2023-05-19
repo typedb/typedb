@@ -21,12 +21,12 @@ define
 object-join sub relation, relates start, relates end;
 object plays object-join:start, plays object-join:end;
 
-object-cartesian sub object-join;
-rule object-cartesian-rule:
+object-pair sub object-join;
+rule generate-all-object-pairs:
 when {
     $a isa object; $b isa object;
 } then {
-    (start: $a, end: $b) isa object-cartesian; # produce all pairs for the heck of it
+    (start: $a, end: $b) isa object-pair; # produce all pairs for the heck of it
 };
 
 # attributes
@@ -40,10 +40,10 @@ when {
 };
 
 # inferred relation owns attribute
-object-cartesian  owns name, owns number, owns path;
-rule object-cartesian-owns-both-ids:
+object-pair  owns name, owns number, owns path;
+rule object-pair-owns-both-ids:
 when {
-    $j ($o) isa object-cartesian;
+    $j ($o) isa object-pair;
     $o has id $oid;
 } then {
     $j has $oid;

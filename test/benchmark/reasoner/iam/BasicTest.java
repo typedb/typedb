@@ -71,7 +71,7 @@ public class BasicTest {
     @Test
     public void testRelationWithRolePlayers() {
         String query = "match\n" +
-                "(start: $o, end: $x) isa object-cartesian;\n";
+                "(start: $o, end: $x) isa object-pair;\n";
         Benchmark benchmark = new Benchmark("relation-with-rp", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
 
@@ -83,7 +83,7 @@ public class BasicTest {
     @Test
     public void testRelationWithoutRolePlayer() {
         String query = "match\n" +
-                "$r isa object-cartesian;\n";
+                "$r isa object-pair;\n";
         Benchmark benchmark = new Benchmark("relation-without-rp", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
 
@@ -97,7 +97,7 @@ public class BasicTest {
         String query = String.format(
                 "match\n" +
                         "$o isa object, has id \"%s\";\n" +
-                        "(start: $o, end: $x) isa object-cartesian;\n",
+                        "(start: $o, end: $x) isa object-pair;\n",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("relation-bound", query, NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -112,7 +112,7 @@ public class BasicTest {
         String query = String.format(
                 "match\n" +
                         "$o1 isa object, has id \"%s\";\n" +
-                        "$r1 (start: $o1, end: $x1) isa object-cartesian;\n" +
+                        "$r1 (start: $o1, end: $x1) isa object-pair;\n" +
                         "$r1 is $r2;\n" +
                         "$r2 (start: $o2, end: $x2);\n",
                 queryParams.basicTestObject);
@@ -127,7 +127,7 @@ public class BasicTest {
     @Test
     public void testInferredRelationAndOwnership() {
         String query = "match\n" +
-                "$r isa object-cartesian, has id $id;\n";
+                "$r isa object-pair, has id $id;\n";
         Benchmark benchmark = new Benchmark("inferred-relation-inferred-ownership", query, NOBJECTS * NOBJECTS * 2 - NOBJECTS);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
@@ -141,8 +141,8 @@ public class BasicTest {
         String query = String.format(
                 "match\n" +
                         "$a isa object, has id \"%s\";\n" +
-                        "(start: $a, end: $b) isa object-cartesian;\n" +
-                        "(start: $b, end: $c) isa object-cartesian;\n",
+                        "(start: $a, end: $b) isa object-pair;\n" +
+                        "(start: $b, end: $c) isa object-pair;\n",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("double-join", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -157,8 +157,8 @@ public class BasicTest {
         String query = String.format(
                 "match\n" +
                         "$a isa object, has id \"%s\";\n" +
-                        "($a, $b) isa object-cartesian;\n" +
-                        "($b, $c) isa object-cartesian;\n",
+                        "($a, $b) isa object-pair;\n" +
+                        "($b, $c) isa object-pair;\n",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("double-join-symmetric", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -172,8 +172,8 @@ public class BasicTest {
     public void testLoopBack() {
         String query = String.format("match\n" +
                         "$a isa object, has id \"%s\";\n" +
-                        "(start: $a, end: $b) isa object-cartesian;\n" +
-                        "(start: $b, end: $a) isa object-cartesian;\n",
+                        "(start: $a, end: $b) isa object-pair;\n" +
+                        "(start: $b, end: $a) isa object-pair;\n",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("double-join-loop", query, NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -187,8 +187,8 @@ public class BasicTest {
     public void testFromMiddle() {
         String query = String.format("match\n" +
                         "$b isa object, has id \"%s\";\n" +
-                        "(start: $a, end: $b) isa object-cartesian;\n" +
-                        "(start: $b, end: $c) isa object-cartesian;\n",
+                        "(start: $a, end: $b) isa object-pair;\n" +
+                        "(start: $b, end: $c) isa object-pair;\n",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("double-join", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -203,8 +203,8 @@ public class BasicTest {
         String query = String.format(
                 "match\n" +
                         "$a isa object, has id \"%s\";\n" +
-                        "(start: $a, end: $b) isa object-cartesian;\n" +
-                        "(start: $a, end: $c) isa object-cartesian;\n",
+                        "(start: $a, end: $b) isa object-pair;\n" +
+                        "(start: $a, end: $c) isa object-pair;\n",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("double-join", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
