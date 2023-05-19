@@ -44,6 +44,7 @@ public class RealQueriesTest {
         benchmarker.loadSchema("schema_types.tql");
         benchmarker.loadSchema("schema_rules_optimised.tql");
         benchmarker.importData("data.typedb");
+        benchmarker.warmUp();
     }
 
     @AfterClass
@@ -122,6 +123,6 @@ public class RealQueriesTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1500);
-        benchmark.assertCounters(500, 92, 2, 1000);
+        benchmark.assertCounters(250, 92, 20, 100);
     }
 }

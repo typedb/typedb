@@ -130,3 +130,12 @@ rule automatic-permission-validity:
     } then {
         $p has validity true;
     };
+
+## Rule: ALlows access to be planned separate from the rest of the retrievable - speeding up certain cases.
+#rule dummy-access:
+#when {
+#  $o isa object, has id "__dummy__";
+#  $a isa action, has id "__dummy__";
+#} then {
+#   (object: $o, action: $a) isa access;
+#};
