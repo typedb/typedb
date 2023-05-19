@@ -117,11 +117,11 @@ public class RealQueriesTest {
                 "$s-requesting isa subject, has parent-company-name \"Vaticle\", has id $s-requesting-id;\n" +
                 "$s-requested isa subject, has parent-company-name \"Vaticle\", has id $s-requested-id;\n" +
                 "(requester: $s-requesting, requestee: $s-requested, change: $ac) isa change-request;\n";
-        Benchmark benchmark = new Benchmark("list-change-requests", query, 0); // TODO: Generate and keep in dataset
+        Benchmark benchmark = new Benchmark("list-change-requests", query, 7);
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(500);
-        benchmark.assertCounters(200, 37, 251, 507);
+        benchmark.assertRunningTime(1500);
+        benchmark.assertCounters(500, 92, 2, 1000);
     }
 }
