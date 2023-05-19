@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.benchmark.iam;
+package com.vaticle.typedb.core.reasoner.benchmark.iam.complex;
 
 import com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark;
 import com.vaticle.typedb.core.reasoner.benchmark.iam.common.BenchmarkRunner;
@@ -27,23 +27,26 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class LargeDataTest {
 
+    private static final Path COMMON_RESOURCE_DIR = Paths.get("test", "benchmark", "reasoner", "iam", "resources");
     private static final String database = "iam-benchmark-large-data";
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
     private final QueryParams queryParams;
 
     public LargeDataTest() {
-        queryParams = QueryParams.load();
+        queryParams = QueryParams.load(COMMON_RESOURCE_DIR.resolve("params.yml"));
     }
 
     @BeforeClass
     public static void setup() throws IOException {
         benchmarker.setUp();
-        benchmarker.loadSchema("schema_types.tql");
-        benchmarker.loadSchema("schema_rules_optimised.tql");
-        benchmarker.importData("data.typedb");
+        benchmarker.loadSchema(COMMON_RESOURCE_DIR.resolve("types.tql"));
+        benchmarker.loadSchema(COMMON_RESOURCE_DIR.resolve("rules.tql"));
+        benchmarker.importData(COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.warmUp();
     }
 

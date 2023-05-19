@@ -62,7 +62,6 @@ public class BenchmarkRunner {
     }
 
     public void setUp() throws IOException {
-        QueryParams.load();
         Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
         if (Files.exists(dataDir)) {
             Files.walk(dataDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
@@ -89,24 +88,22 @@ public class BenchmarkRunner {
         return databaseMgr.session(database, Arguments.Session.Type.DATA);
     }
 
-    public void loadSchema(String... filenames) {
+    public void loadSchema(Path schemaFile) {
         try (TypeDB.Session session = schemaSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                iterate(filenames).forEachRemaining(filename -> {
-                    try {
-                        TypeQLDefine defineQuery = TypeQL.parseQuery(Files.readString(RESOURCE_DIRECTORY.resolve(filename))).asDefine();
-                        tx.query().define(defineQuery);
-                    } catch (IOException e) {
-                        fail("IOException when loading schema: " + e.getMessage());
-                    }
-                });
+                try {
+                    TypeQLDefine defineQuery = TypeQL.parseQuery(Files.readString(schemaFile)).asDefine();
+                    tx.query().define(defineQuery);
+                } catch (IOException e) {
+                    fail("IOException when loading schema: " + e.getMessage());
+                }
                 tx.commit();
             }
         }
     }
 
-    public void importData(String filename) {
-        new DataImporter(databaseMgr, database, RESOURCE_DIRECTORY.resolve(filename), Version.VERSION).run();
+    public void importData(Path dataFile) {
+        new DataImporter(databaseMgr, database, dataFile, Version.VERSION).run();
     }
 
     public void warmUp() {
@@ -134,23 +131,23 @@ public class BenchmarkRunner {
         LOG.info("Warmup took: {} ms", (System.nanoTime() - start)/1_000_000);
     }
 
-    public void runBenchmark(Benchmark benchmark) {
+    public void runBenchmark(com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark benchmark) {
         for (int i = 0; i < benchmark.nRuns; i++) {
-            Benchmark.BenchmarkRun run = runMatchQuery(benchmark.query);
+            com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark.BenchmarkRun run = runMatchQuery(benchmark.query);
             benchmark.addRun(run);
             LOG.info("Completed run in {} ms; Summary:\n{}", run.timeTaken.toMillis(), run);
         }
         if (csvBuilder != null) csvBuilder.append(benchmark);
     }
 
-    private Benchmark.BenchmarkRun runMatchQuery(String query) {
-        Benchmark.BenchmarkRun run;
+    private com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark.BenchmarkRun runMatchQuery(String query) {
+        com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark.BenchmarkRun run;
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
                 Instant start = Instant.now();
                 long nAnswers = tx.query().match(TypeQL.parseQuery(query).asMatch()).count();
                 Duration timeTaken = Duration.between(start, Instant.now());
-                run = new Benchmark.BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters());
+                run = new com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark.BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters());
             }
         }
         return run;

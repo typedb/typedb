@@ -25,8 +25,6 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 
 public class QueryParams {
-    private static final Path paramsFile = BenchmarkRunner.RESOURCE_DIRECTORY.resolve("query_params.yml");
-
     public final String permissionEmail;
     public final String permissionObject;
     public final String permissionAction;
@@ -55,10 +53,10 @@ public class QueryParams {
         return yamlMap.get(key).asString().value();
     }
 
-    public static QueryParams load() {
+    public static QueryParams load(Path paramFile) {
         YAML.Map yamlMap = null;
         try {
-            yamlMap = YAML.load(paramsFile).asMap();
+            yamlMap = YAML.load(paramFile).asMap();
         } catch (FileNotFoundException e) {
             throw TypeDBException.of(e);
         }

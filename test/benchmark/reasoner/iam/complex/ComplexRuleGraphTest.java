@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.benchmark.iam;
+package com.vaticle.typedb.core.reasoner.benchmark.iam.complex;
 
 import com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark;
 import com.vaticle.typedb.core.reasoner.benchmark.iam.common.BenchmarkRunner;
@@ -27,24 +27,27 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-public class LanguageFeatureTest {
+public class ComplexRuleGraphTest {
+    static final Path RESOURCE_DIRECTORY =  Paths.get("test", "benchmark", "reasoner", "iam", "complex");
+    private static final Path COMMON_RESOURCE_DIR = Paths.get("test", "benchmark", "reasoner", "iam", "resources");
 
-    private static final String database = "iam-benchmark-language-features";
+    private static final String database = "iam-benchmark-rules";
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
     private final QueryParams queryParams;
 
-    public LanguageFeatureTest() {
-        queryParams = QueryParams.load();
+    public ComplexRuleGraphTest() {
+        queryParams = QueryParams.load(COMMON_RESOURCE_DIR.resolve("params.yml"));
     }
 
     @BeforeClass
     public static void setup() throws IOException {
         benchmarker.setUp();
-        benchmarker.loadSchema("schema_types.tql");
-        benchmarker.loadSchema("schema_rules_optimised.tql");
-        benchmarker.loadSchema("schema_rules_test_specific.tql");
-        benchmarker.importData("data.typedb");
+        benchmarker.loadSchema(COMMON_RESOURCE_DIR.resolve("types.tql"));
+        benchmarker.loadSchema(RESOURCE_DIRECTORY.resolve("complex-rule-graph-test.tql"));
+        benchmarker.importData(COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.warmUp();
     }
 
@@ -59,35 +62,37 @@ public class LanguageFeatureTest {
     }
 
     @Test
-    public void testValuePredicateFiltering() {
-        String query = String.format(
-                "match\n" +
-                        "$p isa person, has $email; $email = \"%s\";\n" +
-                        "$f isa file, has $path; $path = \"%s\";\n" +
-                        "$o isa operation, has $operation; $operation = \"%s\";\n" +
-                        "$a (object: $f, action: $o) isa access;\n" +
-                        "$pe (subject: $p, access: $a) isa permission, has validity true;\n",
-                queryParams.permissionEmail, queryParams.permissionObject, queryParams.permissionAction);
-        Benchmark benchmark = new Benchmark("value-predicate-filtering", query, 1);
-        benchmarker.runBenchmark(benchmark);
-
-        benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(2500);
-        benchmark.assertCounters(1000, 200, 500, 1500);
-    }
-
-    @Test
-    public void variabilisedRules() {
+    public void testCombinatorialProofsSingle() {
         String query = String.format(
                 "match\n" +
                         "$p isa person, has email \"%s\";\n" +
-                        "(group: $g, member: $p) isa variabilised-group-membership;\n",
-                queryParams.permissionEmail);
-        Benchmark benchmark = new Benchmark("variabilised-rules", query, 3);
+                        "$f isa file, has path \"%s\";\n" +
+                        "$o isa operation, has name \"%s\";\n" +
+                        "$a (object: $f, action: $o) isa access;\n" +
+                        "$pe (subject: $p, access: $a) isa permission;\n",
+                queryParams.permissionEmail, queryParams.permissionObject, queryParams.permissionAction);
+        Benchmark benchmark = new Benchmark("combinatorial-proofs-single", query, 1);
         benchmarker.runBenchmark(benchmark);
-
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
-        benchmark.assertCounters(200, 9, 29, 104);
+        benchmark.assertCounters(200, 149, 301, 1658);
+    }
+
+    @Test
+    public void testCombinatorialProofsAll() {
+        String query = String.format(
+                "match\n" +
+                        "$p isa person, has email \"%s\";\n" +
+                        "$o isa object, has id $o-id;\n" +
+                        "$a isa action, has name $an;\n" +
+                        "$ac (object: $o, action: $a) isa access;\n" +
+                        "$pe (subject: $p, access: $ac) isa permission;\n",
+                queryParams.permissionEmail);
+
+        Benchmark benchmark = new Benchmark("combinatorial-proofs-all", query, 67);
+        benchmarker.runBenchmark(benchmark);
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1000);
+        benchmark.assertCounters(100, 265, 342, 837);
     }
 }

@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.benchmark.iam;
+package com.vaticle.typedb.core.reasoner.benchmark.iam.basic;
 
 import com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark;
 import com.vaticle.typedb.core.reasoner.benchmark.iam.common.BenchmarkRunner;
@@ -27,25 +27,30 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class BasicTest {
+    static final Path RESOURCE_DIRECTORY =  Paths.get("test", "benchmark", "reasoner", "iam", "basic");
+    private static final Path COMMON_RESOURCE_DIR = Paths.get("test", "benchmark", "reasoner", "iam", "resources");
+
     private static final int NOBJECTS = 52;
     private static final int NACCESS = 656;
-    private static final String database = "iam-benchmark-language-features";
+    private static final String database = "iam-benchmark-basic-test";
     private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
 
     private final QueryParams queryParams;
 
     public BasicTest() {
-        queryParams = QueryParams.load();
+        queryParams = QueryParams.load(COMMON_RESOURCE_DIR.resolve("params.yml"));
     }
 
     @BeforeClass
     public static void setup() throws IOException {
         benchmarker.setUp();
-        benchmarker.loadSchema("schema_types.tql");
-        benchmarker.loadSchema("schema_rules_basic_test.tql");
-        benchmarker.importData("data.typedb");
+        benchmarker.loadSchema(COMMON_RESOURCE_DIR.resolve("types.tql"));
+        benchmarker.loadSchema(RESOURCE_DIRECTORY.resolve("basic_test.tql"));
+        benchmarker.importData(COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.warmUp();
     }
 
