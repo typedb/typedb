@@ -18,15 +18,15 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark.iam;
 
+import com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark;
+import com.vaticle.typedb.core.reasoner.benchmark.iam.common.BenchmarkRunner;
+import com.vaticle.typedb.core.reasoner.benchmark.iam.common.QueryParams;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ComplexRuleGraphTest {
 

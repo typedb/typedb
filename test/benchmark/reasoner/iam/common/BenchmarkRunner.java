@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.benchmark.iam;
+package com.vaticle.typedb.core.reasoner.benchmark.iam.common;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -56,12 +56,12 @@ public class BenchmarkRunner {
     private final String database;
     private final CSVBuilder csvBuilder;
 
-    BenchmarkRunner(String database) {
+    public BenchmarkRunner(String database) {
         this.database = database;
         this.csvBuilder = PRINT_RESULTS ? new CSVBuilder() : null;
     }
 
-    void setUp() throws IOException {
+    public void setUp() throws IOException {
         QueryParams.load();
         Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
         if (Files.exists(dataDir)) {
@@ -72,9 +72,13 @@ public class BenchmarkRunner {
         databaseMgr.create(database);
     }
 
-    void tearDown() {
+    public void tearDown() {
         databaseMgr.close();
         if (this.csvBuilder != null) System.out.println(csvBuilder.build());
+    }
+
+    public void reset() {
+
     }
 
     private TypeDB.Session schemaSession() {
@@ -85,7 +89,7 @@ public class BenchmarkRunner {
         return databaseMgr.session(database, Arguments.Session.Type.DATA);
     }
 
-    void loadSchema(String... filenames) {
+    public void loadSchema(String... filenames) {
         try (TypeDB.Session session = schemaSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 iterate(filenames).forEachRemaining(filename -> {
@@ -101,11 +105,11 @@ public class BenchmarkRunner {
         }
     }
 
-    void importData(String filename) {
+    public void importData(String filename) {
         new DataImporter(databaseMgr, database, RESOURCE_DIRECTORY.resolve(filename), Version.VERSION).run();
     }
 
-    void warmUp() {
+    public void warmUp() {
         // Best effort warm-up
         long start = System.nanoTime();
         // Populate LogicManager caches
@@ -130,7 +134,7 @@ public class BenchmarkRunner {
         LOG.info("Warmup took: {} ms", (System.nanoTime() - start)/1_000_000);
     }
 
-    void runBenchmark(Benchmark benchmark) {
+    public void runBenchmark(Benchmark benchmark) {
         for (int i = 0; i < benchmark.nRuns; i++) {
             Benchmark.BenchmarkRun run = runMatchQuery(benchmark.query);
             benchmark.addRun(run);
@@ -150,10 +154,6 @@ public class BenchmarkRunner {
             }
         }
         return run;
-    }
-
-    public void reset() {
-
     }
 
     static class CSVBuilder {

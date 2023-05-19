@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.benchmark.iam;
+package com.vaticle.typedb.core.reasoner.benchmark.iam.common;
 
 import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
@@ -31,7 +31,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-class Benchmark {
+public class Benchmark {
     private static final double COUNTER_MARGIN = 1.5;
 
     final String name;
@@ -40,11 +40,11 @@ class Benchmark {
     final int nRuns;
     final List<BenchmarkRun> runs;
 
-    Benchmark(String name, String query, long expectedAnswers) {
+    public Benchmark(String name, String query, long expectedAnswers) {
         this(name, query, expectedAnswers, 1);
     }
 
-    Benchmark(String name, String query, long expectedAnswers, int nRuns) {
+    public Benchmark(String name, String query, long expectedAnswers, int nRuns) {
         this.name = name;
         this.query = query;
         this.expectedAnswers = expectedAnswers;
