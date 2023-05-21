@@ -49,3 +49,9 @@ native_java_libraries(
         "@maven//:junit_junit",
     ]
 )
+
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*"]),
+    license_type = "agpl-header",
+)

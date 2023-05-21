@@ -26,6 +26,7 @@ filegroup(
     name = "common",
     srcs = ["types.tql", "rules.tql", "data.typedb", "params.yml"],
 )
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

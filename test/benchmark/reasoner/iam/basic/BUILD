@@ -28,3 +28,10 @@ host_compatible_java_test(
     ],
     native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
 )
+
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*"]),
+    exclude = glob(["*.typedb"]),
+    license_type = "agpl-header",
+)
