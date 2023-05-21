@@ -23,7 +23,7 @@ package(default_visibility = [
 ])
 
 native_java_libraries(
-    name = "benchmark-lib",
+    name = "common",
     srcs = ["BenchmarkRunner.java",
             "Benchmark.java",
             "QueryParams.java",

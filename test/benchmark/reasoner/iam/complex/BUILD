@@ -19,18 +19,18 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test", "native_java_libraries")
 
 host_compatible_java_test(
-    name = "large-data-test",
+    name = "test-large-data",
     size = "large",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.complex.LargeDataTest",
     srcs = ["LargeDataTest.java"],
     data = [
         "//test/benchmark/reasoner/iam/resources:common",
     ],
-    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:benchmark-lib"],
+    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
 )
 
 host_compatible_java_test(
-    name = "complex-rule-graph-test",
+    name = "test-complex-rule-graph",
     size = "large",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.complex.ComplexRuleGraphTest",
     srcs = ["ComplexRuleGraphTest.java"],
@@ -38,39 +38,39 @@ host_compatible_java_test(
         "//test/benchmark/reasoner/iam/resources:common",
         "complex-rule-graph-test.tql"
     ],
-    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:benchmark-lib"],
+    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
 )
 
 host_compatible_java_test(
-    name = "conjunction-structure-test",
+    name = "test-conjunction-structure",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.complex.ConjunctionStructureTest",
     srcs = ["ConjunctionStructureTest.java"],
     data = [
         "//test/benchmark/reasoner/iam/resources:common",
         "conjunction-structure-test.tql",
     ],
-    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:benchmark-lib"],
+    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
 )
 
 host_compatible_java_test(
-    name = "language-feature-test",
+    name = "test-language-feature",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.complex.LanguageFeatureTest",
     srcs = ["LanguageFeatureTest.java"],
     data = [
         "//test/benchmark/reasoner/iam/resources:common",
         "language-features-test.tql",
     ],
-    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:benchmark-lib"],
+    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
 )
 
 host_compatible_java_test(
-    name = "real-queries-test",
+    name = "test-real-queries",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.complex.RealQueriesTest",
     srcs = ["RealQueriesTest.java"],
     data = [
         "//test/benchmark/reasoner/iam/resources:common",
     ],
-    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:benchmark-lib"],
+    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
 )
 
 checkstyle_test(

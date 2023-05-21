@@ -35,7 +35,7 @@ public class ComplexRuleGraphTest {
     private static final Path COMMON_RESOURCE_DIR = Paths.get("test", "benchmark", "reasoner", "iam", "resources");
 
     private static final String database = "iam-benchmark-rules";
-    private static final BenchmarkRunner benchmarker = new BenchmarkRunner(database);
+    private static final BenchmarkRunner runner = new BenchmarkRunner(database);
     private final QueryParams queryParams;
 
     public ComplexRuleGraphTest() {
@@ -44,21 +44,21 @@ public class ComplexRuleGraphTest {
 
     @BeforeClass
     public static void setup() throws IOException {
-        benchmarker.setUp();
-        benchmarker.loadSchema(COMMON_RESOURCE_DIR.resolve("types.tql"));
-        benchmarker.loadSchema(RESOURCE_DIRECTORY.resolve("complex-rule-graph-test.tql"));
-        benchmarker.importData(COMMON_RESOURCE_DIR.resolve("data.typedb"));
-        benchmarker.warmUp();
+        runner.setUp();
+        runner.loadSchema(COMMON_RESOURCE_DIR.resolve("types.tql"));
+        runner.loadSchema(RESOURCE_DIRECTORY.resolve("complex-rule-graph-test.tql"));
+        runner.importData(COMMON_RESOURCE_DIR.resolve("data.typedb"));
+        runner.warmUp();
     }
 
     @AfterClass
     public static void tearDown() {
-        benchmarker.tearDown();
+        runner.tearDown();
     }
 
     @After
     public void reset() {
-        benchmarker.reset();
+        runner.reset();
     }
 
     @Test
@@ -72,7 +72,7 @@ public class ComplexRuleGraphTest {
                         "$pe (subject: $p, access: $a) isa permission;\n",
                 queryParams.permissionEmail, queryParams.permissionObject, queryParams.permissionAction);
         Benchmark benchmark = new Benchmark("combinatorial-proofs-single", query, 1);
-        benchmarker.runBenchmark(benchmark);
+        runner.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
         benchmark.assertCounters(200, 149, 301, 1658);
@@ -90,7 +90,7 @@ public class ComplexRuleGraphTest {
                 queryParams.permissionEmail);
 
         Benchmark benchmark = new Benchmark("combinatorial-proofs-all", query, 67);
-        benchmarker.runBenchmark(benchmark);
+        runner.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
         benchmark.assertCounters(100, 265, 342, 837);

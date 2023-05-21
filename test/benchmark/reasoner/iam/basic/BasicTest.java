@@ -139,8 +139,8 @@ public class BasicTest {
         Benchmark benchmark = new Benchmark("inferred-relation-inferred-ownership", query, NOBJECTS * NOBJECTS * 2 - NOBJECTS);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(NOBJECTS * NOBJECTS + (NOBJECTS * NOBJECTS * 2 - NOBJECTS));
-        benchmark.assertCounters(25, 8060, 3, 3);
+        benchmark.assertRunningTime(1500);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS + (NOBJECTS * NOBJECTS * 2 - NOBJECTS), 3, 3);
     }
 
     // More complicated
@@ -156,7 +156,7 @@ public class BasicTest {
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(5000);
+        benchmark.assertRunningTime(2500);
         benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS, NOBJECTS + 3);
     }
 
@@ -172,7 +172,7 @@ public class BasicTest {
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(1500);
+        benchmark.assertRunningTime(2500);
         benchmark.assertCounters(25, NOBJECTS * NOBJECTS, 1 + NOBJECTS * 2, NOBJECTS * 2 + 3);
     }
 
@@ -198,7 +198,7 @@ public class BasicTest {
                         "(start: $a, end: $b) isa object-pair;\n" +
                         "(start: $b, end: $c) isa object-pair;\n",
                 queryParams.basicTestObject);
-        Benchmark benchmark = new Benchmark("double-join", query, NOBJECTS * NOBJECTS);
+        Benchmark benchmark = new Benchmark("double-join-from-middle", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
@@ -214,11 +214,24 @@ public class BasicTest {
                         "(start: $a, end: $b) isa object-pair;\n" +
                         "(start: $a, end: $c) isa object-pair;\n",
                 queryParams.basicTestObject);
-        Benchmark benchmark = new Benchmark("double-join", query, NOBJECTS * NOBJECTS);
+        Benchmark benchmark = new Benchmark("double-join-out-going", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(500);
         benchmark.assertCounters(40, NOBJECTS * NOBJECTS, 2, 3 + 1);
+    }
+
+    @Test
+    public void testQueryTwice() {
+        String query = "match\n" +
+                        "(start: $a, end: $b) isa object-pair;\n" +
+                        "(start: $a, end: $b) isa object-pair;\n";
+        Benchmark benchmark = new Benchmark("double-join-self", query, NOBJECTS * NOBJECTS);
+        benchmarker.runBenchmark(benchmark);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(3500);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS * NOBJECTS + 2,  NOBJECTS * NOBJECTS + 2);
     }
 }
