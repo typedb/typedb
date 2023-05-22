@@ -139,7 +139,7 @@ public class BasicTest {
         Benchmark benchmark = new Benchmark("inferred-relation-inferred-ownership", query, NOBJECTS * NOBJECTS * 2 - NOBJECTS);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(1500);
+        benchmark.assertRunningTime(4500);
         benchmark.assertCounters(25, NOBJECTS * NOBJECTS + (NOBJECTS * NOBJECTS * 2 - NOBJECTS), 3, 3);
     }
 

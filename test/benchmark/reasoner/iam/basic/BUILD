@@ -19,7 +19,7 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test", "native_java_libraries")
 
 host_compatible_java_test(
-    name = "basic-test",
+    name = "test-basic",
     test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.basic.BasicTest",
     srcs = ["BasicTest.java"],
     data = [

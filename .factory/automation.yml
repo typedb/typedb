@@ -130,7 +130,12 @@ build:
       dependencies: [ build ]
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //test/benchmark/reasoner/iam/... --test_output=streamed
+        bazel test //test/benchmark/reasoner/iam/basic:test-basic --test_output=streamed
+        bazel test //test/benchmark/reasoner/iam/complex:test-conjunction-structure --test_output=streamed
+        bazel test //test/benchmark/reasoner/iam/complex:test-complex-rule-graph --test_output=streamed
+        bazel test //test/benchmark/reasoner/iam/complex:test-language-features --test_output=streamed
+        bazel test //test/benchmark/reasoner/iam/complex:test-large-data --test_output=streamed
+        bazel test //test/benchmark/reasoner/iam/complex:test-real-queries --test_output=streamed
     test-assembly-linux-targz:
       image: vaticle-ubuntu-22.04
       filter:
