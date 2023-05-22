@@ -156,7 +156,7 @@ public class BasicTest {
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(2500);
+        benchmark.assertRunningTime(1500);
         benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS, NOBJECTS + 3);
     }
 
@@ -172,7 +172,7 @@ public class BasicTest {
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(2500);
+        benchmark.assertRunningTime(1500);
         benchmark.assertCounters(25, NOBJECTS * NOBJECTS, 1 + NOBJECTS * 2, NOBJECTS * 2 + 3);
     }
 
