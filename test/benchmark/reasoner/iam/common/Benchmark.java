@@ -32,7 +32,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class Benchmark {
-    private static final double COUNTER_MARGIN = 1.5;
+
+    private static final int DEFAULT_NRUNS = 5;
+    private static final double COUNTER_LOWER_MARGIN = 0.75;
+    private static final double COUNTER_UPPER_MARGIN = 1.25;
 
     final String name;
     final String query;
@@ -41,7 +44,7 @@ public class Benchmark {
     final List<BenchmarkRun> runs;
 
     public Benchmark(String name, String query, long expectedAnswers) {
-        this(name, query, expectedAnswers, 1);
+        this(name, query, expectedAnswers, DEFAULT_NRUNS);
     }
 
     public Benchmark(String name, String query, long expectedAnswers, int nRuns) {
@@ -67,17 +70,30 @@ public class Benchmark {
                 run.timeTaken.toMillis() <= maxTimeMs));
     }
 
-    public void assertCounter(String counter, long maxValue) {
-        runs.forEach(run -> assertTrue(
-                String.format("%s: %d <= %d", counter, run.reasonerPerfCounters.get(counter), maxValue),
-                run.reasonerPerfCounters.get(counter) <= maxValue));
+    public void assertCounterUpperBound(String counter, long refValue) {
+        runs.forEach(run -> {
+            assertTrue(
+                    String.format("%s: %d <= %d", counter, run.reasonerPerfCounters.get(counter), Math.round(COUNTER_UPPER_MARGIN * refValue)),
+                    run.reasonerPerfCounters.get(counter) <= Math.round(COUNTER_UPPER_MARGIN * refValue));
+        });
+    }
+
+    public void assertCounterLowerBound(String counter, long refValue) {
+            assertTrue( // If this error throws, It's time to revise the bound.
+                String.format("[GOOD FAILURE!] Counter %s consistently better than lower bound of %d", counter, Math.round(COUNTER_LOWER_MARGIN * refValue)),
+                iterate(runs).anyMatch(run -> run.reasonerPerfCounters.get(counter) >= Math.round(COUNTER_LOWER_MARGIN * refValue)));
     }
 
     public void assertCounters(long planningTimeMillis, long materialisations, long conjunctionProcessors, long compoundStreams) {
-        assertCounter(ReasonerPerfCounters.PLANNING_TIME_NS, Math.round(planningTimeMillis * 1_000_000 * COUNTER_MARGIN));
-        assertCounter(ReasonerPerfCounters.MATERIALISATIONS, Math.round(materialisations * COUNTER_MARGIN));
-        assertCounter(ReasonerPerfCounters.CONJUNCTION_PROCESSORS, Math.round(conjunctionProcessors * COUNTER_MARGIN));
-        assertCounter(ReasonerPerfCounters.COMPOUND_STREAMS, Math.round(compoundStreams * COUNTER_MARGIN));
+        assertCounterUpperBound(ReasonerPerfCounters.PLANNING_TIME_NS, planningTimeMillis * 1_000_000);
+        assertCounterUpperBound(ReasonerPerfCounters.MATERIALISATIONS, materialisations);
+        assertCounterUpperBound(ReasonerPerfCounters.CONJUNCTION_PROCESSORS, conjunctionProcessors);
+        assertCounterUpperBound(ReasonerPerfCounters.COMPOUND_STREAMS, compoundStreams);
+
+        // Do not assert lower bound for time planning. Times are too variable.
+        assertCounterLowerBound(ReasonerPerfCounters.MATERIALISATIONS, materialisations);
+        assertCounterLowerBound(ReasonerPerfCounters.CONJUNCTION_PROCESSORS, conjunctionProcessors);
+        assertCounterLowerBound(ReasonerPerfCounters.COMPOUND_STREAMS, compoundStreams);
     }
 
     public static class BenchmarkRun {

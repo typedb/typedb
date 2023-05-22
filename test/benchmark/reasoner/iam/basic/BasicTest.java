@@ -203,7 +203,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(500);
-        benchmark.assertCounters(50, NOBJECTS * NOBJECTS, 3, 3 + 2);
+        benchmark.assertCounters(50, NOBJECTS + NOBJECTS, 3, 3 + 2);
     }
 
     @Test
@@ -219,7 +219,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(500);
-        benchmark.assertCounters(40, NOBJECTS * NOBJECTS, 2, 3 + 1);
+        benchmark.assertCounters(40, NOBJECTS, 2, 3 + 1);
     }
 
     @Test

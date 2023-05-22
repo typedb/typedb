@@ -48,10 +48,9 @@ import static org.junit.Assert.fail;
 
 public class BenchmarkRunner {
 
+    private static boolean warmupRunForEachQuery = true;
     private static final boolean PRINT_RESULTS = true;
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(BenchmarkRunner.class);
-    static final Path RESOURCE_DIRECTORY = Paths.get("test", "benchmark", "reasoner", "iam", "resources");
-
     private static CoreDatabaseManager databaseMgr;
     private final String database;
     private final CSVBuilder csvBuilder;
@@ -118,7 +117,7 @@ public class BenchmarkRunner {
             }
         }
         // A dummy reasoning query
-        runMatchQuery("match $wr isa warm-up-relation, has warm-up-attribute $wa;");
+        for (int i=0;i<1;i++) runMatchQuery("match $wr isa warm-up-relation, has warm-up-attribute $wa;");
         // Warm up all persisted data
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
@@ -131,23 +130,29 @@ public class BenchmarkRunner {
         LOG.info("Warmup took: {} ms", (System.nanoTime() - start)/1_000_000);
     }
 
-    public void runBenchmark(com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark benchmark) {
+    public void runBenchmark(Benchmark benchmark) {
+        if (warmupRunForEachQuery) {
+            LOG.info("Doing warmup query...");
+            Benchmark.BenchmarkRun warmupRun = runMatchQuery(benchmark.query);
+            LOG.info("Warmup query took {} ms", warmupRun.timeTaken.toMillis());
+        }
+
         for (int i = 0; i < benchmark.nRuns; i++) {
-            com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark.BenchmarkRun run = runMatchQuery(benchmark.query);
+            Benchmark.BenchmarkRun run = runMatchQuery(benchmark.query);
             benchmark.addRun(run);
             LOG.info("Completed run in {} ms; Summary:\n{}", run.timeTaken.toMillis(), run);
         }
         if (csvBuilder != null) csvBuilder.append(benchmark);
     }
 
-    private com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark.BenchmarkRun runMatchQuery(String query) {
-        com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark.BenchmarkRun run;
+    private Benchmark.BenchmarkRun runMatchQuery(String query) {
+        Benchmark.BenchmarkRun run;
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
                 Instant start = Instant.now();
                 long nAnswers = tx.query().match(TypeQL.parseQuery(query).asMatch()).count();
                 Duration timeTaken = Duration.between(start, Instant.now());
-                run = new com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark.BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters());
+                run = new Benchmark.BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters());
             }
         }
         return run;

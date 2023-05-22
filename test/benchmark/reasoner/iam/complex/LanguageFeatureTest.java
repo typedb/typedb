@@ -77,7 +77,7 @@ public class LanguageFeatureTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(2500);
-        benchmark.assertCounters(1000, 200, 500, 1500);
+        benchmark.assertCounters(1000, 108, 79, 218);
     }
 
     @Test
