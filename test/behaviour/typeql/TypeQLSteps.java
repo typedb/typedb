@@ -52,11 +52,7 @@ import io.cucumber.java.en.When;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -67,6 +63,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -698,34 +695,31 @@ public class TypeQLSteps {
                 return false;
             }
 
-            Set<? extends Attribute> keys = concept.asThing().getHas(set(TypeQLToken.Annotation.KEY)).toSet();
-
-            for (Attribute key : keys) {
-                if (!key.getType().getLabel().toString().equals(type))
-                    continue;
-                switch (key.getType().getValueType()) {
-                    case BOOLEAN:
-                        return Boolean.valueOf(value).equals(key.asBoolean().getValue());
-                    case LONG:
-                        return Long.valueOf(value).equals(key.asLong().getValue());
-                    case DOUBLE:
-                        return equalsApproximate(Double.parseDouble(value), key.asDouble().getValue());
-                    case STRING:
-                        return value.equals(key.asString().getValue());
-                    case DATETIME:
-                        LocalDateTime dateTime;
-                        try {
-                            dateTime = LocalDateTime.parse(value);
-                        } catch (DateTimeParseException e) {
-                            dateTime = LocalDate.parse(value).atStartOfDay();
-                        }
-                        return dateTime.equals(key.asDateTime().getValue());
-                    case OBJECT:
-                    default:
-                        throw new ScenarioDefinitionException("Unrecognised value type " + key.getType().getValueType());
-                }
+            Optional<? extends Attribute> keyOpt = concept.asThing().getHas(set(TypeQLToken.Annotation.KEY))
+                    .filter(attr -> attr.getType().getLabel().toString().equals(type)).first();
+            if (keyOpt.isEmpty()) return false;
+            Attribute key = keyOpt.get().asAttribute();
+            switch (key.getType().getValueType()) {
+                case BOOLEAN:
+                    return Boolean.valueOf(value).equals(key.asBoolean().getValue());
+                case LONG:
+                    return Long.valueOf(value).equals(key.asLong().getValue());
+                case DOUBLE:
+                    return equalsApproximate(Double.parseDouble(value), key.asDouble().getValue());
+                case STRING:
+                    return value.equals(key.asString().getValue());
+                case DATETIME:
+                    LocalDateTime dateTime;
+                    try {
+                        dateTime = LocalDateTime.parse(value);
+                    } catch (DateTimeParseException e) {
+                        dateTime = LocalDate.parse(value).atStartOfDay();
+                    }
+                    return dateTime.equals(key.asDateTime().getValue());
+                case OBJECT:
+                default:
+                    throw new ScenarioDefinitionException("Unrecognised value type " + key.getType().getValueType());
             }
-            return false;
         }
     }
 }
