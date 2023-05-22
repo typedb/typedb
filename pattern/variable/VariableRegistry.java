@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
+import static com.vaticle.typedb.common.collection.Collections.concatToSet;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.ANONYMOUS_CONCEPT_VARIABLE;
@@ -161,7 +162,7 @@ public class VariableRegistry {
     }
 
     public Set<ThingVariable> things() {
-        return set(things.values(), anonymous);
+        return concatToSet(things.values(), anonymous);
     }
 
     public Set<Variable> variables() {
