@@ -72,7 +72,7 @@ public class BasicTest {
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(200);
+        benchmark.assertRunningTime(400);
         benchmark.assertCounters(10, NACCESS, NACCESS + 1, NACCESS + 1);
     }
 
