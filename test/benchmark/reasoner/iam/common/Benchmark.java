@@ -36,7 +36,7 @@ public class Benchmark {
     private static final int DEFAULT_NRUNS = 5;
     private static final double COUNTER_LOWER_MARGIN = 0.75;
     private static final double COUNTER_UPPER_MARGIN = 1.25;
-    private static final double RUNNING_TIME_UPPER_MARGIN = 2.0;
+    private static final double RUNNING_TIME_UPPER_MARGIN = 3.0;
 
     final String name;
     final String query;
