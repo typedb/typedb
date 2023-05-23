@@ -133,7 +133,7 @@ build:
         bazel test //test/benchmark/reasoner/iam/basic:test-basic --test_output=streamed
         bazel test //test/benchmark/reasoner/iam/complex:test-conjunction-structure --test_output=streamed
         bazel test //test/benchmark/reasoner/iam/complex:test-complex-rule-graph --test_output=streamed
-        bazel test //test/benchmark/reasoner/iam/complex:test-language-features --test_output=streamed
+        bazel test //test/benchmark/reasoner/iam/complex:test-language-feature --test_output=streamed
         bazel test //test/benchmark/reasoner/iam/complex:test-large-data --test_output=streamed
         bazel test //test/benchmark/reasoner/iam/complex:test-real-queries --test_output=streamed
     test-assembly-linux-targz:

@@ -47,7 +47,7 @@ public class LanguageFeatureTest {
         benchmarker.setUp();
         benchmarker.loadSchema(COMMON_RESOURCE_DIR.resolve("types.tql"));
         benchmarker.loadSchema(COMMON_RESOURCE_DIR.resolve("rules.tql"));
-        benchmarker.loadSchema(RESOURCE_DIRECTORY.resolve("language-features-test.tql"));
+        benchmarker.loadSchema(RESOURCE_DIRECTORY.resolve("language-feature-test.tql"));
         benchmarker.importData(COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.warmUp();
     }
