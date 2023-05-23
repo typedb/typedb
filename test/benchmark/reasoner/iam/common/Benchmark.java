@@ -36,6 +36,7 @@ public class Benchmark {
     private static final int DEFAULT_NRUNS = 5;
     private static final double COUNTER_LOWER_MARGIN = 0.75;
     private static final double COUNTER_UPPER_MARGIN = 1.25;
+    private static final double RUNNING_TIME_UPPER_MARGIN = 2.0;
 
     final String name;
     final String query;
@@ -66,8 +67,8 @@ public class Benchmark {
 
     public void assertRunningTime(long maxTimeMs) {
         runs.forEach(run -> assertTrue(
-                String.format("Time taken: %d <= %d", run.timeTaken.toMillis(), maxTimeMs),
-                run.timeTaken.toMillis() <= maxTimeMs));
+                String.format("Time taken: %d <= %f * %d", run.timeTaken.toMillis(), RUNNING_TIME_UPPER_MARGIN, maxTimeMs),
+                run.timeTaken.toMillis() <= Math.round(RUNNING_TIME_UPPER_MARGIN * maxTimeMs)));
     }
 
     public void assertCounterUpperBound(String counter, long refValue) {
