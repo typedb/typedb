@@ -53,9 +53,9 @@ host_compatible_java_test(
 )
 
 host_compatible_java_test(
-    name = "test-language-feature",
-    test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.complex.LanguageFeatureTest",
-    srcs = ["LanguageFeatureTest.java"],
+    name = "test-language-features",
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.complex.LanguageFeaturesTest",
+    srcs = ["LanguageFeaturesTest.java"],
     data = [
         "//test/benchmark/reasoner/iam/resources:common",
         "language-features-test.tql",
