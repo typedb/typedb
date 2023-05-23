@@ -251,6 +251,7 @@ checkstyle_test(
         "*.md",
         ".circleci/windows/*",
         "docs/*",
+        "tools/**",
     ]) + [
         ".bazelversion",
         ".bazel-remote-cache.rc",
