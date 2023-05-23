@@ -91,7 +91,7 @@ public class LanguageFeaturesTest {
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
-        benchmark.assertRunningTime(1000);
+        benchmark.assertRunningTime(100);
         benchmark.assertCounters(200, 9, 29, 104);
     }
 }
