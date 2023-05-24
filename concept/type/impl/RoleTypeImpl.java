@@ -126,7 +126,7 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     public Forwardable<ThingTypeImpl, Order.Asc> getPlayerTypes(Transitivity transitivity) {
         Forwardable<TypeVertex, Order.Asc> playerTypes;
         if (transitivity == EXPLICIT) playerTypes = vertex.ins().edge(Encoding.Edge.Type.PLAYS).from();
-        else playerTypes = iterateSorted(graphMgr.schema().playersOfRoleType(vertex), ASC);
+        else playerTypes = iterateSorted(graphMgr().schema().playersOfRoleType(vertex), ASC);
         return playerTypes.mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), roleType -> roleType.vertex, ASC);
     }
 
@@ -138,8 +138,8 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Override
     public FunctionalIterator<RelationImpl> getRelationInstances(Transitivity transitivity) {
         FunctionalIterator<ThingVertex> instances;
-        if (transitivity == EXPLICIT) instances = graphMgr.data().getReadable(vertex);
-        else instances = getSubtypes(TRANSITIVE).filter(t -> !t.isAbstract()).flatMap(t -> graphMgr.data().getReadable(t.vertex));
+        if (transitivity == EXPLICIT) instances = graphMgr().data().getReadable(vertex);
+        else instances = getSubtypes(TRANSITIVE).filter(t -> !t.isAbstract()).flatMap(t -> graphMgr().data().getReadable(t.vertex));
         return instances.flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.RELATING).from()).map(v -> RelationImpl.of(conceptMgr, v));
     }
 
@@ -151,8 +151,8 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     @Override
     public FunctionalIterator<ThingImpl> getPlayerInstances(Transitivity transitivity) {
         FunctionalIterator<ThingVertex> instances;
-        if (transitivity == EXPLICIT) instances = graphMgr.data().getReadable(vertex);
-        else instances = getSubtypes(TRANSITIVE).filter(t -> !t.isAbstract()).flatMap(t -> graphMgr.data().getReadable(t.vertex));
+        if (transitivity == EXPLICIT) instances = graphMgr().data().getReadable(vertex);
+        else instances = getSubtypes(TRANSITIVE).filter(t -> !t.isAbstract()).flatMap(t -> graphMgr().data().getReadable(t.vertex));
         return instances.flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.PLAYING).from()).map(v -> ThingImpl.of(conceptMgr, v));
     }
 

@@ -68,14 +68,14 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public EntityTypeImpl getSupertype() {
-        return vertex.outs().edge(SUB).to().map(t -> EntityTypeImpl.of(graphMgr, t)).firstOrNull();
+        return vertex.outs().edge(SUB).to().map(v -> (EntityTypeImpl) conceptMgr.convertEntityType(v)).firstOrNull();
     }
 
     @Override
     public Forwardable<EntityTypeImpl, Order.Asc> getSupertypes() {
-        return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
+        return iterateSorted(graphMgr().schema().getSupertypes(vertex), ASC)
                 .filter(TypeVertex::isEntityType)
-                .mapSorted(v -> EntityTypeImpl.of(graphMgr, v), t -> t.vertex, ASC);
+                .mapSorted(v -> (EntityTypeImpl) conceptMgr.convertEntityType(v), t -> t.vertex, ASC);
     }
 
     @Override
@@ -112,7 +112,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     @Override
     public EntityImpl create(Existence existence) {
         validateCanHaveInstances(Entity.class);
-        ThingVertex.Write instance = graphMgr.data().create(vertex, existence);
+        ThingVertex.Write instance = graphMgr().data().create(vertex, existence);
         return EntityImpl.of(conceptMgr, instance);
     }
 

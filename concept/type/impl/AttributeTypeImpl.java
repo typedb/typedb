@@ -99,14 +99,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public AttributeTypeImpl getSupertype() {
-        return vertex.outs().edge(SUB).to().map(t -> AttributeTypeImpl.of(graphMgr, t)).firstOrNull();
+        return vertex.outs().edge(SUB).to().map(v -> (AttributeTypeImpl) conceptMgr.convertAttributeType(v)).firstOrNull();
     }
 
     @Override
     public Forwardable<AttributeTypeImpl, Order.Asc> getSupertypes() {
-        return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
+        return iterateSorted(graphMgr().schema().getSupertypes(vertex), ASC)
                 .filter(TypeVertex::isAttributeType)
-                .mapSorted(v -> AttributeTypeImpl.of(graphMgr, v), t -> t.vertex, ASC);
+                .mapSorted(v -> (AttributeTypeImpl) conceptMgr.convertAttributeType(v), t -> t.vertex, ASC);
     }
 
     @Override
@@ -124,7 +124,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     Forwardable<TypeVertex, Order.Asc> getSubtypeVertices(Encoding.ValueType<?> valueType, Transitivity transitivity) {
         Forwardable<TypeVertex, Order.Asc> subtypeVertices;
         if (transitivity == EXPLICIT) subtypeVertices = vertex.ins().edge(SUB).from();
-        else subtypeVertices = iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC);
+        else subtypeVertices = iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC);
         return subtypeVertices.filter(sv -> sv.valueType().equals(valueType));
     }
 
@@ -154,10 +154,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         Forwardable<TypeVertex, Order.Asc> owners;
         if (transitivity == EXPLICIT) owners = vertex.ins().edge(OWNS_KEY).from().merge(vertex.ins().edge(OWNS).from());
-        else owners = iterateSorted(graphMgr.schema().ownersOfAttributeType(vertex, annotations), ASC);
+        else owners = iterateSorted(graphMgr().schema().ownersOfAttributeType(vertex, annotations), ASC);
 
         return owners.mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), thingType -> thingType.vertex, ASC)
-                .filter(thingType -> thingType.getOwnsExplicit(this)
+                .filter(thingType -> thingType.getOwns(this, EXPLICIT)
                         .map(owns -> owns.effectiveAnnotations().containsAll(annotations))
                         .orElse(false)
                 );
@@ -350,7 +350,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Forwardable<AttributeImpl<?>, Order.Asc> getInstances(Transitivity transitivity) {
             if (transitivity == EXPLICIT) return emptySorted();
-            else return instances(v -> AttributeImpl.of(v.asAttribute()));
+            else return instances(v -> AttributeImpl.of(conceptMgr, v.asAttribute()));
         }
 
         @Override
@@ -437,7 +437,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Boolean put(boolean value, Existence existence) {
             validateCanHaveInstances(Attribute.class);
-            AttributeVertex.Write<java.lang.Boolean> attVertex = graphMgr.data().put(vertex, value, existence);
+            AttributeVertex.Write<java.lang.Boolean> attVertex = graphMgr().data().put(vertex, value, existence);
             return new AttributeImpl.Boolean(conceptMgr, attVertex);
         }
 
@@ -572,7 +572,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Long put(long value, Existence existence) {
             validateCanHaveInstances(Attribute.class);
-            AttributeVertex.Write<java.lang.Long> attVertex = graphMgr.data().put(vertex, value, existence);
+            AttributeVertex.Write<java.lang.Long> attVertex = graphMgr().data().put(vertex, value, existence);
             return new AttributeImpl.Long(conceptMgr, attVertex);
         }
 
@@ -707,7 +707,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Double put(double value, Existence existence) {
             validateCanHaveInstances(Attribute.class);
-            AttributeVertex.Write<java.lang.Double> attVertex = graphMgr.data().put(vertex, value, existence);
+            AttributeVertex.Write<java.lang.Double> attVertex = graphMgr().data().put(vertex, value, existence);
             return new AttributeImpl.Double(conceptMgr, attVertex);
         }
 
@@ -866,7 +866,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             if (vertex.regex() != null && !getRegex().matcher(value).matches()) {
                 throw exception(TypeDBException.of(ATTRIBUTE_VALUE_UNSATISFIES_REGEX, getLabel(), value, getRegex()));
             }
-            AttributeVertex.Write<java.lang.String> attVertex = graphMgr.data().put(vertex, value, existence);
+            AttributeVertex.Write<java.lang.String> attVertex = graphMgr().data().put(vertex, value, existence);
             return new AttributeImpl.String(conceptMgr, attVertex);
         }
 
@@ -1016,7 +1016,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.DateTime put(LocalDateTime value, Existence existence) {
             validateCanHaveInstances(Attribute.class);
-            AttributeVertex.Write<LocalDateTime> attVertex = graphMgr.data().put(vertex, value, existence);
+            AttributeVertex.Write<LocalDateTime> attVertex = graphMgr().data().put(vertex, value, existence);
             return new AttributeImpl.DateTime(conceptMgr, attVertex);
         }
 

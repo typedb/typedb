@@ -105,14 +105,14 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public RelationTypeImpl getSupertype() {
-        return vertex.outs().edge(SUB).to().map(t -> RelationTypeImpl.of(graphMgr, t)).firstOrNull();
+        return vertex.outs().edge(SUB).to().map(t -> (RelationTypeImpl) conceptMgr.convertRelationType(t)).firstOrNull();
     }
 
     @Override
     public Forwardable<RelationTypeImpl, Order.Asc> getSupertypes() {
-        return iterateSorted(graphMgr.schema().getSupertypes(vertex), ASC)
+        return iterateSorted(graphMgr().schema().getSupertypes(vertex), ASC)
                 .filter(TypeVertex::isRelationType)
-                .mapSorted(v -> RelationTypeImpl.of(graphMgr, v), t -> t.vertex, ASC);
+                .mapSorted(t -> (RelationTypeImpl) conceptMgr.convertRelationType(t), t -> t.vertex, ASC);
     }
 
     @Override
@@ -199,7 +199,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public Forwardable<RoleTypeImpl, Order.Asc> getRelates(Transitivity transitivity) {
         Forwardable<TypeVertex, Order.Asc> relates;
         if (transitivity == EXPLICIT) relates = vertex.outs().edge(RELATES).to();
-        else relates = iterateSorted(graphMgr.schema().relatedRoleTypes(vertex), ASC);
+        else relates = iterateSorted(graphMgr().schema().relatedRoleTypes(vertex), ASC);
         return relates.mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), roleType -> roleType.vertex, ASC);
     }
 
@@ -226,7 +226,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
-    public RoleTypeImpl getRelates(String roleLabel) {
+    public RoleType getRelates(String roleLabel) {
         return getRelates(roleLabel, TRANSITIVE);
     }
 
@@ -241,8 +241,8 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
      * @return the role type related in this relation
      */
     @Override
-    public RoleTypeImpl getRelates(String roleLabel, Transitivity transitivity) {
-        TypeVertex roleTypeVertex = graphMgr.schema().getType(roleLabel, vertex.label());
+    public RoleType getRelates(String roleLabel, Transitivity transitivity) {
+        TypeVertex roleTypeVertex = graphMgr().schema().getType(roleLabel, vertex.label());
         if (roleTypeVertex != null) return conceptMgr.convertRoleType(roleTypeVertex);
         else if (transitivity == TRANSITIVE) return getRelates().filter(role -> role.getLabel().name().equals(roleLabel)).first().orElse(null);
         else return null;
@@ -274,7 +274,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public RelationImpl create(Existence existence) {
         validateCanHaveInstances(Relation.class);
-        ThingVertex.Write instance = graphMgr.data().create(vertex, existence);
+        ThingVertex.Write instance = graphMgr().data().create(vertex, existence);
         return RelationImpl.of(conceptMgr, instance);
     }
 

@@ -77,13 +77,6 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         vertex.outs().put(SUB, superTypeVertex);
     }
 
-    public static TypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
-        if (vertex.encoding() == ROLE_TYPE)
-            return RoleTypeImpl.of(graphMgr, vertex);
-        else
-            return ThingTypeImpl.of(graphMgr, vertex);
-    }
-
     @Override
     public boolean isDeleted() {
         return vertex.isDeleted();
@@ -130,7 +123,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         if (transitivity == EXPLICIT)
             return vertex.ins().edge(SUB).from().mapSorted(typeConstructor, type -> type.vertex, ASC);
         else
-            return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC).mapSorted(typeConstructor, type -> type.vertex, ASC);
+            return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC).mapSorted(typeConstructor, type -> type.vertex, ASC);
     }
 
     GraphManager graphMgr() {
