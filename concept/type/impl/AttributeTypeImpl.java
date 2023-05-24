@@ -157,7 +157,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         else owners = iterateSorted(graphMgr().schema().ownersOfAttributeType(vertex, annotations), ASC);
 
         return owners.mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), thingType -> thingType.vertex, ASC)
-                .filter(thingType -> thingType.getOwns(this, EXPLICIT)
+                .filter(thingType -> thingType.getOwns(this, transitivity)
                         .map(owns -> owns.effectiveAnnotations().containsAll(annotations))
                         .orElse(false)
                 );
