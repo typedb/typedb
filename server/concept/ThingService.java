@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
@@ -55,11 +56,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNO
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Attribute.getOwnersResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.addPlayerRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.addRolePlayerRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.getRolePlayersResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.getPlayersByRoleTypeResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.getPlayersResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.getRelatingResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.removePlayerRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.Relation.removeRolePlayerRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.deleteRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.getHasResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.getPlayingResPart;
@@ -67,11 +68,11 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.getRel
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.setHasRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.unsetHasRes;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.ATTRIBUTE_GET_OWNERS_REQ;
-import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_ADD_PLAYER_REQ;
+import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_ADD_ROLE_PLAYER_REQ;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_GET_PLAYERS_BY_ROLE_TYPE_REQ;
-import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_GET_PLAYERS_REQ;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_GET_RELATING_REQ;
-import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_REMOVE_PLAYER_REQ;
+import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_GET_ROLE_PLAYERS_REQ;
+import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.RELATION_REMOVE_ROLE_PLAYER_REQ;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.REQ_NOT_SET;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.THING_DELETE_REQ;
 import static com.vaticle.typedb.protocol.ConceptProto.Thing.Req.ReqCase.THING_GET_HAS_REQ;
@@ -98,10 +99,10 @@ public class ThingService {
         handlers.put(THING_UNSET_HAS_REQ, this::unsetHas);
         handlers.put(THING_GET_RELATIONS_REQ, this::getRelations);
         handlers.put(THING_GET_PLAYING_REQ, this::getPlaying);
-        handlers.put(RELATION_ADD_PLAYER_REQ, this::relationAddPlayer);
-        handlers.put(RELATION_REMOVE_PLAYER_REQ, this::relationRemovePlayer);
-        handlers.put(RELATION_GET_PLAYERS_REQ, this::relationGetPlayers);
+        handlers.put(RELATION_ADD_ROLE_PLAYER_REQ, this::relationAddRolePlayer);
+        handlers.put(RELATION_REMOVE_ROLE_PLAYER_REQ, this::relationRemoveRolePlayer);
         handlers.put(RELATION_GET_PLAYERS_BY_ROLE_TYPE_REQ, this::relationGetPlayersByRoleType);
+        handlers.put(RELATION_GET_ROLE_PLAYERS_REQ, this::relationGetRolePlayers);
         handlers.put(RELATION_GET_RELATING_REQ, this::relationGetRelating);
         handlers.put(ATTRIBUTE_GET_OWNERS_REQ, this::attributeGetOwners);
         handlers.put(REQ_NOT_SET, this::requestNotSet);
@@ -123,14 +124,10 @@ public class ThingService {
     private void getHas(ConceptProto.Thing.Req thingReq, UUID reqID) {
         ConceptProto.Thing.GetHas.Req getHasRequest = thingReq.getThingGetHasReq();
         Thing thing = getThing(thingReq);
-        FunctionalIterator<? extends Attribute> attributes;
-        if (getHasRequest.hasAttributeTypes())
-            attributes = thing.getHas(
-                getHasRequest.getAttributeTypes().getAttributeTypesList().stream()
-                    .map(t -> notNull(getAttributeType(t))).toArray(AttributeType[]::new)
-            );
-        else
-            attributes = thing.getHas(getAnnotations(getHasRequest.getAnnotationFilter().getAnnotationsList()));
+        List<AttributeType> attributeTypes = getHasRequest.getAttributeTypesList().stream()
+                .map(t -> notNull(getAttributeType(t))).collect(Collectors.toList());
+        Set<TypeQLToken.Annotation> annotations = getAnnotations(getHasRequest.getAnnotationsList());
+        FunctionalIterator<? extends Attribute> attributes = thing.getHas(attributeTypes, annotations);
         transactionSvc.stream(attributes, reqID, atts -> getHasResPart(reqID, atts));
     }
 
@@ -161,31 +158,31 @@ public class ThingService {
         transactionSvc.stream(roleTypes, reqID, rols -> getPlayingResPart(reqID, rols));
     }
 
-    private void relationAddPlayer(ConceptProto.Thing.Req thingReq, UUID reqID) {
+    private void relationAddRolePlayer(ConceptProto.Thing.Req thingReq, UUID reqID) {
         Relation relation = getThing(thingReq).asRelation();
-        ConceptProto.Relation.AddPlayer.Req addPlayerReq = thingReq.getRelationAddPlayerReq();
-        relation.addPlayer(getRoleType(addPlayerReq.getRoleType()), getThing(addPlayerReq.getPlayer()));
-        transactionSvc.respond(addPlayerRes(reqID));
+        ConceptProto.Relation.RolePlayer rolePlayer = thingReq.getRelationAddRolePlayerReq().getRolePlayer();
+        relation.addPlayer(getRoleType(rolePlayer.getRoleType()), getThing(rolePlayer.getPlayer()));
+        transactionSvc.respond(addRolePlayerRes(reqID));
     }
 
-    private void relationRemovePlayer(ConceptProto.Thing.Req thingReq, UUID reqID) {
+    private void relationRemoveRolePlayer(ConceptProto.Thing.Req thingReq, UUID reqID) {
         Relation relation = getThing(thingReq).asRelation();
-        ConceptProto.Relation.RemovePlayer.Req removePlayerReq = thingReq.getRelationRemovePlayerReq();
-        relation.removePlayer(getRoleType(removePlayerReq.getRoleType()), getThing(removePlayerReq.getPlayer()));
-        transactionSvc.respond(removePlayerRes(reqID));
+        ConceptProto.Relation.RolePlayer rolePlayer = thingReq.getRelationRemoveRolePlayerReq().getRolePlayer();
+        relation.removePlayer(getRoleType(rolePlayer.getRoleType()), getThing(rolePlayer.getPlayer()));
+        transactionSvc.respond(removeRolePlayerRes(reqID));
     }
 
-    private void relationGetPlayers(ConceptProto.Thing.Req thingReq, UUID reqID) {
+    private void relationGetPlayersByRoleType(ConceptProto.Thing.Req thingReq, UUID reqID) {
         Relation relation = getThing(thingReq).asRelation();
-        RoleType[] roleTypes = thingReq.getRelationGetPlayersReq().getRoleTypesList().stream()
+        RoleType[] roleTypes = thingReq.getRelationGetPlayersByRoleTypeReq().getRoleTypesList().stream()
                 .map(type -> notNull(getRoleType(type))).toArray(RoleType[]::new);
         FunctionalIterator<? extends Thing> players = roleTypes.length == 0 ?
                 relation.getPlayers() :
                 relation.getPlayers(roleTypes[0], Arrays.copyOfRange(roleTypes, 1, roleTypes.length));
-        transactionSvc.stream(players, reqID, things -> getPlayersResPart(reqID, things));
+        transactionSvc.stream(players, reqID, things -> getPlayersByRoleTypeResPart(reqID, things));
     }
 
-    private void relationGetPlayersByRoleType(ConceptProto.Thing.Req thingReq, UUID reqID) {
+    private void relationGetRolePlayers(ConceptProto.Thing.Req thingReq, UUID reqID) {
         Relation relation = getThing(thingReq).asRelation();
         // TODO: this should be optimised to actually iterate over role players by role type lazily
         Map<? extends RoleType, ? extends List<? extends Thing>> playersByRole = relation.getPlayersByRoleType();
@@ -195,7 +192,7 @@ public class ThingService {
                 responses.add(pair(players.getKey(), player));
             }
         }
-        transactionSvc.stream(responses.build().iterator(), reqID, players -> getPlayersByRoleTypeResPart(reqID, players));
+        transactionSvc.stream(responses.build().iterator(), reqID, players -> getRolePlayersResPart(reqID, players));
     }
 
     private void relationGetRelating(ConceptProto.Thing.Req thingReq, UUID reqID) {
@@ -206,7 +203,7 @@ public class ThingService {
         Attribute attribute = getThing(thingReq).asAttribute();
         ConceptProto.Attribute.GetOwners.Req getOwnersReq = thingReq.getAttributeGetOwnersReq();
         FunctionalIterator<? extends Thing> things;
-        if (getOwnersReq.hasFilter()) things = attribute.getOwners(getThingType(getOwnersReq.getFilter()).asThingType());
+        if (getOwnersReq.hasThingType()) things = attribute.getOwners(getThingType(getOwnersReq.getThingType()));
         else things = attribute.getOwners();
         transactionSvc.stream(things, reqID, owners -> getOwnersResPart(reqID, owners));
     }

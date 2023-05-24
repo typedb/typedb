@@ -284,8 +284,8 @@ public class TypeService {
         FunctionalIterator<AttributeType> attributes;
         Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnsReq.getAnnotationsList());
         Transitivity transitivity = Transitivity.of(getOwnsReq.getTransitivity());
-        if (getOwnsReq.hasFilter())
-            attributes = getThingType(thingTypeReq).getOwns(valueType(getOwnsReq.getFilter()), annotations, transitivity)
+        if (getOwnsReq.hasValueType())
+            attributes = getThingType(thingTypeReq).getOwns(valueType(getOwnsReq.getValueType()), annotations, transitivity)
                     .map(ThingType.Owns::attributeType);
         else
             attributes = getThingType(thingTypeReq).getOwns(annotations, transitivity).map(ThingType.Owns::attributeType);

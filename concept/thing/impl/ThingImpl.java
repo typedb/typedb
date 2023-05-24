@@ -158,6 +158,12 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
+    public FunctionalIterator<AttributeImpl<?>> getHas(List<AttributeType> attributeTypes, Set<TypeQLToken.Annotation> ownsAnnotations) {
+        return getHas(getType().getOwns(ownsAnnotations).stream().map(ThingType.Owns::attributeType)
+                .filter(attributeTypes::contains).toArray(AttributeType[]::new));
+    }
+
+    @Override
     public FunctionalIterator<AttributeImpl<?>> getHas(Set<TypeQLToken.Annotation> ownsAnnotations) {
         return getHas(getType().getOwns(ownsAnnotations).stream().map(ThingType.Owns::attributeType).toArray(AttributeType[]::new));
     }

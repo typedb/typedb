@@ -22,11 +22,13 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
+import java.util.List;
 import java.util.Set;
 
 public interface Thing extends Concept, Comparable<Thing> {
@@ -119,6 +121,8 @@ public interface Thing extends Concept, Comparable<Thing> {
      * @return an iterator of {@code Attribute} instances owned by this {@code Thing}
      */
     FunctionalIterator<? extends Attribute> getHas(AttributeType... attributeType);
+
+    FunctionalIterator<? extends Attribute> getHas(List<AttributeType> attributeTypes, Set<TypeQLToken.Annotation> ownsAnnotations);
 
     /**
      * Check whether a Has edge to a given attribute instance exists, and that edge is inferred

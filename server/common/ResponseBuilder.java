@@ -65,7 +65,7 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoEn
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoRelationType;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoAttributeType;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoRoleType;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoRootThingType;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoThingTypeRoot;
 import static java.util.stream.Collectors.toList;
 
 public class ResponseBuilder {
@@ -385,7 +385,7 @@ public class ResponseBuilder {
             } else if (concept.isAttributeType()) {
                 return ConceptProto.Concept.newBuilder().setAttributeType(protoAttributeType(concept.asAttributeType())).build();
             } else if (concept.isThingType()) {
-                return ConceptProto.Concept.newBuilder().setRootThingType(protoRootThingType()).build();
+                return ConceptProto.Concept.newBuilder().setThingTypeRoot(protoThingTypeRoot()).build();
             } else if (concept.isRoleType()) {
                 return ConceptProto.Concept.newBuilder().setRoleType(protoRoleType(concept.asRoleType())).build();
             } else if (concept.isEntity()) {
@@ -431,7 +431,7 @@ public class ResponseBuilder {
             return protoAttributeType.build();
         }
 
-        public static ConceptProto.ThingType.Root protoRootThingType() {
+        public static ConceptProto.ThingType.Root protoThingTypeRoot() {
             return ConceptProto.ThingType.Root.getDefaultInstance();
         }
 
@@ -911,31 +911,31 @@ public class ResponseBuilder {
 
         public static class Relation {
 
-            public static TransactionProto.Transaction.Res addPlayerRes(UUID reqID) {
-                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationAddPlayerRes(
-                        ConceptProto.Relation.AddPlayer.Res.getDefaultInstance()
+            public static TransactionProto.Transaction.Res addRolePlayerRes(UUID reqID) {
+                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationAddRolePlayerRes(
+                        ConceptProto.Relation.AddRolePlayer.Res.getDefaultInstance()
                 ));
             }
 
-            public static TransactionProto.Transaction.Res removePlayerRes(UUID reqID) {
-                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationRemovePlayerRes(
-                        ConceptProto.Relation.RemovePlayer.Res.getDefaultInstance()
-                ));
-            }
-
-            public static TransactionProto.Transaction.ResPart getPlayersResPart(
-                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> players) {
-                return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetPlayersResPart(
-                        ConceptProto.Relation.GetPlayers.ResPart.newBuilder().addAllThings(
-                                players.stream().map(Thing::protoThing).collect(toList()))
+            public static TransactionProto.Transaction.Res removeRolePlayerRes(UUID reqID) {
+                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationRemoveRolePlayerRes(
+                        ConceptProto.Relation.RemoveRolePlayer.Res.getDefaultInstance()
                 ));
             }
 
             public static TransactionProto.Transaction.ResPart getPlayersByRoleTypeResPart(
-                    UUID reqID, List<Pair<RoleType, com.vaticle.typedb.core.concept.thing.Thing>> rolePlayers) {
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> players) {
                 return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetPlayersByRoleTypeResPart(
-                        ConceptProto.Relation.GetPlayersByRoleType.ResPart.newBuilder().addAllRoleTypesWithPlayers(
-                                rolePlayers.stream().map(rp -> ConceptProto.Relation.GetPlayersByRoleType.RoleTypeWithPlayer.newBuilder()
+                        ConceptProto.Relation.GetPlayersByRoleType.ResPart.newBuilder().addAllThings(
+                                players.stream().map(Thing::protoThing).collect(toList()))
+                ));
+            }
+
+            public static TransactionProto.Transaction.ResPart getRolePlayersResPart(
+                    UUID reqID, List<Pair<RoleType, com.vaticle.typedb.core.concept.thing.Thing>> rolePlayers) {
+                return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetRolePlayersResPart(
+                        ConceptProto.Relation.GetRolePlayers.ResPart.newBuilder().addAllRolePlayers(
+                                rolePlayers.stream().map(rp -> ConceptProto.Relation.RolePlayer.newBuilder()
                                         .setRoleType(protoRoleType(rp.first())).setPlayer(protoThing(rp.second())).build()).collect(toList()))
                 ));
             }
