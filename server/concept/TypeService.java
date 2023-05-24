@@ -19,7 +19,6 @@ package com.vaticle.typedb.core.server.concept;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
@@ -37,7 +36,6 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -285,10 +283,10 @@ public class TypeService {
         Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnsReq.getAnnotationsList());
         Transitivity transitivity = Transitivity.of(getOwnsReq.getTransitivity());
         if (getOwnsReq.hasValueType())
-            attributes = getThingType(thingTypeReq).getOwns(valueType(getOwnsReq.getValueType()), annotations, transitivity)
+            attributes = getThingType(thingTypeReq).getOwns(transitivity, valueType(getOwnsReq.getValueType()), annotations)
                     .map(ThingType.Owns::attributeType);
         else
-            attributes = getThingType(thingTypeReq).getOwns(annotations, transitivity).map(ThingType.Owns::attributeType);
+            attributes = getThingType(thingTypeReq).getOwns(transitivity, annotations).map(ThingType.Owns::attributeType);
         transactionSvc.stream(attributes, reqID, attributeTypes -> ResponseBuilder.Type.ThingType.getOwnsResPart(reqID, attributeTypes));
     }
 
@@ -578,7 +576,7 @@ public class TypeService {
         Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnersReq.getAnnotationsList());
         Transitivity transitivity = Transitivity.of(getOwnersReq.getTransitivity());
         transactionSvc.stream(
-                getAttributeType(thingTypeReq).getOwners(annotations, transitivity), reqID,
+                getAttributeType(thingTypeReq).getOwners(transitivity, annotations), reqID,
                 owners -> ResponseBuilder.Type.AttributeType.getOwnersResPart(reqID, owners)
         );
     }

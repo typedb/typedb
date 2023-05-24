@@ -101,7 +101,7 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public Forwardable<EntityImpl, Order.Asc> getInstances(Transitivity transitivity) {
-        return instances(v -> EntityImpl.of(conceptMgr, v), transitivity);
+        return instances(transitivity, v -> EntityImpl.of(conceptMgr, v));
     }
 
     @Override

@@ -221,10 +221,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public abstract Forwardable<? extends ThingTypeImpl, Order.Asc> getSubtypes(Transitivity transitivity);
 
     <THING extends ThingImpl> Forwardable<THING, Order.Asc> instances(Function<ThingVertex, THING> thingConstructor) {
-        return instances(thingConstructor, TRANSITIVE);
+        return instances(TRANSITIVE, thingConstructor);
     }
 
-    <THING extends ThingImpl> Forwardable<THING, Order.Asc> instances(Function<ThingVertex, THING> thingConstructor, Transitivity transitivity) {
+    <THING extends ThingImpl> Forwardable<THING, Order.Asc> instances(Transitivity transitivity, Function<ThingVertex, THING> thingConstructor) {
         Forwardable<ThingVertex, Order.Asc> instances;
         if (transitivity == EXPLICIT) instances = graphMgr().data().getReadable(vertex, ASC);
         else instances = getSubtypes().filter(t -> !t.isAbstract())
@@ -256,7 +256,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public void unsetOwns(AttributeType attributeType) {
         validateIsNotDeleted();
-        Optional<Owns> owns = getOwns(attributeType, EXPLICIT);
+        Optional<Owns> owns = getOwns(EXPLICIT, attributeType);
         if (owns.isPresent()) owns.get().delete();
         else if (getOwns(attributeType).isPresent()) {
             throw exception(TypeDBException.of(INVALID_UNDEFINE_INHERITED_OWNS, getLabel(), attributeType.getLabel()));
@@ -280,11 +280,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public Optional<Owns> getOwns(AttributeType attributeType) {
-        return getOwns(attributeType, TRANSITIVE);
+        return getOwns(TRANSITIVE, attributeType);
     }
 
     @Override
-    public Optional<Owns> getOwns(AttributeType attributeType, Transitivity transitivity) {
+    public Optional<Owns> getOwns(Transitivity transitivity, AttributeType attributeType) {
         // TODO: optimise for non-cached setting by using point lookups rather than a scan
         return iterate(getOwns(transitivity)).filter(owns -> owns.attributeType().equals(attributeType)).first();
     }
@@ -312,32 +312,32 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public Forwardable<Owns, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations) {
-        return getOwns(annotations, TRANSITIVE);
+        return getOwns(TRANSITIVE, annotations);
     }
 
     @Override
-    public Forwardable<Owns, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations, Transitivity transitivity) {
+    public Forwardable<Owns, Order.Asc> getOwns(Transitivity transitivity, Set<TypeQLToken.Annotation> annotations) {
         return iterateSorted(getOwns(transitivity), ASC).filter(owns -> owns.effectiveAnnotations().containsAll(annotations));
     }
 
     @Override
     public Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType) {
-        return getOwns(valueType, TRANSITIVE);
+        return getOwns(TRANSITIVE, valueType);
     }
 
     @Override
     public Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations) {
-        return getOwns(valueType, annotations, TRANSITIVE);
+        return getOwns(TRANSITIVE, valueType, annotations);
     }
 
     @Override
-    public Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Transitivity transitivity) {
-        return getOwns(valueType, emptySet(), transitivity);
+    public Forwardable<Owns, Order.Asc> getOwns(Transitivity transitivity, AttributeType.ValueType valueType) {
+        return getOwns(transitivity, valueType, emptySet());
     }
 
     @Override
-    public Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations, Transitivity transitivity) {
-        return getOwns(annotations, transitivity).filter(owns -> owns.attributeType().getValueType().equals(valueType));
+    public Forwardable<Owns, Order.Asc> getOwns(Transitivity transitivity, AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations) {
+        return getOwns(transitivity, annotations).filter(owns -> owns.attributeType().getValueType().equals(valueType));
     }
 
     private NavigableSet<Owns> fetchOwns() {

@@ -138,7 +138,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public Forwardable<RelationImpl, Order.Asc> getInstances(Transitivity transitivity) {
-        return instances(v -> RelationImpl.of(conceptMgr, v), transitivity);
+        return instances(transitivity, v -> RelationImpl.of(conceptMgr, v));
     }
 
     @Override
@@ -227,7 +227,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public RoleType getRelates(String roleLabel) {
-        return getRelates(roleLabel, TRANSITIVE);
+        return getRelates(TRANSITIVE, roleLabel);
     }
 
     /**
@@ -241,7 +241,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
      * @return the role type related in this relation
      */
     @Override
-    public RoleType getRelates(String roleLabel, Transitivity transitivity) {
+    public RoleType getRelates(Transitivity transitivity, String roleLabel) {
         TypeVertex roleTypeVertex = graphMgr().schema().getType(roleLabel, vertex.label());
         if (roleTypeVertex != null) return conceptMgr.convertRoleType(roleTypeVertex);
         else if (transitivity == TRANSITIVE) return getRelates().filter(role -> role.getLabel().name().equals(roleLabel)).first().orElse(null);

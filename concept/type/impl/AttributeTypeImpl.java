@@ -121,7 +121,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public abstract Forwardable<? extends AttributeImpl<?>, Order.Asc> getInstances(Transitivity transitivity);
 
-    Forwardable<TypeVertex, Order.Asc> getSubtypeVertices(Encoding.ValueType<?> valueType, Transitivity transitivity) {
+    Forwardable<TypeVertex, Order.Asc> getSubtypeVertices(Transitivity transitivity, Encoding.ValueType<?> valueType) {
         Forwardable<TypeVertex, Order.Asc> subtypeVertices;
         if (transitivity == EXPLICIT) subtypeVertices = vertex.ins().edge(SUB).from();
         else subtypeVertices = iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC);
@@ -145,11 +145,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     @Override
     public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations) {
-        return getOwners(annotations, TRANSITIVE);
+        return getOwners(TRANSITIVE, annotations);
     }
 
     @Override
-    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations, Transitivity transitivity) {
+    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwners(Transitivity transitivity, Set<TypeQLToken.Annotation> annotations) {
         if (isRoot()) return emptySorted();
 
         Forwardable<TypeVertex, Order.Asc> owners;
@@ -157,7 +157,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         else owners = iterateSorted(graphMgr().schema().ownersOfAttributeType(vertex, annotations), ASC);
 
         return owners.mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), thingType -> thingType.vertex, ASC)
-                .filter(thingType -> thingType.getOwns(this, transitivity)
+                .filter(thingType -> thingType.getOwns(transitivity, this)
                         .map(owns -> owns.effectiveAnnotations().containsAll(annotations))
                         .orElse(false)
                 );
@@ -411,7 +411,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Forwardable<AttributeImpl.Boolean, Order.Asc> getInstances(Transitivity transitivity) {
-            return instances(v -> new AttributeImpl.Boolean(conceptMgr, v.asAttribute().asBoolean()), transitivity);
+            return instances(transitivity, v -> new AttributeImpl.Boolean(conceptMgr, v.asAttribute().asBoolean()));
         }
 
         @Override
@@ -462,7 +462,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Forwardable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypes(Transitivity transitivity) {
-                Forwardable<AttributeTypeImpl.Boolean, Order.Asc> subtypeVertices = getSubtypeVertices(BOOLEAN, transitivity)
+                Forwardable<AttributeTypeImpl.Boolean, Order.Asc> subtypeVertices = getSubtypeVertices(transitivity, BOOLEAN)
                         .mapSorted(v -> (AttributeTypeImpl.Boolean) conceptMgr.convertAttributeType(v).asBoolean(), attrType -> attrType.vertex, ASC);
                 if (transitivity == EXPLICIT) return subtypeVertices;
                 else return merge(iterateSorted(ASC, this), subtypeVertices);
@@ -546,7 +546,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Forwardable<AttributeImpl.Long, Order.Asc> getInstances(Transitivity transitivity) {
-            return instances(v -> new AttributeImpl.Long(conceptMgr, v.asAttribute().asLong()), TRANSITIVE);
+            return instances(TRANSITIVE, v -> new AttributeImpl.Long(conceptMgr, v.asAttribute().asLong()));
         }
 
         @Override
@@ -597,7 +597,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Forwardable<AttributeTypeImpl.Long, Order.Asc> getSubtypes(Transitivity transitivity) {
-                Forwardable<AttributeTypeImpl.Long, Order.Asc> subtypeVertices = getSubtypeVertices(LONG, transitivity)
+                Forwardable<AttributeTypeImpl.Long, Order.Asc> subtypeVertices = getSubtypeVertices(transitivity, LONG)
                         .mapSorted(v -> (AttributeTypeImpl.Long) conceptMgr.convertAttributeType(v).asAttributeType(), attrType -> attrType.vertex, ASC);
                 if (transitivity == EXPLICIT) return subtypeVertices;
                 else return merge(iterateSorted(ASC, this), subtypeVertices);
@@ -681,7 +681,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Forwardable<AttributeImpl.Double, Order.Asc> getInstances(Transitivity transitivity) {
-            return instances(v -> new AttributeImpl.Double(conceptMgr, v.asAttribute().asDouble()), TRANSITIVE);
+            return instances(TRANSITIVE, v -> new AttributeImpl.Double(conceptMgr, v.asAttribute().asDouble()));
         }
 
         @Override
@@ -732,7 +732,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Forwardable<AttributeTypeImpl.Double, Order.Asc> getSubtypes(Transitivity transitivity) {
-                Forwardable<AttributeTypeImpl.Double, Order.Asc> subtypeVertices = getSubtypeVertices(DOUBLE, transitivity)
+                Forwardable<AttributeTypeImpl.Double, Order.Asc> subtypeVertices = getSubtypeVertices(transitivity, DOUBLE)
                         .mapSorted(v -> (AttributeTypeImpl.Double) conceptMgr.convertAttributeType(v).asDouble(), attrType -> attrType.vertex, ASC);
                 if (transitivity == EXPLICIT) return subtypeVertices;
                 else return merge(iterateSorted(ASC, this), subtypeVertices);
@@ -816,7 +816,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Forwardable<AttributeImpl.String, Order.Asc> getInstances(Transitivity transitivity) {
-            return instances(v -> new AttributeImpl.String(conceptMgr, v.asAttribute().asString()), TRANSITIVE);
+            return instances(TRANSITIVE, v -> new AttributeImpl.String(conceptMgr, v.asAttribute().asString()));
         }
 
         @Override
@@ -896,7 +896,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Forwardable<AttributeTypeImpl.String, Order.Asc> getSubtypes(Transitivity transitivity) {
-                Forwardable<AttributeTypeImpl.String, Order.Asc> subtypeVertices = getSubtypeVertices(STRING, transitivity)
+                Forwardable<AttributeTypeImpl.String, Order.Asc> subtypeVertices = getSubtypeVertices(transitivity, STRING)
                         .mapSorted(v -> (AttributeTypeImpl.String) conceptMgr.convertAttributeType(v).asString(), attrType -> attrType.vertex, ASC);
                 if (transitivity == EXPLICIT) return subtypeVertices;
                 else return merge(iterateSorted(ASC, this), subtypeVertices);
@@ -990,7 +990,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Forwardable<AttributeImpl.DateTime, Order.Asc> getInstances(Transitivity transitivity) {
-            return instances(v -> new AttributeImpl.DateTime(conceptMgr, v.asAttribute().asDateTime()), transitivity);
+            return instances(transitivity, v -> new AttributeImpl.DateTime(conceptMgr, v.asAttribute().asDateTime()));
         }
 
         @Override
@@ -1041,7 +1041,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
             @Override
             public Forwardable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypes(Transitivity transitivity) {
-                Forwardable<AttributeTypeImpl.DateTime, Order.Asc> subtypeVertices = getSubtypeVertices(DATETIME, transitivity)
+                Forwardable<AttributeTypeImpl.DateTime, Order.Asc> subtypeVertices = getSubtypeVertices(transitivity, DATETIME)
                         .mapSorted(v -> (AttributeTypeImpl.DateTime) conceptMgr.convertAttributeType(v).asDateTime(), attrType -> attrType.vertex, ASC);
                 if (transitivity == EXPLICIT) return subtypeVertices;
                 else return merge(iterateSorted(ASC, this), subtypeVertices);

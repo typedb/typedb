@@ -61,7 +61,7 @@ public interface AttributeType extends ThingType {
 
     Forwardable<? extends ThingType, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations);
 
-    Forwardable<? extends ThingType, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations, Transitivity transitivity);
+    Forwardable<? extends ThingType, Order.Asc> getOwners(Transitivity transitivity, Set<TypeQLToken.Annotation> annotations);
 
     boolean isBoolean();
 

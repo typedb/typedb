@@ -75,13 +75,13 @@ public interface ThingType extends Type {
 
     NavigableSet<Owns> getOwns(Transitivity transitivity);
 
-    Optional<Owns> getOwns(AttributeType attributeType, Transitivity transitivity);
+    Optional<Owns> getOwns(Transitivity transitivity, AttributeType attributeType);
 
-    Forwardable<Owns, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations, Transitivity transitivity);
+    Forwardable<Owns, Order.Asc> getOwns(Transitivity transitivity, Set<TypeQLToken.Annotation> annotations);
 
-    Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Transitivity transitivity);
+    Forwardable<Owns, Order.Asc> getOwns(Transitivity transitivity, AttributeType.ValueType valueType);
 
-    Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations, Transitivity transitivity);
+    Forwardable<Owns, Order.Asc> getOwns(Transitivity transitivity, AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations);
 
     AttributeType getOwnsOverridden(AttributeType attributeType);
 

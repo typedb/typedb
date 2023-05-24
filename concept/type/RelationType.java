@@ -59,7 +59,7 @@ public interface RelationType extends ThingType {
 
     RoleType getRelates(String roleLabel);
 
-    RoleType getRelates(String roleLabel, Transitivity transitivity);
+    RoleType getRelates(Transitivity transitivity, String roleLabel);
 
     RoleType getRelatesOverridden(String roleLabel);
 

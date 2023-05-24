@@ -280,7 +280,7 @@ public class ThingTypeSteps {
     public void thing_type_get_owns_explicit_types_with_annotations_contain(
             RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
     ) {
-        Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns(set(annotations), EXPLICIT).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
+        Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns(EXPLICIT, set(annotations)).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
         assertTrue(actuals.containsAll(attributeLabels));
     }
 
@@ -288,7 +288,7 @@ public class ThingTypeSteps {
     public void thing_type_get_owns_explicit_attribute_types_with_annotations_do_not_contain(
             RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
     ) {
-        Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns(set(annotations), EXPLICIT).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
+        Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns(EXPLICIT, set(annotations)).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
         for (String attributeLabel : attributeLabels) {
             assertFalse(actuals.contains(attributeLabel));
         }
