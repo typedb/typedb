@@ -21,8 +21,10 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.server.common.ResponseBuilder;
 import com.vaticle.typedb.protocol.DatabaseProto.Database;
 import com.vaticle.typedb.protocol.DatabaseProto.DatabaseManager;
+import com.vaticle.typedb.protocol.ServerProto.ServerManager;
 import com.vaticle.typedb.protocol.SessionProto;
 import com.vaticle.typedb.protocol.TransactionProto;
 import com.vaticle.typedb.protocol.TypeDBGrpc;
@@ -70,6 +72,17 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         this.address = address.getHostString() + ":" + address.getPort();
         this.databaseMgr = databaseMgr;
         sessionServices = new ConcurrentHashMap<>();
+    }
+
+    @Override
+    public void serversAll(ServerManager.All.Req request, StreamObserver<ServerManager.All.Res> responder) {
+        try {
+            responder.onNext(ResponseBuilder.ServerManager.allRes(address));
+            responder.onCompleted();
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
     }
 
     @Override
