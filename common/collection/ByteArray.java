@@ -327,10 +327,11 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     @Override
     public final int hashCode() {
         if (hash == 0) {
-            hash = 1;
+            int arrayHash = 1;
             for (int i = 0; i < length(); i++) {
-                hash = 31 * hash + (int) get(i);
+                arrayHash = 31 * arrayHash + (int) get(i);
             }
+            hash = arrayHash;
         }
         return hash;
     }
