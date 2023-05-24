@@ -124,10 +124,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Forwardable<ThingTypeImpl, Order.Asc> getPlayerTypes(Transitivity transitivity) {
-        Forwardable<TypeVertex, Order.Asc> playerTypes;
-        if (transitivity == EXPLICIT) playerTypes = vertex.ins().edge(Encoding.Edge.Type.PLAYS).from();
-        else playerTypes = iterateSorted(graphMgr().schema().playersOfRoleType(vertex), ASC);
-        return playerTypes.mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), roleType -> roleType.vertex, ASC);
+        return getPlayerTypeVertices(transitivity).mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), roleType -> roleType.vertex, ASC);
+    }
+
+    Forwardable<TypeVertex, Order.Asc> getPlayerTypeVertices(Transitivity transitivity) {
+        if (transitivity == EXPLICIT) return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from();
+        else return iterateSorted(graphMgr().schema().playersOfRoleType(vertex), ASC);
     }
 
     @Override
@@ -137,10 +139,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public FunctionalIterator<RelationImpl> getRelationInstances(Transitivity transitivity) {
-        FunctionalIterator<ThingVertex> instances;
-        if (transitivity == EXPLICIT) instances = graphMgr().data().getReadable(vertex);
-        else instances = getSubtypes(TRANSITIVE).filter(t -> !t.isAbstract()).flatMap(t -> graphMgr().data().getReadable(t.vertex));
-        return instances.flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.RELATING).from()).map(v -> RelationImpl.of(conceptMgr, v));
+        return getRelationVertices(transitivity).flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.RELATING).from()).map(v -> RelationImpl.of(conceptMgr, v));
+    }
+
+    public FunctionalIterator<ThingVertex> getRelationVertices(Transitivity transitivity) {
+        if (transitivity == EXPLICIT) return graphMgr().data().getReadable(vertex);
+        else return getSubtypes(TRANSITIVE).filter(t -> !t.isAbstract()).flatMap(t -> graphMgr().data().getReadable(t.vertex));
     }
 
     @Override
@@ -150,10 +154,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public FunctionalIterator<ThingImpl> getPlayerInstances(Transitivity transitivity) {
-        FunctionalIterator<ThingVertex> instances;
-        if (transitivity == EXPLICIT) instances = graphMgr().data().getReadable(vertex);
-        else instances = getSubtypes(TRANSITIVE).filter(t -> !t.isAbstract()).flatMap(t -> graphMgr().data().getReadable(t.vertex));
-        return instances.flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.PLAYING).from()).map(v -> ThingImpl.of(conceptMgr, v));
+        return getPlayerVertices(transitivity).flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.PLAYING).from()).map(v -> ThingImpl.of(conceptMgr, v));
+    }
+
+    public FunctionalIterator<ThingVertex> getPlayerVertices(Transitivity transitivity) {
+        if (transitivity == EXPLICIT) return graphMgr().data().getReadable(vertex);
+        else return getSubtypes(TRANSITIVE).filter(t -> !t.isAbstract()).flatMap(t -> graphMgr().data().getReadable(t.vertex));
     }
 
     @Override

@@ -54,7 +54,6 @@ import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.For
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
-import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ROLE_TYPE;
 
 public abstract class TypeImpl extends ConceptImpl implements Type {
 
@@ -120,10 +119,8 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     public abstract Forwardable<? extends TypeImpl, Order.Asc> getSubtypes(Transitivity transitivity);
 
     <TYPE extends TypeImpl> Forwardable<TYPE, Order.Asc> getSubtypes(Transitivity transitivity, Function<TypeVertex, TYPE> typeConstructor) {
-        if (transitivity == EXPLICIT)
-            return vertex.ins().edge(SUB).from().mapSorted(typeConstructor, type -> type.vertex, ASC);
-        else
-            return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC).mapSorted(typeConstructor, type -> type.vertex, ASC);
+        if (transitivity == EXPLICIT) return vertex.ins().edge(SUB).from().mapSorted(typeConstructor, type -> type.vertex, ASC);
+        else return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC).mapSorted(typeConstructor, type -> type.vertex, ASC);
     }
 
     GraphManager graphMgr() {

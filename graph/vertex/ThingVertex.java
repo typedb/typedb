@@ -69,7 +69,11 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
      */
     boolean isInferred();
 
-    // TODO
+    /**
+     * Returns the mode of {@code Existence} of this {@code ThingVertex}.
+     *
+     * @return {@code INFERRED} if this {@code ThingVertex} is a result of inference, {@code STORED} otherwise
+     */
     Existence existence();
 
     /**

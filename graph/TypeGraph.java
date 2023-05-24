@@ -60,7 +60,6 @@ import javax.annotation.Nullable;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeGraph.INVALID_SCHEMA_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
@@ -333,19 +332,12 @@ public class TypeGraph {
         return overridden;
     }
 
-    private FunctionalIterator<TypeVertex> ownersOfAttType(TypeVertex attType, Set<TypeQLToken.Annotation> annotations) {
+    private NavigableSet<TypeVertex> ownersOfAttributeTypeImpl(TypeVertex attType, Set<TypeQLToken.Annotation> annotations) {
         Forwardable<TypeVertex, Order.Asc> owners = attType.ins().edge(OWNS_KEY).from();
         if (!annotations.contains(TypeQLToken.Annotation.KEY)) owners = owners.merge(attType.ins().edge(OWNS).from());
         return owners.flatMap(owner -> tree(owner, o -> o.ins().edge(SUB).from().filter(s ->
                 overriddenOwns(s, annotations).noneMatch(ov -> ov.equals(attType))
-        )));
-    }
-
-    public NavigableSet<TypeVertex> ownersOfAttributeTypeImpl(TypeVertex attType, Set<TypeQLToken.Annotation> annotations) {
-        TreeSet<TypeVertex> owners = new TreeSet<>();
-        ownersOfAttType(attType, annotations).toSet(owners);
-        if (!annotations.contains(TypeQLToken.Annotation.KEY)) ownersOfAttType(attType, set()).toSet(owners);
-        return owners;
+        ))).collect(TreeSet::new);
     }
 
     public NavigableSet<TypeVertex> ownersOfAttributeType(TypeVertex attType, Set<TypeQLToken.Annotation> annotations) {

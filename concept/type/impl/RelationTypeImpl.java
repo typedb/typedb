@@ -197,10 +197,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public Forwardable<RoleTypeImpl, Order.Asc> getRelates(Transitivity transitivity) {
-        Forwardable<TypeVertex, Order.Asc> relates;
-        if (transitivity == EXPLICIT) relates = vertex.outs().edge(RELATES).to();
-        else relates = iterateSorted(graphMgr().schema().relatedRoleTypes(vertex), ASC);
-        return relates.mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), roleType -> roleType.vertex, ASC);
+        return getRelatesVertices(transitivity).mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), roleType -> roleType.vertex, ASC);
+    }
+
+    Forwardable<TypeVertex, Order.Asc> getRelatesVertices(Transitivity transitivity) {
+        if (transitivity == EXPLICIT) return vertex.outs().edge(RELATES).to();
+        else return iterateSorted(graphMgr().schema().relatedRoleTypes(vertex), ASC);
     }
 
     @Override

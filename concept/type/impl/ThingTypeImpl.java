@@ -43,6 +43,7 @@ import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import javax.annotation.Nullable;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NavigableSet;
@@ -103,22 +104,17 @@ import static java.util.Comparator.comparing;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
-    private final Cache cache;
-
-    private static class Cache {
-        private NavigableSet<Owns> owns = null;
-        private NavigableSet<Owns> ownsExplicit = null;
-    }
+    private final EnumMap<Transitivity, NavigableSet<Owns>> cache;
 
     ThingTypeImpl(ConceptManager conceptMgr, TypeVertex vertex) {
         super(conceptMgr, vertex);
-        if (graphMgr().schema().isReadOnly()) cache = new Cache();
+        if (graphMgr().schema().isReadOnly()) cache = new EnumMap<>(Transitivity.class);
         else cache = null;
     }
 
     ThingTypeImpl(ConceptManager conceptMgr, String label, Encoding.Vertex.Type encoding) {
         super(conceptMgr, label, encoding);
-        if (graphMgr().schema().isReadOnly()) this.cache = new Cache();
+        if (graphMgr().schema().isReadOnly()) this.cache = new EnumMap<>(Transitivity.class);
         else cache = null;
     }
 
@@ -296,18 +292,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
     @Override
     public NavigableSet<Owns> getOwns(Transitivity transitivity) {
-        // TODO: refactor cache
-        if (transitivity == TRANSITIVE) {
-            if (cache != null) {
-                if (cache.owns == null) cache.owns = fetchOwns();
-                return cache.owns;
-            } else return fetchOwns();
-        } else {
-            if (cache != null) {
-                if (cache.ownsExplicit == null) cache.ownsExplicit = fetchOwnsExplicit();
-                return cache.ownsExplicit;
-            } else return fetchOwnsExplicit();
-        }
+        if (cache != null) {
+            if (cache.get(transitivity) == null) cache.put(transitivity, fetchOwns(transitivity));
+            return cache.get(transitivity);
+        } else return fetchOwns(transitivity);
     }
 
     @Override
@@ -340,21 +328,15 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         return getOwns(transitivity, annotations).filter(owns -> owns.attributeType().getValueType().equals(valueType));
     }
 
-    private NavigableSet<Owns> fetchOwns() {
-        NavigableSet<Owns> owns = new TreeSet<>();
-        graphMgr().schema().ownedAttributeTypes(vertex, emptySet()).forEach(
-                v -> owns.add(OwnsImpl.of(this, (AttributeTypeImpl) conceptMgr.convertAttributeType(v)))
-        );
-        return owns;
+    private NavigableSet<Owns> fetchOwns(Transitivity transitivity) {
+        return fetchOwnsVertices(transitivity)
+                .map(v -> OwnsImpl.of(this, (AttributeTypeImpl) conceptMgr.convertAttributeType(v)))
+                .collect(TreeSet::new);
     }
 
-    private NavigableSet<Owns> fetchOwnsExplicit() {
-        if (isRoot()) return new TreeSet<>();
-        NavigableSet<Owns> ownsExplicit = new TreeSet<>();
-        vertex.outs().edge(OWNS_KEY).to().link(vertex.outs().edge(OWNS).to()).forEachRemaining(v ->
-                ownsExplicit.add(OwnsImpl.of(this, (AttributeTypeImpl) conceptMgr.convertAttributeType(v)))
-        );
-        return ownsExplicit;
+    private FunctionalIterator<TypeVertex> fetchOwnsVertices(Transitivity transitivity) {
+        if (transitivity == EXPLICIT) return vertex.outs().edge(OWNS_KEY).to().link(vertex.outs().edge(OWNS).to());
+        else return iterate(graphMgr().schema().ownedAttributeTypes(vertex, emptySet()));
     }
 
     public AttributeType getOwnsOverridden(AttributeType attributeType) {
@@ -421,10 +403,12 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public Forwardable<RoleType, Order.Asc> getPlays(Transitivity transitivity) {
         if (isRoot()) return emptySorted();
-        Forwardable<TypeVertex, Order.Asc> plays;
-        if (transitivity == EXPLICIT) plays = vertex.outs().edge(PLAYS).to();
-        else plays = iterateSorted(graphMgr().schema().playedRoleTypes(vertex), ASC);
-        return plays.mapSorted(conceptMgr::convertRoleType, roleType -> ((RoleTypeImpl) roleType).vertex, ASC);
+        return getPlaysVertices(transitivity).mapSorted(conceptMgr::convertRoleType, roleType -> ((RoleTypeImpl) roleType).vertex, ASC);
+    }
+
+    Forwardable<TypeVertex, Order.Asc> getPlaysVertices(Transitivity transitivity) {
+        if (transitivity == EXPLICIT) return vertex.outs().edge(PLAYS).to();
+        else return iterateSorted(graphMgr().schema().playedRoleTypes(vertex), ASC);
     }
 
     @Override
@@ -551,7 +535,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Forwardable<ThingTypeImpl, Order.Asc> getSubtypes(Transitivity transitivity) {
-            if (transitivity == EXPLICIT) return getSubtypes(EXPLICIT, v -> {
+            return getSubtypes(transitivity, v -> {
                 switch (v.encoding()) {
                     case ENTITY_TYPE:
                         return (ThingTypeImpl) conceptMgr.convertEntityType(v);
@@ -559,21 +543,11 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                         return (ThingTypeImpl) conceptMgr.convertAttributeType(v);
                     case RELATION_TYPE:
                         return (ThingTypeImpl) conceptMgr.convertRelationType(v);
-                    default:
-                        throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
-                }
-            });
-            else return getSubtypes(TRANSITIVE, v -> {
-                switch (v.encoding()) {
                     case THING_TYPE:
-                        assert vertex == v;
-                        return this;
-                    case ENTITY_TYPE:
-                        return (ThingTypeImpl) conceptMgr.convertEntityType(v);
-                    case ATTRIBUTE_TYPE:
-                        return (ThingTypeImpl) conceptMgr.convertAttributeType(v);
-                    case RELATION_TYPE:
-                        return (ThingTypeImpl) conceptMgr.convertRelationType(v);
+                        if (transitivity == TRANSITIVE) {
+                            assert vertex == v;
+                            return this;
+                        } else throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                     default:
                         throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                 }
