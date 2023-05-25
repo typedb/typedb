@@ -34,9 +34,9 @@ public class PerfCounters {
         long get();
     }
 
+    protected final boolean enabled;
     private final Function<String, Counter> counterConstructor;
     private final ConcurrentSet<Counter> counters;
-    private final boolean enabled;
 
     public PerfCounters(boolean enabled) {
         this.enabled = enabled;
@@ -66,7 +66,8 @@ public class PerfCounters {
         return cloned;
     }
 
-    public String prettyPrintUnsynchronised() {
+    @Override
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         counters.stream().sorted(Comparator.comparing(Counter::name)).forEach(counter -> {
             sb.append(String.format("%-48s: %-20d\n", counter.name(), counter.get()));

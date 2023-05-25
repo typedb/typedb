@@ -43,4 +43,10 @@ public class ReasonerPerfCounters extends PerfCounters {
         conjunctionProcessors = register(CONJUNCTION_PROCESSORS);
         compoundStreams = register(COMPOUND_STREAMS);
     }
+
+    public void logCounters() {
+        if (enabled) {
+            LOG.debug("Perf counters:\n{}", toString());
+        }
+    }
 }

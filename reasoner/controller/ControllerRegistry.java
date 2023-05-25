@@ -281,6 +281,7 @@ public class ControllerRegistry {
 
     public void close() {
         controllerContext.tracer().ifPresent(Tracer::finishTrace);
+        controllerContext.processor().perfCounters().logCounters();
     }
 
     public static abstract class ControllerView {
