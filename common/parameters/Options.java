@@ -41,7 +41,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final boolean DEFAULT_INFER = false;
     public static final boolean DEFAULT_TRACE_INFERENCE = false;
     public static final boolean DEFAULT_EXPLAIN = false;
-    public static final boolean DEFAULT_PERFCOUNTERS = false;
+    public static final boolean DEFAULT_REASONER_PERF_COUNTERS = false;
     public static final boolean DEFAULT_PARALLEL = true;
     public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
     public static final boolean DEFAULT_QUERY_WRITE_PREFETCH = false;
@@ -108,7 +108,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public boolean reasonerPerfCounters() {
         if (reasonerPerfCounters != null) return reasonerPerfCounters;
         else if (parent != null) return parent.reasonerPerfCounters();
-        else return DEFAULT_PERFCOUNTERS;
+        else return DEFAULT_REASONER_PERF_COUNTERS;
     }
 
     public SELF reasonerPerfCounters(boolean perfCounters) {

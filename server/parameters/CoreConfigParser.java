@@ -380,7 +380,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                     predefined("reasoner-tracer", "Configure reasoner tracer.", new ReasonerTracer());
 
             private static final Predefined<CoreConfig.Log.Debugger.ReasonerPerfCounters> reasonerPerfCounters =
-                    predefined("reasoner-perfcounters", "Configure reasoner perfcounters.", new ReasonerPerfCounters());
+                    predefined("reasoner-perf-counters", "Configure transaction-bound reasoner performance counters.", new ReasonerPerfCounters());
             private static final Set<Predefined<?>> parsers = set(reasonerTracer, reasonerPerfCounters);
 
             @Override
@@ -427,11 +427,11 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
             private static class ReasonerPerfCounters extends Compound<CoreConfig.Log.Debugger.ReasonerPerfCounters> {
 
-                private static final String type = "reasoner-perfcounters";
+                private static final String type = "reasoner-perf-counters";
                 private static final Predefined<String> typeParser =
                         predefined("type", "Type of this debugger.", restricted(STRING, list(type)));
                 private static final Predefined<Boolean> enable =
-                        predefined("enable", "Enable perf-counting and logging.", BOOLEAN);
+                        predefined("enable", "Enable reasoner performance counters and logging in each transasction.", BOOLEAN);
                 private static final Set<Predefined<?>> parsers = set(typeParser, output, enable);
 
                 @Override

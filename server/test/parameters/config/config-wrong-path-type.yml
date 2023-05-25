@@ -47,9 +47,9 @@ log:
       enable: false
       type: reasoner-tracer
       output: file
-    reasoner-perfcounters:
+    reasoner-perf-counters:
       enable: false
-      type: reasoner-perfcounters
+      type: reasoner-perf-counters
 
 vaticle-factory:
   enable: false
