@@ -72,22 +72,20 @@ public abstract class ReasonerPlanner {
         return boundVars.containsAll(dependencies.get(resolvable));
     }
 
-    public void plan(ResolvableConjunction conjunction, Set<Variable> mode) {
-        long start = System.nanoTime();
-        plan(new CallMode(conjunction, estimateableVariables(mode)));
-        perfCounters.timePlanning.add(System.nanoTime() - start);
-    }
-
     public void planAllDependencies(Concludable concludable, Set<Variable> mode) {
         triggeredCalls(concludable, estimateableVariables(mode), null)
-                .forEach(callMode -> plan(callMode));
+            .forEach(callMode -> plan(callMode));
+    }
+
+    public void planRoot(ResolvableConjunction conjunction) {
+        plan(new CallMode(conjunction, new HashSet<>()));
     }
 
     public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> mode) {
         return getPlan(new CallMode(conjunction, estimateableVariables(mode)));
     }
 
-    synchronized void plan(CallMode callMode) {
+    protected synchronized void plan(CallMode callMode) {
         if (planCache.getIfPresent(callMode) == null) {
             planCache.put(callMode, computePlan(callMode));
         }

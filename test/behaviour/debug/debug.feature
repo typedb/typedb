@@ -17,10 +17,80 @@
 
 Feature: Debugging Space
 
-  Background:
-    Given connection has been opened
-    Given connection delete all databases
-    Given connection does not have any database
+  Background: Set up database
+    Given typedb starts
+    Given connection opens without authentication
+    Given reasoning schema
+      """
+      define
 
-  # Paste any scenarios below for debugging.
-  # Do not commit any changes to this file.
+      person sub entity,
+        owns unrelated-attribute,
+        owns sub-string-attribute,
+        owns name,
+        owns age,
+        owns is-old;
+
+      tortoise sub entity,
+        owns age,
+        owns is-old;
+
+      soft-drink sub entity,
+        owns name,
+        owns retailer,
+        owns price;
+
+      string-attribute sub attribute, value string, abstract;
+      sub-string-attribute sub string-attribute;
+      retailer sub attribute, value string;
+      age sub attribute, value long;
+      name sub attribute, value string;
+      is-old sub attribute, value boolean;
+      price sub attribute, value double;
+      unrelated-attribute sub attribute, value string;
+      """
+    # each scenario specialises the schema further
+
+  Scenario: a negation can filter out variables by equality to another variable with a specified value
+    Given reasoning schema
+      """
+      define
+      rule tesco-sells-all-soft-drinks: when {
+        $x isa soft-drink;
+      } then {
+        $x has retailer 'Tesco';
+      };
+
+      rule if-ocado-exists-it-sells-all-soft-drinks: when {
+        $x isa retailer;
+        $x = 'Ocado';
+        $y isa soft-drink;
+      } then {
+        $y has retailer 'Ocado';
+      };
+      """
+    Given reasoning data
+      """
+      insert
+      $x isa soft-drink, has name "Fanta";
+      $y isa soft-drink, has name "Tango";
+      $r "Ocado" isa retailer;
+      """
+    Given verifier is initialised
+    Given reasoning query
+      """
+      match
+        $x has retailer $r;
+        not {
+          $r = $unwanted;
+          $unwanted = "Ocado";
+        };
+      """
+    # x     | r     |
+    # Fanta | Tesco |
+    # Tango | Tesco |
+    Then verify answer size is: 2
+    Then verify answers are sound
+    Then verify answers are complete
+
+
