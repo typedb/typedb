@@ -399,7 +399,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public Forwardable<RoleType, Order.Asc> getPlays() {
         return getPlays(TRANSITIVE);
     }
-    
+
     @Override
     public Forwardable<RoleType, Order.Asc> getPlays(Transitivity transitivity) {
         if (isRoot()) return emptySorted();
