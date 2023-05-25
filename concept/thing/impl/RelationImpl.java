@@ -74,7 +74,7 @@ public class RelationImpl extends ThingImpl implements Relation {
 
     @Override
     public void addPlayer(RoleType roleType, Thing player, Existence existence) {
-        assert isInferred() == (existence == INFERRED);
+        assert existence() == existence;
         validateIsNotDeleted();
         if (this.getType().getRelates().noneMatch(t -> t.equals(roleType))) {
             throw exception(TypeDBException.of(RELATION_ROLE_UNRELATED, this.getType().getLabel(), roleType.getLabel()));

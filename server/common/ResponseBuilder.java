@@ -56,6 +56,7 @@ import javax.annotation.Nullable;
 import static com.google.protobuf.ByteString.copyFrom;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeUUID;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.conceptMap;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.numeric;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Logic.Rule.protoRule;
@@ -846,7 +847,7 @@ public class ResponseBuilder {
             ConceptProto.Entity.Builder protoEntity = ConceptProto.Entity.newBuilder()
                     .setIid(ByteString.copyFrom(thing.getIID().getBytes()))
                     .setEntityType(protoEntityType(thing.getType()))
-                    .setInferred(thing.isInferred());
+                    .setInferred(thing.existence() == INFERRED);
             return protoEntity.build();
         }
 
@@ -854,7 +855,7 @@ public class ResponseBuilder {
             ConceptProto.Relation.Builder protoRelation = ConceptProto.Relation.newBuilder()
                     .setIid(ByteString.copyFrom(thing.getIID().getBytes()))
                     .setRelationType(protoRelationType(thing.getType()))
-                    .setInferred(thing.isInferred());
+                    .setInferred(thing.existence() == INFERRED);
             return protoRelation.build();
         }
 
@@ -862,7 +863,7 @@ public class ResponseBuilder {
             ConceptProto.Attribute.Builder protoAttribute = ConceptProto.Attribute.newBuilder()
                     .setIid(ByteString.copyFrom(thing.getIID().getBytes()))
                     .setAttributeType(protoAttributeType(thing.getType()))
-                    .setInferred(thing.isInferred())
+                    .setInferred(thing.existence() == INFERRED)
                     .setValue(Attribute.attributeValue(thing.asAttribute()));
             return protoAttribute.build();
         }

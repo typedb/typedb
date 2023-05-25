@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.traversal.common.Identifier.Variable.anon;
 
 public class Materialiser {
@@ -115,7 +116,7 @@ public class Materialiser {
         } else {
             while (existingRelations.hasNext()) {
                 Relation preexisting = existingRelations.next();
-                if (!preexisting.isInferred()) return Optional.empty();
+                if (preexisting.existence() == STORED) return Optional.empty();
                 else {
                     if (insertable(preexisting, materialisable)) {
                         return Optional.of(new Materialisation.Relation(preexisting));

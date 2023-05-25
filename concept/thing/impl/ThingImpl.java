@@ -59,6 +59,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.T
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.HAS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.PLAYING;
@@ -113,8 +114,8 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public boolean isInferred() {
-        return readableVertex().isInferred();
+    public Existence existence() {
+        return readableVertex().existence();
     }
 
     @Override
@@ -218,13 +219,13 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     @Override
     public boolean hasInferred(Attribute attribute) {
         ThingEdge hasEdge = readableVertex().outs().edge(HAS, ((ThingImpl) attribute).readableVertex());
-        return hasEdge != null && hasEdge.isInferred();
+        return hasEdge != null && hasEdge.existence() == INFERRED;
     }
 
     @Override
     public boolean hasNonInferred(Attribute attribute) {
         ThingEdge hasEdge = readableVertex().outs().edge(HAS, ((ThingImpl) attribute).readableVertex());
-        return hasEdge != null && !hasEdge.isInferred();
+        return hasEdge != null && hasEdge.existence() == STORED;
     }
 
     @Override

@@ -71,11 +71,6 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public boolean isInferred() {
-        return false;
-    }
-
-    @Override
     public Existence existence() {
         return STORED;
     }
@@ -268,18 +263,13 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             }
 
             @Override
-            public boolean isInferred() {
-                return existence == INFERRED;
-            }
-
-            @Override
             public Existence existence() {
                 return existence;
             }
 
             @Override
             public void commit() {
-                if (isInferred()) throw TypeDBException.of(ILLEGAL_OPERATION);
+                if (existence() == INFERRED) throw TypeDBException.of(ILLEGAL_OPERATION);
                 commitVertex();
                 commitEdges();
             }

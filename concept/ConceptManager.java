@@ -65,6 +65,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
@@ -328,7 +329,7 @@ public final class ConceptManager {
 
     public void validateThings() {
         List<List<Thing>> lists = graphMgr.data().vertices().filter(
-                v -> !v.isInferred() && v.isModified() && !v.encoding().equals(ROLE)
+                v -> v.existence().equals(STORED) && v.isModified() && !v.encoding().equals(ROLE)
         ).<Thing>map(v -> ThingImpl.of(this, v)).toLists(PARALLELISATION_SPLIT_MINIMUM, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         if (lists.size() == 1) {

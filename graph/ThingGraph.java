@@ -63,6 +63,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.I
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 import static com.vaticle.typedb.core.encoding.Encoding.Status.BUFFERED;
@@ -319,7 +320,7 @@ public class ThingGraph {
                     return v;
                 }
         );
-        assert (existence == INFERRED) == vertex.isInferred();
+        assert existence == vertex.existence();
         return vertex;
     }
 
@@ -337,7 +338,7 @@ public class ThingGraph {
                     return v;
                 }
         );
-        assert (existence == INFERRED) == vertex.isInferred();
+        assert existence == vertex.existence();
         return vertex;
     }
 
@@ -355,7 +356,7 @@ public class ThingGraph {
                     return v;
                 }
         );
-        assert (existence == INFERRED) == vertex.isInferred();
+        assert existence == vertex.existence();
         return vertex;
     }
 
@@ -384,7 +385,7 @@ public class ThingGraph {
                     return v;
                 }
         );
-        assert (existence == INFERRED) == vertex.isInferred();
+        assert existence == vertex.existence();
         return vertex;
     }
 
@@ -402,7 +403,7 @@ public class ThingGraph {
                     return v;
                 }
         );
-        assert (existence == INFERRED) == vertex.isInferred();
+        assert existence == vertex.existence();
         return vertex;
     }
 
@@ -425,8 +426,8 @@ public class ThingGraph {
 
     private void vertexCreated(ThingVertexImpl.Write vertex) {
         if (vertex.status() != BUFFERED) return;
-        statistics.vertexCreated(vertex.iid().type(), vertex.isInferred());
-        if (vertex.isAttribute() && !vertex.isInferred()) {
+        statistics.vertexCreated(vertex.iid().type(), vertex.existence());
+        if (vertex.isAttribute() && vertex.existence() == STORED) {
             if (attributesDeleted.contains(vertex.asAttribute())) {
                 // if the vertex has already been deleted, and we are re-creating it, we should just reverse the deletion
                 attributesDeleted.remove(vertex.asAttribute());
@@ -438,8 +439,8 @@ public class ThingGraph {
     }
 
     private void vertexDeleted(ThingVertexImpl.Write vertex) {
-        statistics.vertexDeleted(vertex.iid().type(), vertex.isInferred());
-        if (vertex.isAttribute() && !vertex.isInferred()) {
+        statistics.vertexDeleted(vertex.iid().type(), vertex.existence());
+        if (vertex.isAttribute() && vertex.existence() == STORED) {
             if (attributesCreated.contains(vertex.asAttribute())) {
                 // if the vertex has already been created, and we are deleting it, we just reverse the creation
                 // the attribute that was created must have been a brand-new attribute that was not persisted
@@ -453,7 +454,7 @@ public class ThingGraph {
 
     public void edgeCreated(ThingEdge edge) {
         if (edge.encoding() != Encoding.Edge.Thing.Base.HAS || isPersisted(edge)) return;
-        statistics.hasEdgeCreated(edge.from().asWrite(), edge.to().asAttribute().asWrite(), edge.isInferred());
+        statistics.hasEdgeCreated(edge.from().asWrite(), edge.to().asAttribute().asWrite(), edge.existence());
 
         if (hasEdgeDeleted.contains(edge)) {
             // if the edge was already deleted, and we are re-creating it, we should just reverse the deletion
@@ -471,7 +472,7 @@ public class ThingGraph {
 
     public void edgeDeleted(ThingEdge edge) {
         if (edge.encoding() == Encoding.Edge.Thing.Base.HAS) {
-            statistics.hasEdgeDeleted(edge.from().asWrite(), edge.to().asAttribute().asWrite(), edge.isInferred());
+            statistics.hasEdgeDeleted(edge.from().asWrite(), edge.to().asAttribute().asWrite(), edge.existence());
             if (hasEdgeCreated.contains(edge)) {
                 // if the edge has already been created, and we are deleting it, we just reverse the creation
                 hasEdgeCreated.remove(edge);
@@ -536,12 +537,12 @@ public class ThingGraph {
      * anyways, we don't need to parallelise the streams to commit the vertices.
      */
     public void commit() {
-        iterate(thingsByIID.values()).filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEachRemaining(v -> {
+        iterate(thingsByIID.values()).filter(v -> v.status().equals(BUFFERED) && v.existence() == STORED).forEachRemaining(v -> {
             VertexIID.Thing newIID = generate(storage.dataKeyGenerator(), v.type().iid(), v.type().properLabel());
             committedIIDs.put(v.iid(), newIID);
             v.iid(newIID);
         }); // thingsByIID no longer contains valid mapping from IID to TypeVertex
-        thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(ThingVertex.Write::commit);
+        thingsByIID.values().stream().filter(v -> v.existence() == STORED).forEach(ThingVertex.Write::commit);
         attributesByIID.valuesIterator().forEachRemaining(AttributeVertex.Write::commit);
         statistics.commit();
     }
@@ -700,26 +701,26 @@ public class ThingGraph {
                     inferredHasEdgeCount(fromTypeIID, toTypeIID);
         }
 
-        private void vertexCreated(VertexIID.Type type, boolean inferred) {
-            if (inferred) inferredVertexCount.compute(type, (k, v) -> (v == null ? 0 : v) + 1);
+        private void vertexCreated(VertexIID.Type type, Existence existence) {
+            if (existence == INFERRED) inferredVertexCount.compute(type, (k, v) -> (v == null ? 0 : v) + 1);
             else deltaVertexCount.compute(type, (k, v) -> (v == null ? 0 : v) + 1);
         }
 
-        private void vertexDeleted(VertexIID.Type type, boolean inferred) {
-            if (inferred) inferredVertexCount.compute(type, (k, v) -> (v == null ? 0 : v) - 1);
+        private void vertexDeleted(VertexIID.Type type, Existence existence) {
+            if (existence == INFERRED) inferredVertexCount.compute(type, (k, v) -> (v == null ? 0 : v) - 1);
             else deltaVertexCount.compute(type, (k, v) -> (v == null ? 0 : v) - 1);
         }
 
-        private void hasEdgeCreated(ThingVertex.Write thing, AttributeVertex.Write<?> attribute, boolean inferred) {
-            if (inferred) {
+        private void hasEdgeCreated(ThingVertex.Write thing, AttributeVertex.Write<?> attribute, Existence existence) {
+            if (existence == INFERRED) {
                 inferredHasEdgeCount.compute(new Pair<>(thing.type().iid(), attribute.type().iid()), (k, v) -> (v == null ? 0 : v) + 1);
             } else {
                 deltaHasEdgeCount.compute(new Pair<>(thing.type().iid(), attribute.type().iid()), (k, v) -> (v == null ? 0 : v) + 1);
             }
         }
 
-        private void hasEdgeDeleted(ThingVertex.Write thing, AttributeVertex.Write<?> attribute, boolean inferred) {
-            if (inferred) {
+        private void hasEdgeDeleted(ThingVertex.Write thing, AttributeVertex.Write<?> attribute, Existence existence) {
+            if (existence == INFERRED) {
                 inferredHasEdgeCount.compute(new Pair<>(thing.type().iid(), attribute.type().iid()), (k, v) -> (v == null ? 0 : v) - 1);
             } else {
                 deltaHasEdgeCount.compute(new Pair<>(thing.type().iid(), attribute.type().iid()), (k, v) -> (v == null ? 0 : v) - 1);

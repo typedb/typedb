@@ -56,6 +56,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 
@@ -342,7 +343,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                         if (isOut()) owner.graph().edgeCreated(edge); // only record creation in one direction
                         return edge;
                     } else {
-                        assert existingEdge.isInferred() == edge.isInferred();
+                        assert existingEdge.existence() == edge.existence();
                         return existingEdge;
                     }
                 });
@@ -403,7 +404,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         @Override
         public void commit() {
             iterate(edges.values()).flatMap(edgeMap -> iterate(edgeMap.values()))
-                    .filter(e -> !e.isInferred()).forEachRemaining(Edge::commit);
+                    .filter(e -> e.existence() == STORED).forEachRemaining(Edge::commit);
         }
 
         public static abstract class Buffered<EDGE_VIEW extends ThingEdge.View<EDGE_VIEW>>

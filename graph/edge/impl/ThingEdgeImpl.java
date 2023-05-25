@@ -63,8 +63,8 @@ public abstract class ThingEdgeImpl implements ThingEdge {
     }
 
     @Override
-    public boolean isInferred() {
-        return existence == INFERRED;
+    public Existence existence() {
+        return existence;
     }
 
     @Override
@@ -264,7 +264,7 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         @Override
         public void commit() {
-            if (isInferred()) throw TypeDBException.of(ILLEGAL_OPERATION);
+            if (existence() == INFERRED) throw TypeDBException.of(ILLEGAL_OPERATION);
             if (committed.compareAndSet(false, true)) {
                 graph.storage().putTracked(computeForwardIID()); // re-compute IID because vertices may be committed
                 graph.storage().putUntracked(computeBackwardIID());

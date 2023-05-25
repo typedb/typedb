@@ -51,6 +51,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanInFanOut;
 
 public abstract class ConcludableController<INPUT, OUTPUT,
@@ -284,7 +285,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 //  traversal mode that doesn't return inferred concepts
                 if (concludable.isInferredAnswer(conceptMap)) return empty();
                 for (Concept c : conceptMap.concepts().values()) {
-                    if (c.isThing() && c.asThing().isInferred()) return empty();
+                    if (c.isThing() && c.asThing().existence() == INFERRED) return empty();
                 }
                 return Iterators.single(conceptMap);
             }
@@ -298,7 +299,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                     conceptToCheck = conceptMap.get(concludable.asIsa().isa().owner().id());
                 }
                 if (conceptToCheck != null) {
-                    if (conceptToCheck.asThing().isInferred()) {
+                    if (conceptToCheck.asThing().existence() == INFERRED) {
                         return Iterators.single(conceptMap);
                     } else {
                         return empty();
@@ -381,10 +382,9 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                 }
                 if (conclusionConceptsToCheck != null) {
                     for (Variable toCheck : conclusionConceptsToCheck) {
-                        if (explanation.conclusionAnswer().concepts().get(toCheck).asThing().isInferred()) {
-                            return Iterators.single(explanation);
-                        } else {
-                            return empty();
+                        switch (explanation.conclusionAnswer().concepts().get(toCheck).asThing().existence()) {
+                            case STORED: return empty();
+                            case INFERRED: return Iterators.single(explanation);
                         }
                     }
                 }

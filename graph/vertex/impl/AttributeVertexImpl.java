@@ -335,11 +335,6 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public boolean isInferred() {
-            return existence == INFERRED;
-        }
-
-        @Override
         public Existence existence() {
             return existence;
         }

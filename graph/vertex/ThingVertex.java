@@ -63,13 +63,6 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
     ThingAdjacency.In ins();
 
     /**
-     * Returns true if this {@code ThingVertex} is a result of inference.
-     *
-     * @return true if this {@code ThingVertex} is a result of inference
-     */
-    boolean isInferred();
-
-    /**
      * Returns the mode of {@code Existence} of this {@code ThingVertex}.
      *
      * @return {@code INFERRED} if this {@code ThingVertex} is a result of inference, {@code STORED} otherwise
