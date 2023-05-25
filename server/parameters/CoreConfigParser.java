@@ -376,26 +376,30 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
             private static final String name = "debugger";
             private static final String description = "Debuggers that may be enabled at runtime.";
 
-            private static final Predefined<CoreConfig.Log.Debugger.Reasoner> reasoner =
-                    predefined("reasoner", "Configure reasoner debugger.", new Reasoner());
-            private static final Set<Predefined<?>> parsers = set(reasoner);
+            private static final Predefined<CoreConfig.Log.Debugger.ReasonerTracer> reasonerTracer =
+                    predefined("reasoner-tracer", "Configure reasoner tracer.", new ReasonerTracer());
+
+            private static final Predefined<CoreConfig.Log.Debugger.ReasonerPerfCounters> reasonerPerfCounters =
+                    predefined("reasoner-perfcounters", "Configure reasoner perfcounters.", new ReasonerPerfCounters());
+            private static final Set<Predefined<?>> parsers = set(reasonerTracer, reasonerPerfCounters);
 
             @Override
             public CoreConfig.Log.Debugger parse(YAML yaml, String path) {
                 if (yaml.isMap()) {
                     validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
-                    return new CoreConfig.Log.Debugger(reasoner.parse(yaml.asMap(), path));
+                    return new CoreConfig.Log.Debugger(reasonerTracer.parse(yaml.asMap(), path),
+                            reasonerPerfCounters.parse(yaml.asMap(), path));
                 } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
             }
 
             @Override
             public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                return list(reasoner.help(path));
+                return list(reasonerTracer.help(path));
             }
 
-            private static class Reasoner extends Compound<CoreConfig.Log.Debugger.Reasoner> {
+            private static class ReasonerTracer extends Compound<CoreConfig.Log.Debugger.ReasonerTracer> {
 
-                private static final String type = "reasoner";
+                private static final String type = "reasoner-tracer";
                 private static final Predefined<String> typeParser =
                         predefined("type", "Type of this debugger.", restricted(STRING, list(type)));
                 private static final Predefined<String> output =
@@ -405,13 +409,38 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                 private static final Set<Predefined<?>> parsers = set(typeParser, output, enable);
 
                 @Override
-                public CoreConfig.Log.Debugger.Reasoner parse(YAML yaml, String path) {
+                public CoreConfig.Log.Debugger.ReasonerTracer parse(YAML yaml, String path) {
                     if (yaml.isMap()) {
                         validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
                         String type = typeParser.parse(yaml.asMap(), path);
-                        assert Reasoner.type.equals(type);
-                        return new CoreConfig.Log.Debugger.Reasoner(
+                        assert ReasonerTracer.type.equals(type);
+                        return new CoreConfig.Log.Debugger.ReasonerTracer(
                                 output.parse(yaml.asMap(), path), enable.parse(yaml.asMap(), path));
+                    } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
+                }
+
+                @Override
+                public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
+                    return list(typeParser.help(path), output.help(path), enable.help(path));
+                }
+            }
+
+            private static class ReasonerPerfCounters extends Compound<CoreConfig.Log.Debugger.ReasonerPerfCounters> {
+
+                private static final String type = "reasoner-perfcounters";
+                private static final Predefined<String> typeParser =
+                        predefined("type", "Type of this debugger.", restricted(STRING, list(type)));
+                private static final Predefined<Boolean> enable =
+                        predefined("enable", "Enable perf-counting and logging.", BOOLEAN);
+                private static final Set<Predefined<?>> parsers = set(typeParser, output, enable);
+
+                @Override
+                public CoreConfig.Log.Debugger.ReasonerPerfCounters parse(YAML yaml, String path) {
+                    if (yaml.isMap()) {
+                        validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
+                        String type = typeParser.parse(yaml.asMap(), path);
+                        assert ReasonerPerfCounters.type.equals(type);
+                        return new CoreConfig.Log.Debugger.ReasonerPerfCounters(enable.parse(yaml.asMap(), path));
                     } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
                 }
 

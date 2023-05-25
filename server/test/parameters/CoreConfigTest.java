@@ -60,7 +60,7 @@ public class CoreConfigTest {
         assertNotNull(config.log().logger().defaultLogger());
         assertFalse(config.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("warn", config.log().logger().defaultLogger().level());
-        assertFalse(config.log().debugger().reasoner().isEnabled());
+        assertFalse(config.log().debugger().reasonerTracer().isEnabled());
     }
 
     @Test
@@ -80,7 +80,7 @@ public class CoreConfigTest {
         assertNotNull(config.log().logger().defaultLogger());
         assertFalse(config.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("warn", config.log().logger().defaultLogger().level());
-        assertFalse(config.log().debugger().reasoner().isEnabled());
+        assertFalse(config.log().debugger().reasonerTracer().isEnabled());
     }
 
     @Test
@@ -183,7 +183,7 @@ public class CoreConfigTest {
         assertFalse(config.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("info", config.log().logger().defaultLogger().level());
         assertEquals(list("file"), config.log().logger().filteredLoggers().get("typedb").outputs());
-        assertFalse(config.log().debugger().reasoner().isEnabled());
+        assertFalse(config.log().debugger().reasonerTracer().isEnabled());
     }
 
     @Test

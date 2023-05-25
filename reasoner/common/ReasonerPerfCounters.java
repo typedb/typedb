@@ -19,8 +19,12 @@
 package com.vaticle.typedb.core.reasoner.common;
 
 import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReasonerPerfCounters extends PerfCounters {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerPerfCounters.class);
 
     public static final String PLANNING_TIME_NS = "planner_time_planning_ns";
     public static final String MATERIALISATIONS = "processor_materialisations";

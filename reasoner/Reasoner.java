@@ -88,7 +88,7 @@ public class Reasoner {
         this.conceptMgr = conceptMgr;
         this.traversalEng = traversalEng;
         this.logicMgr = logicMgr;
-        this.perfCounters = new ReasonerPerfCounters(true);
+        this.perfCounters = new ReasonerPerfCounters(context.options().reasonerPerfCounters());
         this.planner = ReasonerPlanner.create(traversalEng, conceptMgr, logicMgr, perfCounters, context.options().explain());
         this.controllerRegistry = new ControllerRegistry(actor(), traversalEng, conceptMgr, logicMgr, planner, perfCounters, context);
         this.explainablesManager = new ExplainablesManager();
