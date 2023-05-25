@@ -18,24 +18,9 @@
 
 package com.vaticle.typedb.core.common.parameters;
 
-import com.vaticle.typedb.core.common.exception.ErrorMessage;
-import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.protocol.ConceptProto;
-
 public class Concept {
     public enum Transitivity {
-        EXPLICIT,
-        TRANSITIVE;
-
-        public static Transitivity of(ConceptProto.Type.Transitivity proto) {
-            switch (proto) {
-                case EXPLICIT: return EXPLICIT;
-                case TRANSITIVE: return TRANSITIVE;
-                case UNRECOGNIZED:
-                default:
-                    throw TypeDBException.of(ErrorMessage.Server.BAD_VALUE_TYPE, proto);
-            }
-        }
+        EXPLICIT, TRANSITIVE,
     }
 
     public enum Existence {

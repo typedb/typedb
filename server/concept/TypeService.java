@@ -17,6 +17,7 @@
 
 package com.vaticle.typedb.core.server.concept;
 
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
@@ -232,7 +233,7 @@ public class TypeService {
     private void roleTypeGetPlayerTypes(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
         ConceptProto.RoleType.GetPlayerTypes.Req req = roleTypeReq.getRoleTypeGetPlayerTypesReq();
         transactionSvc.stream(
-                getRoleType(roleTypeReq).getPlayerTypes(Transitivity.of(req.getTransitivity())), reqID,
+                getRoleType(roleTypeReq).getPlayerTypes(getTransitivity(req.getTransitivity())), reqID,
                 types -> ResponseBuilder.Type.RoleType.getPlayerTypesResPart(reqID, types)
         );
     }
@@ -240,7 +241,7 @@ public class TypeService {
     private void roleTypeGetRelationInstances(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
         ConceptProto.RoleType.GetRelationInstances.Req req = roleTypeReq.getRoleTypeGetRelationInstancesReq();
         transactionSvc.stream(
-                getRoleType(roleTypeReq).getRelationInstances(Transitivity.of(req.getTransitivity())), reqID,
+                getRoleType(roleTypeReq).getRelationInstances(getTransitivity(req.getTransitivity())), reqID,
                 relations -> ResponseBuilder.Type.RoleType.getRelationInstancesResPart(reqID, relations)
         );
     }
@@ -248,7 +249,7 @@ public class TypeService {
     private void roleTypeGetPlayerInstances(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
         ConceptProto.RoleType.GetPlayerInstances.Req req = roleTypeReq.getRoleTypeGetPlayerInstancesReq();
         transactionSvc.stream(
-                getRoleType(roleTypeReq).getPlayerInstances(Transitivity.of(req.getTransitivity())), reqID,
+                getRoleType(roleTypeReq).getPlayerInstances(getTransitivity(req.getTransitivity())), reqID,
                 players -> ResponseBuilder.Type.RoleType.getPlayerInstancesResPart(reqID, players)
         );
     }
@@ -281,7 +282,7 @@ public class TypeService {
         ConceptProto.ThingType.GetOwns.Req getOwnsReq = thingTypeReq.getThingTypeGetOwnsReq();
         FunctionalIterator<AttributeType> attributes;
         Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnsReq.getAnnotationsList());
-        Transitivity transitivity = Transitivity.of(getOwnsReq.getTransitivity());
+        Transitivity transitivity = getTransitivity(getOwnsReq.getTransitivity());
         if (getOwnsReq.hasValueType())
             attributes = getThingType(thingTypeReq).getOwns(transitivity, valueType(getOwnsReq.getValueType()), annotations)
                     .map(ThingType.Owns::attributeType);
@@ -319,7 +320,7 @@ public class TypeService {
     private void thingTypeGetPlays(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.ThingType.GetPlays.Req getPlaysReq = thingTypeReq.getThingTypeGetPlaysReq();
         transactionSvc.stream(
-                getThingType(thingTypeReq).getPlays(Transitivity.of(getPlaysReq.getTransitivity())), reqID,
+                getThingType(thingTypeReq).getPlays(getTransitivity(getPlaysReq.getTransitivity())), reqID,
                 roleTypes -> ResponseBuilder.Type.ThingType.getPlaysResPart(reqID, roleTypes)
         );
     }
@@ -378,7 +379,7 @@ public class TypeService {
     }
 
     private void entityTypeGetInstances(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        Transitivity transitivity = Transitivity.of(thingTypeReq.getEntityTypeGetInstancesReq().getTransitivity());
+        Transitivity transitivity = getTransitivity(thingTypeReq.getEntityTypeGetInstancesReq().getTransitivity());
         transactionSvc.stream(
                 getEntityType(thingTypeReq).getInstances(transitivity), reqID,
                 things -> ResponseBuilder.Type.EntityType.getInstancesResPart(reqID, things)
@@ -414,7 +415,7 @@ public class TypeService {
     }
 
     private void relationTypeGetInstances(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        Transitivity transitivity = Transitivity.of(thingTypeReq.getRelationTypeGetInstancesReq().getTransitivity());
+        Transitivity transitivity = getTransitivity(thingTypeReq.getRelationTypeGetInstancesReq().getTransitivity());
         transactionSvc.stream(
                 getRelationType(thingTypeReq).getInstances(transitivity), reqID,
                 things -> ResponseBuilder.Type.RelationType.getInstancesResPart(reqID, things)
@@ -422,7 +423,7 @@ public class TypeService {
     }
 
     private void relationTypeGetRelates(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        Transitivity transitivity = Transitivity.of(thingTypeReq.getRelationTypeGetRelatesReq().getTransitivity());
+        Transitivity transitivity = getTransitivity(thingTypeReq.getRelationTypeGetRelatesReq().getTransitivity());
         transactionSvc.stream(
                 getRelationType(thingTypeReq).getRelates(transitivity), reqID,
                 roleTypes -> ResponseBuilder.Type.RelationType.getRelatesResPart(reqID, roleTypes)
@@ -552,7 +553,7 @@ public class TypeService {
     }
 
     private void attributeTypeGetInstances(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        Transitivity transitivity = Transitivity.of(thingTypeReq.getAttributeTypeGetInstancesReq().getTransitivity());
+        Transitivity transitivity = getTransitivity(thingTypeReq.getAttributeTypeGetInstancesReq().getTransitivity());
         transactionSvc.stream(
                 getAttributeType(thingTypeReq).getInstances(transitivity), reqID,
                 things -> ResponseBuilder.Type.AttributeType.getInstancesResPart(reqID, things)
@@ -574,7 +575,7 @@ public class TypeService {
     private void attributeTypeGetOwners(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.AttributeType.GetOwners.Req getOwnersReq = thingTypeReq.getAttributeTypeGetOwnersReq();
         Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnersReq.getAnnotationsList());
-        Transitivity transitivity = Transitivity.of(getOwnersReq.getTransitivity());
+        Transitivity transitivity = getTransitivity(getOwnersReq.getTransitivity());
         transactionSvc.stream(
                 getAttributeType(thingTypeReq).getOwners(transitivity, annotations), reqID,
                 owners -> ResponseBuilder.Type.AttributeType.getOwnersResPart(reqID, owners)
@@ -626,6 +627,16 @@ public class TypeService {
         RelationType relationType = conceptMgr.getRelationType(protoRoleType.getScope());
         if (relationType != null) return relationType.getRelates(protoRoleType.getLabel());
         else return null;
+    }
+
+    public static Transitivity getTransitivity(ConceptProto.Type.Transitivity proto) {
+        switch (proto) {
+            case EXPLICIT: return Transitivity.EXPLICIT;
+            case TRANSITIVE: return Transitivity.TRANSITIVE;
+            case UNRECOGNIZED:
+            default:
+                throw TypeDBException.of(BAD_VALUE_TYPE, proto);
+        }
     }
 
     private Set<TypeQLToken.Annotation> getAnnotations(List<ConceptProto.Type.Annotation> protoAnnotations) {
