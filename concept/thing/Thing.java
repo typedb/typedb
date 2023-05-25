@@ -56,9 +56,9 @@ public interface Thing extends Concept, Comparable<Thing> {
     ThingType getType();
 
     /**
-     * Returns the mode of {@code Existence} of this {@code ThingVertex}.
+     * Returns the mode of {@code Existence} of this {@code Thing}.
      *
-     * @return {@code INFERRED} if this {@code ThingVertex} is a result of inference, {@code STORED} otherwise
+     * @return {@code INFERRED} if this {@code Thing} is inferred, {@code STORED} otherwise
      */
     Existence existence();
 
