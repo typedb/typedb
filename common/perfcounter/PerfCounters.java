@@ -18,9 +18,10 @@
 
 package com.vaticle.typedb.core.common.perfcounter;
 
+import com.vaticle.typedb.common.collection.ConcurrentSet;
+
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -34,13 +35,13 @@ public class PerfCounters {
     }
 
     private final Function<String, Counter> counterConstructor;
-    private final Collection<Counter> counters;
+    private final ConcurrentSet<Counter> counters;
     private final boolean enabled;
 
     public PerfCounters(boolean enabled) {
         this.enabled = enabled;
         this.counterConstructor = enabled ? AtomicLongCounter::new : NoOpCounter::new;
-        this.counters = new ConcurrentLinkedQueue<>();
+        this.counters = new ConcurrentSet<>();
     }
 
     public Counter register(String name) {
