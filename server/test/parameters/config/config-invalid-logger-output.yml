@@ -38,9 +38,9 @@ log:
       level: warn
       output: [ stdout, nonexistant-file ]
   debugger:
-    reasoner:
+    reasoner-tracer:
       enable: false
-      type: reasoner
+      type: reasoner-tracer
       output: nonexistant-file
 
 vaticle-factory:

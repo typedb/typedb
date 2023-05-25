@@ -56,7 +56,6 @@ log:
     reasoner-perfcounters:
       enable: false
       type: reasoner-perfcounters
-      output: stdout
 
 vaticle-factory:
   enable: false
