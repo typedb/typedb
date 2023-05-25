@@ -110,7 +110,7 @@ public class BenchmarkRunner {
         long start = System.nanoTime();
         // Populate LogicManager caches
         try (TypeDB.Session session = dataSession()) {
-            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true).reasonerPerfCounters(true))) {
                 tx.logic().rules().flatMap(rule -> iterate(rule.condition().disjunction().conjunctions()))
                         .flatMap(resolvableConjunction -> resolvableConjunction.allConcludables())
                         .forEachRemaining(concludable -> tx.logic().applicableRules(concludable));
@@ -148,7 +148,7 @@ public class BenchmarkRunner {
     private Benchmark.BenchmarkRun runMatchQuery(String query) {
         Benchmark.BenchmarkRun run;
         try (TypeDB.Session session = dataSession()) {
-            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
+            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true).reasonerPerfCounters(true))) {
                 Instant start = Instant.now();
                 long nAnswers = tx.query().match(TypeQL.parseQuery(query).asMatch()).count();
                 Duration timeTaken = Duration.between(start, Instant.now());
