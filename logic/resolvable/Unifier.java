@@ -166,7 +166,6 @@ public class Unifier {
         if (namedTypeNames.isEmpty()) {
             return Iterators.single(new ConceptMap(fixedConcepts));
         } else {
-            // FIXME Potential for errors if this relies on root ThingType
             return Iterators.cartesian(namedTypeSupers).map(permutation -> {
                 Map<Retrievable, Concept> concepts = new HashMap<>(fixedConcepts);
                 for (int i = 0; i < permutation.size(); i++) {
@@ -459,7 +458,6 @@ public class Unifier {
                 if (types.containsKey(id)) {
                     assert concept.isType();
                     Set<Label> satisfyingTypes = new HashSet<>(types.get(id));
-                    // FIXME ThingType might need to include ThingType in this check (RoleType will not)
                     satisfyingTypes.retainAll(iterate(concept.asType().getSupertypes()).map(Type::getLabel).toSet());
                     return satisfyingTypes.size() > 0;
                 } else {
@@ -566,7 +564,6 @@ public class Unifier {
                                 // if the required concept is a type, the test concept must also be a type
                                 (compatible.isType() && !testConcept.isType()) ||
                                 // types must be compatible (testConcept must be a subtype of required concept)
-                                // FIXME Does this need root ThingType?
                                 (compatible.isType() && testConcept.asType().getSupertypes().noneMatch(t -> t.equals(compatible)))) {
                             return false;
                         }
