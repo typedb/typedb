@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.graph.edge;
 
-import com.vaticle.typedb.core.common.parameters.Concept;
 import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
