@@ -1,30 +1,30 @@
-/.github                   @haikalpribadi
-/.factory                  @haikalpribadi
-/bin                       @haikalpribadi
-/common                    @haikalpribadi
-/concept                   @haikalpribadi
-/config                    @haikalpribadi
-/dependencies              @haikalpribadi
-/docs                      @haikalpribadi
-/graph                     @haikalpribadi
-/logic                     @flyingsilverfin
-/pattern                   @haikalpribadi
-/query                     @haikalpribadi
-/reasoner                  @flyingsilverfin
-/database                  @haikalpribadi
-/server                    @haikalpribadi
-/test                      @haikalpribadi
-/test/integration/logic    @flyingsilverfin
-/traversal                 @haikalpribadi
+/.github                   @haikalpribadi @benjaminasmall
+/.factory                  @haikalpribadi @benjaminasmall
+/bin                       @haikalpribadi @benjaminasmall
+/common                    @haikalpribadi @benjaminasmall
+/concept                   @haikalpribadi @benjaminasmall
+/config                    @haikalpribadi @benjaminasmall
+/dependencies              @haikalpribadi @benjaminasmall
+/docs                      @haikalpribadi @benjaminasmall
+/graph                     @haikalpribadi @benjaminasmall
+/logic                     @flyingsilverfin @benjaminasmall
+/pattern                   @haikalpribadi @benjaminasmall
+/query                     @haikalpribadi @benjaminasmall
+/reasoner                  @flyingsilverfin @benjaminasmall
+/database                  @haikalpribadi @benjaminasmall
+/server                    @haikalpribadi @benjaminasmall
+/test                      @haikalpribadi @benjaminasmall
+/test/integration/logic    @flyingsilverfin @benjaminasmall
+/traversal                 @haikalpribadi @benjaminasmall
 
 
-/*.java                    @haikalpribadi
-/.bazel*                   @haikalpribadi
-/.gitignore                @haikalpribadi
-/LICENSE                   @haikalpribadi
-/README.md                 @haikalpribadi
-/VERSION                   @haikalpribadi
-/WORKSPACE                 @haikalpribadi
-/deployment.bzl            @haikalpribadi
+/*.java                    @haikalpribadi @benjaminasmall
+/.bazel*                   @haikalpribadi @benjaminasmall
+/.gitignore                @haikalpribadi @benjaminasmall
+/LICENSE                   @haikalpribadi @benjaminasmall
+/README.md                 @haikalpribadi @benjaminasmall
+/VERSION                   @haikalpribadi @benjaminasmall
+/WORKSPACE                 @haikalpribadi @benjaminasmall
+/deployment.bzl            @haikalpribadi @benjaminasmall
 
-**BUILD                    @haikalpribadi @lolski
+**BUILD                    @haikalpribadi @lolski @benjaminasmall
