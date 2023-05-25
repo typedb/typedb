@@ -94,7 +94,7 @@ public class OrderingCoster {
 
             estimator.extend(resolvable);
 
-            boolean isConnectedToInput = !Collections.intersection(resolvableMode, inputConnectedVars).isEmpty();
+            boolean isConnectedToInput = callMode.mode.isEmpty() || !Collections.intersection(resolvableMode, inputConnectedVars).isEmpty();
             if (isConnectedToInput) {
                 acyclicCost += resolvableCost;
             } else {

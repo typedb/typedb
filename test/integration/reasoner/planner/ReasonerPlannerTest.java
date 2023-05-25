@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -168,7 +169,7 @@ public class ReasonerPlannerTest {
 
         {
             initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-            ReasonerPlanner planner = ReasonerPlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), false);
+            ReasonerPlanner planner = ReasonerPlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), new ReasonerPerfCounters(false), false);
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
             verifyPlan(planner, conjunction, set(), Collections.list("c"));
@@ -177,7 +178,7 @@ public class ReasonerPlannerTest {
 
         {
             initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-            ReasonerPlanner planner = ReasonerPlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), false);
+            ReasonerPlanner planner = ReasonerPlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), new ReasonerPerfCounters(false), false);
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $x isa node, has nid 0; (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
             verifyPlan(planner, conjunction, set(), Collections.list("r", "c"));
@@ -186,7 +187,7 @@ public class ReasonerPlannerTest {
 
         {
             initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-            ReasonerPlanner planner = ReasonerPlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), false);
+            ReasonerPlanner planner = ReasonerPlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), new ReasonerPerfCounters(false), false);
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $y isa node, has nid 0; (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
             verifyPlan(planner, conjunction, set(), Collections.list("r", "c"));
@@ -195,7 +196,7 @@ public class ReasonerPlannerTest {
 
         {
             initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-            ReasonerPlanner planner = ReasonerPlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), false);
+            ReasonerPlanner planner = ReasonerPlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), new ReasonerPerfCounters(false), false);
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $x isa node, has nid 0; $y isa node, has nid 1; (from: $x, to: $y) isa path; }", transaction.logic()));
             planner.plan(conjunction, set());
             verifyPlan(planner, conjunction, set(), Collections.list("r", "r", "c"));

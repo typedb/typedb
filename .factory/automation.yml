@@ -122,6 +122,20 @@ build:
         bazel test //test/behaviour/reasoner/tests/type_hierarchy:test --test_output=streamed
         bazel test //test/behaviour/reasoner/tests/value_predicate:test --test_output=streamed
         bazel test //test/behaviour/reasoner/tests/variable_roles:test --test_output=streamed
+    test-benchmark-reasoner:
+      image: vaticle-ubuntu-22.04
+      filter:
+        owner: vaticle
+        branch: [master, development]
+      dependencies: [ build ]
+      command: |
+        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel test //test/benchmark/reasoner/iam/basic:test-basic --test_output=streamed
+        bazel test //test/benchmark/reasoner/iam/complex:test-conjunction-structure --test_output=streamed
+        bazel test //test/benchmark/reasoner/iam/complex:test-complex-rule-graph --test_output=streamed
+        bazel test //test/benchmark/reasoner/iam/complex:test-language-features --test_output=streamed
+        bazel test //test/benchmark/reasoner/iam/complex:test-large-data --test_output=streamed
+        bazel test //test/benchmark/reasoner/iam/complex:test-real-queries --test_output=streamed
     test-assembly-linux-targz:
       image: vaticle-ubuntu-22.04
       filter:

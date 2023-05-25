@@ -30,6 +30,7 @@ import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import javax.annotation.Nullable;
@@ -49,17 +50,19 @@ public abstract class ReasonerPlanner {
     final LogicManager logicMgr;
     private final boolean explain;
     final CommonCache<CallMode, Plan> planCache;
+    final ReasonerPerfCounters perfCounters;
 
-    public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, boolean explain) {
+    public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, ReasonerPerfCounters perfCounters, boolean explain) {
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
+        this.perfCounters = perfCounters;
         this.explain = explain;
         this.planCache = new CommonCache<>();
     }
 
-    public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, boolean explain) {
-        return RecursivePlanner.create(traversalEng, conceptMgr, logicMgr, explain);
+    public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, ReasonerPerfCounters perfCounters, boolean explain) {
+        return RecursivePlanner.create(traversalEng, conceptMgr, logicMgr, perfCounters, explain);
     }
 
     static Set<Variable> estimateableVariables(Set<Variable> variables) {
@@ -71,12 +74,14 @@ public abstract class ReasonerPlanner {
     }
 
     public void plan(ResolvableConjunction conjunction, Set<Variable> mode) {
+        long start = System.nanoTime();
         plan(new CallMode(conjunction, estimateableVariables(mode)));
+        perfCounters.timePlanning.add(System.nanoTime() - start);
     }
 
     public void planAllDependencies(Concludable concludable, Set<Variable> mode) {
         triggeredCalls(concludable, estimateableVariables(mode), null)
-                .forEach(callMode -> plan(callMode.conjunction, callMode.mode));
+                .forEach(callMode -> plan(callMode));
     }
 
     public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> mode) {

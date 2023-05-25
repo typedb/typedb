@@ -15,39 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-server:
-  address: 0.0.0.0:1730
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test", "native_java_libraries")
 
-storage:
-  data: /absolute/path/to/data/dir
-  database-cache:
-    data: 200mb
-    index: 700mb
+package(default_visibility = [
+    "//test/benchmark/reasoner/iam:__subpackages__",
+])
 
-log:
-  output:
-    stdout:
-      type: stdout
-    file:
-      type: file
-      directory: /absolute/path/to/logs/dir
-      file-size-cap: 50mb
-      archives-size-cap: 1gb
-  logger:
-    default:
-      level: warn
-      output: [ stdout ]
-  debugger:
-    reasoner-tracer:
-      enable: false
-      type: reasoner-tracer
-      output: file
-    reasoner-perf-counters:
-      enable: false
-      type: reasoner-perf-counters
+filegroup(
+    name = "common",
+    srcs = ["types.tql", "rules.tql", "data.typedb", "params.yml"],
+)
 
-vaticle-factory:
-  enable: false
-#  uri: "https://tracing.factory.vaticle.com:7979"
-#  username: $FACTORY_USERNAME
-#  token: $FACTORY_TOKEN
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*"]),
+    exclude = glob(["*.typedb"]),
+    license_type = "agpl-header",
+)

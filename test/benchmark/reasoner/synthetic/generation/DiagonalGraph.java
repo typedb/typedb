@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.benchmark.generation;
+package com.vaticle.typedb.core.reasoner.benchmark.synthetic.generation;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RelationType;
-import com.vaticle.typedb.core.reasoner.benchmark.Util;
+import com.vaticle.typedb.core.reasoner.benchmark.synthetic.Util;
 
 @SuppressWarnings("CheckReturnValue")
 public class DiagonalGraph {
@@ -32,7 +32,7 @@ public class DiagonalGraph {
     private final TypeDB.DatabaseManager databaseManager;
     private final String databaseName;
 
-    private static final String schemaFile = "test/benchmark/resources/diagonalTest.tql";
+    private static final String schemaFile = "test/benchmark/reasoner/synthetic/resources/diagonalTest.tql";
     private static final Label key = Label.of("name");
 
     public DiagonalGraph(TypeDB.DatabaseManager databaseManager, String dbName) {

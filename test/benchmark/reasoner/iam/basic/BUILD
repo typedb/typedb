@@ -15,39 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-server:
-  address: 0.0.0.0:1730
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test", "native_java_libraries")
 
-storage:
-  data: /absolute/path/to/data/dir
-  database-cache:
-    data: 200mb
-    index: 700mb
+host_compatible_java_test(
+    name = "test-basic",
+    test_class = "com.vaticle.typedb.core.reasoner.benchmark.iam.basic.BasicTest",
+    srcs = ["BasicTest.java"],
+    data = [
+        "//test/benchmark/reasoner/iam/resources:common",
+        "basic_test.tql",
+    ],
+    native_libraries_deps = ["//test/benchmark/reasoner/iam/common:common"],
+)
 
-log:
-  output:
-    stdout:
-      type: stdout
-    file:
-      type: file
-      directory: /absolute/path/to/logs/dir
-      file-size-cap: 50mb
-      archives-size-cap: 1gb
-  logger:
-    default:
-      level: warn
-      output: [ stdout ]
-  debugger:
-    reasoner-tracer:
-      enable: false
-      type: reasoner-tracer
-      output: file
-    reasoner-perf-counters:
-      enable: false
-      type: reasoner-perf-counters
-
-vaticle-factory:
-  enable: false
-#  uri: "https://tracing.factory.vaticle.com:7979"
-#  username: $FACTORY_USERNAME
-#  token: $FACTORY_TOKEN
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*"]),
+    exclude = glob(["*.typedb"]),
+    license_type = "agpl-header",
+)

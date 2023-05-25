@@ -38,6 +38,7 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
@@ -78,7 +79,7 @@ public class ControllerRegistry {
     private TypeDBException terminationCause;
 
     public ControllerRegistry(ActorExecutorGroup executorService, TraversalEngine traversalEngine, ConceptManager conceptMgr,
-                              LogicManager logicMgr, ReasonerPlanner reasonerPlanner, Context.Transaction context) {
+                              LogicManager logicMgr, ReasonerPlanner reasonerPlanner, ReasonerPerfCounters perfCounters, Context.Transaction context) {
         this.traversalEngine = traversalEngine;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
@@ -96,7 +97,7 @@ public class ControllerRegistry {
         Tracer finalTracer = tracer;
         this.controllerContext = new AbstractController.Context(
                 executorService, this, Actor.driver(driver -> new Monitor(driver, finalTracer), executorService),
-                reasonerPlanner, tracer
+                reasonerPlanner, perfCounters, tracer
         );
         this.materialisationController = Actor.driver(driver -> new MaterialisationController(
                 driver, controllerContext, traversalEngine(), conceptManager()), executorService
@@ -122,6 +123,10 @@ public class ControllerRegistry {
             materialisationController.executeNext(a -> a.terminate(terminationCause));
             controllerContext.processor().monitor().executeNext(a -> a.terminate(terminationCause));
         }
+    }
+
+    public ReasonerPerfCounters perfCounters() {
+        return controllerContext.processor().perfCounters();
     }
 
     private <C extends AbstractController<?, ?, ?, ?, ?, C>> void createRootController(
@@ -276,6 +281,7 @@ public class ControllerRegistry {
 
     public void close() {
         controllerContext.tracer().ifPresent(Tracer::finishTrace);
+        controllerContext.processor().perfCounters().logCounters();
     }
 
     public static abstract class ControllerView {

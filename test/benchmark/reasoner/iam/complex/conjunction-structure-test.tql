@@ -15,39 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-server:
-  address: 0.0.0.0:1730
+define
 
-storage:
-  data: /absolute/path/to/data/dir
-  database-cache:
-    data: 200mb
-    index: 700mb
+high-arity-test-segregation-violation sub relation,
+    relates subject, relates object, relates action;
+subject plays high-arity-test-segregation-violation:subject;
+object plays high-arity-test-segregation-violation:object;
+action plays high-arity-test-segregation-violation:action;
 
-log:
-  output:
-    stdout:
-      type: stdout
-    file:
-      type: file
-      directory: /absolute/path/to/logs/dir
-      file-size-cap: 50mb
-      archives-size-cap: 1gb
-  logger:
-    default:
-      level: warn
-      output: [ stdout ]
-  debugger:
-    reasoner-tracer:
-      enable: false
-      type: reasoner-tracer
-      output: file
-    reasoner-perf-counters:
-      enable: false
-      type: reasoner-perf-counters
-
-vaticle-factory:
-  enable: false
-#  uri: "https://tracing.factory.vaticle.com:7979"
-#  username: $FACTORY_USERNAME
-#  token: $FACTORY_TOKEN
+rule high-arity-segregation-violation-detection:
+when {
+    $ac1(object: $o, action: $a1) isa access;
+    $ac2(object: $o, action: $a2) isa access;
+    $p1(subject: $s, access: $ac1) isa permission;
+    $p2(subject: $s, access: $ac2) isa permission;
+} then {
+    (subject: $s, object: $o, action: $a1, action: $a2) isa high-arity-test-segregation-violation;
+};

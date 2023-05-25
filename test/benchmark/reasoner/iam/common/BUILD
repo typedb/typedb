@@ -15,46 +15,43 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
-load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
-load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip", "java_deps")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
-load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
-load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 
-package(default_visibility = ["//visibility:private",])
+package(default_visibility = [
+    "//test/benchmark/reasoner/iam:__subpackages__",
+])
 
-host_compatible_java_test(
-    name = "test-configuration",
-    srcs = [
-        "parameters/CoreConfigTest.java",
+native_java_libraries(
+    name = "common",
+    srcs = ["BenchmarkRunner.java",
+            "Benchmark.java",
+            "QueryParams.java",
     ],
     native_libraries_deps = [
+        "//:typedb",
+        "//database:database",
         "//common:common",
-        "//server:server"
+        "//concurrent:concurrent",
+        "//migrator:migrator",
+        "//reasoner:reasoner",
     ],
-    test_class = "com.vaticle.typedb.core.server.parameters.CoreConfigTest",
     deps = [
-        # Internal dependencies
+        "//server:version",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-    ],
-    data = [
-        "//server:config",
-        ":configurations"
-    ],
-)
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/query",
 
-filegroup(
-    name = "configurations",
-    srcs = glob(["parameters/config/*.yml"])
+        # External dependencies from Maven
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:junit_junit",
+    ]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "parameters/config/*"]),
+    include = glob(["*"]),
     license_type = "agpl-header",
 )
