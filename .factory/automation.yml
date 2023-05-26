@@ -90,7 +90,7 @@ build:
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/behaviour/typeql/language/match/... --test_output=streamed
         bazel test //test/behaviour/typeql/language/get/... --test_output=streamed
-        bazel test //test/behaviour/typeql/language/expressions/... --test_output=streamed
+        bazel test //test/behaviour/typeql/language/expression/... --test_output=streamed
     test-behaviour-writable:
       image: vaticle-ubuntu-22.04
       dependencies: [build]
