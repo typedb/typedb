@@ -37,6 +37,7 @@ import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.answer.PartialExplanation.ConclusionAnswer;
 import com.vaticle.typedb.protocol.AnswerProto;
 import com.vaticle.typedb.protocol.ConceptProto;
+import com.vaticle.typedb.protocol.ConnectionProto;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabaseManager;
 import com.vaticle.typedb.protocol.LogicProto;
@@ -75,6 +76,13 @@ public class ResponseBuilder {
 
     public static ByteString UUIDAsByteString(UUID uuid) {
         return copyFrom(encodeUUID(uuid).getBytes());
+    }
+
+    public static class Connection {
+
+        public static ConnectionProto.Connection.Open.Res openRes() {
+            return ConnectionProto.Connection.Open.Res.newBuilder().build();
+        }
     }
 
     public static class DatabaseManager {

@@ -86,7 +86,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Server MISSING_FIELD =
                 new Server(25, "The request message does not contain the required field '%s'.");
         public static final Server PROTOCOL_VERSION_MISMATCH =
-                new Server(26, "Protocol version mismatch: this server supports version '%s' but the client supports version '%s'. Please use a compatible client to connect.");
+                new Server(26, "A protocol version mismatch was detected. this server supports version '%s' but the client supports version '%s'. Please use a compatible client to connect.");
         public static final Server MISSING_CONCEPT =
                 new Server(27, "Concept does not exist.");
         public static final Server BAD_VALUE_TYPE =

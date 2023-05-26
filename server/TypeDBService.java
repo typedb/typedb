@@ -21,6 +21,7 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.server.common.ResponseBuilder;
 import com.vaticle.typedb.protocol.ConnectionProto;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabaseManager;
@@ -77,10 +78,16 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public void connectionOpen(ConnectionProto.Connection.Open.Req request,
                                StreamObserver<ConnectionProto.Connection.Open.Res> responder) {
         if (request.getVersion() != VersionProto.Version.VERSION) {
-            responder.onError(TypeDBException.of(
-                    PROTOCOL_VERSION_MISMATCH, VersionProto.Version.VERSION.getNumber(), request.getVersionValue()
-            ));
-        } else responder.onCompleted();
+            int clientProtocolVersion = request.getVersion() == VersionProto.Version.UNSPECIFIED ? 0 : request.getVersion().getNumber();
+            TypeDBException error = TypeDBException.of(
+                    PROTOCOL_VERSION_MISMATCH, VersionProto.Version.VERSION.getNumber(), clientProtocolVersion
+            );
+            responder.onError(exception(error));
+            LOG.error(error.getMessage(), error);
+        } else {
+            responder.onNext(ResponseBuilder.Connection.openRes());
+            responder.onCompleted();
+        }
     }
 
     @Override
