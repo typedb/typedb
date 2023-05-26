@@ -70,7 +70,7 @@ public class Util {
             function.run();
             fail();
         } catch (RuntimeException e) {
-            assert (e.getMessage().toLowerCase().contains(message.toLowerCase()));
+            assert e.getMessage().contains(message);
         }
     }
 }
