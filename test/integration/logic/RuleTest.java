@@ -112,8 +112,8 @@ public class RuleTest {
                     assertEquals(2, people.size());
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), people.get(0)),
-                                                               pair(Identifier.Variable.name("y"), people.get(1))));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.namedConcept("x"), people.get(0)),
+                                                               pair(Identifier.Variable.namedConcept("y"), people.get(1))));
 
                     Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertTrue(materialisation.isPresent());
@@ -168,8 +168,8 @@ public class RuleTest {
                     assertEquals(2, people.size());
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), people.get(0)),
-                                                               pair(Identifier.Variable.name("y"), people.get(1))));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.namedConcept("x"), people.get(0)),
+                                                               pair(Identifier.Variable.namedConcept("y"), people.get(1))));
 
                     Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertFalse(materialisation.isPresent());
@@ -211,8 +211,8 @@ public class RuleTest {
                     Attribute.Long ageInDays10 = ageInDays.asLong().put(10L);
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), milkInst),
-                                                               pair(Identifier.Variable.name("a"), ageInDays10)));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.namedConcept("x"), milkInst),
+                                                               pair(Identifier.Variable.namedConcept("a"), ageInDays10)));
                     Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertTrue(materialisation.isPresent());
                     assertEquals(2, materialisation.get().size());
@@ -258,7 +258,7 @@ public class RuleTest {
                     milkInst.setHas(ageInDays.asLong().put(20L));
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), milkInst)));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.namedConcept("x"), milkInst)));
                     Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertTrue(materialisation.isPresent());
                     assertEquals(3, materialisation.get().size());
@@ -317,7 +317,7 @@ public class RuleTest {
                             TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
-                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
+                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.namedConcept("a"));
                     assertEquals(set(Label.of("name")), nameAttr.inferredTypes());
 
                     Rule peopleHaveAge10 = logicMgr.putRule(
@@ -396,7 +396,7 @@ public class RuleTest {
                             TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
-                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
+                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.namedConcept("a"));
                     assertEquals(set(Label.of("name")), nameAttr.inferredTypes());
 
                     txn.commit();
@@ -459,7 +459,7 @@ public class RuleTest {
                             TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
-                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
+                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.namedConcept("a"));
                     assertEquals(set(Label.of("first-name")), nameAttr.inferredTypes());
 
                     txn.commit();
@@ -524,7 +524,7 @@ public class RuleTest {
                             TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
-                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
+                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.namedConcept("a"));
                     assertEquals(set(Label.of("name")), nameAttr.inferredTypes());
 
                     txn.commit();

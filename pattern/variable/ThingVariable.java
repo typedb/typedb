@@ -22,20 +22,19 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
+import com.vaticle.typedb.core.pattern.constraint.common.Predicate;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IIDConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.PredicateConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
-import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
-import com.vaticle.typeql.lang.common.TypeQLToken;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -55,14 +54,14 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     private RelationConstraint relationConstraint;
     private final Set<IsConstraint> isConstraints;
     private final Set<HasConstraint> hasConstraints;
-    private final Set<ValueConstraint<?>> valueConstraints;
+    private final Set<PredicateConstraint> predicateConstraints;
     private final Set<ThingConstraint> constraints;
     private final Set<Constraint> constraining;
 
     public ThingVariable(Identifier.Variable identifier) {
         super(identifier);
         this.isConstraints = new HashSet<>();
-        this.valueConstraints = new HashSet<>();
+        this.predicateConstraints = new HashSet<>();
         this.hasConstraints = new HashSet<>();
         this.constraints = new HashSet<>();
         this.constraining = new HashSet<>();
@@ -78,7 +77,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return this;
     }
 
-    ThingVariable constrainConcept(List<com.vaticle.typeql.lang.pattern.constraint.ConceptConstraint> constraints, VariableRegistry registry) {
+    ThingVariable constrainConcept(List<? extends com.vaticle.typeql.lang.pattern.constraint.ConceptConstraint> constraints, VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(ThingConstraint.of(this, constraint, registry)));
         return this;
     }
@@ -130,7 +129,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
             relationConstraint = constraint.asRelation();
         } else if (constraint.isIs()) isConstraints.add(constraint.asIs());
         else if (constraint.isHas()) hasConstraints.add(constraint.asHas());
-        else if (constraint.isValue()) valueConstraints.add(constraint.asValue());
+        else if (constraint.isPredicate()) predicateConstraints.add(constraint.asPredicate());
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
@@ -173,44 +172,14 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         return isConstraint;
     }
 
-    public Set<ValueConstraint<?>> value() {
-        return valueConstraints;
+    public Set<PredicateConstraint> predicates() {
+        return predicateConstraints;
     }
 
-    public ValueConstraint.Constant.Long valueLong(TypeQLToken.Predicate.Equality comparator, long value) {
-        ValueConstraint.Constant.Long valueLongConstraint = new ValueConstraint.Constant.Long(this, comparator, value);
-        constrain(valueLongConstraint);
-        return valueLongConstraint;
-    }
-
-    public ValueConstraint.Constant.Double valueDouble(TypeQLToken.Predicate.Equality comparator, double value) {
-        ValueConstraint.Constant.Double valueDoubleConstraint = new ValueConstraint.Constant.Double(this, comparator, value);
-        constrain(valueDoubleConstraint);
-        return valueDoubleConstraint;
-    }
-
-    public ValueConstraint.Constant.Boolean valueBoolean(TypeQLToken.Predicate.Equality comparator, boolean value) {
-        ValueConstraint.Constant.Boolean valueBooleanConstraint = new ValueConstraint.Constant.Boolean(this, comparator, value);
-        constrain(valueBooleanConstraint);
-        return valueBooleanConstraint;
-    }
-
-    public ValueConstraint.Constant.String valueString(TypeQLToken.Predicate comparator, String value) {
-        ValueConstraint.Constant.String valueStringConstraint = new ValueConstraint.Constant.String(this, comparator, value);
-        constrain(valueStringConstraint);
-        return valueStringConstraint;
-    }
-
-    public ValueConstraint.Constant.DateTime valueDateTime(TypeQLToken.Predicate.Equality comparator, LocalDateTime value) {
-        ValueConstraint.Constant.DateTime valueDateTimeConstraint = new ValueConstraint.Constant.DateTime(this, comparator, value);
-        constrain(valueDateTimeConstraint);
-        return valueDateTimeConstraint;
-    }
-
-    public ValueConstraint.Variable valueVariable(TypeQLToken.Predicate.Equality comparator, ThingVariable variable) {
-        ValueConstraint.Variable valueVarConstraint = new ValueConstraint.Variable(this, comparator, variable);
-        constrain(valueVarConstraint);
-        return valueVarConstraint;
+    public PredicateConstraint predicate(Predicate<?> predicate) {
+        PredicateConstraint predicateConstraint = new PredicateConstraint(this, predicate);
+        constrain(predicateConstraint);
+        return predicateConstraint;
     }
 
     public RelationConstraint relation(LinkedHashSet<RelationConstraint.RolePlayer> rolePlayers) {
@@ -252,7 +221,7 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
     @Override
     public FunctionalIterator<AlphaEquivalence> alphaEquals(ThingVariable that) {
         return AlphaEquivalence.empty()
-                .alphaEqualIf(id().isName() == that.id().isName())
+                .alphaEqualIf(id().reference().isNameConcept() == that.id().reference().isNameConcept())
                 .flatMap(a -> a.alphaEqualIf(this.inferredTypes().equals(that.inferredTypes())))
                 .map(a -> a.extend(this, that));
     }

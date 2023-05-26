@@ -19,11 +19,9 @@ package com.vaticle.typedb.core.logic.resolvable;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.pattern.Pattern;
-import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -39,7 +37,7 @@ public abstract class Resolvable<T extends Pattern> {
         return pattern;
     }
 
-    public abstract Optional<ThingVariable> generating();
+    public abstract Set<Variable> generating();
 
     public abstract Set<Retrievable> retrieves();
 

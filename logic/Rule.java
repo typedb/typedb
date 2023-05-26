@@ -37,17 +37,18 @@ import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.pattern.constraint.common.Predicate;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.PredicateConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
-import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
-import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.pattern.Pattern;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
@@ -99,7 +100,7 @@ public class Rule {
 
     private Rule(RuleStructure structure, LogicManager logicMgr) {
         this.structure = structure;
-        this.when = whenPattern(structure.when(), structure.then(), logicMgr);
+        this.when = whenPattern(structure.when(), logicMgr);
         this.then = thenPattern(structure.then(), logicMgr);
         this.conclusion = Conclusion.create(this);
         this.condition = Condition.create(this);
@@ -191,16 +192,18 @@ public class Rule {
     }
 
     private Disjunction whenPattern(com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> conjunction,
-                                    com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> then, LogicManager logicMgr) {
-        Disjunction when = Disjunction.create(conjunction.normalise(), VariableRegistry.createFromThings(list(then)));
+                                    LogicManager logicMgr) {
+        // create the When pattern with a reservation of 1 anonymous variable that may be used in the Then pattern
+        Disjunction when = Disjunction.create(conjunction.normalise(), VariableRegistry.createReservedAnonymous(1));
         logicMgr.typeInference().applyCombination(when);
+        logicMgr.expressionResolver().resolveExpressions(when);
         return when;
     }
 
     private Conjunction thenPattern(com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
         Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), list());
         Map<Identifier.Variable.Name, Set<Label>> whenTypes = new HashMap<>();
-        iterate(conj.variables()).map(Variable::id).filter(Identifier::isName).forEachRemaining(thenVar -> {
+        iterate(conj.variables()).filter(var -> !var.isValue()).map(Variable::id).filter(Identifier::isName).forEachRemaining(thenVar -> {
             Set<Label> whenTypesForVar = iterate(when.conjunctions()).flatMap(cj -> iterate(cj.variable(thenVar).inferredTypes())).toSet();
             whenTypes.put(thenVar.asName(), whenTypesForVar);
         });
@@ -323,9 +326,9 @@ public class Rule {
         public static Conclusion create(Rule rule) {
             Optional<Relation> r = Relation.of(rule);
             if ((r).isPresent()) return r.get();
-            Optional<Has.Explicit> e = Has.Explicit.of(rule);
+            Optional<Has.WithIsa> e = Has.WithIsa.of(rule);
             if (e.isPresent()) return e.get();
-            Optional<Has.Variable> v = Has.Variable.of(rule);
+            Optional<Has.WithoutIsa> v = Has.WithoutIsa.of(rule);
             if (v.isPresent()) return v.get();
             throw TypeDBException.of(ILLEGAL_STATE);
         }
@@ -377,11 +380,11 @@ public class Rule {
             return false;
         }
 
-        public boolean isExplicitHas() {
+        public boolean isHasWithIsa() {
             return false;
         }
 
-        public boolean isVariableHas() {
+        public boolean isHasWithoutIsa() {
             return false;
         }
 
@@ -401,12 +404,12 @@ public class Rule {
             throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Value.class));
         }
 
-        public Has.Variable asVariableHas() {
-            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Has.Variable.class));
+        public Has.WithIsa asHasWithIsa() {
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Has.WithIsa.class));
         }
 
-        public Has.Explicit asExplicitHas() {
-            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Has.Explicit.class));
+        public Has.WithoutIsa asHasWithoutIsa() {
+            throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Has.WithoutIsa.class));
         }
 
         public void validate(LogicManager logicMgr, ConceptManager conceptMgr) {
@@ -419,6 +422,7 @@ public class Rule {
             iterate(rule.when.conjunctions()).forEachRemaining(conj -> {
                 Set<Identifier.Variable.Name> sharedIDs = iterate(rule.then.retrieves())
                         .filter(id -> id.isName() && conj.retrieves().contains(id))
+                        .filter(id -> !conj.variable(id).isValue())
                         .map(Identifier.Variable::asName).toSet();
                 FunctionalIterator<Map<Identifier.Variable.Name, Label>> whenPermutations = logicMgr.typeInference()
                         .getPermutations(conj, false, sharedIDs);
@@ -437,7 +441,7 @@ public class Rule {
         }
 
         public interface Value {
-            ValueConstraint<?> value();
+            PredicateConstraint value();
         }
 
         public void reindex() {
@@ -513,7 +517,7 @@ public class Rule {
 
             private RelationType relationType(ConceptMap whenConcepts, ConceptManager conceptMgr) {
                 if (isa().type().reference().isName()) {
-                    Reference.Name typeReference = isa().type().reference().asName();
+                    Reference.Name.Concept typeReference = isa().type().reference().asName().asConcept();
                     assert whenConcepts.contains(typeReference) && whenConcepts.get(typeReference).isRelationType();
                     return whenConcepts.get(typeReference).asRelationType();
                 } else {
@@ -651,8 +655,8 @@ public class Rule {
             private final ThingVariable owner;
             private final ThingVariable attribute;
 
-            Has(HasConstraint has, Rule rule) {
-                super(rule, set(has.owner().id(), has.attribute().id()));
+            Has(HasConstraint has, Rule rule, Set<Identifier.Variable.Retrievable> retrievableIds) {
+                super(rule, retrievableIds);
                 this.owner = has.owner();
                 this.attribute = has.attribute();
             }
@@ -666,6 +670,16 @@ public class Rule {
             }
 
             @Override
+            void index() {
+                attribute().inferredTypes().forEach(rule().structure::indexConcludesEdgeTo);
+            }
+
+            @Override
+            void unindex() {
+                attribute().inferredTypes().forEach(rule().structure::unindexConcludesEdgeTo);
+            }
+
+            @Override
             public Has asHas() {
                 return this;
             }
@@ -675,29 +689,36 @@ public class Rule {
                 return true;
             }
 
-            public static class Explicit extends Has implements Isa, Value {
+            public static class WithIsa extends Has implements Isa, Value {
 
                 private final IsaConstraint isa;
-                private final ValueConstraint<?> value;
+                private final PredicateConstraint value;
 
-                private Explicit(HasConstraint has, IsaConstraint isa, ValueConstraint<?> value, Rule rule) {
-                    super(has, rule);
+                private WithIsa(HasConstraint has, IsaConstraint isa, PredicateConstraint value, Set<Identifier.Variable.Retrievable> retrievableIds, Rule rule) {
+                    super(has, rule, retrievableIds);
                     this.isa = isa;
                     this.value = value;
                 }
 
-                public static Optional<Explicit> of(Rule rule) {
+                public static Optional<WithIsa> of(Rule rule) {
                     return iterate(rule.then().variables()).filter(com.vaticle.typedb.core.pattern.variable.Variable::isThing)
                             .map(com.vaticle.typedb.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> iterate(variable.constraints()).filter(ThingConstraint::isHas)
                                     .filter(constraint -> constraint.asHas().attribute().id().reference().isAnonymous())
+                                    .filter(constraint -> !constraint.asHas().attribute().predicates().isEmpty())
+                                    .filter(constraint -> iterate(constraint.asHas().attribute().predicates()).next().predicate().predicate().equals(TypeQLToken.Predicate.Equality.EQ))
                                     .map(constraint -> {
                                         assert constraint.asHas().attribute().isa().isPresent();
                                         assert constraint.asHas().attribute().isa().get().type().label().isPresent();
-                                        assert constraint.asHas().attribute().value().size() == 1;
-                                        return new Has.Explicit(constraint.asHas(), constraint.asHas().attribute().isa().get(),
-                                                constraint.asHas().attribute().value().iterator().next(),
-                                                rule);
+                                        assert constraint.asHas().attribute().predicates().size() == 1;
+                                        PredicateConstraint predicateConstraint = constraint.asHas().attribute().predicates().iterator().next();
+                                        Set<Identifier.Variable.Retrievable> retrievableIds = new HashSet<>();
+                                        retrievableIds.add(constraint.asHas().owner().id());
+                                        retrievableIds.add(constraint.asHas().attribute().id());
+                                        if (predicateConstraint.predicate().isValueVar())
+                                            retrievableIds.add(predicateConstraint.predicate().asValueVar().value().id());
+                                        return new WithIsa(constraint.asHas(), constraint.asHas().attribute().isa().get(),
+                                                predicateConstraint, retrievableIds, rule);
                                     })).first();
                 }
 
@@ -708,46 +729,67 @@ public class Rule {
                 }
 
                 private void validateAssignableValue(ConceptManager conceptMgr) {
-                    Label attributeTypeLabel = isa().type().label().get().properLabel();
-                    AttributeType attributeType = conceptMgr.getAttributeType(attributeTypeLabel.name());
+                    AttributeType attributeType = conceptMgr.getAttributeType(isa().type().label().get().properLabel().name());
                     assert attributeType != null;
                     AttributeType.ValueType attrTypeValueType = attributeType.getValueType();
-                    ValueConstraint<?> value = attribute().value().iterator().next();
-                    if (!AttributeType.ValueType.of(value.value().getClass()).assignables().contains(attrTypeValueType)) {
-                        throw TypeDBException.of(RULE_THEN_INVALID_VALUE_ASSIGNMENT, rule().getLabel(),
-                                value.value().getClass().getSimpleName(),
-                                attributeType.getValueType().getValueClass().getSimpleName());
+                    Predicate<?> value = attribute().predicates().iterator().next().predicate();
+                    if (value.isValueVar()) {
+                        rule().when().conjunctions().forEach(conj -> {
+                            com.vaticle.typedb.core.pattern.variable.Variable whenVar = conj.variable(value.asValueVar().value().id());
+                            assert whenVar != null && whenVar.isValue();
+                            if (!whenVar.asValue().valueType().assignables().contains(attrTypeValueType.encoding())) {
+                                throw TypeDBException.of(RULE_THEN_INVALID_VALUE_ASSIGNMENT, rule().getLabel(),
+                                        whenVar.asValue().valueType().name(),
+                                        attributeType.getValueType().getValueClass().getSimpleName());
+                            }
+                        });
+                    } else {
+                        if (!AttributeType.ValueType.of(value.value().getClass()).assignables().contains(attrTypeValueType)) {
+                            throw TypeDBException.of(RULE_THEN_INVALID_VALUE_ASSIGNMENT, rule().getLabel(),
+                                    value.value().getClass().getSimpleName(),
+                                    attributeType.getValueType().getValueClass().getSimpleName());
+                        }
                     }
                 }
 
                 @Override
                 public Materialisable materialisable(ConceptMap whenConcepts, ConceptManager conceptMgr) {
-
                     Identifier.Variable.Retrievable ownerId = owner().id();
                     assert whenConcepts.contains(ownerId) && whenConcepts.get(ownerId).isThing();
                     Thing owner = whenConcepts.get(ownerId.reference().asName()).asThing();
 
                     assert isa().type().label().isPresent()
-                            && attribute().value().size() == 1
-                            && attribute().value().iterator().next().isValueIdentity();
-                    Label attributeTypeLabel = isa().type().label().get().properLabel();
-                    AttributeType attrType = conceptMgr.getAttributeType(attributeTypeLabel.name());
+                            && attribute().predicates().size() == 1
+                            && attribute().predicates().iterator().next().predicate().predicate().equals(TypeQLToken.Predicate.Equality.EQ);
+                    AttributeType attrType = conceptMgr.getAttributeType(isa().type().label().get().properLabel().name());
                     assert attrType != null;
-                    ValueConstraint<?> value = attribute().value().iterator().next();
-                    return new Materialisable(owner, attrType, value);
+                    PredicateConstraint value = attribute().predicates().iterator().next();
+                    if (value.predicate().isValueVar())
+                        return new Materialisable(owner, attrType, new PredicateConstraint(attribute(), toConstantPredicate(whenConcepts.get(value.predicate().asValueVar().value().id()).asValue())));
+                    else if (value.predicate().isConstant()) return new Materialisable(owner, attrType, value);
+                    else throw TypeDBException.of(ILLEGAL_STATE);
                 }
 
-                public Map<Identifier.Variable, Concept> thenConcepts(Thing owner, AttributeType attrType,
-                                                                      Attribute attribute, ConceptMap whenConcepts) {
+                private Predicate<?> toConstantPredicate(com.vaticle.typedb.core.concept.value.Value<?> value) {
+                    if (value.isBoolean())
+                        return new Predicate.Constant.Boolean(TypeQLToken.Predicate.Equality.EQ, value.asBoolean().value());
+                    else if (value.isLong())
+                        return new Predicate.Constant.Long(TypeQLToken.Predicate.Equality.EQ, value.asLong().value());
+                    else if (value.isDouble())
+                        return new Predicate.Constant.Double(TypeQLToken.Predicate.Equality.EQ, value.asDouble().value());
+                    else if (value.isString())
+                        return new Predicate.Constant.String(TypeQLToken.Predicate.Equality.EQ, value.asString().value());
+                    else if (value.isDateTime())
+                        return new Predicate.Constant.DateTime(TypeQLToken.Predicate.Equality.EQ, value.asDateTime().value());
+                    else throw TypeDBException.of(ILLEGAL_STATE);
+                }
+
+                public Map<Identifier.Variable, Concept> thenConcepts(Attribute attribute, AttributeType attrType,
+                                                                      ConceptMap whenConcepts) {
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
-                    TypeVariable declaredType = isa().type();
-                    Identifier.Variable declaredTypeId = declaredType.id();
-                    Thing declaredOwner = whenConcepts.get(owner().id()).asThing();
-                    assert declaredOwner.equals(owner);
-                    assert attrType.equals(attribute.getType());
-                    thenConcepts.put(declaredTypeId, attrType);
+                    thenConcepts.put(owner().id(), whenConcepts.get(owner().id()).asThing());
                     thenConcepts.put(attribute().id(), attribute);
-                    thenConcepts.put(owner().id(), declaredOwner);
+                    thenConcepts.put(isa().type().id(), attrType);
                     return thenConcepts;
                 }
 
@@ -758,29 +800,23 @@ public class Rule {
 
                 @Override
                 void index() {
-                    Set<Label> possibleAttributeHas = attribute().inferredTypes();
-                    possibleAttributeHas.forEach(label -> {
-                        rule().structure.indexConcludesVertex(label);
-                        rule().structure.indexConcludesEdgeTo(label);
-                    });
+                    super.index();
+                    attribute().inferredTypes().forEach(label -> rule().structure.indexConcludesVertex(label));
                 }
 
                 @Override
                 void unindex() {
-                    Set<Label> possibleAttributeHas = attribute().inferredTypes();
-                    possibleAttributeHas.forEach(label -> {
-                        rule().structure.unindexConcludesVertex(label);
-                        rule().structure.unindexConcludesEdgeTo(label);
-                    });
+                    super.index();
+                    attribute().inferredTypes().forEach(label -> rule().structure.unindexConcludesVertex(label));
                 }
 
                 @Override
-                public boolean isExplicitHas() {
+                public boolean isHasWithIsa() {
                     return true;
                 }
 
                 @Override
-                public Has.Explicit asExplicitHas() {
+                public WithIsa asHasWithIsa() {
                     return this;
                 }
 
@@ -810,7 +846,7 @@ public class Rule {
                 }
 
                 @Override
-                public ValueConstraint<?> value() {
+                public PredicateConstraint value() {
                     return value;
                 }
 
@@ -818,21 +854,21 @@ public class Rule {
 
                     private final Thing owner;
                     private final AttributeType attrType;
-                    private final ValueConstraint<?> value;
+                    private final PredicateConstraint value;
 
-                    public Materialisable(Thing owner, AttributeType attrType, ValueConstraint<?> value) {
+                    public Materialisable(Thing owner, AttributeType attrType, PredicateConstraint value) {
                         this.owner = owner;
                         this.attrType = attrType;
                         this.value = value;
                     }
 
                     @Override
-                    public boolean isHasExplicit() {
+                    public boolean isHasWithIsa() {
                         return true;
                     }
 
                     @Override
-                    public Materialisable asHasExplicit() {
+                    public Materialisable asHasWithIsa() {
                         return this;
                     }
 
@@ -844,7 +880,7 @@ public class Rule {
                         return attrType;
                     }
 
-                    public ValueConstraint<?> value() {
+                    public PredicateConstraint value() {
                         return value;
                     }
 
@@ -852,10 +888,9 @@ public class Rule {
                     public boolean equals(Object o) {
                         if (this == o) return true;
                         if (o == null || getClass() != o.getClass()) return false;
-                        Materialisable explicit = (Materialisable) o;
-                        return owner.equals(explicit.owner) &&
-                                attrType.equals(explicit.attrType) &&
-                                value.equals(explicit.value);
+                        Materialisable withIsa = (Materialisable) o;
+                        return owner.equals(withIsa.owner) && attrType.equals(withIsa.attrType) &&
+                                value.equals(withIsa.value);
                     }
 
                     @Override
@@ -865,31 +900,25 @@ public class Rule {
 
                     @Override
                     public String toString() {
-                        return "Explicit{" +
-                                "owner=" + owner +
-                                ", attrType=" + attrType +
-                                ", value=" + value +
-                                '}';
+                        return "Materialisable.Has.WithIsa{" + "owner=" + owner + ", attrType=" +
+                                attrType + ", value=" + value + '}';
                     }
                 }
             }
 
-            public static class Variable extends Has {
+            public static class WithoutIsa extends Has {
 
-                private Variable(HasConstraint hasConstraint, Rule rule) {
-                    super(hasConstraint, rule);
+                private WithoutIsa(HasConstraint hasConstraint, Rule rule) {
+                    super(hasConstraint, rule, set(hasConstraint.owner().id(), hasConstraint.attribute().id()));
                 }
 
-                public static Optional<Variable> of(Rule rule) {
+                public static Optional<WithoutIsa> of(Rule rule) {
                     return iterate(rule.then().variables()).filter(com.vaticle.typedb.core.pattern.variable.Variable::isThing)
                             .map(com.vaticle.typedb.core.pattern.variable.Variable::asThing)
                             .flatMap(variable -> iterate(variable.constraints()).filter(ThingConstraint::isHas)
                                     .filter(constraint -> constraint.asHas().attribute().id().isName())
-                                    .map(constraint -> {
-                                        assert !constraint.asHas().attribute().isa().isPresent();
-                                        assert constraint.asHas().attribute().value().size() == 0;
-                                        return new Has.Variable(constraint.asHas(), rule);
-                                    })).first();
+                                    .map(constraint -> new WithoutIsa(constraint.asHas(), rule)))
+                            .first();
                 }
 
                 @Override
@@ -901,14 +930,10 @@ public class Rule {
                     return new Materialisable(owner, attr);
                 }
 
-                public Map<Identifier.Variable, Concept> thenConcepts(Thing owner, Attribute attribute, ConceptMap whenConcepts) {
+                public Map<Identifier.Variable, Concept> thenConcepts(ConceptMap whenConcepts) {
                     Map<Identifier.Variable, Concept> thenConcepts = new HashMap<>();
-                    Thing declaredOwner = whenConcepts.get(owner().id()).asThing();
-                    assert declaredOwner.equals(owner);
-                    Attribute declaredAttribute = whenConcepts.get(attribute().id()).asAttribute();
-                    assert declaredAttribute.equals(attribute);
-                    thenConcepts.put(attribute().id(), declaredAttribute);
-                    thenConcepts.put(owner().id(), declaredOwner);
+                    thenConcepts.put(attribute().id(), whenConcepts.get(attribute().id()).asAttribute());
+                    thenConcepts.put(owner().id(), whenConcepts.get(owner().id()).asThing());
                     return thenConcepts;
                 }
 
@@ -918,24 +943,12 @@ public class Rule {
                 }
 
                 @Override
-                void index() {
-                    Set<Label> possibleAttributeHas = attribute().inferredTypes();
-                    possibleAttributeHas.forEach(rule().structure::indexConcludesEdgeTo);
-                }
-
-                @Override
-                void unindex() {
-                    Set<Label> possibleAttributeHas = attribute().inferredTypes();
-                    possibleAttributeHas.forEach(rule().structure::unindexConcludesEdgeTo);
-                }
-
-                @Override
-                public boolean isVariableHas() {
+                public boolean isHasWithoutIsa() {
                     return true;
                 }
 
                 @Override
-                public Variable asVariableHas() {
+                public WithoutIsa asHasWithoutIsa() {
                     return this;
                 }
 
@@ -950,12 +963,12 @@ public class Rule {
                     }
 
                     @Override
-                    public boolean isHasVariable() {
+                    public boolean isHasWithoutIsa() {
                         return true;
                     }
 
                     @Override
-                    public Materialisable asHasVariable() {
+                    public Materialisable asHasWithoutIsa() {
                         return this;
                     }
 
@@ -972,8 +985,7 @@ public class Rule {
                         if (this == o) return true;
                         if (o == null || getClass() != o.getClass()) return false;
                         Materialisable variable = (Materialisable) o;
-                        return owner.equals(variable.owner) &&
-                                attribute.equals(variable.attribute);
+                        return owner.equals(variable.owner) && attribute.equals(variable.attribute);
                     }
 
                     @Override
@@ -983,14 +995,10 @@ public class Rule {
 
                     @Override
                     public String toString() {
-                        return "Variable{" +
-                                "owner=" + owner +
-                                ", attribute=" + attribute +
-                                '}';
+                        return "Materialisable.Has.WithoutIsa{" + "owner=" + owner + ", attribute=" + attribute + '}';
                     }
                 }
             }
-
         }
 
         public static class Materialisable {
@@ -1003,23 +1011,21 @@ public class Rule {
                 throw TypeDBException.of(ILLEGAL_CAST);
             }
 
-            public boolean isHasExplicit() {
+            public boolean isHasWithIsa() {
                 return false;
             }
 
-            public Has.Explicit.Materialisable asHasExplicit() {
+            public Has.WithIsa.Materialisable asHasWithIsa() {
                 throw TypeDBException.of(ILLEGAL_CAST);
             }
 
-            public boolean isHasVariable() {
+            public boolean isHasWithoutIsa() {
                 return false;
             }
 
-            public Has.Variable.Materialisable asHasVariable() {
+            public Has.WithoutIsa.Materialisable asHasWithoutIsa() {
                 throw TypeDBException.of(ILLEGAL_CAST);
             }
-
         }
     }
-
 }

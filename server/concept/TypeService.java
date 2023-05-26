@@ -433,7 +433,7 @@ public class TypeService {
         );
     }
 
-    private void put(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, UUID reqID) {
+    private void put(AttributeType attributeType, ConceptProto.ConceptValue protoValue, UUID reqID) {
         Attribute attribute;
         switch (protoValue.getValueCase()) {
             case STRING:
@@ -461,7 +461,7 @@ public class TypeService {
         transactionSvc.respond(putRes(reqID, attribute));
     }
 
-    private void get(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, UUID reqID) {
+    private void get(AttributeType attributeType, ConceptProto.ConceptValue protoValue, UUID reqID) {
         Attribute attribute;
         switch (protoValue.getValueCase()) {
             case STRING:

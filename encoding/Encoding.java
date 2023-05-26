@@ -99,7 +99,8 @@ public class Encoding {
     public enum Status {
         BUFFERED(0),
         COMMITTED(1),
-        PERSISTED(2);
+        PERSISTED(2),
+        EPHEMERAL(3);
 
         private final int status;
 
@@ -140,6 +141,7 @@ public class Encoding {
         METADATA,
         TYPE,
         THING,
+        VALUE,
         RULE
     }
 
@@ -164,6 +166,7 @@ public class Encoding {
         VERTEX_ATTRIBUTE(131, PrefixType.THING),
         VERTEX_RELATION(132, PrefixType.THING),
         VERTEX_ROLE(133, PrefixType.THING),
+        VERTEX_VALUE(150, PrefixType.VALUE),
         STRUCTURE_RULE(160, PrefixType.RULE);
 
         private static final ByteMap<Prefix> prefixByKey = ByteMap.create(
@@ -789,6 +792,26 @@ public class Encoding {
                 Thing thing = thingVertexByKey.get(prefix);
                 if (thing == null) throw TypeDBException.of(UNRECOGNISED_VALUE);
                 else return thing;
+            }
+
+            @Override
+            public Prefix prefix() {
+                return prefix;
+            }
+        }
+
+        enum Value implements Vertex {
+            VALUE(Prefix.VERTEX_VALUE);
+
+            private final Prefix prefix;
+
+            Value(Prefix prefix) {
+                this.prefix = prefix;
+            }
+
+            public static Value of(byte prefix) {
+                if (VALUE.prefix.key == prefix) return VALUE;
+                else throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
 
             @Override

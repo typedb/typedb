@@ -36,8 +36,10 @@ native_java_libraries(
     srcs = glob(
         ["*.java",
         "constraint/*.java",
+        "constraint/common/*.java",
         "constraint/thing/*.java",
         "constraint/type/*.java",
+        "constraint/value/*.java",
         "variable/*.java",
         "equivalence/*.java",
         ],

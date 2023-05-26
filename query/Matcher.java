@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
 import com.vaticle.typedb.core.concept.answer.Numeric;
 import com.vaticle.typedb.core.concept.answer.NumericGroup;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.value.Value;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typeql.lang.common.TypeQLToken;
@@ -49,6 +50,7 @@ import java.util.stream.Collector;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.AGGREGATE_ATTRIBUTE_NOT_NUMBER;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -409,10 +411,17 @@ public class Matcher {
         }
 
         private static Numeric numeric(ConceptMap answer, UnboundVariable var) {
-            Attribute attribute = answer.get(var).asAttribute();
-            if (attribute.isLong()) return Numeric.ofLong(attribute.asLong().getValue());
-            else if (attribute.isDouble()) return Numeric.ofDouble(attribute.asDouble().getValue());
-            else throw TypeDBException.of(AGGREGATE_ATTRIBUTE_NOT_NUMBER, var);
+            if (var.reference().isNameConcept()) {
+                Attribute attribute = answer.get(var).asAttribute();
+                if (attribute.isLong()) return Numeric.ofLong(attribute.asLong().getValue());
+                else if (attribute.isDouble()) return Numeric.ofDouble(attribute.asDouble().getValue());
+                else throw TypeDBException.of(AGGREGATE_ATTRIBUTE_NOT_NUMBER, var);
+            } else if (var.reference().isNameValue()) {
+                Value<?> value = answer.get(var).asValue();
+                if (value.isLong()) return Numeric.ofLong(value.asLong().value());
+                else if (value.isDouble()) return Numeric.ofDouble(value.asDouble().value());
+                else throw TypeDBException.of(AGGREGATE_ATTRIBUTE_NOT_NUMBER, var);
+            } else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         private static Numeric sum(Numeric x, Numeric y) {

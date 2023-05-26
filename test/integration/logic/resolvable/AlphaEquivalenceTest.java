@@ -460,7 +460,7 @@ public class AlphaEquivalenceTest {
         schema("define number sub attribute, value long; other-number sub attribute, value long;");
         List<Concludable> concludables = iterate(
                 concludable("$a 3 isa number"),
-                isa(concludable("$a isa number", "$a = 3")),
+                isa(concludable("$a isa number", "$a == 3")),
                 isa(concludable("$a isa number", "$a < 4", "$a > 2")),
                 isa(concludable("$a isa number", "$a < 4")),
                 concludable("$a isa number"),
@@ -480,7 +480,7 @@ public class AlphaEquivalenceTest {
     public void test_attribute() {
         schema("define number sub attribute, value long; other-number sub attribute, value long;");
         List<Concludable> concludables = iterate(
-                concludable("$a = 3"),
+                concludable("$a == 3"),
                 attribute(concludable("$a < 4", "$a > 2")),
                 concludable("$a < 4")
         ).toList();

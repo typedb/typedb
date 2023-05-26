@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.concept;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.value.Value;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.Relation;
@@ -43,6 +44,7 @@ import com.vaticle.typedb.core.concept.type.impl.TypeImpl;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ValueRead.INVALID_VALUE_CASTING;
 
 public abstract class ConceptImpl implements Concept {
 
@@ -103,6 +105,11 @@ public abstract class ConceptImpl implements Concept {
     }
 
     @Override
+    public boolean isValue() {
+        return false;
+    }
+
+    @Override
     public TypeImpl asType() {
         throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()), className(Type.class)));
     }
@@ -152,4 +159,8 @@ public abstract class ConceptImpl implements Concept {
         throw exception(TypeDBException.of(INVALID_THING_CASTING, className(this.getClass()), className(Relation.class)));
     }
 
+    @Override
+    public Value<?> asValue() {
+        throw exception(TypeDBException.of(INVALID_VALUE_CASTING, className(this.getClass()), className(Value.class)));
+    }
 }

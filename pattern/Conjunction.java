@@ -23,20 +23,24 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IIDConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.ValueVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
-import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
 import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
+import com.vaticle.typeql.lang.pattern.variable.builder.Expression;
+import com.vaticle.typeql.lang.pattern.variable.builder.Expression.Constant;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -57,6 +61,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNBOUNDED_NEGATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.CONTRADICTORY_BOUND_VARIABLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
+import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_CLOSE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_OPEN;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.NEW_LINE;
@@ -118,7 +127,7 @@ public class Conjunction implements Pattern, Cloneable {
         }
     }
 
-    public void bound(Map<Retrievable, Either<Label, ByteArray>> bounds) {
+    public void bound(Map<Identifier.Variable.Retrievable, Either<Label, ByteArray>> bounds) {
         variableSet.forEach(var -> {
             if (var.id().isRetrievable() && bounds.containsKey(var.id().asRetrievable())) {
                 Either<Label, ByteArray> boundVar = bounds.get(var.id().asRetrievable());
@@ -138,6 +147,16 @@ public class Conjunction implements Pattern, Cloneable {
                     } else {
                         var.asThing().iid(boundVar.second());
                     }
+                } else if (var.isValue()) {
+                    assert var.asValue().assignment() == null;
+                    VertexIID.Value<?> iid = VertexIID.Value.of(boundVar.second());
+                    Encoding.ValueType<?> vt = iid.valueType();
+                    if (vt == BOOLEAN) var.asValue().assign(new Constant.Boolean(iid.asBoolean().value()));
+                    else if (vt == LONG) var.asValue().assign(new Constant.Long(iid.asLong().value()));
+                    else if (vt == DOUBLE) var.asValue().assign(new Constant.Double(iid.asDouble().value()));
+                    else if (vt == STRING) var.asValue().assign(new Constant.String(iid.asString().value()));
+                    else if (vt == DATETIME) var.asValue().assign(new Constant.DateTime(iid.asDateTime().value()));
+                    else throw TypeDBException.of(ILLEGAL_STATE);
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             }
         });
@@ -299,6 +318,10 @@ public class Conjunction implements Pattern, Cloneable {
                 clone.addInferredTypes(variable.inferredTypes());
                 return clone;
             }).asType();
+        }
+
+        public ValueVariable cloneVariable(ValueVariable variable) {
+            return variables.computeIfAbsent(variable.id(), ValueVariable::new).asValue();
         }
 
         public Conjunction conjunction() {

@@ -46,7 +46,7 @@ public class Negation implements Pattern, Cloneable {
             Disjunction disjunction = Disjunction.create(typeql.normalise().pattern(), bounds);
             disjunction.conjunctions().forEach(conjunction -> {
                 if (iterate(conjunction.variables()).map(Variable::reference)
-                        .filter(Reference::isName).noneMatch(bounds::contains)) {
+                        .filter(Reference::isName).noneMatch(bounds::isBound)) {
                     throw TypeDBException.of(UNBOUNDED_NEGATION);
                 }
             });

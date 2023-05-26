@@ -87,7 +87,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return identifier;
     }
 
-    Variable constrainConcept(List<ConceptConstraint> constraints, VariableRegistry registry) {
+    Variable constrainConcept(List<? extends ConceptConstraint> constraints, VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, registry)));
         return this;
     }
@@ -95,6 +95,12 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     TypeVariable constrainType(List<com.vaticle.typeql.lang.pattern.constraint.TypeConstraint> constraints, VariableRegistry register) {
         constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, register)));
         return this;
+    }
+
+    public TypeVariable clone() {
+        TypeVariable clone = new TypeVariable(id());
+        clone.addInferredTypes(inferredTypes());
+        return clone;
     }
 
     void constrainClone(TypeVariable toClone, VariableCloner cloner) {

@@ -40,8 +40,9 @@ import static com.vaticle.typedb.core.common.collection.Bytes.INTEGER_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.SHORT_UNSIGNED_MAX_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.UNENCODABLE_STRING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Encoding.ILLEGAL_STRING_SIZE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Encoding.UNENCODABLE_DOUBLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Encoding.UNENCODABLE_STRING;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 public abstract class ByteArray implements Comparable<ByteArray> {
@@ -54,7 +55,7 @@ public abstract class ByteArray implements Comparable<ByteArray> {
     }
 
     public static ByteArray of(byte b) {
-        return ByteArray.of(new byte[] { b });
+        return ByteArray.of(new byte[]{b});
     }
 
     public static ByteArray of(byte[] array) {
@@ -220,13 +221,13 @@ public abstract class ByteArray implements Comparable<ByteArray> {
 
     /**
      * Convert {@code double} to lexicographically sorted bytes.
-     *
+     * <p>
      * We need to implement a custom byte representation of doubles. The bytes
      * need to be lexicographically sortable in the same order as the numerical
      * values of themselves. I.e. The bytes of -10 need to come before -1, -1
      * before 0, 0 before 1, and 1 before 10, and so on. This is not true with
      * the (default) 2's complement byte representation of doubles.
-     *
+     * <p>
      * We need to XOR all positive numbers with 0x8000... and XOR negative
      * numbers with 0xffff... This should flip the sign bit on both (so negative
      * numbers go first), and then reverse the ordering on negative numbers.
@@ -234,7 +235,8 @@ public abstract class ByteArray implements Comparable<ByteArray> {
      * @param value the {@code double} value to convert
      * @return the sorted byte representation of the {@code double} value
      */
-    public static ByteArray encodeDoubleAsSorted(double value) {
+    public static ByteArray encodeDoubleAsSorted(java.lang.Double value) throws TypeDBCheckedException {
+        if (value.isInfinite() || value.isNaN()) throw TypeDBCheckedException.of(UNENCODABLE_DOUBLE, value);
         byte[] bytes = ByteBuffer.allocate(DOUBLE_SIZE).putDouble(value).array();
         if (value >= 0) {
             bytes[0] = (byte) (bytes[0] ^ 0x80);

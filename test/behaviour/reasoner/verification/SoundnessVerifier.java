@@ -242,7 +242,7 @@ class SoundnessVerifier {
                     substituted.put(var, concept);
                 }
             } else {
-                assert concept.isType();
+                assert concept.isType() || concept.isValue();
                 substituted.put(var, concept);
             }
         });

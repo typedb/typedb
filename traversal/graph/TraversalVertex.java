@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.expression.Expression;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 
 import java.util.HashSet;
@@ -57,6 +58,10 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
     }
 
     public boolean isType() {
+        return false;
+    }
+
+    public boolean isValue() {
         return false;
     }
 
@@ -140,11 +145,19 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
             return false;
         }
 
+        public boolean isValue() {
+            return false;
+        }
+
         public Thing asThing() {
             throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(TraversalVertex.Properties.Thing.class));
         }
 
         public Type asType() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(TraversalVertex.Properties.Type.class));
+        }
+
+        public Value asValue() {
             throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(TraversalVertex.Properties.Type.class));
         }
 
@@ -217,11 +230,67 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
             }
         }
 
+        public static class Value extends Properties {
+
+            private Expression<?> expression;
+            private final Set<Predicate.Value<?, ?>> predicates;
+
+            public Value() {
+                predicates = new HashSet<>();
+            }
+
+            public Expression<?> expression() {
+                return expression;
+            }
+
+            public void expression(Expression<?> assignment) {
+                assert this.expression == null;
+                this.expression = assignment;
+            }
+
+            public void predicate(Predicate.Value<?, ?> predicate) {
+                predicates.add(predicate);
+            }
+
+            public Set<Predicate.Value<?, ?>> predicates() {
+                return predicates;
+            }
+
+            @Override
+            public boolean isValue() {
+                return true;
+            }
+
+            @Override
+            public Value asValue() {
+                return this;
+            }
+
+            @Override
+            public String toString() {
+                return String.format("[value] { expression: %s, predicates %s }", expression, predicates);
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+
+                Value that = (Value) o;
+                return (this.expression.equals(that.expression) && this.predicates.equals(that.predicates));
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(this.expression, predicates);
+            }
+        }
         public static class Type extends Properties {
 
             private boolean isAbstract;
             private final Set<Label> labels;
             private final Set<Encoding.ValueType<?>> valueTypes;
+
             private String regex;
 
             public Type() {
@@ -305,11 +374,11 @@ public abstract class TraversalVertex<EDGE extends TraversalEdge<?, ?>, PROPERTI
                         this.valueTypes.equals(that.valueTypes) &&
                         Objects.equals(this.regex, that.regex));
             }
-
             @Override
             public int hashCode() {
                 return Objects.hash(this.isAbstract, this.labels, this.valueTypes, this.regex);
             }
+
         }
     }
 }

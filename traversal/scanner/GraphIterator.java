@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typedb.core.graph.vertex.Value;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -152,8 +153,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         for (ProcedureVertex<?, ?> procedureVertex : procedure.vertices()) {
             if (procedureVertex.id().isRetrievable() && modifiers.filter().variables().contains(procedureVertex.id().asVariable().asRetrievable())) {
                 Vertex<?, ?> vertex = vertexTraversers.get(procedureVertex).vertex();
-                if (vertex.isThing() && vertex.asThing().isAttribute() && vertex.asThing().asAttribute().isValue()) {
-                    answer.put(procedureVertex.id().asVariable().asRetrievable(), vertex.asThing().asAttribute().asValue().toAttribute());
+                if (vertex.isThing() && vertex.asThing().isAttribute() && vertex.asThing().asAttribute().isValueSortable()) {
+                    answer.put(procedureVertex.id().asVariable().asRetrievable(), vertex.asThing().asAttribute().asValueSortable().toAttribute());
                 } else {
                     answer.put(procedureVertex.id().asVariable().asRetrievable(), vertex);
                 }
@@ -400,10 +401,21 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> createIteratorFromEdges() {
-            List<Forwardable<Vertex<?, ?>, Order.Asc>> iterators = new ArrayList<>();
-            procedureVertex.ins().forEach(edge -> iterators.add(branch(vertexTraversers.get(edge.from()).vertex(), edge)));
-            if (iterators.size() == 1) return iterators.get(0);
-            else return intersect(iterate(iterators), ASC);
+            if (procedureVertex.isValue()) {
+                Map<ProcedureEdge<?,?>, Value<?>> arguments = new HashMap<>();
+                procedureVertex.ins().forEach(edge -> {
+                    Vertex<?, ?> fromVertex = vertexTraversers.get(edge.from()).vertex();
+                    Value<?> value = fromVertex.isValue() ? fromVertex.asValue() : fromVertex.asThing().asAttribute();
+                    arguments.put(edge, value);
+                });
+                Vertex<?,?> result = procedureVertex.asValue().evaluateAndFilter(arguments, params).orElse(null);
+                return result != null ? iterateSorted(ASC, result) : iterateSorted(ASC);
+            } else {
+                List<Forwardable<Vertex<?, ?>, Order.Asc>> iterators = new ArrayList<>();
+                procedureVertex.ins().forEach(edge -> iterators.add(branch(vertexTraversers.get(edge.from()).vertex(), edge)));
+                if (iterators.size() == 1) return iterators.get(0);
+                else return intersect(iterate(iterators), ASC);
+            }
         }
 
         private Forwardable<Vertex<?, ?>, Order.Asc> branch(Vertex<?, ?> fromVertex, ProcedureEdge<?, ?> edge) {

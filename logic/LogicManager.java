@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Retrievable;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
+import com.vaticle.typedb.core.logic.tool.ExpressionResolver;
 import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typeql.lang.pattern.Conjunction;
@@ -54,6 +55,7 @@ public class LogicManager {
     private final GraphManager graphMgr;
     private final ConceptManager conceptMgr;
     private final TypeInference typeInference;
+    private final ExpressionResolver expressionResolver;
     private final LogicCache logicCache;
     private final Map<ResolvableConjunction, Set<Resolvable<?>>> compiledConjunctions;
 
@@ -62,6 +64,7 @@ public class LogicManager {
         this.conceptMgr = conceptMgr;
         this.logicCache = logicCache;
         this.typeInference = new TypeInference(logicCache, traversalEng, graphMgr);
+        this.expressionResolver = new ExpressionResolver(graphMgr);
         this.compiledConjunctions = new HashMap<>();
     }
 
@@ -71,6 +74,10 @@ public class LogicManager {
 
     public TypeInference typeInference() {
         return typeInference;
+    }
+
+    public ExpressionResolver expressionResolver() {
+        return expressionResolver;
     }
 
     public void deleteAndInvalidateRule(Rule rule) {
@@ -191,7 +198,7 @@ public class LogicManager {
                 .allMatch(conj -> conj.negations().isEmpty()); // Revise when we support nested negations in rules
         return iterate(rule.condition().branches()).flatMap(condition -> iterate(condition.conjunction().negations()))
                 .flatMap(neg -> iterate(neg.disjunction().conjunctions()))
-                .flatMap(conj -> conj.allConcludables())
+                .flatMap(ResolvableConjunction::allConcludables)
                 .flatMap(concludable -> iterate(applicableRules(concludable).keySet()))
                 .map(recursiveRule -> RuleDependency.of(recursiveRule, rule));
     }

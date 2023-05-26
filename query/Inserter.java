@@ -31,12 +31,14 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.value.Value;
+import com.vaticle.typedb.core.pattern.constraint.common.Predicate;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
-import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.ValueVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.reasoner.Reasoner;
@@ -54,11 +56,13 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_TOO_MANY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CONSTRAINT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_VALUE_CONSTRAINT_IN_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INSERT_RELATION_CONSTRAINT_TOO_MANY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
@@ -74,6 +78,7 @@ import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
 import static com.vaticle.typedb.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
 import static com.vaticle.typedb.core.query.common.Util.getRoleType;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 
 public class Inserter {
 
@@ -114,7 +119,9 @@ public class Inserter {
     public static void validate(Variable var) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
             if (var.isType()) validate(var.asType());
-            else validate(var.asThing());
+            else if (var.isThing()) validate(var.asThing());
+            else if (var.isValue()) validate(var.asValue());
+            else throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
@@ -129,6 +136,19 @@ public class Inserter {
         } else if (!var.is().isEmpty()) {
             throw TypeDBException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());
         }
+    }
+
+    private static void validate(ValueVariable var) {
+        var.constraints().forEach(constraint -> {
+            if (!(constraint.isThing() && constraint.asThing().isPredicate() && constraint.asThing().asPredicate().predicate().predicate().equals(EQ))) {
+                throw TypeDBException.of(ILLEGAL_VALUE_CONSTRAINT_IN_INSERT, var.reference());
+            }
+        });
+        var.constraining().forEach(constraint -> {
+            if (!(constraint.isThing() && constraint.asThing().isPredicate() && constraint.asThing().asPredicate().predicate().predicate().equals(EQ))) {
+                throw TypeDBException.of(ILLEGAL_VALUE_CONSTRAINT_IN_INSERT, var.reference());
+            }
+        });
     }
 
     public FunctionalIterator<ConceptMap> execute() {
@@ -175,13 +195,15 @@ public class Inserter {
         public ConceptMap execute() {
             try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
                 variables.forEach(this::insert);
-                matched.forEach((id, concept) -> inserted.putIfAbsent(id, concept.asThing()));
+                matched.forEach((id, concept) -> {
+                    if (concept.isThing()) inserted.putIfAbsent(id, concept.asThing());
+                });
                 return new ConceptMap(inserted);
             }
         }
 
         private boolean matchedContains(ThingVariable var) {
-            return var.reference().isName() && matched.contains(var.reference().asName());
+            return var.reference().isNameConcept() && matched.contains(var.reference().asName().asConcept());
         }
 
         public Thing matchedGet(ThingVariable var) {
@@ -244,29 +266,46 @@ public class Inserter {
 
         private Attribute insertAttribute(AttributeType attributeType, ThingVariable var) {
             try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_attribute")) {
-                ValueConstraint<?> valueConstraint;
-
-                if (var.value().size() > 1) {
+                if (var.predicates().size() > 1) {
                     throw TypeDBException.of(ATTRIBUTE_VALUE_TOO_MANY, var.reference(), attributeType.getLabel());
-                } else if (!var.value().isEmpty() &&
-                        (valueConstraint = var.value().iterator().next()).isValueIdentity()) {
-                    switch (attributeType.getValueType()) {
-                        case LONG:
-                            return attributeType.asLong().put(valueConstraint.asConstant().asLong().value());
-                        case DOUBLE:
-                            return attributeType.asDouble().put(valueConstraint.asConstant().asDouble().value());
-                        case BOOLEAN:
-                            return attributeType.asBoolean().put(valueConstraint.asConstant().asBoolean().value());
-                        case STRING:
-                            return attributeType.asString().put(valueConstraint.asConstant().asString().value());
-                        case DATETIME:
-                            return attributeType.asDateTime().put(valueConstraint.asConstant().asDateTime().value());
-                        default:
-                            assert false;
-                            return null;
-                    }
-                } else {
+                } else if (var.predicates().isEmpty()) {
                     throw TypeDBException.of(ATTRIBUTE_VALUE_MISSING, var.reference(), attributeType.getLabel());
+                } else {
+                    Predicate<?> predicate = var.predicates().iterator().next().predicate();
+                    if (predicate.predicate().equals(EQ) && predicate.isConstant()) {
+                        switch (attributeType.getValueType()) {
+                            case LONG:
+                                return attributeType.asLong().put(predicate.asConstant().asLong().value());
+                            case DOUBLE:
+                                return attributeType.asDouble().put(predicate.asConstant().asDouble().value());
+                            case BOOLEAN:
+                                return attributeType.asBoolean().put(predicate.asConstant().asBoolean().value());
+                            case STRING:
+                                return attributeType.asString().put(predicate.asConstant().asString().value());
+                            case DATETIME:
+                                return attributeType.asDateTime().put(predicate.asConstant().asDateTime().value());
+                            default:
+                                assert false;
+                                return null;
+                        }
+                    } else if (predicate.predicate().equals(EQ) && predicate.isValueVar()) {
+                        Value<?> value = matched.get(predicate.asValueVar().value().id()).asValue();
+                        switch (attributeType.getValueType()) {
+                            case LONG:
+                                return attributeType.asLong().put(value.asLong().value());
+                            case DOUBLE:
+                                return attributeType.asDouble().put(value.asDouble().value());
+                            case BOOLEAN:
+                                return attributeType.asBoolean().put(value.asBoolean().value());
+                            case STRING:
+                                return attributeType.asString().put(value.asString().value());
+                            case DATETIME:
+                                return attributeType.asDateTime().put(value.asDateTime().value());
+                            default:
+                                assert false;
+                                return null;
+                        }
+                    } else throw TypeDBException.of(ILLEGAL_STATE);
                 }
             }
         }

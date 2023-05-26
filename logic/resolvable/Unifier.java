@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
-import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.PredicateConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -256,10 +256,11 @@ public class Unifier {
             unifiedRequirements.types(target, allowedTypes);
         }
 
-        void addConstantValueRequirements(Set<ValueConstraint<?>> values, Retrievable id, Retrievable unifiedId) {
-            for (ValueConstraint.Constant<?> value : constantValueConstraints(values)) {
-                unifiedRequirements().predicates(unifiedId, valuePredicate(value));
-                requirements().predicates(id, valuePredicate(value));
+        void addConstantValueRequirements(Set<PredicateConstraint> values, Retrievable id, Retrievable unifiedId) {
+            for (PredicateConstraint value : constantPredicateConstraints(values)) {
+                assert value.predicate().isConstant();
+                unifiedRequirements().predicates(unifiedId, valuePredicate(value.predicate().asConstant()));
+                requirements().predicates(id, valuePredicate(value.predicate().asConstant()));
             }
         }
 
@@ -331,14 +332,14 @@ public class Unifier {
                 satisfiable = !Collections.disjoint(concludableThingVar.inferredTypes(), conclusionThingVar.inferredTypes());
             }
 
-            if (!concludableThingVar.value().isEmpty() && !conclusionThingVar.value().isEmpty()) {
-                assert conclusionThingVar.value().size() == 1;
-                ValueConstraint<?> conclusionValueConstraint = iterate(conclusionThingVar.value()).next();
+            if (!concludableThingVar.predicates().isEmpty() && !conclusionThingVar.predicates().isEmpty()) {
+                assert conclusionThingVar.predicates().size() == 1;
+                PredicateConstraint conclusionValueConstraint = iterate(conclusionThingVar.predicates()).next();
 
-                assert conclusionValueConstraint.predicate().isEquality() &&
-                        conclusionValueConstraint.predicate().asEquality().equals(EQ);
+                assert conclusionValueConstraint.predicate().predicate().isEquality() &&
+                        conclusionValueConstraint.predicate().predicate().asEquality().equals(EQ);
 
-                satisfiable &= iterate(concludableThingVar.value()).allMatch(v -> !v.inconsistentWith(conclusionValueConstraint));
+                satisfiable &= iterate(concludableThingVar.predicates()).allMatch(v -> !v.predicate().inconsistentWith(conclusionValueConstraint.predicate()));
             }
             return satisfiable;
         }
@@ -353,12 +354,12 @@ public class Unifier {
             return satisfiable;
         }
 
-        static Set<? extends ValueConstraint.Constant<?>> constantValueConstraints(Set<ValueConstraint<?>> values) {
-            return iterate(values).filter(ValueConstraint::isConstant).map(ValueConstraint::asConstant).toSet();
+        static Set<? extends PredicateConstraint> constantPredicateConstraints(Set<PredicateConstraint> predicateConstraints) {
+            return iterate(predicateConstraints).filter(pred -> pred.predicate().isConstant()).toSet();
         }
 
-        static <T> Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valuePredicate(ValueConstraint.Constant<T> value) {
-            assert !value.isVariable();
+        static <T> Function<com.vaticle.typedb.core.concept.thing.Attribute, Boolean> valuePredicate(com.vaticle.typedb.core.pattern.constraint.common.Predicate.Constant<T> value) {
+            assert !value.isThingVar();
             if (value.isString()) {
                 if (value.predicate().isEquality()) {
                     return (a) -> Predicate.Value.String.of(value.predicate()).apply(((AttributeImpl<?>) a).readableVertex(), value.asString().value());

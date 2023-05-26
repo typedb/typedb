@@ -85,7 +85,7 @@ public class RequestReader {
         }
     }
 
-    public static ValueType valueType(ConceptProto.AttributeType.ValueType valueType) {
+    public static ValueType valueType(ConceptProto.ValueType valueType) {
         switch (valueType) {
             case OBJECT:
                 return ValueType.OBJECT;

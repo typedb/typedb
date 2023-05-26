@@ -46,15 +46,15 @@ public class VariableCloner {
     public Variable clone(Variable variable) {
         if (variable.isThing()) return clone(variable.asThing());
         else if (variable.isType()) return clone(variable.asType());
+        else if (variable.isValue()) return clone(variable.asValue());
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     public ThingVariable clone(ThingVariable variable) {
         assert variable.id().isVariable();
         if (variables.containsKey(variable.id())) return variables.get(variable.id()).asThing();
-        ThingVariable newClone = new ThingVariable(variable.id());
+        ThingVariable newClone = variable.clone();
         variables.put(variable.id(), newClone);
-        newClone.setInferredTypes(variable.inferredTypes());
         newClone.constrainClone(variable, this);
         return newClone;
     }
@@ -62,9 +62,17 @@ public class VariableCloner {
     public TypeVariable clone(TypeVariable variable) {
         assert variable.id().isVariable();
         if (variables.containsKey(variable.id())) return variables.get(variable.id()).asType();
-        TypeVariable newClone = new TypeVariable(variable.id());
+        TypeVariable newClone = variable.clone();
         variables.put(variable.id(), newClone);
-        newClone.setInferredTypes(variable.inferredTypes());
+        newClone.constrainClone(variable, this);
+        return newClone;
+    }
+
+    public ValueVariable clone(ValueVariable variable) {
+        assert variable.id().isVariable();
+        if (variables.containsKey(variable.id())) return variables.get(variable.id()).asValue();
+        ValueVariable newClone = variable.clone();
+        variables.put(variable.id(), newClone);
         newClone.constrainClone(variable, this);
         return newClone;
     }

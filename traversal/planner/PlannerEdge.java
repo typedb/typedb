@@ -26,7 +26,6 @@ import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
-import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
@@ -83,7 +82,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
     static PlannerEdge<?, ?> of(PlannerVertex<?> from, PlannerVertex<?> to, StructureEdge<?, ?> edge) {
         if (edge.isEqual()) return new PlannerEdge.Equal(from, to);
-        else if (edge.isPredicate()) return new Predicate(from.asThing(), to.asThing(), edge.asPredicate().predicate());
+        else if (edge.isPredicate()) return new Predicate(from, to, edge.asPredicate().predicate());
+        else if (edge.isArgument()) return new Argument(from, to.asValue());
         else if (edge.isNative()) return PlannerEdge.Native.of(from, to, edge.asNative());
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
@@ -144,10 +144,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         OptimiserConstraint conIsMinimal;
         OptimiserVariable.Boolean[] varIsMinimalWithMultiplicity;
 
-        private final String varPrefix;
-        private final String conPrefix;
-        private final GraphPlanner planner;
-        private final Encoding.Direction.Edge direction;
+        final String varPrefix;
+        final String conPrefix;
+        final GraphPlanner planner;
+        final Encoding.Direction.Edge direction;
 
         private boolean isInitialised;
 
@@ -253,9 +253,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             double[] filters = to.ins().stream().filter(e -> !e.equals(this)).filter(this::cheaperThan).mapToDouble(e -> e.safeCost() / to.safeCost()).toArray();
             double averageFilter = 1.0;
-            if (filters.length > 0)
+            if (filters.length > 0) {
                 averageFilter = pow(Arrays.stream(filters).reduce(1.0, (a, b) -> a * b), 1.0 / filters.length);
-
+            }
             for (int i = 0; i < to.ins().size(); i++) {
                 planner.optimiser().setObjectiveCoefficient(varIsMinimalWithMultiplicity[i], log(1 + safeCost() * pow(averageFilter, i)));
             }
@@ -297,6 +297,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             return false;
         }
 
+        public boolean isArgument() {
+            return false;
+        }
+
         public boolean isNative() {
             return false;
         }
@@ -307,6 +311,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         public Predicate.Directional asPredicate() {
             throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Predicate.Directional.class));
+        }
+
+        public Argument.Directional<?,?> asArgument() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Argument.Directional.class));
         }
 
         public Native.Directional<?, ?> asNative() {
@@ -356,28 +364,29 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
     }
 
-    public static class Predicate extends PlannerEdge<PlannerVertex.Thing, PlannerVertex.Thing> {
+    public static class Predicate extends PlannerEdge<PlannerVertex<?>, PlannerVertex<?>> {
 
         private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
 
-        Predicate(PlannerVertex.Thing from, PlannerVertex.Thing to,
+        Predicate(PlannerVertex<?> from, PlannerVertex<?> to,
                   com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, predicate.toString(), false);
+            assert (from.isThing() || from.isValue()) && (to.isThing() || to.isValue());
             this.predicate = predicate;
             initialiseDirectionalEdges();
         }
 
         @Override
         protected void initialiseDirectionalEdges() {
-            forward = new Directional(from.asThing(), to.asThing(), FORWARD, predicate);
-            backward = new Directional(to.asThing(), from.asThing(), BACKWARD, predicate.reflection());
+            forward = new Directional(from, to, FORWARD, predicate);
+            backward = new Directional(to, from, BACKWARD, predicate.reflection());
         }
 
-        public static class Directional extends PlannerEdge.Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
+        public static class Directional extends PlannerEdge.Directional<PlannerVertex<?>, PlannerVertex<?>> {
 
             private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
 
-            Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Direction.Edge direction,
+            Directional(PlannerVertex<?> from, PlannerVertex<?> to, Encoding.Direction.Edge direction,
                         com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
                 super(from, to, direction, predicate.toString());
                 this.predicate = predicate;
@@ -399,14 +408,64 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             @Override
             void computeCost(GraphManager graphMgr) {
-                if (isLoop() || to().props().hasIID()) {
+                if (to.isThing()) {
+                    PlannerVertex.Thing to = this.to.asThing();
+                    if (isLoop() || to.props().hasIID()) {
+                        cost = 1;
+                    } else if (predicate.operator().equals(PredicateOperator.Equality.EQ)) {
+                        cost = to.props().types().size();
+                    } else {
+                        cost = graphMgr.data().stats().thingVertexSum(to.props().types());
+                    }
+                } else if (to.isValue()) {
                     cost = 1;
-                } else if (predicate.operator().equals(PredicateOperator.Equality.EQ)) {
-                    cost = to.props().types().size();
-                } else {
-                    cost = graphMgr.data().stats().thingVertexSum(to.props().types());
-                }
+                } else throw TypeDBException.of(ILLEGAL_STATE);
                 assert !Double.isNaN(cost);
+            }
+        }
+    }
+
+    public static class Argument extends PlannerEdge<PlannerVertex<?>, PlannerVertex.Value> {
+
+        Argument(PlannerVertex<?> from, PlannerVertex.Value to) {
+            super(from, to, "arg", true);
+        }
+
+        @Override
+        protected void initialiseDirectionalEdges() {
+            forward = new Directional<>(from, to, FORWARD);
+            backward = new Directional<>(to, from, BACKWARD);
+        }
+
+        public static class Directional<FROM extends PlannerVertex<?>, TO extends PlannerVertex<?>>
+                extends PlannerEdge.Directional<FROM, TO> {
+
+            Directional(FROM from, TO to, Encoding.Direction.Edge direction) {
+                super(from, to, direction, from.toString() + (direction.equals(FORWARD) ? "arg" : "illegal_arg") + to.toString());
+            }
+
+            @Override
+            public boolean isArgument() {
+                return true;
+            }
+
+            @Override
+            public Argument.Directional<FROM, TO> asArgument() {
+                return this;
+            }
+
+            @Override
+            void computeCost(GraphManager graphMgr) {
+                cost = 1;
+            }
+
+            @Override
+            void createOptimiserConstraints() {
+                super.createOptimiserConstraints();
+                if (direction.isForward()) {
+                    OptimiserConstraint conForceForward = planner.optimiser().constraint(1, 1, conPrefix + "force_forward");
+                    conForceForward.setCoefficient(varIsSelected, 1);
+                }
             }
         }
     }

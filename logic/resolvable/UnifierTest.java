@@ -37,13 +37,13 @@ public class UnifierTest {
     }
 
     @Test
-    public void test_constants_which_satisfy_value_constraint() {
+    public void test_constants_which_satisfy_predicate_constraint() {
         Pair<String, String>[] constraintValuePairs = new Pair[]{
                 // Boolean
                 new Pair("{ $x true; }", "{$y true;}"),
                 new Pair("{ $x false; }", "{$y false;}"),
-                new Pair("{ $x = true; }", "{$y true;}"),
-                new Pair("{ $x = false; }", "{$y false;}"),
+                new Pair("{ $x == true; }", "{$y true;}"),
+                new Pair("{ $x == false; }", "{$y false;}"),
                 new Pair("{ $x != true; }", "{$y false;}"),
                 new Pair("{ $x != false; }", "{$y true;}"),
 
@@ -53,10 +53,10 @@ public class UnifierTest {
                 new Pair("{ $x 1.0; }", "{$y 1;}"),
                 new Pair("{ $x 1.0; }", "{$y 1.0;}"),
 
-                new Pair("{ $x = 1; }", "{$y 1;}"),
-                new Pair("{ $x = 1; }", "{$y 1.0;}"),
-                new Pair("{ $x = 1.0; }", "{$y 1;}"),
-                new Pair("{ $x = 1.0; }", "{$y 1.0;}"),
+                new Pair("{ $x == 1; }", "{$y 1;}"),
+                new Pair("{ $x == 1; }", "{$y 1.0;}"),
+                new Pair("{ $x == 1.0; }", "{$y 1;}"),
+                new Pair("{ $x == 1.0; }", "{$y 1.0;}"),
 
                 new Pair("{ $x >= 1; }", "{$y 1;}"),
                 new Pair("{ $x >= 1; }", "{$y 1.0;}"),
@@ -86,7 +86,7 @@ public class UnifierTest {
 
                 // String comparisons
                 new Pair("{ $x \"one\"; }", "{$y \"one\";}"),
-                new Pair("{ $x = \"one\"; }", "{$y \"one\";}"),
+                new Pair("{ $x == \"one\"; }", "{$y \"one\";}"),
                 new Pair("{ $x >= \"one\"; }", "{$y \"one\";}"),
                 new Pair("{ $x <= \"one\"; }", "{$y \"one\";}"),
                 new Pair("{ $x != \"one\"; }", "{$y \"two\";}"),
@@ -100,7 +100,7 @@ public class UnifierTest {
 
                 // DateTime
                 new Pair("{ $x 2022-01-01; }", "{$y 2022-01-01;}"),
-                new Pair("{ $x = 2022-01-01; }", "{$y  2022-01-01;}"),
+                new Pair("{ $x == 2022-01-01; }", "{$y  2022-01-01;}"),
                 new Pair("{ $x != 2022-01-01; }", "{$y  2022-02-02;}"),
 
                 new Pair("{ $x >= 2022-01-01; }", "{$y 2022-01-01;}"),
@@ -116,23 +116,23 @@ public class UnifierTest {
             Conjunction constraint = parseConjunction(pair.first());
             Conjunction value = parseConjunction(pair.second());
 
-            assert (constraint.variable(Identifier.Variable.of(Reference.Name.name("x"))).asThing().value().size() > 0);
-            assert (value.variable(Identifier.Variable.of(Reference.Name.name("y"))).asThing().value().size() > 0);
+            assert (constraint.variable(Identifier.Variable.of(Reference.concept("x"))).asThing().predicates().size() > 0);
+            assert (value.variable(Identifier.Variable.of(Reference.concept("y"))).asThing().predicates().size() > 0);
             assertTrue(Unifier.Builder.unificationSatisfiable(
-                    constraint.variable(Identifier.Variable.of(Reference.Name.name("x"))).asThing(),
-                    value.variable(Identifier.Variable.of(Reference.Name.name("y"))).asThing()
+                    constraint.variable(Identifier.Variable.of(Reference.concept("x"))).asThing(),
+                    value.variable(Identifier.Variable.of(Reference.concept("y"))).asThing()
             ));
         }
     }
 
     @Test
-    public void test_constants_which_dont_satisfy_value_constraint() {
+    public void test_constants_which_dont_satisfy_predicate_constraint() {
         Pair<String, String>[] constraintValuePairs = new Pair[]{
                 // Boolean
                 new Pair("{ $x true; }", "{$y false;}"),
                 new Pair("{ $x false; }", "{$y true;}"),
-                new Pair("{ $x = true; }", "{$y false;}"),
-                new Pair("{ $x = false; }", "{$y true;}"),
+                new Pair("{ $x == true; }", "{$y false;}"),
+                new Pair("{ $x == false; }", "{$y true;}"),
                 new Pair("{ $x != true; }", "{$y true;}"),
                 new Pair("{ $x != false; }", "{$y false;}"),
 
@@ -142,15 +142,15 @@ public class UnifierTest {
                 new Pair("{ $x 1.0; }", "{$y 2;}"),
                 new Pair("{ $x 1.0; }", "{$y 2.0;}"),
 
-                new Pair("{ $x = 1; }", "{$y 2;}"),
-                new Pair("{ $x = 1; }", "{$y 2.0;}"),
-                new Pair("{ $x = 1.0; }", "{$y 2;}"),
-                new Pair("{ $x = 1.0; }", "{$y 2.0;}"),
+                new Pair("{ $x == 1; }", "{$y 2;}"),
+                new Pair("{ $x == 1; }", "{$y 2.0;}"),
+                new Pair("{ $x == 1.0; }", "{$y 2;}"),
+                new Pair("{ $x == 1.0; }", "{$y 2.0;}"),
 
-                new Pair("{ $x = 1; }", "{$y -1;}"),
-                new Pair("{ $x = 1; }", "{$y -1.0;}"),
-                new Pair("{ $x = 1.0; }", "{$y -1;}"),
-                new Pair("{ $x = 1.0; }", "{$y -1.0;}"),
+                new Pair("{ $x == 1; }", "{$y -1;}"),
+                new Pair("{ $x == 1; }", "{$y -1.0;}"),
+                new Pair("{ $x == 1.0; }", "{$y -1;}"),
+                new Pair("{ $x == 1.0; }", "{$y -1.0;}"),
 
                 new Pair("{ $x >= 1; }", "{$y -1;}"),
                 new Pair("{ $x >= 1; }", "{$y -1.0;}"),
@@ -190,7 +190,7 @@ public class UnifierTest {
 
                 // String comparisons
                 new Pair("{ $x \"one\"; }", "{$y \"two\";}"),
-                new Pair("{ $x = \"one\"; }", "{$y \"two\";}"),
+                new Pair("{ $x == \"one\"; }", "{$y \"two\";}"),
                 new Pair("{ $x >= \"two\"; }", "{$y \"one\";}"),
                 new Pair("{ $x <= \"one\"; }", "{$y \"two\";}"),
                 new Pair("{ $x != \"one\"; }", "{$y \"one\";}"),
@@ -201,13 +201,13 @@ public class UnifierTest {
 
                 // String comparisons, case-sensitivity
                 new Pair("{ $x \"OnE\"; }", "{$y \"oNe\";}"),
-                new Pair("{ $x = \"OnE\"; }", "{$y \"oNe\";}"),
+                new Pair("{ $x == \"OnE\"; }", "{$y \"oNe\";}"),
                 new Pair("{ $x > \"two\"; }", "{$y \"ONE\";}"),
                 new Pair("{ $x < \"ONE\"; }", "{$y \"two\";}"),
 
                 // DateTime
                 new Pair("{ $x 2022-01-01; }", "{$y  2022-02-02;}"),
-                new Pair("{ $x = 2022-01-01; }", "{$y  2022-02-02;}"),
+                new Pair("{ $x == 2022-01-01; }", "{$y  2022-02-02;}"),
                 new Pair("{ $x != 2022-01-01; }", "{$y  2022-01-01;}"),
 
                 new Pair("{ $x >= 2022-02-02; }", "{$y 2022-01-01;}"),
@@ -223,11 +223,11 @@ public class UnifierTest {
             Conjunction constraint = parseConjunction(pair.first());
             Conjunction value = parseConjunction(pair.second());
 
-            assert (constraint.variable(Identifier.Variable.of(Reference.Name.name("x"))).asThing().value().size() > 0);
-            assert (value.variable(Identifier.Variable.of(Reference.Name.name("y"))).asThing().value().size() > 0);
+            assert (constraint.variable(Identifier.Variable.of(Reference.concept("x"))).asThing().predicates().size() > 0);
+            assert (value.variable(Identifier.Variable.of(Reference.concept("y"))).asThing().predicates().size() > 0);
             assertFalse(Unifier.Builder.unificationSatisfiable(
-                    constraint.variable(Identifier.Variable.of(Reference.Name.name("x"))).asThing(),
-                    value.variable(Identifier.Variable.of(Reference.Name.name("y"))).asThing()
+                    constraint.variable(Identifier.Variable.of(Reference.concept("x"))).asThing(),
+                    value.variable(Identifier.Variable.of(Reference.concept("y"))).asThing()
             ));
         }
     }
@@ -243,11 +243,11 @@ public class UnifierTest {
             Conjunction constraint = parseConjunction(pair.first());
             Conjunction value = parseConjunction(pair.second());
 
-            assert (constraint.variable(Identifier.Variable.of(Reference.Name.name("x"))).asThing().value().size() > 0);
-            assert (value.variable(Identifier.Variable.of(Reference.Name.name("y"))).asThing().value().size() > 0);
+            assert (constraint.variable(Identifier.Variable.of(Reference.concept("x"))).asThing().predicates().size() > 0);
+            assert (value.variable(Identifier.Variable.of(Reference.concept("y"))).asThing().predicates().size() > 0);
             assertTrue(Unifier.Builder.unificationSatisfiable(
-                    constraint.variable(Identifier.Variable.of(Reference.Name.name("x"))).asThing(),
-                    value.variable(Identifier.Variable.of(Reference.Name.name("y"))).asThing()
+                    constraint.variable(Identifier.Variable.of(Reference.concept("x"))).asThing(),
+                    value.variable(Identifier.Variable.of(Reference.concept("y"))).asThing()
             ));
         }
     }
@@ -264,11 +264,11 @@ public class UnifierTest {
             Conjunction constraint = parseConjunction(pair.first());
             Conjunction value = parseConjunction(pair.second());
 
-            assert (constraint.variable(Identifier.Variable.of(Reference.Name.name("x"))).asThing().value().size() > 0);
-            assert (value.variable(Identifier.Variable.of(Reference.Name.name("y"))).asThing().value().size() > 0);
+            assert (constraint.variable(Identifier.Variable.of(Reference.concept("x"))).asThing().predicates().size() > 0);
+            assert (value.variable(Identifier.Variable.of(Reference.concept("y"))).asThing().predicates().size() > 0);
             assertFalse(Unifier.Builder.unificationSatisfiable(
-                    constraint.variable(Identifier.Variable.of(Reference.Name.name("x"))).asThing(),
-                    value.variable(Identifier.Variable.of(Reference.Name.name("y"))).asThing()
+                    constraint.variable(Identifier.Variable.of(Reference.concept("x"))).asThing(),
+                    value.variable(Identifier.Variable.of(Reference.concept("y"))).asThing()
             ));
         }
     }
@@ -280,8 +280,8 @@ public class UnifierTest {
                 new Pair("{ $x has attr $v; }", "{$y has attr true;}"),
                 new Pair("{ $x has attr $v; }", "{$y has attr false;}"),
 
-                new Pair("{ $x has attr = $v; }", "{$y has attr true;}"),
-                new Pair("{ $x has attr = $v; }", "{$y has attr false;}"),
+                new Pair("{ $x has attr == $v; }", "{$y has attr true;}"),
+                new Pair("{ $x has attr == $v; }", "{$y has attr false;}"),
 
                 new Pair("{ $x has attr != $v; }", "{$y has attr true;}"),
                 new Pair("{ $x has attr != $v; }", "{$y has attr false;}"),
@@ -290,8 +290,8 @@ public class UnifierTest {
                 new Pair("{ $x has attr $v; }", "{$y has attr 1;}"),
                 new Pair("{ $x has attr $v; }", "{$y has attr 1.0;}"),
 
-                new Pair("{ $x has attr = $v; }", "{$y has attr 1;}"),
-                new Pair("{ $x has attr = $v; }", "{$y has attr 1.0;}"),
+                new Pair("{ $x has attr == $v; }", "{$y has attr 1;}"),
+                new Pair("{ $x has attr == $v; }", "{$y has attr 1.0;}"),
 
                 new Pair("{ $x has attr >= $v; }", "{$y has attr 1;}"),
                 new Pair("{ $x has attr >= $v; }", "{$y has attr 1.0;}"),
@@ -310,7 +310,7 @@ public class UnifierTest {
                 new Pair("{ $x has attr < $v; }", "{$y has attr 1.0;}"),
 
                 // String comparisons
-                new Pair("{ $x has attr = $v; }", "{$y has attr \"one\";}"),
+                new Pair("{ $x has attr == $v; }", "{$y has attr \"one\";}"),
                 new Pair("{ $x has attr >= $v; }", "{$y has attr \"one\";}"),
                 new Pair("{ $x has attr <= $v; }", "{$y has attr \"one\";}"),
                 new Pair("{ $x has attr != $v; }", "{$y has attr \"one\";}"),
@@ -319,7 +319,7 @@ public class UnifierTest {
 
                 // DateTime
                 new Pair("{ $x has attr $v; }", "{$y has attr 2022-01-01;}"),
-                new Pair("{ $x has attr = $v; }", "{$y has attr 2022-01-01;}"),
+                new Pair("{ $x has attr == $v; }", "{$y has attr 2022-01-01;}"),
                 new Pair("{ $x has attr != $v; }", "{$y has attr 2022-01-01;}"),
                 new Pair("{ $x has attr >= $v; }", "{$y has attr 2022-01-01;}"),
                 new Pair("{ $x has attr <= $v; }", "{$y has attr 2022-01-01;}"),
@@ -331,26 +331,26 @@ public class UnifierTest {
             Conjunction constraint = parseConjunction(pair.first());
             Conjunction value = parseConjunction(pair.second());
 
-            ThingVariable constraintAttrVar = constraint.variable(Identifier.Variable.of(Reference.Name.name("x"))).asThing()
+            ThingVariable constraintAttrVar = constraint.variable(Identifier.Variable.of(Reference.concept("x"))).asThing()
                     .constraints().stream().filter(c -> c.isHas()).map(c -> c.asHas().attribute()).findAny().get();
 
-            ThingVariable valueAttrVar = value.variable(Identifier.Variable.of(Reference.Name.name("y"))).asThing()
+            ThingVariable valueAttrVar = value.variable(Identifier.Variable.of(Reference.concept("y"))).asThing()
                     .constraints().stream().filter(c -> c.isHas()).map(c -> c.asHas().attribute()).findAny().get();
 
-            assert (constraintAttrVar.value().size() > 0 || valueAttrVar.value().size() > 0);
+            assert (constraintAttrVar.predicates().size() > 0 || valueAttrVar.predicates().size() > 0);
             assertTrue(Unifier.Builder.unificationSatisfiable(constraintAttrVar, valueAttrVar));
         }
     }
 
     @Test
-    public void test_variables_always_satisfy_value_constraint() {
+    public void test_variables_always_satisfy_predicate_constraint() {
         Pair<String, String>[] constraintValuePairs = new Pair[]{
                 // Boolean
                 new Pair("{ $x has attr true; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr false; }", "{$y has attr $v;}"),
 
-                new Pair("{ $x has attr = true; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr = false; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr == true; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr == false; }", "{$y has attr $v;}"),
 
                 new Pair("{ $x has attr != true; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr != false; }", "{$y has attr $v;}"),
@@ -359,8 +359,8 @@ public class UnifierTest {
                 new Pair("{ $x has attr 1; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr 1.0; }", "{$y has attr $v;}"),
 
-                new Pair("{ $x has attr = 1; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr = 1.0; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr == 1; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr == 1.0; }", "{$y has attr $v;}"),
 
                 new Pair("{ $x has attr >= 1; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr >= 1.0; }", "{$y has attr $v;}"),
@@ -388,7 +388,7 @@ public class UnifierTest {
 
                 // DateTime
                 new Pair("{ $x has attr 2022-01-01; }", "{$y has attr $v;}"),
-                new Pair("{ $x has attr = 2022-01-01; }", "{$y has attr $v;}"),
+                new Pair("{ $x has attr == 2022-01-01; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr != 2022-01-01; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr >= 2022-01-01; }", "{$y has attr $v;}"),
                 new Pair("{ $x has attr <= 2022-01-01; }", "{$y has attr $v;}"),
@@ -404,12 +404,12 @@ public class UnifierTest {
             Conjunction constraint = parseConjunction(pair.first());
             Conjunction value = parseConjunction(pair.second());
 
-            ThingVariable constraintAttrVar = constraint.variable(Identifier.Variable.of(Reference.Name.name("x"))).asThing()
+            ThingVariable constraintAttrVar = constraint.variable(Identifier.Variable.of(Reference.concept("x"))).asThing()
                     .constraints().stream().filter(c -> c.isHas()).map(c -> c.asHas().attribute()).findAny().get();
-            ThingVariable valueAttrVar = value.variable(Identifier.Variable.of(Reference.Name.name("y"))).asThing()
+            ThingVariable valueAttrVar = value.variable(Identifier.Variable.of(Reference.concept("y"))).asThing()
                     .constraints().stream().filter(c -> c.isHas()).map(c -> c.asHas().attribute()).findAny().get();
 
-            assert (constraintAttrVar.value().size() > 0 || valueAttrVar.value().size() > 0);
+            assert (constraintAttrVar.predicates().size() > 0 || valueAttrVar.predicates().size() > 0);
             assertTrue(Unifier.Builder.unificationSatisfiable(constraintAttrVar, valueAttrVar));
         }
     }
@@ -419,7 +419,7 @@ public class UnifierTest {
         Pair<String, String>[] constraintValuePairs = new Pair[]{
                 // Both var
                 new Pair("{ $x has attr $v; }", "{$y has attr $w;}"),
-                new Pair("{ $x has attr = $v; }", "{$y has attr $w;}"),
+                new Pair("{ $x has attr == $v; }", "{$y has attr $w;}"),
                 new Pair("{ $x has attr != $v; }", "{$y has attr $w;}"),
                 new Pair("{ $x has attr <= $v; }", "{$y has attr $w;}"),
                 new Pair("{ $x has attr >= $v; }", "{$y has attr $w;}"),
@@ -431,9 +431,9 @@ public class UnifierTest {
             Conjunction constraint = parseConjunction(pair.first());
             Conjunction value = parseConjunction(pair.second());
 
-            ThingVariable constraintAttrVar = constraint.variable(Identifier.Variable.of(Reference.Name.name("x"))).asThing()
+            ThingVariable constraintAttrVar = constraint.variable(Identifier.Variable.of(Reference.concept("x"))).asThing()
                     .constraints().stream().filter(c -> c.isHas()).map(c -> c.asHas().attribute()).findAny().get();
-            ThingVariable valueAttrVar = value.variable(Identifier.Variable.of(Reference.Name.name("y"))).asThing()
+            ThingVariable valueAttrVar = value.variable(Identifier.Variable.of(Reference.concept("y"))).asThing()
                     .constraints().stream().filter(c -> c.isHas()).map(c -> c.asHas().attribute()).findAny().get();
 
             assertTrue(Unifier.Builder.unificationSatisfiable(constraintAttrVar, valueAttrVar));

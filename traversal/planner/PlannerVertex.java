@@ -186,6 +186,10 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.class));
     }
 
+    public Value asValue() {
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.class));
+    }
+
     @Override
     public String toString() {
         String string = super.toString();
@@ -277,6 +281,36 @@ public abstract class PlannerVertex<PROPERTIES extends TraversalVertex.Propertie
 
         @Override
         public PlannerVertex.Type asType() {
+            return this;
+        }
+    }
+
+    public static class Value extends PlannerVertex<Properties.Value> {
+        Value(Identifier id) {
+            this(id, null);
+        }
+
+        Value(Identifier identifier, GraphPlanner planner) {
+            super(identifier, planner);
+        }
+
+        @Override
+        void computeCost(GraphManager graphMgr) {
+            cost = INIT_ZERO;
+        }
+
+        @Override
+        protected Properties.Value newProperties() {
+            return new Properties.Value();
+        }
+
+        @Override
+        public boolean isValue() {
+            return true;
+        }
+
+        @Override
+        public Value asValue() {
             return this;
         }
     }

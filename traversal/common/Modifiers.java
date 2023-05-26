@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.traversal.common;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.pattern.variable.Variable;
 import com.vaticle.typeql.lang.query.builder.Sortable;
 
 import java.util.ArrayList;
@@ -94,7 +95,10 @@ public class Modifiers {
 
         public static Filter create(List<UnboundVariable> vars) {
             Set<Identifier.Variable.Retrievable> variables = new HashSet<>();
-            iterate(vars).map(v -> Identifier.Variable.of(v.reference().asName())).forEachRemaining(variables::add);
+            assert iterate(vars).allMatch(Variable::isNamed);
+            iterate(vars).filter(Variable::isNamed)
+                    .map(v -> Identifier.Variable.of(v.reference().asName()))
+                    .forEachRemaining(variables::add);
             return new Filter(variables);
         }
 
@@ -137,7 +141,7 @@ public class Modifiers {
             List<Identifier.Variable.Retrievable> variables = new ArrayList<>();
             Map<Identifier.Variable.Retrievable, Order> ascending = new HashMap<>();
             sort.variables().forEach(typeQLVar -> {
-                Identifier.Variable.Retrievable var = Identifier.Variable.of(typeQLVar.reference().asReferable()).asRetrievable();
+                Identifier.Variable.Retrievable var = Identifier.Variable.of(typeQLVar.reference().asName());
                 variables.add(var);
                 ascending.put(var, sort.getOrder(typeQLVar) == TypeQLArg.Order.ASC ? ASC : DESC);
             });
@@ -147,7 +151,6 @@ public class Modifiers {
         public List<Identifier.Variable.Retrievable> variables() {
             return variables;
         }
-
 
         public Optional<Order> order(Identifier id) {
             if (!id.isRetrievable()) return Optional.empty();

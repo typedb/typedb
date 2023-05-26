@@ -137,27 +137,16 @@ public abstract class Identifier {
             this.hash = Objects.hash(Variable.class, this.reference, this.id);
         }
 
-        public static Variable of(Reference.Referable reference) {
-            if (reference.isLabel()) return of(reference.asLabel());
-            else if (reference.isName()) return of(reference.asName());
-            else assert false;
-            return null;
-        }
-
-        public static Variable.Label of(Reference.Label reference) {
-            return new Label(reference);
-        }
-
-        public static Variable.Name of(Reference.Name reference) {
+        public static Name of(Reference.Name reference) {
             return new Name(reference);
+        }
+
+        public static Label of(Reference.Label reference) {
+            return new Label(reference);
         }
 
         public static Anonymous of(Reference.Anonymous reference, int id) {
             return new Anonymous(reference, id);
-        }
-
-        public static Name name(String name) {
-            return of(Reference.name(name));
         }
 
         public static Label label(String label) {
@@ -166,6 +155,14 @@ public abstract class Identifier {
 
         public static Anonymous anon(int id) {
             return Variable.of(Reference.anonymous(false), id);
+        }
+
+        public static Name namedConcept(String name) {
+            return of(Reference.concept(name)).asName();
+        }
+
+        public static Name namedValue(String name) {
+            return of(Reference.value(name)).asName();
         }
 
         public Reference reference() {
@@ -186,8 +183,8 @@ public abstract class Identifier {
             throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Retrievable.class));
         }
 
-        public Variable.Name asName() {
-            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Variable.Name.class));
+        public Name asName() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Name.class));
         }
 
         public Variable.Anonymous asAnonymous() {
@@ -238,18 +235,14 @@ public abstract class Identifier {
 
         public static class Name extends Retrievable {
 
-            private Name(Reference.Name reference) {
+            private Name(Reference reference) {
                 super(reference, null);
+                assert reference.isNameConcept() || reference.isNameValue();
             }
 
             @Override
             public String name() {
-                return reference.asName().name();
-            }
-
-            @Override
-            public Reference.Name reference() {
-                return reference.asName();
+                return reference.name();
             }
 
             @Override
@@ -258,12 +251,13 @@ public abstract class Identifier {
             }
 
             @Override
-            public Variable.Name asName() {
+            public Name asName() {
                 return this;
             }
         }
 
         public static class Anonymous extends Retrievable {
+
 
             private Anonymous(Reference.Anonymous reference, int id) {
                 super(reference, id);
@@ -291,9 +285,11 @@ public abstract class Identifier {
             public Variable.Anonymous asAnonymous() {
                 return this;
             }
+
         }
 
         public static class Label extends Variable {
+
 
             private Label(Reference.Label reference) {
                 super(reference, null);
@@ -313,6 +309,7 @@ public abstract class Identifier {
             public Variable.Label asLabel() {
                 return this;
             }
+
         }
     }
 }

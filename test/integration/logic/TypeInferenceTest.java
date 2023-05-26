@@ -361,7 +361,7 @@ public class TypeInferenceTest {
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $p has $a;" +
-                "  $a = 'bob';";
+                "  $a == 'bob';";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -383,7 +383,7 @@ public class TypeInferenceTest {
         );
 
         TypeInference typeInference = transaction.logic().typeInference();
-        String queryString = "match $x = 1; $y = 1.0; $z = 'bob';";
+        String queryString = "match $x == 1; $y == 1.0; $z == 'bob';";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -965,10 +965,10 @@ public class TypeInferenceTest {
 
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match " +
-                " $x = $y;" +
-                " $y = $z;" +
-                " $z = $w;" +
-                " $w = 1;";
+                " $x == $y;" +
+                " $y == $z;" +
+                " $z == $w;" +
+                " $w == 1;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -1000,8 +1000,8 @@ public class TypeInferenceTest {
 
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match " +
-                " $x = 'bob';" +
-                " $y = $x;" +
+                " $x == 'bob';" +
+                " $y == $x;" +
                 " $x has $y;" +
                 " $y has $x;";
 
@@ -1020,7 +1020,7 @@ public class TypeInferenceTest {
     public void multiple_value_types_returns_unsatisfiable_error() throws IOException {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
-        String queryString = "match $x = 2; $x = 'bob';";
+        String queryString = "match $x == 2; $x == 'bob';";
         Disjunction disjunction = createDisjunction(queryString);
 
         assertThrows(
@@ -1048,7 +1048,7 @@ public class TypeInferenceTest {
     public void infer_is_attribute_from_having_value() throws IOException {
         define_standard_schema("test-type-inference");
         TypeInference typeInference = transaction.logic().typeInference();
-        String queryString = "match $x = $y;";
+        String queryString = "match $x == $y;";
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 

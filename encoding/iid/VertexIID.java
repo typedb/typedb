@@ -37,8 +37,10 @@ import static com.vaticle.typedb.core.common.collection.Bytes.DOUBLE_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.LONG_SIZE;
 import static com.vaticle.typedb.core.common.collection.Bytes.booleanToByte;
 import static com.vaticle.typedb.core.common.collection.Bytes.byteToBoolean;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_IID_CASTING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ValueRead.INVALID_VALUE_IID_CASTING;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DATETIME;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
@@ -50,6 +52,7 @@ import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING_SIZE_EN
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.TIME_ZONE_ID;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ATTRIBUTE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ATTRIBUTE_TYPE;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Value.VALUE;
 
 public abstract class VertexIID extends PartitionedIID {
 
@@ -65,6 +68,8 @@ public abstract class VertexIID extends PartitionedIID {
                 return VertexIID.Type.of(bytes);
             case THING:
                 return VertexIID.Thing.of(bytes);
+            case VALUE:
+                return VertexIID.Value.of(bytes);
             default:
                 return null;
         }
@@ -129,7 +134,6 @@ public abstract class VertexIID extends PartitionedIID {
             return readableString;
         }
     }
-
 
     public static class Thing extends VertexIID {
 
@@ -213,15 +217,23 @@ public abstract class VertexIID extends PartitionedIID {
         static final int VALUE_TYPE_INDEX = PrefixIID.LENGTH + VertexIID.Type.LENGTH;
         static final int VALUE_INDEX = VALUE_TYPE_INDEX + VALUE_TYPE_LENGTH;
         private final Encoding.ValueType<VALUE> valueType;
+        VALUE value;
 
-        Attribute(Encoding.ValueType<VALUE> valueType, Type typeIID, ByteArray valueBytes) {
-            this(join(ATTRIBUTE.prefix().bytes(), typeIID.bytes, valueType.bytes(), valueBytes), valueType);
+        Attribute(Encoding.ValueType<VALUE> valueType, Type typeIID, ByteArray valueBytes, VALUE value) {
+            this(join(ATTRIBUTE.prefix().bytes(), typeIID.bytes, valueType.bytes(), valueBytes), valueType, value);
         }
 
         private Attribute(ByteArray bytes, Encoding.ValueType<VALUE> valueType) {
             super(bytes);
             assert bytes.get(PREFIX_W_TYPE_LENGTH) == valueType.key();
             this.valueType = valueType;
+        }
+
+        private Attribute(ByteArray bytes, Encoding.ValueType<VALUE> valueType, VALUE value) {
+            super(bytes);
+            assert bytes.get(PREFIX_W_TYPE_LENGTH) == valueType.key();
+            this.valueType = valueType;
+            this.value = value;
         }
 
         public static VertexIID.Attribute<?> of(ByteArray bytes) {
@@ -300,7 +312,7 @@ public abstract class VertexIID extends PartitionedIID {
             }
 
             public Boolean(VertexIID.Type typeIID, boolean value) {
-                super(BOOLEAN, typeIID, ByteArray.of(new byte[]{booleanToByte(value)}));
+                super(BOOLEAN, typeIID, ByteArray.of(new byte[]{booleanToByte(value)}), value);
             }
 
             public static VertexIID.Attribute.Boolean extract(ByteArray bytes, int from) {
@@ -309,7 +321,8 @@ public abstract class VertexIID extends PartitionedIID {
 
             @Override
             public java.lang.Boolean value() {
-                return byteToBoolean(bytes.get(VALUE_INDEX));
+                if (value == null) value = byteToBoolean(bytes.get(VALUE_INDEX));
+                return value;
             }
 
             @Override
@@ -325,7 +338,7 @@ public abstract class VertexIID extends PartitionedIID {
             }
 
             public Long(VertexIID.Type typeIID, long value) {
-                super(LONG, typeIID, encodeLongAsSorted(value));
+                super(LONG, typeIID, encodeLongAsSorted(value), value);
             }
 
             public static VertexIID.Attribute.Long extract(ByteArray bytes, int from) {
@@ -334,7 +347,8 @@ public abstract class VertexIID extends PartitionedIID {
 
             @Override
             public java.lang.Long value() {
-                return bytes.view(VALUE_INDEX, VALUE_INDEX + LONG_SIZE).decodeSortedAsLong();
+                if (value == null) value = bytes.view(VALUE_INDEX, VALUE_INDEX + LONG_SIZE).decodeSortedAsLong();
+                return value;
             }
 
             @Override
@@ -349,8 +363,8 @@ public abstract class VertexIID extends PartitionedIID {
                 super(bytes, DOUBLE);
             }
 
-            public Double(VertexIID.Type typeIID, double value) {
-                super(DOUBLE, typeIID, encodeDoubleAsSorted(value));
+            public Double(VertexIID.Type typeIID, java.lang.Double value) throws TypeDBCheckedException {
+                super(DOUBLE, typeIID, encodeDoubleAsSorted(value), value);
             }
 
             public static VertexIID.Attribute.Double extract(ByteArray bytes, int from) {
@@ -359,7 +373,8 @@ public abstract class VertexIID extends PartitionedIID {
 
             @Override
             public java.lang.Double value() {
-                return bytes.view(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE).decodeSortedAsDouble();
+                if (value == null) value = bytes.view(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE).decodeSortedAsDouble();
+                return value;
             }
 
             @Override
@@ -375,7 +390,7 @@ public abstract class VertexIID extends PartitionedIID {
             }
 
             public String(VertexIID.Type typeIID, java.lang.String value) throws TypeDBCheckedException {
-                super(STRING, typeIID, encodeStringAsSorted(value, STRING_ENCODING));
+                super(STRING, typeIID, encodeStringAsSorted(value, STRING_ENCODING), value);
                 assert bytes.length() <= STRING_MAX_SIZE + STRING_SIZE_ENCODING;
             }
 
@@ -388,7 +403,9 @@ public abstract class VertexIID extends PartitionedIID {
 
             @Override
             public java.lang.String value() {
-                return bytes.view(VALUE_INDEX, bytes.length()).decodeSortedAsString(STRING_ENCODING);
+                if (value == null)
+                    value = bytes.view(VALUE_INDEX, bytes.length()).decodeSortedAsString(STRING_ENCODING);
+                return value;
             }
 
             @Override
@@ -404,7 +421,7 @@ public abstract class VertexIID extends PartitionedIID {
             }
 
             public DateTime(VertexIID.Type typeIID, java.time.LocalDateTime value) {
-                super(DATETIME, typeIID, encodeDateTimeAsSorted(value, TIME_ZONE_ID));
+                super(DATETIME, typeIID, encodeDateTimeAsSorted(value, TIME_ZONE_ID), value);
             }
 
             public static VertexIID.Attribute.DateTime extract(ByteArray bytes, int from) {
@@ -413,12 +430,195 @@ public abstract class VertexIID extends PartitionedIID {
 
             @Override
             public java.time.LocalDateTime value() {
-                return bytes.view(VALUE_INDEX, bytes.length()).decodeSortedAsDateTime(TIME_ZONE_ID);
+                if (value == null) value = bytes.view(VALUE_INDEX, bytes.length()).decodeSortedAsDateTime(TIME_ZONE_ID);
+                return value;
             }
 
             @Override
             public DateTime asDateTime() {
                 return this;
+            }
+        }
+    }
+
+    public abstract static class Value<VALUE> extends VertexIID {
+        private static final int VALUE_TYPE_INDEX = PrefixIID.LENGTH;
+        private static final int VALUE_TYPE_LENGTH = 1;
+        private static final int VALUE_INDEX = PrefixIID.LENGTH + VALUE_TYPE_LENGTH;
+
+        private final Encoding.ValueType<VALUE> valueType;
+        VALUE value;
+
+        private Value(Encoding.ValueType<VALUE> valueType, ByteArray bytes) {
+            super(bytes);
+            assert bytes.get(VALUE_TYPE_INDEX) == valueType.key();
+            this.valueType = valueType;
+        }
+
+        private Value(Encoding.ValueType<VALUE> valueType, ByteArray bytes, VALUE value) {
+            super(bytes);
+            assert bytes.get(VALUE_TYPE_INDEX) == valueType.key();
+            this.valueType = valueType;
+            this.value = value;
+        }
+
+        private static ByteArray valueBytesToIID(Encoding.ValueType<?> valueType, ByteArray valueBytes) {
+            return join(VALUE.prefix().bytes(), valueType.bytes(), valueBytes);
+        }
+
+        public static Value<?> of(ByteArray bytes) {
+            assert Encoding.Vertex.Value.of(bytes.get(0)).equals(VALUE);
+            Encoding.ValueType<?> valueType = Encoding.ValueType.of(bytes.get(VALUE_TYPE_INDEX));
+            if (valueType == BOOLEAN) return new Boolean(bytes);
+            else if (valueType == LONG) return new Long(bytes);
+            else if (valueType == DOUBLE) return new Double(bytes);
+            else if (valueType == STRING) return new String(bytes);
+            else if (valueType == DATETIME) return new DateTime(bytes);
+            else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        public Encoding.ValueType<VALUE> valueType() {
+            return valueType;
+        }
+
+        public abstract VALUE value();
+
+        @Override
+        public Encoding.Vertex.Value encoding() {
+            return Encoding.Vertex.Value.VALUE;
+        }
+
+        @Override
+        public java.lang.String toString() {
+            return "ValueVertex[" + valueType + ": " + value() + "]";
+        }
+
+        public VertexIID.Value.Boolean asBoolean() {
+            throw TypeDBException.of(INVALID_VALUE_IID_CASTING, className(Value.Boolean.class));
+        }
+
+        public VertexIID.Value.Long asLong() {
+            throw TypeDBException.of(INVALID_VALUE_IID_CASTING, className(Value.Long.class));
+        }
+
+        public VertexIID.Value.Double asDouble() {
+            throw TypeDBException.of(INVALID_VALUE_IID_CASTING, className(Value.Double.class));
+        }
+
+        public VertexIID.Value.String asString() {
+            throw TypeDBException.of(INVALID_VALUE_IID_CASTING, className(Value.String.class));
+        }
+
+        public VertexIID.Value.DateTime asDateTime() {
+            throw TypeDBException.of(INVALID_VALUE_IID_CASTING, className(Value.DateTime.class));
+        }
+
+        public static class Boolean extends Value<java.lang.Boolean> {
+
+            private Boolean(ByteArray bytes) {
+                super(BOOLEAN, bytes);
+            }
+
+            public Boolean(boolean value) {
+                super(BOOLEAN, valueBytesToIID(BOOLEAN, ByteArray.of(new byte[]{booleanToByte(value)})), value);
+            }
+
+            @Override
+            public Boolean asBoolean() {
+                return this;
+            }
+
+            @Override
+            public java.lang.Boolean value() {
+                if (value == null) value = byteToBoolean(bytes.get(VALUE_INDEX));
+                return value;
+            }
+        }
+
+        public static class Long extends Value<java.lang.Long> {
+
+            private Long(ByteArray bytes) {
+                super(LONG, bytes);
+            }
+
+            public Long(long value) {
+                super(LONG, valueBytesToIID(LONG, encodeLongAsSorted(value)), value);
+            }
+
+            @Override
+            public Long asLong() {
+                return this;
+            }
+
+            @Override
+            public java.lang.Long value() {
+                if (value == null) value = bytes.view(VALUE_INDEX, VALUE_INDEX + LONG_SIZE).decodeSortedAsLong();
+                return value;
+            }
+        }
+
+        public static class Double extends Value<java.lang.Double> {
+
+            private Double(ByteArray bytes) {
+                super(DOUBLE, bytes);
+            }
+
+            public Double(java.lang.Double value) throws TypeDBCheckedException {
+                super(DOUBLE, valueBytesToIID(DOUBLE, encodeDoubleAsSorted(value)), value);
+            }
+            @Override
+            public Double asDouble() {
+                return this;
+            }
+
+            @Override
+            public java.lang.Double value() {
+                if (value == null) value = bytes.view(VALUE_INDEX, VALUE_INDEX + DOUBLE_SIZE).decodeSortedAsDouble();
+                return value;
+            }
+        }
+
+        public static class String extends Value<java.lang.String> {
+
+            private String(ByteArray bytes) {
+                super(STRING, bytes);
+            }
+
+            public String(java.lang.String value) throws TypeDBCheckedException {
+                super(STRING, valueBytesToIID(STRING, encodeStringAsSorted(value, STRING_ENCODING)), value);
+            }
+
+            @Override
+            public String asString() {
+                return this;
+            }
+
+            @Override
+            public java.lang.String value() {
+                if (value == null) value = bytes.view(VALUE_INDEX).decodeSortedAsString(STRING_ENCODING);
+                return value;
+            }
+        }
+
+        public static class DateTime extends Value<java.time.LocalDateTime> {
+
+            private DateTime(ByteArray bytes) {
+                super(DATETIME, bytes);
+            }
+
+            public DateTime(java.time.LocalDateTime value) {
+                super(DATETIME, valueBytesToIID(DATETIME, encodeDateTimeAsSorted(value, TIME_ZONE_ID)), value);
+            }
+
+            @Override
+            public DateTime asDateTime() {
+                return this;
+            }
+
+            @Override
+            public java.time.LocalDateTime value() {
+                if (value == null) value = bytes.view(VALUE_INDEX, bytes.length()).decodeSortedAsDateTime(TIME_ZONE_ID);
+                return value;
             }
         }
     }
