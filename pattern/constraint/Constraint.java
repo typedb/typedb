@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.pattern.constraint;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.constraint.value.ValueConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
 import com.vaticle.typedb.core.pattern.variable.Variable;
@@ -46,12 +47,18 @@ public abstract class Constraint {
         return false;
     }
 
+    public boolean isValue() { return false; }
+
     public TypeConstraint asType() {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(TypeConstraint.class));
     }
 
     public ThingConstraint asThing() {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(ThingConstraint.class));
+    }
+
+    public ValueConstraint asValue() {
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(ValueConstraint.class));
     }
 
     @Override

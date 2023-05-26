@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.test.behaviour.reasoner.verification;
 
 import com.vaticle.typedb.common.collection.Pair;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
@@ -26,8 +27,12 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.pattern.Conjunction;
+import com.vaticle.typedb.core.pattern.constraint.common.Predicate;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,6 +40,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class BoundPattern {
@@ -146,9 +154,7 @@ public class BoundPattern {
         BoundConcludable removeInferredBound() {
             // Remove the bound for the variable that the conclusion may generate
             Set<Variable.Retrievable> nonGenerating = new HashSet<>(unboundConcludable.retrieves());
-            if (unboundConcludable.generating().isPresent()) {
-                nonGenerating.remove(unboundConcludable.generating().get().id());
-            }
+            nonGenerating.remove(unboundConcludable.generatingVariable().id());
             return BoundConcludable.create(unboundConcludable, conjunction.bounds().filter(nonGenerating));
         }
 
@@ -173,11 +179,41 @@ public class BoundPattern {
             assert this.unboundConclusion.pattern().retrieves().containsAll(conjunction.bounds().concepts().keySet());
         }
 
-        public static BoundConclusion create(Rule.Conclusion conclusion, Map<Variable, Concept> conclusionAnswer) {
+        public static BoundConclusion create(Rule.Conclusion conclusion, Map<Variable, Concept> conclusionAnswer, @Nullable Attribute assignedValue) {
             return new BoundConclusion(BoundConjunction.create(
-                    conclusion.pattern(),
+                    valueVariableAssignmentToAttributePredicate(conclusion, conclusionAnswer, assignedValue),
                     new ConceptMap(filterRetrievable(conclusionAnswer))
             ), conclusion, conclusionAnswer);
+        }
+
+        private static Conjunction valueVariableAssignmentToAttributePredicate(Rule.Conclusion conclusion, Map<Variable, Concept> conclusionAnswer, @Nullable Attribute assignedValue) {
+            if (conclusion.isHasWithIsa() && conclusion.asHasWithIsa().value().predicate().isValueVar()) {
+                Predicate.ValueVar val = conclusion.asHasWithIsa().value().predicate().asValueVar();
+                assert val.predicate().equals(TypeQLToken.Predicate.Equality.EQ);
+
+                Attribute assigned;
+                if (assignedValue == null) {
+                    assigned = conclusionAnswer.get(conclusion.asHasWithIsa().attribute().id()).asAttribute();
+                } else assigned = assignedValue;
+                assert assigned != null;
+
+                ThingVariable newAttr = new ThingVariable(conclusion.asHas().attribute().id());
+                if (assigned.isBoolean()) {
+                    newAttr.predicate(new Predicate.Constant.Boolean(TypeQLToken.Predicate.Equality.EQ, assigned.asBoolean().getValue()));
+                } else if (assigned.isDouble()) {
+                    newAttr.predicate(new Predicate.Constant.Double(TypeQLToken.Predicate.Equality.EQ, assigned.asDouble().getValue()));
+                } else if (assigned.isLong()) {
+                    newAttr.predicate(new Predicate.Constant.Long(TypeQLToken.Predicate.Equality.EQ, assigned.asLong().getValue()));
+                } else if (assigned.isString()) {
+                    newAttr.predicate(new Predicate.Constant.String(TypeQLToken.Predicate.Equality.EQ, assigned.asString().getValue()));
+                } else if (assigned.isDateTime()) {
+                    newAttr.predicate(new Predicate.Constant.DateTime(TypeQLToken.Predicate.Equality.EQ, assigned.asDateTime().getValue()));
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+
+                ThingVariable newOwner = new ThingVariable(conclusion.asHas().owner().id());
+                newOwner.has(newAttr);
+                return new Conjunction(set(newOwner, newAttr), list());
+            } else return conclusion.pattern();
         }
 
         private static Map<Variable.Retrievable, Concept> filterRetrievable(Map<Variable, Concept> concepts) {
@@ -190,12 +226,14 @@ public class BoundPattern {
 
         public BoundConclusion removeInferredBound() {
             Set<Variable.Retrievable> nonGenerating = new HashSet<>(unboundConclusion.retrievableIds());
-            if (unboundConclusion.generating().isPresent()) nonGenerating.remove(unboundConclusion.generating().get().id());
+            if (unboundConclusion.generating().isPresent())
+                nonGenerating.remove(unboundConclusion.generating().get().id());
             Map<Variable, Concept> nonGeneratingBounds = new HashMap<>();
             bounds().forEach((v, c) -> {
                 if (v.isRetrievable() && nonGenerating.contains(v.asRetrievable())) nonGeneratingBounds.put(v, c);
             });
-            return BoundConclusion.create(unboundConclusion, nonGeneratingBounds);
+            Attribute assignedValue = (unboundConclusion.isHasWithIsa()) ? bounds().get(unboundConclusion.generating().get().id()).asAttribute() : null;
+            return BoundConclusion.create(unboundConclusion, nonGeneratingBounds, assignedValue);
         }
 
         public BoundConjunction pattern() {
@@ -221,7 +259,7 @@ public class BoundPattern {
         public Optional<Pair<Thing, Attribute>> inferredHas() {
             if (unboundConclusion.isHas()) {
                 Thing owner = conjunction.bounds().get(unboundConclusion.asHas().owner().id()).asThing();
-                Attribute attribute =conjunction.bounds().get(unboundConclusion.asHas().attribute().id()).asAttribute();
+                Attribute attribute = conjunction.bounds().get(unboundConclusion.asHas().attribute().id()).asAttribute();
                 return Optional.of(new Pair<>(owner, attribute));
             } else {
                 return Optional.empty();

@@ -23,6 +23,8 @@ import com.vaticle.typedb.core.concept.Concept;
 import java.util.List;
 import java.util.Objects;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+
 public class ConceptMapGroup implements Answer {
     private final Concept owner;
     private final List<? extends ConceptMap> conceptMaps;
@@ -40,6 +42,11 @@ public class ConceptMapGroup implements Answer {
 
     public List<? extends ConceptMap> conceptMaps() {
         return this.conceptMaps;
+    }
+
+    @Override
+    public String toString() {
+        return owner + ":[" + String.join(", ", iterate(conceptMaps).map(ConceptMap::toString).toList()) + "]";
     }
 
     @Override

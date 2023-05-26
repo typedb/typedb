@@ -64,7 +64,7 @@ public class ConjunctionTest {
         assertEquals(expectedVariableStrings, variableStrings);
 
         Set<String> expectedConstraintStrings = set("$p isa person", "$p has $n",
-                                                    "$n isa name", "$n = \"Alice\"",
+                                                    "$n isa name", "$n == \"Alice\"",
                                                     "$e (employee:$p)", "$e isa employment");
         String conjunctionString = conjunction.toString();
         assertEquals(expectedNewlines(expectedConstraintStrings), newlinesIn(conjunctionString));

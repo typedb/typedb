@@ -19,15 +19,14 @@ package com.vaticle.typedb.core.logic.resolvable;
 
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.Negation;
-import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static java.util.Collections.emptySet;
 
 public class Negated extends Resolvable<Disjunction> {
     // note: we always guarantee unique anonymous IDs within one query
@@ -46,8 +45,8 @@ public class Negated extends Resolvable<Disjunction> {
     }
 
     @Override
-    public Optional<ThingVariable> generating() {
-        return Optional.empty();
+    public Set<Variable> generating() {
+        return emptySet();
     }
 
     @Override
@@ -56,7 +55,9 @@ public class Negated extends Resolvable<Disjunction> {
     }
 
     @Override
-    public Set<Variable> variables() { return iterate(pattern().conjunctions()).flatMap(conj -> iterate(conj.variables())).toSet(); }
+    public Set<Variable> variables() {
+        return iterate(pattern().conjunctions()).flatMap(conj -> iterate(conj.variables())).toSet();
+    }
 
     @Override
     public boolean isNegated() {

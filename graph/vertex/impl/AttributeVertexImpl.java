@@ -101,18 +101,18 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public boolean isValue() {
+        public boolean isValueSortable() {
             return false;
         }
 
         @Override
-        public Value<VALUE> asValue() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(AttributeVertex.Value.class));
+        public ValueSortable<VALUE> asValueSortable() {
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(ValueSortable.class));
         }
 
         @Override
-        public Value<VALUE> toValue() {
-            return new AttributeVertexImpl.Value<>(this);
+        public ValueSortable<VALUE> toValueSortable() {
+            return new AttributeVertexImpl.ValueSortable<>(this);
         }
 
         @Override
@@ -342,18 +342,18 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public boolean isValue() {
+        public boolean isValueSortable() {
             return false;
         }
 
         @Override
-        public Value<VALUE> toValue() {
-            return new AttributeVertexImpl.Value<>(this);
+        public ValueSortable<VALUE> toValueSortable() {
+            return new AttributeVertexImpl.ValueSortable<>(this);
         }
 
         @Override
-        public Value<VALUE> asValue() {
-            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(AttributeVertex.Value.class));
+        public ValueSortable<VALUE> asValueSortable() {
+            throw TypeDBException.of(INVALID_THING_VERTEX_CASTING, className(getClass()), className(ValueSortable.class));
         }
 
         @Override
@@ -556,11 +556,11 @@ public abstract class AttributeVertexImpl {
         }
     }
 
-    static class Value<VALUE> extends AttributeVertexImpl.Read<VALUE> implements AttributeVertex.Value<VALUE> {
+    static class ValueSortable<VALUE> extends AttributeVertexImpl.Read<VALUE> implements AttributeVertex.ValueSortable<VALUE> {
 
         private final AttributeVertex<VALUE> attributeVertex;
 
-        Value(AttributeVertex<VALUE> attributeVertex) {
+        ValueSortable(AttributeVertex<VALUE> attributeVertex) {
             super(attributeVertex.graph(), attributeVertex.iid());
             this.attributeVertex = attributeVertex;
         }
@@ -571,31 +571,31 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
-        public boolean isValue() {
+        public boolean isValueSortable() {
             return true;
         }
 
         @Override
-        public Value<VALUE> asValue() {
+        public ValueSortable<VALUE> asValueSortable() {
             return this;
         }
 
         @Override
-        public Value<VALUE> toValue() {
+        public ValueSortable<VALUE> toValueSortable() {
             return this;
         }
 
         @Override
         public int compareTo(Vertex<?, ?> other) {
-            if (other.isThing() && other.asThing().isAttribute() && other.asThing().asAttribute().isValue()) {
-                Value<?> value = other.asThing().asAttribute().asValue();
-                int comp = compareValue(value);
-                return comp == 0 ? type().compareTo(value.type()) : comp;
+            if (other.isThing() && other.asThing().isAttribute() && other.asThing().asAttribute().isValueSortable()) {
+                ValueSortable<?> asValueSortable = other.asThing().asAttribute().asValueSortable();
+                int comp = compareValue(asValueSortable);
+                return comp == 0 ? type().compareTo(asValueSortable.type()) : comp;
             } else return super.compareTo(other);
         }
 
-        private <T> int compareValue(Value<T> valueVertex) {
-            return Encoding.ValueType.compare(valueType(), value(), valueVertex.valueType(), valueVertex.value());
+        private <T> int compareValue(ValueSortable<T> valueSortableVertex) {
+            return Encoding.ValueType.compare(valueType(), value(), valueSortableVertex.valueType(), valueSortableVertex.value());
         }
     }
 }

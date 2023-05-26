@@ -67,12 +67,20 @@ public abstract class Variable implements Pattern {
         return false;
     }
 
+    public boolean isValue() {
+        return false;
+    }
+
     public TypeVariable asType() {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(TypeVariable.class));
     }
 
     public ThingVariable asThing() {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(ThingVariable.class));
+    }
+
+    public ValueVariable asValue() {
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(ValueVariable.class));
     }
 
     public void addInferredTypes(Label label) {

@@ -71,6 +71,14 @@ public class Structure {
         }).asType();
     }
 
+    public StructureVertex.Value valueVertex(Identifier.Variable identifier) {
+        return vertices.computeIfAbsent(identifier, id -> {
+            StructureVertex.Value v = new StructureVertex.Value(id);
+            if (id.isVariable()) properties.put(id.asVariable(), v.props());
+            return v;
+        }).asValue();
+    }
+
     public Collection<StructureVertex<?>> vertices() {
         return vertices.values();
     }
@@ -80,13 +88,19 @@ public class Structure {
     }
 
     public void equalEdge(StructureVertex<?> from, StructureVertex<?> to) {
-        StructureEdge.Equal edge = new StructureEdge.Equal(from, to);
-        recordEdge(edge);
+        recordEdge(new StructureEdge.Equal(from, to));
     }
 
-    public void predicateEdge(StructureVertex.Thing from, StructureVertex.Thing to, Predicate.Variable predicate) {
-        StructureEdge.Predicate edge = new StructureEdge.Predicate(from, to, predicate);
-        recordEdge(edge);
+    public void predicateEdge(StructureVertex<?> from, StructureVertex<?> to, Predicate.Variable predicate) {
+        recordEdge(new StructureEdge.Predicate(from, to, predicate));
+    }
+
+    public void argumentEdge(StructureVertex.Value argument, StructureVertex.Value result) {
+        recordEdge(new StructureEdge.Argument(argument, result));
+    }
+
+    public void argumentEdge(StructureVertex.Thing argument, StructureVertex.Value result) {
+        recordEdge(new StructureEdge.Argument(argument, result));
     }
 
     public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, Set<TypeQLToken.Annotation> annotations) {

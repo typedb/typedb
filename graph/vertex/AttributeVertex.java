@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.encoding.iid.VertexIID;
 
 import java.time.LocalDateTime;
 
-public interface AttributeVertex<VALUE> extends ThingVertex {
+public interface AttributeVertex<VALUE> extends ThingVertex, Value<VALUE> {
 
     /**
      * Returns the IID of this {@code AttributeVertex}.
@@ -50,21 +50,11 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
 
     AttributeVertex.Write<VALUE> asWrite();
 
-    boolean isValue();
+    boolean isValueSortable();
 
-    AttributeVertex.Value<VALUE> asValue();
+    ValueSortable<VALUE> asValueSortable();
 
-    AttributeVertex.Value<VALUE> toValue();
-
-    boolean isBoolean();
-
-    boolean isLong();
-
-    boolean isDouble();
-
-    boolean isString();
-
-    boolean isDateTime();
+    ValueSortable<VALUE> toValueSortable();
 
     AttributeVertex<Boolean> asBoolean();
 
@@ -95,7 +85,7 @@ public interface AttributeVertex<VALUE> extends ThingVertex {
     /**
      * An vertex wrapper that sorts based on its value, then type -- as opposed to type, then value.
      */
-    interface Value<VALUE> extends AttributeVertex<VALUE> {
+    interface ValueSortable<VALUE> extends AttributeVertex<VALUE> {
 
         AttributeVertex<VALUE> toAttribute();
 

@@ -46,12 +46,20 @@ public interface Vertex<VERTEX_IID extends VertexIID, VERTEX_ENCODING extends En
         return false;
     }
 
+    default boolean isValue() {
+        return false;
+    }
+
     default ThingVertex asThing() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(ThingVertex.class));
     }
 
     default TypeVertex asType() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(TypeVertex.class));
+    }
+
+    default ValueVertex<?> asValue() {
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(ValueVertex.class));
     }
 
     @Override

@@ -29,7 +29,8 @@ import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.logic.Rule.Conclusion;
-import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
+import com.vaticle.typedb.core.pattern.constraint.common.Predicate;
+import com.vaticle.typedb.core.pattern.constraint.thing.PredicateConstraint;
 import com.vaticle.typedb.core.traversal.RelationTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -58,51 +59,55 @@ public class Materialiser {
                                                         ConceptManager conceptMgr) {
         if (materialisable.isRelation()) {
             return materialise(materialisable.asRelation(), traversalEng, conceptMgr);
-        } else if (materialisable.isHasExplicit()) {
-            return materialise(materialisable.asHasExplicit());
-        } else if (materialisable.isHasVariable()) {
-            return materialise(materialisable.asHasVariable());
+        } else if (materialisable.isHasWithIsa()) {
+            return materialise(materialisable.asHasWithIsa());
+        } else if (materialisable.isHasWithoutIsa()) {
+            return materialise(materialisable.asHasWithoutIsa());
         } else {
             throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
-    private static Optional<Materialisation> materialise(Conclusion.Has.Explicit.Materialisable materialisable) {
+    private static Optional<Materialisation> materialise(Conclusion.Has.WithIsa.Materialisable materialisable) {
         Attribute attribute = getAttribute(materialisable.attrType(), materialisable.value())
                 .orElseGet(() -> putAttribute(materialisable.attrType(), materialisable.value()));
         if (materialisable.owner().hasNonInferred(attribute)) return Optional.empty();
         else {
             materialisable.owner().setHas(attribute, true);
-            return Optional.of(new Materialisation.Has.Explicit(
+            return Optional.of(new Materialisation.Has.WithIsa(
                     materialisable.owner(), materialisable.attrType(), attribute)
             );
         }
     }
 
-    private static Optional<Attribute> getAttribute(AttributeType attrType, ValueConstraint<?> value) {
-        if (attrType.isDateTime()) return Optional.ofNullable(attrType.asDateTime().get(value.asConstant().asDateTime().value()));
-        else if (attrType.isBoolean()) return Optional.ofNullable(attrType.asBoolean().get(value.asConstant().asBoolean().value()));
-        else if (attrType.isDouble()) return Optional.ofNullable(attrType.asDouble().get(value.asConstant().asDouble().value()));
-        else if (attrType.isLong()) return Optional.ofNullable(attrType.asLong().get(value.asConstant().asLong().value()));
-        else if (attrType.isString()) return Optional.ofNullable(attrType.asString().get(value.asConstant().asString().value()));
+    private static Optional<Attribute> getAttribute(AttributeType attrType, PredicateConstraint valueIdentityConstraint) {
+        assert valueIdentityConstraint.predicate().isValueIdentity();
+        Predicate.Constant<?> asConstant = valueIdentityConstraint.predicate().asConstant();
+        if (attrType.isDateTime()) return Optional.ofNullable(attrType.asDateTime().get(asConstant.asDateTime().value()));
+        else if (attrType.isBoolean()) return Optional.ofNullable(attrType.asBoolean().get(asConstant.asBoolean().value()));
+        else if (attrType.isDouble()) return Optional.ofNullable(attrType.asDouble().get(asConstant.asDouble().value()));
+        else if (attrType.isLong()) return Optional.ofNullable(attrType.asLong().get(asConstant.asLong().value()));
+        else if (attrType.isString()) return Optional.ofNullable(attrType.asString().get(asConstant.asString().value()));
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private static Attribute putAttribute(AttributeType attrType, ValueConstraint<?> value) {
-        if (attrType.isDateTime()) return attrType.asDateTime().put(value.asConstant().asDateTime().value(), true);
-        else if (attrType.isBoolean()) return attrType.asBoolean().put(value.asConstant().asBoolean().value(), true);
-        else if (attrType.isDouble()) return attrType.asDouble().put(value.asConstant().asDouble().value(), true);
-        else if (attrType.isLong()) return attrType.asLong().put(value.asConstant().asLong().value(), true);
-        else if (attrType.isString()) return attrType.asString().put(value.asConstant().asString().value(), true);
+    private static Attribute putAttribute(AttributeType attrType, PredicateConstraint valueIdentityConstraint) {
+        assert valueIdentityConstraint.predicate().isValueIdentity();
+        Predicate.Constant<?> asConstant = valueIdentityConstraint.predicate().asConstant();
+        if (attrType.isDateTime()) return attrType.asDateTime().put(asConstant.asDateTime().value(), true);
+        else if (attrType.isBoolean()) return attrType.asBoolean().put(asConstant.asBoolean().value(), true);
+        else if (attrType.isDouble()) return attrType.asDouble().put(asConstant.asDouble().value(), true);
+        else if (attrType.isLong()) return attrType.asLong().put(asConstant.asLong().value(), true);
+        else if (attrType.isString()) return attrType.asString().put(asConstant.asString().value(), true);
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
-    private static Optional<Materialisation> materialise(Conclusion.Has.Variable.Materialisable materialisable) {
+    private static Optional<Materialisation> materialise(Conclusion.Has.WithoutIsa.Materialisable materialisable) {
         Thing owner = materialisable.owner();
         Attribute attribute = materialisable.attribute();
         if (owner.hasNonInferred(attribute)) return Optional.empty();
         else owner.setHas(attribute, true);
-        return Optional.of(new Materialisation.Has.Variable(owner, attribute));
+        return Optional.of(new Materialisation.Has.WithoutIsa(owner, attribute));
     }
 
     private static Optional<Materialisation> materialise(
@@ -198,33 +203,31 @@ public class Materialiser {
             }
         }
 
-        public static abstract  class Has extends Materialisation {
+        public static abstract class Has extends Materialisation {
 
-            public static class Explicit extends Has {
-
+            public static class WithIsa extends Has {
                 private final Thing owner;
-                private final AttributeType attrType;
                 private final Attribute attribute;
+                private final AttributeType attrType;
 
-                private Explicit(Thing owner, AttributeType attrType, Attribute attribute) {
+                private WithIsa(Thing owner, AttributeType attrType, Attribute attribute) {
                     this.owner = owner;
-                    this.attrType = attrType;
                     this.attribute = attribute;
+                    this.attrType = attrType;
                 }
 
                 @Override
                 public Map<Identifier.Variable, Concept> bindToConclusion(Conclusion conclusion, ConceptMap whenConcepts) {
-                    assert conclusion.isExplicitHas();
-                    return conclusion.asExplicitHas().thenConcepts(owner, attrType, attribute, whenConcepts);
+                    assert conclusion.isHasWithIsa();
+                    return conclusion.asHasWithIsa().thenConcepts(attribute, attrType, whenConcepts);
                 }
 
                 @Override
                 public boolean equals(Object o) {
                     if (this == o) return true;
                     if (o == null || getClass() != o.getClass()) return false;
-                    Explicit explicit = (Explicit) o;
-                    return owner.equals(explicit.owner) &&
-                            attrType.equals(explicit.attrType) &&
+                    WithIsa explicit = (WithIsa) o;
+                    return owner.equals(explicit.owner) && attrType.equals(explicit.attrType) &&
                             attribute.equals(explicit.attribute);
                 }
 
@@ -234,29 +237,28 @@ public class Materialiser {
                 }
             }
 
-            public static class Variable extends Has {
+            public static class WithoutIsa extends Has {
 
                 private final Thing owner;
                 private final Attribute attribute;
 
-                public Variable(Thing owner, Attribute attribute) {
+                public WithoutIsa(Thing owner, Attribute attribute) {
                     this.owner = owner;
                     this.attribute = attribute;
                 }
 
                 @Override
                 public Map<Identifier.Variable, Concept> bindToConclusion(Conclusion conclusion, ConceptMap whenConcepts) {
-                    assert conclusion.isVariableHas();
-                    return conclusion.asVariableHas().thenConcepts(owner, attribute, whenConcepts);
+                    assert conclusion.isHasWithoutIsa();
+                    return conclusion.asHasWithoutIsa().thenConcepts(whenConcepts);
                 }
 
                 @Override
                 public boolean equals(Object o) {
                     if (this == o) return true;
                     if (o == null || getClass() != o.getClass()) return false;
-                    Variable variable = (Variable) o;
-                    return owner.equals(variable.owner) &&
-                            attribute.equals(variable.attribute);
+                    WithoutIsa variable = (WithoutIsa) o;
+                    return owner.equals(variable.owner) && attribute.equals(variable.attribute);
                 }
 
                 @Override

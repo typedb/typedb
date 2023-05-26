@@ -48,7 +48,7 @@ public abstract class ThingConstraint extends Constraint {
                                      VariableRegistry registry) {
         if (constraint.isIID()) return IIDConstraint.of(owner, constraint.asIID());
         else if (constraint.isIsa()) return IsaConstraint.of(owner, constraint.asIsa(), registry);
-        else if (constraint.isValue()) return ValueConstraint.of(owner, constraint.asValue(), registry);
+        else if (constraint.isPredicate()) return PredicateConstraint.of(owner, constraint.asPredicate(), registry);
         else if (constraint.isRelation()) return RelationConstraint.of(owner, constraint.asRelation(), registry);
         else if (constraint.isHas()) return HasConstraint.of(owner, constraint.asHas(), registry);
         else throw TypeDBException.of(ILLEGAL_STATE);
@@ -63,7 +63,7 @@ public abstract class ThingConstraint extends Constraint {
     public static ThingConstraint of(ThingVariable owner, ThingConstraint clone, VariableCloner cloner) {
         if (clone.isIID()) return IIDConstraint.of(owner, clone.asIID());
         else if (clone.isIsa()) return IsaConstraint.of(owner, clone.asIsa(), cloner);
-        else if (clone.isValue()) return ValueConstraint.of(owner, clone.asValue(), cloner);
+        else if (clone.isPredicate()) return PredicateConstraint.of(owner, clone.asPredicate(), cloner);
         else if (clone.isRelation()) return RelationConstraint.of(owner, clone.asRelation(), cloner);
         else if (clone.isHas()) return HasConstraint.of(owner, clone.asHas(), cloner);
         else if (clone.isIs()) return IsConstraint.of(owner, clone.asIs(), cloner);
@@ -102,7 +102,7 @@ public abstract class ThingConstraint extends Constraint {
         return false;
     }
 
-    public boolean isValue() {
+    public boolean isPredicate() {
         return false;
     }
 
@@ -126,8 +126,8 @@ public abstract class ThingConstraint extends Constraint {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(IsConstraint.class));
     }
 
-    public ValueConstraint<?> asValue() {
-        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(ValueConstraint.class));
+    public PredicateConstraint asPredicate() {
+        throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(PredicateConstraint.class));
     }
 
     public RelationConstraint asRelation() {

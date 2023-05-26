@@ -42,12 +42,12 @@ public class Disjunction implements Pattern, Cloneable {
     private static final String TRACE_PREFIX = "disjunction.";
     private final List<Conjunction> conjunctions;
     private final int hash;
-    private final Set<Identifier.Variable.Retrievable> retrieves;
+    private final Set<Identifier.Variable.Retrievable> sharedVariables;
 
     public Disjunction(List<Conjunction> conjunctions) {
         this.conjunctions = conjunctions;
         this.hash = Objects.hash(conjunctions);
-        this.retrieves = iterate(conjunctions)
+        this.sharedVariables = iterate(conjunctions)
                 .flatMap(conjunction -> iterate(conjunction.retrieves()))
                 .filter(id -> iterate(conjunctions).allMatch(conjunction -> conjunction.retrieves().contains(id)))
                 .toSet();
@@ -76,8 +76,8 @@ public class Disjunction implements Pattern, Cloneable {
         return iterate(conjunctions).allMatch(Conjunction::isCoherent);
     }
 
-    public Set<Identifier.Variable.Retrievable> retrieves() {
-        return retrieves;
+    public Set<Identifier.Variable.Retrievable> sharedVariables() {
+        return sharedVariables;
     }
 
     @Override
@@ -89,7 +89,7 @@ public class Disjunction implements Pattern, Cloneable {
     public String toString() {
         return conjunctions.stream().map(Conjunction::toString)
                 .collect(joining("" + CURLY_CLOSE + NEW_LINE + OR + NEW_LINE + CURLY_OPEN,
-                                 "" + CURLY_OPEN, "" + CURLY_CLOSE));
+                        "" + CURLY_OPEN, "" + CURLY_CLOSE));
     }
 
     @Override

@@ -50,6 +50,10 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         return false;
     }
 
+    public boolean isArgument() {
+        return false;
+    }
+
     public Equal asEqual() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Equal.class));
     }
@@ -60,6 +64,10 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
 
     public Native<?, ?> asNative() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Native.class));
+    }
+
+    public Argument asArgument() {
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Argument.class));
     }
 
     public static class Equal extends StructureEdge<StructureVertex<?>, StructureVertex<?>> {
@@ -96,13 +104,14 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         }
     }
 
-    public static class Predicate extends StructureEdge<StructureVertex.Thing, StructureVertex.Thing> {
+    public static class Predicate extends StructureEdge<StructureVertex<?>, StructureVertex<?>> {
 
         private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
         private final int hash;
 
-        Predicate(StructureVertex.Thing from, StructureVertex.Thing to, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
+        Predicate(StructureVertex<?> from, StructureVertex<?> to, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, predicate.toString());
+            assert (from.isThing() || from.isValue()) && (to.isThing() || to.isValue());
             this.predicate = predicate;
             this.hash = Objects.hash(getClass(), from, to, this.predicate);
         }
@@ -251,6 +260,40 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
             public int hashCode() {
                 return hash;
             }
+        }
+    }
+
+    public static class Argument extends StructureEdge<StructureVertex<?>, StructureVertex.Value> {
+
+        private final int hash;
+
+        Argument(StructureVertex<?> from, StructureVertex.Value to) {
+            super(from, to, "arg");
+            this.hash = Objects.hash(getClass(), from, to);
+        }
+
+        @Override
+        public boolean isArgument() {
+            return true;
+        }
+
+        @Override
+        public Argument asArgument() {
+            return this;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Argument that = (Argument) o;
+            return (this.from.equals(that.from) && this.to.equals(that.to));
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
         }
     }
 }

@@ -22,12 +22,11 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
-import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.constraint.value.ValueConstraint;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -36,6 +35,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 public class Retrievable extends Resolvable<Conjunction> {
 
     private final Set<Identifier.Variable.Retrievable> retrievableIds;
+    private Set<Variable> generating;
 
     public Retrievable(Conjunction conjunction) {
         super(conjunction);
@@ -47,8 +47,15 @@ public class Retrievable extends Resolvable<Conjunction> {
     }
 
     @Override
-    public Optional<ThingVariable> generating() {
-        return Optional.empty();
+    public Set<Variable> generating() {
+        if (generating == null) {
+            HashSet<Variable> variables = new HashSet<>();
+            variables().forEach(v -> v.constraints().forEach(c -> {
+                if (c.isValue() && c.asValue().isAssignment()) variables.add(v);
+            }));
+            generating = variables;
+        }
+        return generating;
     }
 
     @Override
@@ -150,6 +157,7 @@ public class Retrievable extends Resolvable<Conjunction> {
             private void registerConstraint(Constraint constraint) {
                 if (constraint.isThing()) registerConstraint(constraint.asThing());
                 else if (constraint.isType()) registerConstraint(constraint.asType());
+                else if (constraint.isValue()) registerConstraint(constraint.asValue());
                 else throw TypeDBException.of(ILLEGAL_STATE);
             }
 
@@ -164,6 +172,13 @@ public class Retrievable extends Resolvable<Conjunction> {
                 if (!extractedConstraints.contains(typeConstraint)) {
                     registeredConstraints.add(typeConstraint);
                     iterate(typeConstraint.variables()).forEachRemaining(this::registerVariable);
+                }
+            }
+
+            private void registerConstraint(ValueConstraint valueConstraint) {
+                if (!extractedConstraints.contains(valueConstraint)) {
+                    registeredConstraints.add(valueConstraint);
+                    iterate(valueConstraint.variables()).forEachRemaining(this::registerVariable);
                 }
             }
         }

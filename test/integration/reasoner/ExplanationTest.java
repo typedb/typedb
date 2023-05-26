@@ -129,17 +129,17 @@ public class ExplanationTest {
 
                 ConceptMap withExplainable;
                 ConceptMap withoutExplainable;
-                if (ans.get(0).contains("p2")) {
+                if (ans.get(0).containsConcept("p2")) {
                     withExplainable = ans.get(0);
-                    if (!ans.get(1).contains("p2")) withoutExplainable = ans.get(1);
+                    if (!ans.get(1).containsConcept("p2")) withoutExplainable = ans.get(1);
                     else withoutExplainable = ans.get(2);
-                } else if (ans.get(1).contains("p2")) {
+                } else if (ans.get(1).containsConcept("p2")) {
                     withExplainable = ans.get(1);
-                    if (!ans.get(0).contains("p2")) withoutExplainable = ans.get(0);
+                    if (!ans.get(0).containsConcept("p2")) withoutExplainable = ans.get(0);
                     else withoutExplainable = ans.get(2);
                 } else {
                     withExplainable = ans.get(2);
-                    if (!ans.get(0).contains("p2")) withoutExplainable = ans.get(0);
+                    if (!ans.get(0).containsConcept("p2")) withoutExplainable = ans.get(0);
                     else withoutExplainable = ans.get(1);
                 }
 
@@ -284,15 +284,15 @@ public class ExplanationTest {
                 assertFalse(ans.get(2).explainables().isEmpty());
 
                 AttributeType ageInDays = txn.concepts().getAttributeType("age-in-days");
-                if (ans.get(0).get("x").asThing().getHas(ageInDays).first().get().asLong().getValue().equals(15L)) {
+                if (ans.get(0).getConcept("x").asThing().getHas(ageInDays).first().get().asLong().getValue().equals(15L)) {
                     assertSingleExplainableExplanations(ans.get(0), 0, 1, 1, txn);
                 } else assertSingleExplainableExplanations(ans.get(0), 0, 1, 2, txn);
 
-                if (ans.get(1).get("x").asThing().getHas(ageInDays).first().get().asLong().getValue().equals(15L)) {
+                if (ans.get(1).getConcept("x").asThing().getHas(ageInDays).first().get().asLong().getValue().equals(15L)) {
                     assertSingleExplainableExplanations(ans.get(1), 0, 1, 1, txn);
                 } else assertSingleExplainableExplanations(ans.get(1), 0, 1, 2, txn);
 
-                if (ans.get(2).get("x").asThing().getHas(ageInDays).first().get().asLong().getValue().equals(15L)) {
+                if (ans.get(2).getConcept("x").asThing().getHas(ageInDays).first().get().asLong().getValue().equals(15L)) {
                     assertSingleExplainableExplanations(ans.get(2), 0, 1, 1, txn);
                 } else assertSingleExplainableExplanations(ans.get(2), 0, 1, 2, txn);
             }

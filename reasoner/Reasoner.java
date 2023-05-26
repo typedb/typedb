@@ -59,6 +59,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INCOHERENT_PATTERN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INCOHERENT_SUB_PATTERN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
@@ -133,6 +134,7 @@ public class Reasoner {
 
     private void inferAndValidateTypes(Disjunction disjunction) {
         logicMgr.typeInference().applyCombination(disjunction);
+        logicMgr.expressionResolver().resolveExpressions(disjunction);
         if (!disjunction.isCoherent()) {
             Set<Conjunction> causes = incoherentConjunctions(disjunction);
             if (set(disjunction.conjunctions()).equals(causes)) {
@@ -159,11 +161,13 @@ public class Reasoner {
         Map<Identifier.Variable.Retrievable, HashSet<AttributeType>> sortAttrTypes = new HashMap<>();
         sorting.variables().forEach(id -> disjunction.conjunctions().forEach(conjunction -> {
             Variable variable = conjunction.variable(id);
-            HashSet<AttributeType> types = sortAttrTypes.computeIfAbsent(id, (i) -> new HashSet<>());
-            variable.inferredTypes().forEach(label -> {
-                ThingType type = conceptMgr.getThingType(label.name());
-                if (type != null && type.isAttributeType()) types.add(type.asAttributeType());
-            });
+            if (!variable.isValue()) { // value variables never have ambiguous value types
+                HashSet<AttributeType> types = sortAttrTypes.computeIfAbsent(id, (i) -> new HashSet<>());
+                variable.inferredTypes().forEach(label -> {
+                    ThingType type = conceptMgr.getThingType(label.name());
+                    if (type != null && type.isAttributeType()) types.add(type.asAttributeType());
+                });
+            }
         }));
         sortAttrTypes.forEach((var, attrTypes) -> {
             Optional<List<AttributeType>> incomparable = cartesian(list(iterate(attrTypes), iterate(attrTypes)))
@@ -185,7 +189,7 @@ public class Reasoner {
         for (Conjunction conj : disjunction.conjunctions()) {
             Set<Variable> vars = conj.variables();
             List<Negation> negs = conj.negations();
-            if (iterate(vars).flatMap(v -> iterate(v.inferredTypes())).distinct().anyMatch(this::ruleConcludes)) {
+            if (iterate(vars).filter(v -> !v.isValue()).flatMap(v -> iterate(v.inferredTypes())).anyMatch(this::ruleConcludes)) {
                 return true;
             }
             if (!negs.isEmpty() && iterate(negs).anyMatch(n -> mayReason(n.disjunction()))) return true;
@@ -201,6 +205,7 @@ public class Reasoner {
         for (Conjunction conjunction : disjunction.conjunctions()) {
             for (Identifier.Variable.Retrievable id : sorting.variables()) {
                 Variable variable = conjunction.variable(id);
+                if (variable.isValue()) return false;
                 if (variable.isThing() && iterate(variable.inferredTypes()).map(traversalEng.graph().schema()::getType)
                         .anyMatch(type -> type.isAttributeType() && !type.asType().valueType().isSorted())) {
                     return false;
@@ -262,7 +267,7 @@ public class Reasoner {
     }
 
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
-        return iterator(bound(conjunction, bounds), Filter.create(list()));
+        return iterator(bound(conjunction, bounds, logicMgr), Filter.create(list()));
     }
 
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, Filter filter) {
@@ -289,14 +294,22 @@ public class Reasoner {
         }
     }
 
-    private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
+    private Conjunction bound(Conjunction conjunction, ConceptMap bounds, LogicManager logicMgr) {
         Conjunction clone = conjunction.clone();
         Map<Identifier.Variable.Retrievable, Either<Label, ByteArray>> converted = new HashMap<>();
-        iterate(bounds.concepts().entrySet()).forEachRemaining(e -> converted.put(
-                e.getKey(),
-                e.getValue().isType() ? Either.first(e.getValue().asType().getLabel()) : Either.second(e.getValue().asThing().getIID())
-        ));
+        iterate(bounds.concepts().entrySet()).forEachRemaining(e -> {
+            Either<Label, ByteArray> value;
+            if (e.getValue().isType()) value = Either.first(e.getValue().asType().getLabel());
+            else if (e.getValue().isThing()) value = Either.second(e.getValue().asThing().getIID());
+            else if (e.getValue().isValue()) value = Either.second(e.getValue().asValue().getIID());
+            else throw TypeDBException.of(ILLEGAL_STATE);
+            converted.put(e.getKey(), value);
+        });
         clone.bound(converted);
+        converted.keySet().forEach(boundId -> {
+            Variable var = clone.variable(boundId);
+            if (var != null && var.isValue()) logicMgr.expressionResolver().resolveAssignment(var.asValue());
+        });
         return clone;
     }
 

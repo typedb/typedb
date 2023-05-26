@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
+import com.vaticle.typedb.core.concept.value.impl.ValueImpl;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.thing.impl.ThingImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -103,6 +104,7 @@ public final class ConceptManager {
             if (vertex.isThing()) map.put(id, ThingImpl.of(this, vertex.asThing()));
             else if (vertex.isType() && vertex.asType().isRoleType()) map.put(id, convertRoleType(vertex.asType()));
             else if (vertex.isType()) map.put(id, convertThingType(vertex.asType()));
+            else if (vertex.isValue()) map.put(id, ValueImpl.of(this, vertex.asValue()));
             else throw exception(TypeDBException.of(ILLEGAL_STATE));
         });
         return map;

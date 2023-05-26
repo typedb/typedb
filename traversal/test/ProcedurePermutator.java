@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.structure.Structure;
+import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 
 import java.util.ArrayList;
@@ -45,11 +46,29 @@ public class ProcedurePermutator {
             else retrievables.add(vertex.id());
         }
 
-        return iterate(permutations(retrievables)).map(idPermutation -> {
-            Map<Identifier, Integer> orderingMap = new HashMap<>();
-            labels.forEach(labelled -> orderingMap.put(labelled, orderingMap.size()));
-            idPermutation.forEach(retrievable -> orderingMap.put(retrievable, orderingMap.size()));
-            return GraphProcedure.create(structure, orderingMap);
-        });
+        return iterate(permutations(retrievables))
+                .filter(idPermutation -> isValidPermutation(structure, idPermutation))
+                .map(idPermutation -> {
+                    Map<Identifier, Integer> orderingMap = new HashMap<>();
+                    labels.forEach(labelled -> orderingMap.put(labelled, orderingMap.size()));
+                    idPermutation.forEach(retrievable -> orderingMap.put(retrievable, orderingMap.size()));
+                    return GraphProcedure.create(structure, orderingMap);
+                });
+    }
+
+    private static boolean isValidPermutation(Structure structure, List<Identifier> idPermutation) {
+        Set<Identifier> seen = new HashSet<>();
+        Map<Identifier, StructureVertex<?>> vertices = new HashMap<>();
+        structure.vertices().forEach(vertex -> vertices.put(vertex.id(), vertex));
+        for (Identifier id : idPermutation) {
+            StructureVertex<?> vertex = vertices.get(id);
+            if (vertex.isValue()) {
+                if (!iterate(vertex.ins()).filter(StructureEdge::isArgument).allMatch(argEdge -> seen.contains(argEdge.from().id()))) {
+                    return false;
+                }
+            }
+            seen.add(id);
+        }
+        return true;
     }
 }

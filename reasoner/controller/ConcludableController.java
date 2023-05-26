@@ -71,8 +71,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
     }
 
     public static boolean canBypassReasoning(Concludable concludable, Set<com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable> boundVariables, boolean isExplainEnabled) {
-        return !isExplainEnabled && !concludable.isHas() &&
-                concludable.generating().isPresent() && boundVariables.contains(concludable.generating().get().id());
+        return !isExplainEnabled && !concludable.isHas() && boundVariables.contains(concludable.generatingVariable().id());
     }
 
     @Override
@@ -317,7 +316,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             static ConceptMap withExplainable(ConceptMap conceptMap, Concludable concludable) {
                 if (concludable.isRelation() || concludable.isAttribute() || concludable.isIsa()) {
-                    return conceptMap.withExplainableConcept(concludable.generating().get().id(), concludable.pattern());
+                    return conceptMap.withExplainableConcept(concludable.generatingVariable().id(), concludable.pattern());
                 } else if (concludable.isHas()) {
                     return conceptMap.withExplainableOwnership(
                             concludable.asHas().owner().id(), concludable.asHas().attribute().id(), concludable.pattern()

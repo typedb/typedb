@@ -179,7 +179,7 @@ public class UnifyHasConcludableTest {
 
         // test filter allows a valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
@@ -188,7 +188,7 @@ public class UnifyHasConcludableTest {
 
         // filter out invalid type
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("age"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
@@ -196,7 +196,7 @@ public class UnifyHasConcludableTest {
 
         // filter out invalid value
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "bob"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
@@ -229,8 +229,8 @@ public class UnifyHasConcludableTest {
 
         // test filter allows a valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("a"), instanceOf("last-name", "john"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("a"), instanceOf("last-name", "john"))
         );
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.hasNext());
@@ -238,16 +238,16 @@ public class UnifyHasConcludableTest {
 
         // filter out invalid type
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("a"), instanceOf("age"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("a"), instanceOf("age"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());
 
         // filter out invalid value
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("a"), instanceOf("first-name", "bob"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("a"), instanceOf("first-name", "bob"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());
@@ -279,7 +279,7 @@ public class UnifyHasConcludableTest {
 
         // test unifier allows a valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
@@ -312,8 +312,8 @@ public class UnifyHasConcludableTest {
 
         // test filter allows a valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("a"), instanceOf("last-name", "john"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("a"), instanceOf("last-name", "john"))
         );
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.hasNext());
@@ -346,16 +346,16 @@ public class UnifyHasConcludableTest {
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(2, unifier.requirements().isaExplicit().size());
-        assertEquals(set(Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
+        assertEquals(set(Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.namedConcept("b")));
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test forward unification can reject an invalid partial answer
-        ConceptMap partialAnswer = new ConceptMap(map(pair(Identifier.Variable.name("b"), instanceOf("age"))));
+        ConceptMap partialAnswer = new ConceptMap(map(pair(Identifier.Variable.namedConcept("b"), instanceOf("age"))));
         assertFalse(unifier.unify(partialAnswer).isPresent());
 
         // test filter allows a valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
@@ -364,7 +364,7 @@ public class UnifyHasConcludableTest {
 
         // filter out invalid type
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("age"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
@@ -392,13 +392,13 @@ public class UnifyHasConcludableTest {
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(2, unifier.requirements().isaExplicit().size());
-        assertEquals(set(Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
+        assertEquals(set(Label.of("first-name"), Label.of("last-name")), unifier.requirements().isaExplicit().get(Identifier.Variable.namedConcept("b")));
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("a"), instanceOf("first-name", "john"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("a"), instanceOf("first-name", "john"))
         );
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.hasNext());
@@ -406,8 +406,8 @@ public class UnifyHasConcludableTest {
 
         // filter out invalid type
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("a"), instanceOf("age"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("a"), instanceOf("age"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());
@@ -455,7 +455,7 @@ public class UnifyHasConcludableTest {
         assertEquals(expected, result);
         // test requirements of one-to-many using valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("self-owning-attribute")),
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("self-owning-attribute")),
                 pair(Identifier.Variable.anon(0), instanceOf("self-owning-attribute"))
         );
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
@@ -464,7 +464,7 @@ public class UnifyHasConcludableTest {
 
         // test requirements of one-to-many using invalid answer
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("age"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
@@ -491,7 +491,7 @@ public class UnifyHasConcludableTest {
         // test requirements
         assertEquals(0, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
-        assertEquals(set(Label.of("self-owning-attribute")), unifier.requirements().isaExplicit().get(Identifier.Variable.name("b")));
+        assertEquals(set(Label.of("self-owning-attribute")), unifier.requirements().isaExplicit().get(Identifier.Variable.namedConcept("b")));
         assertEquals(0, unifier.requirements().predicates().size());
     }
 
@@ -521,7 +521,7 @@ public class UnifyHasConcludableTest {
 
         // test filter allows a valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "jane"))
         );
 
@@ -531,7 +531,7 @@ public class UnifyHasConcludableTest {
 
         // filter out invalid value
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
                 pair(Identifier.Variable.anon(0), instanceOf("first-name", "john"))
         );
 
@@ -565,8 +565,8 @@ public class UnifyHasConcludableTest {
 
         // test filter allows a valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("n"), instanceOf("last-name", "bob"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("n"), instanceOf("last-name", "bob"))
         );
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.hasNext());
@@ -574,16 +574,16 @@ public class UnifyHasConcludableTest {
 
         // filter out invalid type
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("n"), instanceOf("age"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("n"), instanceOf("age"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());
 
         // filter out invalid value
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("n"), instanceOf("first-name", "john"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("n"), instanceOf("first-name", "john"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());
@@ -614,8 +614,8 @@ public class UnifyHasConcludableTest {
 
         // test filter allows a valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("a"), instanceOf("age", 15L))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("a"), instanceOf("age", 15L))
         );
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.hasNext());
@@ -623,8 +623,8 @@ public class UnifyHasConcludableTest {
 
         // filter out invalid value
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("a"), instanceOf("age", 25L))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("a"), instanceOf("age", 25L))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());
@@ -655,8 +655,8 @@ public class UnifyHasConcludableTest {
 
         // test filter allows a valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("a"), instanceOf("age", 25L))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("a"), instanceOf("age", 25L))
         );
 
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
@@ -665,8 +665,8 @@ public class UnifyHasConcludableTest {
 
         // filter out invalid value
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("a"), instanceOf("age", 15L))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("a"), instanceOf("age", 15L))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());
@@ -698,8 +698,8 @@ public class UnifyHasConcludableTest {
 
         // test filter allows a valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("n"), instanceOf("last-name", "van Gogh"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("n"), instanceOf("last-name", "van Gogh"))
         );
 
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
@@ -708,16 +708,16 @@ public class UnifyHasConcludableTest {
 
         // filter out invalid type
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("n"), instanceOf("age"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("n"), instanceOf("age"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());
 
         // filter out invalid value
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("n"), instanceOf("first-name", "john"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("n"), instanceOf("first-name", "john"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());
@@ -750,8 +750,8 @@ public class UnifyHasConcludableTest {
 
         // test filter allows a valid answer
         Map<Identifier.Variable, Concept> concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("n"), instanceOf("last-name", "reasoner@vaticle.com"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("n"), instanceOf("last-name", "reasoner@vaticle.com"))
         );
 
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
@@ -760,16 +760,16 @@ public class UnifyHasConcludableTest {
 
         // filter out invalid type
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("n"), instanceOf("age"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("n"), instanceOf("age"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());
 
         // filter out invalid value
         concepts = map(
-                pair(Identifier.Variable.name("x"), instanceOf("person")),
-                pair(Identifier.Variable.name("n"), instanceOf("first-name", "reasoner@grakn.ai"))
+                pair(Identifier.Variable.namedConcept("x"), instanceOf("person")),
+                pair(Identifier.Variable.namedConcept("n"), instanceOf("first-name", "reasoner@grakn.ai"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());

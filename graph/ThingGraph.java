@@ -58,7 +58,7 @@ import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.collection.ByteArray.empty;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.join;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_STRING_SIZE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Encoding.ILLEGAL_STRING_SIZE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
@@ -265,9 +265,15 @@ public class ThingGraph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Double.class);
 
+        VertexIID.Attribute.Double vertexIID;
+        try {
+            vertexIID = new VertexIID.Attribute.Double(type.iid(), value);
+        } catch (TypeDBCheckedException e) {
+            throw TypeDBException.of(e);
+        }
         return getOrReadFromStorage(
                 attributesByIID.doubles,
-                new VertexIID.Attribute.Double(type.iid(), value),
+                vertexIID,
                 iid -> new AttributeVertexImpl.Read.Double(this, iid)
         );
     }
@@ -344,9 +350,14 @@ public class ThingGraph {
         assert type.isAttributeType();
         assert type.valueType().valueClass().equals(Double.class);
 
+        VertexIID.Attribute.Double vertexIID;
+        try {
+            vertexIID = new VertexIID.Attribute.Double(type.iid(), value);
+        } catch (TypeDBCheckedException e) {
+            throw TypeDBException.of(e);
+        }
         AttributeVertex.Write<Double> vertex = attributesByIID.doubles.computeIfAbsent(
-                new VertexIID.Attribute.Double(type.iid(), value),
-                iid -> {
+                vertexIID, iid -> {
                     AttributeVertexImpl.Write.Double v = new AttributeVertexImpl.Write.Double(this, iid, isInferred);
                     thingsByTypeIID.computeIfAbsent(type.iid(), t -> new ConcurrentSkipListSet<>()).add(v);
                     vertexCreated(v);
@@ -525,7 +536,7 @@ public class ThingGraph {
 
     /**
      * Commits all the writes captured in
-     *
+     * <p>
      * We start off by generating new IIDs for every {@code ThingVertex} (which
      * does not actually include {@code AttributeVertex}). We then write the every
      * {@code ThingVertex} onto the storage. Once all commit operations for every
@@ -631,7 +642,7 @@ public class ThingGraph {
         /**
          * Get the latest committed statistics version, across all transactions (is not snapshot-bound)
          * NB: persisting a statistics version number in RocksDB that is stored per snapshot & read in every transaction
-         *     ends up being a performance bottleneck during heavy writes.
+         * ends up being a performance bottleneck during heavy writes.
          */
         public long getDBStatisticsVersion() {
             return DBStatisticsVersion.get();

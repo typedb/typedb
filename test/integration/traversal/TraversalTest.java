@@ -29,17 +29,20 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.database.CoreTransaction;
+import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.common.VertexMap;
+import com.vaticle.typedb.core.traversal.expression.ExpressionFactory;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.pattern.variable.builder.Expression;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
 import org.junit.After;
@@ -53,6 +56,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -109,7 +113,7 @@ public class TraversalTest {
             Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has age $a;")
                     .asMatch().conjunction().normalise());
             transaction.logic().typeInference().applyCombination(disjunction);
-            Identifier.Variable.Name var = Identifier.Variable.name("a");
+            Identifier.Variable.Name var = Identifier.Variable.namedConcept("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
             Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, DESC)));
             SortedIterator<ConceptMap.Sortable, Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
@@ -117,7 +121,7 @@ public class TraversalTest {
             long lastValue = Long.MAX_VALUE;
             while (answers.hasNext()) {
                 ConceptMap.Sortable answer = answers.next();
-                long nextValue = answer.get("a").asAttribute().asLong().getValue();
+                long nextValue = answer.getConcept("a").asAttribute().asLong().getValue();
                 assertTrue(nextValue <= lastValue);
                 lastValue = nextValue;
             }
@@ -143,12 +147,12 @@ public class TraversalTest {
             Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has is-married $a;")
                     .asMatch().conjunction().normalise());
             transaction.logic().typeInference().applyCombination(disjunction);
-            Identifier.Variable.Name var = Identifier.Variable.name("a");
+            Identifier.Variable.Name var = Identifier.Variable.namedConcept("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
             Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, DESC)));
             List<ConceptMap.Sortable> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting).toList();
-            assertEquals(true, answers.get(0).get("a").asAttribute().asBoolean().getValue());
-            assertEquals(false, answers.get(1).get("a").asAttribute().asBoolean().getValue());
+            assertEquals(true, answers.get(0).getConcept("a").asAttribute().asBoolean().getValue());
+            assertEquals(false, answers.get(1).getConcept("a").asAttribute().asBoolean().getValue());
         }
     }
 
@@ -172,7 +176,7 @@ public class TraversalTest {
             Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has money $a;")
                     .asMatch().conjunction().normalise());
             transaction.logic().typeInference().applyCombination(disjunction);
-            Identifier.Variable.Name var = Identifier.Variable.name("a");
+            Identifier.Variable.Name var = Identifier.Variable.namedConcept("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
             Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, ASC)));
             SortedIterator<ConceptMap.Sortable, Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
@@ -180,7 +184,7 @@ public class TraversalTest {
             double lastValue = Double.MIN_VALUE;
             while (answers.hasNext()) {
                 ConceptMap.Sortable answer = answers.next();
-                double nextValue = answer.get("a").asAttribute().asDouble().getValue();
+                double nextValue = answer.getConcept("a").asAttribute().asDouble().getValue();
                 assertTrue(nextValue >= lastValue);
                 lastValue = nextValue;
             }
@@ -210,7 +214,7 @@ public class TraversalTest {
             Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has birth-date $a;")
                     .asMatch().conjunction().normalise());
             transaction.logic().typeInference().applyCombination(disjunction);
-            Identifier.Variable.Name var = Identifier.Variable.name("a");
+            Identifier.Variable.Name var = Identifier.Variable.namedConcept("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
             Modifiers.Sorting sorting = Modifiers.Sorting.create(singletonList(var), map(pair(var, DESC)));
             SortedIterator<ConceptMap.Sortable, Order.Asc> answers = transaction.reasoner().executeTraversalSorted(disjunction, filter, sorting);
@@ -218,7 +222,7 @@ public class TraversalTest {
             LocalDateTime lastValue = LocalDateTime.MAX;
             while (answers.hasNext()) {
                 ConceptMap.Sortable answer = answers.next();
-                LocalDateTime nextValue = answer.get("a").asAttribute().asDateTime().getValue();
+                LocalDateTime nextValue = answer.getConcept("a").asAttribute().asDateTime().getValue();
                 assertTrue(nextValue.compareTo(lastValue) < 0);
                 lastValue = nextValue;
             }
@@ -600,5 +604,60 @@ public class TraversalTest {
             vertices.next();
         }
         session.close();
+    }
+
+    @Test
+    public void test_expressions() {
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            TypeQLDefine query = TypeQL.parseQuery("define money sub attribute, value double;");
+            transaction.query().define(query);
+            transaction.commit();
+        }
+        session.close();
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
+        try (CoreTransaction transaction = session.transaction(WRITE)) {
+            transaction.query().insert(TypeQL.parseQuery("insert $m isa money; $m 10.8;").asInsert());
+            transaction.query().insert(TypeQL.parseQuery("insert $m isa money; $m 14.4;").asInsert());
+            transaction.commit();
+        }
+
+        try (CoreTransaction transaction = session.transaction(READ)) {
+            GraphProcedure.Builder proc = new GraphProcedure.Builder();
+             /*
+             match $m isa money $m; ?t = 0.25 * $m; get $t;
+
+            vertices:
+            $m [thing] { hasIID: false, types: [money], predicates: [] } (start) }
+            $t [value] { expression: 0.25 * $m }
+
+            edges:
+            1: ($m --[ARGUMENT]--> ?t)
+            */
+
+            ProcedureVertex.Thing m = proc.namedThing(0, "m");
+            m.props().types(set(Label.of("money")));
+
+            ProcedureVertex.Value t = proc.namedValue(1, "t");
+            t.props().expression(ExpressionFactory.operation(TypeQLToken.Expression.Operation.MULTIPLY,
+                    list(
+                            ExpressionFactory.constant(new Expression.Constant.Double(0.25)).asDouble(),
+                            ExpressionFactory.var(m.id().asVariable(), Encoding.ValueType.DOUBLE).asDouble()
+                    )
+            ));
+
+            proc.forwardArgument(m, t);
+
+            GraphTraversal.Thing.Parameters params = new GraphTraversal.Thing.Parameters();
+            Modifiers modifiers = new Modifiers();
+            modifiers.filter(Modifiers.Filter.create(set(t.id().asVariable().asRetrievable())));
+
+            GraphProcedure procedure = proc.build();
+            FunctionalIterator<VertexMap> vertices = procedure.iterator(transaction.traversal().graph(), params, modifiers);
+
+            List<java.lang.Double> expectedAnswers = list(2.7, 3.6);
+            List<java.lang.Double> actualAnswers = vertices.map(vertexMap -> vertexMap.get(Identifier.Variable.namedValue("t")).asValue().asDouble().value()).toList();
+            assertTrue(actualAnswers.containsAll(expectedAnswers));
+            assertTrue(expectedAnswers.containsAll(actualAnswers));
+        }
     }
 }

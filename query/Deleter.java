@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.ValueVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.reasoner.Reasoner;
@@ -49,6 +50,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.I
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CONSTRAINT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_VALUE_VARIABLE_IN_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_HAS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING_DIRECT;
@@ -85,12 +87,17 @@ public class Deleter {
     public static void validate(Variable var) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
             if (var.isType()) validate(var.asType());
+            else if (var.isValue()) validate(var.asValue());
             else validate(var.asThing());
         }
     }
 
     private static void validate(TypeVariable var) {
         if (!var.reference().isLabel()) throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, var.reference());
+    }
+
+    private static void validate(ValueVariable var) {
+        throw TypeDBException.of(ILLEGAL_VALUE_VARIABLE_IN_DELETE, var.reference());
     }
 
     private static void validate(ThingVariable var) {
@@ -143,7 +150,6 @@ public class Deleter {
                 detached.put(var, thing);
             }
         }
-
 
         private void deleteHas(ThingVariable var, Thing thing) {
             try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete_has")) {

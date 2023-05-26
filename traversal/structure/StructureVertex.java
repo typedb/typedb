@@ -40,6 +40,10 @@ public abstract class StructureVertex<PROPERTY extends TraversalVertex.Propertie
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(StructureVertex.Type.class));
     }
 
+    public Value asValue() {
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Value.class));
+    }
+
     public static class Thing extends StructureVertex<TraversalVertex.Properties.Thing> {
 
         Thing(Identifier identifier) {
@@ -80,6 +84,28 @@ public abstract class StructureVertex<PROPERTY extends TraversalVertex.Propertie
 
         @Override
         public StructureVertex.Type asType() {
+            return this;
+        }
+    }
+
+    public static class Value extends StructureVertex<Properties.Value> {
+
+        Value(Identifier identifier) {
+            super(identifier);
+        }
+
+        @Override
+        protected Properties.Value newProperties() {
+            return new Properties.Value();
+        }
+
+        @Override
+        public boolean isValue() {
+            return true;
+        }
+
+        @Override
+        public Value asValue() {
             return this;
         }
     }

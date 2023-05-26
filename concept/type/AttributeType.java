@@ -123,6 +123,10 @@ public interface AttributeType extends ThingType {
             return encoding.valueClass();
         }
 
+        public Encoding.ValueType<?> encoding() {
+            return encoding;
+        }
+
         public boolean isWritable() {
             return encoding.isWritable();
         }

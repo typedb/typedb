@@ -42,6 +42,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Encoding.UNENCODABLE_STRING;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -107,7 +108,7 @@ public class StringAttributeTest {
                             Optional<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery(
                                     "match $a \"" + generated + "\" isa string-value;").asMatch()).first();
                             assertTrue(ans.isPresent());
-                            assertEquals(generated, ans.get().get("a").asAttribute().asString().getValue());
+                            assertEquals(generated, ans.get().getConcept("a").asAttribute().asString().getValue());
                         }
                     }
                 }
@@ -145,7 +146,7 @@ public class StringAttributeTest {
                         attrType.put(excludedString);
                     } catch (TypeDBException e) {
                         assertTrue(e.code().isPresent());
-                        assertEquals(ErrorMessage.ThingWrite.UNENCODABLE_STRING.code(), e.code().get());
+                        assertEquals(UNENCODABLE_STRING.code(), e.code().get());
                     }
                 }
             }

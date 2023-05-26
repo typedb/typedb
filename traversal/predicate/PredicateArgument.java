@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.traversal.predicate;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 
 import java.time.LocalDateTime;
@@ -72,9 +71,9 @@ public abstract class PredicateArgument {
             return valueType;
         }
 
-        abstract <T> boolean apply(ARG_VAL_OP operator, AttributeVertex<T> vertex, Traversal.Parameters.Value<?> value);
+        abstract <T> boolean apply(ARG_VAL_OP operator, com.vaticle.typedb.core.graph.vertex.Value<T> vertex, Traversal.Parameters.Value<?> value);
 
-        <T> boolean apply(ARG_VAL_OP operator, AttributeVertex<T> vertex, ARG_VAL_TYPE value) {
+        <T> boolean apply(ARG_VAL_OP operator, com.vaticle.typedb.core.graph.vertex.Value<T> vertex, ARG_VAL_TYPE value) {
             return apply(operator, vertex.valueType(), vertex.value(), value);
         }
 
@@ -82,7 +81,7 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator.Equality, Boolean> BOOLEAN = new Value<>(Encoding.ValueType.BOOLEAN) {
             @Override
-            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value<?> value) {
+            <T> boolean apply(PredicateOperator.Equality operator, com.vaticle.typedb.core.graph.vertex.Value<T> vertex, Traversal.Parameters.Value<?> value) {
                 assert value.isBoolean();
                 return apply(operator, vertex, value.asBoolean().value());
             }
@@ -96,7 +95,7 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator.Equality, Long> LONG = new Value<>(Encoding.ValueType.LONG) {
             @Override
-            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value<?> value) {
+            <T> boolean apply(PredicateOperator.Equality operator, com.vaticle.typedb.core.graph.vertex.Value<T> vertex, Traversal.Parameters.Value<?> value) {
                 assert value.isLong();
                 return apply(operator, vertex, value.asLong().value());
             }
@@ -110,7 +109,7 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator.Equality, Double> DOUBLE = new Value<>(Encoding.ValueType.DOUBLE) {
             @Override
-            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value<?> value) {
+            <T> boolean apply(PredicateOperator.Equality operator, com.vaticle.typedb.core.graph.vertex.Value<T> vertex, Traversal.Parameters.Value<?> value) {
                 assert value.isDouble();
                 return apply(operator, vertex, value.asDouble().value());
             }
@@ -124,7 +123,7 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator.Equality, LocalDateTime> DATETIME = new Value<>(Encoding.ValueType.DATETIME) {
             @Override
-            <T> boolean apply(PredicateOperator.Equality operator, AttributeVertex<T> vertex, Traversal.Parameters.Value<?> value) {
+            <T> boolean apply(PredicateOperator.Equality operator, com.vaticle.typedb.core.graph.vertex.Value<T> vertex, Traversal.Parameters.Value<?> value) {
                 assert value.isDateTime();
                 return apply(operator, vertex, value.asDateTime().value());
             }
@@ -138,7 +137,7 @@ public abstract class PredicateArgument {
 
         public static final Value<PredicateOperator, String> STRING = new Value<>(Encoding.ValueType.STRING) {
             @Override
-            <T> boolean apply(PredicateOperator operator, AttributeVertex<T> vertex, Traversal.Parameters.Value<?> value) {
+            <T> boolean apply(PredicateOperator operator, com.vaticle.typedb.core.graph.vertex.Value<T> vertex, Traversal.Parameters.Value<?> value) {
                 if (!vertex.valueType().comparableTo(Encoding.ValueType.STRING)) return false;
                 assert value.isString() || value.isRegex();
                 if (operator.isSubString()) return operator.asSubString().apply(vertex.asString().value(), value);
@@ -162,14 +161,14 @@ public abstract class PredicateArgument {
             super("var");
         }
 
-        boolean apply(PredicateOperator.Equality operator, AttributeVertex<?> from, AttributeVertex<?> to) {
+        boolean apply(PredicateOperator.Equality operator, com.vaticle.typedb.core.graph.vertex.Value<?> from, com.vaticle.typedb.core.graph.vertex.Value<?> to) {
             if (!from.valueType().comparableTo(to.valueType())) return false;
             Encoding.ValueType<?> valueType = to.valueType();
-            if (valueType == BOOLEAN) return Value.BOOLEAN.apply(operator, from, to.asBoolean().value());
-            else if (valueType == LONG) return Value.LONG.apply(operator, from, to.asLong().value());
-            else if (valueType == DOUBLE) return Value.DOUBLE.apply(operator, from, to.asDouble().value());
-            else if (valueType == STRING) return Value.STRING.apply(operator, from, to.asString().value());
-            else if (valueType == DATETIME) return Value.DATETIME.apply(operator, from, to.asDateTime().value());
+            if (valueType == BOOLEAN) return PredicateArgument.Value.BOOLEAN.apply(operator, from, to.asBoolean().value());
+            else if (valueType == LONG) return PredicateArgument.Value.LONG.apply(operator, from, to.asLong().value());
+            else if (valueType == DOUBLE) return PredicateArgument.Value.DOUBLE.apply(operator, from, to.asDouble().value());
+            else if (valueType == STRING) return PredicateArgument.Value.STRING.apply(operator, from, to.asString().value());
+            else if (valueType == DATETIME) return PredicateArgument.Value.DATETIME.apply(operator, from, to.asDateTime().value());
             throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
