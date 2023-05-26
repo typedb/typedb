@@ -21,23 +21,29 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.protocol.ConnectionProto;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabaseManager;
 import com.vaticle.typedb.protocol.SessionProto;
 import com.vaticle.typedb.protocol.TransactionProto;
 import com.vaticle.typedb.protocol.TypeDBGrpc;
+import com.vaticle.typedb.protocol.VersionProto;
 import io.grpc.stub.StreamObserver;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PROTOCOL_VERSION_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
@@ -65,6 +71,16 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public TypeDBService(TypeDB.DatabaseManager databaseMgr) {
         this.databaseMgr = databaseMgr;
         sessionServices = new ConcurrentHashMap<>();
+    }
+
+    @Override
+    public void connectionOpen(ConnectionProto.Connection.Open.Req request,
+                               StreamObserver<ConnectionProto.Connection.Open.Res> responder) {
+        if (request.getVersion() != VersionProto.Version.VERSION) {
+            responder.onError(TypeDBException.of(
+                    PROTOCOL_VERSION_MISMATCH, VersionProto.Version.VERSION.getNumber(), request.getVersionValue()
+            ));
+        } else responder.onCompleted();
     }
 
     @Override
