@@ -157,10 +157,6 @@ build:
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
       image: vaticle-ubuntu-22.04
-      filter:
-        owner: vaticle
-        branch: [master, development]
-      dependencies: [test-assembly-linux-targz]
       command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_ARTIFACT_PASSWORD=$REPO_VATICLE_PASSWORD
