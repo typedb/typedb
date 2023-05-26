@@ -22,9 +22,9 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "test",
     srcs = [
-        "ExpressionsTest.java",
+        "ExpressionTest.java",
     ],
-    test_class = "com.vaticle.typedb.core.test.behaviour.typeql.language.expressions.ExpressionsTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.typeql.language.expression.ExpressionTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",
@@ -36,7 +36,7 @@ java_test(
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@vaticle_typedb_behaviour//typeql/language:expressions.feature",
+        "@vaticle_typedb_behaviour//typeql/language:expression.feature",
     ],
     size = "medium",
     visibility = ["//visibility:public"],

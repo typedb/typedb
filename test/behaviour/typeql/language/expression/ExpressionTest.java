@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.behaviour.typeql.language.expressions;
+package com.vaticle.typedb.core.test.behaviour.typeql.language.expression;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
@@ -27,10 +27,10 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "com.vaticle.typedb.core.test.behaviour",
-        features = "external/vaticle_typedb_behaviour/typeql/language/expressions.feature",
+        features = "external/vaticle_typedb_behaviour/typeql/language/expression.feature",
         tags = "not @ignore and not @ignore-typedb"
 )
-public class ExpressionsTest {
+public class ExpressionTest {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:
