@@ -30,6 +30,8 @@ import com.vaticle.typedb.protocol.TransactionProto;
 import com.vaticle.typedb.protocol.TypeDBGrpc;
 import com.vaticle.typedb.protocol.VersionProto;
 import io.grpc.stub.StreamObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -37,9 +39,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
@@ -77,16 +76,22 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     @Override
     public void connectionOpen(ConnectionProto.Connection.Open.Req request,
                                StreamObserver<ConnectionProto.Connection.Open.Res> responder) {
-        if (request.getVersion() != VersionProto.Version.VERSION) {
-            int clientProtocolVersion = request.getVersion() == VersionProto.Version.UNSPECIFIED ? 0 : request.getVersion().getNumber();
-            TypeDBException error = TypeDBException.of(
-                    PROTOCOL_VERSION_MISMATCH, VersionProto.Version.VERSION.getNumber(), clientProtocolVersion
-            );
-            responder.onError(exception(error));
-            LOG.error(error.getMessage(), error);
-        } else {
-            responder.onNext(ResponseBuilder.Connection.openRes());
-            responder.onCompleted();
+        try {
+            if (request.getVersion() != VersionProto.Version.VERSION) {
+                int clientProtocolVersion = request.getVersion() == VersionProto.Version.UNSPECIFIED ?
+                        0 : request.getVersion().getNumber();
+                TypeDBException error = TypeDBException.of(
+                        PROTOCOL_VERSION_MISMATCH, VersionProto.Version.VERSION.getNumber(), clientProtocolVersion
+                );
+                responder.onError(exception(error));
+                LOG.error(error.getMessage(), error);
+            } else {
+                responder.onNext(ResponseBuilder.Connection.openRes());
+                responder.onCompleted();
+            }
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
         }
     }
 
