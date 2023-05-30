@@ -320,7 +320,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Expression ILLEGAL_FUNCTION_ARGUMENT_TYPE =
                 new Expression(6, "The expression function '%s' cannot accept arguments of value type '%s'.");
         public static final Expression ARGUMENT_COUNT_MISMATCH =
-                new Expression(7, "The expression '%s' expects '%'s arguments but received '%s': '%s'.");
+                new Expression(7, "The expression '%s' expects '%s' arguments but received '%s': '%s'.");
         public static final Expression EVALUATION_ERROR =
                 new Expression(8, "An error occured while evaluating an expression:\nExpression: '%s = %s'; \nInput: '%s'.\nError: '%s'");
         public static final Expression EVALUATION_ERROR_DIVISION_BY_ZERO =
