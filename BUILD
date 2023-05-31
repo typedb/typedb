@@ -159,7 +159,7 @@ deploy_github(
     repository = deployment_github['github.repository'],
     title = "TypeDB",
     title_append_version = True,
-    release_description = "//:LATEST_RELEASE_NOTES.md",
+    release_description = "//:RELEASE_NOTES_LATEST.md",
     archive = ":assemble-versioned-all",
     draft = False
 )

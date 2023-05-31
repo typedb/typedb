@@ -16,4 +16,4 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
- bazel run @vaticle_dependencies//tool/release/notes:create -- vaticle typedb HEAD $(cat VERSION) ./RELEASE_TEMPLATE.md ./LATEST_RELEASE_NOTES.md
+ bazel run @vaticle_dependencies//tool/release/notes:create -- vaticle typedb HEAD $(cat VERSION) ./RELEASE_TEMPLATE.md ./RELEASE_NOTES_LATEST.md
