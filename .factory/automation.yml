@@ -206,7 +206,11 @@ release:
     validate-dependencies:
       image: vaticle-ubuntu-22.04
       command: bazel test //:release-validate-deps --test_output=streamed
-  deployment:
+    validate-release-notes:
+      image: vaticle-ubuntu-22.04
+      command: |
+        export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
+        bazel run @vaticle_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO ./RELEASE_NOTES_LATEST.md  deployment:
     deploy-github:
       image: vaticle-ubuntu-22.04
       filter:
@@ -220,8 +224,6 @@ release:
         sudo ln -s $(which python3) /usr/bin/python3
         sudo ln -s /usr/share/pyshared/lsb_release.py /opt/pyenv/versions/3.7.9/lib/python3.7/site-packages/lsb_release.py
         python3 -m pip install certifi
-        export NOTES_CREATE_TOKEN=$REPO_GITHUB_TOKEN
-        bazel run @vaticle_dependencies//tool/release/notes:create -- $FACTORY_OWNER $FACTORY_REPO $FACTORY_COMMIT $(cat VERSION) ./RELEASE_TEMPLATE.md
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-github -- $FACTORY_COMMIT
     deploy-brew:
