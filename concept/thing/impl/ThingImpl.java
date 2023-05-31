@@ -54,6 +54,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.T
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_UNIQUE_TAKEN;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
@@ -138,7 +139,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             vertex.graph().exclusiveOwnership(((TypeImpl) this.getType()).vertex, attrVertex);
         } else if (iterate(owns).anyMatch(o -> o.effectiveAnnotations().contains(UNIQUE) && o.attributeType().equals(attribute.getType()))) {
             if (attribute.getOwners(getType()).anyMatch(owner -> owner.getType().equals(getType()))) {
-                throw exception(TypeDBException.of(THING_KEY_TAKEN, ((AttributeImpl<?>) attribute).getValue(),
+                throw exception(TypeDBException.of(THING_UNIQUE_TAKEN, ((AttributeImpl<?>) attribute).getValue(),
                         attribute.getType().getLabel(), getType().getLabel()));
             }
             vertex.graph().exclusiveOwnership(((TypeImpl) this.getType()).vertex, attrVertex);
