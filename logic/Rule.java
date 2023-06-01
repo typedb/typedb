@@ -813,7 +813,7 @@ public class Rule {
 
                 @Override
                 void unindex() {
-                    super.index();
+                    super.unindex();
                     attribute().inferredTypes().forEach(label -> rule().structure.unindexConcludesVertex(label));
                 }
 
