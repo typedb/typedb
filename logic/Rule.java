@@ -69,8 +69,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_CONCLUSION_ILLEGAL_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INCOHERENT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INSERTS_ABSTRACT_TYPES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_INVALID_VALUE_ASSIGNMENT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_THEN_UNANSWERABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_INCOHERENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_UNANSWERABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.RULE_WHEN_UNANSWERABLE_BRANCH;
@@ -188,7 +188,6 @@ public class Rule {
             }
         }
         if (!then.isCoherent()) throw TypeDBException.of(RULE_THEN_INCOHERENT, structure.label(), then);
-        if (!then.isAnswerable()) throw TypeDBException.of(RULE_THEN_UNANSWERABLE, structure.label(), then);
     }
 
     private Disjunction whenPattern(com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> conjunction,
@@ -413,10 +412,18 @@ public class Rule {
         }
 
         public void validate(LogicManager logicMgr, ConceptManager conceptMgr) {
-            validateInsertable(logicMgr);
+            validateInsertable(logicMgr, conceptMgr);
         }
 
-        private void validateInsertable(LogicManager logicMgr) {
+        private void validateInsertable(LogicManager logicMgr, ConceptManager conceptMgr) {
+            // All types (labelled or variabilised) must represent exclusively concrete types
+            if (isIsa() && iterate(asIsa().isa().type().inferredTypes())
+                    .anyMatch(t -> conceptMgr.getThingType(t.name()).isAbstract())) {
+                throw TypeDBException.of(
+                        RULE_THEN_INSERTS_ABSTRACT_TYPES, rule.structure.label(), rule.then, asIsa().isa().type().inferredTypes()
+                );
+            }
+
             Conjunction clonedThen = rule.then.clone();
             logicMgr.typeInference().applyCombination(clonedThen, true);
             iterate(rule.when.conjunctions()).forEachRemaining(conj -> {
