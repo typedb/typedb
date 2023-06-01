@@ -91,7 +91,7 @@ public class TypeInference {
     }
 
     private void applyCombination(Disjunction disjunction, Map<Identifier.Variable.Name, Set<Label>> bounds) {
-        disjunction.conjunctions().forEach(conjunction -> applyCombination(conjunction, bounds, false));
+       disjunction.conjunctions().forEach(conjunction -> applyCombination(conjunction, bounds, false));
     }
 
     public void applyCombination(Conjunction conjunction) {
@@ -194,7 +194,9 @@ public class TypeInference {
             Map<Retrievable, Order> sortOrder = new HashMap<>();
             sortVars.forEach(var -> sortOrder.put(var, Order.Asc.ASC));
             traversal.modifiers().filter(inferenceFilter).sorting(Modifiers.Sorting.create(sortVars, sortOrder));
-            return traversalEng.iterator(traversal).map(vertexMap -> {
+            return traversalEng.iterator(traversal).filter(vertexMap ->
+                !iterate(vertexMap.map().entrySet()).anyMatch(e -> thingInferenceVars().contains(e.getKey()) && e.getValue().asType().isAbstract())
+            ).map(vertexMap -> {
                 Map<Identifier.Variable.Name, Label> labels = new HashMap<>();
                 vertexMap.forEach((id, vertex) -> {
                     if (!inferenceToOriginal.containsKey(id)) return;
@@ -338,7 +340,7 @@ public class TypeInference {
 
         private void registerPredicate(TypeVariable inferenceVar, PredicateConstraint constraint) {
             Set<Encoding.ValueType<?>> predicateValueTypes;
-            Predicate predicate = constraint.predicate();
+            Predicate<?> predicate = constraint.predicate();
             if (predicate.isConstant()) {
                 predicateValueTypes = set(Encoding.ValueType.of(predicate.value().getClass()));
             } else if (predicate.isThingVar()) {
