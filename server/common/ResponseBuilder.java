@@ -37,6 +37,7 @@ import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.answer.PartialExplanation.ConclusionAnswer;
 import com.vaticle.typedb.protocol.AnswerProto;
 import com.vaticle.typedb.protocol.ConceptProto;
+import com.vaticle.typedb.protocol.ConnectionProto;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabaseManager;
 import com.vaticle.typedb.protocol.LogicProto;
@@ -46,13 +47,13 @@ import com.vaticle.typedb.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 
+import javax.annotation.Nullable;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 
 import static com.google.protobuf.ByteString.copyFrom;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeUUID;
@@ -63,6 +64,7 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.numer
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Logic.Rule.protoRule;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.protoThing;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoType;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Value.protoValue;
 import static java.util.stream.Collectors.toList;
 
 public class ResponseBuilder {
@@ -74,6 +76,13 @@ public class ResponseBuilder {
 
     public static ByteString UUIDAsByteString(UUID uuid) {
         return copyFrom(encodeUUID(uuid).getBytes());
+    }
+
+    public static class Connection {
+
+        public static ConnectionProto.Connection.Open.Res openRes() {
+            return ConnectionProto.Connection.Open.Res.newBuilder().build();
+        }
     }
 
     public static class DatabaseManager {
@@ -334,8 +343,12 @@ public class ResponseBuilder {
             if (concept == null) return null;
             if (concept.isThing()) {
                 return ConceptProto.Concept.newBuilder().setThing(protoThing(concept.asThing())).build();
-            } else {
+            } else if (concept.isType()) {
                 return ConceptProto.Concept.newBuilder().setType(protoType(concept.asType())).build();
+            } else if (concept.isValue()) {
+                return ConceptProto.Concept.newBuilder().setValue(protoValue(concept.asValue())).build();
+            } else {
+                throw TypeDBException.of(ILLEGAL_STATE);
             }
         }
     }
@@ -639,20 +652,20 @@ public class ResponseBuilder {
 
         public static class AttributeType {
 
-            public static ConceptProto.AttributeType.ValueType protoValueType(
+            public static ConceptProto.ValueType protoValueType(
                     com.vaticle.typedb.core.concept.type.AttributeType attributeType) {
                 if (attributeType.isString()) {
-                    return ConceptProto.AttributeType.ValueType.STRING;
+                    return ConceptProto.ValueType.STRING;
                 } else if (attributeType.isBoolean()) {
-                    return ConceptProto.AttributeType.ValueType.BOOLEAN;
+                    return ConceptProto.ValueType.BOOLEAN;
                 } else if (attributeType.isLong()) {
-                    return ConceptProto.AttributeType.ValueType.LONG;
+                    return ConceptProto.ValueType.LONG;
                 } else if (attributeType.isDouble()) {
-                    return ConceptProto.AttributeType.ValueType.DOUBLE;
+                    return ConceptProto.ValueType.DOUBLE;
                 } else if (attributeType.isDateTime()) {
-                    return ConceptProto.AttributeType.ValueType.DATETIME;
+                    return ConceptProto.ValueType.DATETIME;
                 } else if (attributeType.isRoot()) {
-                    return ConceptProto.AttributeType.ValueType.OBJECT;
+                    return ConceptProto.ValueType.OBJECT;
                 } else {
                     throw TypeDBException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
                 }
@@ -809,9 +822,9 @@ public class ResponseBuilder {
 
         public static class Attribute {
 
-            public static ConceptProto.Attribute.Value attributeValue(com.vaticle.typedb.core.concept.thing.Attribute attribute) {
-                ConceptProto.Attribute.Value.Builder builder = ConceptProto.Attribute.Value.newBuilder();
-
+            public static ConceptProto.ConceptValue attributeValue(com.vaticle.typedb.core.concept.thing.Attribute attribute) {
+                ConceptProto.ConceptValue.Builder builder = ConceptProto.ConceptValue.newBuilder();
+                // attributes don't need to set the value type
                 if (attribute.isString()) {
                     builder.setString(attribute.asString().getValue());
                 } else if (attribute.isLong()) {
@@ -825,7 +838,6 @@ public class ResponseBuilder {
                 } else {
                     throw TypeDBException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
                 }
-
                 return builder.build();
             }
 
@@ -836,6 +848,37 @@ public class ResponseBuilder {
                                 owners.stream().map(Thing::protoThing).collect(toList()))
                 ));
             }
+        }
+    }
+
+    public static class Value {
+
+        public static ConceptProto.Value protoValue(com.vaticle.typedb.core.concept.value.Value<?> value) {
+            ConceptProto.Value.Builder protoValue = ConceptProto.Value.newBuilder()
+                    .setValueType(valueType(value))
+                    .setValue(value(value));
+            return protoValue.build();
+        }
+
+        public static ConceptProto.ValueType valueType(com.vaticle.typedb.core.concept.value.Value<?> value) {
+            if (value.isString()) return ConceptProto.ValueType.STRING;
+            else if (value.isBoolean()) return ConceptProto.ValueType.BOOLEAN;
+            else if (value.isLong()) return ConceptProto.ValueType.LONG;
+            else if (value.isDouble()) return ConceptProto.ValueType.DOUBLE;
+            else if (value.isDateTime()) return ConceptProto.ValueType.DATETIME;
+            else throw TypeDBException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
+        }
+
+        public static ConceptProto.ConceptValue value(com.vaticle.typedb.core.concept.value.Value<?> value) {
+            ConceptProto.ConceptValue.Builder builder = ConceptProto.ConceptValue.newBuilder();
+            if (value.isString()) builder.setString(value.asString().value());
+            else if (value.isLong()) builder.setLong(value.asLong().value());
+            else if (value.isBoolean()) builder.setBoolean(value.asBoolean().value());
+            else if (value.isDateTime()) {
+                builder.setDateTime(value.asDateTime().value().toInstant(ZoneOffset.UTC).toEpochMilli());
+            } else if (value.isDouble()) builder.setDouble(value.asDouble().value());
+            else throw TypeDBException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
+            return builder.build();
         }
     }
 

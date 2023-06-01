@@ -239,7 +239,6 @@ public abstract class Traversal {
             public boolean equals(Object o) {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
-
                 Value<T> that = (Value<T>) o;
                 return valueType.equals(that.valueType) && value.equals(that.value);
             }
@@ -260,7 +259,6 @@ public abstract class Traversal {
             private <U> int compareTyped(Value<U> other) {
                 return Encoding.ValueType.compare(valueType, value, other.valueType(), other.value());
             }
-
 
             public static class Boolean extends Value<java.lang.Boolean> {
 

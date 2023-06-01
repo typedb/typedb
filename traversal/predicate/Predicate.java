@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.traversal.predicate;
 
 import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
@@ -91,11 +90,11 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
             return argument.valueType();
         }
 
-        public boolean apply(AttributeVertex<?> vertex, Traversal.Parameters.Value<?> value) {
+        public boolean apply(com.vaticle.typedb.core.graph.vertex.Value<?> vertex, Traversal.Parameters.Value<?> value) {
             return argument.apply(operator, vertex, value);
         }
 
-        public <T> boolean apply(AttributeVertex<T> vertex, ARG_TYPE rhs) {
+        public <T> boolean apply(com.vaticle.typedb.core.graph.vertex.Value<T> vertex, ARG_TYPE rhs) {
             return apply(vertex.valueType(), vertex.value(), rhs);
         }
 
@@ -136,7 +135,7 @@ public abstract class Predicate<PRED_OP extends PredicateOperator, PRED_ARG exte
             return new Predicate.Variable(PredicateOperator.Equality.of(token));
         }
 
-        public boolean apply(AttributeVertex<?> fromVertex, AttributeVertex<?> toVertex) {
+        public boolean apply(com.vaticle.typedb.core.graph.vertex.Value<?> fromVertex, com.vaticle.typedb.core.graph.vertex.Value<?> toVertex) {
             return argument.apply(operator, fromVertex, toVertex);
         }
 

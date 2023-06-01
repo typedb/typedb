@@ -27,6 +27,7 @@ import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.ForwardChainingMaterialiser;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.After;
 import org.junit.Before;
@@ -44,7 +45,7 @@ import static com.vaticle.typeql.lang.TypeQL.and;
 import static com.vaticle.typeql.lang.TypeQL.define;
 import static com.vaticle.typeql.lang.TypeQL.rule;
 import static com.vaticle.typeql.lang.TypeQL.type;
-import static com.vaticle.typeql.lang.TypeQL.var;
+import static com.vaticle.typeql.lang.TypeQL.cVar;
 import static com.vaticle.typeql.lang.common.TypeQLArg.ValueType.STRING;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ENTITY;
@@ -76,7 +77,7 @@ public class MaterialiserTest {
         loadTransitivityExample(databaseMgr);
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             ForwardChainingMaterialiser materialiser = ForwardChainingMaterialiser.materialise(session);
-            TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.var("lh").isa("location-hierarchy"));
+            TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.cVar("lh").isa("location-hierarchy"));
             List<ConceptMap> inferredAnswers = iterate(materialiser.query(inferredAnswersQuery).entrySet())
                     .flatMap(Map.Entry::getValue).toList();
             assertEquals(6, inferredAnswers.size());
@@ -90,7 +91,7 @@ public class MaterialiserTest {
                         type("name").sub(ATTRIBUTE).value(STRING),
                         type("location").sub(ENTITY)
                                 .isAbstract()
-                                .owns("name", true)
+                                .owns("name", TypeQLToken.Annotation.KEY)
                                 .plays("location-hierarchy", "superior")
                                 .plays("location-hierarchy", "subordinate"),
                         type("area").sub("location"),
@@ -102,9 +103,9 @@ public class MaterialiserTest {
                                 .relates("subordinate"),
                         rule("location-hierarchy-transitivity")
                                 .when(and(
-                                        var().rel("superior", "a").rel("subordinate", "b").isa("location-hierarchy"),
-                                        var().rel("superior", "b").rel("subordinate", "c").isa("location-hierarchy")
-                                )).then(var().rel("superior", "a").rel("subordinate", "c").isa("location-hierarchy"))
+                                        cVar().rel("superior", cVar("a")).rel("subordinate", cVar("b")).isa("location-hierarchy"),
+                                        cVar().rel("superior", cVar("b")).rel("subordinate", cVar("c")).isa("location-hierarchy")
+                                )).then(cVar().rel("superior", cVar("a")).rel("subordinate", cVar("c")).isa("location-hierarchy"))
                 )));
                 tx.commit();
             }
@@ -112,13 +113,13 @@ public class MaterialiserTest {
         try (TypeDB.Session session = typedb.session(MaterialiserTest.database, Arguments.Session.Type.DATA)) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 tx.query().insert(TypeQL.insert(list(
-                        var("area").isa("area").has("name", "King's Cross"),
-                        var("city").isa("city").has("name", "London"),
-                        var("country").isa("country").has("name", "UK"),
-                        var("continent").isa("continent").has("name", "Europe"),
-                        var().rel("superior", "continent").rel("subordinate", "country").isa("location-hierarchy"),
-                        var().rel("superior", "country").rel("subordinate", "city").isa("location-hierarchy"),
-                        var().rel("superior", "city").rel("subordinate", "area").isa("location-hierarchy")
+                        cVar("area").isa("area").has("name", "King's Cross"),
+                        cVar("city").isa("city").has("name", "London"),
+                        cVar("country").isa("country").has("name", "UK"),
+                        cVar("continent").isa("continent").has("name", "Europe"),
+                        cVar().rel("superior", cVar("continent")).rel("subordinate", cVar("country")).isa("location-hierarchy"),
+                        cVar().rel("superior", cVar("country")).rel("subordinate", cVar("city")).isa("location-hierarchy"),
+                        cVar().rel("superior", cVar("city")).rel("subordinate", cVar("area")).isa("location-hierarchy")
                 )).asInsert());
                 tx.commit();
             }

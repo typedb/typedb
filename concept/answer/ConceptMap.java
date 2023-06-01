@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.value.Value;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -64,11 +65,15 @@ public class ConceptMap implements Answer {
         this.hash = Objects.hash(this.concepts, this.explainables);
     }
 
-    public boolean contains(String variable) {
-        return contains(Reference.name(variable));
+    public boolean contains(Reference.Name variable) {
+        return concepts.containsKey(Identifier.Variable.of(variable));
     }
 
-    public boolean contains(Reference.Name variable) {
+    public boolean contains(Reference.Name.Concept variable) {
+        return concepts.containsKey(Identifier.Variable.of(variable));
+    }
+
+    public boolean contains(Reference.Name.Value variable) {
         return concepts.containsKey(Identifier.Variable.of(variable));
     }
 
@@ -76,13 +81,17 @@ public class ConceptMap implements Answer {
         return concepts.containsKey(id);
     }
 
-    public Concept get(String variable) {
-        return get(Reference.name(variable));
+    public boolean containsConcept(String name) {
+        return contains(Reference.Name.concept(name));
+    }
+
+    public boolean containsValue(String name) {
+        return contains(Reference.Name.value(name));
     }
 
     public Concept get(UnboundVariable variable) {
-        if (!variable.reference().isName()) return null;
-        else return get(variable.reference().asName());
+        if (variable.isNamed()) return get(Identifier.Variable.of(variable.reference().asName()));
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     public Concept get(Reference.Name variable) {
@@ -91,6 +100,14 @@ public class ConceptMap implements Answer {
 
     public Concept get(Retrievable id) {
         return concepts.get(id);
+    }
+
+    public Concept getConcept(String variable) {
+        return get(Identifier.Variable.namedConcept(variable));
+    }
+
+    public Concept getValue(String variable) {
+        return get(Identifier.Variable.namedValue(variable));
     }
 
     public Map<Retrievable, ? extends Concept> concepts() {
@@ -210,7 +227,7 @@ public class ConceptMap implements Answer {
             assert !sorting.variables().isEmpty();
             Optional<java.util.Comparator<ConceptMap>> comparator = sorting.variables().stream()
                     .map(var -> {
-                        java.util.Comparator<ConceptMap> variableComparator = variableComparator(var.asRetrievable());
+                        java.util.Comparator<ConceptMap> variableComparator = variableComparator(var);
                         return sorting.order(var).get().isAscending() ? variableComparator : variableComparator.reversed();
                     }).reduce(java.util.Comparator::thenComparing);
             return new Comparator(sorting, comparator.get());
@@ -219,7 +236,10 @@ public class ConceptMap implements Answer {
         private static java.util.Comparator<ConceptMap> variableComparator(Retrievable var) {
             return java.util.Comparator.comparing(
                     (ConceptMap conceptMap) -> conceptMap.get(var), (concept1, concept2) -> {
-                        if (concept1.isAttribute() && concept2.isAttribute()) {
+                        if (concept1.isValue() && concept2.isValue()) {
+                            return compare(concept1.asValue(), concept2.asValue());
+                        } else if (concept1.isAttribute() && concept2.isAttribute()) {
+                            // TODO: if Attribute were generic we could abstract this away
                             Attribute att1 = concept1.asAttribute();
                             Attribute att2 = concept2.asAttribute();
                             if (att1.isString()) {
@@ -245,6 +265,10 @@ public class ConceptMap implements Answer {
                             throw TypeDBException.of(ILLEGAL_STATE);
                         }
                     });
+        }
+
+        private static <T, U> int compare(Value<T> val1, Value<U> val2) {
+            return Encoding.ValueType.compare(val1.valueType(), val1.value(), val2.valueType(), val2.value());
         }
 
         @Override

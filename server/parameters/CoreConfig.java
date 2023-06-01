@@ -23,13 +23,14 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_OUTPUT_UNRECOGNISED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_LOG_OUTPUT_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_REASONER_REQUIRES_DIR_OUTPUT;
 
 public class CoreConfig {
@@ -263,7 +264,7 @@ public class CoreConfig {
                 void validateOutputs(Map<String, Output.Type> outputsAvailable) {
                     outputNames.forEach(name -> {
                         if (!outputsAvailable.containsKey(name)) {
-                            throw TypeDBException.of(CONFIG_OUTPUT_UNRECOGNISED, name);
+                            throw TypeDBException.of(CONFIG_LOG_OUTPUT_UNRECOGNISED, name);
                         }
                     });
                 }
@@ -286,27 +287,33 @@ public class CoreConfig {
 
         public static class Debugger {
 
-            private final Reasoner reasoner;
+            private final ReasonerTracer reasonerTracer;
+            private final ReasonerPerfCounters reasonerPerfCounters;
 
-            Debugger(Reasoner reasoner) {
-                this.reasoner = reasoner;
+            Debugger(ReasonerTracer reasonerTracer, ReasonerPerfCounters reasonerPerfCounters) {
+                this.reasonerTracer = reasonerTracer;
+                this.reasonerPerfCounters = reasonerPerfCounters;
             }
 
-            public Reasoner reasoner() {
-                return reasoner;
+            public ReasonerTracer reasonerTracer() {
+                return reasonerTracer;
             }
 
             public void validateAndSetOutputs(Map<String, Output.Type> outputs) {
-                reasoner.validateAndSetOutputs(outputs);
+                reasonerTracer.validateAndSetOutputs(outputs);
             }
 
-            public static class Reasoner {
+            public ReasonerPerfCounters reasonerPerfCounters() {
+                return reasonerPerfCounters;
+            }
+
+            public static class ReasonerTracer {
 
                 private final String outputName;
                 private final boolean enable;
                 private Output.Type.File output;
 
-                Reasoner(String outputName, boolean enable) {
+                ReasonerTracer(String outputName, boolean enable) {
                     this.outputName = outputName;
                     this.enable = enable;
                 }
@@ -314,7 +321,7 @@ public class CoreConfig {
                 public void validateAndSetOutputs(Map<String, Output.Type> outputs) {
                     assert output == null;
                     if (!outputs.containsKey(outputName))
-                        throw TypeDBException.of(CONFIG_OUTPUT_UNRECOGNISED, outputName);
+                        throw TypeDBException.of(CONFIG_LOG_OUTPUT_UNRECOGNISED, outputName);
                     else if (!outputs.get(outputName).isFile()) {
                         throw TypeDBException.of(CONFIG_REASONER_REQUIRES_DIR_OUTPUT);
                     }
@@ -328,6 +335,19 @@ public class CoreConfig {
                 public Output.Type.File output() {
                     assert output != null;
                     return output;
+                }
+            }
+
+            public static class ReasonerPerfCounters {
+
+                private final boolean enable;
+
+                ReasonerPerfCounters(boolean enable) {
+                    this.enable = enable;
+                }
+
+                public boolean isEnabled() {
+                    return enable;
                 }
             }
         }

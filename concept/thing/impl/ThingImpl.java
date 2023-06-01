@@ -21,10 +21,8 @@ package com.vaticle.typedb.core.concept.thing.impl;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
-import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptImpl;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -37,14 +35,17 @@ import com.vaticle.typedb.core.encoding.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_ROLE_TYPE_LABEL;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_HAS;
@@ -53,29 +54,33 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.T
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_OVER;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_KEY_TAKEN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_UNIQUE_TAKEN;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.HAS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.PLAYING;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.UNIQUE;
 
 public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     private ThingVertex vertex;
 
-    ThingImpl(ThingVertex vertex) {
+    ThingImpl(ConceptManager conceptMgr, ThingVertex vertex) {
+        super(conceptMgr);
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    public static ThingImpl of(ThingVertex vertex) {
+    public static ThingImpl of(ConceptManager conceptMgr, ThingVertex vertex) {
         switch (vertex.encoding()) {
             case ENTITY:
-                return EntityImpl.of(vertex);
+                return EntityImpl.of(conceptMgr, vertex);
             case ATTRIBUTE:
-                return AttributeImpl.of(vertex.asAttribute());
+                return AttributeImpl.of(conceptMgr, vertex.asAttribute());
             case RELATION:
-                return RelationImpl.of(vertex);
+                return RelationImpl.of(conceptMgr, vertex);
             default:
                 throw vertex.graphs().exception(TypeDBException.of(UNRECOGNISED_VALUE));
         }
@@ -119,9 +124,10 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     public void setHas(Attribute attribute, boolean isInferred) {
         validateIsNotDeleted();
         AttributeVertex.Write<?> attrVertex = ((AttributeImpl<?>) attribute).writableVertex();
-        if (getType().getOwns().findFirst(attribute.getType()).isEmpty()) {
+        NavigableSet<ThingType.Owns> owns = getType().getOwns();
+        if (iterate(owns).noneMatch(o -> o.attributeType().equals(attribute.getType()))) {
             throw exception(TypeDBException.of(THING_CANNOT_OWN_ATTRIBUTE, attribute.getType().getLabel(), readableVertex().type().label()));
-        } else if (getType().getOwns(true).findFirst(attribute.getType()).isPresent()) {
+        } else if (iterate(owns).anyMatch(o -> o.effectiveAnnotations().contains(KEY) && o.attributeType().equals(attribute.getType()))) {
             if (getHas(attribute.getType()).first().isPresent()) {
                 throw exception(TypeDBException.of(THING_KEY_OVER, attribute.getType().getLabel(), getType().getLabel()));
             } else {
@@ -129,6 +135,12 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
                     throw exception(TypeDBException.of(THING_KEY_TAKEN, ((AttributeImpl<?>) attribute).getValue(),
                             attribute.getType().getLabel(), getType().getLabel()));
                 }
+            }
+            vertex.graph().exclusiveOwnership(((TypeImpl) this.getType()).vertex, attrVertex);
+        } else if (iterate(owns).anyMatch(o -> o.effectiveAnnotations().contains(UNIQUE) && o.attributeType().equals(attribute.getType()))) {
+            if (attribute.getOwners(getType()).anyMatch(owner -> owner.getType().equals(getType()))) {
+                throw exception(TypeDBException.of(THING_UNIQUE_TAKEN, ((AttributeImpl<?>) attribute).getValue(),
+                        attribute.getType().getLabel(), getType().getLabel()));
             }
             vertex.graph().exclusiveOwnership(((TypeImpl) this.getType()).vertex, attrVertex);
         }
@@ -144,44 +156,46 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public FunctionalIterator<AttributeImpl<?>> getHas(boolean onlyKey) {
-        return getHas(getType().getOwns(onlyKey).stream().toArray(AttributeType[]::new));
+    public FunctionalIterator<AttributeImpl<?>> getHas(Set<TypeQLToken.Annotation> ownsAnnotations) {
+        return getHas(getType().getOwns(ownsAnnotations).stream().map(ThingType.Owns::attributeType).toArray(AttributeType[]::new));
     }
 
     @Override
     public FunctionalIterator<AttributeImpl.Boolean> getHas(AttributeType.Boolean attributeType) {
-        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asBoolean());
+        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(conceptMgr, v).asBoolean());
     }
 
     @Override
     public FunctionalIterator<AttributeImpl.Long> getHas(AttributeType.Long attributeType) {
-        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asLong());
+        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(conceptMgr, v).asLong());
     }
 
     @Override
     public FunctionalIterator<AttributeImpl.Double> getHas(AttributeType.Double attributeType) {
-        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asDouble());
+        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(conceptMgr, v).asDouble());
     }
 
     @Override
     public FunctionalIterator<AttributeImpl.String> getHas(AttributeType.String attributeType) {
-        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asString());
+        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(conceptMgr, v).asString());
     }
 
     @Override
     public FunctionalIterator<AttributeImpl.DateTime> getHas(AttributeType.DateTime attributeType) {
-        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(v).asDateTime());
+        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(conceptMgr, v).asDateTime());
     }
 
     @Override
     public FunctionalIterator<AttributeImpl<?>> getHas(AttributeType... attributeTypes) {
         if (attributeTypes.length == 0) {
-            return getAttributeVertices(getType().getOwns().toList()).map(AttributeImpl::of);
+            return getAttributeVertices(Collections.emptyList()).map(v -> AttributeImpl.of(conceptMgr, v));
+        } else {
+            return getAttributeVertices(Arrays.asList(attributeTypes)).map(v -> AttributeImpl.of(conceptMgr, v));
         }
-        return getAttributeVertices(Arrays.asList(attributeTypes)).map(AttributeImpl::of);
     }
 
-    private FunctionalIterator<? extends AttributeVertex<?>> getAttributeVertices(List<? extends AttributeType> attributeTypes) {
+    private FunctionalIterator<? extends AttributeVertex<?>> getAttributeVertices(List<? extends
+            AttributeType> attributeTypes) {
         if (!attributeTypes.isEmpty()) {
             return iterate(attributeTypes)
                     .flatMap(AttributeType::getSubtypes).distinct()
@@ -206,9 +220,9 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public FunctionalIterator<? extends RoleType> getPlaying() {
+    public FunctionalIterator<RoleType> getPlaying() {
         return readableVertex().outs().edge(PLAYING).to().map(ThingVertex::type)
-                .map(v -> RoleTypeImpl.of(readableVertex().graphs(), v));
+                .map(conceptMgr::convertRoleType);
     }
 
     @Override
@@ -218,24 +232,24 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
                 throw exception(TypeDBException.of(INVALID_ROLE_TYPE_LABEL, scopedLabel));
             }
             String[] label = scopedLabel.split(":");
-            return RoleTypeImpl.of(readableVertex().graphs(), readableVertex().graph().type().getType(label[1], label[0]));
+            return conceptMgr.convertRoleType(readableVertex().graph().type().getType(label[1], label[0]));
         }).stream().toArray(RoleType[]::new));
     }
 
     @Override
     public FunctionalIterator<RelationImpl> getRelations(RoleType... roleTypes) {
         if (roleTypes.length == 0) {
-            return readableVertex().ins().edge(ROLEPLAYER).from().map(RelationImpl::of);
+            return readableVertex().ins().edge(ROLEPLAYER).from().map(v -> RelationImpl.of(conceptMgr, v));
         } else {
             return iterate(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(
                     rt -> readableVertex().ins().edge(ROLEPLAYER, ((RoleTypeImpl) rt).vertex).from()
-            ).map(RelationImpl::of);
+            ).map(v -> RelationImpl.of(conceptMgr, v));
         }
     }
 
     @Override
     public void delete() {
-        Set<RelationImpl> relations = writableVertex().ins().edge(ROLEPLAYER).from().map(RelationImpl::of).toSet();
+        Set<RelationImpl> relations = writableVertex().ins().edge(ROLEPLAYER).from().map(v -> RelationImpl.of(conceptMgr, v)).toSet();
         writableVertex().outs().edge(PLAYING).to().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
         writableVertex().delete();
         relations.forEach(RelationImpl::deleteIfNoPlayer);
@@ -243,10 +257,11 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public void validate() {
-        long requiredKeys = getType().getOwns(true).count();
-        if (requiredKeys > 0 && getHas(true).map(Attribute::getType).count() < requiredKeys) {
-            Set<AttributeType> missing = getType().getOwns(true).map(Concept::asAttributeType).toSet();
-            missing.removeAll(getHas(true).map(Attribute::getType).toSet());
+        Set<TypeQLToken.Annotation> keyAnnotation = set(KEY);
+        long requiredKeys = getType().getOwns(keyAnnotation).count();
+        if (requiredKeys > 0 && getHas(keyAnnotation).map(Attribute::getType).count() < requiredKeys) {
+            Set<AttributeType> missing = getType().getOwns(keyAnnotation).map(ThingType.Owns::attributeType).toSet();
+            missing.removeAll(getHas(keyAnnotation).map(Attribute::getType).toSet());
             throw exception(TypeDBException.of(THING_KEY_MISSING, getType().getLabel(), printTypeSet(missing)));
         }
     }

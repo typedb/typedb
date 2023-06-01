@@ -255,6 +255,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
         }
 
         @Override
+        public boolean isDeleted() {
+            return deleted.get();
+        }
+
+        @Override
         public void commit() {
             if (isInferred()) throw TypeDBException.of(ILLEGAL_OPERATION);
             if (committed.compareAndSet(false, true)) {
@@ -371,6 +376,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
 
         @Override
         public void delete() {
+            throw TypeDBException.of(ILLEGAL_OPERATION);
+        }
+
+        @Override
+        public boolean isDeleted() {
             throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
@@ -510,6 +520,11 @@ public abstract class ThingEdgeImpl implements ThingEdge {
                 graph.storage().deleteUntracked(backward.iid());
                 graph.edgeDeleted(this);
             }
+        }
+
+        @Override
+        public boolean isDeleted() {
+            return deleted.get();
         }
 
         /**

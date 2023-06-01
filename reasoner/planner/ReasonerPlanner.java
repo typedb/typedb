@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.core.common.cache.CommonCache;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
@@ -27,8 +26,9 @@ import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
-import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
+import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 
 import javax.annotation.Nullable;
@@ -41,30 +41,31 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.intersection;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 
 public abstract class ReasonerPlanner {
     final ConceptManager conceptMgr;
     final TraversalEngine traversalEng;
     final LogicManager logicMgr;
+    private final boolean explain;
     final CommonCache<CallMode, Plan> planCache;
+    final ReasonerPerfCounters perfCounters;
 
-    public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
+    public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, ReasonerPerfCounters perfCounters, boolean explain) {
         this.traversalEng = traversalEng;
         this.conceptMgr = conceptMgr;
         this.logicMgr = logicMgr;
+        this.perfCounters = perfCounters;
+        this.explain = explain;
         this.planCache = new CommonCache<>();
     }
 
-    public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr) {
-        return RecursivePlanner.create(traversalEng, conceptMgr, logicMgr);
+    public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, ReasonerPerfCounters perfCounters, boolean explain) {
+        return RecursivePlanner.create(traversalEng, conceptMgr, logicMgr, perfCounters, explain);
     }
 
     static Set<Variable> estimateableVariables(Set<Variable> variables) {
         return iterate(variables).filter(Variable::isThing).toSet();
-    }
-
-    static Set<Variable> retrievedVariables(Resolvable<?> resolvable) {
-        return iterate(resolvable.variables()).filter(v -> v.id().isRetrievable()).toSet();
     }
 
     static boolean dependenciesSatisfied(Resolvable<?> resolvable, Set<Variable> boundVars, Map<Resolvable<?>, Set<Variable>> dependencies) {
@@ -72,12 +73,14 @@ public abstract class ReasonerPlanner {
     }
 
     public void plan(ResolvableConjunction conjunction, Set<Variable> mode) {
+        long start = System.nanoTime();
         plan(new CallMode(conjunction, estimateableVariables(mode)));
+        perfCounters.timePlanning.add(System.nanoTime() - start);
     }
 
     public void planAllDependencies(Concludable concludable, Set<Variable> mode) {
         triggeredCalls(concludable, estimateableVariables(mode), null)
-                .forEach(callMode -> plan(callMode.conjunction, callMode.mode));
+                .forEach(callMode -> plan(callMode));
     }
 
     public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> mode) {
@@ -111,25 +114,50 @@ public abstract class ReasonerPlanner {
                 .toSet();
         iterate(resolvables).filter(Resolvable::isNegated)
                 .forEachRemaining(resolvable -> deps.get(resolvable).addAll(intersection(resolvable.variables(), unnegatedVars)));
-        Set<ThingVariable> generatedVars = iterate(resolvables).filter(resolvable -> resolvable.generating().isPresent())
-                .map(resolvable -> resolvable.generating().get()).toSet();
-        // Add dependency for resolvable to any variables for which it can't (independently) generate all satisfying values
-        iterate(resolvables).filter(resolvable -> !resolvable.isNegated())
-                .forEachRemaining(resolvable -> deps.get(resolvable).addAll(
-                        iterate(resolvable.variables()).filter(v -> generatedVars.contains(v) && notGeneratedByResolvable(resolvable, v)).toSet()
-                ));
-
+        Set<Variable> generatedVars = iterate(resolvables).flatMap(resolvable -> iterate(resolvable.generating())).toSet();
+        // Add dependency for resolvables which depend on generated variables they do not depend on directly
+        iterate(resolvables).filter(resolvable -> !resolvable.isNegated()).forEachRemaining(
+                resolvable -> deps.compute(resolvable, (r, varDeps) -> {
+                    iterate(resolvable.variables()).filter(v -> generatedVars.contains(v) && !resolvable.generating().contains(v) && isIncompleteRetrievalIfGeneratable(v))
+                            .forEachRemaining(varDeps::add);
+                    return varDeps;
+                }));
+        // Add dependency for RHS of assignments if they are only present in the assignment and nowhere else in the resolvable
+        iterate(resolvables).forEachRemaining(resolvable -> {
+            Set<Variable> varDeps = deps.get(resolvable);
+            resolvable.variables().forEach(var -> var.constraints().forEach(constraint -> {
+                if (constraint.isValue() && constraint.asValue().isAssignment()) {
+                    constraint.asValue().asAssignment().arguments().forEachRemaining(v -> {
+                        if (v.constraining().size() == 1) {
+                            assert v.constraining().contains(constraint);
+                            varDeps.add(v);
+                        }
+                    });
+                }
+            }));
+        });
         return deps;
     }
 
-    private static boolean notGeneratedByResolvable(Resolvable<?> resolvable, Variable variable) {
-        return !resolvable.generating().map(generating -> generating.equals(variable)).orElse(false) &&
-                Iterators.link(iterate(variable.constraints()), iterate(variable.constraining()))
-                .allMatch(constraint -> constraint.isThing() && constraint.asThing().isValue());
+    /**
+     * Check whether the variable would miss answers when used as a retrievable:
+     * In effect: The variable is only involved in predicates or the RHS of assignment constraints
+     */
+    private static boolean isIncompleteRetrievalIfGeneratable(Variable v) {
+        return link(iterate(v.constraints()), iterate(v.constraining())).allMatch(constraint ->
+                (constraint.isThing() && constraint.asThing().isPredicate())
+                        || (constraint.isValue() && (constraint.asValue().isPredicate() || (constraint.asValue().isAssignment() && !v.equals(constraint.owner())))
+                )
+        );
     }
 
     public Set<CallMode> triggeredCalls(Concludable concludable, Set<Variable> mode, @Nullable Set<ResolvableConjunction> dependencyFilter) {
         Set<CallMode> calls = new HashSet<>();
+
+        if (ConcludableController.canBypassReasoning(concludable, iterate(mode).map(v -> v.id().asRetrievable()).toSet(), explain)) {
+            return calls;
+        }
+
         for (Map.Entry<Rule, Set<Unifier>> entry : logicMgr.applicableRules(concludable).entrySet()) {
             for (Rule.Condition.ConditionBranch conditionBranch : entry.getKey().condition().branches()) {
                 ResolvableConjunction ruleConjunction = conditionBranch.conjunction();

@@ -46,7 +46,9 @@ java_test(
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/connection/transaction:steps",
         "//test/behaviour/typeql:steps",
-        "//test/behaviour/reasoner:steps"
+
+        # --- If testing Reasoner BDD, enable these steps and disable the Connection steps above ---
+#        "//test/behaviour/reasoner:steps"
     ],
     data = [
         ":debug.feature",

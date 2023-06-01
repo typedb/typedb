@@ -97,7 +97,8 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
             recycle();
             state = State.COMPLETED;
             if (done.error().isPresent()) {
-                throw TypeDBException.of(done.error().get());
+                if (done.error().get() instanceof TypeDBException) throw (TypeDBException) done.error().get();
+                else throw TypeDBException.of(done.error().get());
             }
         }
 

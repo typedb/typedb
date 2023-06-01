@@ -97,8 +97,8 @@ public class ReasonerTest {
                 List<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x has age-in-days $a;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
-                    assertEquals("age-in-days", a.get("a").asThing().getType().getLabel().scopedName());
-                    assertEquals("milk", a.get("x").asThing().getType().getLabel().scopedName());
+                    assertEquals("age-in-days", a.getConcept("a").asThing().getType().getLabel().scopedName());
+                    assertEquals("milk", a.getConcept("x").asThing().getType().getLabel().scopedName());
                 });
                 assertEquals(2, ans.size());
             }
@@ -126,8 +126,8 @@ public class ReasonerTest {
                 List<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x has age-in-days $a;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
-                    assertEquals("age-in-days", a.get("a").asThing().getType().getLabel().scopedName());
-                    assertEquals("milk", a.get("x").asThing().getType().getLabel().scopedName());
+                    assertEquals("age-in-days", a.getConcept("a").asThing().getType().getLabel().scopedName());
+                    assertEquals("milk", a.getConcept("x").asThing().getType().getLabel().scopedName());
                 });
                 assertEquals(2, ans.size());
 
@@ -210,9 +210,9 @@ public class ReasonerTest {
                 List<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
-                    assertFalse(a.get("a").asAttribute().asBoolean().getValue());
-                    assertEquals("is-still-good", a.get("a").asThing().getType().getLabel().scopedName());
-                    assertEquals("milk", a.get("x").asThing().getType().getLabel().scopedName());
+                    assertFalse(a.getConcept("a").asAttribute().asBoolean().getValue());
+                    assertEquals("is-still-good", a.getConcept("a").asThing().getType().getLabel().scopedName());
+                    assertEquals("milk", a.getConcept("x").asThing().getType().getLabel().scopedName());
                 });
                 assertEquals(2, ans.size());
             }
@@ -253,10 +253,10 @@ public class ReasonerTest {
                 List<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
-                    assertEquals("friendship", a.get("f").asThing().getType().getLabel().scopedName());
-                    assertEquals("person", a.get("p1").asThing().getType().getLabel().scopedName());
-                    assertEquals("person", a.get("p2").asThing().getType().getLabel().scopedName());
-                    assertEquals("name", a.get("na").asAttribute().getType().getLabel().scopedName());
+                    assertEquals("friendship", a.getConcept("f").asThing().getType().getLabel().scopedName());
+                    assertEquals("person", a.getConcept("p1").asThing().getType().getLabel().scopedName());
+                    assertEquals("person", a.getConcept("p2").asThing().getType().getLabel().scopedName());
+                    assertEquals("name", a.getConcept("na").asAttribute().getType().getLabel().scopedName());
                 });
 
                 assertEquals(2, ans.size());

@@ -30,6 +30,7 @@ host_compatible_java_test(
         "//common:common",
         "//concept:concept",
         "//database:database",
+        "//encoding:encoding",
         "//traversal:traversal",
         "//pattern:pattern",
     ],
@@ -40,6 +41,7 @@ host_compatible_java_test(
         "@vaticle_typeql//java/query:query",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/common",
+        "@vaticle_typeql//java/pattern",
         "@vaticle_typedb_common//:common"
     ],
 )

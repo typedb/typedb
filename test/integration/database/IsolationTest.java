@@ -369,12 +369,39 @@ public class IsolationTest {
 
     @Test
     public void concurrent_key_insertion_conflicts() {
-
         try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             TypeDB.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
             TypeDB.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
             txn1.query().insert(TypeQL.parseQuery("insert $x isa company, has address 'abc-key-1';"));
             txn2.query().insert(TypeQL.parseQuery("insert $x isa company, has address 'abc-key-1';"));
+            txn1.commit();
+            try {
+                txn2.commit();
+            } catch (TypeDBException e) {
+                // success
+                return;
+            } catch (Exception e) {
+                fail("Wrong exception type: " + e);
+            }
+            fail();
+        }
+    }
+
+    @Test
+    public void concurrent_unique_insertion_conflicts() {
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                txn.query().define(TypeQL.parseQuery("define " +
+                        "domain sub attribute, value string;" +
+                        "company owns domain @unique;").asDefine());
+                txn.commit();
+            }
+        }
+        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
+            TypeDB.Transaction txn1 = session.transaction(Arguments.Transaction.Type.WRITE);
+            TypeDB.Transaction txn2 = session.transaction(Arguments.Transaction.Type.WRITE);
+            txn1.query().insert(TypeQL.parseQuery("insert $x isa company, has address 'a1', has domain 'vaticle.com';"));
+            txn2.query().insert(TypeQL.parseQuery("insert $x isa company, has address 'a2', has domain 'vaticle.com';"));
             txn1.commit();
             try {
                 txn2.commit();

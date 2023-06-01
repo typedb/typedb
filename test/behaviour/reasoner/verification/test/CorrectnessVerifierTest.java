@@ -45,7 +45,7 @@ import static com.vaticle.typeql.lang.TypeQL.define;
 import static com.vaticle.typeql.lang.TypeQL.parseQuery;
 import static com.vaticle.typeql.lang.TypeQL.rule;
 import static com.vaticle.typeql.lang.TypeQL.type;
-import static com.vaticle.typeql.lang.TypeQL.var;
+import static com.vaticle.typeql.lang.TypeQL.cVar;
 import static com.vaticle.typeql.lang.common.TypeQLArg.ValueType.BOOLEAN;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ENTITY;
@@ -69,8 +69,8 @@ public class CorrectnessVerifierTest {
                         type("employable").sub(ATTRIBUTE).value(BOOLEAN),
                         type("person").sub(ENTITY).owns("employable"),
                         rule("people-are-employable")
-                                .when(and(var("p").isa("person")))
-                                .then(var("p").has("employable", true))
+                                .when(and(cVar("p").isa("person")))
+                                .then(cVar("p").has("employable", true))
                 )));
                 tx.commit();
             }

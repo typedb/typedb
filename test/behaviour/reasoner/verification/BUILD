@@ -38,6 +38,8 @@ native_java_libraries(
         "@vaticle_typeql//java/common",
         "@vaticle_typeql//java/query",
         "@vaticle_typeql//java/pattern",
+
+        "@maven//:com_google_code_findbugs_jsr305",
     ],
 )
 

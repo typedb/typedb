@@ -21,23 +21,23 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.impl.AttributeImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.util.Objects.className;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_UNSATISFIES_REGEX;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
@@ -71,8 +71,8 @@ import static com.vaticle.typeql.lang.common.util.Strings.quoteString;
 
 public abstract class AttributeTypeImpl extends ThingTypeImpl implements AttributeType {
 
-    private AttributeTypeImpl(GraphManager graphMgr, TypeVertex vertex) {
-        super(graphMgr, vertex);
+    private AttributeTypeImpl(ConceptManager conceptMgr, TypeVertex vertex) {
+        super(conceptMgr, vertex);
         if (vertex.encoding() != ATTRIBUTE_TYPE) {
             throw exception(TypeDBException.of(TYPE_ROOT_MISMATCH, vertex.label(),
                     ATTRIBUTE_TYPE.root().label(),
@@ -80,20 +80,9 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
     }
 
-    private AttributeTypeImpl(GraphManager graphMgr, java.lang.String label, Class<?> valueType) {
-        super(graphMgr, label, ATTRIBUTE_TYPE);
+    private AttributeTypeImpl(ConceptManager conceptMgr, java.lang.String label, Class<?> valueType) {
+        super(conceptMgr, label, ATTRIBUTE_TYPE);
         vertex.valueType(Encoding.ValueType.of(valueType));
-    }
-
-    public static AttributeTypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
-        Encoding.ValueType<?> valueType = vertex.valueType();
-        if (valueType == OBJECT) return new Root(graphMgr, vertex);
-        else if (valueType == BOOLEAN) return Boolean.of(graphMgr, vertex);
-        else if (valueType == LONG) return Long.of(graphMgr, vertex);
-        else if (valueType == DOUBLE) return Double.of(graphMgr, vertex);
-        else if (valueType == STRING) return String.of(graphMgr, vertex);
-        else if (valueType == DATETIME) return DateTime.of(graphMgr, vertex);
-        throw graphMgr.exception(TypeDBException.of(UNRECOGNISED_VALUE));
     }
 
     @Override
@@ -114,7 +103,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     public abstract Forwardable<? extends AttributeImpl<?>, Order.Asc> getInstances();
 
     Forwardable<TypeVertex, Order.Asc> getSubtypeVertices(Encoding.ValueType<?> valueType) {
-        return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
+        return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
                 .filter(sv -> sv.valueType().equals(valueType));
     }
 
@@ -135,41 +124,30 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     }
 
     @Override
-    public boolean isKeyable() {
-        return vertex.valueType().isKeyable();
-    }
-
-    @Override
     public abstract ValueType getValueType();
 
     @Override
-    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwners() {
-        return getOwners(false);
-    }
-
-    @Override
-    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwners(boolean onlyKey) {
+    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations) {
         if (isRoot()) return emptySorted();
-        else if (onlyKey) {
-            return iterateSorted(graphMgr.schema().ownersOfAttributeTypeKey(vertex), ASC)
-                    .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
-        } else {
-            return iterateSorted(graphMgr.schema().ownersOfAttributeType(vertex), ASC)
-                    .mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
+        else {
+            return iterateSorted(graphMgr().schema().ownersOfAttributeType(vertex), ASC)
+                    .mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), thingType -> thingType.vertex, ASC)
+                    .filter(thingType -> thingType.getOwns(this)
+                            .map(owns -> owns.effectiveAnnotations().containsAll(annotations))
+                            .orElse(false)
+                    );
         }
     }
 
     @Override
-    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwnersExplicit() {
-        return getOwnersExplicit(false);
-    }
-
-    @Override
-    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwnersExplicit(boolean onlyKey) {
+    public Forwardable<? extends ThingTypeImpl, Order.Asc> getOwnersExplicit(Set<TypeQLToken.Annotation> annotations) {
         if (isRoot()) return emptySorted();
-        Forwardable<TypeVertex, Order.Asc> iterator = vertex.ins().edge(OWNS_KEY).from();
-        if (!onlyKey) iterator = iterator.merge(vertex.ins().edge(OWNS).from());
-        return iterator.mapSorted(v -> ThingTypeImpl.of(graphMgr, v), thingType -> thingType.vertex, ASC);
+        Forwardable<TypeVertex, Order.Asc> iterator = vertex.ins().edge(OWNS_KEY).from().merge(vertex.ins().edge(OWNS).from());
+        return iterator.mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), thingType -> thingType.vertex, ASC)
+                .filter(thingType -> thingType.getOwnsExplicit(this)
+                        .map(owns -> owns.effectiveAnnotations().containsAll(annotations))
+                        .orElse(false)
+                );
     }
 
     @Override
@@ -228,13 +206,13 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
     @Override
     public AttributeTypeImpl.String asString() {
         throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                                           className(AttributeType.String.class)));
+                className(AttributeType.String.class)));
     }
 
     @Override
     public AttributeTypeImpl.DateTime asDateTime() {
         throw exception(TypeDBException.of(INVALID_TYPE_CASTING, className(this.getClass()),
-                                           className(AttributeType.DateTime.class)));
+                className(AttributeType.DateTime.class)));
     }
 
     @Override
@@ -252,7 +230,7 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                         .append(quoteString(escapeRegex(regex.pattern())));
             }
         }
-        writeOwnsAttributes(builder);
+        writeOwns(builder);
         writePlays(builder);
         builder.append(SEMICOLON).append(NEW_LINE);
     }
@@ -269,10 +247,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         return vertex.equals(that.vertex);
     }
 
-    private static class Root extends AttributeTypeImpl {
+    public static class Root extends AttributeTypeImpl {
 
-        private Root(GraphManager graphMgr, TypeVertex vertex) {
-            super(graphMgr, vertex);
+        public Root(ConceptManager conceptMgr, TypeVertex vertex) {
+            super(conceptMgr, vertex);
             assert vertex.valueType().equals(OBJECT);
             assert vertex.label().equals(ATTRIBUTE.label());
         }
@@ -283,27 +261,27 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public AttributeTypeImpl.Boolean asBoolean() {
-            return AttributeTypeImpl.Boolean.of(graphMgr, vertex);
+            return new AttributeTypeImpl.Boolean.Root(conceptMgr, vertex);
         }
 
         @Override
         public AttributeTypeImpl.Long asLong() {
-            return AttributeTypeImpl.Long.of(graphMgr, vertex);
+            return new AttributeTypeImpl.Long.Root(conceptMgr, vertex);
         }
 
         @Override
         public AttributeTypeImpl.Double asDouble() {
-            return AttributeTypeImpl.Double.of(graphMgr, vertex);
+            return new AttributeTypeImpl.Double.Root(conceptMgr, vertex);
         }
 
         @Override
         public AttributeTypeImpl.String asString() {
-            return AttributeTypeImpl.String.of(graphMgr, vertex);
+            return new AttributeTypeImpl.String.Root(conceptMgr, vertex);
         }
 
         @Override
         public AttributeTypeImpl.DateTime asDateTime() {
-            return AttributeTypeImpl.DateTime.of(graphMgr, vertex);
+            return new AttributeTypeImpl.DateTime.Root(conceptMgr, vertex);
         }
 
         @Override
@@ -338,36 +316,20 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         @Override
         public Forwardable<AttributeTypeImpl, Order.Asc> getSubtypes() {
-            return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC).mapSorted(v -> {
-                Encoding.ValueType<?> valueType = v.valueType();
-                if (valueType == OBJECT) {
-                    assert vertex == v;
-                    return this;
-                } else if (valueType == BOOLEAN) return AttributeTypeImpl.Boolean.of(graphMgr, v);
-                else if (valueType == LONG) return AttributeTypeImpl.Long.of(graphMgr, v);
-                else if (valueType == DOUBLE) return AttributeTypeImpl.Double.of(graphMgr, v);
-                else if (valueType == STRING) return AttributeTypeImpl.String.of(graphMgr, v);
-                else if (valueType == DATETIME) return AttributeTypeImpl.DateTime.of(graphMgr, v);
-                throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
-            }, attrType -> attrType.vertex, ASC);
+            return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC).mapSorted(
+                    v -> (AttributeTypeImpl) conceptMgr.convertAttributeType(v),
+                    attrType -> attrType.vertex, ASC
+            );
         }
 
         @Override
         public Forwardable<AttributeTypeImpl, Order.Asc> getSubtypesExplicit() {
-            return getSubtypesExplicit(v -> {
-                Encoding.ValueType<?> valueType = v.valueType();
-                if (valueType == BOOLEAN) return AttributeTypeImpl.Boolean.of(graphMgr, v);
-                else if (valueType == LONG) return AttributeTypeImpl.Long.of(graphMgr, v);
-                else if (valueType == DOUBLE) return AttributeTypeImpl.Double.of(graphMgr, v);
-                else if (valueType == STRING) return AttributeTypeImpl.String.of(graphMgr, v);
-                else if (valueType == DATETIME) return AttributeTypeImpl.DateTime.of(graphMgr, v);
-                throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
-            });
+            return getSubtypesExplicit(v -> (AttributeTypeImpl) conceptMgr.convertAttributeType(v));
         }
 
         @Override
         public Forwardable<AttributeImpl<?>, Order.Asc> getInstances() {
-            return instances(v -> AttributeImpl.of(v.asAttribute()));
+            return instances(v -> AttributeImpl.of(conceptMgr, v.asAttribute()));
         }
 
         @Override
@@ -376,12 +338,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+        public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
@@ -403,12 +365,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class Boolean extends AttributeTypeImpl implements AttributeType.Boolean {
 
-        public Boolean(GraphManager graphMgr, java.lang.String label) {
-            super(graphMgr, label, java.lang.Boolean.class);
+        public Boolean(ConceptManager conceptMgr, java.lang.String label) {
+            super(conceptMgr, label, java.lang.Boolean.class);
         }
 
-        private Boolean(GraphManager graphMgr, TypeVertex vertex) {
-            super(graphMgr, vertex);
+        public Boolean(ConceptManager conceptMgr, TypeVertex vertex) {
+            super(conceptMgr, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) &&
                     !vertex.valueType().equals(BOOLEAN)) {
                 throw exception(TypeDBException.of(VALUE_TYPE_MISMATCH, vertex.label(),
@@ -416,31 +378,25 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
         }
 
-        public static AttributeTypeImpl.Boolean of(GraphManager graphMgr, TypeVertex vertex) {
-            return vertex.label().equals(ATTRIBUTE.label()) ?
-                    new Root(graphMgr, vertex) :
-                    new AttributeTypeImpl.Boolean(graphMgr, vertex);
-        }
-
         @Override
         public Forwardable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypes() {
-            return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
-                    .mapSorted(v -> AttributeTypeImpl.Boolean.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+            return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
+                    .mapSorted(v -> (AttributeTypeImpl.Boolean) conceptMgr.convertAttributeType(v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
         public Forwardable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypesExplicit() {
-            return super.getSubtypesExplicit(v -> AttributeTypeImpl.Boolean.of(graphMgr, v));
+            return super.getSubtypesExplicit(v -> (AttributeTypeImpl.Boolean) conceptMgr.convertAttributeType(v));
         }
 
         @Override
         public Forwardable<AttributeImpl.Boolean, Order.Asc> getInstances() {
-            return instances(v -> new AttributeImpl.Boolean(v.asAttribute().asBoolean()));
+            return instances(v -> new AttributeImpl.Boolean(conceptMgr, v.asAttribute().asBoolean()));
         }
 
         @Override
         public Forwardable<AttributeImpl.Boolean, Order.Asc> getInstancesExplicit() {
-            return instancesExplicit(v -> new AttributeImpl.Boolean(v.asAttribute().asBoolean()));
+            return instancesExplicit(v -> new AttributeImpl.Boolean(conceptMgr, v.asAttribute().asBoolean()));
         }
 
         @Override
@@ -466,21 +422,21 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Boolean put(boolean value, boolean isInferred) {
             validateCanHaveInstances(Attribute.class);
-            AttributeVertex.Write<java.lang.Boolean> attVertex = graphMgr.data().put(vertex, value, isInferred);
-            return new AttributeImpl.Boolean(attVertex);
+            AttributeVertex.Write<java.lang.Boolean> attVertex = graphMgr().data().put(vertex, value, isInferred);
+            return new AttributeImpl.Boolean(conceptMgr, attVertex);
         }
 
         @Override
         public Attribute.Boolean get(boolean value) {
-            AttributeVertex<java.lang.Boolean> attVertex = graphMgr.data().getReadable(vertex, value);
-            if (attVertex != null) return new AttributeImpl.Boolean(attVertex);
+            AttributeVertex<java.lang.Boolean> attVertex = graphMgr().data().getReadable(vertex, value);
+            if (attVertex != null) return new AttributeImpl.Boolean(conceptMgr, attVertex);
             else return null;
         }
 
         private static class Root extends AttributeTypeImpl.Boolean {
 
-            private Root(GraphManager graphMgr, TypeVertex vertex) {
-                super(graphMgr, vertex);
+            private Root(ConceptManager conceptMgr, TypeVertex vertex) {
+                super(conceptMgr, vertex);
                 assert vertex.label().equals(ATTRIBUTE.label());
             }
 
@@ -494,7 +450,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
                 return merge(
                         iterateSorted(ASC, this),
                         super.getSubtypeVertices(BOOLEAN).mapSorted(v ->
-                                AttributeTypeImpl.Boolean.of(graphMgr, v), attrType -> attrType.vertex, ASC
+                                // convert and cast are required for changing a Root into a Boolean type
+                                (AttributeTypeImpl.Boolean) conceptMgr.convertAttributeType(v).asBoolean(), attrType -> attrType.vertex, ASC
                         )
                 );
             }
@@ -502,7 +459,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Forwardable<AttributeTypeImpl.Boolean, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(BOOLEAN)
-                        .mapSorted(v -> AttributeTypeImpl.Boolean.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+                        .mapSorted(
+                                // convert and cast are required for changing a Root into a Boolean type
+                                v -> (AttributeTypeImpl.Boolean) conceptMgr.convertAttributeType(v).asBoolean(),
+                                attrType -> attrType.vertex, ASC
+                        );
             }
 
             @Override
@@ -526,12 +487,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
@@ -554,43 +515,37 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class Long extends AttributeTypeImpl implements AttributeType.Long {
 
-        public Long(GraphManager graphMgr, java.lang.String label) {
-            super(graphMgr, label, java.lang.Long.class);
+        public Long(ConceptManager conceptMgr, java.lang.String label) {
+            super(conceptMgr, label, java.lang.Long.class);
         }
 
-        private Long(GraphManager graphMgr, TypeVertex vertex) {
-            super(graphMgr, vertex);
+        public Long(ConceptManager conceptMgr, TypeVertex vertex) {
+            super(conceptMgr, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) && !vertex.valueType().equals(LONG)) {
                 throw exception(TypeDBException.of(VALUE_TYPE_MISMATCH, vertex.label(),
                         LONG.name(), vertex.valueType().name()));
             }
         }
 
-        public static AttributeTypeImpl.Long of(GraphManager graphMgr, TypeVertex vertex) {
-            return vertex.label().equals(ATTRIBUTE.label()) ?
-                    new Root(graphMgr, vertex) :
-                    new AttributeTypeImpl.Long(graphMgr, vertex);
-        }
-
         @Override
         public Forwardable<AttributeTypeImpl.Long, Order.Asc> getSubtypes() {
-            return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
-                    .mapSorted(v -> AttributeTypeImpl.Long.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+            return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
+                    .mapSorted(v -> (AttributeTypeImpl.Long) conceptMgr.convertAttributeType(v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
         public Forwardable<AttributeTypeImpl.Long, Order.Asc> getSubtypesExplicit() {
-            return super.getSubtypesExplicit(v -> AttributeTypeImpl.Long.of(graphMgr, v));
+            return super.getSubtypesExplicit(v -> (AttributeTypeImpl.Long) conceptMgr.convertAttributeType(v));
         }
 
         @Override
         public Forwardable<AttributeImpl.Long, Order.Asc> getInstances() {
-            return instances(v -> new AttributeImpl.Long(v.asAttribute().asLong()));
+            return instances(v -> new AttributeImpl.Long(conceptMgr, v.asAttribute().asLong()));
         }
 
         @Override
         public Forwardable<AttributeImpl.Long, Order.Asc> getInstancesExplicit() {
-            return instancesExplicit(v -> new AttributeImpl.Long(v.asAttribute().asLong()));
+            return instancesExplicit(v -> new AttributeImpl.Long(conceptMgr, v.asAttribute().asLong()));
         }
 
         @Override
@@ -616,21 +571,21 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Long put(long value, boolean isInferred) {
             validateCanHaveInstances(Attribute.class);
-            AttributeVertex.Write<java.lang.Long> attVertex = graphMgr.data().put(vertex, value, isInferred);
-            return new AttributeImpl.Long(attVertex);
+            AttributeVertex.Write<java.lang.Long> attVertex = graphMgr().data().put(vertex, value, isInferred);
+            return new AttributeImpl.Long(conceptMgr, attVertex);
         }
 
         @Override
         public Attribute.Long get(long value) {
-            AttributeVertex<java.lang.Long> attVertex = graphMgr.data().getReadable(vertex, value);
-            if (attVertex != null) return new AttributeImpl.Long(attVertex);
+            AttributeVertex<java.lang.Long> attVertex = graphMgr().data().getReadable(vertex, value);
+            if (attVertex != null) return new AttributeImpl.Long(conceptMgr, attVertex);
             else return null;
         }
 
         private static class Root extends AttributeTypeImpl.Long {
 
-            private Root(GraphManager graphMgr, TypeVertex vertex) {
-                super(graphMgr, vertex);
+            private Root(ConceptManager conceptMgr, TypeVertex vertex) {
+                super(conceptMgr, vertex);
                 assert vertex.label().equals(ATTRIBUTE.label());
             }
 
@@ -643,8 +598,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public Forwardable<AttributeTypeImpl.Long, Order.Asc> getSubtypes() {
                 return merge(
                         iterateSorted(ASC, this),
-                        super.getSubtypeVertices(LONG).mapSorted(v ->
-                                AttributeTypeImpl.Long.of(graphMgr, v), attrType -> attrType.vertex, ASC
+                        super.getSubtypeVertices(LONG).mapSorted(
+                                // convert and cast are required for changing a Root into a Long type
+                                v -> (AttributeTypeImpl.Long) conceptMgr.convertAttributeType(v).asAttributeType(),
+                                attrType -> attrType.vertex, ASC
                         )
                 );
             }
@@ -652,7 +609,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Forwardable<AttributeTypeImpl.Long, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(LONG)
-                        .mapSorted(v -> AttributeTypeImpl.Long.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+                        .mapSorted(
+                                // convert and cast are required for changing a Root into a Long type
+                                v -> (AttributeTypeImpl.Long) conceptMgr.convertAttributeType(v).asAttributeType(),
+                                attrType -> attrType.vertex, ASC
+                        );
             }
 
             @Override
@@ -676,12 +637,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
@@ -704,43 +665,37 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class Double extends AttributeTypeImpl implements AttributeType.Double {
 
-        public Double(GraphManager graphMgr, java.lang.String label) {
-            super(graphMgr, label, java.lang.Double.class);
+        public Double(ConceptManager conceptMgr, java.lang.String label) {
+            super(conceptMgr, label, java.lang.Double.class);
         }
 
-        private Double(GraphManager graphMgr, TypeVertex vertex) {
-            super(graphMgr, vertex);
+        public Double(ConceptManager conceptMgr, TypeVertex vertex) {
+            super(conceptMgr, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) && !vertex.valueType().equals(DOUBLE)) {
                 throw exception(TypeDBException.of(VALUE_TYPE_MISMATCH, vertex.label(),
                         DOUBLE.name(), vertex.valueType().name()));
             }
         }
 
-        public static AttributeTypeImpl.Double of(GraphManager graphMgr, TypeVertex vertex) {
-            return vertex.label().equals(ATTRIBUTE.label()) ?
-                    new Root(graphMgr, vertex) :
-                    new AttributeTypeImpl.Double(graphMgr, vertex);
-        }
-
         @Override
         public Forwardable<AttributeTypeImpl.Double, Order.Asc> getSubtypes() {
-            return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
-                    .mapSorted(v -> AttributeTypeImpl.Double.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+            return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
+                    .mapSorted(v -> (AttributeTypeImpl.Double) conceptMgr.convertAttributeType(v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
         public Forwardable<AttributeTypeImpl.Double, Order.Asc> getSubtypesExplicit() {
-            return super.getSubtypesExplicit(v -> AttributeTypeImpl.Double.of(graphMgr, v));
+            return super.getSubtypesExplicit(v -> (AttributeTypeImpl.Double) conceptMgr.convertAttributeType(v));
         }
 
         @Override
         public Forwardable<AttributeImpl.Double, Order.Asc> getInstances() {
-            return instances(v -> new AttributeImpl.Double(v.asAttribute().asDouble()));
+            return instances(v -> new AttributeImpl.Double(conceptMgr, v.asAttribute().asDouble()));
         }
 
         @Override
         public Forwardable<AttributeImpl.Double, Order.Asc> getInstancesExplicit() {
-            return instancesExplicit(v -> new AttributeImpl.Double(v.asAttribute().asDouble()));
+            return instancesExplicit(v -> new AttributeImpl.Double(conceptMgr, v.asAttribute().asDouble()));
         }
 
         @Override
@@ -766,21 +721,21 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.Double put(double value, boolean isInferred) {
             validateCanHaveInstances(Attribute.class);
-            AttributeVertex.Write<java.lang.Double> attVertex = graphMgr.data().put(vertex, value, isInferred);
-            return new AttributeImpl.Double(attVertex);
+            AttributeVertex.Write<java.lang.Double> attVertex = graphMgr().data().put(vertex, value, isInferred);
+            return new AttributeImpl.Double(conceptMgr, attVertex);
         }
 
         @Override
         public Attribute.Double get(double value) {
-            AttributeVertex<java.lang.Double> attVertex = graphMgr.data().getReadable(this.vertex, value);
-            if (attVertex != null) return new AttributeImpl.Double(attVertex);
+            AttributeVertex<java.lang.Double> attVertex = graphMgr().data().getReadable(this.vertex, value);
+            if (attVertex != null) return new AttributeImpl.Double(conceptMgr, attVertex);
             else return null;
         }
 
         private static class Root extends AttributeTypeImpl.Double {
 
-            private Root(GraphManager graphMgr, TypeVertex vertex) {
-                super(graphMgr, vertex);
+            private Root(ConceptManager conceptMgr, TypeVertex vertex) {
+                super(conceptMgr, vertex);
                 assert vertex.label().equals(ATTRIBUTE.label());
             }
 
@@ -793,8 +748,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public Forwardable<AttributeTypeImpl.Double, Order.Asc> getSubtypes() {
                 return merge(
                         iterateSorted(ASC, this),
-                        super.getSubtypeVertices(DOUBLE).mapSorted(v ->
-                                AttributeTypeImpl.Double.of(graphMgr, v), attrType -> attrType.vertex, ASC
+                        super.getSubtypeVertices(DOUBLE).mapSorted(
+                                // convert and cast are required for changing a Root into a Double type
+                                v -> (AttributeTypeImpl.Double) conceptMgr.convertAttributeType(v).asDouble(),
+                                attrType -> attrType.vertex, ASC
                         )
                 );
             }
@@ -802,7 +759,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Forwardable<AttributeTypeImpl.Double, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(DOUBLE)
-                        .mapSorted(v -> AttributeTypeImpl.Double.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+                        .mapSorted( // convert and cast are required for changing a Root into a Double type
+                                v -> (AttributeTypeImpl.Double) conceptMgr.convertAttributeType(v).asDouble(),
+                                attrType -> attrType.vertex, ASC
+                        );
             }
 
             @Override
@@ -826,12 +786,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
@@ -854,43 +814,37 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class String extends AttributeTypeImpl implements AttributeType.String {
 
-        public String(GraphManager graphMgr, java.lang.String label) {
-            super(graphMgr, label, java.lang.String.class);
+        public String(ConceptManager conceptMgr, java.lang.String label) {
+            super(conceptMgr, label, java.lang.String.class);
         }
 
-        private String(GraphManager graphMgr, TypeVertex vertex) {
-            super(graphMgr, vertex);
+        public String(ConceptManager conceptMgr, TypeVertex vertex) {
+            super(conceptMgr, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) && !vertex.valueType().equals(STRING)) {
                 throw exception(TypeDBException.of(VALUE_TYPE_MISMATCH, vertex.label(),
                         STRING.name(), vertex.valueType().name()));
             }
         }
 
-        public static AttributeTypeImpl.String of(GraphManager graphMgr, TypeVertex vertex) {
-            return vertex.label().equals(ATTRIBUTE.label()) ?
-                    new Root(graphMgr, vertex) :
-                    new AttributeTypeImpl.String(graphMgr, vertex);
-        }
-
         @Override
         public Forwardable<AttributeTypeImpl.String, Order.Asc> getSubtypes() {
-            return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
-                    .mapSorted(v -> AttributeTypeImpl.String.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+            return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
+                    .mapSorted(v -> (AttributeTypeImpl.String) conceptMgr.convertAttributeType(v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
         public Forwardable<AttributeTypeImpl.String, Order.Asc> getSubtypesExplicit() {
-            return super.getSubtypesExplicit(v -> AttributeTypeImpl.String.of(graphMgr, v));
+            return super.getSubtypesExplicit(v -> (AttributeTypeImpl.String) conceptMgr.convertAttributeType(v));
         }
 
         @Override
         public Forwardable<AttributeImpl.String, Order.Asc> getInstances() {
-            return instances(v -> new AttributeImpl.String(v.asAttribute().asString()));
+            return instances(v -> new AttributeImpl.String(conceptMgr, v.asAttribute().asString()));
         }
 
         @Override
         public Forwardable<AttributeImpl.String, Order.Asc> getInstancesExplicit() {
-            return instancesExplicit(v -> new AttributeImpl.String(v.asAttribute().asString()));
+            return instancesExplicit(v -> new AttributeImpl.String(conceptMgr, v.asAttribute().asString()));
         }
 
         @Override
@@ -940,14 +894,14 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             if (vertex.regex() != null && !getRegex().matcher(value).matches()) {
                 throw exception(TypeDBException.of(ATTRIBUTE_VALUE_UNSATISFIES_REGEX, getLabel(), value, getRegex()));
             }
-            AttributeVertex.Write<java.lang.String> attVertex = graphMgr.data().put(vertex, value, isInferred);
-            return new AttributeImpl.String(attVertex);
+            AttributeVertex.Write<java.lang.String> attVertex = graphMgr().data().put(vertex, value, isInferred);
+            return new AttributeImpl.String(conceptMgr, attVertex);
         }
 
         @Override
         public Attribute.String get(java.lang.String value) {
-            AttributeVertex<java.lang.String> attVertex = graphMgr.data().getReadable(vertex, value);
-            if (attVertex != null) return new AttributeImpl.String(attVertex);
+            AttributeVertex<java.lang.String> attVertex = graphMgr().data().getReadable(vertex, value);
+            if (attVertex != null) return new AttributeImpl.String(conceptMgr, attVertex);
             else return null;
         }
 
@@ -958,8 +912,8 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
         private static class Root extends AttributeTypeImpl.String {
 
-            private Root(GraphManager graphMgr, TypeVertex vertex) {
-                super(graphMgr, vertex);
+            private Root(ConceptManager conceptMgr, TypeVertex vertex) {
+                super(conceptMgr, vertex);
                 assert vertex.label().equals(ATTRIBUTE.label());
             }
 
@@ -972,8 +926,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public Forwardable<AttributeTypeImpl.String, Order.Asc> getSubtypes() {
                 return merge(
                         iterateSorted(ASC, this),
-                        super.getSubtypeVertices(STRING).mapSorted(v ->
-                                AttributeTypeImpl.String.of(graphMgr, v), attrType -> attrType.vertex, ASC
+                        super.getSubtypeVertices(STRING).mapSorted(
+                                // convert and cast are required for changing a Root into a String type
+                                v -> (AttributeTypeImpl.String) conceptMgr.convertAttributeType(v).asString(),
+                                attrType -> attrType.vertex, ASC
                         )
                 );
             }
@@ -981,7 +937,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Forwardable<AttributeTypeImpl.String, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(STRING)
-                        .mapSorted(v -> AttributeTypeImpl.String.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+                        .mapSorted(
+                                // convert and cast are required for changing a Root into a String type
+                                v -> (AttributeTypeImpl.String) conceptMgr.convertAttributeType(v).asString(),
+                                attrType -> attrType.vertex, ASC
+                        );
             }
 
             @Override
@@ -1005,12 +965,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
@@ -1043,43 +1003,37 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
 
     public static class DateTime extends AttributeTypeImpl implements AttributeType.DateTime {
 
-        public DateTime(GraphManager graphMgr, java.lang.String label) {
-            super(graphMgr, label, LocalDateTime.class);
+        public DateTime(ConceptManager conceptMgr, java.lang.String label) {
+            super(conceptMgr, label, LocalDateTime.class);
         }
 
-        private DateTime(GraphManager graphMgr, TypeVertex vertex) {
-            super(graphMgr, vertex);
+        public DateTime(ConceptManager conceptMgr, TypeVertex vertex) {
+            super(conceptMgr, vertex);
             if (!vertex.label().equals(ATTRIBUTE.label()) && !vertex.valueType().equals(DATETIME)) {
                 throw exception(TypeDBException.of(VALUE_TYPE_MISMATCH, vertex.label(),
                         DATETIME.name(), vertex.valueType().name()));
             }
         }
 
-        public static AttributeTypeImpl.DateTime of(GraphManager graphMgr, TypeVertex vertex) {
-            return vertex.label().equals(ATTRIBUTE.label()) ?
-                    new Root(graphMgr, vertex) :
-                    new AttributeTypeImpl.DateTime(graphMgr, vertex);
-        }
-
         @Override
         public Forwardable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypes() {
-            return iterateSorted(graphMgr.schema().getSubtypes(vertex), ASC)
-                    .mapSorted(v -> AttributeTypeImpl.DateTime.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+            return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
+                    .mapSorted(v -> (AttributeTypeImpl.DateTime) conceptMgr.convertAttributeType(v), attrType -> attrType.vertex, ASC);
         }
 
         @Override
         public Forwardable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypesExplicit() {
-            return super.getSubtypesExplicit(v -> AttributeTypeImpl.DateTime.of(graphMgr, v));
+            return super.getSubtypesExplicit(v -> (AttributeTypeImpl.DateTime) conceptMgr.convertAttributeType(v));
         }
 
         @Override
         public Forwardable<AttributeImpl.DateTime, Order.Asc> getInstances() {
-            return instances(v -> new AttributeImpl.DateTime(v.asAttribute().asDateTime()));
+            return instances(v -> new AttributeImpl.DateTime(conceptMgr, v.asAttribute().asDateTime()));
         }
 
         @Override
         public Forwardable<AttributeImpl.DateTime, Order.Asc> getInstancesExplicit() {
-            return instancesExplicit(v -> new AttributeImpl.DateTime(v.asAttribute().asDateTime()));
+            return instancesExplicit(v -> new AttributeImpl.DateTime(conceptMgr, v.asAttribute().asDateTime()));
         }
 
         @Override
@@ -1105,21 +1059,21 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
         @Override
         public Attribute.DateTime put(LocalDateTime value, boolean isInferred) {
             validateCanHaveInstances(Attribute.class);
-            AttributeVertex.Write<LocalDateTime> attVertex = graphMgr.data().put(vertex, value, isInferred);
-            return new AttributeImpl.DateTime(attVertex);
+            AttributeVertex.Write<LocalDateTime> attVertex = graphMgr().data().put(vertex, value, isInferred);
+            return new AttributeImpl.DateTime(conceptMgr, attVertex);
         }
 
         @Override
         public Attribute.DateTime get(LocalDateTime value) {
-            AttributeVertex<java.time.LocalDateTime> attVertex = graphMgr.data().getReadable(vertex, value);
-            if (attVertex != null) return new AttributeImpl.DateTime(attVertex);
+            AttributeVertex<java.time.LocalDateTime> attVertex = graphMgr().data().getReadable(vertex, value);
+            if (attVertex != null) return new AttributeImpl.DateTime(conceptMgr, attVertex);
             else return null;
         }
 
         private static class Root extends AttributeTypeImpl.DateTime {
 
-            private Root(GraphManager graphMgr, TypeVertex vertex) {
-                super(graphMgr, vertex);
+            private Root(ConceptManager conceptMgr, TypeVertex vertex) {
+                super(conceptMgr, vertex);
                 assert vertex.label().equals(ATTRIBUTE.label());
             }
 
@@ -1132,8 +1086,10 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             public Forwardable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypes() {
                 return merge(
                         iterateSorted(ASC, this),
-                        super.getSubtypeVertices(DATETIME).mapSorted(v ->
-                                AttributeTypeImpl.DateTime.of(graphMgr, v), attrType -> attrType.vertex, ASC
+                        super.getSubtypeVertices(DATETIME).mapSorted(
+                                // convert and cast are required for changing a Root into a DateTime type
+                                v -> (AttributeTypeImpl.DateTime) conceptMgr.convertAttributeType(v).asDateTime(),
+                                attrType -> attrType.vertex, ASC
                         )
                 );
             }
@@ -1141,7 +1097,11 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             @Override
             public Forwardable<AttributeTypeImpl.DateTime, Order.Asc> getSubtypesExplicit() {
                 return super.getSubtypeVerticesDirect(DATETIME)
-                        .mapSorted(v -> AttributeTypeImpl.DateTime.of(graphMgr, v), attrType -> attrType.vertex, ASC);
+                        .mapSorted(
+                                // convert and cast are required for changing a Root into a DateTime type
+                                v -> (AttributeTypeImpl.DateTime) conceptMgr.convertAttributeType(v).asDateTime(),
+                                attrType -> attrType.vertex, ASC
+                        );
             }
 
             @Override
@@ -1165,12 +1125,12 @@ public abstract class AttributeTypeImpl extends ThingTypeImpl implements Attribu
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 
             @Override
-            public void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey) {
+            public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
                 throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
             }
 

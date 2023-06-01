@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.traversal.procedure;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
@@ -38,6 +39,7 @@ import com.vaticle.typedb.core.traversal.scanner.GraphIterator;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +52,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
@@ -263,9 +266,13 @@ public class GraphProcedure implements PermutationProcedure {
                 ProcedureVertex.Thing vertex = registerThingVertex(traversalVertex.id());
                 vertex.props(traversalVertex.props().asThing());
                 vertex.setOrder(order);
-            } else {
+            } else if (traversalVertex.isType()) {
                 ProcedureVertex.Type vertex = registerTypeVertex(traversalVertex.id());
                 vertex.props(traversalVertex.props().asType());
+                vertex.setOrder(order);
+            } else if (traversalVertex.isValue()) {
+                ProcedureVertex.Value vertex = registerValueVertex(traversalVertex.id());
+                vertex.props(traversalVertex.props().asValue());
                 vertex.setOrder(order);
             }
         }
@@ -284,9 +291,18 @@ public class GraphProcedure implements PermutationProcedure {
             return vertex;
         }
 
+        private ProcedureVertex.Value registerValueVertex(Identifier id) {
+            assert !vertices.containsKey(id);
+            ProcedureVertex.Value vertex = new ProcedureVertex.Value(id);
+            vertices.put(id, vertex);
+            return vertex;
+        }
+
         private ProcedureVertex<?, ?> vertex(TraversalVertex<?, ?> traversalVertex) {
             if (traversalVertex.isThing()) return vertices.get(traversalVertex.id()).asThing();
-            else return vertices.get(traversalVertex.id()).asType();
+            else if (traversalVertex.isType()) return vertices.get(traversalVertex.id()).asType();
+            else if (traversalVertex.isValue()) return vertices.get(traversalVertex.id()).asValue();
+            else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         // ---- manual builder methods ----
@@ -298,13 +314,13 @@ public class GraphProcedure implements PermutationProcedure {
         }
 
         public ProcedureVertex.Type namedType(int order, String name) {
-            ProcedureVertex.Type vertex = registerTypeVertex(Identifier.Variable.of(Reference.name(name)));
+            ProcedureVertex.Type vertex = registerTypeVertex(Identifier.Variable.of(Reference.concept(name)));
             vertex.setOrder(order);
             return vertex;
         }
 
         public ProcedureVertex.Thing namedThing(int order, String name) {
-            ProcedureVertex.Thing vertex = registerThingVertex(Identifier.Variable.of(Reference.name(name)));
+            ProcedureVertex.Thing vertex = registerThingVertex(Identifier.Variable.of(Reference.concept(name)));
             vertex.setOrder(order);
             return vertex;
         }
@@ -317,6 +333,12 @@ public class GraphProcedure implements PermutationProcedure {
 
         public ProcedureVertex.Thing scopedThing(int order, ProcedureVertex.Thing relation, @Nullable ProcedureVertex.Type roleType, ProcedureVertex.Thing player, int repetition) {
             ProcedureVertex.Thing vertex = registerThingVertex(Identifier.Scoped.of(relation.id().asVariable(), roleType != null ? roleType.id().asVariable() : null, player.id().asVariable(), repetition));
+            vertex.setOrder(order);
+            return vertex;
+        }
+
+        public ProcedureVertex.Value namedValue(int order, String name) {
+            ProcedureVertex.Value vertex = registerValueVertex(Identifier.Variable.of(Reference.value(name)));
             vertex.setOrder(order);
             return vertex;
         }
@@ -369,17 +391,17 @@ public class GraphProcedure implements PermutationProcedure {
         }
 
         public ProcedureEdge.Native.Type.Owns.Forward forwardOwns(
-                ProcedureVertex.Type owner, ProcedureVertex.Type att, boolean isKey) {
+                ProcedureVertex.Type owner, ProcedureVertex.Type att, Set<TypeQLToken.Annotation> annotations) {
             ProcedureEdge.Native.Type.Owns.Forward edge =
-                    new ProcedureEdge.Native.Type.Owns.Forward(owner, att, isKey);
+                    new ProcedureEdge.Native.Type.Owns.Forward(owner, att, annotations);
             attachEdge(owner, att, edge);
             return edge;
         }
 
         public ProcedureEdge.Native.Type.Owns.Backward backwardOwns(
-                ProcedureVertex.Type att, ProcedureVertex.Type owner, boolean isKey) {
+                ProcedureVertex.Type att, ProcedureVertex.Type owner, Set<TypeQLToken.Annotation> annotations) {
             ProcedureEdge.Native.Type.Owns.Backward edge =
-                    new ProcedureEdge.Native.Type.Owns.Backward(att, owner, isKey);
+                    new ProcedureEdge.Native.Type.Owns.Backward(att, owner, annotations);
             attachEdge(att, owner, edge);
             return edge;
         }
@@ -501,6 +523,13 @@ public class GraphProcedure implements PermutationProcedure {
             ProcedureEdge.Native.Thing.RolePlayer.Backward edge =
                     new ProcedureEdge.Native.Thing.RolePlayer.Backward(player, relation, repetition, roleTypes);
             attachEdge(player, relation, edge);
+            return edge;
+        }
+
+        public ProcedureEdge.Argument forwardArgument(ProcedureVertex<?,?> argument, ProcedureVertex.Value result) {
+            // backwardArgument is illegal
+            ProcedureEdge.Argument edge = new ProcedureEdge.Argument(argument, result, Encoding.Direction.Edge.FORWARD);
+            attachEdge(argument, result, edge);
             return edge;
         }
     }

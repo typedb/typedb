@@ -37,6 +37,7 @@ import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.common.TypeQLArg;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.pattern.constraint.ConceptConstraint;
 
 import javax.annotation.Nullable;
@@ -86,7 +87,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return identifier;
     }
 
-    Variable constrainConcept(List<ConceptConstraint> constraints, VariableRegistry registry) {
+    Variable constrainConcept(List<? extends ConceptConstraint> constraints, VariableRegistry registry) {
         constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, registry)));
         return this;
     }
@@ -94,6 +95,12 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     TypeVariable constrainType(List<com.vaticle.typeql.lang.pattern.constraint.TypeConstraint> constraints, VariableRegistry register) {
         constraints.forEach(constraint -> this.constrain(TypeConstraint.of(this, constraint, register)));
         return this;
+    }
+
+    public TypeVariable clone() {
+        TypeVariable clone = new TypeVariable(id());
+        clone.addInferredTypes(inferredTypes());
+        return clone;
     }
 
     void constrainClone(TypeVariable toClone, VariableCloner cloner) {
@@ -189,8 +196,8 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return ownsConstraints;
     }
 
-    public OwnsConstraint owns(TypeVariable attributeType, @Nullable TypeVariable overriddenAttributeType, boolean isKey) {
-        OwnsConstraint ownsConstraint = new OwnsConstraint(this, attributeType, overriddenAttributeType, isKey);
+    public OwnsConstraint owns(TypeVariable attributeType, @Nullable TypeVariable overriddenAttributeType, Set<TypeQLToken.Annotation> annotations) {
+        OwnsConstraint ownsConstraint = new OwnsConstraint(this, attributeType, overriddenAttributeType, annotations);
         constrain(ownsConstraint);
         return ownsConstraint;
     }

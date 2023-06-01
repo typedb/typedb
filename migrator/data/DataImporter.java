@@ -248,6 +248,7 @@ public class DataImporter {
                 conceptTracker.recordMapped(originalID, pair.second());
                 if (incompleteIDs.contains(originalID)) conceptTracker.recordIncomplete(originalID);
             });
+            incompleteIDs.clear();
             bufferedToOriginalIDs.clear();
             originalToBufferedIDs.clear();
             completedIDs.forEach(conceptTracker::deleteIncomplete);
@@ -282,9 +283,7 @@ public class DataImporter {
             if ((newIID = originalToBufferedIDs.get(originalID)) == null && (newIID = conceptTracker.getMapped(originalID)) == null) {
                 return null;
             } else {
-                Thing thing = transaction.concepts().getThing(newIID);
-                assert thing != null;
-                return thing;
+                return transaction.concepts().getThing(newIID);
             }
         }
 
@@ -646,7 +645,7 @@ public class DataImporter {
         enum Prefix {
             ID_MAPPING(0),
             ID_INCOMPLETE(1);
-            ByteArray bytes;
+            final ByteArray bytes;
 
             Prefix(int key) {
                 this.bytes = ByteArray.of(new byte[]{unsignedByte(key)});

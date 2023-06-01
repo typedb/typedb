@@ -46,9 +46,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
-import static com.vaticle.typedb.core.encoding.Encoding.Property.LABEL;
-import static com.vaticle.typedb.core.encoding.Encoding.Property.THEN;
-import static com.vaticle.typedb.core.encoding.Encoding.Property.WHEN;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.Structure.LABEL;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.Structure.THEN;
+import static com.vaticle.typedb.core.encoding.Encoding.Property.Structure.WHEN;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING_ENCODING;
 
 public abstract class RuleStructureImpl implements RuleStructure {
@@ -167,9 +167,9 @@ public abstract class RuleStructureImpl implements RuleStructure {
                 });
     }
 
-    private Set<Variable> connectedVars(Variable var, Set<Variable> visited) {
+    private Set<BoundVariable> connectedVars(BoundVariable var, Set<BoundVariable> visited) {
         visited.add(var);
-        Set<Variable> vars = iterate(var.constraints()).flatMap(c -> iterate(c.variables())).map(v -> (Variable) v).toSet();
+        Set<BoundVariable> vars = iterate(var.constraints()).flatMap(c -> iterate(c.variables())).map(v -> (BoundVariable) v).toSet();
         if (visited.containsAll(vars)) return visited;
         else {
             visited.addAll(vars);

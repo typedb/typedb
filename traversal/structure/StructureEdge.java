@@ -50,6 +50,10 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         return false;
     }
 
+    public boolean isArgument() {
+        return false;
+    }
+
     public Equal asEqual() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Equal.class));
     }
@@ -60,6 +64,10 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
 
     public Native<?, ?> asNative() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Native.class));
+    }
+
+    public Argument asArgument() {
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Argument.class));
     }
 
     public static class Equal extends StructureEdge<StructureVertex<?>, StructureVertex<?>> {
@@ -96,13 +104,14 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
         }
     }
 
-    public static class Predicate extends StructureEdge<StructureVertex.Thing, StructureVertex.Thing> {
+    public static class Predicate extends StructureEdge<StructureVertex<?>, StructureVertex<?>> {
 
         private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
         private final int hash;
 
-        Predicate(StructureVertex.Thing from, StructureVertex.Thing to, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
+        Predicate(StructureVertex<?> from, StructureVertex<?> to, com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, predicate.toString());
+            assert (from.isThing() || from.isValue()) && (to.isThing() || to.isValue());
             this.predicate = predicate;
             this.hash = Objects.hash(getClass(), from, to, this.predicate);
         }
@@ -143,13 +152,15 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
 
         protected final Encoding.Edge encoding;
         private final boolean isTransitive;
+        private final Set<TypeQLToken.Annotation> annotations;
         private final int hash;
 
-        public Native(VERTEX_FROM from, VERTEX_TO to, Encoding.Edge encoding, boolean isTransitive) {
+        public Native(VERTEX_FROM from, VERTEX_TO to, Encoding.Edge encoding, boolean isTransitive, Set<TypeQLToken.Annotation> annotations) {
             super(from, to, encoding.name());
             this.encoding = encoding;
             this.isTransitive = isTransitive;
-            this.hash = Objects.hash(getClass(), from, to, this.encoding, this.isTransitive);
+            this.annotations = annotations;
+            this.hash = Objects.hash(getClass(), from, to, this.encoding, this.isTransitive, this.annotations);
         }
 
         public Encoding.Edge encoding() {
@@ -158,6 +169,10 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
 
         public boolean isTransitive() {
             return isTransitive;
+        }
+
+        public Set<TypeQLToken.Annotation> annotations() {
+            return this.annotations;
         }
 
         @Override
@@ -187,6 +202,7 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
             return (this.from.equals(that.from) &&
                     this.to.equals(that.to) &&
                     this.encoding.equals(that.encoding) &&
+                    this.annotations.equals(that.annotations) &&
                     this.isTransitive == that.isTransitive);
         }
 
@@ -201,8 +217,9 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
             private final int repetition;
             private final int hash;
 
-            RolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes, int repetition) {
-                super(from, to, ROLEPLAYER, false);
+            RolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes, int repetition,
+                       Set<TypeQLToken.Annotation> annotations) {
+                super(from, to, ROLEPLAYER, false, annotations);
                 this.roleTypes = roleTypes;
                 this.repetition = repetition;
                 this.hash = Objects.hash(this.getClass(), from, to, encoding, roleTypes, repetition);
@@ -243,6 +260,40 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
             public int hashCode() {
                 return hash;
             }
+        }
+    }
+
+    public static class Argument extends StructureEdge<StructureVertex<?>, StructureVertex.Value> {
+
+        private final int hash;
+
+        Argument(StructureVertex<?> from, StructureVertex.Value to) {
+            super(from, to, "arg");
+            this.hash = Objects.hash(getClass(), from, to);
+        }
+
+        @Override
+        public boolean isArgument() {
+            return true;
+        }
+
+        @Override
+        public Argument asArgument() {
+            return this;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Argument that = (Argument) o;
+            return (this.from.equals(that.from) && this.to.equals(that.to));
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
         }
     }
 }

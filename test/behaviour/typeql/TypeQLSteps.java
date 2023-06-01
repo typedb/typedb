@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
 import com.vaticle.typedb.core.concept.answer.Numeric;
 import com.vaticle.typedb.core.concept.answer.NumericGroup;
+import com.vaticle.typedb.core.concept.value.Value;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
@@ -35,6 +36,7 @@ import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.test.ProcedurePermutator;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 import com.vaticle.typeql.lang.pattern.variable.Variable;
@@ -55,15 +57,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.common.util.Double.equalsApproximate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -175,11 +181,11 @@ public class TypeQLSteps {
     private void assertQueryPlansCorrect(TypeQLMatch typeQLQuery) {
         Disjunction disjunction = Disjunction.create(typeQLQuery.conjunction().normalise());
         tx().logic().typeInference().applyCombination(disjunction);
+        tx().logic().expressionResolver().resolveExpressions(disjunction);
         Set<Identifier.Variable.Retrievable> filter = (typeQLQuery.modifiers().filter().isEmpty() ?
                 iterate(typeQLQuery.variables()).map(Variable::asUnbound) : iterate(typeQLQuery.modifiers().filter()))
-                .map(unboundVar -> Identifier.Variable.of(unboundVar.reference().asReferable()))
-                .filter(Identifier::isRetrievable).map(Identifier.Variable::asRetrievable)
-                .toSet();
+                .map(unboundVar -> Identifier.Variable.of(unboundVar.reference().asName()))
+                .map(Identifier.Variable::asRetrievable).toSet();
         for (Conjunction conjunction : disjunction.conjunctions()) {
             GraphTraversal.Thing traversal = conjunction.traversal(Filter.create(filter));
             // limited permutation space to avoid timeouts
@@ -199,6 +205,11 @@ public class TypeQLSteps {
     @When("typeql match; throws exception")
     public void typeql_match_throws_exception(String typeQLQueryStatements) {
         assertThrows(() -> typeql_match(typeQLQueryStatements));
+    }
+
+    @When("typeql match; throws exception containing {string}")
+    public void typeql_match_throws_exception(String exception, String typeQLQueryStatements) {
+        assertThrowsWithMessage(() -> typeql_match(typeQLQueryStatements), exception);
     }
 
     @When("get answer of typeql match aggregate")
@@ -319,12 +330,16 @@ public class TypeQLSteps {
                 case "key":
                     checker = new KeyUniquenessCheck(identifier[1]);
                     break;
+                case "attr":
+                    checker = new AttributeValueUniquenessCheck(identifier[1]);
+                    break;
                 case "value":
                     checker = new ValueUniquenessCheck(identifier[1]);
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + identifier[0]);
             }
+            System.out.println(answerGroups);
             ConceptMapGroup answerGroup = answerGroups.stream()
                     .filter(ag -> checker.check(ag.owner()))
                     .findAny()
@@ -373,6 +388,9 @@ public class TypeQLSteps {
                 case "key":
                     checker = new KeyUniquenessCheck(identifier[1]);
                     break;
+                case "attr":
+                    checker = new AttributeValueUniquenessCheck(identifier[1]);
+                    break;
                 case "value":
                     checker = new ValueUniquenessCheck(identifier[1]);
                     break;
@@ -419,8 +437,11 @@ public class TypeQLSteps {
 
     private boolean matchAnswer(Map<String, String> answerIdentifiers, ConceptMap answer) {
 
+        Map<String, Reference.Name> nameReferenceMap = new HashMap<>();
+        iterate(answer.concepts().keySet()).filter(Identifier.Variable.Retrievable::isName)
+                .forEachRemaining(v -> nameReferenceMap.put(v.asName().name(), v.asName().reference().asName()));
         for (Map.Entry<String, String> entry : answerIdentifiers.entrySet()) {
-            Reference.Name var = Reference.name(entry.getKey());
+            Reference.Name var = nameReferenceMap.get(entry.getKey());
             String identifier = entry.getValue();
 
             if (!identifierChecks.containsKey(identifier)) {
@@ -436,24 +457,31 @@ public class TypeQLSteps {
 
     private boolean matchAnswerConcept(Map<String, String> answerIdentifiers, ConceptMap answer) {
         for (Map.Entry<String, String> entry : answerIdentifiers.entrySet()) {
-            Reference.Name var = Reference.name(entry.getKey());
             String[] identifier = entry.getValue().split(":", 2);
             switch (identifier[0]) {
                 case "label":
-                    if (!new LabelUniquenessCheck(identifier[1]).check(answer.get(var))) {
+                    if (!new LabelUniquenessCheck(identifier[1]).check(answer.get(Reference.concept(entry.getKey())))) {
                         return false;
                     }
                     break;
                 case "key":
-                    if (!new KeyUniquenessCheck(identifier[1]).check(answer.get(var))) {
+                    if (!new KeyUniquenessCheck(identifier[1]).check(answer.get(Reference.concept(entry.getKey())))) {
+                        return false;
+                    }
+                    break;
+                case "attr":
+                    if (!new AttributeValueUniquenessCheck(identifier[1]).check(answer.get(Reference.concept(entry.getKey())))) {
                         return false;
                     }
                     break;
                 case "value":
-                    if (!new ValueUniquenessCheck(identifier[1]).check(answer.get(var))) {
+                    if (!new ValueUniquenessCheck(identifier[1]).check(answer.get(Reference.value(entry.getKey())))) {
                         return false;
                     }
                     break;
+                default:
+                    throw new ScenarioDefinitionException("Unrecognised concept type " + identifier[0]);
+
             }
         }
         return true;
@@ -579,9 +607,8 @@ public class TypeQLSteps {
             String requiredVariable = variableFromTemplatePlaceholder(matched.substring(1, matched.length() - 1));
 
             builder.append(template, i, matcher.start());
-            if (templateFiller.contains(Reference.name(requiredVariable))) {
-
-                Concept concept = templateFiller.get(requiredVariable);
+            if (templateFiller.contains(Reference.concept(requiredVariable))) {
+                Concept concept = templateFiller.getConcept(requiredVariable);
                 if (!concept.isThing())
                     throw new ScenarioDefinitionException("Cannot apply IID templating to Type concepts");
                 String conceptId = concept.asThing().getIID().toHexString();
@@ -644,8 +671,8 @@ public class TypeQLSteps {
         }
     }
 
-    public static class ValueUniquenessCheck extends AttributeUniquenessCheck implements UniquenessCheck {
-        ValueUniquenessCheck(String typeAndValue) {
+    public static class AttributeValueUniquenessCheck extends AttributeUniquenessCheck implements UniquenessCheck {
+        AttributeValueUniquenessCheck(String typeAndValue) {
             super(typeAndValue);
         }
 
@@ -662,11 +689,11 @@ public class TypeQLSteps {
 
             switch (attribute.getType().getValueType()) {
                 case BOOLEAN:
-                    return value.equals(attribute.asBoolean().getValue().toString());
+                    return Boolean.valueOf(value).equals(attribute.asBoolean().getValue());
                 case LONG:
-                    return value.equals(attribute.asLong().getValue().toString());
+                    return Long.valueOf(value).equals(attribute.asLong().getValue());
                 case DOUBLE:
-                    return value.equals(attribute.asDouble().getValue().toString());
+                    return equalsApproximate(Double.parseDouble(value), attribute.asDouble().getValue());
                 case STRING:
                     return value.equals(attribute.asString().getValue());
                 case DATETIME:
@@ -695,36 +722,77 @@ public class TypeQLSteps {
                 return false;
             }
 
-            Set<? extends Attribute> keys = concept.asThing().getHas(true).toSet();
-
-            HashMap<String, String> keyMap = new HashMap<>();
-
-            for (Attribute key : keys) {
-                String keyValue;
-                switch (key.getType().getValueType()) {
-                    case BOOLEAN:
-                        keyValue = key.asBoolean().getValue().toString();
-                        break;
-                    case LONG:
-                        keyValue = key.asLong().getValue().toString();
-                        break;
-                    case DOUBLE:
-                        keyValue = key.asDouble().getValue().toString();
-                        break;
-                    case STRING:
-                        keyValue = key.asString().getValue();
-                        break;
-                    case DATETIME:
-                        keyValue = key.asDateTime().getValue().toString();
-                        break;
-                    case OBJECT:
-                    default:
-                        throw new ScenarioDefinitionException("Unrecognised value type " + key.getType().getValueType());
-                }
-
-                keyMap.put(key.getType().getLabel().toString(), keyValue);
+            Optional<? extends Attribute> keyOpt = concept.asThing().getHas(set(TypeQLToken.Annotation.KEY))
+                    .filter(attr -> attr.getType().getLabel().toString().equals(type)).first();
+            if (keyOpt.isEmpty()) return false;
+            Attribute key = keyOpt.get().asAttribute();
+            switch (key.getType().getValueType()) {
+                case BOOLEAN:
+                    return Boolean.valueOf(value).equals(key.asBoolean().getValue());
+                case LONG:
+                    return Long.valueOf(value).equals(key.asLong().getValue());
+                case DOUBLE:
+                    return equalsApproximate(Double.parseDouble(value), key.asDouble().getValue());
+                case STRING:
+                    return value.equals(key.asString().getValue());
+                case DATETIME:
+                    LocalDateTime dateTime;
+                    try {
+                        dateTime = LocalDateTime.parse(value);
+                    } catch (DateTimeParseException e) {
+                        dateTime = LocalDate.parse(value).atStartOfDay();
+                    }
+                    return dateTime.equals(key.asDateTime().getValue());
+                case OBJECT:
+                default:
+                    throw new ScenarioDefinitionException("Unrecognised value type " + key.getType().getValueType());
             }
-            return value.equals(keyMap.get(type));
+        }
+    }
+
+    public static class ValueUniquenessCheck implements UniquenessCheck {
+        private final String valueType;
+        private final String value;
+
+        ValueUniquenessCheck(String valueTypeAndValue) {
+            String[] s = valueTypeAndValue.split(":");
+            this.valueType = s[0].toLowerCase().strip();
+            this.value = s[1].strip();
+        }
+
+        public boolean check(Concept concept) {
+            if (!concept.isValue()) {
+                return false;
+            }
+
+            Value<?> value = concept.asValue();
+
+            switch (valueType) {
+                case "boolean":
+                    assertTrue(value.isBoolean());
+                    return this.value.equals(value.asBoolean().value().toString());
+                case "long":
+                    assertTrue(value.isLong());
+                    return this.value.equals(value.asLong().value().toString());
+                case "double":
+                    assertTrue(value.isDouble());
+                    return this.value.equals(value.asDouble().value().toString());
+                case "string":
+                    assertTrue(value.isString());
+                    return this.value.equals(value.asString().value());
+                case "datetime":
+                    assertTrue(value.isDateTime());
+                    LocalDateTime dateTime;
+                    try {
+                        dateTime = LocalDateTime.parse(this.value);
+                    } catch (DateTimeParseException e) {
+                        dateTime = LocalDate.parse(this.value).atStartOfDay();
+                    }
+                    return dateTime.equals(value.asDateTime().value());
+                case "object":
+                default:
+                    throw new ScenarioDefinitionException("Unrecognised value type specified in test " + this.valueType);
+            }
         }
     }
 }

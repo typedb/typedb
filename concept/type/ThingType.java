@@ -21,6 +21,11 @@ package com.vaticle.typedb.core.concept.type;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.thing.Thing;
+import com.vaticle.typeql.lang.common.TypeQLToken;
+
+import java.util.NavigableSet;
+import java.util.Optional;
+import java.util.Set;
 
 public interface ThingType extends Type {
 
@@ -46,29 +51,33 @@ public interface ThingType extends Type {
 
     void setOwns(AttributeType attributeType);
 
-    void setOwns(AttributeType attributeType, boolean isKey);
+    void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations);
 
     void setOwns(AttributeType attributeType, AttributeType overriddenType);
 
-    void setOwns(AttributeType attributeType, AttributeType overriddenType, boolean isKey);
+    void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations);
 
     void unsetOwns(AttributeType attributeType);
 
-    Forwardable<AttributeType, Order.Asc> getOwns();
+    NavigableSet<Owns> getOwns();
 
-    Forwardable<AttributeType, Order.Asc> getOwnsExplicit();
+    Optional<Owns> getOwns(AttributeType attributeType);
 
-    Forwardable<AttributeType, Order.Asc> getOwns(boolean onlyKey);
+    Forwardable<Owns, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations);
 
-    Forwardable<AttributeType, Order.Asc> getOwnsExplicit(boolean onlyKey);
+    Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType);
 
-    Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType);
+    Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations);
 
-    Forwardable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType);
+    NavigableSet<Owns> getOwnsExplicit();
 
-    Forwardable<AttributeType, Order.Asc> getOwns(AttributeType.ValueType valueType, boolean onlyKey);
+    Optional<Owns> getOwnsExplicit(AttributeType attributeType);
 
-    Forwardable<AttributeType, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType, boolean onlyKey);
+    Forwardable<Owns, Order.Asc> getOwnsExplicit(Set<TypeQLToken.Annotation> annotations);
+
+    Forwardable<Owns, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType);
+
+    Forwardable<Owns, Order.Asc> getOwnsExplicit(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations);
 
     AttributeType getOwnsOverridden(AttributeType attributeType);
 
@@ -89,4 +98,17 @@ public interface ThingType extends Type {
     void getSyntax(StringBuilder builder);
 
     void getSyntaxRecursive(StringBuilder builder);
+
+    interface Owns extends Comparable<Owns> {
+
+        AttributeType attributeType();
+
+        Set<TypeQLToken.Annotation> effectiveAnnotations();
+
+        Optional<AttributeType> overridden();
+
+        void delete();
+
+        void getSyntax(StringBuilder builder);
+    }
 }

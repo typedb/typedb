@@ -54,9 +54,11 @@ import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.PLAYS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.traversal.planner.GraphPlanner.INIT_ZERO;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
 import static java.lang.Math.log;
 import static java.lang.Math.max;
 import static java.lang.Math.pow;
+import static java.util.Collections.emptySet;
 
 public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_TO extends PlannerVertex<?>>
         extends TraversalEdge<VERTEX_FROM, VERTEX_TO> {
@@ -80,7 +82,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
     static PlannerEdge<?, ?> of(PlannerVertex<?> from, PlannerVertex<?> to, StructureEdge<?, ?> edge) {
         if (edge.isEqual()) return new PlannerEdge.Equal(from, to);
-        else if (edge.isPredicate()) return new Predicate(from.asThing(), to.asThing(), edge.asPredicate().predicate());
+        else if (edge.isPredicate()) return new Predicate(from, to, edge.asPredicate().predicate());
+        else if (edge.isArgument()) return new Argument(from, to.asValue());
         else if (edge.isNative()) return PlannerEdge.Native.of(from, to, edge.asNative());
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
@@ -141,10 +144,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         OptimiserConstraint conIsMinimal;
         OptimiserVariable.Boolean[] varIsMinimalWithMultiplicity;
 
-        private final String varPrefix;
-        private final String conPrefix;
-        private final GraphPlanner planner;
-        private final Encoding.Direction.Edge direction;
+        final String varPrefix;
+        final String conPrefix;
+        final GraphPlanner planner;
+        final Encoding.Direction.Edge direction;
 
         private boolean isInitialised;
 
@@ -247,11 +250,12 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         protected void updateOptimiserCoefficients() {
             assert costLastRecorded == safeCost();
-            
+
             double[] filters = to.ins().stream().filter(e -> !e.equals(this)).filter(this::cheaperThan).mapToDouble(e -> e.safeCost() / to.safeCost()).toArray();
             double averageFilter = 1.0;
-            if (filters.length > 0) averageFilter = pow(Arrays.stream(filters).reduce(1.0, (a,b) -> a*b), 1.0 / filters.length);
-            
+            if (filters.length > 0) {
+                averageFilter = pow(Arrays.stream(filters).reduce(1.0, (a, b) -> a * b), 1.0 / filters.length);
+            }
             for (int i = 0; i < to.ins().size(); i++) {
                 planner.optimiser().setObjectiveCoefficient(varIsMinimalWithMultiplicity[i], log(1 + safeCost() * pow(averageFilter, i)));
             }
@@ -281,7 +285,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                                     noneMatch(e -> e.cheaperThan(this))
             );
             for (int i = 0; i < to.ins().size(); i++) {
-                varIsMinimalWithMultiplicity[i].setValue(varIsMinimal.value() && to.varNumInsSelected.value() == i+1);
+                varIsMinimalWithMultiplicity[i].setValue(varIsMinimal.value() && to.varNumInsSelected.value() == i + 1);
             }
         }
 
@@ -290,6 +294,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
 
         public boolean isPredicate() {
+            return false;
+        }
+
+        public boolean isArgument() {
             return false;
         }
 
@@ -303,6 +311,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         public Predicate.Directional asPredicate() {
             throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Predicate.Directional.class));
+        }
+
+        public Argument.Directional<?,?> asArgument() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Argument.Directional.class));
         }
 
         public Native.Directional<?, ?> asNative() {
@@ -352,28 +364,29 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         }
     }
 
-    public static class Predicate extends PlannerEdge<PlannerVertex.Thing, PlannerVertex.Thing> {
+    public static class Predicate extends PlannerEdge<PlannerVertex<?>, PlannerVertex<?>> {
 
         private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
 
-        Predicate(PlannerVertex.Thing from, PlannerVertex.Thing to,
+        Predicate(PlannerVertex<?> from, PlannerVertex<?> to,
                   com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
             super(from, to, predicate.toString(), false);
+            assert (from.isThing() || from.isValue()) && (to.isThing() || to.isValue());
             this.predicate = predicate;
             initialiseDirectionalEdges();
         }
 
         @Override
         protected void initialiseDirectionalEdges() {
-            forward = new Directional(from.asThing(), to.asThing(), FORWARD, predicate);
-            backward = new Directional(to.asThing(), from.asThing(), BACKWARD, predicate.reflection());
+            forward = new Directional(from, to, FORWARD, predicate);
+            backward = new Directional(to, from, BACKWARD, predicate.reflection());
         }
 
-        public static class Directional extends PlannerEdge.Directional<PlannerVertex.Thing, PlannerVertex.Thing> {
+        public static class Directional extends PlannerEdge.Directional<PlannerVertex<?>, PlannerVertex<?>> {
 
             private final com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate;
 
-            Directional(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Direction.Edge direction,
+            Directional(PlannerVertex<?> from, PlannerVertex<?> to, Encoding.Direction.Edge direction,
                         com.vaticle.typedb.core.traversal.predicate.Predicate.Variable predicate) {
                 super(from, to, direction, predicate.toString());
                 this.predicate = predicate;
@@ -395,14 +408,64 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             @Override
             void computeCost(GraphManager graphMgr) {
-                if (isLoop() || to().props().hasIID()) {
+                if (to.isThing()) {
+                    PlannerVertex.Thing to = this.to.asThing();
+                    if (isLoop() || to.props().hasIID()) {
+                        cost = 1;
+                    } else if (predicate.operator().equals(PredicateOperator.Equality.EQ)) {
+                        cost = to.props().types().size();
+                    } else {
+                        cost = graphMgr.data().stats().thingVertexSum(to.props().types());
+                    }
+                } else if (to.isValue()) {
                     cost = 1;
-                } else if (predicate.operator().equals(PredicateOperator.Equality.EQ)) {
-                    cost = to.props().types().size();
-                } else {
-                    cost = graphMgr.data().stats().thingVertexSum(to.props().types());
-                }
+                } else throw TypeDBException.of(ILLEGAL_STATE);
                 assert !Double.isNaN(cost);
+            }
+        }
+    }
+
+    public static class Argument extends PlannerEdge<PlannerVertex<?>, PlannerVertex.Value> {
+
+        Argument(PlannerVertex<?> from, PlannerVertex.Value to) {
+            super(from, to, "arg", true);
+        }
+
+        @Override
+        protected void initialiseDirectionalEdges() {
+            forward = new Directional<>(from, to, FORWARD);
+            backward = new Directional<>(to, from, BACKWARD);
+        }
+
+        public static class Directional<FROM extends PlannerVertex<?>, TO extends PlannerVertex<?>>
+                extends PlannerEdge.Directional<FROM, TO> {
+
+            Directional(FROM from, TO to, Encoding.Direction.Edge direction) {
+                super(from, to, direction, from.toString() + (direction.equals(FORWARD) ? "arg" : "illegal_arg") + to.toString());
+            }
+
+            @Override
+            public boolean isArgument() {
+                return true;
+            }
+
+            @Override
+            public Argument.Directional<FROM, TO> asArgument() {
+                return this;
+            }
+
+            @Override
+            void computeCost(GraphManager graphMgr) {
+                cost = 1;
+            }
+
+            @Override
+            void createOptimiserConstraints() {
+                super.createOptimiserConstraints();
+                if (direction.isForward()) {
+                    OptimiserConstraint conForceForward = planner.optimiser().constraint(1, 1, conPrefix + "force_forward");
+                    conForceForward.setCoefficient(varIsSelected, 1);
+                }
             }
         }
     }
@@ -412,8 +475,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
         protected final Encoding.Edge encoding;
 
-        Native(VERTEX_NATIVE_FROM from, VERTEX_NATIVE_TO to, Encoding.Edge encoding) {
-            super(from, to, encoding.name());
+        Native(VERTEX_NATIVE_FROM from, VERTEX_NATIVE_TO to, Encoding.Edge encoding, boolean initialise) {
+            super(from, to, encoding.name(), initialise);
             this.encoding = encoding;
         }
 
@@ -477,7 +540,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             private final boolean isTransitive;
 
             Isa(PlannerVertex.Thing from, PlannerVertex.Type to, boolean isTransitive) {
-                super(from, to, ISA);
+                super(from, to, ISA, true);
                 this.isTransitive = isTransitive;
             }
 
@@ -548,8 +611,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             protected final boolean isTransitive;
 
-            Type(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Edge.Type encoding, boolean isTransitive) {
-                super(from, to, encoding);
+            Type(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Edge.Type encoding, boolean isTransitive, boolean initialise) {
+                super(from, to, encoding, initialise);
                 this.isTransitive = isTransitive;
             }
 
@@ -563,9 +626,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     case SUB:
                         return new Type.Sub(from.asType(), to.asType(), structureEdge.isTransitive());
                     case OWNS:
-                        return new Type.Owns(from.asType(), to.asType(), false);
+                        return new Type.Owns(from.asType(), to.asType(), structureEdge.annotations());
                     case OWNS_KEY:
-                        return new Type.Owns(from.asType(), to.asType(), true);
+                        return new Type.Owns(from.asType(), to.asType(), structureEdge.annotations());
                     case PLAYS:
                         return new Type.Plays(from.asType(), to.asType());
                     case RELATES:
@@ -577,13 +640,20 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             public abstract class Directional extends Native.Directional<PlannerVertex.Type, PlannerVertex.Type> {
 
+                private final Set<TypeQLToken.Annotation> annotations;
+
                 Directional(PlannerVertex.Type from, PlannerVertex.Type to,
-                            Encoding.Direction.Edge direction, Encoding.Edge encoding) {
+                            Encoding.Direction.Edge direction, Encoding.Edge encoding, Set<TypeQLToken.Annotation> annotations) {
                     super(from, to, direction, encoding);
+                    this.annotations = annotations;
                 }
 
                 public boolean isTransitive() {
                     return isTransitive;
+                }
+
+                public Set<TypeQLToken.Annotation> annotations() {
+                    return annotations;
                 }
 
                 @Override
@@ -627,12 +697,17 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 public Type.Relates.Directional asRelates() {
                     throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Type.Relates.Directional.class));
                 }
+
+                @Override
+                public String toString() {
+                    return super.toString() + "{ annotations: " + annotations + " }";
+                }
             }
 
             static class Sub extends Type {
 
                 Sub(PlannerVertex.Type from, PlannerVertex.Type to, boolean isTransitive) {
-                    super(from, to, SUB, isTransitive);
+                    super(from, to, SUB, isTransitive, true);
                 }
 
                 @Override
@@ -644,7 +719,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 private abstract class Directional extends Type.Directional {
 
                     Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Direction.Edge direction) {
-                        super(from, to, direction, SUB);
+                        super(from, to, direction, SUB, emptySet());
                     }
 
                     @Override
@@ -701,31 +776,25 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             static class Owns extends Type {
 
-                private final boolean isKey;
+                private final Set<TypeQLToken.Annotation> annotations;
 
-                Owns(PlannerVertex.Type from, PlannerVertex.Type to, boolean isKey) {
-                    super(from, to, isKey ? OWNS_KEY : OWNS, false);
-                    this.isKey = isKey;
-                }
-
-                public boolean isKey() {
-                    return isKey;
+                Owns(PlannerVertex.Type from, PlannerVertex.Type to, Set<TypeQLToken.Annotation> annotations) {
+                    super(from, to, annotations.contains(KEY) ? OWNS_KEY : OWNS, false, false);
+                    this.annotations = annotations;
+                    initialiseDirectionalEdges();
                 }
 
                 @Override
                 protected void initialiseDirectionalEdges() {
-                    forward = new Forward(from.asType(), to.asType());
-                    backward = new Backward(to.asType(), from.asType());
+                    forward = new Forward(from.asType(), to.asType(), annotations);
+                    backward = new Backward(to.asType(), from.asType(), annotations);
                 }
 
                 public abstract class Directional extends Type.Directional {
 
-                    Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Direction.Edge direction) {
-                        super(from, to, direction, OWNS);
-                    }
-
-                    public boolean isKey() {
-                        return isKey;
+                    Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Direction.Edge direction,
+                                Set<TypeQLToken.Annotation> annotations) {
+                        super(from, to, direction, OWNS, annotations);
                     }
 
                     @Override
@@ -741,8 +810,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                 private class Forward extends Owns.Directional {
 
-                    private Forward(PlannerVertex.Type from, PlannerVertex.Type to) {
-                        super(from, to, FORWARD);
+                    private Forward(PlannerVertex.Type from, PlannerVertex.Type to, Set<TypeQLToken.Annotation> annotations) {
+                        super(from, to, FORWARD, annotations);
                     }
 
                     @Override
@@ -752,10 +821,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         } else if (!to.props().labels().isEmpty()) {
                             cost = to.props().labels().size();
                         } else if (!from.props().labels().isEmpty()) {
-                            cost = graphMgr.schema().stats().outOwnsMean(from.props().labels(), isKey);
+                            cost = graphMgr.schema().stats().outOwnsMean(from.props().labels(), annotations.contains(KEY));
                         } else {
                             // TODO: We can refine the branching factor by not strictly considering entity types only
-                            cost = graphMgr.schema().stats().outOwnsMean(graphMgr.schema().entityTypes().stream(), isKey);
+                            cost = graphMgr.schema().stats().outOwnsMean(graphMgr.schema().entityTypes().stream(), annotations.contains(KEY));
                         }
                         assert !Double.isNaN(cost);
                     }
@@ -763,8 +832,8 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                 private class Backward extends Owns.Directional {
 
-                    private Backward(PlannerVertex.Type from, PlannerVertex.Type to) {
-                        super(from, to, BACKWARD);
+                    private Backward(PlannerVertex.Type from, PlannerVertex.Type to, Set<TypeQLToken.Annotation> annotations) {
+                        super(from, to, BACKWARD, annotations);
                     }
 
                     @Override
@@ -775,10 +844,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                         } else if (!to.props().labels().isEmpty()) {
                             cost = graphMgr.schema().stats().subTypesSum(to.props().labels(), true);
                         } else if (!from.props().labels().isEmpty()) {
-                            cost = graphMgr.schema().stats().inOwnsMean(from.props().labels(), isKey) *
+                            cost = graphMgr.schema().stats().inOwnsMean(from.props().labels(), annotations.contains(KEY)) *
                                     graphMgr.schema().stats().subTypesMean(graphMgr.schema().entityTypes().stream(), true);
                         } else {
-                            cost = graphMgr.schema().stats().inOwnsMean(graphMgr.schema().attributeTypes().stream(), isKey) *
+                            cost = graphMgr.schema().stats().inOwnsMean(graphMgr.schema().attributeTypes().stream(), annotations.contains(KEY)) *
                                     graphMgr.schema().stats().subTypesMean(graphMgr.schema().entityTypes().stream(), true);
                         }
                         assert !Double.isNaN(cost);
@@ -789,7 +858,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             static class Plays extends Type {
 
                 Plays(PlannerVertex.Type from, PlannerVertex.Type to) {
-                    super(from, to, PLAYS, false);
+                    super(from, to, PLAYS, false, true);
                 }
 
                 @Override
@@ -801,7 +870,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 private abstract class Directional extends Type.Directional {
 
                     Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Direction.Edge direction) {
-                        super(from, to, direction, PLAYS);
+                        super(from, to, direction, PLAYS, emptySet());
                     }
 
                     @Override
@@ -861,7 +930,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
             static class Relates extends Type {
 
                 Relates(PlannerVertex.Type from, PlannerVertex.Type to) {
-                    super(from, to, RELATES, false);
+                    super(from, to, RELATES, false, true);
                 }
 
                 @Override
@@ -873,7 +942,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 private abstract class Directional extends Type.Directional {
 
                     Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Direction.Edge direction) {
-                        super(from, to, direction, RELATES);
+                        super(from, to, direction, RELATES, emptySet());
                     }
 
                     @Override
@@ -934,7 +1003,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
         public static abstract class Thing extends Native<PlannerVertex.Thing, PlannerVertex.Thing> {
 
             Thing(PlannerVertex.Thing from, PlannerVertex.Thing to, Encoding.Edge.Thing encoding) {
-                super(from, to, encoding);
+                super(from, to, encoding, true);
             }
 
             public Encoding.Edge.Thing encoding() {

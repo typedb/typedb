@@ -47,6 +47,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_PLANNING_ERROR;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async2;
@@ -111,7 +112,9 @@ public class GraphPlanner implements ComponentPlanner {
         List<StructureVertex<?>> adjacents = new ArrayList<>();
         PlannerVertex<?> vertex = vertex(structureVertex);
         if (vertex.isThing()) vertex.asThing().props(structureVertex.asThing().props());
-        else vertex.asType().props(structureVertex.asType().props());
+        else if (vertex.isType()) vertex.asType().props(structureVertex.asType().props());
+        else if (vertex.isValue()) vertex.asValue().props(structureVertex.asValue().props());
+        else throw TypeDBException.of(ILLEGAL_STATE);
         structureVertex.outs().forEach(structureEdge -> {
             if (!registeredEdges.contains(structureEdge)) {
                 registeredEdges.add(structureEdge);
@@ -153,7 +156,9 @@ public class GraphPlanner implements ComponentPlanner {
 
     private PlannerVertex<?> vertex(StructureVertex<?> structureVertex) {
         if (structureVertex.isThing()) return thingVertex(structureVertex.asThing());
-        else return typeVertex(structureVertex.asType());
+        else if (structureVertex.isType()) return typeVertex(structureVertex.asType());
+        else if (structureVertex.isValue()) return valueVertex(structureVertex.asValue());
+        else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
     private PlannerVertex.Thing thingVertex(StructureVertex.Thing structureVertex) {
@@ -166,6 +171,12 @@ public class GraphPlanner implements ComponentPlanner {
         return vertices.computeIfAbsent(
                 structureVertex.id(), i -> new PlannerVertex.Type(i, this)
         ).asType();
+    }
+
+    private PlannerVertex.Value valueVertex(StructureVertex.Value structureVertex) {
+        return vertices.computeIfAbsent(
+                structureVertex.id(), i -> new PlannerVertex.Value(i, this)
+        ).asValue();
     }
 
     private void initialiseOptimiserModel() {
@@ -314,7 +325,6 @@ public class GraphPlanner implements ComponentPlanner {
         assert visited.size() == vertices.size() && vertexOrder == vertices.size();
     }
 
-
     private void updateOptimiser() {
         updateOptimiserCoefficients();
         updateOptimiserConstraints();
@@ -448,10 +458,12 @@ public class GraphPlanner implements ComponentPlanner {
             unorderedVertices.remove(vertex);
         }
         while (!unorderedVertices.isEmpty()) {
-            PlannerVertex<?> vertex = unorderedVertices.stream().min(comparing(
-                    v -> v.ins().stream().filter(e -> !unorderedVertices.contains(e.from()))
-                            .mapToDouble(PlannerEdge.Directional::safeCost).min().orElse(v.safeCost())
-            )).get();
+            PlannerVertex<?> vertex = unorderedVertices.stream()
+                    .filter(v -> !v.isValue() || v.ins().stream().filter(e -> e.isArgument() && e.direction().isForward()).noneMatch(e -> unorderedVertices.contains(e.from())))
+                    .min(comparing(
+                            v -> v.ins().stream().filter(e -> !unorderedVertices.contains(e.from()))
+                                    .mapToDouble(PlannerEdge.Directional::safeCost).min().orElse(v.safeCost())
+                    )).get();
             unorderedVertices.remove(vertex);
             vertex.setOrder(vertexOrder++);
         }

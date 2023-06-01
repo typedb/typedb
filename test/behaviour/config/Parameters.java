@@ -18,18 +18,22 @@
 
 package com.vaticle.typedb.core.test.behaviour.config;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.ParameterType;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.UNRECOGNISED_ANNOTATION;
 import static java.util.Objects.hash;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -125,6 +129,18 @@ public class Parameters {
         }
 
         return typeList;
+    }
+
+    @ParameterType("(\\s*([\\w\\-_]+,\\s*)*[\\w\\-_]*\\s*)")
+    public List<TypeQLToken.Annotation> annotations(String stringList) {
+        List<String> strings = Arrays.asList(stringList.split(",\\s?"));
+        List<TypeQLToken.Annotation> annotations = new ArrayList<>();
+        strings.forEach(string -> {
+            TypeQLToken.Annotation annotation = TypeQLToken.Annotation.of(string);
+            if (annotation == null) throw TypeDBException.of(UNRECOGNISED_ANNOTATION, string);
+            else annotations.add(annotation);
+        });
+        return annotations;
     }
 
     public enum RootLabel {

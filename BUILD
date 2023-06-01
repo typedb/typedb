@@ -30,7 +30,7 @@ load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "co
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
 
 exports_files(
-    ["VERSION", "deployment.bzl", "RELEASE_TEMPLATE.md", "LICENSE", "README.md"],
+    ["VERSION", "deployment.bzl", "LICENSE", "README.md"],
 )
 
 native_java_libraries(
@@ -159,7 +159,7 @@ deploy_github(
     repository = deployment_github['github.repository'],
     title = "TypeDB",
     title_append_version = True,
-    release_description = "//:RELEASE_TEMPLATE.md",
+    release_description = "//:RELEASE_NOTES_LATEST.md",
     archive = ":assemble-versioned-all",
     draft = False
 )
@@ -251,8 +251,11 @@ checkstyle_test(
         "*.md",
         ".circleci/windows/*",
         "docs/*",
+        "tools/**",
     ]) + [
         ".bazelversion",
+        ".bazel-remote-cache.rc",
+        ".bazel-cache-credential.json",
         "LICENSE",
         "VERSION",
         "typedb.iml",  # TODO remove when checkstyle_test has .gitignore support
@@ -272,6 +275,7 @@ filegroup(
     data = [
         "@vaticle_dependencies//factory/analysis:dependency-analysis",
         "@vaticle_dependencies//library/maven:update",
+        "@vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh",
         "@vaticle_dependencies//tool/release/notes:create",
         "@vaticle_dependencies//tool/checkstyle:test-coverage",
         "@vaticle_dependencies//tool/sonarcloud:code-analysis",

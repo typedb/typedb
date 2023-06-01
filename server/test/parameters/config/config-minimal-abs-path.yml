@@ -38,10 +38,13 @@ log:
       level: warn
       output: [ stdout ]
   debugger:
-    reasoner:
+    reasoner-tracer:
       enable: false
-      type: reasoner
+      type: reasoner-tracer
       output: file
+    reasoner-perf-counters:
+      enable: false
+      type: reasoner-perf-counters
 
 vaticle-factory:
   enable: false

@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,6 +36,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 
 public class Structure {
 
@@ -69,6 +71,14 @@ public class Structure {
         }).asType();
     }
 
+    public StructureVertex.Value valueVertex(Identifier.Variable identifier) {
+        return vertices.computeIfAbsent(identifier, id -> {
+            StructureVertex.Value v = new StructureVertex.Value(id);
+            if (id.isVariable()) properties.put(id.asVariable(), v.props());
+            return v;
+        }).asValue();
+    }
+
     public Collection<StructureVertex<?>> vertices() {
         return vertices.values();
     }
@@ -78,26 +88,32 @@ public class Structure {
     }
 
     public void equalEdge(StructureVertex<?> from, StructureVertex<?> to) {
-        StructureEdge.Equal edge = new StructureEdge.Equal(from, to);
-        recordEdge(edge);
+        recordEdge(new StructureEdge.Equal(from, to));
     }
 
-    public void predicateEdge(StructureVertex.Thing from, StructureVertex.Thing to, Predicate.Variable predicate) {
-        StructureEdge.Predicate edge = new StructureEdge.Predicate(from, to, predicate);
-        recordEdge(edge);
+    public void predicateEdge(StructureVertex<?> from, StructureVertex<?> to, Predicate.Variable predicate) {
+        recordEdge(new StructureEdge.Predicate(from, to, predicate));
     }
 
-    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding) {
-        nativeEdge(from, to, encoding, false);
+    public void argumentEdge(StructureVertex.Value argument, StructureVertex.Value result) {
+        recordEdge(new StructureEdge.Argument(argument, result));
     }
 
-    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, boolean isTransitive) {
-        StructureEdge.Native<?, ?> edge = new StructureEdge.Native<>(from, to, encoding, isTransitive);
+    public void argumentEdge(StructureVertex.Thing argument, StructureVertex.Value result) {
+        recordEdge(new StructureEdge.Argument(argument, result));
+    }
+
+    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, Set<TypeQLToken.Annotation> annotations) {
+        nativeEdge(from, to, encoding, false, annotations);
+    }
+
+    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, boolean isTransitive, Set<TypeQLToken.Annotation> annotations) {
+        StructureEdge.Native<?, ?> edge = new StructureEdge.Native<>(from, to, encoding, isTransitive, annotations);
         recordEdge(edge);
     }
 
     public void rolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes, int repetition) {
-        StructureEdge.Native.RolePlayer edge = new StructureEdge.Native.RolePlayer(from, to, roleTypes, repetition);
+        StructureEdge.Native.RolePlayer edge = new StructureEdge.Native.RolePlayer(from, to, roleTypes, repetition, emptySet());
         recordEdge(edge);
     }
 

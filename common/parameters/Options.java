@@ -41,6 +41,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final boolean DEFAULT_INFER = false;
     public static final boolean DEFAULT_TRACE_INFERENCE = false;
     public static final boolean DEFAULT_EXPLAIN = false;
+    public static final boolean DEFAULT_REASONER_PERF_COUNTERS = false;
     public static final boolean DEFAULT_PARALLEL = true;
     public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
     public static final boolean DEFAULT_QUERY_WRITE_PREFETCH = false;
@@ -50,6 +51,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Boolean infer = null;
     private Boolean traceInference = null;
     private Boolean explain = null;
+    private Boolean reasonerPerfCounters = null;
     private Boolean parallel = null;
     private Integer prefetchSize = null;
     private Long sessionIdleTimeoutMillis = null;
@@ -100,6 +102,17 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public SELF explain(boolean explain) {
         this.explain = explain;
+        return getThis();
+    }
+
+    public boolean reasonerPerfCounters() {
+        if (reasonerPerfCounters != null) return reasonerPerfCounters;
+        else if (parent != null) return parent.reasonerPerfCounters();
+        else return DEFAULT_REASONER_PERF_COUNTERS;
+    }
+
+    public SELF reasonerPerfCounters(boolean perfCounters) {
+        this.reasonerPerfCounters = perfCounters;
         return getThis();
     }
 

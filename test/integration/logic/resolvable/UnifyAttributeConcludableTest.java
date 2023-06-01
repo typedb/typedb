@@ -125,7 +125,7 @@ public class UnifyAttributeConcludableTest {
 
     @Test
     public void literal_predicates_unify_and_filter_answers() {
-        String conjunction = "{ $a = 'john'; }";
+        String conjunction = "{ $a == 'john'; }";
         Set<Concludable> concludables = Concludable.create(resolvedConjunction(conjunction, logicMgr));
         Concludable.Attribute queryConcludable = concludables.iterator().next().asAttribute();
 
@@ -146,7 +146,7 @@ public class UnifyAttributeConcludableTest {
         assertEquals(1, unifier.requirements().predicates().size());
 
         // test forward unification can reject an invalid partial answer
-        ConceptMap unUnified = new ConceptMap(map(pair(Identifier.Variable.name("a"), instanceOf("first-name", "bob"))));
+        ConceptMap unUnified = new ConceptMap(map(pair(Identifier.Variable.namedConcept("a"), instanceOf("first-name", "bob"))));
         assertFalse(unifier.unify(unUnified).isPresent());
 
         // test filter allows a valid answer

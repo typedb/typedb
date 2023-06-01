@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
+
 package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -26,6 +27,7 @@ import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
@@ -104,10 +106,10 @@ public class RecursivePlannerTest {
     @Test
     public void test_single_retrieval() {
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planner = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), new ReasonerPerfCounters(false), false);
         ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person; }", transaction.logic()));
-        planSpaceSearch.plan(conjunction, set());
-        ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
+        planner.plan(conjunction, set());
+        ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
         assertEquals(10.0, plan.allCallsCost()); // For now the retrieval cost is just the answer-count
     }
 
@@ -116,25 +118,25 @@ public class RecursivePlannerTest {
         // Still just answer counts. Improve if we have an improved estimate for retrievables
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
 
-        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planner = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), new ReasonerPerfCounters(false), false);
         {   // Query only count of $p, where $p isa man;
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa man, has name $n; }", transaction.logic()));
-            planSpaceSearch.plan(conjunction, set());
-            ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
+            planner.plan(conjunction, set());
+            ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
             assertEquals(6.0, plan.allCallsCost());
         }
 
         {   // Query count of both variables $p and $n, where $p isa! person
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa! person, has name $n; }", transaction.logic()));
-            planSpaceSearch.plan(conjunction, set());
-            ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
+            planner.plan(conjunction, set());
+            ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
             assertEquals(4.0, plan.allCallsCost());
         }
 
         {   // Query count of both variables $p and $n, where $p isa person (and subtypes)
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p isa person, has name $n; }", transaction.logic()));
-            planSpaceSearch.plan(conjunction, set());
-            ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
+            planner.plan(conjunction, set());
+            ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
             assertEquals(10.0, plan.allCallsCost());
         }
     }
@@ -150,18 +152,18 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planner = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), new ReasonerPerfCounters(false), false);
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; }", transaction.logic()));
-            planSpaceSearch.plan(conjunction, set());
-            ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
+            planner.plan(conjunction, set());
+            ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
             assertEquals(30.0, plan.allCallsCost());
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; (friendor: $p, friendee: $f) isa friendship; }", transaction.logic()));
-            planSpaceSearch.plan(conjunction, set());
-            ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
+            planner.plan(conjunction, set());
+            ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
             assertEquals(36.0, plan.allCallsCost());
         }
     }
@@ -185,11 +187,11 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planner = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), new ReasonerPerfCounters(false), false);
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
-            planSpaceSearch.plan(conjunction, set());
-            ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
+            planner.plan(conjunction, set());
+            ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
             assertEquals(120.0, plan.allCallsCost());
         }
     }
@@ -205,12 +207,12 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planner = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), new ReasonerPerfCounters(false), false);
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa friendship; }", transaction.logic()));
 
-            planSpaceSearch.plan(conjunction, set());
-            ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
+            planner.plan(conjunction, set());
+            ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
             assertEquals(1377.0, plan.allCallsCost());
         }
     }
@@ -251,18 +253,18 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planSpaceSearch = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planner = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), new ReasonerPerfCounters(false), false);
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
-            planSpaceSearch.plan(conjunction, set());
-            ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
+            planner.plan(conjunction, set());
+            ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
             assertTrue(plan.allCallsCost() > 0); // TODO: Verify whether this is the right/sensible answer
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(guest: $x, host: $y) isa can-live-with; }", transaction.logic()));
-            planSpaceSearch.plan(conjunction, set());
-            ReasonerPlanner.Plan plan = planSpaceSearch.getPlan(conjunction, set());
+            planner.plan(conjunction, set());
+            ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
             assertTrue(plan.allCallsCost() > 0); // TODO: Verify whether this is the right/sensible answer
         }
     }
@@ -286,7 +288,7 @@ public class RecursivePlannerTest {
         session.close();
 
         initialise(Arguments.Session.Type.DATA, Arguments.Transaction.Type.READ);
-        RecursivePlanner planner = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic());
+        RecursivePlanner planner = RecursivePlanner.create(transaction.traversal(), transaction.concepts(), transaction.logic(), new ReasonerPerfCounters(false), false);
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$x has name \"Jim\"; (friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planner.plan(conjunction, set());

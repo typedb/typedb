@@ -18,8 +18,7 @@
 package com.vaticle.typedb.core.server.concept;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
-import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -31,12 +30,17 @@ import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.server.TransactionService;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.TransactionProto.Transaction;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
+import javax.annotation.Nullable;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
@@ -237,10 +241,10 @@ public class TypeService {
                 setRegex(type.asAttributeType(), typeReq.getAttributeTypeSetRegexReq().getRegex(), reqID);
                 return;
             case ATTRIBUTE_TYPE_GET_OWNERS_REQ:
-                getOwners(type.asAttributeType(), typeReq.getAttributeTypeGetOwnersReq().getOnlyKey(), reqID);
+                getOwners(type.asAttributeType(), getAnnotations(typeReq.getAttributeTypeGetOwnersReq().getAnnotationsList()), reqID);
                 return;
             case ATTRIBUTE_TYPE_GET_OWNERS_EXPLICIT_REQ:
-                getOwnersExplicit(type.asAttributeType(), typeReq.getAttributeTypeGetOwnersExplicitReq().getOnlyKey(), reqID);
+                getOwnersExplicit(type.asAttributeType(), getAnnotations(typeReq.getAttributeTypeGetOwnersExplicitReq().getAnnotationsList()), reqID);
                 return;
             case REQ_NOT_SET:
             default:
@@ -319,29 +323,31 @@ public class TypeService {
     }
 
     private void getOwns(ThingType thingType, ConceptProto.ThingType.GetOwns.Req getOwnsReq, UUID reqID) {
+        Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnsReq.getAnnotationsList());
         if (getOwnsReq.getFilterCase() == ConceptProto.ThingType.GetOwns.Req.FilterCase.VALUE_TYPE) {
             getOwnsStream(reqID, thingType.getOwns(
                     valueType(getOwnsReq.getValueType()),
-                    getOwnsReq.getKeysOnly()
-            ));
-        } else getOwnsStream(reqID, thingType.getOwns(getOwnsReq.getKeysOnly()));
+                    annotations
+            ).map(ThingType.Owns::attributeType));
+        } else getOwnsStream(reqID, thingType.getOwns(annotations).map(ThingType.Owns::attributeType));
     }
 
-    private void getOwnsStream(UUID reqID, SortedIterator.Forwardable<AttributeType, Order.Asc> atts) {
+    private void getOwnsStream(UUID reqID, FunctionalIterator<AttributeType> atts) {
         transactionSvc.stream(atts, reqID, attributeTypes -> getOwnsResPart(reqID, attributeTypes));
     }
 
     private void getOwnsExplicit(ThingType thingType, ConceptProto.ThingType.GetOwnsExplicit.Req getOwnsExplicitReq,
                                  UUID reqID) {
+        Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnsExplicitReq.getAnnotationsList());
         if (getOwnsExplicitReq.getFilterCase() == ConceptProto.ThingType.GetOwnsExplicit.Req.FilterCase.VALUE_TYPE) {
             getOwnsStream(reqID, thingType.getOwnsExplicit(
                     valueType(getOwnsExplicitReq.getValueType()),
-                    getOwnsExplicitReq.getKeysOnly()
-            ));
-        } else getOwnsExplicitStream(reqID, thingType.getOwnsExplicit(getOwnsExplicitReq.getKeysOnly()));
+                    annotations
+            ).map(ThingType.Owns::attributeType));
+        } else getOwnsExplicitStream(reqID, thingType.getOwnsExplicit(annotations).map(ThingType.Owns::attributeType));
     }
 
-    private void getOwnsExplicitStream(UUID reqID, SortedIterator.Forwardable<AttributeType, Order.Asc> atts) {
+    private void getOwnsExplicitStream(UUID reqID, FunctionalIterator<AttributeType> atts) {
         transactionSvc.stream(atts, reqID, attributeTypes -> getOwnsExplicitResPart(reqID, attributeTypes));
     }
 
@@ -352,13 +358,12 @@ public class TypeService {
 
     private void setOwns(ThingType thingType, ConceptProto.ThingType.SetOwns.Req setOwnsRequest, UUID reqID) {
         AttributeType attributeType = getThingType(setOwnsRequest.getAttributeType()).asAttributeType();
-        boolean isKey = setOwnsRequest.getIsKey();
-
+        Set<TypeQLToken.Annotation> annotations = getAnnotations(setOwnsRequest.getAnnotationsList());
         if (setOwnsRequest.hasOverriddenType()) {
             AttributeType overriddenType = getThingType(setOwnsRequest.getOverriddenType()).asAttributeType();
-            thingType.setOwns(attributeType, overriddenType, isKey);
+            thingType.setOwns(attributeType, overriddenType, annotations);
         } else {
-            thingType.setOwns(attributeType, isKey);
+            thingType.setOwns(attributeType, annotations);
         }
         transactionSvc.respond(setOwnsRes(reqID));
     }
@@ -399,18 +404,36 @@ public class TypeService {
         transactionSvc.respond(getSyntaxRes(reqID, thingType.getSyntax()));
     }
 
-    private void getOwners(AttributeType attributeType, boolean onlyKey, UUID reqID) {
-        transactionSvc.stream(attributeType.getOwners(onlyKey), reqID, owners -> getOwnersResPart(reqID, owners));
+    static Set<TypeQLToken.Annotation> getAnnotations(List<ConceptProto.Type.Annotation> annotationsProto) {
+        Set<TypeQLToken.Annotation> annotations = new HashSet<>(annotationsProto.size());
+        for (ConceptProto.Type.Annotation annotation : annotationsProto) {
+            switch (annotation.getAnnotationCase()) {
+                case KEY:
+                    annotations.add(TypeQLToken.Annotation.KEY);
+                    break;
+                case UNIQUE:
+                    annotations.add(TypeQLToken.Annotation.UNIQUE);
+                    break;
+                case ANNOTATION_NOT_SET:
+                default:
+                    throw TypeDBException.of(MISSING_FIELD, annotation.getKey());
+            }
+        }
+        return annotations;
     }
 
-    private void getOwnersExplicit(AttributeType attributeType, boolean onlyKey, UUID reqID) {
+    private void getOwners(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations, UUID reqID) {
+        transactionSvc.stream(attributeType.getOwners(annotations), reqID, owners -> getOwnersResPart(reqID, owners));
+    }
+
+    private void getOwnersExplicit(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations, UUID reqID) {
         transactionSvc.stream(
-                attributeType.getOwnersExplicit(onlyKey), reqID,
+                attributeType.getOwnersExplicit(annotations), reqID,
                 owners -> getOwnersExplicitResPart(reqID, owners)
         );
     }
 
-    private void put(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, UUID reqID) {
+    private void put(AttributeType attributeType, ConceptProto.ConceptValue protoValue, UUID reqID) {
         Attribute attribute;
         switch (protoValue.getValueCase()) {
             case STRING:
@@ -438,7 +461,7 @@ public class TypeService {
         transactionSvc.respond(putRes(reqID, attribute));
     }
 
-    private void get(AttributeType attributeType, ConceptProto.Attribute.Value protoValue, UUID reqID) {
+    private void get(AttributeType attributeType, ConceptProto.ConceptValue protoValue, UUID reqID) {
         Attribute attribute;
         switch (protoValue.getValueCase()) {
             case STRING:

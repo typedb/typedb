@@ -524,7 +524,7 @@ public class AnswerCountEstimatorTest {
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $f has is-inferred $a; }", transaction.logic()));
             double answers = answerCountEstimator.estimateAnswers(conjunction, getVariablesByName(conjunction.pattern(), set("f")));
-            assertEquals(6.0, answers); // TODO: This should be 6L?
+            assertEquals(6.0, answers);
         }
     }
 
@@ -739,7 +739,7 @@ public class AnswerCountEstimatorTest {
 
     private Set<Variable> getVariablesByName(Conjunction conjunctionPattern, Set<String> names) {
         return names.stream()
-                .map(name -> conjunctionPattern.variable(Identifier.Variable.Retrievable.of(Reference.Name.name(name))))
+                .map(name -> conjunctionPattern.variable(Identifier.Variable.of(Reference.concept(name))))
                 .collect(Collectors.toSet());
     }
 }

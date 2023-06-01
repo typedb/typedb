@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.benchmark;
+package com.vaticle.typedb.core.reasoner.benchmark.synthetic;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -28,11 +28,12 @@ import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
-import com.vaticle.typedb.core.test.benchmark.generation.DiagonalGraph;
-import com.vaticle.typedb.core.test.benchmark.generation.PathTreeGraph;
-import com.vaticle.typedb.core.test.benchmark.generation.TransitivityChainGraph;
-import com.vaticle.typedb.core.test.benchmark.generation.TransitivityMatrixGraph;
+import com.vaticle.typedb.core.reasoner.benchmark.synthetic.generation.DiagonalGraph;
+import com.vaticle.typedb.core.reasoner.benchmark.synthetic.generation.PathTreeGraph;
+import com.vaticle.typedb.core.reasoner.benchmark.synthetic.generation.TransitivityChainGraph;
+import com.vaticle.typedb.core.reasoner.benchmark.synthetic.generation.TransitivityMatrixGraph;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.pattern.variable.UnboundConceptVariable;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.After;
 import org.junit.Before;
@@ -267,7 +268,7 @@ public class BenchmarkSmall {
                 TypeQLMatch.Unfiltered query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x has index 'a';"));
 
                 // with substitution
-                Concept id = tx.query().match(TypeQL.parseQuery("match $x has index 'a';").asMatch()).next().get("x");
+                Concept id = tx.query().match(TypeQL.parseQuery("match $x has index 'a';").asMatch()).next().get(UnboundConceptVariable.named("x"));
                 TypeQLMatch.Unfiltered query3 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x iid " + id.asThing().getIID().toHexString() + ";"));
 
                 Util.timeQuery(query, tx, "full");

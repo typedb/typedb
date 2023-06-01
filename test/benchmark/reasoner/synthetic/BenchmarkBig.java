@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.reasoner.benchmark;
+package com.vaticle.typedb.core.reasoner.benchmark.synthetic;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.schema.Rule;
+import com.vaticle.typeql.lang.pattern.variable.UnboundConceptVariable;
 import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 import org.junit.After;
 import org.junit.Before;
@@ -45,7 +46,7 @@ import java.util.Random;
 import java.util.UUID;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
-import static com.vaticle.typeql.lang.TypeQL.var;
+import static com.vaticle.typeql.lang.TypeQL.cVar;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
@@ -81,7 +82,7 @@ public class BenchmarkBig {
     final private Random rand = new Random();
 
     private void loadSchema(String fileName, TypeDB.Session session) {
-        String filePath = "test/benchmark/resources/" + fileName;
+        String filePath = "test/benchmark/reasoner/synthetic/resources/" + fileName;
         try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             tx.query().define(Util.parseTQL(filePath).asDefine());
             tx.commit();
@@ -101,9 +102,9 @@ public class BenchmarkBig {
     private void loadRandomisedRelationInstances(String entityLabel, String fromRoleLabel, String toRoleLabel,
                                                  String relationLabel, int N, TypeDB.Session session) {
         try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            UnboundVariable entity = var("e");
+            UnboundConceptVariable entity = cVar("e");
             Thing[] instances = transaction.query().match(TypeQL.match(entity.isa(entityLabel)))
-                    .map(ans -> ans.get(entity.name()))
+                    .map(ans -> ans.get(entity))
                     .toList().toArray(new Thing[0]);
 
             assertEquals(instances.length, N);
@@ -176,23 +177,23 @@ public class BenchmarkBig {
 
                 // define N rules
                 for (int i = 2; i <= N; i++) {
-                    UnboundVariable fromVar = var("from");
-                    UnboundVariable intermedVar = var("intermed");
-                    UnboundVariable toVar = var("to");
+                    UnboundConceptVariable fromVar = cVar("from");
+                    UnboundConceptVariable intermedVar = cVar("intermed");
+                    UnboundConceptVariable toVar = cVar("to");
                     Rule rulePattern = TypeQL.rule("rule" + i).when(
                             TypeQL.and(
-                                    var()
+                                    cVar()
                                             .rel(fromRoleLabel, fromVar)
                                             .rel(toRoleLabel, intermedVar)
                                             .isa(baseRelationLabel),
-                                    var()
+                                    cVar()
                                             .rel(fromRoleLabel, intermedVar)
                                             .rel(toRoleLabel, toVar)
                                             .isa(genericRelationLabel + (i - 1))
                             )
                     )
                             .then(
-                                    var()
+                                    cVar()
                                             .rel(fromRoleLabel, fromVar)
                                             .rel(toRoleLabel, toVar)
                                             .isa(genericRelationLabel + i)
@@ -209,9 +210,9 @@ public class BenchmarkBig {
             loadEntities(entityLabel, N + 1, session);
 
             try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                UnboundVariable entityVar = var("e");
+                UnboundConceptVariable entityVar = cVar("e");
                 Thing[] instances = transaction.query().match(TypeQL.match(entityVar.isa(entityLabel)))
-                        .map(ans -> ans.get(entityVar.name()).asThing())
+                        .map(ans -> ans.get(entityVar).asThing())
                         .toList().toArray(new Thing[0]);
 
                 RelationType baseRelation = transaction.concepts().getRelationType(baseRelationLabel);
@@ -325,8 +326,8 @@ public class BenchmarkBig {
 
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
-                Thing firstId = tx.query().match(TypeQL.parseQuery("match $x has index 'first';").asMatch()).next().get("x").asThing();
-                Thing lastId = tx.query().match(TypeQL.parseQuery("match $x has index '" + N + "';").asMatch()).next().get("x").asThing();
+                Thing firstId = tx.query().match(TypeQL.parseQuery("match $x has index 'first';").asMatch()).next().get(UnboundConceptVariable.named("x")).asThing();
+                Thing lastId = tx.query().match(TypeQL.parseQuery("match $x has index '" + N + "';").asMatch()).next().get(UnboundConceptVariable.named("x")).asThing();
                 String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
                 String queryString = "match " + queryPattern;
                 String subbedQueryString = "match " + queryPattern +

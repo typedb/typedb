@@ -31,7 +31,6 @@ import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import io.cucumber.java.After;
-import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 
@@ -109,9 +108,9 @@ public class ReasonerSteps {
         databaseMgr.create(DATABASE);
     }
 
-    @Given("connection opens without authentication")
-    public void open_connection() {
-        // noop
+    @Given("connection opens with default authentication")
+    public void connection_opens_with_default_authentication() {
+        // no-op for embedded server
     }
 
     @Given("reasoning schema")

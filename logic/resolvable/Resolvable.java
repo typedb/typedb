@@ -19,11 +19,9 @@ package com.vaticle.typedb.core.logic.resolvable;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.pattern.Pattern;
-import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
-import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -31,7 +29,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVA
 
 public abstract class Resolvable<T extends Pattern> {
 
-    private T pattern;
+    private final T pattern;
 
     public Resolvable(T pattern) {this.pattern = pattern;}
 
@@ -39,7 +37,7 @@ public abstract class Resolvable<T extends Pattern> {
         return pattern;
     }
 
-    public abstract Optional<ThingVariable> generating();
+    public abstract Set<Variable> generating();
 
     public abstract Set<Retrievable> retrieves();
 
@@ -67,5 +65,10 @@ public abstract class Resolvable<T extends Pattern> {
 
     public Negated asNegated() {
         throw TypeDBException.of(INVALID_CASTING, className(this.getClass()), className(Negated.class));
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[ " + pattern.toString() + " ]";
     }
 }

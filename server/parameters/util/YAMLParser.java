@@ -36,9 +36,9 @@ import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_ENUM_UNEXPECTED_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_UNEXPECTED_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONFIG_OPTION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_VALUE_ENUM_UNEXPECTED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_VALUE_UNEXPECTED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_KEY_MISSING;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class YAMLParser {
@@ -90,7 +90,7 @@ public class YAMLParser {
 
             public TYPE parse(YAML.Map yaml, String path) {
                 String childPath = concatenate(path, key());
-                if (!yaml.containsKey(key())) throw TypeDBException.of(MISSING_CONFIG_OPTION, childPath);
+                if (!yaml.containsKey(key())) throw TypeDBException.of(CONFIG_KEY_MISSING, childPath);
                 else return valueParser.parse(yaml.get(key()), childPath);
             }
 
@@ -236,7 +236,7 @@ public class YAMLParser {
             public T parse(YAML yaml, String path) {
                 T value = valueParser.parse(yaml, path);
                 if (allowed.contains(value)) return value;
-                else throw TypeDBException.of(CONFIG_ENUM_UNEXPECTED_VALUE, path, value, allowed);
+                else throw TypeDBException.of(CONFIG_VALUE_ENUM_UNEXPECTED, path, value, allowed);
             }
 
             public String help() {
@@ -321,7 +321,7 @@ public class YAMLParser {
             @Override
             public T parse(YAML yaml, String path) {
                 if (!validator.apply(yaml)) {
-                    throw TypeDBException.of(CONFIG_UNEXPECTED_VALUE, path, yaml, help);
+                    throw TypeDBException.of(CONFIG_VALUE_UNEXPECTED, path, yaml, help);
                 } else {
                     return converter.apply(yaml);
                 }

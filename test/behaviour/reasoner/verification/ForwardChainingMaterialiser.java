@@ -37,9 +37,9 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConcludable;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundConclusion;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern.BoundCondition;
-import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 
@@ -319,7 +319,7 @@ public class ForwardChainingMaterialiser {
         static Materialisation create(com.vaticle.typedb.core.logic.Rule.Condition.ConditionBranch ruleConditionBranch, ConceptMap conditionAnswer,
                                       Map<Variable, Concept> conclusionAnswer) {
             return new Materialisation(ruleConditionBranch, BoundCondition.create(ruleConditionBranch, conditionAnswer),
-                    BoundConclusion.create(ruleConditionBranch.rule().conclusion(), conclusionAnswer));
+                    BoundConclusion.create(ruleConditionBranch.rule().conclusion(), conclusionAnswer, null));
         }
 
         BoundCondition boundCondition() {

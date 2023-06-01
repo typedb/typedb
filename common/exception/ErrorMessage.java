@@ -65,15 +65,15 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Server(14, "The configuration file must be a YAML map.");
         public static final Server CONFIG_SECTION_MUST_BE_MAP =
                 new Server(15, "The configuration section with key '%s' must be a key-value map.");
-        public static final Server MISSING_CONFIG_OPTION =
+        public static final Server CONFIG_KEY_MISSING =
                 new Server(16, "Required configuration '%s' is missing.");
-        public static final Server UNRECOGNISED_CONFIGURATION_OPTIONS =
+        public static final Server CONFIGS_UNRECOGNISED =
                 new Server(17, "The provided configuration(s) '%s' are unrecognised.");
-        public static final Server CONFIG_UNEXPECTED_VALUE =
+        public static final Server CONFIG_VALUE_UNEXPECTED =
                 new Server(18, "Configuration '%s' received an unexpeted value '%s'. It must be '%s'.");
-        public static final Server CONFIG_ENUM_UNEXPECTED_VALUE =
+        public static final Server CONFIG_VALUE_ENUM_UNEXPECTED =
                 new Server(19, "Configuration '%s' received an unexpected value '%s'. It must be one of '%s'.");
-        public static final Server CONFIG_OUTPUT_UNRECOGNISED =
+        public static final Server CONFIG_LOG_OUTPUT_UNRECOGNISED =
                 new Server(20, "Configuration output named '%s' was not recognised (check the output definition names).");
         public static final Server CONFIG_REASONER_REQUIRES_DIR_OUTPUT =
                 new Server(21, "Reasoner debugger configuration requires a directory output");
@@ -85,24 +85,26 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Server(24, "TypeDB server has been shutdown.");
         public static final Server MISSING_FIELD =
                 new Server(25, "The request message does not contain the required field '%s'.");
+        public static final Server PROTOCOL_VERSION_MISMATCH =
+                new Server(26, "A protocol version mismatch was detected. this server supports version '%s' but the client supports version '%s'. Please use a compatible client to connect.");
         public static final Server MISSING_CONCEPT =
-                new Server(26, "Concept does not exist.");
+                new Server(27, "Concept does not exist.");
         public static final Server BAD_VALUE_TYPE =
-                new Server(27, "The value type '%s' was not recognised.");
+                new Server(28, "The value type '%s' was not recognised.");
         public static final Server TRANSACTION_EXCEEDED_MAX_SECONDS =
-                new Server(28, "Transaction exceeded maximum configured duration of '%s' seconds.");
+                new Server(29, "Transaction exceeded maximum configured duration of '%s' seconds.");
         public static final Server EMPTY_TRANSACTION_REQUEST =
-                new Server(29, "Empty transaction request.");
+                new Server(30, "Empty transaction request.");
         public static final Server UNKNOWN_REQUEST_TYPE =
-                new Server(30, "The request message was not recognised.");
+                new Server(31, "The request message was not recognised.");
         public static final Server ITERATION_WITH_UNKNOWN_ID =
-                new Server(31, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
+                new Server(32, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
         public static final Server DUPLICATE_REQUEST =
-                new Server(32, "The request with ID '%s' is a duplicate.");
+                new Server(33, "The request with ID '%s' is a duplicate.");
         public static final Server ALREADY_RUNNING =
-                new Server(33, "Another instance of TypeDB server is already running at this port: '%s'.");
+                new Server(34, "Another instance of TypeDB server is already running at this port: '%s'.");
         public static final Server INCOMPATIBLE_JAVA_RUNTIME =
-                new Server(34, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
+                new Server(35, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
 
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Invalid Server Operation";
@@ -285,11 +287,49 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Pattern(17, "The schema does not allow for data matching the pattern '%s', due to the included pattern '%s'.");
         public static final Pattern INCOHERENT_PATTERN_VARIABLE_VALUE =
                 new Pattern(18, "The schema does not allow for data matching the pattern '%s', due to contradicting attribute value types for '%s'.");
+        public static final Pattern UNRECOGNISED_ANNOTATION =
+                new Pattern(19, "The annotation '%s' is not recognised.");
+        public static final Pattern VARIABLE_NAME_CONFLICT =
+                new Pattern(20, "The variable name '%s' was used both for a concept variable and a value variable.");
+        public static final Pattern VALUE_VARIABLE_UNASSIGNED =
+                new Pattern(21, "The value variable '%s' is never assigned to.");
+        public static final Pattern VALUE_VARIABLE_DUPLICATE_ASSIGMENT =
+                new Pattern(22, "The value variable '%s' can only have one assignment in the first scope it is used in.");
+        public static final Pattern VALUE_ASSIGNMENT_CYCLE =
+                new Pattern(23, "A cyclic assignment between value variables was detected: '%s'.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";
 
         Pattern(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
+    }
+
+    public static class Expression extends ErrorMessage {
+        public static final Expression AMBIGUOUS_VARIABLE_TYPE =
+                new Expression(1, "The variable '%s' has ambiguous value types: '%s'.");
+        public static final Expression FUNCTION_NOT_RECOGNISED =
+                new Expression(2, "The expression function '%s' is not recognised.");
+        public static final Expression OPERATION_NOT_RECOGNISED =
+                new Expression(3, "The expression operation '%s' is not recognised.");
+        public static final Expression FUNCTION_ARGUMENTS_INCOMPATIBLE =
+                new Expression(4, "The expression '%s' has arguments with incompatible value types: '%s : %s' and '%s : %s'.");
+        public static final Expression ILLEGAL_CONVERSION =
+                new Expression(5, "The expression '%s' with value type '%s' cannot be converted to type '%s'.");
+        public static final Expression ILLEGAL_FUNCTION_ARGUMENT_TYPE =
+                new Expression(6, "The expression function '%s' cannot accept arguments of value type '%s'.");
+        public static final Expression ARGUMENT_COUNT_MISMATCH =
+                new Expression(7, "The expression '%s' expects '%s' arguments but received '%s': '%s'.");
+        public static final Expression EVALUATION_ERROR =
+                new Expression(8, "An error occured while evaluating an expression:\nExpression: '%s = %s'; \nInput: '%s'.\nError: '%s'");
+        public static final Expression EVALUATION_ERROR_DIVISION_BY_ZERO =
+                new Expression(9, "Illegal division by zero occurred during: '%s / %s'.");
+
+        private static final String codePrefix = "EXP";
+        private static final String messagePrefix = "Invalid expression operation";
+
+        Expression(int number, String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
@@ -329,68 +369,70 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
     public static class ThingWrite extends ErrorMessage {
         public static final ThingWrite ILLEGAL_ABSTRACT_WRITE =
                 new ThingWrite(1, "Attempted an illegal write of a new '%s' of abstract type '%s'.");
-        public static final ThingWrite ILLEGAL_STRING_SIZE =
-                new ThingWrite(2, "Attempted to insert a string larger than the maximum possible size: %s bytes.");
-        public static final ThingWrite UNENCODABLE_STRING =
-                new ThingWrite(3, "The string '%s' cannot be encoded to bytes using the encoding '%s'.");
         public static final ThingWrite THING_HAS_BEEN_DELETED =
-                new ThingWrite(4, "Instance '%s' of type '%s' has been deleted and cannot be modified any further.");
+                new ThingWrite(2, "Instance '%s' of type '%s' has been deleted and cannot be modified any further.");
         public static final ThingWrite THING_CANNOT_OWN_ATTRIBUTE =
-                new ThingWrite(5, "Attribute of type '%s' is not defined to be owned by type '%s'.");
+                new ThingWrite(3, "Attribute of type '%s' is not defined to be owned by type '%s'.");
         public static final ThingWrite THING_KEY_OVER =
-                new ThingWrite(6, "Attempted to assign a key of type '%s' onto a(n) '%s' that already has one.");
+                new ThingWrite(4, "Attempted to assign a key of type '%s' onto a(n) '%s' that already has one.");
         public static final ThingWrite THING_KEY_TAKEN =
-                new ThingWrite(7, "Attempted to assign a key '%s' of type '%s' that had been taken by another '%s'.");
+                new ThingWrite(5, "Attempted to assign a key '%s' of type '%s' that had been taken by another '%s'.");
         public static final ThingWrite THING_KEY_MISSING =
-                new ThingWrite(8, "Attempted to commit a(n) '%s' that is missing key(s) of type(s): %s"); // don't put quotes around the last %s
+                new ThingWrite(6, "Attempted to commit a(n) '%s' that is missing key(s) of type(s): %s"); // don't put quotes around the last %s
+        public static final ThingWrite THING_UNIQUE_TAKEN =
+                new ThingWrite(7, "Attempted to assign a unique attribute '%s' of type '%s' that had been taken by another '%s'.");
         public static final ThingWrite THING_ROLE_UNPLAYED =
-                new ThingWrite(9, "The thing type '%s' does not play the role type '%s'.");
+                new ThingWrite(8, "The thing type '%s' does not play the role type '%s'.");
         public static final ThingWrite RELATION_ROLE_UNRELATED =
-                new ThingWrite(10, "Relation type '%s' does not relate role type '%s'.");
+                new ThingWrite(9, "Relation type '%s' does not relate role type '%s'.");
         public static final ThingWrite RELATION_PLAYER_MISSING =
-                new ThingWrite(11, "Relation instance of type '%s' does not have any role player");
+                new ThingWrite(10, "Relation instance of type '%s' does not have any role player");
         public static final ThingWrite ATTRIBUTE_VALUE_UNSATISFIES_REGEX =
-                new ThingWrite(12, "Attempted to put an instance of '%s' with value '%s' that does not satisfy the regular expression '%s'.");
+                new ThingWrite(11, "Attempted to put an instance of '%s' with value '%s' that does not satisfy the regular expression '%s'.");
         public static final ThingWrite THING_IID_NOT_INSERTABLE =
-                new ThingWrite(13, "The variable '%s' tries to insert iid '%s'. IIDs are prohibited in insert clauses. You may want to query the variable using IID in the match clause.");
+                new ThingWrite(12, "The variable '%s' tries to insert iid '%s'. IIDs are prohibited in insert clauses. You may want to query the variable using IID in the match clause.");
         public static final ThingWrite THING_ISA_REINSERTION =
-                new ThingWrite(14, "Attempted to re-insert pre-existing thing of matched variable '%s' as a new instance (isa) of type '%s'.");
+                new ThingWrite(13, "Attempted to re-insert pre-existing thing of matched variable '%s' as a new instance (isa) of type '%s'.");
         public static final ThingWrite THING_ISA_MISSING =
-                new ThingWrite(15, "The thing variable '%s' cannot be inserted as a new instance without providing its type (isa).");
+                new ThingWrite(14, "The thing variable '%s' cannot be inserted as a new instance without providing its type (isa).");
         public static final ThingWrite ILLEGAL_TYPE_VARIABLE_IN_INSERT =
-                new ThingWrite(16, "Illegal type variable '%s' found in insert query. Types can only be referred to by their labels in insert queries or then clauses.");
+                new ThingWrite(15, "Illegal type variable '%s' found in insert query. Types can only be referred to by their labels in insert queries or then clauses.");
         public static final ThingWrite ILLEGAL_TYPE_VARIABLE_IN_DELETE =
-                new ThingWrite(17, "Illegal type variable '%s' found in delete query. Types can only be referred to by their labels in delete queries or then clauses.");
+                new ThingWrite(16, "Illegal type variable '%s' found in delete query. Types can only be referred to by their labels in delete queries or then clauses.");
         public static final ThingWrite ILLEGAL_ANONYMOUS_RELATION_IN_DELETE =
-                new ThingWrite(18, "Illegal anonymous relation in delete query: '%s'.  You must match the relation variable by name, and then delete it.");
+                new ThingWrite(17, "Illegal anonymous relation in delete query: '%s'.  You must match the relation variable by name, and then delete it.");
         public static final ThingWrite ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE =
-                new ThingWrite(19, "Illegal anonymous variable in delete query: '%s'.  You can only delete named variables that were matched.");
+                new ThingWrite(18, "Illegal anonymous variable in delete query: '%s'.  You can only delete named variables that were matched.");
         public static final ThingWrite INVALID_DELETE_THING =
-                new ThingWrite(20, "The thing '%s' cannot be deleted, as the provided type '%s' is not its direct type nor supertype.");
+                new ThingWrite(19, "The thing '%s' cannot be deleted, as the provided type '%s' is not its direct type nor supertype.");
         public static final ThingWrite INVALID_DELETE_THING_DIRECT =
-                new ThingWrite(21, "The thing '%s' cannot be deleted, as the provided direct type '%s' is not valid.");
+                new ThingWrite(20, "The thing '%s' cannot be deleted, as the provided direct type '%s' is not valid.");
         public static final ThingWrite INVALID_DELETE_HAS =
-                new ThingWrite(22, "Invalid attempt to delete attribute ownership. The thing '%s' does not have attribute '%s'.");
+                new ThingWrite(21, "Invalid attempt to delete attribute ownership. The thing '%s' does not have attribute '%s'.");
         public static final ThingWrite ILLEGAL_IS_CONSTRAINT =
-                new ThingWrite(23, "The 'is' constraint, e.g. used in '%s', is not accepted in an insert/delete query.");
+                new ThingWrite(22, "The 'is' constraint, e.g. used in '%s', is not accepted in an insert/delete query.");
         public static final ThingWrite ATTRIBUTE_VALUE_TOO_MANY =
-                new ThingWrite(24, "Unable to insert attribute '%s' of type '%s' with more than one value operations.");
+                new ThingWrite(23, "Unable to insert attribute '%s' of type '%s' with more than one value operations.");
         public static final ThingWrite ATTRIBUTE_VALUE_MISSING =
-                new ThingWrite(25, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
+                new ThingWrite(24, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
         public static final ThingWrite INSERT_RELATION_CONSTRAINT_TOO_MANY =
-                new ThingWrite(26, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
+                new ThingWrite(25, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
         public static final ThingWrite RELATION_CONSTRAINT_MISSING =
-                new ThingWrite(27, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
+                new ThingWrite(26, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
         public static final ThingWrite ROLE_TYPE_AMBIGUOUS =
-                new ThingWrite(28, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
+                new ThingWrite(27, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
         public static final ThingWrite ROLE_TYPE_MISSING =
-                new ThingWrite(29, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
+                new ThingWrite(28, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
         public static final ThingWrite MAX_INSTANCE_REACHED =
-                new ThingWrite(30, "The maximum number of instances for type '%s' has been reached: '%s'");
+                new ThingWrite(29, "The maximum number of instances for type '%s' has been reached: '%s'");
         public static final ThingWrite DELETE_RELATION_CONSTRAINT_TOO_MANY =
-                new ThingWrite(31, "Could not perform delete of role players due to multiple relation constraints being present for relation '%s'.");
+                new ThingWrite(30, "Could not perform delete of role players due to multiple relation constraints being present for relation '%s'.");
         public static final ThingWrite DELETE_ROLEPLAYER_NOT_PRESENT =
-                new ThingWrite(32, "Could not delete roleplayer '%s' as relation '%s' does not relate it.");
+                new ThingWrite(31, "Could not delete roleplayer '%s' as relation '%s' does not relate it.");
+        public static final ThingWrite ILLEGAL_VALUE_VARIABLE_IN_DELETE =
+                new ThingWrite(32, "Illegal value variable '%s' found in delete query. Value variables may not be used in delete queries.");
+        public static final ThingWrite ILLEGAL_VALUE_CONSTRAINT_IN_INSERT =
+                new ThingWrite(33, "Illegal value constraint found in insert query on variable '%s'. Value variables are only permitted to specify attribute values.");
 
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
@@ -453,105 +495,127 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(4, "The type '%s' has instances, and cannot be deleted.");
         public static final TypeWrite TYPE_HAS_BEEN_DELETED =
                 new TypeWrite(5, "The type '%s' has been deleted and cannot be modified any further.");
+        public static final TypeWrite EDGE_HAS_BEEN_DELETED =
+                new TypeWrite(6, "The edge '%s' has been deleted and cannot be modified any further.");
         public static final TypeWrite TYPE_REFERENCED_IN_RULES =
-                new TypeWrite(6, "The type '%s' is referenced in rules '%s', and cannot be deleted.");
+                new TypeWrite(7, "The type '%s' is referenced in rules '%s', and cannot be deleted.");
         public static final TypeWrite CYCLIC_TYPE_HIERARCHY =
-                new TypeWrite(7, "There is a cyclic type hierarchy, which is not allowed: '%s'.");
+                new TypeWrite(8, "There is a cyclic type hierarchy, which is not allowed: '%s'.");
         public static final TypeWrite OWNS_ABSTRACT_ATTRIBUTE_TYPE =
-                new TypeWrite(8, "The type '%s' is not abstract, and thus cannot own an abstract attribute type '%s'.");
+                new TypeWrite(9, "The type '%s' is not abstract, and thus cannot own an abstract attribute type '%s'.");
         public static final TypeWrite OVERRIDDEN_OWNED_ATTRIBUTE_TYPE_NOT_SUPERTYPE =
-                new TypeWrite(9, "In the type '%s', the owned attribute type '%s' cannot override '%s' as it is not a supertype.");
+                new TypeWrite(10, "In the type '%s', the owned attribute type '%s' cannot override '%s' as it is not a supertype.");
         public static final TypeWrite OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE =
-                new TypeWrite(10, "In the type '%s', the played role type '%s' cannot override '%s' as it is not a supertype.");
+                new TypeWrite(11, "In the type '%s', the played role type '%s' cannot override '%s' as it is not a supertype.");
         public static final TypeWrite OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED =
-                new TypeWrite(11, "In the relation type '%s', the related role type '%s' cannot override '%s' as it is not an inherited role type.");
+                new TypeWrite(12, "In the relation type '%s', the related role type '%s' cannot override '%s' as it is not an inherited role type.");
         public static final TypeWrite OVERRIDE_NOT_AVAILABLE = // TODO: this can be split between 'has', 'key' and 'plays' once pushed to commit
-                new TypeWrite(12, "The type '%s' cannot override '%s' as it is either directly declared or not inherited.");
+                new TypeWrite(13, "The type '%s' cannot override '%s' as it is either directly declared or not inherited.");
         public static final TypeWrite ATTRIBUTE_SUPERTYPE_VALUE_TYPE =
-                new TypeWrite(13, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
+                new TypeWrite(14, "The attribute type '%s' has value type '%s', and cannot have supertype '%s' with value type '%s'.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MISSING =
-                new TypeWrite(14, "The attribute type '%s' is missing a value type.");
+                new TypeWrite(15, "The attribute type '%s' is missing a value type.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_MODIFIED =
-                new TypeWrite(15, "An attribute value type (in this case '%s') can only be set onto an attribute type (in this case '%s') when it is defined for the first time.");
+                new TypeWrite(16, "An attribute value type (in this case '%s') can only be set onto an attribute type (in this case '%s') when it is defined for the first time.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_UNDEFINED =
-                new TypeWrite(16, "An attribute value type (in this case '%s') cannot be undefined. You can only undefine the attribute type (in this case '%s') itself.");
+                new TypeWrite(17, "An attribute value type (in this case '%s') cannot be undefined. You can only undefine the attribute type (in this case '%s') itself.");
         public static final TypeWrite ATTRIBUTE_UNSET_ABSTRACT_HAS_SUBTYPES =
-                new TypeWrite(17, "The attribute type '%s' cannot be set to non abstract as it has subtypes.");
+                new TypeWrite(18, "The attribute type '%s' cannot be set to non abstract as it has subtypes.");
         public static final TypeWrite ATTRIBUTE_NEW_SUPERTYPE_NOT_ABSTRACT =
-                new TypeWrite(18, "The attribute type '%s' cannot be subtyped as it is not abstract.");
+                new TypeWrite(19, "The attribute type '%s' cannot be subtyped as it is not abstract.");
         public static final TypeWrite ATTRIBUTE_REGEX_UNSATISFIES_INSTANCES =
-                new TypeWrite(19, "The attribute type '%s' cannot have regex '%s' as as it has an instance of value '%s'.");
+                new TypeWrite(20, "The attribute type '%s' cannot have regex '%s' as as it has an instance of value '%s'.");
         public static final TypeWrite ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE =
-                new TypeWrite(20, "The type '%s' is not an attribute type, so it can not have a value type defined.");
+                new TypeWrite(21, "The type '%s' is not an attribute type, so it can not have a value type defined.");
         public static final TypeWrite ROOT_ATTRIBUTE_TYPE_CANNOT_BE_OWNED =
-                new TypeWrite(21, "The native root 'attribute' type cannot be owned.");
+                new TypeWrite(22, "The native root 'attribute' type cannot be owned.");
         public static final TypeWrite ROOT_ROLE_TYPE_CANNOT_BE_PLAYED =
-                new TypeWrite(22, "The native root 'role' type cannot be played.");
-        public static final TypeWrite OWNS_ATT_NOT_AVAILABLE =
-                new TypeWrite(23, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as an attribute.");
-        public static final TypeWrite OWNS_KEY_NOT_AVAILABLE =
-                new TypeWrite(24, "The attribute type '%s' has been inherited or overridden, and cannot be redeclared as a key.");
-        public static final TypeWrite OWNS_KEY_VALUE_TYPE =
-                new TypeWrite(25, "The attribute type '%s' has value type '%s', and cannot and cannot be used as a type key.");
+                new TypeWrite(23, "The native root 'role' type cannot be played.");
+        public static final TypeWrite OWNS_ATTRIBUTE_WAS_OVERRIDDEN =
+                new TypeWrite(24, "Type '%s' cannot own '%s' since it was overridden in a supertype, and cannot be redeclared as an ownership.");
+        public static final TypeWrite OWNS_ATTRIBUTE_REDECLARATION =
+                new TypeWrite(25, "Type '%s' cannot redeclare inherited ownership '%s' without annotation specialisation or as an override.");
+        public static final TypeWrite OWNS_VALUE_TYPE_NO_EXACT_EQUALITY =
+                new TypeWrite(26, "Type '%s' cannot own '%s' with annotations '%s' since it has has value type '%s', which does not have an exact equality.");
+        public static final TypeWrite OWNS_ANNOTATION_DECLARATION_INCOMPATIBLE =
+                new TypeWrite(27, "Type '%s' cannot own '%s' with incompatible declared annotations '%s' and '%s'");
+        public static final TypeWrite OWNS_ANNOTATION_REDECLARATION =
+                new TypeWrite(28, "Type '%s' cannot declare ownership of '%s' with annotations '%s' since these annotations are inherited.");
+        public static final TypeWrite OWNS_ANNOTATION_LESS_STRICT_THAN_PARENT =
+                new TypeWrite(29, "Type '%s' cannot declare ownership of '%s' with annotations '%s' since this annotation is not stricter than the parent ownership '%s'.");
         public static final TypeWrite OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_TOO_MANY =
-                new TypeWrite(26, "Some instances of type '%s' have zero attributes of type '%s' to convert to key.");
+                new TypeWrite(30, "Some instances of type '%s' have zero attributes of type '%s' to convert to key.");
         public static final TypeWrite OWNS_KEY_PRECONDITION_OWNERSHIP_KEY_MISSING =
-                new TypeWrite(27, "Some instances of type '%s' have more than one attribute of type '%s' to convert to key.");
+                new TypeWrite(31, "Some instances of type '%s' have more than one attribute of type '%s' to convert to key.");
         public static final TypeWrite OWNS_KEY_PRECONDITION_UNIQUENESS =
-                new TypeWrite(28, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key.");
-        public static final TypeWrite OWNS_KEY_PRECONDITION_NO_INSTANCES =
-                new TypeWrite(29, "The instances of type '%s' do not have any attribute of type '%s' that could be converted to a key.");
+                new TypeWrite(32, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key.");
+        public static final TypeWrite OWNS_UNIQUE_PRECONDITION =
+                new TypeWrite(33, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to unique.");
         public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE =
-                new TypeWrite(30, "Type '%s' cannot declare plays role type '%s' as it has been inherited or overridden and cannot be redeclared.");
+                new TypeWrite(34, "Type '%s' cannot declare plays role type '%s' as it has been inherited or overridden and cannot be redeclared.");
         public static final TypeWrite PLAYS_ABSTRACT_ROLE_TYPE =
-                new TypeWrite(31, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
+                new TypeWrite(35, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
         public static final TypeWrite RELATION_NO_ROLE =
-                new TypeWrite(32, "The relation type '%s' does not relate any role type.");
+                new TypeWrite(36, "The relation type '%s' does not relate any role type.");
         public static final TypeWrite RELATION_ABSTRACT_ROLE =
-                new TypeWrite(33, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
+                new TypeWrite(37, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
         public static final TypeWrite RELATION_RELATES_ROLE_FROM_SUPERTYPE =
-                new TypeWrite(34, "The role type '%s' is already declared by a supertype of '%s'.");
+                new TypeWrite(38, "The role type '%s' is already declared by a supertype of '%s'.");
         public static final TypeWrite RELATION_RELATES_ROLE_NOT_AVAILABLE =
-                new TypeWrite(35, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
+                new TypeWrite(39, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
         public static final TypeWrite ROLE_DEFINED_OUTSIDE_OF_RELATION =
-                new TypeWrite(36, "The role type '%s' cannot be defined/undefined outside the scope of its relation type.");
+                new TypeWrite(40, "The role type '%s' cannot be defined/undefined outside the scope of its relation type.");
         public static final TypeWrite INVALID_DEFINE_SUB =
-                new TypeWrite(37, "The type '%s' cannot be defined, as the provided supertype '%s' is not a valid thing type.");
+                new TypeWrite(41, "The type '%s' cannot be defined, as the provided supertype '%s' is not a valid thing type.");
         public static final TypeWrite INVALID_UNDEFINE_SUB =
-                new TypeWrite(38, "The type '%s' cannot be undefined, as the provided supertype '%s' is not a valid supertype.");
+                new TypeWrite(42, "The type '%s' cannot be undefined, as the provided supertype '%s' is not a valid supertype.");
         public static final TypeWrite INVALID_UNDEFINE_RELATES_OVERRIDE =
-                new TypeWrite(39, "The overridden related role type '%s' cannot be undefined. You should re-define relating '%s' without overriding.");
+                new TypeWrite(43, "The overridden related role type '%s' cannot be undefined. You should re-define relating '%s' without overriding.");
         public static final TypeWrite INVALID_UNDEFINE_PLAYS_OVERRIDE =
-                new TypeWrite(40, "The overridden played role type '%s' cannot be undefined. You should re-define playing '%s' without overriding.");
+                new TypeWrite(44, "The overridden played role type '%s' cannot be undefined. You should re-define playing '%s' without overriding.");
         public static final TypeWrite INVALID_UNDEFINE_OWNS_OVERRIDE =
-                new TypeWrite(41, "The overridden owned attribute type '%s' cannot be undefined. You should re-define owning '%s' without overriding.");
-        public static final TypeWrite INVALID_UNDEFINE_OWNS_KEY =
-                new TypeWrite(42, "The annotation @key on attribute type '%s' cannot be undefined. You should re-define owning '%s' without @key annotation.");
+                new TypeWrite(45, "The overridden owned attribute type '%s' cannot be undefined. You should re-define owning '%s' without overriding.");
+        public static final TypeWrite INVALID_UNDEFINE_ANNOTATIONS =
+                new TypeWrite(46, "Annotations cannot be undefined on '%s'. You should re-define the pattern without the annotations.");
         public static final TypeWrite INVALID_UNDEFINE_RELATES_HAS_INSTANCES =
-                new TypeWrite(43, "The role type '%s' cannot be undefined because it is currently played by existing instances.");
+                new TypeWrite(47, "The role type '%s' cannot be undefined because it is currently played by existing instances.");
         public static final TypeWrite INVALID_UNDEFINE_OWNS_HAS_INSTANCES =
-                new TypeWrite(44, "The ability of type '%s' to own attribute type '%s' cannot be undefined because it is currently owned by existing instances.");
+                new TypeWrite(48, "The ability of type '%s' to own attribute type '%s' cannot be undefined because there are data instances using this ownership.");
         public static final TypeWrite INVALID_UNDEFINE_PLAYS_HAS_INSTANCES =
-                new TypeWrite(45, "The ability of type '%s' to play role type '%s' cannot be undefined because it is currently played by existing instances.");
+                new TypeWrite(49, "The ability of type '%s' to play role type '%s' cannot be undefined because it is currently played by existing instances.");
         public static final TypeWrite INVALID_UNDEFINE_INHERITED_OWNS =
-                new TypeWrite(46, "The ability of type '%s' to own attribute type '%s' cannot be undefined because the ability is inherited from a supertype.");
+                new TypeWrite(50, "The ability of type '%s' to own attribute type '%s' cannot be undefined because the ability is inherited from a supertype.");
         public static final TypeWrite INVALID_UNDEFINE_INHERITED_PLAYS =
-                new TypeWrite(47, "The ability of type '%s' to play role type '%s' cannot be undefined because the ability is inherited from a supertype.");
+                new TypeWrite(51, "The ability of type '%s' to play role type '%s' cannot be undefined because the ability is inherited from a supertype.");
         public static final TypeWrite INVALID_UNDEFINE_NONEXISTENT_OWNS =
-                new TypeWrite(48, "The ability of type '%s' to own attribute type '%s' cannot be undefined because it does not have that ability.");
+                new TypeWrite(52, "The ability of type '%s' to own attribute type '%s' cannot be undefined because it does not have that ability.");
         public static final TypeWrite INVALID_UNDEFINE_NONEXISTENT_PLAYS =
-                new TypeWrite(49, "The ability of type '%s' to play role type '%s' cannot be undefined because it does not have that ability.");
+                new TypeWrite(53, "The ability of type '%s' to play role type '%s' cannot be undefined because it does not have that ability.");
         public static final TypeWrite TYPE_CONSTRAINT_UNACCEPTED =
-                new TypeWrite(50, "The type constraint '%s' is not accepted in a define/undefine query.");
+                new TypeWrite(54, "The type constraint '%s' is not accepted in a define/undefine query.");
         public static final TypeWrite ILLEGAL_SUPERTYPE_ENCODING =
-                new TypeWrite(51, "Unable to set type with class '%s' as a supertype.");
+                new TypeWrite(55, "Unable to set type with class '%s' as a supertype.");
         public static final TypeWrite MAX_SUBTYPE_REACHED =
-                new TypeWrite(52, "The maximum number of '%s' types has been reached: '%s'.");
+                new TypeWrite(56, "The maximum number of '%s' types has been reached: '%s'.");
 
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";
 
         TypeWrite(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
+    }
+
+    public static class ValueRead extends ErrorMessage {
+        public static final ValueRead INVALID_VALUE_CASTING =
+                new ValueRead(1, "Invalid value conversion from '%s' to '%s'.");
+        public static final ValueRead INVALID_VALUE_IID_CASTING =
+                new ValueRead(2, "Invalid value IID casting to '%s'.");
+
+        private static final String codePrefix = "VLR";
+        private static final String messagePrefix = "Invalid value read";
+
+        ValueRead(int number, String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }
@@ -583,8 +647,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new RuleWrite(6, "The rule '%s' has a branch in the when clause '%s' that can never have answers in the current schema.");
         public static final RuleWrite RULE_THEN_INCOHERENT =
                 new RuleWrite(7, "The rule '%s' has a then clause '%s' that can never be satisfied in the current schema.");
-        public static final RuleWrite RULE_THEN_UNANSWERABLE =
-                new RuleWrite(8, "The rule '%s' has a then clause '%s' that can never have answers in the current schema.");
+        public static final RuleWrite RULE_THEN_INSERTS_ABSTRACT_TYPES =
+                new RuleWrite(8, "The rule '%s' has a then clause '%s' which tries to insert instances of types '%s', some of which are abstract.");
         public static final RuleWrite RULE_THEN_INVALID_VALUE_ASSIGNMENT =
                 new RuleWrite(9, "The rule '%s' has a then clause with an invalid assignment of '%s' into a '%s'.");
         public static final RuleWrite MAX_RULE_REACHED =
@@ -636,7 +700,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Migrator PLAYER_NOT_FOUND =
                 new Migrator(6, "A player for relation type '%s' was expected but not found.");
         public static final Migrator NO_PLAYERS =
-                new Migrator(7, "The relation of type '%'s with original ID '%s' has no role players");
+                new Migrator(7, "The relation of type '%s' with original ID '%s' has no role players");
         public static final Migrator INVALID_DATA =
                 new Migrator(8, "The data being imported is invalid.");
         public static final Migrator MISSING_HEADER =
@@ -648,6 +712,22 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         private static final String messagePrefix = "Migrator failure";
 
         Migrator(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
+    }
+
+    public static class Encoding extends ErrorMessage {
+        public static final Encoding ILLEGAL_STRING_SIZE =
+                new Encoding(1, "Attempted to insert a string larger than the maximum possible size: %s bytes.");
+        public static final Encoding UNENCODABLE_STRING =
+                new Encoding(2, "The string '%s' cannot be encoded to bytes using the encoding '%s'.");
+        public static final Encoding UNENCODABLE_DOUBLE =
+                new Encoding(3, "The double '%s' cannot be encoded.");
+
+        private static final String codePrefix = "ENC";
+        private static final String messagePrefix = "Data encoding error";
+
+        Encoding(int number, String message) {
             super(codePrefix, number, messagePrefix, message);
         }
     }

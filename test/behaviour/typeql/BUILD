@@ -31,6 +31,7 @@ host_compatible_java_library(
         "//test/behaviour/connection:steps",
 
         # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/common:common",
         "@vaticle_typeql//java/pattern:pattern",

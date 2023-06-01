@@ -82,8 +82,8 @@ public class OrderingCoster {
                 // I lean towards the overestimate.
                 Set<Variable> projectionVars = iterate(restrictedResolvableVars).filter(v -> !callMode.mode.contains(v)).toSet();
                 double allAnswersForUnrestrictedMode = answerCountEstimator.localEstimate(conjunctionNode.conjunction(), resolvable, resolvableMode);
-                double cyclicScalingFactor = projectionVars.isEmpty() && allAnswersForUnrestrictedMode != 0 ? 0.0 :
-                        (double) estimator.answerEstimate(projectionVars) / allAnswersForUnrestrictedMode;
+                double cyclicScalingFactor = (projectionVars.isEmpty() || allAnswersForUnrestrictedMode == 0) ? 0.0 :
+                        estimator.answerEstimate(projectionVars) / allAnswersForUnrestrictedMode;
 
                 // Terrible overestimate. Let's take the square-root to be more realistic.
                 if (allAnswersForUnrestrictedMode != 0) {
@@ -94,7 +94,7 @@ public class OrderingCoster {
 
             estimator.extend(resolvable);
 
-            boolean isConnectedToInput = !Collections.intersection(resolvableMode, inputConnectedVars).isEmpty();
+            boolean isConnectedToInput = callMode.mode.isEmpty() || !Collections.intersection(resolvableMode, inputConnectedVars).isEmpty();
             if (isConnectedToInput) {
                 acyclicCost += resolvableCost;
             } else {

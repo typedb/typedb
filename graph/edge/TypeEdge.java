@@ -21,8 +21,10 @@ package com.vaticle.typedb.core.graph.edge;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * An edge between two {@code TypeVertex}.
@@ -52,6 +54,10 @@ public interface TypeEdge extends Edge<Encoding.Edge.Type, TypeVertex> {
     void setOverridden(TypeVertex overridden);
 
     void unsetOverridden();
+
+    Set<TypeQLToken.Annotation> annotations();
+
+    void setAnnotations(Set<TypeQLToken.Annotation> annotations);
 
     View.Forward forwardView();
 

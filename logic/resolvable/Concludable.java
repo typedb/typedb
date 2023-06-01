@@ -28,12 +28,13 @@ import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
+import com.vaticle.typedb.core.pattern.constraint.common.Predicate;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.PredicateConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint.RolePlayer;
 import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
-import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
@@ -55,6 +56,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.concatToSet;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -85,6 +87,8 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
     public Set<Variable> variables() {
         return pattern().variables();
     }
+
+    public abstract ThingVariable generatingVariable();
 
     public boolean isConcludable() {
         return true;
@@ -140,21 +144,37 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         return clone;
     }
 
-    private static FunctionalIterator<AlphaEquivalence> alphaEqualValueConstraints(Set<ValueConstraint<?>> set1,
-                                                                                   Set<ValueConstraint<?>> set2) {
+    private static FunctionalIterator<AlphaEquivalence> alphaEqualPredicateConstraints(Set<PredicateConstraint> set1,
+                                                                                       Set<PredicateConstraint> set2) {
         if (set1.size() != set2.size()) return Iterators.empty();
         else {
-            Set<ValueConstraint<?>> remaining = new HashSet<>(set2);
-            for (ValueConstraint<?> s1 : set1) {
-                for (ValueConstraint<?> r : remaining) {
+            Set<PredicateConstraint> remaining = new HashSet<>(set2);
+            for (PredicateConstraint s1 : set1) {
+                boolean found = false;
+                for (PredicateConstraint r : remaining) {
                     if (s1.alphaEquals(r).first().isPresent()) {
                         remaining.remove(r);
+                        found = true;
                         break;
-                    } else return Iterators.empty();
+                    }
                 }
+                if (!found) return Iterators.empty();
             }
             return Iterators.single(AlphaEquivalence.empty());
         }
+    }
+
+    Map<Rule, Set<Unifier>> applicableRules(Set<Label> types, ConceptManager conceptMgr, LogicManager logicMgr) {
+        assert !types.isEmpty();
+        Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
+        types.forEach(type -> logicMgr.rulesConcluding(type)
+                .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
+                        .forEachRemaining(unifier -> {
+                            applicableRules.putIfAbsent(rule, new HashSet<>());
+                            applicableRules.get(rule).add(unifier);
+                        })));
+
+        return applicableRules;
     }
 
     /**
@@ -173,12 +193,14 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         private final RelationConstraint relation;
         private final IsaConstraint isa;
         private final Set<LabelConstraint> labels;
+        private final Set<Variable> generating;
 
         private Relation(Conjunction conjunction, RelationConstraint relation, @Nullable IsaConstraint isa, Set<LabelConstraint> labels) {
             super(conjunction);
             this.relation = relation;
             this.isa = isa;
             this.labels = labels;
+            this.generating = set(generatingVariable());
         }
 
         public static Relation of(RelationConstraint relation, @Nullable IsaConstraint isa, Set<LabelConstraint> labels) {
@@ -219,12 +241,17 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         @Override
         public boolean isInferredAnswer(ConceptMap conceptMap) {
-            return conceptMap.get(generating().get().id()).asThing().isInferred();
+            return conceptMap.get(relation.owner().id()).asThing().isInferred();
         }
 
         @Override
-        public Optional<ThingVariable> generating() {
-            return Optional.of(relation.owner());
+        public ThingVariable generatingVariable() {
+            return relation.owner();
+        }
+
+        @Override
+        public Set<Variable> generating() {
+            return generating;
         }
 
         public FunctionalIterator<Unifier> unify(Rule.Conclusion.Relation relationConclusion, ConceptManager conceptMgr) {
@@ -303,20 +330,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         @Override
         public Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            assert generating().isPresent();
-            Variable generatedRelation = generating().get();
-            Set<Label> relationTypes = generatedRelation.inferredTypes();
-            assert !relationTypes.isEmpty();
-
-            Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
-            relationTypes.forEach(type -> logicMgr.rulesConcluding(type)
-                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
-                            .forEachRemaining(unifier -> {
-                                applicableRules.putIfAbsent(rule, new HashSet<>());
-                                applicableRules.get(rule).add(unifier);
-                            })));
-
-            return applicableRules;
+            return applicableRules(generatingVariable().inferredTypes(), conceptMgr, logicMgr);
         }
 
         @Override
@@ -356,27 +370,30 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         private final HasConstraint has;
         private final IsaConstraint isa;
-        private final Set<ValueConstraint<?>> values;
+        private final Set<PredicateConstraint> predicates;
+        private final Set<Variable> generating;
 
-        private Has(Conjunction conjunction, HasConstraint has, @Nullable IsaConstraint isa, Set<ValueConstraint<?>> values) {
+        private Has(Conjunction conjunction, HasConstraint has, @Nullable IsaConstraint isa, Set<PredicateConstraint> predicates) {
             super(conjunction);
             this.has = has;
             this.isa = isa;
-            this.values = values;
+            this.predicates = predicates;
+            this.generating = set(generatingVariable());
         }
 
-        public static Has of(HasConstraint has, @Nullable IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labels) {
+        public static Has of(HasConstraint has, @Nullable IsaConstraint isa, Set<PredicateConstraint> predicates, Set<LabelConstraint> labels) {
             Conjunction.ConstraintCloner cloner;
             IsaConstraint clonedIsa;
             if (isa == null) {
-                cloner = Conjunction.ConstraintCloner.cloneExactly(values, has);
+                cloner = Conjunction.ConstraintCloner.cloneExactly(predicates, has);
                 clonedIsa = null;
             } else {
-                cloner = Conjunction.ConstraintCloner.cloneExactly(labels, values, isa, has);
+                cloner = Conjunction.ConstraintCloner.cloneExactly(labels, predicates, isa, has);
                 clonedIsa = cloner.getClone(isa).asThing().asIsa();
             }
-            FunctionalIterator<ValueConstraint<?>> valueIt = iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
-            return new Has(cloner.conjunction(), cloner.getClone(has).asThing().asHas(), clonedIsa, valueIt.toSet());
+            Set<PredicateConstraint> clonedPredicates = new HashSet<>();
+            iterate(predicates).map(c -> cloner.getClone(c).asThing().asPredicate()).forEachRemaining(clonedPredicates::add);
+            return new Has(cloner.conjunction(), cloner.getClone(has).asThing().asHas(), clonedIsa, clonedPredicates);
         }
 
         public ThingVariable owner() {
@@ -391,8 +408,8 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             return has;
         }
 
-        public Set<ValueConstraint<?>> values() {
-            return values;
+        public Set<PredicateConstraint> predicates() {
+            return predicates;
         }
 
         public Optional<IsaConstraint> isa() {
@@ -404,7 +421,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(has);
             if (isa != null) constraints.add(isa);
-            constraints.addAll(Unifier.Builder.constantValueConstraints(values));
+            constraints.addAll(Unifier.Builder.constantPredicateConstraints(predicates));
             return set(constraints);
         }
 
@@ -438,7 +455,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                             Unifier.Builder.subtypeLabels(attr.isa().get().type().label().get().properLabel(), conceptMgr).toSet()
                                     .containsAll(unifierBuilder.requirements().isaExplicit().get(attr.id()));
                 }
-                unifierBuilder.addConstantValueRequirements(values, attr.id(), conclusionAttr.id());
+                unifierBuilder.addConstantValueRequirements(predicates, attr.id(), conclusionAttr.id());
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -455,17 +472,19 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        public Optional<ThingVariable> generating() {
-            return Optional.of(has.attribute());
+        public ThingVariable generatingVariable() {
+            return has.attribute();
+        }
+
+        @Override
+        public Set<Variable> generating() {
+            return generating;
         }
 
         @Override
         public Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            assert generating().isPresent();
-            Variable generatedAttribute = generating().get();
-            Set<Label> attributeTypes = generatedAttribute.inferredTypes();
-            assert !generatedAttribute.inferredTypes().isEmpty();
-
+            Set<Label> attributeTypes = generatingVariable().inferredTypes();
+            assert !generatingVariable().inferredTypes().isEmpty();
             Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
             attributeTypes.forEach(type -> logicMgr.rulesConcludingHas(type)
                     .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
@@ -483,7 +502,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                     .flatMap(a -> has().alphaEquals(that.asHas().has()).flatMap(a::extendIfCompatible))
                     .flatMap(a -> AlphaEquivalence.alphaEquals(isa().orElse(null), that.asHas().isa().orElse(null))
                             .flatMap(a::extendIfCompatible))
-                    .flatMap(a -> alphaEqualValueConstraints(values(), that.asHas().values())
+                    .flatMap(a -> alphaEqualPredicateConstraints(predicates(), that.asHas().predicates())
                             .flatMap(a::extendIfCompatible));
         }
 
@@ -500,33 +519,36 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
     public static class Isa extends Concludable {
 
         private final IsaConstraint isa;
-        private final Set<ValueConstraint<?>> values;
+        private final Set<PredicateConstraint> predicates;
+        private final Set<Variable> generating;
 
-        private Isa(Conjunction conjunction, IsaConstraint isa, Set<ValueConstraint<?>> values) {
+        private Isa(Conjunction conjunction, IsaConstraint isa, Set<PredicateConstraint> predicates) {
             super(conjunction);
             this.isa = isa;
-            this.values = values;
+            this.predicates = predicates;
+            this.generating = set(generatingVariable());
         }
 
-        public static Isa of(IsaConstraint isa, Set<ValueConstraint<?>> values, Set<LabelConstraint> labelConstraints) {
-            Conjunction.ConstraintCloner cloner = Conjunction.ConstraintCloner.cloneExactly(labelConstraints, values, isa);
-            FunctionalIterator<ValueConstraint<?>> valueIt = iterate(values).map(cloner::getClone).map(c -> c.asThing().asValue());
-            return new Isa(cloner.conjunction(), cloner.getClone(isa).asThing().asIsa(), valueIt.toSet());
+        public static Isa of(IsaConstraint isa, Set<PredicateConstraint> predicates, Set<LabelConstraint> labelConstraints) {
+            Conjunction.ConstraintCloner cloner = Conjunction.ConstraintCloner.cloneExactly(labelConstraints, predicates, isa);
+            Set<PredicateConstraint> clonedPredicates = new HashSet<>();
+            iterate(predicates).map(c -> cloner.getClone(c).asThing().asPredicate()).forEachRemaining(clonedPredicates::add);
+            return new Isa(cloner.conjunction(), cloner.getClone(isa).asThing().asIsa(), clonedPredicates);
         }
 
         public IsaConstraint isa() {
             return isa;
         }
 
-        public Set<ValueConstraint<?>> values() {
-            return values;
+        public Set<PredicateConstraint> predicates() {
+            return predicates;
         }
 
         @Override
         public Set<Constraint> concludableConstraints() {
             Set<Constraint> constraints = new HashSet<>();
             constraints.add(isa);
-            constraints.addAll(Unifier.Builder.constantValueConstraints(values));
+            constraints.addAll(Unifier.Builder.constantPredicateConstraints(predicates));
             return set(constraints);
         }
 
@@ -538,7 +560,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         @Override
         public boolean isInferredAnswer(ConceptMap conceptMap) {
-            return conceptMap.get(generating().get().id()).asThing().isInferred();
+            return conceptMap.get(isa().owner().id()).asThing().isInferred();
         }
 
         FunctionalIterator<Unifier> unify(Rule.Conclusion.Isa isa, ConceptManager conceptMgr) {
@@ -560,7 +582,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                 } else {
                     unifierBuilder.addVariableType(type, unifiedType.id());
                 }
-                unifierBuilder.addConstantValueRequirements(values, owner.id(), unifiedOwner.id());
+                unifierBuilder.addConstantValueRequirements(predicates, owner.id(), unifiedOwner.id());
             } else return Iterators.empty();
 
             return single(unifierBuilder.build());
@@ -577,33 +599,25 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        public Optional<ThingVariable> generating() {
-            return Optional.of(isa().owner());
+        public ThingVariable generatingVariable() {
+            return isa.owner();
+        }
+
+        @Override
+        public Set<Variable> generating() {
+            return generating;
         }
 
         @Override
         public Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            assert generating().isPresent();
-            Variable generated = generating().get();
-            Set<Label> types = generated.inferredTypes();
-            assert !types.isEmpty();
-
-            Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
-            types.forEach(type -> logicMgr.rulesConcluding(type)
-                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
-                            .forEachRemaining(unifier -> {
-                                applicableRules.putIfAbsent(rule, new HashSet<>());
-                                applicableRules.get(rule).add(unifier);
-                            })));
-
-            return applicableRules;
+            return applicableRules(generatingVariable().inferredTypes(), conceptMgr, logicMgr);
         }
 
         @Override
         public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
             return AlphaEquivalence.empty().alphaEqualIf(that.isIsa())
                     .flatMap(a -> isa().alphaEquals(that.asIsa().isa()).flatMap(a::extendIfCompatible))
-                    .flatMap(a -> alphaEqualValueConstraints(values(), that.asIsa().values()).flatMap(a::extendIfCompatible));
+                    .flatMap(a -> alphaEqualPredicateConstraints(predicates(), that.asIsa().predicates()).flatMap(a::extendIfCompatible));
         }
     }
 
@@ -613,23 +627,26 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
      * `{ $a > 5; $a < 20; }`
      * It does not handle `{ $a < $b; }`, this scenario should be split into a Retrievable of `{ $a < $b; }`, a
      * `Concludable.Attribute` of `$a` and a `Concludable.Attribute` of `$b` (both having an empty set of
-     * ValueConstraints). Only `=` is added as a requirement on the unifier.
+     * predicateConstraints). Only `=` is added as a requirement on the unifier.
      */
     public static class Attribute extends Concludable {
 
-        private final Set<ValueConstraint<?>> values;
+        private final Set<PredicateConstraint> values;
         private final ThingVariable attribute;
+        private final Set<Variable> generating;
 
-        private Attribute(ThingVariable attribute, Set<ValueConstraint<?>> values) {
+        private Attribute(ThingVariable attribute, Set<PredicateConstraint> values) {
             super(new Conjunction(set(attribute), list()));
             this.attribute = attribute;
             this.values = values;
+            this.generating = set(generatingVariable());
         }
 
         private Attribute(IsaConstraint isa) {
             super(new Conjunction(isa.variables(), list()));
             attribute = isa.owner();
             values = set();
+            this.generating = set(generatingVariable());
         }
 
         public static Attribute of(ThingVariable attribute) {
@@ -639,24 +656,24 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
             return new Attribute(attribute.clone().isa(typeVar, false));
         }
 
-        public static Attribute of(ThingVariable attribute, Set<ValueConstraint<?>> values) {
+        public static Attribute of(ThingVariable attribute, Set<PredicateConstraint> values) {
             assert iterate(values).map(ThingConstraint::owner).toSet().equals(set(attribute));
             Conjunction.ConstraintCloner cloner = Conjunction.ConstraintCloner.cloneExactly(values);
             assert cloner.conjunction().variables().size() == 1;
-            FunctionalIterator<ValueConstraint<?>> valueIt = iterate(values).map(v -> cloner.getClone(v).asThing().asValue());
+            FunctionalIterator<PredicateConstraint> valueIt = iterate(values).map(v -> cloner.getClone(v).asThing().asPredicate());
             return new Attribute(cloner.conjunction().variables().iterator().next().asThing(), valueIt.toSet());
         }
 
         @Override
         public Set<Constraint> concludableConstraints() {
-            return new HashSet<>(Unifier.Builder.constantValueConstraints(values));
+            return new HashSet<>(Unifier.Builder.constantPredicateConstraints(values));
         }
 
         public ThingVariable attribute() {
             return attribute;
         }
 
-        public Set<ValueConstraint<?>> values() {
+        public Set<PredicateConstraint> values() {
             return values;
         }
 
@@ -668,11 +685,11 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         @Override
         public boolean isInferredAnswer(ConceptMap conceptMap) {
-            return conceptMap.get(generating().get().id()).asThing().isInferred();
+            return conceptMap.get(generatingVariable().id()).asThing().isInferred();
         }
 
         FunctionalIterator<Unifier> unify(Rule.Conclusion.Value value) {
-            assert iterate(values).filter(ValueConstraint::isVariable).toSet().size() == 0;
+            assert iterate(values).filter(pred -> pred.predicate().isThingVar()).toSet().size() == 0;
             Unifier.Builder unifierBuilder = Unifier.builder();
             if (Unifier.Builder.unificationSatisfiable(attribute, value.value().owner())) {
                 unifierBuilder.addThing(attribute, value.value().owner().id());
@@ -692,33 +709,25 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
         }
 
         @Override
-        public Optional<ThingVariable> generating() {
-            return Optional.of(attribute);
+        public ThingVariable generatingVariable() {
+            return attribute;
+        }
+
+        @Override
+        public Set<Variable> generating() {
+            return generating;
         }
 
         @Override
         public Map<Rule, Set<Unifier>> computeApplicableRules(ConceptManager conceptMgr, LogicManager logicMgr) {
-            assert generating().isPresent();
-            Variable generatedAttr = generating().get();
-            Set<Label> attributeTypes = generatedAttr.inferredTypes();
-            assert !attributeTypes.isEmpty();
-
-            Map<Rule, Set<Unifier>> applicableRules = new HashMap<>();
-            attributeTypes.forEach(type -> logicMgr.rulesConcluding(type)
-                    .forEachRemaining(rule -> unify(rule.conclusion(), conceptMgr)
-                            .forEachRemaining(unifier -> {
-                                applicableRules.putIfAbsent(rule, new HashSet<>());
-                                applicableRules.get(rule).add(unifier);
-                            })));
-
-            return applicableRules;
+            return applicableRules(generatingVariable().inferredTypes(), conceptMgr, logicMgr);
         }
 
         @Override
         public FunctionalIterator<AlphaEquivalence> alphaEquals(Concludable that) {
             return AlphaEquivalence.empty().alphaEqualIf(that.isAttribute())
                     .flatMap(a -> attribute().alphaEquals(that.asAttribute().attribute()).flatMap(a::extendIfCompatible))
-                    .flatMap(a -> alphaEqualValueConstraints(values(), that.asAttribute().values()).flatMap(a::extendIfCompatible));
+                    .flatMap(a -> alphaEqualPredicateConstraints(values(), that.asAttribute().values()).flatMap(a::extendIfCompatible));
         }
     }
 
@@ -737,46 +746,46 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
                     .map(ThingConstraint::asHas).forEach(this::fromConstraint);
             constraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isIsa)
                     .map(ThingConstraint::asIsa).forEach(this::fromConstraint);
-            constraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isValue)
-                    .map(ThingConstraint::asValue).forEach(this::fromConstraint);
+            constraints.stream().filter(Constraint::isThing).map(Constraint::asThing).filter(ThingConstraint::isPredicate)
+                    .map(ThingConstraint::asPredicate).forEach(this::fromConstraint);
         }
 
         public void fromConstraint(RelationConstraint relationConstraint) {
-            Set<LabelConstraint> labelConstraints = set(labelConstraints(relationConstraint), relationConstraint.owner().isa().map(Extractor::labelConstraints).orElse(set()));
+            Set<LabelConstraint> labelConstraints = concatToSet(labelConstraints(relationConstraint), relationConstraint.owner().isa().map(Extractor::labelConstraints).orElse(set()));
             concludables.add(Relation.of(relationConstraint, relationConstraint.owner().isa().orElse(null), labelConstraints));
             isaOwnersToSkip.add(relationConstraint.owner());
         }
 
         private void fromConstraint(HasConstraint hasConstraint) {
-            Set<LabelConstraint> labelConstraints = set(labelConstraints(hasConstraint), hasConstraint.attribute().isa().map(Extractor::labelConstraints).orElse(set()));
-            Set<ValueConstraint<?>> valueConstraints = Iterators.iterate(hasConstraint.attribute().value()).filter(v -> !v.isVariable()).toSet();
-            concludables.add(Has.of(hasConstraint, hasConstraint.attribute().isa().orElse(null), valueConstraints, labelConstraints));
+            Set<LabelConstraint> labelConstraints = concatToSet(labelConstraints(hasConstraint), hasConstraint.attribute().isa().map(Extractor::labelConstraints).orElse(set()));
+            Set<PredicateConstraint> predicateConstraints = Iterators.iterate(hasConstraint.attribute().predicates()).filter(v -> !v.predicate().isThingVar()).toSet();
+            concludables.add(Has.of(hasConstraint, hasConstraint.attribute().isa().orElse(null), predicateConstraints, labelConstraints));
             isaOwnersToSkip.add(hasConstraint.attribute());
             valueOwnersToSkip.add(hasConstraint.attribute());
         }
 
         private void fromConstraint(IsaConstraint isaConstraint) {
             if (isaOwnersToSkip.contains(isaConstraint.owner())) return;
-            Set<ValueConstraint<?>> valueConstraints = Iterators.iterate(isaConstraint.owner().value()).filter(v -> !v.isVariable()).toSet();
-            concludables.add(Concludable.Isa.of(isaConstraint, valueConstraints, labelConstraints(isaConstraint)));
+            Set<PredicateConstraint> predicateConstraints = Iterators.iterate(isaConstraint.owner().predicates()).filter(v -> !v.predicate().isThingVar()).toSet();
+            concludables.add(Concludable.Isa.of(isaConstraint, predicateConstraints, labelConstraints(isaConstraint)));
             isaOwnersToSkip.add(isaConstraint.owner());
             valueOwnersToSkip.add(isaConstraint.owner());
         }
 
-        private void fromConstraint(ValueConstraint<?> valueConstraint) {
-            if (valueOwnersToSkip.contains(valueConstraint.owner())) return;
-            if (valueConstraint.isVariable()) {
+        private void fromConstraint(PredicateConstraint predicateConstraint) {
+            if (valueOwnersToSkip.contains(predicateConstraint.owner())) return;
+            if (predicateConstraint.predicate().isThingVar()) {
                 // form: `{ $x > $y; }`
-                concludables.add(Attribute.of(valueConstraint.owner()));
-                ValueConstraint.Variable val;
-                if (!valueOwnersToSkip.contains((val = valueConstraint.asVariable()).value())) {
+                concludables.add(Attribute.of(predicateConstraint.owner()));
+                Predicate.ThingVar val;
+                if (!valueOwnersToSkip.contains((val = predicateConstraint.predicate().asThingVar()).value())) {
                     concludables.add(Attribute.of(val.value()));
                     valueOwnersToSkip.add(val.value());
                 }
             } else {
-                concludables.add(Attribute.of(valueConstraint.owner(), set(valueConstraint.owner().value())));
+                concludables.add(Attribute.of(predicateConstraint.owner(), set(predicateConstraint.owner().predicates())));
             }
-            valueOwnersToSkip.add(valueConstraint.owner());
+            valueOwnersToSkip.add(predicateConstraint.owner());
         }
 
         public Set<Concludable> concludables() {

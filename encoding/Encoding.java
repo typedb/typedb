@@ -99,7 +99,8 @@ public class Encoding {
     public enum Status {
         BUFFERED(0),
         COMMITTED(1),
-        PERSISTED(2);
+        PERSISTED(2),
+        EPHEMERAL(3);
 
         private final int status;
 
@@ -140,13 +141,14 @@ public class Encoding {
         METADATA,
         TYPE,
         THING,
+        VALUE,
         RULE
     }
 
     /**
      * The values in this class will be used as 'prefixes' within an IID for every database object,
      * and must not overlap with each other.
-     *
+     * <p>
      * A prefix is 1 unsigned byte, up to the value of 179. Values 180-255 are reserved for TypeDB Cluster.
      */
     public enum Prefix {
@@ -164,6 +166,7 @@ public class Encoding {
         VERTEX_ATTRIBUTE(131, PrefixType.THING),
         VERTEX_RELATION(132, PrefixType.THING),
         VERTEX_ROLE(133, PrefixType.THING),
+        VERTEX_VALUE(150, PrefixType.VALUE),
         STRUCTURE_RULE(160, PrefixType.RULE);
 
         private static final ByteMap<Prefix> prefixByKey = ByteMap.create(
@@ -241,9 +244,9 @@ public class Encoding {
     /**
      * The values in this class will be used as 'infixes' between two IIDs of
      * two objects in the database, and must not overlap with each other.
-     *
+     * <p>
      * The size of a prefix is 1 signed byte; i.e. min-value = -128 and max-value = 127.
-     *
+     * <p>
      * TODO: these should be scoped to be within a section of the encoding.
      * For example, Edge and Property should have their own Infixes.
      */
@@ -257,6 +260,7 @@ public class Encoding {
         PROPERTY_THEN(6),
         PROPERTY_VALUE(7),
         PROPERTY_VALUE_REF(8),
+        EDGE_OWNS_PROPERTY_ANNOTATION_UNIQUE(20),
         EDGE_ISA_BACKWARD(-40), // EDGE_ISA_FORWARD does not exist by design
         EDGE_SUB_FORWARD(50),
         EDGE_SUB_BACKWARD(-50),
@@ -344,25 +348,62 @@ public class Encoding {
 
     }
 
-    public enum Property {
-        LABEL(Infix.PROPERTY_LABEL),
-        SCOPE(Infix.PROPERTY_SCOPE),
-        ABSTRACT(Infix.PROPERTY_ABSTRACT),
-        REGEX(Infix.PROPERTY_REGEX),
-        VALUE_TYPE(Infix.PROPERTY_VALUE_TYPE),
-        VALUE_REF(Infix.PROPERTY_VALUE_REF),
-        VALUE(Infix.PROPERTY_VALUE),
-        WHEN(Infix.PROPERTY_WHEN),
-        THEN(Infix.PROPERTY_THEN);
+    public static class Property {
 
-        private final Infix infix;
+        public enum Vertex {
+            LABEL(Infix.PROPERTY_LABEL),
+            SCOPE(Infix.PROPERTY_SCOPE),
+            ABSTRACT(Infix.PROPERTY_ABSTRACT),
+            REGEX(Infix.PROPERTY_REGEX),
+            VALUE_TYPE(Infix.PROPERTY_VALUE_TYPE),
+            VALUE_REF(Infix.PROPERTY_VALUE_REF),
+            VALUE(Infix.PROPERTY_VALUE);
 
-        Property(Infix infix) {
-            this.infix = infix;
+            private final Infix infix;
+
+            Vertex(Infix infix) {
+                this.infix = infix;
+            }
+
+            public Infix infix() {
+                return infix;
+            }
         }
 
-        public Infix infix() {
-            return infix;
+        public enum Edge {
+            OWNS_PROPERTY_ANNOTATION_UNIQUE(Infix.EDGE_OWNS_PROPERTY_ANNOTATION_UNIQUE, true);
+
+            private final Infix infix;
+            private final boolean isAnnotation;
+
+            Edge(Infix infix, boolean isAnnotation) {
+                this.infix = infix;
+                this.isAnnotation = isAnnotation;
+            }
+
+            public Infix infix() {
+                return infix;
+            }
+
+            public boolean isAnnotation() {
+                return isAnnotation;
+            }
+        }
+
+        public enum Structure {
+            LABEL(Infix.PROPERTY_LABEL),
+            WHEN(Infix.PROPERTY_WHEN),
+            THEN(Infix.PROPERTY_THEN);
+
+            private final Infix infix;
+
+            Structure(Infix infix) {
+                this.infix = infix;
+            }
+
+            public Infix infix() {
+                return infix;
+            }
         }
     }
 
@@ -381,7 +422,7 @@ public class Encoding {
                 0, "Object", Object.class, false, false, false, null, null
         );
         public static final ValueType<Boolean> BOOLEAN = new ValueType<>(
-                10, "Boolean", Boolean.class, true, false, true, TypeQLArg.ValueType.BOOLEAN, Boolean::compareTo
+                10, "Boolean", Boolean.class, true, true, true, TypeQLArg.ValueType.BOOLEAN, Boolean::compareTo
         );
         public static final ValueType<Long> LONG = new ValueType<>(
                 20, "Long", Long.class, true, true, true, TypeQLArg.ValueType.LONG, Long::compareTo
@@ -430,7 +471,7 @@ public class Encoding {
         private final String name;
         private final byte key;
         private final ByteArray bytes;
-        private final boolean isKeyable;
+        private final boolean hasExactEquality;
         private final boolean isWritable;
         private final boolean isSorted; // TODO: once strings are encoded in the correct order, we can remove this
 
@@ -438,7 +479,7 @@ public class Encoding {
         private final TypeQLArg.ValueType typeQLValueType;
         private final Comparator<T> comparator;
 
-        ValueType(int key, String name, Class<T> valueClass, boolean isWritable, boolean isKeyable, boolean isSorted,
+        ValueType(int key, String name, Class<T> valueClass, boolean isWritable, boolean hasExactEquality, boolean isSorted,
                   @Nullable TypeQLArg.ValueType typeQLValueType, @Nullable Comparator<T> comparator) {
             this.key = unsignedByte(key);
             this.name = name;
@@ -446,7 +487,7 @@ public class Encoding {
             this.bytes = ByteArray.of(new byte[]{this.key});
             this.valueClass = valueClass;
             this.isWritable = isWritable;
-            this.isKeyable = isKeyable;
+            this.hasExactEquality = hasExactEquality;
             this.isSorted = isSorted;
             this.typeQLValueType = typeQLValueType;
         }
@@ -497,8 +538,8 @@ public class Encoding {
             return isWritable;
         }
 
-        public boolean isKeyable() {
-            return isKeyable;
+        public boolean hasExactEquality() {
+            return hasExactEquality;
         }
 
         public boolean isSorted() {
@@ -594,6 +635,11 @@ public class Encoding {
             assert DATETIME.comparableTo(sourceEncoding);
             if (sourceEncoding.equals(DATETIME)) return (LocalDateTime) sourceValue;
             else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 
@@ -697,6 +743,7 @@ public class Encoding {
 
                 private final String label;
                 private final String scope;
+                private final Label properLabel;
 
                 Root(String label) {
                     this(label, null);
@@ -705,6 +752,7 @@ public class Encoding {
                 Root(String label, @Nullable String scope) {
                     this.label = label;
                     this.scope = scope;
+                    this.properLabel = Label.of(label, scope);
                 }
 
                 public String label() {
@@ -716,7 +764,7 @@ public class Encoding {
                 }
 
                 public Label properLabel() {
-                    return Label.of(label, scope);
+                    return properLabel;
                 }
             }
         }
@@ -744,6 +792,26 @@ public class Encoding {
                 Thing thing = thingVertexByKey.get(prefix);
                 if (thing == null) throw TypeDBException.of(UNRECOGNISED_VALUE);
                 else return thing;
+            }
+
+            @Override
+            public Prefix prefix() {
+                return prefix;
+            }
+        }
+
+        enum Value implements Vertex {
+            VALUE(Prefix.VERTEX_VALUE);
+
+            private final Prefix prefix;
+
+            Value(Prefix prefix) {
+                this.prefix = prefix;
+            }
+
+            public static Value of(byte prefix) {
+                if (VALUE.prefix.key == prefix) return VALUE;
+                else throw TypeDBException.of(UNRECOGNISED_VALUE);
             }
 
             @Override

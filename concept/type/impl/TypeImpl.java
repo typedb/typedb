@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.ConceptImpl;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
@@ -36,9 +37,7 @@ import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -55,33 +54,23 @@ import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
 
 public abstract class TypeImpl extends ConceptImpl implements Type {
 
-    protected final GraphManager graphMgr;
     public final TypeVertex vertex;
 
-    TypeImpl(GraphManager graphMgr, TypeVertex vertex) {
-        this.graphMgr = graphMgr;
+    TypeImpl(ConceptManager conceptMgr, TypeVertex vertex) {
+        super(conceptMgr);
         this.vertex = Objects.requireNonNull(vertex);
     }
 
-    TypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding) {
-        this(graphMgr, label, encoding, null);
+    TypeImpl(ConceptManager conceptMgr, String label, Encoding.Vertex.Type encoding) {
+        this(conceptMgr, label, encoding, null);
     }
 
-    TypeImpl(GraphManager graphMgr, String label, Encoding.Vertex.Type encoding, String scope) {
+    TypeImpl(ConceptManager conceptMgr, String label, Encoding.Vertex.Type encoding, String scope) {
+        super(conceptMgr);
         label = TypeQL.parseLabel(label);
-        this.graphMgr = graphMgr;
-        this.vertex = graphMgr.schema().create(encoding, label, scope);
-        TypeVertex superTypeVertex = graphMgr.schema().getType(encoding.root().label(), encoding.root().scope());
+        this.vertex = graphMgr().schema().create(encoding, label, scope);
+        TypeVertex superTypeVertex = graphMgr().schema().getType(encoding.root().label(), encoding.root().scope());
         vertex.outs().put(SUB, superTypeVertex);
-    }
-
-    public static TypeImpl of(GraphManager graphMgr, TypeVertex vertex) {
-        switch (vertex.encoding()) {
-            case ROLE_TYPE:
-                return RoleTypeImpl.of(graphMgr, vertex);
-            default:
-                return ThingTypeImpl.of(graphMgr, vertex);
-        }
     }
 
     @Override
@@ -96,7 +85,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
 
     @Override
     public long getInstancesCount() {
-        return graphMgr.data().stats().thingVertexTransitiveCount(vertex);
+        return graphMgr().data().stats().thingVertexTransitiveCount(vertex);
     }
 
     @Override
@@ -126,6 +115,10 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
     @Override
     public abstract Forwardable<? extends TypeImpl, Order.Asc> getSubtypesExplicit();
 
+    GraphManager graphMgr() {
+        return conceptMgr.graph();
+    }
+
     void setSuperTypeVertex(TypeVertex superTypeVertex) {
         vertex.outs().edge(SUB, ((TypeImpl) getSupertype()).vertex).delete();
         vertex.outs().put(SUB, superTypeVertex);
@@ -151,7 +144,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
 
     void validateDelete() {
         if (isRoot()) throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
-        FunctionalIterator<RuleStructure> rules = graphMgr.schema().rules().references().get(vertex);
+        FunctionalIterator<RuleStructure> rules = graphMgr().schema().rules().references().get(vertex);
         if (rules.hasNext()) {
             throw exception(TypeDBException.of(TYPE_REFERENCED_IN_RULES, getLabel(), rules.map(RuleStructure::label).toList()));
         }
@@ -202,7 +195,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
 
     @Override
     public TypeDBException exception(TypeDBException exception) {
-        return graphMgr.exception(exception);
+        return conceptMgr.exception(exception);
     }
 
     @Override

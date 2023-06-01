@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typeql.lang.common.TypeQLArg;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -48,17 +49,11 @@ public interface AttributeType extends ThingType {
 
     void setSupertype(AttributeType superType);
 
-    boolean isKeyable();
-
     ValueType getValueType();
 
-    Forwardable<? extends ThingType, Order.Asc> getOwners();
+    Forwardable<? extends ThingType, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations);
 
-    Forwardable<? extends ThingType, Order.Asc> getOwners(boolean onlyKey);
-
-    Forwardable<? extends ThingType, Order.Asc> getOwnersExplicit();
-
-    Forwardable<? extends ThingType, Order.Asc> getOwnersExplicit(boolean onlyKey);
+    Forwardable<? extends ThingType, Order.Asc> getOwnersExplicit(Set<TypeQLToken.Annotation> annotations);
 
     boolean isBoolean();
 
@@ -128,12 +123,16 @@ public interface AttributeType extends ThingType {
             return encoding.valueClass();
         }
 
+        public Encoding.ValueType<?> encoding() {
+            return encoding;
+        }
+
         public boolean isWritable() {
             return encoding.isWritable();
         }
 
-        public boolean isKeyable() {
-            return encoding.isKeyable();
+        public boolean hasExactEquality() {
+            return encoding.hasExactEquality();
         }
 
         public Set<ValueType> comparables() {

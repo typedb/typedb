@@ -170,9 +170,9 @@ public class ControllerTest {
         }
         try (CoreSession session = dataSession()) {
             try (CoreTransaction transaction = singleThreadElgTransaction(session)) {
-                Set<Identifier.Variable.Retrievable> filter = set(Identifier.Variable.name("t"),
-                        Identifier.Variable.name("p1"),
-                        Identifier.Variable.name("p2"));
+                Set<Identifier.Variable.Retrievable> filter = set(Identifier.Variable.namedConcept("t"),
+                        Identifier.Variable.namedConcept("p1"),
+                        Identifier.Variable.namedConcept("p2"));
                 Disjunction disjunction = resolvedDisjunction("{ $t(twin1: $p1, twin2: $p2) isa twins; { $p1 has age 24; } or { $p1 has age 26; }; }", transaction.logic());
                 createRootAndAssertResponses(transaction, disjunction, filter, 2L, 0L);
             }

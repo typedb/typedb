@@ -27,6 +27,11 @@ host_compatible_java_library(
     deps = [
         "//test/behaviour/config:parameters",
         "//test/behaviour/connection:steps",
+
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java/common:common",
+
         # External Maven Dependencies
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",

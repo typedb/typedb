@@ -64,7 +64,7 @@ public class ConcludableTest {
     }
 
     @Test
-    public void test_conjunction_isa_value_constrained_is_built() {
+    public void test_conjunction_isa_predicate_constrained_is_built() {
         String conjunction = "{ $x isa milk; $a 10 isa age-in-days; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(2, isaConcludablesCount(concludables));
@@ -94,7 +94,7 @@ public class ConcludableTest {
     }
 
     @Test
-    public void test_conjunction_isa_has_value_constrained_is_built() {
+    public void test_conjunction_isa_has_predicate_constrained_is_built() {
         String conjunction = "{ $x isa milk, has age-in-days >= 10; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(1, isaConcludablesCount(concludables));
@@ -175,7 +175,7 @@ public class ConcludableTest {
     }
 
     @Test
-    public void test_conjunction_only_creates_has_concludable_when_attribute_has_value_constraints() {
+    public void test_conjunction_only_creates_has_concludable_when_attribute_has_predicate_constraints() {
         String conjunction = "{ $x has $a; $a isa age; $a > 5; $a <= 10; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(0, isaConcludablesCount(concludables));
@@ -185,7 +185,7 @@ public class ConcludableTest {
     }
 
     @Test
-    public void test_conjunction_creates_multiple_value_constraints_for_same_owned_attribute_without_an_isa() {
+    public void test_conjunction_creates_multiple_predicate_constraints_for_same_owned_attribute_without_an_isa() {
         String conjunction = "{ $x has $a; $a > 5; $a <= 10; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(0, isaConcludablesCount(concludables));
@@ -195,7 +195,7 @@ public class ConcludableTest {
     }
 
     @Test
-    public void test_conjunction_creates_multiple_value_constraints_for_same_attribute() {
+    public void test_conjunction_creates_multiple_predicate_constraints_for_same_attribute() {
         String conjunction = "{ $a > 5; $a <= 10; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(0, isaConcludablesCount(concludables));
@@ -226,7 +226,7 @@ public class ConcludableTest {
 
     @Test
     public void test_conjunction_creates_two_attribute_concludables_for_variable_and_constant_value_comparison() {
-        String conjunction = "{ $x > $y; $y = 5; }";
+        String conjunction = "{ $x > $y; $y == 5; }";
         Set<Concludable> concludables = Concludable.create(parseConjunction(conjunction));
         assertEquals(0, isaConcludablesCount(concludables));
         assertEquals(0, hasConcludablesCount(concludables));
@@ -306,7 +306,7 @@ public class ConcludableTest {
             assertTrue(relationConcludable.relation().owner().isa().isPresent());
         });
         concludables.stream().filter(Concludable::isHas).map(Concludable::asHas).forEach(hasConcludable -> {
-            assertEquals(1, hasConcludable.has().attribute().value().size());
+            assertEquals(1, hasConcludable.has().attribute().predicates().size());
             assertTrue(hasConcludable.has().attribute().isa().isPresent());
         });
     }

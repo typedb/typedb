@@ -70,6 +70,10 @@ public abstract class ConcludableController<INPUT, OUTPUT,
         this.conclusionUnifiers = new HashMap<>();
     }
 
+    public static boolean canBypassReasoning(Concludable concludable, Set<com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable> boundVariables, boolean isExplainEnabled) {
+        return !isExplainEnabled && !concludable.isHas() && boundVariables.contains(concludable.generatingVariable().id());
+    }
+
     @Override
     public void setUpUpstreamControllers() {
         iterate(registry().logicManager().applicableRules(concludable).entrySet()).forEachRemaining(ruleAndUnifiers -> {
@@ -262,7 +266,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
                             (attribute = bounds.get(concludable.asHas().attribute().id())) != null &&
                             (owner.asThing().hasInferred(attribute.asAttribute()) || owner.asThing().hasNonInferred(attribute.asAttribute()));
                 } else {
-                    return bounds.contains(concludable.generating().get().id());
+                    return ConcludableController.canBypassReasoning(concludable, bounds.concepts().keySet(), false);
                 }
             }
 
@@ -312,7 +316,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
 
             static ConceptMap withExplainable(ConceptMap conceptMap, Concludable concludable) {
                 if (concludable.isRelation() || concludable.isAttribute() || concludable.isIsa()) {
-                    return conceptMap.withExplainableConcept(concludable.generating().get().id(), concludable.pattern());
+                    return conceptMap.withExplainableConcept(concludable.generatingVariable().id(), concludable.pattern());
                 } else if (concludable.isHas()) {
                     return conceptMap.withExplainableOwnership(
                             concludable.asHas().owner().id(), concludable.asHas().attribute().id(), concludable.pattern()

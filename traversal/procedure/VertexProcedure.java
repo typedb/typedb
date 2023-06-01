@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.traversal.procedure;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concurrent.producer.FunctionalProducer;
@@ -37,6 +38,7 @@ import java.util.Optional;
 
 import static com.vaticle.typedb.common.collection.Collections.map;
 import static com.vaticle.typedb.common.collection.Collections.pair;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 
@@ -50,11 +52,18 @@ public class VertexProcedure implements PermutationProcedure {
     }
 
     public static VertexProcedure create(StructureVertex<?> structureVertex) {
-        ProcedureVertex<?, ?> procedureVertex = structureVertex.isType()
-                ? new ProcedureVertex.Type(structureVertex.id())
-                : new ProcedureVertex.Thing(structureVertex.id());
-        if (procedureVertex.isType()) procedureVertex.asType().props(structureVertex.asType().props());
-        else procedureVertex.asThing().props(structureVertex.asThing().props());
+        ProcedureVertex<?, ?> procedureVertex;
+        if (structureVertex.isType()) {
+            procedureVertex = new ProcedureVertex.Type(structureVertex.id());
+            procedureVertex.asType().props(structureVertex.asType().props());
+        } else if (structureVertex.isThing()) {
+            procedureVertex = new ProcedureVertex.Thing(structureVertex.id());
+            procedureVertex.asThing().props(structureVertex.asThing().props());
+        } else if (structureVertex.isValue()) {
+            procedureVertex = new ProcedureVertex.Value(structureVertex.id());
+            procedureVertex.asValue().props(structureVertex.asValue().props());
+        } else throw TypeDBException.of(ILLEGAL_STATE);
+
         for (StructureEdge<?, ?> structureEdge : structureVertex.loops()) {
             ProcedureEdge<?, ?> edge = ProcedureEdge.of(procedureVertex, procedureVertex, structureEdge, true);
             procedureVertex.loop(edge);
@@ -83,8 +92,8 @@ public class VertexProcedure implements PermutationProcedure {
         }
 
         return iterator.map(v -> {
-            if (v.isThing() && v.asThing().isAttribute() && v.asThing().asAttribute().isValue()) {
-                return VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v.asThing().asAttribute().asValue().toAttribute())));
+            if (v.isThing() && v.asThing().isAttribute() && v.asThing().asAttribute().isValueSortable()) {
+                return VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v.asThing().asAttribute().asValueSortable().toAttribute())));
             } else {
                 return VertexMap.of(map(pair(vertex.id().asVariable().asRetrievable(), v)));
             }

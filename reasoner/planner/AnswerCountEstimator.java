@@ -32,9 +32,9 @@ import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.PredicateConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
-import com.vaticle.typedb.core.pattern.constraint.thing.ValueConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
@@ -366,8 +366,8 @@ public class AnswerCountEstimator {
                     return localModelFactory.modelForRelation(asThingConstraint.asRelation(), correspondingConcludable);
                 } else if (asThingConstraint.isIsa()) {
                     return localModelFactory.modelForIsa(asThingConstraint.asIsa(), correspondingConcludable);
-                } else if (asThingConstraint.isValue() && asThingConstraint.asValue().isValueIdentity()) {
-                    return localModelFactory.modelForValue(asThingConstraint.asValue(), correspondingConcludable);
+                } else if (asThingConstraint.isPredicate() && asThingConstraint.asPredicate().predicate().isValueIdentity()) {
+                    return localModelFactory.modelForValue(asThingConstraint.asPredicate(), correspondingConcludable);
                 } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
             } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
         }
@@ -381,7 +381,7 @@ public class AnswerCountEstimator {
         private boolean isModellable(Constraint constraint) {
             return constraint.isThing() &&
                     (constraint.asThing().isRelation() || constraint.asThing().isHas() || constraint.asThing().isIsa() ||
-                            (constraint.asThing().isValue() && constraint.asThing().asValue().isValueIdentity()));
+                            (constraint.asThing().isPredicate() && constraint.asThing().asPredicate().predicate().isValueIdentity()));
         }
     }
 
@@ -629,7 +629,7 @@ public class AnswerCountEstimator {
             double attributeEstimate = countPersistedThingsMatchingType(hasConstraint.attribute());
             if (correspondingConcludable != null) {
                 hasEdgeEstimate += estimateInferredAnswerCount(correspondingConcludable, set(hasConstraint.owner(), hasConstraint.attribute()));
-                attributeEstimate += attributesCreatedByExplicitHas(correspondingConcludable);
+                attributeEstimate += attributesCreatedByHasWithIsa(correspondingConcludable);
                 if (attributeEstimate != 0 && ownerEstimate < hasEdgeEstimate / attributeEstimate) {
                     boolean rulesConcludeOwner = iterate(hasConstraint.owner().inferredTypes()).flatMap(ownerType -> iterate(answerCountEstimator.logicMgr.rulesConcluding(ownerType))).hasNext();
                     if (rulesConcludeOwner) ownerEstimate = hasEdgeEstimate / attributeEstimate;
@@ -647,8 +647,8 @@ public class AnswerCountEstimator {
             return new LocalModel.IsaModel(isaConstraint, estimate);
         }
 
-        public LocalModel modelForValue(ValueConstraint<?> asValue, @Nullable Concludable correspondingConcludable) {
-            if (asValue.isValueIdentity()) {
+        public LocalModel modelForValue(PredicateConstraint asValue, @Nullable Concludable correspondingConcludable) {
+            if (asValue.predicate().isValueIdentity()) {
                 return new LocalModel.VariableModel(set(asValue.owner()), 1L);
             } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
         }
@@ -656,9 +656,9 @@ public class AnswerCountEstimator {
         private LocalModel.VariableModel modelForVariable(Variable v, @Nullable Concludable concludable) {
             double persistedAnswerCount = countPersistedThingsMatchingType(v.asThing());
             double inferredAnswerCount = 0;
-            if (concludable != null && v == concludable.generating().orElse(null)) {
+            if (concludable != null) {
                 inferredAnswerCount = (concludable.isHas() || concludable.isAttribute()) ?
-                        attributesCreatedByExplicitHas(concludable) :
+                        attributesCreatedByHasWithIsa(concludable) :
                         estimateInferredAnswerCount(concludable, set(v));
             }
             return new LocalModel.VariableModel(set(v), persistedAnswerCount + inferredAnswerCount);
@@ -712,10 +712,10 @@ public class AnswerCountEstimator {
             return inferredEstimate;
         }
 
-        private long attributesCreatedByExplicitHas(Concludable concludable) {
+        private long attributesCreatedByHasWithIsa(Concludable concludable) {
             return iterate(answerCountEstimator.logicMgr.applicableRules(concludable).keySet())
-                    .filter(rule -> rule.conclusion().isExplicitHas())
-                    .map(rule -> rule.conclusion().asExplicitHas().value().value())
+                    .filter(rule -> rule.conclusion().isHasWithIsa())
+                    .map(rule -> rule.conclusion().asHasWithIsa().value().predicate().value())
                     .toSet().size();
         }
 

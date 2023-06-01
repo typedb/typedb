@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.concept;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.concept.value.Value;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.Relation;
@@ -56,6 +57,8 @@ public interface Concept {
 
     boolean isRelation();
 
+    boolean isValue();
+
     Type asType();
 
     ThingType asThingType();
@@ -75,6 +78,8 @@ public interface Concept {
     Attribute asAttribute();
 
     Relation asRelation();
+
+    Value<?> asValue();
 
     TypeDBException exception(TypeDBException exception);
 }

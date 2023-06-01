@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.planner;
 import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
@@ -70,7 +69,7 @@ class HybridAStarBeamSearch {
         this.valueIdentityResolvables = iterate(this.resolvables).filter(resolvable -> !resolvable.isNegated()).filter(r ->
                 iterate(ReasonerPlanner.estimateableVariables(r.variables())).flatMap(v -> iterate(v.constraints()))
                         .anyMatch(constraint ->
-                                constraint.isThing() && constraint.asThing().isValue() && constraint.asThing().asValue().isValueIdentity())).toSet();
+                                constraint.isThing() && constraint.asThing().isPredicate() && constraint.asThing().asPredicate().predicate().isValueIdentity())).toSet();
 
         this.resolvableCostForHeuristic = planner.orderingCoster.resolvableHeuristics(callMode, conjunctionNode, resolvables);
         this.completedSignatures = new HashMap<>();
@@ -174,12 +173,12 @@ class HybridAStarBeamSearch {
         return node.resolvables.size() == resolvables.size();
     }
 
-    private FunctionalIterator<SearchNode> successors(FringeElement of) {
+    private FunctionalIterator<SearchNode> successors(FringeElement fringeElement) {
         FunctionalIterator<Resolvable<?>> next = iterate(resolvables)
-                .filter(res -> !of.node.resolvables.contains(res))
-                .filter(res -> ReasonerPlanner.dependenciesSatisfied(res, of.bounds(), dependencies));
+                .filter(res -> !fringeElement.node.resolvables.contains(res))
+                .filter(res -> ReasonerPlanner.dependenciesSatisfied(res, fringeElement.bounds(), dependencies));
 
-        return next.map(res -> of.node.extend(res, res.isConcludable() && cyclicConcludables.contains(res.asConcludable()), of.bounds()));
+        return next.map(res -> fringeElement.node.extend(res, res.isConcludable() && cyclicConcludables.contains(res.asConcludable()), fringeElement.bounds()));
     }
 
     private boolean checkRedundant(Set<SearchNode> seenNodes, SearchNode searchNode) {

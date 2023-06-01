@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.traversal.procedure;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.KeyValue;
+import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
@@ -30,17 +31,22 @@ import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
+import com.vaticle.typedb.core.graph.vertex.ValueVertex;
 import com.vaticle.typedb.core.graph.vertex.Vertex;
 import com.vaticle.typedb.core.graph.vertex.impl.ThingVertexImpl;
+import com.vaticle.typedb.core.graph.vertex.impl.ValueVertexImpl;
 import com.vaticle.typedb.core.traversal.Traversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typedb.core.traversal.expression.Expression;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -51,6 +57,7 @@ import static com.vaticle.typedb.common.collection.Collections.intersection;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Expression.EVALUATION_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNSUPPORTED_OPERATION;
@@ -105,6 +112,10 @@ public abstract class ProcedureVertex<
 
     public ProcedureVertex.Type asType() {
         throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(ProcedureVertex.Type.class));
+    }
+
+    public Value asValue() {
+        throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Value.class));
     }
 
     public int order() {
@@ -262,7 +273,7 @@ public abstract class ProcedureVertex<
                 if (iterate(vertices).anyMatch(v -> v.isAttribute() && v.asAttribute().valueType().equals(STRING))) {
                     return iterateSorted(filterPredicatesAndMapVertices(vertices, params, ThingVertex::asAttribute), order);
                 } else {
-                    return iterateSorted(filterPredicatesAndMapVertices(vertices, params, v -> v.asAttribute().toValue()), order);
+                    return iterateSorted(filterPredicatesAndMapVertices(vertices, params, v -> v.asAttribute().toValueSortable()), order);
                 }
             }
         }
@@ -286,7 +297,7 @@ public abstract class ProcedureVertex<
                 if (iterate(edges).anyMatch(kv -> kv.key().isAttribute() && kv.key().asAttribute().type().valueType().equals(STRING))) {
                     return iterateSorted(filterPredicatesAndMapEdges(edges, params, ThingVertex::asAttribute), order);
                 } else {
-                    return iterateSorted(filterPredicatesAndMapEdges(edges, params, v -> v.asAttribute().toValue()), order);
+                    return iterateSorted(filterPredicatesAndMapEdges(edges, params, v -> v.asAttribute().toValueSortable()), order);
                 }
             }
         }
@@ -323,11 +334,11 @@ public abstract class ProcedureVertex<
                     } else if (pair.first().isAttributeType()) {
                         return applyPredicatesOnVertices(graphMgr, params, pair.first(), pair.second())
                                 .mapSorted(
-                                        a -> a.asAttribute().toValue(),
+                                        a -> a.asAttribute().toValueSortable(),
                                         v -> {
-                                            assert v.isAttribute() && v.asAttribute().isValue() &&
+                                            assert v.isAttribute() && v.asAttribute().isValueSortable() &&
                                                     pair.first().valueType().comparables().contains(v.asAttribute().valueType());
-                                            return attributeVertexTarget(graphMgr, pair.first(), v.asAttribute().asValue(), order.isAscending());
+                                            return attributeVertexTarget(graphMgr, pair.first(), v.asAttribute().asValueSortable(), order.isAscending());
                                         },
                                         order
                                 );
@@ -519,9 +530,13 @@ public abstract class ProcedureVertex<
                         graphMgr.data(), new VertexIID.Thing.Attribute.Long(type.iid(), convertToLong(sourceEncoding, sourceValue, roundDown))
                 );
             } else if (type.valueType().equals(DOUBLE)) {
-                return ThingVertexImpl.Target.of(
-                        graphMgr.data(), new VertexIID.Thing.Attribute.Double(type.iid(), convertToDouble(sourceEncoding, sourceValue))
-                );
+                VertexIID.Attribute.Double iid;
+                try {
+                    iid = new VertexIID.Thing.Attribute.Double(type.iid(), convertToDouble(sourceEncoding, sourceValue));
+                } catch (TypeDBCheckedException e) {
+                    throw TypeDBException.of(e);
+                }
+                return ThingVertexImpl.Target.of(graphMgr.data(), iid);
             } else if (type.valueType().equals(STRING)) throw TypeDBException.of(UNSUPPORTED_OPERATION);
             else throw TypeDBException.of(ILLEGAL_STATE);
         }
@@ -641,6 +656,81 @@ public abstract class ProcedureVertex<
         @Override
         public ProcedureVertex.Type asType() {
             return this;
+        }
+    }
+
+    public static class Value extends ProcedureVertex<ValueVertex<?>, Properties.Value> {
+        Value(Identifier identifier) {
+            super(identifier);
+        }
+
+        @Override
+        protected Properties.Value newProperties() {
+            return new Properties.Value();
+        }
+
+        @Override
+        public <ORDER extends Order> Forwardable<? extends ValueVertex<?>, ORDER> iterator(
+                GraphManager graphMgr, Traversal.Parameters parameters, ORDER order, boolean forceValueSort
+        ) {
+            assert iterate(ins()).noneMatch(ProcedureEdge::isArgument);
+            return evaluateAndFilter(new HashMap<>(), parameters).map(v -> iterateSorted(order, v)).orElse(iterateSorted(order));
+        }
+
+        @Override
+        public boolean isValue() {
+            return true;
+        }
+
+        @Override
+        public Value asValue() {
+            return this;
+        }
+
+        public Optional<ValueVertex<?>> evaluateAndFilter(Map<ProcedureEdge<?, ?>, com.vaticle.typedb.core.graph.vertex.Value<?>> arguments, Traversal.Parameters parameters) {
+            Map<Identifier, com.vaticle.typedb.core.graph.vertex.Value<?>> args = new HashMap<>();
+            Map<ProcedureEdge.Predicate, com.vaticle.typedb.core.graph.vertex.Value<?>> variablePredicates = new HashMap<>();
+            arguments.forEach((edge, vertex) -> {
+                if (edge.isArgument()) args.put(edge.from().id(), vertex);
+                else if (edge.isPredicate()) variablePredicates.put(edge.asPredicate(), vertex);
+                else throw TypeDBException.of(ILLEGAL_STATE);
+            });
+
+            ValueVertexImpl<?> vertex;
+            try {
+                vertex = evaluateToVertex(props().expression(), args);
+            } catch (TypeDBException e) {
+                throw e;
+            } catch (RuntimeException e) {
+                throw evaluationError(args, e);
+            } catch (TypeDBCheckedException e) {
+                throw TypeDBException.of(e);
+            }
+
+            if (iterate(props().predicates()).allMatch(predicate -> checkPredicate(predicate, vertex, parameters.getValues(id().asVariable(), predicate))) &&
+                    iterate(variablePredicates.entrySet()).allMatch(entry -> checkPredicate(entry.getKey().predicate(), entry.getValue(), vertex))) {
+                return Optional.of(vertex);
+            } else return Optional.empty();
+        }
+
+        private <T> ValueVertexImpl<?> evaluateToVertex(
+                Expression<T> expression, Map<Identifier, com.vaticle.typedb.core.graph.vertex.Value<?>> args
+        ) throws TypeDBCheckedException {
+            return ValueVertexImpl.of(expression.returnType(), expression.evaluate(args));
+        }
+
+        private boolean checkPredicate(Predicate.Variable edgePredicate, com.vaticle.typedb.core.graph.vertex.Value<?> incomingVertexValue, com.vaticle.typedb.core.graph.vertex.Value<?> thisVertexValue) {
+            return edgePredicate.apply(incomingVertexValue, thisVertexValue);
+        }
+
+        private boolean checkPredicate(Predicate.Value<?, ?> predicate, com.vaticle.typedb.core.graph.vertex.Value<?> thisVertexValue, Set<Traversal.Parameters.Value<?>> predicateConstants) {
+            return iterate(predicateConstants).allMatch(predicateConstant -> predicate.apply(thisVertexValue, predicateConstant));
+        }
+
+        private TypeDBException evaluationError(Map<Identifier, com.vaticle.typedb.core.graph.vertex.Value<?>> arguments, Exception e) {
+            String argumentsString = arguments.isEmpty() ? "" :
+                    "{" + String.join(", ", iterate(arguments.keySet()).map(id -> id.toString() + " : " + arguments.get(id).value()).toList()) + "}";
+            throw TypeDBException.of(EVALUATION_ERROR, id(), props().expression().toString(), argumentsString, e);
         }
     }
 }

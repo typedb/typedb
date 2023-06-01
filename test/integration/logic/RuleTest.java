@@ -112,8 +112,8 @@ public class RuleTest {
                     assertEquals(2, people.size());
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), people.get(0)),
-                                                               pair(Identifier.Variable.name("y"), people.get(1))));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.namedConcept("x"), people.get(0)),
+                                                               pair(Identifier.Variable.namedConcept("y"), people.get(1))));
 
                     Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertTrue(materialisation.isPresent());
@@ -168,8 +168,8 @@ public class RuleTest {
                     assertEquals(2, people.size());
 
                     Rule rule = txn.logic().getRule("marriage-is-friendship");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), people.get(0)),
-                                                               pair(Identifier.Variable.name("y"), people.get(1))));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.namedConcept("x"), people.get(0)),
+                                                               pair(Identifier.Variable.namedConcept("y"), people.get(1))));
 
                     Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertFalse(materialisation.isPresent());
@@ -211,8 +211,8 @@ public class RuleTest {
                     Attribute.Long ageInDays10 = ageInDays.asLong().put(10L);
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), milkInst),
-                                                               pair(Identifier.Variable.name("a"), ageInDays10)));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.namedConcept("x"), milkInst),
+                                                               pair(Identifier.Variable.namedConcept("a"), ageInDays10)));
                     Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertTrue(materialisation.isPresent());
                     assertEquals(2, materialisation.get().size());
@@ -258,7 +258,7 @@ public class RuleTest {
                     milkInst.setHas(ageInDays.asLong().put(20L));
 
                     Rule rule = txn.logic().getRule("old-milk-is-not-good");
-                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.name("x"), milkInst)));
+                    ConceptMap whenAnswer = new ConceptMap(map(pair(Identifier.Variable.namedConcept("x"), milkInst)));
                     Optional<Map<Identifier.Variable, Concept>> materialisation = rule.conclusion().materialiseAndBind(whenAnswer, txn.traversal(), conceptMgr);
                     assertTrue(materialisation.isPresent());
                     assertEquals(3, materialisation.get().size());
@@ -317,7 +317,7 @@ public class RuleTest {
                             TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
-                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
+                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.namedConcept("a"));
                     assertEquals(set(Label.of("name")), nameAttr.inferredTypes());
 
                     Rule peopleHaveAge10 = logicMgr.putRule(
@@ -396,7 +396,7 @@ public class RuleTest {
                             TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
-                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
+                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.namedConcept("a"));
                     assertEquals(set(Label.of("name")), nameAttr.inferredTypes());
 
                     txn.commit();
@@ -459,7 +459,7 @@ public class RuleTest {
                             TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
-                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
+                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.namedConcept("a"));
                     assertEquals(set(Label.of("first-name")), nameAttr.inferredTypes());
 
                     txn.commit();
@@ -524,7 +524,7 @@ public class RuleTest {
                             TypeQL.parsePattern("{ $x isa person, has name $a; $y isa person; (spouse:$x, spouse: $y) isa marriage; }").asConjunction(),
                             TypeQL.parseVariable("$y has $a").asThing());
                     Conjunction sameName = marriageSameName.then();
-                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.name("a"));
+                    Variable nameAttr = getVariable(sameName.variables(), Identifier.Variable.namedConcept("a"));
                     assertEquals(set(Label.of("name")), nameAttr.inferredTypes());
 
                     txn.commit();
@@ -766,6 +766,36 @@ public class RuleTest {
                                                                  "  $x has is-starting-school true;" +
                                                                  "};").asDefine());
                     assertThrowsTypeDBException(txn::commit, CONTRADICTORY_RULE_CYCLE.code());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void rule_vars_in_conclusion_with_variable_isa_constraints_have_types_pruned_from_when() throws IOException {
+        Util.resetDirectory(dataDir);
+
+        try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
+            databaseMgr.create(database);
+            try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+
+                    txn.query().define(TypeQL.parseQuery("define " +
+                            "rel1 sub relation, relates some-role;" +
+                            "rel2 sub relation, relates some-role;" +
+                            "ent1 sub entity, plays rel1:some-role, plays rel2:some-role;" +
+                            "rule variabilised-relation: when {" +
+                            "  $x isa ent1;" +
+                            "  $reltype sub rel1;" +
+                            "} then {" +
+                            "  (some-role: $x) isa $reltype;" +
+                            "};").asDefine());
+                    txn.commit();
+                }
+                try (CoreTransaction txn = session.transaction(Arguments.Transaction.Type.WRITE)) {
+                    Set<Label> relationInferredTypes = txn.logic().getRule("variabilised-relation").conclusion()
+                            .asRelation().relation().owner().inferredTypes();
+                    assertEquals(set(Label.of("rel1")), relationInferredTypes);
                 }
             }
         }
