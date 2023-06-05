@@ -38,10 +38,13 @@ import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.PredicateConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
+import com.vaticle.typedb.core.pattern.constraint.value.AssignmentConstraint;
+import com.vaticle.typedb.core.pattern.constraint.value.ValueConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.planner.ConjunctionGraph.ConjunctionNode;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -377,6 +380,8 @@ public class AnswerCountEstimator {
                 } else if (asThingConstraint.isIs()) {
                     return localModelFactory.modelForIs(asThingConstraint.asIs(), correspondingConcludable);
                 } else throw TypeDBException.of(ILLEGAL_STATE);
+            } else if (constraint.isValue()) {
+                return new LocalModel(new HashSet<>(localModelFactory.variableModelsBasedOnType(new HashSet<>(constraint.asValue().variables()), null)), set());
             } else throw TypeDBException.of(UNSUPPORTED_OPERATION);
         }
 
@@ -387,7 +392,7 @@ public class AnswerCountEstimator {
         }
 
         private boolean isModellable(Constraint constraint) {
-            return constraint.isThing();
+            return constraint.isThing() || constraint.isValue();
         }
     }
 
@@ -600,8 +605,7 @@ public class AnswerCountEstimator {
                 return new LocalModel(set(new LocalModel.VariableEstimate(predicateConstraint.owner(), 1.0)), set());
             } else {
                 List<LocalModel.VariableEstimate> variableModels = variableModelsBasedOnType(predicateConstraint.variables(), correspondingConcludable);
-                if ( (predicateConstraint.predicate().isThingVar() || predicateConstraint.predicate().isValueVar())
-                        && predicateConstraint.predicate().predicate().isEquality()) {
+                if ( predicateConstraint.predicate().isThingVar() && predicateConstraint.predicate().predicate().equals(TypeQLToken.Predicate.Equality.EQ)) {
                     double betterEstimate = Math.min(variableModels.get(0).estimate, variableModels.get(1).estimate);
                     return new LocalModel(
                             set(
@@ -609,7 +613,7 @@ public class AnswerCountEstimator {
                                     new LocalModel.VariableEstimate(variableModels.get(1).variable, betterEstimate)
                             ),
                             set(
-                                    new LocalModel.EdgeEstimate(variableModels.get(0).variable, variableModels.get(1).variable, 1)
+                                    new LocalModel.EdgeEstimate(variableModels.get(0).variable, variableModels.get(1).variable, betterEstimate)
                             )
                     );
                 } else {
@@ -710,7 +714,6 @@ public class AnswerCountEstimator {
 
             return inferredEstimate;
         }
-
 
         private List<LocalModel.VariableEstimate> variableModelsBasedOnType(Set<Variable> variables, @Nullable Concludable correspondingConcludable) {
             List<LocalModel.VariableEstimate> variableModels = new ArrayList<>();
