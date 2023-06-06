@@ -164,7 +164,7 @@ public class RecursivePlannerTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{ $p has name $n; (friendor: $p, friendee: $f) isa friendship; }", transaction.logic()));
             planner.planRoot(conjunction);
             ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
-            assertEquals(36.0, plan.allCallsCost());
+            assertEquals(24.0, plan.allCallsCost());
         }
     }
 
@@ -192,7 +192,7 @@ public class RecursivePlannerTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{(friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planner.planRoot(conjunction);
             ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
-            assertEquals(120.0, plan.allCallsCost());
+            assertEquals(98.0, plan.allCallsCost());
         }
     }
 
@@ -214,7 +214,7 @@ public class RecursivePlannerTest {
             planner.planRoot(conjunction);
 
             ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
-            assertEquals(1377.0, plan.allCallsCost());
+            assertEquals(429.0, plan.allCallsCost());
         }
     }
 
@@ -278,11 +278,11 @@ public class RecursivePlannerTest {
                 "person plays transitive-friendship:friendor, plays transitive-friendship:friendee;" +
 
                 "rule friendship-is-transitive-1: " +
-                "when { (friendor: $f1, friendee: $f2) isa friendship; } " +
+                "when { (friendor: $f1, friendee: $f2) isa friendship; } " + // 3
                 "then { (friendor: $f1, friendee: $f2) isa transitive-friendship; };" +
 
                 "rule friendship-is-transitive-2: " +
-                "when { (friendor: $f1, friendee: $f2) isa friendship; (friendor: $f2, friendee: $f3) isa transitive-friendship;  } " +
+                "when { (friendor: $f1, friendee: $f2) isa friendship; (friendor: $f2, friendee: $f3) isa transitive-friendship;  } " + // 3 + 3/6 * 36 = 21
                 "then { (friendor: $f1, friendee: $f3) isa transitive-friendship; };" +
                 ""));
         transaction.commit();
@@ -294,14 +294,14 @@ public class RecursivePlannerTest {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$x has name \"Jim\"; (friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planner.planRoot(conjunction);
             ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
-            assertEquals(46.0, plan.allCallsCost());
+            assertEquals(32.0, plan.allCallsCost());
         }
 
         {
             ResolvableConjunction conjunction = ResolvableConjunction.of(resolvedConjunction("{$y has name \"Jim\"; (friendor: $x, friendee: $y) isa transitive-friendship; }", transaction.logic()));
             planner.planRoot(conjunction);
             ReasonerPlanner.Plan plan = planner.getPlan(conjunction, set());
-            assertEquals(27.0, plan.allCallsCost());
+            assertEquals(22.0, plan.allCallsCost());
         }
     }
 
