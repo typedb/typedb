@@ -78,7 +78,9 @@ public abstract class ReasonerPlanner {
     }
 
     public void planRoot(ResolvableConjunction conjunction) {
+        long start = System.nanoTime();
         plan(new CallMode(conjunction, new HashSet<>()));
+        perfCounters.timePlanning.add(System.nanoTime() - start);
     }
 
     public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> mode) {
