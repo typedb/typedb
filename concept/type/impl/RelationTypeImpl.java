@@ -30,7 +30,6 @@ import com.vaticle.typedb.core.concept.thing.impl.RelationImpl;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
@@ -55,6 +54,7 @@ import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.RELATES;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.RELATION_TYPE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.RELATION;
@@ -85,7 +85,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void setLabel(String label) {
         vertex.label(label);
-        vertex.outs().edge(Encoding.Edge.Type.RELATES).to().forEachRemaining(v -> v.scope(label));
+        vertex.outs().edge(RELATES).to().forEachRemaining(v -> v.scope(label));
     }
 
     @Override
@@ -155,13 +155,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
             if (roleTypeVertex == null) {
                 roleType = RoleTypeImpl.of(conceptMgr, roleLabel, vertex.label());
                 if (this.isAbstract()) roleType.setAbstract();
-                vertex.outs().put(Encoding.Edge.Type.RELATES, roleType.vertex);
+                vertex.outs().put(RELATES, roleType.vertex);
             } else {
                 roleType = (RoleTypeImpl) conceptMgr.convertRoleType(roleTypeVertex);
                 roleType.setSupertype(conceptMgr.convertRoleType(graphMgr().schema().rootRoleType()));
             }
             assert roleType.getSupertype() != null;
-            vertex.outs().edge(Encoding.Edge.Type.RELATES, roleType.vertex).setOverridden(((RoleTypeImpl) roleType.getSupertype()).vertex);
+            vertex.outs().edge(RELATES, roleType.vertex).setOverridden(((RoleTypeImpl) roleType.getSupertype()).vertex);
         }
     }
 
@@ -182,7 +182,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
 
         roleType.setSupertype(inherited.get());
-        vertex.outs().edge(Encoding.Edge.Type.RELATES, roleType.vertex).setOverridden(inherited.get().vertex);
+        vertex.outs().edge(RELATES, roleType.vertex).setOverridden(inherited.get().vertex);
     }
 
     @Override
@@ -202,7 +202,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     Forwardable<TypeVertex, Order.Asc> getRelatesVertices(Transitivity transitivity) {
-        if (transitivity == EXPLICIT) return vertex.outs().edge(Encoding.Edge.Type.RELATES).to();
+        if (transitivity == EXPLICIT) return vertex.outs().edge(RELATES).to();
         else return iterateSorted(graphMgr().schema().relatedRoleTypes(vertex), ASC);
     }
 
@@ -210,7 +210,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     public RoleType getRelatesOverridden(String roleLabel) {
         TypeVertex roleVertex = graphMgr().schema().getType(roleLabel, vertex.label());
         if (roleVertex != null) {
-            TypeEdge relatesEdge = vertex.outs().edge(Encoding.Edge.Type.RELATES, roleVertex);
+            TypeEdge relatesEdge = vertex.outs().edge(RELATES, roleVertex);
             if (relatesEdge != null &&
                     relatesEdge.overridden().isPresent() &&
                     !relatesEdge.overridden().get().equals(graphMgr().schema().rootRoleType()))
@@ -220,12 +220,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     FunctionalIterator<RoleTypeImpl> overriddenRoles() {
-        return vertex.outs().edge(Encoding.Edge.Type.RELATES).overridden().filter(Objects::nonNull)
+        return vertex.outs().edge(RELATES).overridden().filter(Objects::nonNull)
                 .map(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v));
     }
 
     private FunctionalIterator<RoleTypeImpl> declaredRoles() {
-        return vertex.outs().edge(Encoding.Edge.Type.RELATES).to().map(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v));
+        return vertex.outs().edge(RELATES).to().map(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v));
     }
 
     @Override
