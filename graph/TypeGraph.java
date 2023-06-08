@@ -298,6 +298,17 @@ public class TypeGraph {
         return iterateSorted(getSubtypes(rootRoleType()), order);
     }
 
+    public NavigableSet<TypeVertex> ownedAttributeTypes(TypeVertex owner, Set<Annotation> annotations) {
+        if (isReadOnly) {
+            if (annotations.contains(Annotation.KEY)) {
+                return cache.ownedKeyAttributeTypes.computeIfAbsent(owner, o -> fetchOwnedAttributeTypes(owner, annotations));
+            } else {
+                return cache.ownedAttributeTypes.computeIfAbsent(owner, o -> fetchOwnedAttributeTypes(owner, annotations));
+            }
+        }
+        else return fetchOwnedAttributeTypes(owner, annotations);
+    }
+
     private NavigableSet<TypeVertex> fetchOwnedAttributeTypes(TypeVertex owner, Set<Annotation> annotations) {
         Set<TypeVertex> overriddens = new HashSet<>();
         NavigableSet<TypeVertex> ownedAttributeTypes = new TreeSet<>();
@@ -305,8 +316,8 @@ public class TypeGraph {
                 .flatMap(sub -> {
                     FunctionalIterator<KeyValue<TypeVertex, TypeVertex>> ownsAndOverridden =
                             (annotations.contains(Annotation.KEY)) ?
-                                sub.outs().edge(OWNS_KEY).toAndOverridden() :
-                                sub.outs().edge(OWNS).toAndOverridden().link(sub.outs().edge(OWNS_KEY).toAndOverridden());
+                                    sub.outs().edge(OWNS_KEY).toAndOverridden() :
+                                    sub.outs().edge(OWNS).toAndOverridden().link(sub.outs().edge(OWNS_KEY).toAndOverridden());
                     return ownsAndOverridden.map(e -> {
                         if (e.value() != null) overriddens.add(e.value());
                         if (sub.equals(owner) || !overriddens.contains(e.key())) return e.key();
@@ -316,37 +327,28 @@ public class TypeGraph {
         return ownedAttributeTypes;
     }
 
-    public NavigableSet<TypeVertex> ownedAttributeTypes(TypeVertex owner, Set<Annotation> annotations) {
-        if (isReadOnly) {
-            if (annotations.contains(Annotation.KEY))
-                return cache.ownedKeyAttributeTypes.computeIfAbsent(owner, o -> fetchOwnedAttributeTypes(owner, annotations));
-            else
-                return cache.ownedAttributeTypes.computeIfAbsent(owner, o -> fetchOwnedAttributeTypes(owner, annotations));
-        }
-        else return fetchOwnedAttributeTypes(owner, annotations);
-    }
-
     private FunctionalIterator<TypeVertex> overriddenOwns(TypeVertex owner, Set<Annotation> annotations) {
         FunctionalIterator<TypeVertex> overridden = owner.outs().edge(OWNS_KEY).overridden().noNulls();
         if (!annotations.contains(Annotation.KEY)) overridden = overridden.link(owner.outs().edge(OWNS).overridden().noNulls());
         return overridden;
     }
 
+    public NavigableSet<TypeVertex> ownersOfAttributeType(TypeVertex attType, Set<Annotation> annotations) {
+        if (isReadOnly) {
+            if (annotations.contains(Annotation.KEY)) {
+                return cache.ownersOfKeyAttributeTypes.computeIfAbsent(attType, o -> fetchOwnersOfAttributeType(attType, annotations));
+            } else {
+                return cache.ownersOfAttributeTypes.computeIfAbsent(attType, o -> fetchOwnersOfAttributeType(attType, annotations));
+            }
+        } else return fetchOwnersOfAttributeType(attType, annotations);
+    }
+
     private NavigableSet<TypeVertex> fetchOwnersOfAttributeType(TypeVertex attType, Set<Annotation> annotations) {
-        Forwardable<TypeVertex, Order.Asc> owners = attType.ins().edge(OWNS_KEY).from();
+        Forwardable<TypeVertex, Order.Asc>owners = attType.ins().edge(OWNS_KEY).from();
         if (!annotations.contains(Annotation.KEY)) owners = owners.merge(attType.ins().edge(OWNS).from());
         return owners.flatMap(owner -> tree(owner, o -> o.ins().edge(SUB).from().filter(s ->
                 overriddenOwns(s, annotations).noneMatch(ov -> ov.equals(attType))
         ))).collect(TreeSet::new);
-    }
-
-    public NavigableSet<TypeVertex> ownersOfAttributeType(TypeVertex attType, Set<Annotation> annotations) {
-        if (isReadOnly) {
-            if (annotations.contains(Annotation.KEY))
-                return cache.ownersOfKeyAttributeTypes.computeIfAbsent(attType, o -> fetchOwnersOfAttributeType(attType, annotations));
-            else
-                return cache.ownersOfAttributeTypes.computeIfAbsent(attType, o -> fetchOwnersOfAttributeType(attType, annotations));
-        } else return fetchOwnersOfAttributeType(attType, annotations);
     }
 
     public NavigableSet<TypeVertex> playedRoleTypes(TypeVertex player) {

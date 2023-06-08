@@ -281,11 +281,10 @@ public class TypeService {
         FunctionalIterator<AttributeType> attributes;
         Set<Annotation> annotations = getAnnotations(getOwnsReq.getAnnotationsList());
         Transitivity transitivity = getTransitivity(getOwnsReq.getTransitivity());
-        if (getOwnsReq.hasValueType())
+        if (getOwnsReq.hasValueType()) {
             attributes = getThingType(thingTypeReq).getOwns(transitivity, valueType(getOwnsReq.getValueType()), annotations)
                     .map(ThingType.Owns::attributeType);
-        else
-            attributes = getThingType(thingTypeReq).getOwns(transitivity, annotations).map(ThingType.Owns::attributeType);
+        } else attributes = getThingType(thingTypeReq).getOwns(transitivity, annotations).map(ThingType.Owns::attributeType);
         transactionSvc.stream(attributes, reqID, attributeTypes -> ResponseBuilder.Type.ThingType.getOwnsResPart(reqID, attributeTypes));
     }
 
@@ -303,9 +302,7 @@ public class TypeService {
         if (setOwnsReq.hasOverriddenType()) {
             AttributeType overriddenType = getAttributeType(setOwnsReq.getOverriddenType());
             getThingType(thingTypeReq).setOwns(attributeType, overriddenType, annotations);
-        } else {
-            getThingType(thingTypeReq).setOwns(attributeType, annotations);
-        }
+        } else getThingType(thingTypeReq).setOwns(attributeType, annotations);
         transactionSvc.respond(ResponseBuilder.Type.ThingType.setOwnsRes(reqID));
     }
 

@@ -238,8 +238,10 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     <THING extends ThingImpl> Forwardable<THING, Order.Asc> instances(Transitivity transitivity, Function<ThingVertex, THING> thingConstructor) {
         Forwardable<ThingVertex, Order.Asc> instances;
         if (transitivity == EXPLICIT) instances = graphMgr().data().getReadable(vertex, ASC);
-        else instances = getSubtypes().filter(t -> !t.isAbstract())
+        else {
+            instances = getSubtypes().filter(t -> !t.isAbstract())
                 .mergeMapForwardable(t -> graphMgr().data().getReadable(t.vertex, ASC), ASC);
+        }
         return instances.mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
     }
 
@@ -576,9 +578,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
         @Override
         public Forwardable<ThingImpl, Order.Asc> getInstances(Transitivity transitivity) {
-            if (transitivity == EXPLICIT)
-                return emptySorted();
-            else
+            if (transitivity == EXPLICIT) return emptySorted();
+            else {
                 return instances(v -> {
                     switch (v.encoding()) {
                         case ENTITY:
@@ -592,6 +593,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
                             throw exception(TypeDBException.of(UNRECOGNISED_VALUE));
                     }
                 });
+            }
         }
 
         @Override
