@@ -47,7 +47,7 @@ public class RootDisjunctionController
 
     @Override
     public void initialise() {
-        disjunction.conjunctions().forEach(conjunction -> planner().planRoot(conjunction));
+        planner().planRoot(disjunction);
         setUpUpstreamControllers();
         getOrCreateProcessor(new ConceptMap());
     }

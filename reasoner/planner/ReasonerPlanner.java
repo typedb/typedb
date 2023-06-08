@@ -25,6 +25,7 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
@@ -80,6 +81,12 @@ public abstract class ReasonerPlanner {
     public void planRoot(ResolvableConjunction conjunction) {
         long start = System.nanoTime();
         plan(new CallMode(conjunction, new HashSet<>()));
+        perfCounters.timePlanning.add(System.nanoTime() - start);
+    }
+
+    public void planRoot(ResolvableDisjunction disjunction) {
+        long start = System.nanoTime();
+        disjunction.conjunctions().forEach(conjunction -> plan(new CallMode(conjunction, new HashSet<>())));
         perfCounters.timePlanning.add(System.nanoTime() - start);
     }
 
