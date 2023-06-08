@@ -34,6 +34,7 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
+import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -169,14 +170,14 @@ public class AttributeTypeSteps {
     @Then("attribute\\( ?{type_label} ?) get owners contain:")
     public void attribute_type_get_owners_as_attribute_contain(String typeLabel, List<String> ownerLabels) {
         AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
-        Set<String> actuals = attributeType.getOwners(set()).map(ThingType::getLabel).map(Label::toString).toSet();
+        Set<String> actuals = attributeType.getOwners(emptySet()).map(ThingType::getLabel).map(Label::toString).toSet();
         assertTrue(actuals.containsAll(ownerLabels));
     }
 
     @Then("attribute\\( ?{type_label} ?) get owners do not contain:")
     public void attribute_type_get_owners_as_attribute_do_not_contain(String typeLabel, List<String> ownerLabels) {
         AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
-        Set<String> actuals = attributeType.getOwners(set()).map(ThingType::getLabel).map(Label::toString).toSet();
+        Set<String> actuals = attributeType.getOwners(emptySet()).map(ThingType::getLabel).map(Label::toString).toSet();
         for (String ownerLabel : ownerLabels) {
             assertFalse(actuals.contains(ownerLabel));
         }
@@ -185,14 +186,14 @@ public class AttributeTypeSteps {
     @Then("attribute\\( ?{type_label} ?) get owners explicit contain:")
     public void attribute_type_get_owners_explicit_as_attribute_contain(String typeLabel, List<String> ownerLabels) {
         AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
-        Set<String> actuals = attributeType.getOwners(EXPLICIT, set()).map(ThingType::getLabel).map(Label::toString).toSet();
+        Set<String> actuals = attributeType.getOwners(EXPLICIT, emptySet()).map(ThingType::getLabel).map(Label::toString).toSet();
         assertTrue(actuals.containsAll(ownerLabels));
     }
 
     @Then("attribute\\( ?{type_label} ?) get owners explicit do not contain:")
     public void attribute_type_get_owners_explicit_as_attribute_do_not_contain(String typeLabel, List<String> ownerLabels) {
         AttributeType attributeType = tx().concepts().getAttributeType(typeLabel);
-        Set<String> actuals = attributeType.getOwners(EXPLICIT, set()).map(ThingType::getLabel).map(Label::toString).toSet();
+        Set<String> actuals = attributeType.getOwners(EXPLICIT, emptySet()).map(ThingType::getLabel).map(Label::toString).toSet();
         for (String ownerLabel : ownerLabels) {
             assertFalse(actuals.contains(ownerLabel));
         }
