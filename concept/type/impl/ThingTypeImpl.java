@@ -104,17 +104,32 @@ import static java.util.Comparator.comparing;
 
 public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
 
-    private final EnumMap<Transitivity, NavigableSet<Owns>> cache;
+    private final Cache cache;
+
+    private static class Cache {
+        private NavigableSet<Owns> owns = null;
+        private NavigableSet<Owns> ownsExplicit = null;
+
+        NavigableSet<Owns> get(Transitivity transitivity) {
+            if (transitivity == EXPLICIT) return ownsExplicit;
+            else return owns;
+        }
+
+        void put(Transitivity transitivity, NavigableSet<Owns> value) {
+            if (transitivity == EXPLICIT) ownsExplicit = value;
+            else owns = value;
+        }
+    }
 
     ThingTypeImpl(ConceptManager conceptMgr, TypeVertex vertex) {
         super(conceptMgr, vertex);
-        if (graphMgr().schema().isReadOnly()) cache = new EnumMap<>(Transitivity.class);
+        if (graphMgr().schema().isReadOnly()) cache = new Cache();
         else cache = null;
     }
 
     ThingTypeImpl(ConceptManager conceptMgr, String label, Encoding.Vertex.Type encoding) {
         super(conceptMgr, label, encoding);
-        if (graphMgr().schema().isReadOnly()) this.cache = new EnumMap<>(Transitivity.class);
+        if (graphMgr().schema().isReadOnly()) this.cache = new Cache();
         else cache = null;
     }
 
