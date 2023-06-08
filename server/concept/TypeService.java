@@ -536,7 +536,6 @@ public class TypeService {
     private void attributeTypeGetSubtypes(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         AttributeType attributeType = getAttributeType(thingTypeReq);
         switch (thingTypeReq.getAttributeTypeGetSubtypesReq().getValueType()) {
-            // FIXME barf
             case BOOLEAN: attributeType = attributeType.asBoolean(); break;
             case DATETIME: attributeType = attributeType.asDateTime(); break;
             case DOUBLE: attributeType = attributeType.asDouble(); break;
