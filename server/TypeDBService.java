@@ -18,6 +18,7 @@
 package com.vaticle.typedb.core.server;
 
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -28,6 +29,8 @@ import com.vaticle.typedb.protocol.ServerProto.ServerManager;
 import com.vaticle.typedb.protocol.SessionProto;
 import com.vaticle.typedb.protocol.TransactionProto;
 import com.vaticle.typedb.protocol.TypeDBGrpc;
+import com.vaticle.typedb.protocol.UserProto.User;
+import com.vaticle.typedb.protocol.UserProto.UserManager;
 import io.grpc.stub.StreamObserver;
 
 import java.net.InetSocketAddress;
@@ -43,6 +46,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DAT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.USER_MANAGEMENT_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
@@ -83,6 +87,62 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             LOG.error(e.getMessage(), e);
             responder.onError(exception(e));
         }
+    }
+
+    @Override
+    public void usersContains(UserManager.Contains.Req request, StreamObserver<UserManager.Contains.Res> responder) {
+        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(error_message.message());
+        responder.onError(TypeDBException.of(error_message));
+    }
+
+    @Override
+    public void usersCreate(UserManager.Create.Req request, StreamObserver<UserManager.Create.Res> responder) {
+        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(error_message.message());
+        responder.onError(TypeDBException.of(error_message));
+    }
+
+    @Override
+    public void usersDelete(UserManager.Delete.Req request, StreamObserver<UserManager.Delete.Res> responder) {
+        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(error_message.message());
+        responder.onError(TypeDBException.of(error_message));
+    }
+
+    @Override
+    public void usersAll(UserManager.All.Req request, StreamObserver<UserManager.All.Res> responder) {
+        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(error_message.message());
+        responder.onError(TypeDBException.of(error_message));
+    }
+
+    @Override
+    public void usersPasswordSet(UserManager.PasswordSet.Req request, StreamObserver<UserManager.PasswordSet.Res> responder) {
+        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(error_message.message());
+        responder.onError(TypeDBException.of(error_message));
+    }
+
+    @Override
+    public void usersGet(UserManager.Get.Req request, StreamObserver<UserManager.Get.Res> responder) {
+        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(error_message.message());
+        responder.onError(TypeDBException.of(error_message));
+    }
+
+    @Override
+    public void userPasswordUpdate(User.PasswordUpdate.Req request, StreamObserver<User.PasswordUpdate.Res> responder) {
+        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(error_message.message());
+        responder.onError(TypeDBException.of(error_message));
+    }
+
+    @Override
+    public void userToken(User.Token.Req request, StreamObserver<User.Token.Res> responder) {
+        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(error_message.message());
+        responder.onError(TypeDBException.of(error_message));
     }
 
     @Override
