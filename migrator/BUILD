@@ -73,13 +73,13 @@ native_java_libraries(
         "@maven//:org_slf4j_slf4j_api",
     ],
     mac_deps = [
-        "@maven//:org_rocksdb_rocksdbjni_dev_mac"
+        "@maven//:io_github_speedb_io_speedbjni_2_4_1"
     ],
     linux_deps = [
-        "@maven//:org_rocksdb_rocksdbjni",
+        "@maven//:io_github_speedb_io_speedbjni_2_4_1",
     ],
     windows_deps = [
-        "@maven//:org_rocksdb_rocksdbjni",
+        "@maven//:io_github_speedb_io_speedbjni_2_4_1",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-migrator:{pom_version}"],
     visibility = ["//visibility:public"],

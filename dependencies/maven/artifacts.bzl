@@ -33,14 +33,13 @@ artifacts = [
     "com.eclipsesource.minimal-json:minimal-json",
     "io.cucumber:cucumber-java",
     "io.cucumber:cucumber-junit",
+    "io.github.speedb-io:speedbjni",
     "io.grpc:grpc-api",
     "io.grpc:grpc-netty",
     "io.grpc:grpc-stub",
     "io.netty:netty-all",
     "io.netty:netty-transport",
     "junit:junit",
-    "org.rocksdb:rocksdbjni",
-    "org.rocksdb:rocksdbjni-dev-mac",
     "org.slf4j:slf4j-api",
     "org.zeroturnaround:zt-exec"
 ]

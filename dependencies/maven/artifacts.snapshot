@@ -35,6 +35,7 @@
 @maven//:io_cucumber_datatable_3_2_1
 @maven//:io_cucumber_docstring_5_1_3
 @maven//:io_cucumber_tag_expressions_2_0_4
+@maven//:io_github_speedb_io_speedbjni_2_4_1
 @maven//:io_grpc_grpc_api_1_43_0
 @maven//:io_grpc_grpc_context_1_43_0
 @maven//:io_grpc_grpc_core_1_43_0
@@ -100,8 +101,6 @@
 @maven//:org_jetbrains_compose_compiler_compiler_1_3_2
 @maven//:org_mockito_mockito_core_2_6_4
 @maven//:org_objenesis_objenesis_2_5
-@maven//:org_rocksdb_rocksdbjni_6_20_3
-@maven//:org_rocksdb_rocksdbjni_dev_mac_6_20_3
 @maven//:org_slf4j_slf4j_api_1_7_32
 @maven//:org_yaml_snakeyaml_1_25
 @maven//:org_zeroturnaround_zt_exec_1_10

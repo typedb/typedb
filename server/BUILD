@@ -127,6 +127,7 @@ java_binary(
     data = [":prepare-server-directories"]
 )
 
+
 java_deps(
     name = "server-deps-mac",
     target = ":server-bin-mac",
@@ -260,4 +261,3 @@ checkstyle_test(
     include = glob(["*", "*/*", "*/*/*"]),
     license_type = "agpl-header",
 )
-
