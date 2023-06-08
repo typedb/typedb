@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Concept.Existence;
-import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptImpl;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
@@ -37,7 +36,7 @@ import com.vaticle.typedb.core.encoding.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -159,13 +158,13 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public FunctionalIterator<AttributeImpl<?>> getHas(List<AttributeType> attributeTypes, Set<TypeQLToken.Annotation> ownsAnnotations) {
+    public FunctionalIterator<AttributeImpl<?>> getHas(List<AttributeType> attributeTypes, Set<Annotation> ownsAnnotations) {
         return getHas(getType().getOwns(ownsAnnotations).stream().map(ThingType.Owns::attributeType)
                 .filter(attributeTypes::contains).toArray(AttributeType[]::new));
     }
 
     @Override
-    public FunctionalIterator<AttributeImpl<?>> getHas(Set<TypeQLToken.Annotation> ownsAnnotations) {
+    public FunctionalIterator<AttributeImpl<?>> getHas(Set<Annotation> ownsAnnotations) {
         return getHas(getType().getOwns(ownsAnnotations).stream().map(ThingType.Owns::attributeType).toArray(AttributeType[]::new));
     }
 
@@ -266,7 +265,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public void validate() {
-        Set<TypeQLToken.Annotation> keyAnnotation = set(KEY);
+        Set<Annotation> keyAnnotation = set(KEY);
         long requiredKeys = getType().getOwns(keyAnnotation).count();
         if (requiredKeys > 0 && getHas(keyAnnotation).map(Attribute::getType).count() < requiredKeys) {
             Set<AttributeType> missing = getType().getOwns(keyAnnotation).map(ThingType.Owns::attributeType).toSet();

@@ -17,7 +17,6 @@
 
 package com.vaticle.typedb.core.server.concept;
 
-import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
@@ -33,7 +32,7 @@ import com.vaticle.typedb.core.server.TransactionService;
 import com.vaticle.typedb.core.server.common.ResponseBuilder;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.TransactionProto.Transaction;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.time.LocalDateTime;
 import java.util.EnumMap;
@@ -44,7 +43,6 @@ import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.MISSING_CONCEPT;
@@ -281,7 +279,7 @@ public class TypeService {
     private void thingTypeGetOwns(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.ThingType.GetOwns.Req getOwnsReq = thingTypeReq.getThingTypeGetOwnsReq();
         FunctionalIterator<AttributeType> attributes;
-        Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnsReq.getAnnotationsList());
+        Set<Annotation> annotations = getAnnotations(getOwnsReq.getAnnotationsList());
         Transitivity transitivity = getTransitivity(getOwnsReq.getTransitivity());
         if (getOwnsReq.hasValueType())
             attributes = getThingType(thingTypeReq).getOwns(transitivity, valueType(getOwnsReq.getValueType()), annotations)
@@ -300,7 +298,7 @@ public class TypeService {
     private void thingTypeSetOwns(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.ThingType.SetOwns.Req setOwnsReq = thingTypeReq.getThingTypeSetOwnsReq();
         AttributeType attributeType = getAttributeType(setOwnsReq.getAttributeType());
-        Set<TypeQLToken.Annotation> annotations = getAnnotations(setOwnsReq.getAnnotationsList());
+        Set<Annotation> annotations = getAnnotations(setOwnsReq.getAnnotationsList());
 
         if (setOwnsReq.hasOverriddenType()) {
             AttributeType overriddenType = getAttributeType(setOwnsReq.getOverriddenType());
@@ -574,7 +572,7 @@ public class TypeService {
 
     private void attributeTypeGetOwners(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.AttributeType.GetOwners.Req getOwnersReq = thingTypeReq.getAttributeTypeGetOwnersReq();
-        Set<TypeQLToken.Annotation> annotations = getAnnotations(getOwnersReq.getAnnotationsList());
+        Set<Annotation> annotations = getAnnotations(getOwnersReq.getAnnotationsList());
         Transitivity transitivity = getTransitivity(getOwnersReq.getTransitivity());
         transactionSvc.stream(
                 getAttributeType(thingTypeReq).getOwners(transitivity, annotations), reqID,
@@ -639,12 +637,12 @@ public class TypeService {
         }
     }
 
-    private Set<TypeQLToken.Annotation> getAnnotations(List<ConceptProto.Type.Annotation> protoAnnotations) {
+    private Set<Annotation> getAnnotations(List<ConceptProto.Type.Annotation> protoAnnotations) {
         return iterate(protoAnnotations).map(
                 annotation -> {
                     switch (annotation.getAnnotationCase()) {
-                        case KEY: return TypeQLToken.Annotation.KEY;
-                        case UNIQUE: return TypeQLToken.Annotation.UNIQUE;
+                        case KEY: return Annotation.KEY;
+                        case UNIQUE: return Annotation.UNIQUE;
                         case ANNOTATION_NOT_SET:
                         default: throw TypeDBException.of(ILLEGAL_ARGUMENT);
                     }

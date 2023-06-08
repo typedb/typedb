@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.test.behaviour.config.Parameters;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 
@@ -226,7 +226,7 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) set owns attribute type: {type_label}, with annotations: {annotations}; throws exception")
     public void thing_type_set_owns_attribute_type_with_annotations_throws_exception(
-            RootLabel rootLabel, String typeLabel, String attributeLabel, List<TypeQLToken.Annotation> annotations
+            RootLabel rootLabel, String typeLabel, String attributeLabel, List<Annotation> annotations
     ) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         assertThrows(() -> get_thing_type(rootLabel, typeLabel).setOwns(attributeType, set(annotations)));
@@ -234,7 +234,7 @@ public class ThingTypeSteps {
 
     @When("{root_label}\\( ?{type_label} ?) set owns attribute type: {type_label}, with annotations: {annotations}")
     public void thing_type_set_owns_attribute_type_with_annotations(
-            RootLabel rootLabel, String typeLabel, String attTypeLabel, List<TypeQLToken.Annotation> annotations
+            RootLabel rootLabel, String typeLabel, String attTypeLabel, List<Annotation> annotations
     ) {
         AttributeType attributeType = tx().concepts().getAttributeType(attTypeLabel);
         get_thing_type(rootLabel, typeLabel).setOwns(attributeType, set(annotations));
@@ -242,7 +242,7 @@ public class ThingTypeSteps {
 
     @When("{root_label}\\( ?{type_label} ?) set owns attribute type: {type_label} as {type_label}, with annotations: {annotations}")
     public void thing_type_set_owns_attribute_type_as_with_annotations(
-            RootLabel rootLabel, String typeLabel, String attTypeLabel, String overriddenLabel, List<TypeQLToken.Annotation> annotations
+            RootLabel rootLabel, String typeLabel, String attTypeLabel, String overriddenLabel, List<Annotation> annotations
     ) {
         AttributeType attributeType = tx().concepts().getAttributeType(attTypeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
@@ -251,7 +251,7 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) set owns attribute type: {type_label} as {type_label}, with annotations: {annotations}; throws exception")
     public void thing_type_set_owns_attribute_type_as_with_annotations_throws_exception(
-            RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel, List<TypeQLToken.Annotation> annotations
+            RootLabel rootLabel, String typeLabel, String attributeLabel, String overriddenLabel, List<Annotation> annotations
     ) {
         AttributeType attributeType = tx().concepts().getAttributeType(attributeLabel);
         AttributeType overriddenType = tx().concepts().getAttributeType(overriddenLabel);
@@ -260,7 +260,7 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) get owns attribute types, with annotations: {annotations}; contain:")
     public void thing_type_get_owns_attribute_types_with_annotations_contain(
-            RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
+            RootLabel rootLabel, String typeLabel, List<Annotation> annotations, List<String> attributeLabels
     ) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns(set(annotations)).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
         assertTrue(actuals.containsAll(attributeLabels));
@@ -268,7 +268,7 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) get owns attribute types, with annotations: {annotations}; do not contain:")
     public void thing_type_get_owns_attribute_types_with_annotations_do_not_contain(
-            RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
+            RootLabel rootLabel, String typeLabel, List<Annotation> annotations, List<String> attributeLabels
     ) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns(set(annotations)).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
         for (String attributeLabel : attributeLabels) {
@@ -278,7 +278,7 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) get owns explicit attribute types, with annotations: {annotations}; contain:")
     public void thing_type_get_owns_explicit_types_with_annotations_contain(
-            RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
+            RootLabel rootLabel, String typeLabel, List<Annotation> annotations, List<String> attributeLabels
     ) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns(EXPLICIT, set(annotations)).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
         assertTrue(actuals.containsAll(attributeLabels));
@@ -286,7 +286,7 @@ public class ThingTypeSteps {
 
     @Then("{root_label}\\( ?{type_label} ?) get owns explicit attribute types, with annotations: {annotations}; do not contain:")
     public void thing_type_get_owns_explicit_attribute_types_with_annotations_do_not_contain(
-            RootLabel rootLabel, String typeLabel, List<TypeQLToken.Annotation> annotations, List<String> attributeLabels
+            RootLabel rootLabel, String typeLabel, List<Annotation> annotations, List<String> attributeLabels
     ) {
         Set<String> actuals = get_thing_type(rootLabel, typeLabel).getOwns(EXPLICIT, set(annotations)).map(owns -> owns.attributeType().getLabel()).map(Label::toString).toSet();
         for (String attributeLabel : attributeLabels) {

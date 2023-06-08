@@ -43,6 +43,7 @@ import com.vaticle.typedb.core.traversal.predicate.Predicate.Value;
 import com.vaticle.typedb.core.traversal.scanner.GraphIterator;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -540,9 +541,9 @@ public abstract class ProcedureEdge<
 
             static abstract class Owns extends Type {
 
-                final Set<TypeQLToken.Annotation> annotations;
+                final Set<Annotation> annotations;
 
-                private Owns(ProcedureVertex.Type from, ProcedureVertex.Type to, Encoding.Direction.Edge direction, Set<TypeQLToken.Annotation> annotations) {
+                private Owns(ProcedureVertex.Type from, ProcedureVertex.Type to, Encoding.Direction.Edge direction, Set<Annotation> annotations) {
                     super(from, to, direction, OWNS);
                     this.annotations = annotations;
                 }
@@ -559,7 +560,7 @@ public abstract class ProcedureEdge<
 
                 static class Forward extends Owns {
 
-                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, Set<TypeQLToken.Annotation> annotations) {
+                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, Set<Annotation> annotations) {
                         super(from, to, FORWARD, annotations);
                     }
 
@@ -593,7 +594,7 @@ public abstract class ProcedureEdge<
                         Forwardable<TypeVertex, Order.Asc> owned = iterateSorted(ownedAttributeTypes(graphMgr, fromVertex.asType()), ASC);
                         if ((annotations.contains(KEY) && annotations.size() > 1) || !annotations.isEmpty()) {
                             owned = owned.filter(attr -> {
-                                Set<TypeQLToken.Annotation> ownershipAnnotations = new HashSet<>();
+                                Set<Annotation> ownershipAnnotations = new HashSet<>();
                                 FunctionalIterator<Vertex<?, ?>> superTypes = loop(
                                         fromVertex, Objects::nonNull,
                                         v -> v.asType().outs().edge(SUB).to().firstOrNull()
@@ -625,7 +626,7 @@ public abstract class ProcedureEdge<
 
                 static class Backward extends Owns {
 
-                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, Set<TypeQLToken.Annotation> annotations) {
+                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, Set<Annotation> annotations) {
                         super(from, to, BACKWARD, annotations);
                     }
 
@@ -657,7 +658,7 @@ public abstract class ProcedureEdge<
                         Forwardable<TypeVertex, Order.Asc> owners = iterateSorted(ownersOfAttributeType(graphMgr, attrVertex.asType()), ASC);
                         if ((annotations.contains(KEY) && annotations.size() > 1) || !annotations.isEmpty()) {
                             owners = owners.filter(owner -> {
-                                Set<TypeQLToken.Annotation> ownershipAnnotations = new HashSet<>();
+                                Set<Annotation> ownershipAnnotations = new HashSet<>();
                                 FunctionalIterator<Vertex<?, ?>> ownerSupers = loop(
                                         owner, Objects::nonNull,
                                         v -> v.asType().outs().edge(SUB).to().firstOrNull()

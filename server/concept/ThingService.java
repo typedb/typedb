@@ -35,7 +35,7 @@ import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.server.TransactionService;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.TransactionProto.Transaction;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -126,7 +126,7 @@ public class ThingService {
         Thing thing = getThing(thingReq);
         List<AttributeType> attributeTypes = getHasRequest.getAttributeTypesList().stream()
                 .map(t -> notNull(getAttributeType(t))).collect(Collectors.toList());
-        Set<TypeQLToken.Annotation> annotations = getAnnotations(getHasRequest.getAnnotationsList());
+        Set<Annotation> annotations = getAnnotations(getHasRequest.getAnnotationsList());
         FunctionalIterator<? extends Attribute> attributes = thing.getHas(attributeTypes, annotations);
         transactionSvc.stream(attributes, reqID, atts -> getHasResPart(reqID, atts));
     }
@@ -273,12 +273,12 @@ public class ThingService {
         return conceptMgr.getAttribute(ByteArray.of(protoThing.getIid().toByteArray()));
     }
 
-    private Set<TypeQLToken.Annotation> getAnnotations(List<ConceptProto.Type.Annotation> protoAnnotations) {
+    private Set<Annotation> getAnnotations(List<ConceptProto.Type.Annotation> protoAnnotations) {
         return iterate(protoAnnotations).map(
                 annotation -> {
                     switch (annotation.getAnnotationCase()) {
-                        case KEY: return TypeQLToken.Annotation.KEY;
-                        case UNIQUE: return TypeQLToken.Annotation.UNIQUE;
+                        case KEY: return Annotation.KEY;
+                        case UNIQUE: return Annotation.UNIQUE;
                         case ANNOTATION_NOT_SET:
                         default: throw TypeDBException.of(ILLEGAL_ARGUMENT);
                     }

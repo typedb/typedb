@@ -25,7 +25,7 @@ import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typeql.lang.common.TypeQLArg;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -59,9 +59,9 @@ public interface AttributeType extends ThingType {
 
     ValueType getValueType();
 
-    Forwardable<? extends ThingType, Order.Asc> getOwners(Set<TypeQLToken.Annotation> annotations);
+    Forwardable<? extends ThingType, Order.Asc> getOwners(Set<Annotation> annotations);
 
-    Forwardable<? extends ThingType, Order.Asc> getOwners(Transitivity transitivity, Set<TypeQLToken.Annotation> annotations);
+    Forwardable<? extends ThingType, Order.Asc> getOwners(Transitivity transitivity, Set<Annotation> annotations);
 
     boolean isBoolean();
 

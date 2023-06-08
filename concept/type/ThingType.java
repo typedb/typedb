@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.impl.ThingTypeImpl;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.util.NavigableSet;
 import java.util.Optional;
@@ -55,11 +55,11 @@ public interface ThingType extends Type {
 
     void setOwns(AttributeType attributeType);
 
-    void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations);
+    void setOwns(AttributeType attributeType, Set<Annotation> annotations);
 
     void setOwns(AttributeType attributeType, AttributeType overriddenType);
 
-    void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations);
+    void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<Annotation> annotations);
 
     void unsetOwns(AttributeType attributeType);
 
@@ -67,21 +67,21 @@ public interface ThingType extends Type {
 
     Optional<Owns> getOwns(AttributeType attributeType);
 
-    Forwardable<Owns, Order.Asc> getOwns(Set<TypeQLToken.Annotation> annotations);
+    Forwardable<Owns, Order.Asc> getOwns(Set<Annotation> annotations);
 
     Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType);
 
-    Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations);
+    Forwardable<Owns, Order.Asc> getOwns(AttributeType.ValueType valueType, Set<Annotation> annotations);
 
     NavigableSet<Owns> getOwns(Transitivity transitivity);
 
     Optional<Owns> getOwns(Transitivity transitivity, AttributeType attributeType);
 
-    Forwardable<Owns, Order.Asc> getOwns(Transitivity transitivity, Set<TypeQLToken.Annotation> annotations);
+    Forwardable<Owns, Order.Asc> getOwns(Transitivity transitivity, Set<Annotation> annotations);
 
     Forwardable<Owns, Order.Asc> getOwns(Transitivity transitivity, AttributeType.ValueType valueType);
 
-    Forwardable<Owns, Order.Asc> getOwns(Transitivity transitivity, AttributeType.ValueType valueType, Set<TypeQLToken.Annotation> annotations);
+    Forwardable<Owns, Order.Asc> getOwns(Transitivity transitivity, AttributeType.ValueType valueType, Set<Annotation> annotations);
 
     AttributeType getOwnsOverridden(AttributeType attributeType);
 
@@ -107,7 +107,7 @@ public interface ThingType extends Type {
 
         AttributeType attributeType();
 
-        Set<TypeQLToken.Annotation> effectiveAnnotations();
+        Set<Annotation> effectiveAnnotations();
 
         Optional<AttributeType> overridden();
 

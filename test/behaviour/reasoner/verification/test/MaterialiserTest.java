@@ -27,7 +27,6 @@ import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.ForwardChainingMaterialiser;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.query.TypeQLMatch;
 import org.junit.After;
 import org.junit.Before;
@@ -47,6 +46,7 @@ import static com.vaticle.typeql.lang.TypeQL.rule;
 import static com.vaticle.typeql.lang.TypeQL.type;
 import static com.vaticle.typeql.lang.TypeQL.var;
 import static com.vaticle.typeql.lang.common.TypeQLArg.ValueType.STRING;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ENTITY;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.RELATION;
@@ -91,7 +91,7 @@ public class MaterialiserTest {
                         type("name").sub(ATTRIBUTE).value(STRING),
                         type("location").sub(ENTITY)
                                 .isAbstract()
-                                .owns("name", TypeQLToken.Annotation.KEY)
+                                .owns("name", KEY)
                                 .plays("location-hierarchy", "superior")
                                 .plays("location-hierarchy", "subordinate"),
                         type("area").sub("location"),

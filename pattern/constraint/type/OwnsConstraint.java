@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -42,11 +42,11 @@ public class OwnsConstraint extends TypeConstraint {
 
     private final TypeVariable attributeType;
     private final TypeVariable overriddenAttributeType;
-    private final Set<TypeQLToken.Annotation> annotations;
+    private final Set<Annotation> annotations;
     private final int hash;
 
     public OwnsConstraint(TypeVariable owner, TypeVariable attributeType,
-                          @Nullable TypeVariable overriddenAttributeType, Set<TypeQLToken.Annotation> annotations) {
+                          @Nullable TypeVariable overriddenAttributeType, Set<Annotation> annotations) {
         super(owner, attributeTypes(attributeType, overriddenAttributeType));
         this.attributeType = attributeType;
         this.overriddenAttributeType = overriddenAttributeType;
@@ -78,7 +78,7 @@ public class OwnsConstraint extends TypeConstraint {
         return Optional.ofNullable(overriddenAttributeType);
     }
 
-    public Set<TypeQLToken.Annotation> annotations() {
+    public Set<Annotation> annotations() {
         return annotations;
     }
 

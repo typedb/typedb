@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -76,8 +76,8 @@ public abstract class TypeEdgeImpl implements TypeEdge {
 
     abstract VertexIID.Type toIID();
 
-    void writeAnnotations(Set<TypeQLToken.Annotation> annotations) {
-        for (TypeQLToken.Annotation annotation : annotations) {
+    void writeAnnotations(Set<Annotation> annotations) {
+        for (Annotation annotation : annotations) {
             switch (annotation) {
                 case KEY:
                     // TODO: put KEY property once the OWNS_KEY edge is removed as a separate edge type
@@ -182,7 +182,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         private final AtomicBoolean committed;
         private final AtomicBoolean deleted;
         private TypeVertex overridden;
-        private Set<TypeQLToken.Annotation> annotations;
+        private Set<Annotation> annotations;
 
         /**
          * Default constructor for {@code EdgeImpl.Buffered}.
@@ -252,12 +252,12 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public Set<TypeQLToken.Annotation> annotations() {
+        public Set<Annotation> annotations() {
             return annotations;
         }
 
         @Override
-        public void setAnnotations(Set<TypeQLToken.Annotation> annotations) {
+        public void setAnnotations(Set<Annotation> annotations) {
             this.annotations = annotations;
         }
 
@@ -371,12 +371,12 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public Set<TypeQLToken.Annotation> annotations() {
+        public Set<Annotation> annotations() {
             throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
         @Override
-        public void setAnnotations(Set<TypeQLToken.Annotation> annotations) {
+        public void setAnnotations(Set<Annotation> annotations) {
             throw TypeDBException.of(ILLEGAL_OPERATION);
         }
 
@@ -409,7 +409,7 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         private TypeVertex to;
         private VertexIID.Type overriddenIID;
         private TypeVertex overridden;
-        private Set<TypeQLToken.Annotation> annotations;
+        private Set<Annotation> annotations;
 
         /**
          * Default constructor for {@code Edge.Persisted}.
@@ -515,13 +515,13 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public Set<TypeQLToken.Annotation> annotations() {
+        public Set<Annotation> annotations() {
             if (annotations == null) annotations = fetchAnnotations();
             return annotations;
         }
 
-        private Set<TypeQLToken.Annotation> fetchAnnotations() {
-            Set<TypeQLToken.Annotation> annotations = new HashSet<>();
+        private Set<Annotation> fetchAnnotations() {
+            Set<Annotation> annotations = new HashSet<>();
             for (Encoding.Property.Edge encoding : Encoding.Property.Edge.values()) {
                 if (encoding.isAnnotation() && graph.storage().get(PropertyIID.TypeEdge.of(fromIID(), toIID(), encoding)) != null) {
                     if (encoding == Encoding.Property.Edge.OWNS_PROPERTY_ANNOTATION_UNIQUE) {
@@ -541,15 +541,15 @@ public abstract class TypeEdgeImpl implements TypeEdge {
         }
 
         @Override
-        public void setAnnotations(Set<TypeQLToken.Annotation> annotations) {
+        public void setAnnotations(Set<Annotation> annotations) {
             deleteAnnotations();
             writeAnnotations(annotations);
             this.annotations = annotations;
         }
 
         private void deleteAnnotations() {
-            Set<TypeQLToken.Annotation> persistedAnnotations = annotations();
-            for (TypeQLToken.Annotation annotation : persistedAnnotations) {
+            Set<Annotation> persistedAnnotations = annotations();
+            for (Annotation annotation : persistedAnnotations) {
                 switch (annotation) {
                     case KEY:
                         // TODO: delete KEY property once the OWNS_KEY edge is removed as a separate edge type

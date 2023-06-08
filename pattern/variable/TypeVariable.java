@@ -37,7 +37,7 @@ import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalent;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.common.TypeQLArg;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 import com.vaticle.typeql.lang.pattern.constraint.ConceptConstraint;
 
 import javax.annotation.Nullable;
@@ -190,7 +190,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
         return ownsConstraints;
     }
 
-    public OwnsConstraint owns(TypeVariable attributeType, @Nullable TypeVariable overriddenAttributeType, Set<TypeQLToken.Annotation> annotations) {
+    public OwnsConstraint owns(TypeVariable attributeType, @Nullable TypeVariable overriddenAttributeType, Set<Annotation> annotations) {
         OwnsConstraint ownsConstraint = new OwnsConstraint(this, attributeType, overriddenAttributeType, annotations);
         constrain(ownsConstraint);
         return ownsConstraint;
