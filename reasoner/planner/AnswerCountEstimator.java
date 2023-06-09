@@ -193,6 +193,7 @@ public class AnswerCountEstimator {
             while (!remainingVars.isEmpty()) {
                 Variable start = remainingVars.stream().findAny().get();
                 // Question: Does the tree which minimises the answer count for all variables also minimise it for the queried variables?
+                // Ideally we'd figure out how to do the projection first, and then estimation should just be finding the MST.
                 Map<Variable, Set<LocalModel.EdgeEstimate.Directed>> mdst = findTree(remainingVars, start);
                 estimate *= minVariableEstimate.get(start) * effectiveConnectivityFromMdst(estimateableVariables, mdst, start, 1.0, null).first();
             }
