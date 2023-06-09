@@ -121,7 +121,7 @@ public class AnswerCountEstimator {
         private final ConjunctionModel conjunctionModel;
         private final LocalModelFactory localModelFactory;
         private final Map<Variable, Double> minVariableEstimate;
-        private final Map<Variable, Set<LocalModel.EdgeEstimate.Directed>> outgoingEdges; // TODO: Only store the min edge per (u,v) ?
+        private final Map<Variable, Set<LocalModel.EdgeEstimate.Directed>> outgoingEdges;
 
         private IncrementalEstimator(ConjunctionModel conjunctionModel, LocalModelFactory localModelFactory, Set<Variable> initialBounds) {
             this.conjunctionModel = conjunctionModel;
@@ -157,7 +157,7 @@ public class AnswerCountEstimator {
         }
 
         private void propagate(Map<Variable, Double> firstUpdatesToApply) {
-            int maxIters = Math.max(1, 2 * (firstUpdatesToApply.size() + minVariableEstimate.size())); // TODO: Ignoring small changes can force early convergence
+            int maxIters = Math.max(1, 2 * (firstUpdatesToApply.size() + minVariableEstimate.size()));
             Map<Variable, Double> updatesToApply = firstUpdatesToApply;
             while (!updatesToApply.isEmpty() && maxIters > 0) {
                 assert iterate(updatesToApply.entrySet()).allMatch(update -> update.getValue() <= minVariableEstimate.getOrDefault(update.getKey(), Double.MAX_VALUE));
@@ -177,7 +177,8 @@ public class AnswerCountEstimator {
             Double newFromEstimate = minVariableEstimate.get(from);
             outgoingEdges.get(from).forEach(edge -> {
                 edge.scaleDownFrom(newFromEstimate);
-                if (edge.toEstimate() < minVariableEstimate.get(edge.to())) {
+                double delta = (minVariableEstimate.get(edge.to()) - edge.toEstimate());
+                if ( delta > 0.1 && delta / minVariableEstimate.get(edge.to()) > 0.01) { // Ignore reductions less than 1%
                     cascadingEffects.put(edge.to(), edge.toEstimate());
                 }
             });
@@ -191,13 +192,13 @@ public class AnswerCountEstimator {
             double estimate = 1.0;
             while (!remainingVars.isEmpty()) {
                 Variable start = remainingVars.stream().findAny().get();
+                // Question: Does the tree which minimises the answer count for all variables also minimise it for the queried variables?
                 Map<Variable, Set<LocalModel.EdgeEstimate.Directed>> mdst = findTree(remainingVars, start);
                 estimate *= minVariableEstimate.get(start) * effectiveConnectivityFromMdst(estimateableVariables, mdst, start, 1.0, null).first();
             }
             return estimate;
         }
 
-        // TODO: Read up and see if I can use a standard rooted minimum directed spanning tree approach.
         private Map<Variable, Set<LocalModel.EdgeEstimate.Directed>> findTree(Set<Variable> remainingQueryVars, Variable start) {
             Map<Variable, Set<LocalModel.EdgeEstimate.Directed>> tree = new HashMap<>();
             tree.put(start, new HashSet<>());
@@ -647,16 +648,16 @@ public class AnswerCountEstimator {
                 Variable relationVar = correspondingConcludable.asRelation().relation().owner();
                 LocalModel.VariableEstimate relationEstimate = iterate(vertices).filter(vertex -> vertex.variable == relationVar).next();
                 vertices.remove(relationEstimate);
-                // Everything fully connected is too pessimistic. // TODO: Apply heuristic upper bound
-                double heuristicUpperBoundToFullyConnected = iterate(vertices).map(vertex -> vertex.estimate).reduce(1.0, (x, y) -> x * y);
+
+                double fullyConnectedUpperBound = iterate(vertices).map(vertex -> vertex.estimate).reduce(1.0, (x, y) -> x * y);
                 for (LocalModel.VariableEstimate vertex : vertices) {
-                    edges.add(new LocalModel.EdgeEstimate(relationVar, vertex.variable, heuristicUpperBoundToFullyConnected));
+                    edges.add(new LocalModel.EdgeEstimate(relationVar, vertex.variable, fullyConnectedUpperBound));
                 }
                 List<LocalModel.VariableEstimate> oldVertices = vertices;
                 vertices = new ArrayList<>();
-                vertices.add(new LocalModel.VariableEstimate(relationVar, heuristicUpperBoundToFullyConnected));
+                vertices.add(new LocalModel.VariableEstimate(relationVar, fullyConnectedUpperBound));
                 iterate(oldVertices)
-                        .map(oldEstimate -> new LocalModel.VariableEstimate(oldEstimate.variable, Math.min(heuristicUpperBoundToFullyConnected, oldEstimate.estimate)))
+                        .map(oldEstimate -> new LocalModel.VariableEstimate(oldEstimate.variable, Math.min(fullyConnectedUpperBound, oldEstimate.estimate)))
                         .forEachRemaining(vertices::add);
             }
 
