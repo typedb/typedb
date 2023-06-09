@@ -54,17 +54,17 @@ native_java_libraries(
     mac_deps = [
         "@maven//:com_google_ortools_ortools_darwin",
         "@maven//:com_google_ortools_ortools_darwin_java",
-        "@maven//:org_rocksdb_rocksdbjni",
+        "@maven//:io_github_speedb_io_speedbjni",
     ],
     linux_deps = [
         "@maven//:com_google_ortools_ortools_linux_x86_64",
         "@maven//:com_google_ortools_ortools_linux_x86_64_java",
-        "@maven//:org_rocksdb_rocksdbjni",
+        "@maven//:io_github_speedb_io_speedbjni",
     ],
     windows_deps = [
         "@maven//:com_google_ortools_ortools_win32_x86_64",
         "@maven//:com_google_ortools_ortools_win32_x86_64_java",
-        "@maven//:org_rocksdb_rocksdbjni",
+        "@maven//:io_github_speedb_io_speedbjni",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-database:{pom_version}"],
     visibility = [ "//visibility:public" ]
