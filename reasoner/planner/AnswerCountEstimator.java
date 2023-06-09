@@ -38,8 +38,6 @@ import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.PredicateConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.ThingConstraint;
-import com.vaticle.typedb.core.pattern.constraint.value.AssignmentConstraint;
-import com.vaticle.typedb.core.pattern.constraint.value.ValueConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.planner.ConjunctionGraph.ConjunctionNode;
@@ -204,8 +202,8 @@ public class AnswerCountEstimator {
             Map<Variable, Set<LocalModel.EdgeEstimate.Directed>> tree = new HashMap<>();
             tree.put(start, new HashSet<>());
             remainingQueryVars.remove(start);
-            PriorityQueue<LocalModel.EdgeEstimate.Directed> fringe = new PriorityQueue<>(Comparator.comparing(edge -> edge.connectivity()));
-            outgoingEdges.get(start).forEach(edge -> fringe.add(edge));
+            PriorityQueue<LocalModel.EdgeEstimate.Directed> fringe = new PriorityQueue<>(Comparator.comparing(LocalModel.EdgeEstimate.Directed::connectivity));
+            fringe.addAll(outgoingEdges.get(start));
             while (!fringe.isEmpty()) {
                 LocalModel.EdgeEstimate.Directed topEdge = fringe.poll();
                 Variable nextVar = topEdge.to();
@@ -215,9 +213,7 @@ public class AnswerCountEstimator {
                 remainingQueryVars.remove(nextVar);
                 tree.get(topEdge.from()).add(topEdge);
 
-                outgoingEdges.get(nextVar).forEach(edge -> {
-                    fringe.add(edge);
-                });
+                fringe.addAll(outgoingEdges.get(nextVar));
             }
             return tree;
         }
@@ -238,10 +234,12 @@ public class AnswerCountEstimator {
                     relevantEdges.add(edge);
                 }
             }
+
             boolean isRelevantBranch = queryVariables.contains(root) || relevantEdges.size() > 0;
+            if (!isRelevantBranch) return null;
 
             // Correct for repeated role-players
-            if (root.isThing() && root.asThing().relation().isPresent() && isRelevantBranch) {
+            if (root.isThing() && root.asThing().relation().isPresent()) {
                 if (incomingEdge != null) relevantEdges.add(incomingEdge.reversed());
 
                 Set<Set<LocalModel.EdgeEstimate.Directed>> groupedEdges = iterate(relevantEdges).map(LocalModel.EdgeEstimate.Directed::sameRoleTypeSet).distinct()
@@ -261,9 +259,7 @@ public class AnswerCountEstimator {
             }
 
             connectivity = Math.min(connectivity, upperBound);
-            if (isRelevantBranch) {
-                return new Pair<>(connectivity, upperBound);
-            } else return null;
+            return new Pair<>(connectivity, upperBound);
         }
 
         public double answerSetSize() {
@@ -653,8 +649,8 @@ public class AnswerCountEstimator {
                 vertices.remove(relationEstimate);
                 // Everything fully connected is too pessimistic. // TODO: Apply heuristic upper bound
                 double heuristicUpperBoundToFullyConnected = iterate(vertices).map(vertex -> vertex.estimate).reduce(1.0, (x, y) -> x * y);
-                for (int i = 0; i < vertices.size(); i++) {
-                    edges.add(new LocalModel.EdgeEstimate(relationVar, vertices.get(i).variable, heuristicUpperBoundToFullyConnected));
+                for (LocalModel.VariableEstimate vertex : vertices) {
+                    edges.add(new LocalModel.EdgeEstimate(relationVar, vertex.variable, heuristicUpperBoundToFullyConnected));
                 }
                 List<LocalModel.VariableEstimate> oldVertices = vertices;
                 vertices = new ArrayList<>();
