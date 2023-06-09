@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.type.AttributeType;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 import io.cucumber.java.DataTableType;
 import io.cucumber.java.ParameterType;
 
@@ -132,11 +132,11 @@ public class Parameters {
     }
 
     @ParameterType("(\\s*([\\w\\-_]+,\\s*)*[\\w\\-_]*\\s*)")
-    public List<TypeQLToken.Annotation> annotations(String stringList) {
+    public List<Annotation> annotations(String stringList) {
         List<String> strings = Arrays.asList(stringList.split(",\\s?"));
-        List<TypeQLToken.Annotation> annotations = new ArrayList<>();
+        List<Annotation> annotations = new ArrayList<>();
         strings.forEach(string -> {
-            TypeQLToken.Annotation annotation = TypeQLToken.Annotation.of(string);
+            Annotation annotation = Annotation.of(string);
             if (annotation == null) throw TypeDBException.of(UNRECOGNISED_ANNOTATION, string);
             else annotations.add(annotation);
         });

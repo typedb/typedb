@@ -21,6 +21,8 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
+import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Entity;
@@ -44,6 +46,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OV
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ROLE_TYPE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ROLE;
@@ -89,13 +94,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Forwardable<RoleTypeImpl, Order.Asc> getSubtypes() {
-        return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
-                .mapSorted(v ->  (RoleTypeImpl) conceptMgr.convertRoleType(v), rt -> rt.vertex, ASC);
+        return getSubtypes(TRANSITIVE);
     }
 
     @Override
-    public Forwardable<RoleTypeImpl, Order.Asc> getSubtypesExplicit() {
-        return super.getSubtypesExplicit(v ->  (RoleTypeImpl) conceptMgr.convertRoleType(v));
+    public Forwardable<RoleTypeImpl, Order.Asc> getSubtypes(Transitivity transitivity) {
+        return getSubtypes(transitivity, v -> (RoleTypeImpl) conceptMgr.convertRoleType(v));
     }
 
     @Override
@@ -111,44 +115,47 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
     @Override
     public Forwardable<ThingTypeImpl, Order.Asc> getPlayerTypes() {
-        return iterateSorted(graphMgr().schema().playersOfRoleType(vertex), ASC)
-                .mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), roleType -> roleType.vertex, ASC);
+        return getPlayerTypes(TRANSITIVE);
     }
 
     @Override
-    public Forwardable<ThingTypeImpl, Order.Asc> getPlayerTypesExplicit() {
-        return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from()
-                .mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), thingType -> thingType.vertex, ASC);
+    public Forwardable<ThingTypeImpl, Order.Asc> getPlayerTypes(Transitivity transitivity) {
+        return getPlayerTypeVertices(transitivity).mapSorted(v -> (ThingTypeImpl) conceptMgr.convertThingType(v), roleType -> roleType.vertex, ASC);
+    }
+
+    Forwardable<TypeVertex, Order.Asc> getPlayerTypeVertices(Transitivity transitivity) {
+        if (transitivity == EXPLICIT) return vertex.ins().edge(Encoding.Edge.Type.PLAYS).from();
+        else return iterateSorted(graphMgr().schema().playersOfRoleType(vertex), ASC);
     }
 
     @Override
     public FunctionalIterator<RelationImpl> getRelationInstances() {
-        return getSubtypes().filter(t -> !t.isAbstract())
-                .flatMap(t -> graphMgr().data().getReadable(t.vertex))
-                .flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.RELATING).from())
-                .map(v -> RelationImpl.of(conceptMgr, v));
+        return getRelationInstances(TRANSITIVE);
     }
 
     @Override
-    public FunctionalIterator<RelationImpl> getRelationInstancesExplicit() {
-        return graphMgr().data().getReadable(vertex)
-                .flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.RELATING).from())
-                .map(v -> RelationImpl.of(conceptMgr, v));
+    public FunctionalIterator<RelationImpl> getRelationInstances(Transitivity transitivity) {
+        return getRelationVertices(transitivity).flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.RELATING).from()).map(v -> RelationImpl.of(conceptMgr, v));
+    }
+
+    public FunctionalIterator<ThingVertex> getRelationVertices(Transitivity transitivity) {
+        if (transitivity == EXPLICIT) return graphMgr().data().getReadable(vertex);
+        else return getSubtypes(TRANSITIVE).filter(t -> !t.isAbstract()).flatMap(t -> graphMgr().data().getReadable(t.vertex));
     }
 
     @Override
     public FunctionalIterator<ThingImpl> getPlayerInstances() {
-        return getSubtypes().filter(t -> !t.isAbstract())
-                .flatMap(t -> graphMgr().data().getReadable(t.vertex))
-                .flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.PLAYING).from())
-                .map(v -> ThingImpl.of(conceptMgr, v));
+        return getPlayerInstances(TRANSITIVE);
     }
 
     @Override
-    public FunctionalIterator<ThingImpl> getPlayerInstancesExplicit() {
-        return graphMgr().data().getReadable(vertex)
-                .flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.PLAYING).from())
-                .map(v -> ThingImpl.of(conceptMgr, v));
+    public FunctionalIterator<ThingImpl> getPlayerInstances(Transitivity transitivity) {
+        return getPlayerVertices(transitivity).flatMap(v -> v.ins().edge(Encoding.Edge.Thing.Base.PLAYING).from()).map(v -> ThingImpl.of(conceptMgr, v));
+    }
+
+    public FunctionalIterator<ThingVertex> getPlayerVertices(Transitivity transitivity) {
+        if (transitivity == EXPLICIT) return graphMgr().data().getReadable(vertex);
+        else return getSubtypes(TRANSITIVE).filter(t -> !t.isAbstract()).flatMap(t -> graphMgr().data().getReadable(t.vertex));
     }
 
     @Override
@@ -177,8 +184,9 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     private List<TypeDBException> validateOverriddenTypesAreInheritedFromRelationType() {
+        assert !isRoot();
         RoleType superType = getSupertype();
-        assert !isRoot() || superType != null;
+        assert superType != null;
         if (superType.isRoot()) return list();
         else if (getRelationType().getSupertype().asRelationType().getRelates().noneMatch(rt -> rt.equals(superType))) {
             return list(TypeDBException.of(OVERRIDDEN_RELATED_ROLE_TYPE_NOT_INHERITED,
@@ -197,12 +205,12 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
     }
 
     public RoleImpl create() {
-        return create(false);
+        return create(STORED);
     }
 
-    public RoleImpl create(boolean isInferred) {
+    public RoleImpl create(Existence existence) {
         validateCanHaveInstances(Entity.class);
-        ThingVertex.Write instance = graphMgr().data().create(vertex, isInferred);
+        ThingVertex.Write instance = graphMgr().data().create(vertex, existence);
         return RoleImpl.of(instance);
     }
 

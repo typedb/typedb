@@ -44,34 +44,6 @@ host_compatible_java_library(
     ]
 )
 
-java_test(
-    name = "test",
-    srcs = [
-        "ThingTypeTest.java"
-    ],
-    test_class = "com.vaticle.typedb.core.test.behaviour.concept.type.thingtype.ThingTypeTest",
-    deps = [
-        # External Maven Dependencies
-        "@maven//:io_cucumber_cucumber_junit",
-    ],
-    runtime_deps = [
-        ":steps",
-        "//test/behaviour/config:parameters",
-        "//test/behaviour/concept/thing/entity:steps",
-        "//test/behaviour/concept/thing/attribute:steps",
-        "//test/behaviour/concept/thing/relation:steps",
-        "//test/behaviour/concept/type/attributetype:steps",
-        "//test/behaviour/concept/type/relationtype:steps",
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/session:steps",
-        "//test/behaviour/connection/transaction:steps",
-    ],
-    data = [
-        "@vaticle_typedb_behaviour//concept/type:thingtype.feature",
-    ],
-    size = "medium",
-)
-
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

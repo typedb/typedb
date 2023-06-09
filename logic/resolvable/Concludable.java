@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.logic.resolvable;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.Iterators;
+import com.vaticle.typedb.core.common.parameters.Concept;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -63,6 +64,7 @@ import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INVALID_CASTING;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 import static java.util.stream.Collectors.toSet;
 
 public abstract class Concludable extends Resolvable<Conjunction> implements AlphaEquivalent<Concludable> {
@@ -241,7 +243,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         @Override
         public boolean isInferredAnswer(ConceptMap conceptMap) {
-            return conceptMap.get(relation.owner().id()).asThing().isInferred();
+            return conceptMap.get(relation.owner().id()).asThing().existence() == INFERRED;
         }
 
         @Override
@@ -560,7 +562,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         @Override
         public boolean isInferredAnswer(ConceptMap conceptMap) {
-            return conceptMap.get(isa().owner().id()).asThing().isInferred();
+            return conceptMap.get(isa().owner().id()).asThing().existence() == INFERRED;
         }
 
         FunctionalIterator<Unifier> unify(Rule.Conclusion.Isa isa, ConceptManager conceptMgr) {
@@ -685,7 +687,7 @@ public abstract class Concludable extends Resolvable<Conjunction> implements Alp
 
         @Override
         public boolean isInferredAnswer(ConceptMap conceptMap) {
-            return conceptMap.get(generatingVariable().id()).asThing().isInferred();
+            return conceptMap.get(generatingVariable().id()).asThing().existence() == INFERRED;
         }
 
         FunctionalIterator<Unifier> unify(Rule.Conclusion.Value value) {

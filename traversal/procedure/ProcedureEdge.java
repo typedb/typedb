@@ -43,6 +43,7 @@ import com.vaticle.typedb.core.traversal.planner.PlannerEdge;
 import com.vaticle.typedb.core.traversal.scanner.GraphIterator;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -84,6 +85,7 @@ import static com.vaticle.typedb.core.encoding.Encoding.Prefix.VERTEX_ROLE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.RELATION;
 import static com.vaticle.typedb.core.traversal.predicate.PredicateOperator.Equality.EQ;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
+import static java.util.Collections.emptySet;
 
 public abstract class ProcedureEdge<
         VERTEX_FROM extends ProcedureVertex<?, ?>, VERTEX_TO extends ProcedureVertex<?, ?>
@@ -618,9 +620,9 @@ public abstract class ProcedureEdge<
 
             static abstract class Owns extends Type {
 
-                final Set<TypeQLToken.Annotation> annotations;
+                final Set<Annotation> annotations;
 
-                private Owns(ProcedureVertex.Type from, ProcedureVertex.Type to, Encoding.Direction.Edge direction, Set<TypeQLToken.Annotation> annotations) {
+                private Owns(ProcedureVertex.Type from, ProcedureVertex.Type to, Encoding.Direction.Edge direction, Set<Annotation> annotations) {
                     super(from, to, direction, OWNS);
                     this.annotations = annotations;
                 }
@@ -637,7 +639,7 @@ public abstract class ProcedureEdge<
 
                 static class Forward extends Owns {
 
-                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, Set<TypeQLToken.Annotation> annotations) {
+                    Forward(ProcedureVertex.Type from, ProcedureVertex.Type to, Set<Annotation> annotations) {
                         super(from, to, FORWARD, annotations);
                     }
 
@@ -647,9 +649,7 @@ public abstract class ProcedureEdge<
                     }
 
                     private NavigableSet<TypeVertex> ownedAttributeTypes(GraphManager graphMgr, TypeVertex fromVertex) {
-                        return annotations.contains(KEY) ?
-                                graphMgr.schema().ownedKeyAttributeTypes(fromVertex) :
-                                graphMgr.schema().ownedAttributeTypes(fromVertex);
+                        return graphMgr.schema().ownedAttributeTypes(fromVertex, annotations);
                     }
 
                     @Override
@@ -673,7 +673,7 @@ public abstract class ProcedureEdge<
                         Forwardable<TypeVertex, Order.Asc> owned = iterateSorted(ownedAttributeTypes(graphMgr, fromVertex.asType()), ASC);
                         if ((annotations.contains(KEY) && annotations.size() > 1) || !annotations.isEmpty()) {
                             owned = owned.filter(attr -> {
-                                Set<TypeQLToken.Annotation> ownershipAnnotations = new HashSet<>();
+                                Set<Annotation> ownershipAnnotations = new HashSet<>();
                                 FunctionalIterator<Vertex<?, ?>> superTypes = loop(
                                         fromVertex, Objects::nonNull,
                                         v -> v.asType().outs().edge(SUB).to().firstOrNull()
@@ -705,7 +705,7 @@ public abstract class ProcedureEdge<
 
                 static class Backward extends Owns {
 
-                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, Set<TypeQLToken.Annotation> annotations) {
+                    Backward(ProcedureVertex.Type from, ProcedureVertex.Type to, Set<Annotation> annotations) {
                         super(from, to, BACKWARD, annotations);
                     }
 
@@ -715,9 +715,7 @@ public abstract class ProcedureEdge<
                     }
 
                     private NavigableSet<TypeVertex> ownersOfAttributeType(GraphManager graphMgr, TypeVertex attType) {
-                        return annotations.contains(KEY) ?
-                                graphMgr.schema().ownersOfAttributeTypeKey(attType) :
-                                graphMgr.schema().ownersOfAttributeType(attType);
+                        return graphMgr.schema().ownersOfAttributeType(attType, annotations);
                     }
 
                     @Override
@@ -739,7 +737,7 @@ public abstract class ProcedureEdge<
                         Forwardable<TypeVertex, Order.Asc> owners = iterateSorted(ownersOfAttributeType(graphMgr, attrVertex.asType()), ASC);
                         if ((annotations.contains(KEY) && annotations.size() > 1) || !annotations.isEmpty()) {
                             owners = owners.filter(owner -> {
-                                Set<TypeQLToken.Annotation> ownershipAnnotations = new HashSet<>();
+                                Set<Annotation> ownershipAnnotations = new HashSet<>();
                                 FunctionalIterator<Vertex<?, ?>> ownerSupers = loop(
                                         owner, Objects::nonNull,
                                         v -> v.asType().outs().edge(SUB).to().firstOrNull()
@@ -1048,7 +1046,7 @@ public abstract class ProcedureEdge<
                     private List<Pair<TypeVertex, Forwardable<ThingVertex, Order.Asc>>> branchToTypes(
                             GraphManager graphMgr, ThingVertex owner
                     ) {
-                        Set<TypeVertex> types = graphMgr.schema().ownedAttributeTypes(owner.type());
+                        Set<TypeVertex> types = graphMgr.schema().ownedAttributeTypes(owner.type(), emptySet());
                         return iterate(types)
                                 .filter(t -> to.props().types().contains(t.properLabel()))
                                 .map(t -> new Pair<>(t, owner.outs().edge(HAS, PrefixIID.of(VERTEX_ATTRIBUTE), t.iid()).to()))
@@ -1085,7 +1083,7 @@ public abstract class ProcedureEdge<
                             if (toVertex.isPresent()) return to.iterateAndFilterPredicates(toVertex.get(), params, ASC);
                             else return emptySorted();
                         } else {
-                            Set<TypeVertex> owners = graphMgr.schema().ownersOfAttributeType(att.type());
+                            Set<TypeVertex> owners = graphMgr.schema().ownersOfAttributeType(att.type(), emptySet());
                             return to.mergeAndFilterPredicatesOnVertices(
                                     graphMgr,
                                     iterate(owners).filter(owner -> to.props().types().contains(owner.properLabel()))

@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.util.Objects;
 import java.util.Set;
@@ -152,10 +153,10 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
 
         protected final Encoding.Edge encoding;
         private final boolean isTransitive;
-        private final Set<TypeQLToken.Annotation> annotations;
+        private final Set<Annotation> annotations;
         private final int hash;
 
-        public Native(VERTEX_FROM from, VERTEX_TO to, Encoding.Edge encoding, boolean isTransitive, Set<TypeQLToken.Annotation> annotations) {
+        public Native(VERTEX_FROM from, VERTEX_TO to, Encoding.Edge encoding, boolean isTransitive, Set<Annotation> annotations) {
             super(from, to, encoding.name());
             this.encoding = encoding;
             this.isTransitive = isTransitive;
@@ -171,7 +172,7 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
             return isTransitive;
         }
 
-        public Set<TypeQLToken.Annotation> annotations() {
+        public Set<Annotation> annotations() {
             return this.annotations;
         }
 
@@ -218,7 +219,7 @@ public abstract class StructureEdge<VERTEX_FROM extends StructureVertex<?>, VERT
             private final int hash;
 
             RolePlayer(StructureVertex.Thing from, StructureVertex.Thing to, Set<Label> roleTypes, int repetition,
-                       Set<TypeQLToken.Annotation> annotations) {
+                       Set<Annotation> annotations) {
                 super(from, to, ROLEPLAYER, false, annotations);
                 this.roleTypes = roleTypes;
                 this.repetition = repetition;

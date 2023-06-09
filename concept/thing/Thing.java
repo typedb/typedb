@@ -20,12 +20,14 @@ package com.vaticle.typedb.core.concept.thing;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
+import java.util.List;
 import java.util.Set;
 
 public interface Thing extends Concept, Comparable<Thing> {
@@ -54,11 +56,11 @@ public interface Thing extends Concept, Comparable<Thing> {
     ThingType getType();
 
     /**
-     * Indicates whether this {@code Thing} is inferred.
+     * Returns the mode of {@code Existence} of this {@code Thing}.
      *
-     * @return true if this {@code Thing} is inferred, else false
+     * @return {@code INFERRED} if this {@code Thing} is inferred, {@code STORED} otherwise
      */
-    boolean isInferred();
+    Existence existence();
 
     /**
      * Set an {@code Attribute} to be owned by this {@code Thing}.
@@ -73,7 +75,7 @@ public interface Thing extends Concept, Comparable<Thing> {
      */
     void setHas(Attribute attribute);
 
-    void setHas(Attribute attribute, boolean isInferred);
+    void setHas(Attribute attribute, Existence existence);
 
     /**
      * Remove an {@code Attribute} from being owned by this {@code Thing}.
@@ -95,7 +97,7 @@ public interface Thing extends Concept, Comparable<Thing> {
      *
      * @return an iterator of {@code Attribute} instances owned by this {@code Thing}
      */
-    FunctionalIterator<? extends Attribute> getHas(Set<TypeQLToken.Annotation> annotations);
+    FunctionalIterator<? extends Attribute> getHas(Set<Annotation> annotations);
 
     FunctionalIterator<? extends Attribute.Boolean> getHas(AttributeType.Boolean attributeType);
 
@@ -118,6 +120,8 @@ public interface Thing extends Concept, Comparable<Thing> {
      * @return an iterator of {@code Attribute} instances owned by this {@code Thing}
      */
     FunctionalIterator<? extends Attribute> getHas(AttributeType... attributeType);
+
+    FunctionalIterator<? extends Attribute> getHas(List<AttributeType> attributeTypes, Set<Annotation> ownsAnnotations);
 
     /**
      * Check whether a Has edge to a given attribute instance exists, and that edge is inferred

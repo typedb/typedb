@@ -36,7 +36,6 @@ import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.test.ProcedurePermutator;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 import com.vaticle.typeql.lang.pattern.variable.Variable;
@@ -722,7 +721,7 @@ public class TypeQLSteps {
                 return false;
             }
 
-            Optional<? extends Attribute> keyOpt = concept.asThing().getHas(set(TypeQLToken.Annotation.KEY))
+            Optional<? extends Attribute> keyOpt = concept.asThing().getHas(set(KEY))
                     .filter(attr -> attr.getType().getLabel().toString().equals(type)).first();
             if (keyOpt.isEmpty()) return false;
             Attribute key = keyOpt.get().asAttribute();

@@ -158,9 +158,8 @@ build:
         bazel test //test/assembly:docker --test_output=streamed
     deploy-artifact-snapshot:
       image: vaticle-ubuntu-22.04
-      filter:
-        owner: vaticle
-        branch: [master, development]
+      filter:  # XXX: do not merge this block; temporary for api-rearchitecture development
+        branch: [api-rearchitecture]
       dependencies: [test-assembly-linux-targz]
       command: |
         export DEPLOY_ARTIFACT_USERNAME=$REPO_VATICLE_USERNAME

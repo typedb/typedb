@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.traversal.graph.TraversalEdge;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -640,10 +641,10 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             public abstract class Directional extends Native.Directional<PlannerVertex.Type, PlannerVertex.Type> {
 
-                private final Set<TypeQLToken.Annotation> annotations;
+                private final Set<Annotation> annotations;
 
                 Directional(PlannerVertex.Type from, PlannerVertex.Type to,
-                            Encoding.Direction.Edge direction, Encoding.Edge encoding, Set<TypeQLToken.Annotation> annotations) {
+                            Encoding.Direction.Edge direction, Encoding.Edge encoding, Set<Annotation> annotations) {
                     super(from, to, direction, encoding);
                     this.annotations = annotations;
                 }
@@ -652,7 +653,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                     return isTransitive;
                 }
 
-                public Set<TypeQLToken.Annotation> annotations() {
+                public Set<Annotation> annotations() {
                     return annotations;
                 }
 
@@ -776,9 +777,9 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
             static class Owns extends Type {
 
-                private final Set<TypeQLToken.Annotation> annotations;
+                private final Set<Annotation> annotations;
 
-                Owns(PlannerVertex.Type from, PlannerVertex.Type to, Set<TypeQLToken.Annotation> annotations) {
+                Owns(PlannerVertex.Type from, PlannerVertex.Type to, Set<Annotation> annotations) {
                     super(from, to, annotations.contains(KEY) ? OWNS_KEY : OWNS, false, false);
                     this.annotations = annotations;
                     initialiseDirectionalEdges();
@@ -793,7 +794,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
                 public abstract class Directional extends Type.Directional {
 
                     Directional(PlannerVertex.Type from, PlannerVertex.Type to, Encoding.Direction.Edge direction,
-                                Set<TypeQLToken.Annotation> annotations) {
+                                Set<Annotation> annotations) {
                         super(from, to, direction, OWNS, annotations);
                     }
 
@@ -810,7 +811,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                 private class Forward extends Owns.Directional {
 
-                    private Forward(PlannerVertex.Type from, PlannerVertex.Type to, Set<TypeQLToken.Annotation> annotations) {
+                    private Forward(PlannerVertex.Type from, PlannerVertex.Type to, Set<Annotation> annotations) {
                         super(from, to, FORWARD, annotations);
                     }
 
@@ -832,7 +833,7 @@ public abstract class PlannerEdge<VERTEX_FROM extends PlannerVertex<?>, VERTEX_T
 
                 private class Backward extends Owns.Directional {
 
-                    private Backward(PlannerVertex.Type from, PlannerVertex.Type to, Set<TypeQLToken.Annotation> annotations) {
+                    private Backward(PlannerVertex.Type from, PlannerVertex.Type to, Set<Annotation> annotations) {
                         super(from, to, BACKWARD, annotations);
                     }
 

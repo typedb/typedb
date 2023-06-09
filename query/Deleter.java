@@ -203,7 +203,7 @@ public class Deleter {
                         if (type.getLabel().equals(typeLabel)) thing.delete();
                         else throw TypeDBException.of(INVALID_DELETE_THING_DIRECT, var.reference(), typeLabel);
                     } else {
-                        if (type.getSupertypes().anyMatch(t -> t.getLabel().equals(typeLabel))) thing.delete();
+                        if (type.getSupertypesWithThing().anyMatch(t -> t.getLabel().equals(typeLabel))) thing.delete();
                         else throw TypeDBException.of(INVALID_DELETE_THING, var.reference(), typeLabel);
                     }
                     matched.concepts().remove(var.id());

@@ -32,16 +32,15 @@ import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.reasoner.answer.PartialExplanation.ConclusionAnswer;
 import com.vaticle.typedb.protocol.AnswerProto;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.ConnectionProto;
-import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;
-import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabaseManager;
+import com.vaticle.typedb.protocol.DatabaseProto;
 import com.vaticle.typedb.protocol.LogicProto;
 import com.vaticle.typedb.protocol.QueryProto;
+import com.vaticle.typedb.protocol.ServerProto;
 import com.vaticle.typedb.protocol.SessionProto;
 import com.vaticle.typedb.protocol.TransactionProto;
 import io.grpc.Status;
@@ -57,12 +56,20 @@ import java.util.regex.Pattern;
 
 import static com.google.protobuf.ByteString.copyFrom;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeUUID;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.conceptMap;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.numeric;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Logic.Rule.protoRule;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.protoAttribute;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.protoEntity;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.protoRelation;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.protoThing;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoAttributeType;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoEntityType;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoRelationType;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoRoleType;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoThingTypeRoot;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoType;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Value.protoValue;
 import static java.util.stream.Collectors.toList;
@@ -78,44 +85,56 @@ public class ResponseBuilder {
         return copyFrom(encodeUUID(uuid).getBytes());
     }
 
-    public static class Connection {
-
-        public static ConnectionProto.Connection.Open.Res openRes() {
-            return ConnectionProto.Connection.Open.Res.newBuilder().build();
+    public static class ServerManager {
+        public static ServerProto.ServerManager.All.Res allRes(String serverAddress) {
+            return ServerProto.ServerManager.All.Res.newBuilder()
+                    .addServers(ServerProto.Server.newBuilder().setAddress(serverAddress)).build();
         }
     }
 
     public static class DatabaseManager {
 
-        public static CoreDatabaseManager.Contains.Res containsRes(boolean contains) {
-            return CoreDatabaseManager.Contains.Res.newBuilder().setContains(contains).build();
+        public static DatabaseProto.DatabaseManager.Contains.Res containsRes(boolean contains) {
+            return DatabaseProto.DatabaseManager.Contains.Res.newBuilder().setContains(contains).build();
         }
 
-        public static CoreDatabaseManager.Create.Res createRes() {
-            return CoreDatabaseManager.Create.Res.getDefaultInstance();
+        public static DatabaseProto.DatabaseManager.Create.Res createRes() {
+            return DatabaseProto.DatabaseManager.Create.Res.getDefaultInstance();
         }
 
-        public static CoreDatabaseManager.All.Res allRes(List<String> names) {
-            return CoreDatabaseManager.All.Res.newBuilder().addAllNames(names).build();
+        public static DatabaseProto.DatabaseManager.Get.Res getRes(String serverAddress, String name) {
+            return DatabaseProto.DatabaseManager.Get.Res.newBuilder().setDatabase(
+                DatabaseProto.DatabaseReplicas.newBuilder().setName(name).addReplicas(
+                        DatabaseProto.DatabaseReplicas.Replica.newBuilder().setAddress(serverAddress).setPrimary(true).setPreferred(true).setTerm(0).build()
+                )
+            ).build();
+        }
+
+        public static DatabaseProto.DatabaseManager.All.Res allRes(String serverAddress, List<String> names) {
+            return DatabaseProto.DatabaseManager.All.Res.newBuilder().addAllDatabases(
+                iterate(names).map(name -> DatabaseProto.DatabaseReplicas.newBuilder().setName(name).addReplicas(
+                    DatabaseProto.DatabaseReplicas.Replica.newBuilder().setAddress(serverAddress).setPrimary(true).setPreferred(true).setTerm(0).build()
+                ).build()).toList()
+            ).build();
         }
     }
 
     public static class Database {
 
-        public static CoreDatabase.Schema.Res schemaRes(String schema) {
-            return CoreDatabase.Schema.Res.newBuilder().setSchema(schema).build();
+        public static DatabaseProto.Database.Schema.Res schemaRes(String schema) {
+            return DatabaseProto.Database.Schema.Res.newBuilder().setSchema(schema).build();
         }
 
-        public static CoreDatabase.TypeSchema.Res typeSchemaRes(String schema) {
-            return CoreDatabase.TypeSchema.Res.newBuilder().setSchema(schema).build();
+        public static DatabaseProto.Database.TypeSchema.Res typeSchemaRes(String schema) {
+            return DatabaseProto.Database.TypeSchema.Res.newBuilder().setSchema(schema).build();
         }
 
-        public static CoreDatabase.RuleSchema.Res ruleSchemaRes(String schema) {
-            return CoreDatabase.RuleSchema.Res.newBuilder().setSchema(schema).build();
+        public static DatabaseProto.Database.RuleSchema.Res ruleSchemaRes(String schema) {
+            return DatabaseProto.Database.RuleSchema.Res.newBuilder().setSchema(schema).build();
         }
 
-        public static CoreDatabase.Delete.Res deleteRes() {
-            return CoreDatabase.Delete.Res.getDefaultInstance();
+        public static DatabaseProto.Database.Delete.Res deleteRes() {
+            return DatabaseProto.Database.Delete.Res.getDefaultInstance();
         }
     }
 
@@ -247,7 +266,6 @@ public class ResponseBuilder {
                             iterate(explanations).map(Logic::explanation).toList()
                     )));
         }
-
     }
 
     public static class ConceptManager {
@@ -256,38 +274,70 @@ public class ResponseBuilder {
             return TransactionProto.Transaction.Res.newBuilder().setReqId(UUIDAsByteString(reqID)).setConceptManagerRes(res).build();
         }
 
+        public static TransactionProto.Transaction.Res getEntityTypeRes(UUID reqID, EntityType thingType) {
+            ConceptProto.ConceptManager.GetEntityType.Res.Builder getEntityTypeRes =
+                    ConceptProto.ConceptManager.GetEntityType.Res.newBuilder();
+            if (thingType != null) getEntityTypeRes.setEntityType(protoEntityType(thingType));
+            return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetEntityTypeRes(getEntityTypeRes));
+        }
+
+        public static TransactionProto.Transaction.Res getRelationTypeRes(UUID reqID, RelationType thingType) {
+            ConceptProto.ConceptManager.GetRelationType.Res.Builder getRelationTypeRes =
+                    ConceptProto.ConceptManager.GetRelationType.Res.newBuilder();
+            if (thingType != null) getRelationTypeRes.setRelationType(protoRelationType(thingType));
+            return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetRelationTypeRes(getRelationTypeRes));
+        }
+
+        public static TransactionProto.Transaction.Res getAttributeTypeRes(UUID reqID, AttributeType thingType) {
+            ConceptProto.ConceptManager.GetAttributeType.Res.Builder getAttributeTypeRes =
+                    ConceptProto.ConceptManager.GetAttributeType.Res.newBuilder();
+            if (thingType != null) getAttributeTypeRes.setAttributeType(protoAttributeType(thingType));
+            return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetAttributeTypeRes(getAttributeTypeRes));
+        }
+
+        public static TransactionProto.Transaction.Res getEntityRes(
+                UUID reqID, @Nullable com.vaticle.typedb.core.concept.thing.Entity thing
+        ) {
+            ConceptProto.ConceptManager.GetEntity.Res.Builder getEntityRes =
+                    ConceptProto.ConceptManager.GetEntity.Res.newBuilder();
+            if (thing != null) getEntityRes.setEntity(protoEntity(thing));
+            return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetEntityRes(getEntityRes));
+        }
+
+        public static TransactionProto.Transaction.Res getRelationRes(
+                UUID reqID, @Nullable com.vaticle.typedb.core.concept.thing.Relation thing
+        ) {
+            ConceptProto.ConceptManager.GetRelation.Res.Builder getRelationRes =
+                    ConceptProto.ConceptManager.GetRelation.Res.newBuilder();
+            if (thing != null) getRelationRes.setRelation(protoRelation(thing));
+            return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetRelationRes(getRelationRes));
+        }
+
+        public static TransactionProto.Transaction.Res getAttributeRes(
+                UUID reqID, @Nullable com.vaticle.typedb.core.concept.thing.Attribute thing
+        ) {
+            ConceptProto.ConceptManager.GetAttribute.Res.Builder getAttributeRes =
+                    ConceptProto.ConceptManager.GetAttribute.Res.newBuilder();
+            if (thing != null) getAttributeRes.setAttribute(protoAttribute(thing));
+            return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetAttributeRes(getAttributeRes));
+        }
+
         public static TransactionProto.Transaction.Res putEntityTypeRes(UUID reqID, EntityType entityType) {
             return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setPutEntityTypeRes(
-                    ConceptProto.ConceptManager.PutEntityType.Res.newBuilder().setEntityType(protoType(entityType))
+                    ConceptProto.ConceptManager.PutEntityType.Res.newBuilder().setEntityType(protoEntityType(entityType))
             ));
         }
 
         public static TransactionProto.Transaction.Res putRelationTypeRes(UUID reqID, RelationType relationType) {
             return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setPutRelationTypeRes(
-                    ConceptProto.ConceptManager.PutRelationType.Res.newBuilder().setRelationType(protoType(relationType))
+                    ConceptProto.ConceptManager.PutRelationType.Res.newBuilder().setRelationType(protoRelationType(relationType))
             ));
         }
 
         public static TransactionProto.Transaction.Res putAttributeTypeRes(UUID reqID, AttributeType attributeType) {
             return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setPutAttributeTypeRes(
-                    ConceptProto.ConceptManager.PutAttributeType.Res.newBuilder().setAttributeType(protoType(attributeType))
+                    ConceptProto.ConceptManager.PutAttributeType.Res.newBuilder().setAttributeType(protoAttributeType(attributeType))
             ));
-        }
-
-        public static TransactionProto.Transaction.Res getThingTypeRes(UUID reqID, ThingType thingType) {
-            ConceptProto.ConceptManager.GetThingType.Res.Builder getThingTypeRes =
-                    ConceptProto.ConceptManager.GetThingType.Res.newBuilder();
-            if (thingType != null) getThingTypeRes.setThingType(protoType(thingType));
-            return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetThingTypeRes(getThingTypeRes));
-        }
-
-        public static TransactionProto.Transaction.Res getThingRes(
-                UUID reqID, @Nullable com.vaticle.typedb.core.concept.thing.Thing thing
-        ) {
-            ConceptProto.ConceptManager.GetThing.Res.Builder getThingRes =
-                    ConceptProto.ConceptManager.GetThing.Res.newBuilder();
-            if (thing != null) getThingRes.setThing(protoThing(thing));
-            return conceptMgrRes(reqID, ConceptProto.ConceptManager.Res.newBuilder().setGetThingRes(getThingRes));
         }
 
         public static TransactionProto.Transaction.Res getSchemaExceptionsRes(UUID reqID, List<TypeDBException> exceptions) {
@@ -297,7 +347,7 @@ public class ResponseBuilder {
                                     // TODO: We need a new TypeDB Exception API that is consistent,
                                     //       that ensures every exception has a code and a message.
                                     //       For this specific API we know that getSchemaExceptions() always does.
-                                    e -> ConceptProto.Exceptions.newBuilder()
+                                    e -> ConceptProto.Exception.newBuilder()
                                             .setCode(e.code().get()).setMessage(e.getMessage()).build()
                             ).collect(toList())
                     ).build()
@@ -341,44 +391,70 @@ public class ResponseBuilder {
 
         public static ConceptProto.Concept protoConcept(com.vaticle.typedb.core.concept.Concept concept) {
             if (concept == null) return null;
-            if (concept.isThing()) {
-                return ConceptProto.Concept.newBuilder().setThing(protoThing(concept.asThing())).build();
-            } else if (concept.isType()) {
-                return ConceptProto.Concept.newBuilder().setType(protoType(concept.asType())).build();
-            } else if (concept.isValue()) {
-                return ConceptProto.Concept.newBuilder().setValue(protoValue(concept.asValue())).build();
-            } else {
-                throw TypeDBException.of(ILLEGAL_STATE);
+            if (concept.isEntityType()) {
+                return ConceptProto.Concept.newBuilder().setEntityType(protoEntityType(concept.asEntityType())).build();
+            } else if (concept.isRelationType()) {
+                return ConceptProto.Concept.newBuilder().setRelationType(protoRelationType(concept.asRelationType())).build();
+            } else if (concept.isAttributeType()) {
+                return ConceptProto.Concept.newBuilder().setAttributeType(protoAttributeType(concept.asAttributeType())).build();
+            } else if (concept.isThingType()) {
+                return ConceptProto.Concept.newBuilder().setThingTypeRoot(protoThingTypeRoot()).build();
+            } else if (concept.isRoleType()) {
+                return ConceptProto.Concept.newBuilder().setRoleType(protoRoleType(concept.asRoleType())).build();
+            } else if (concept.isEntity()) {
+                return ConceptProto.Concept.newBuilder().setEntity(protoEntity(concept.asEntity())).build();
+            } else if (concept.isRelation()) {
+                return ConceptProto.Concept.newBuilder().setRelation(protoRelation(concept.asRelation())).build();
+            } else if (concept.isAttribute()) {
+                return ConceptProto.Concept.newBuilder().setAttribute(protoAttribute(concept.asAttribute())).build();
             }
+            throw TypeDBException.of(ErrorMessage.Internal.ILLEGAL_STATE);
         }
     }
 
     public static class Type {
 
-        private static ConceptProto.Type.Encoding protoEncoding(com.vaticle.typedb.core.concept.type.Type type) {
-            if (type.isEntityType()) {
-                return ConceptProto.Type.Encoding.ENTITY_TYPE;
-            } else if (type.isRelationType()) {
-                return ConceptProto.Type.Encoding.RELATION_TYPE;
-            } else if (type.isAttributeType()) {
-                return ConceptProto.Type.Encoding.ATTRIBUTE_TYPE;
-            } else if (type.isThingType()) {
-                return ConceptProto.Type.Encoding.THING_TYPE;
-            } else if (type.isRoleType()) {
-                return ConceptProto.Type.Encoding.ROLE_TYPE;
-            } else {
-                throw TypeDBException.of(ILLEGAL_STATE);
-            }
+        public static ConceptProto.ThingType protoThingType(com.vaticle.typedb.core.concept.type.ThingType type) {
+            var builder = ConceptProto.ThingType.newBuilder();
+            if (type.isEntityType()) builder.setEntityType(protoEntityType(type.asEntityType()));
+            else if (type.isRelationType()) builder.setRelationType(protoRelationType(type.asRelationType()));
+            else if (type.isAttributeType()) builder.setAttributeType(protoAttributeType(type.asAttributeType()));
+            return builder.build();
         }
 
-        public static ConceptProto.Type protoType(com.vaticle.typedb.core.concept.type.Type type) {
-            ConceptProto.Type.Builder protoType = ConceptProto.Type.newBuilder()
-                    .setLabel(type.getLabel().name()).setEncoding(protoEncoding(type));
-            if (type.isAttributeType()) protoType.setValueType(AttributeType.protoValueType(type.asAttributeType()));
-            if (type.isRoleType()) protoType.setScope(type.asRoleType().getLabel().scope().get());
-            if (type.isRoot()) protoType.setIsRoot(true);
-            if (type.isAbstract()) protoType.setIsAbstract(true);
-            return protoType.build();
+        public static ConceptProto.EntityType protoEntityType(com.vaticle.typedb.core.concept.type.EntityType type) {
+            ConceptProto.EntityType.Builder protoEntityType = ConceptProto.EntityType.newBuilder().setLabel(type.getLabel().name());
+            if (type.isRoot()) protoEntityType.setIsRoot(true);
+            if (type.isAbstract()) protoEntityType.setIsAbstract(true);
+            return protoEntityType.build();
+        }
+
+        public static ConceptProto.RelationType protoRelationType(com.vaticle.typedb.core.concept.type.RelationType type) {
+            ConceptProto.RelationType.Builder protoRelationType = ConceptProto.RelationType.newBuilder().setLabel(type.getLabel().name());
+            if (type.isRoot()) protoRelationType.setIsRoot(true);
+            if (type.isAbstract()) protoRelationType.setIsAbstract(true);
+            return protoRelationType.build();
+        }
+
+        public static ConceptProto.AttributeType protoAttributeType(com.vaticle.typedb.core.concept.type.AttributeType type) {
+            ConceptProto.AttributeType.Builder protoAttributeType = ConceptProto.AttributeType.newBuilder()
+                    .setLabel(type.getLabel().name()).setValueType(AttributeType.protoValueType(type.asAttributeType()));
+            if (type.isRoot()) protoAttributeType.setIsRoot(true);
+            if (type.isAbstract()) protoAttributeType.setIsAbstract(true);
+            return protoAttributeType.build();
+        }
+
+        public static ConceptProto.ThingType.Root protoThingTypeRoot() {
+            return ConceptProto.ThingType.Root.getDefaultInstance();
+        }
+
+        public static ConceptProto.RoleType protoRoleType(com.vaticle.typedb.core.concept.type.RoleType type) {
+            assert type.asRoleType().getLabel().scope().isPresent();
+            ConceptProto.RoleType.Builder protoRoleType = ConceptProto.RoleType.newBuilder()
+                    .setLabel(type.getLabel().name()).setScope(type.asRoleType().getLabel().scope().get());
+            if (type.isRoot()) protoRoleType.setIsRoot(true);
+            if (type.isAbstract()) protoRoleType.setIsAbstract(true);
+            return protoRoleType.build();
         }
 
         private static TransactionProto.Transaction.Res typeRes(UUID reqID, ConceptProto.Type.Res.Builder res) {
@@ -389,235 +465,258 @@ public class ResponseBuilder {
             return TransactionProto.Transaction.ResPart.newBuilder().setReqId(UUIDAsByteString(reqID)).setTypeResPart(resPart).build();
         }
 
-        public static TransactionProto.Transaction.Res deleteRes(UUID reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setTypeDeleteRes(
-                    ConceptProto.Type.Delete.Res.getDefaultInstance()
-            ));
+        private static TransactionProto.Transaction.Res roleTypeRes(UUID reqID, ConceptProto.RoleType.Res.Builder res) {
+            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRoleTypeRes(res));
         }
 
-        public static TransactionProto.Transaction.Res setLabelRes(UUID reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setTypeSetLabelRes(
-                    ConceptProto.Type.SetLabel.Res.getDefaultInstance()
-            ));
+        private static TransactionProto.Transaction.ResPart roleTypeResPart(UUID reqID, ConceptProto.RoleType.ResPart.Builder res) {
+            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeResPart(res));
         }
 
-        public static TransactionProto.Transaction.Res getSupertypeRes(
-                UUID reqID, @Nullable com.vaticle.typedb.core.concept.type.Type supertype) {
-            ConceptProto.Type.GetSupertype.Res.Builder getSupertypeRes = ConceptProto.Type.GetSupertype.Res.newBuilder();
-            if (supertype != null) getSupertypeRes.setType(protoType(supertype));
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setTypeGetSupertypeRes(getSupertypeRes));
+        private static TransactionProto.Transaction.Res thingTypeRes(UUID reqID, ConceptProto.ThingType.Res.Builder res) {
+            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeRes(res));
         }
 
-        public static TransactionProto.Transaction.Res setSupertypeRes(UUID reqID) {
-            return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setTypeSetSupertypeRes(
-                    ConceptProto.Type.SetSupertype.Res.getDefaultInstance()
-            ));
-        }
-
-        public static TransactionProto.Transaction.ResPart getSupertypesResPart(
-                UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.Type> types) {
-            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setTypeGetSupertypesResPart(
-                    ConceptProto.Type.GetSupertypes.ResPart.newBuilder().addAllTypes(
-                            types.stream().map(Type::protoType).collect(toList()))));
-        }
-
-        public static TransactionProto.Transaction.ResPart getSubtypesResPart(
-                UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.Type> types) {
-            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setTypeGetSubtypesResPart(
-                    ConceptProto.Type.GetSubtypes.ResPart.newBuilder().addAllTypes(
-                            types.stream().map(Type::protoType).collect(toList()))));
-        }
-
-        public static TransactionProto.Transaction.ResPart getSubtypesExplicitResPart(
-                UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.Type> types) {
-            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setTypeGetSubtypesExplicitResPart(
-                    ConceptProto.Type.GetSubtypesExplicit.ResPart.newBuilder().addAllTypes(
-                            types.stream().map(Type::protoType).collect(toList()))));
+        private static TransactionProto.Transaction.ResPart thingTypeResPart(UUID reqID, ConceptProto.ThingType.ResPart.Builder res) {
+            return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeResPart(res));
         }
 
         public static class RoleType {
+            public static TransactionProto.Transaction.Res deleteRes(UUID reqID) {
+                return roleTypeRes(reqID, ConceptProto.RoleType.Res.newBuilder().setRoleTypeDeleteRes(
+                        ConceptProto.RoleType.Delete.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.Res setLabelRes(UUID reqID) {
+                return roleTypeRes(reqID, ConceptProto.RoleType.Res.newBuilder().setRoleTypeSetLabelRes(
+                        ConceptProto.RoleType.SetLabel.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.Res getSupertypeRes(
+                    UUID reqID, @Nullable com.vaticle.typedb.core.concept.type.RoleType supertype) {
+                ConceptProto.RoleType.GetSupertype.Res.Builder getSupertypeRes = ConceptProto.RoleType.GetSupertype.Res.newBuilder();
+                if (supertype != null) getSupertypeRes.setRoleType(protoRoleType(supertype));
+                return roleTypeRes(reqID, ConceptProto.RoleType.Res.newBuilder().setRoleTypeGetSupertypeRes(getSupertypeRes));
+            }
+
+            public static TransactionProto.Transaction.ResPart getSupertypesResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> types) {
+                return roleTypeResPart(reqID, ConceptProto.RoleType.ResPart.newBuilder().setRoleTypeGetSupertypesResPart(
+                        ConceptProto.RoleType.GetSupertypes.ResPart.newBuilder().addAllRoleTypes(
+                                types.stream().map(Type::protoRoleType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.ResPart getSubtypesResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> types) {
+                return roleTypeResPart(reqID, ConceptProto.RoleType.ResPart.newBuilder().setRoleTypeGetSubtypesResPart(
+                        ConceptProto.RoleType.GetSubtypes.ResPart.newBuilder().addAllRoleTypes(
+                                types.stream().map(Type::protoRoleType).collect(toList()))));
+            }
 
             public static TransactionProto.Transaction.ResPart getRelationTypesResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RelationType> relationTypes) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetRelationTypesResPart(
+                return roleTypeResPart(reqID, ConceptProto.RoleType.ResPart.newBuilder().setRoleTypeGetRelationTypesResPart(
                         ConceptProto.RoleType.GetRelationTypes.ResPart.newBuilder().addAllRelationTypes(
-                                relationTypes.stream().map(Type::protoType).collect(toList()))));
+                                relationTypes.stream().map(Type::protoRelationType).collect(toList()))));
             }
 
             public static TransactionProto.Transaction.ResPart getPlayerTypesResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> players) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayerTypesResPart(
+                return roleTypeResPart(reqID, ConceptProto.RoleType.ResPart.newBuilder().setRoleTypeGetPlayerTypesResPart(
                         ConceptProto.RoleType.GetPlayerTypes.ResPart.newBuilder().addAllThingTypes(
-                                players.stream().map(Type::protoType).collect(toList()))));
-            }
-
-            public static TransactionProto.Transaction.ResPart getPlayerTypesExplicitResPart(
-                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> players) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayerTypesExplicitResPart(
-                        ConceptProto.RoleType.GetPlayerTypesExplicit.ResPart.newBuilder().addAllThingTypes(
-                                players.stream().map(Type::protoType).collect(toList()))));
+                                players.stream().map(Type::protoThingType).collect(toList()))));
             }
 
             public static TransactionProto.Transaction.ResPart getRelationInstancesResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Relation> relations) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetRelationInstancesResPart(
+                return roleTypeResPart(reqID, ConceptProto.RoleType.ResPart.newBuilder().setRoleTypeGetRelationInstancesResPart(
                         ConceptProto.RoleType.GetRelationInstances.ResPart.newBuilder().addAllRelations(
-                                relations.stream().map(Thing::protoThing).collect(toList()))));
-            }
-
-            public static TransactionProto.Transaction.ResPart getRelationInstancesExplicitResPart(
-                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Relation> relations) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetRelationInstancesExplicitResPart(
-                        ConceptProto.RoleType.GetRelationInstancesExplicit.ResPart.newBuilder().addAllRelations(
-                                relations.stream().map(Thing::protoThing).collect(toList()))));
+                                relations.stream().map(Thing::protoRelation).collect(toList()))));
             }
 
             public static TransactionProto.Transaction.ResPart getPlayerInstancesResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> players) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayerInstancesResPart(
+                return roleTypeResPart(reqID, ConceptProto.RoleType.ResPart.newBuilder().setRoleTypeGetPlayerInstancesResPart(
                         ConceptProto.RoleType.GetPlayerInstances.ResPart.newBuilder().addAllThings(
-                                players.stream().map(Thing::protoThing).collect(toList()))));
-            }
-
-            public static TransactionProto.Transaction.ResPart getPlayerInstancesExplicitResPart(
-                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> players) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRoleTypeGetPlayerInstancesExplicitResPart(
-                        ConceptProto.RoleType.GetPlayerInstancesExplicit.ResPart.newBuilder().addAllThings(
                                 players.stream().map(Thing::protoThing).collect(toList()))));
             }
         }
 
         public static class ThingType {
-
-            public static TransactionProto.Transaction.ResPart getInstancesResPart(
-                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> things) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetInstancesResPart(
-                        ConceptProto.ThingType.GetInstances.ResPart.newBuilder().addAllThings(
-                                things.stream().map(Thing::protoThing).collect(toList()))));
+            public static TransactionProto.Transaction.Res deleteRes(UUID reqID) {
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setThingTypeDeleteRes(
+                        ConceptProto.ThingType.Delete.Res.getDefaultInstance()
+                ));
             }
 
-            public static TransactionProto.Transaction.ResPart getInstancesExplicitResPart(
-                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> things) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetInstancesExplicitResPart(
-                        ConceptProto.ThingType.GetInstancesExplicit.ResPart.newBuilder().addAllThings(
-                                things.stream().map(Thing::protoThing).collect(toList()))));
+            public static TransactionProto.Transaction.Res setLabelRes(UUID reqID) {
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setThingTypeSetLabelRes(
+                        ConceptProto.ThingType.SetLabel.Res.getDefaultInstance()
+                ));
             }
 
             public static TransactionProto.Transaction.Res setAbstractRes(UUID reqID) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSetAbstractRes(
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setThingTypeSetAbstractRes(
                         ConceptProto.ThingType.SetAbstract.Res.getDefaultInstance()
                 ));
             }
 
             public static TransactionProto.Transaction.Res unsetAbstractRes(UUID reqID) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetAbstractRes(
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setThingTypeUnsetAbstractRes(
                         ConceptProto.ThingType.UnsetAbstract.Res.getDefaultInstance()
                 ));
             }
 
             public static TransactionProto.Transaction.ResPart getOwnsResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.AttributeType> attributeTypes) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetOwnsResPart(
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setThingTypeGetOwnsResPart(
                         ConceptProto.ThingType.GetOwns.ResPart.newBuilder().addAllAttributeTypes(
-                                attributeTypes.stream().map(Type::protoType).collect(toList()))));
-            }
-
-            public static TransactionProto.Transaction.ResPart getOwnsExplicitResPart(
-                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.AttributeType> attributeTypes) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetOwnsExplicitResPart(
-                        ConceptProto.ThingType.GetOwnsExplicit.ResPart.newBuilder().addAllAttributeTypes(
-                                attributeTypes.stream().map(Type::protoType).collect(toList()))));
+                                attributeTypes.stream().map(Type::protoAttributeType).collect(toList()))));
             }
 
             public static TransactionProto.Transaction.Res getOwnsOverriddenRes(
                     UUID reqID, com.vaticle.typedb.core.concept.type.AttributeType attributeType) {
                 ConceptProto.ThingType.GetOwnsOverridden.Res.Builder getOwnsOverridden = ConceptProto.ThingType.GetOwnsOverridden.Res.newBuilder();
-                if (attributeType != null) getOwnsOverridden.setAttributeType(protoType(attributeType));
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeGetOwnsOverriddenRes(getOwnsOverridden));
+                if (attributeType != null) getOwnsOverridden.setAttributeType(protoAttributeType(attributeType));
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setThingTypeGetOwnsOverriddenRes(getOwnsOverridden));
             }
 
             public static TransactionProto.Transaction.Res setOwnsRes(UUID reqID) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSetOwnsRes(
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setThingTypeSetOwnsRes(
                         ConceptProto.ThingType.SetOwns.Res.getDefaultInstance()
                 ));
             }
 
             public static TransactionProto.Transaction.Res unsetOwnsRes(UUID reqID) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetOwnsRes(
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setThingTypeUnsetOwnsRes(
                         ConceptProto.ThingType.UnsetOwns.Res.getDefaultInstance()
                 ));
             }
 
             public static TransactionProto.Transaction.ResPart getPlaysResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> roleTypes) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetPlaysResPart(
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setThingTypeGetPlaysResPart(
                         ConceptProto.ThingType.GetPlays.ResPart.newBuilder().addAllRoleTypes(
-                                roleTypes.stream().map(Type::protoType).collect(toList()))));
-            }
-
-            public static TransactionProto.Transaction.ResPart getPlaysExplicitResPart(
-                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> roleTypes) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setThingTypeGetPlaysExplicitResPart(
-                        ConceptProto.ThingType.GetPlaysExplicit.ResPart.newBuilder().addAllRoleTypes(
-                                roleTypes.stream().map(Type::protoType).collect(toList()))));
+                                roleTypes.stream().map(Type::protoRoleType).collect(toList()))));
             }
 
             public static TransactionProto.Transaction.Res getPlaysOverriddenRes(
                     UUID reqID, com.vaticle.typedb.core.concept.type.RoleType roleType) {
                 ConceptProto.ThingType.GetPlaysOverridden.Res.Builder getPlaysOverridden = ConceptProto.ThingType.GetPlaysOverridden.Res.newBuilder();
-                if (roleType != null) getPlaysOverridden.setRoleType(protoType(roleType));
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeGetPlaysOverriddenRes(getPlaysOverridden));
+                if (roleType != null) getPlaysOverridden.setRoleType(protoRoleType(roleType));
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setThingTypeGetPlaysOverriddenRes(getPlaysOverridden));
             }
 
             public static TransactionProto.Transaction.Res setPlaysRes(UUID reqID) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeSetPlaysRes(
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setThingTypeSetPlaysRes(
                         ConceptProto.ThingType.SetPlays.Res.getDefaultInstance()
                 ));
             }
 
             public static TransactionProto.Transaction.Res unsetPlaysRes(UUID reqID) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeUnsetPlaysRes(
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setThingTypeUnsetPlaysRes(
                         ConceptProto.ThingType.UnsetPlays.Res.getDefaultInstance()
                 ));
             }
 
             public static TransactionProto.Transaction.Res getSyntaxRes(UUID reqID, String syntax) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setThingTypeGetSyntaxRes(
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setThingTypeGetSyntaxRes(
                         ConceptProto.ThingType.GetSyntax.Res.newBuilder().setSyntax(syntax)
                 ));
             }
         }
 
-        public static class EntityType {
 
+        public static class EntityType {
             public static TransactionProto.Transaction.Res createRes(UUID reqID, Entity entity) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setEntityTypeCreateRes(
-                        ConceptProto.EntityType.Create.Res.newBuilder().setEntity(protoThing(entity))
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setEntityTypeCreateRes(
+                        ConceptProto.EntityType.Create.Res.newBuilder().setEntity(protoEntity(entity))
                 ));
+            }
+
+            public static TransactionProto.Transaction.Res getSupertypeRes(
+                    UUID reqID, @Nullable com.vaticle.typedb.core.concept.type.EntityType supertype) {
+                ConceptProto.EntityType.GetSupertype.Res.Builder getSupertypeRes = ConceptProto.EntityType.GetSupertype.Res.newBuilder();
+                if (supertype != null) getSupertypeRes.setEntityType(protoEntityType(supertype));
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setEntityTypeGetSupertypeRes(getSupertypeRes));
+            }
+
+            public static TransactionProto.Transaction.Res setSupertypeRes(UUID reqID) {
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setEntityTypeSetSupertypeRes(
+                        ConceptProto.EntityType.SetSupertype.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.ResPart getSupertypesResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.EntityType> types) {
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setEntityTypeGetSupertypesResPart(
+                        ConceptProto.EntityType.GetSupertypes.ResPart.newBuilder().addAllEntityTypes(
+                                types.stream().map(Type::protoEntityType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.ResPart getSubtypesResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.EntityType> types) {
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setEntityTypeGetSubtypesResPart(
+                        ConceptProto.EntityType.GetSubtypes.ResPart.newBuilder().addAllEntityTypes(
+                                types.stream().map(Type::protoEntityType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.ResPart getInstancesResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Entity> things) {
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setEntityTypeGetInstancesResPart(
+                        ConceptProto.EntityType.GetInstances.ResPart.newBuilder().addAllEntities(
+                                things.stream().map(Thing::protoEntity).collect(toList()))));
             }
         }
 
         public static class RelationType {
-
             public static TransactionProto.Transaction.Res createRes(UUID reqID, Relation relation) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeCreateRes(
-                        ConceptProto.RelationType.Create.Res.newBuilder().setRelation(protoThing(relation))
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setRelationTypeCreateRes(
+                        ConceptProto.RelationType.Create.Res.newBuilder().setRelation(protoRelation(relation))
                 ));
+            }
+
+            public static TransactionProto.Transaction.Res getSupertypeRes(
+                    UUID reqID, @Nullable com.vaticle.typedb.core.concept.type.RelationType supertype) {
+                ConceptProto.RelationType.GetSupertype.Res.Builder getSupertypeRes = ConceptProto.RelationType.GetSupertype.Res.newBuilder();
+                if (supertype != null) getSupertypeRes.setRelationType(protoRelationType(supertype));
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setRelationTypeGetSupertypeRes(getSupertypeRes));
+            }
+
+            public static TransactionProto.Transaction.Res setSupertypeRes(UUID reqID) {
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setRelationTypeSetSupertypeRes(
+                        ConceptProto.RelationType.SetSupertype.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.ResPart getSupertypesResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RelationType> types) {
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setRelationTypeGetSupertypesResPart(
+                        ConceptProto.RelationType.GetSupertypes.ResPart.newBuilder().addAllRelationTypes(
+                                types.stream().map(Type::protoRelationType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.ResPart getSubtypesResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RelationType> types) {
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setRelationTypeGetSubtypesResPart(
+                        ConceptProto.RelationType.GetSubtypes.ResPart.newBuilder().addAllRelationTypes(
+                                types.stream().map(Type::protoRelationType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.ResPart getInstancesResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Relation> things) {
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setRelationTypeGetInstancesResPart(
+                        ConceptProto.RelationType.GetInstances.ResPart.newBuilder().addAllRelations(
+                                things.stream().map(Thing::protoRelation).collect(toList()))));
             }
 
             public static TransactionProto.Transaction.ResPart getRelatesResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> roleTypes) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRelationTypeGetRelatesResPart(
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setRelationTypeGetRelatesResPart(
                         ConceptProto.RelationType.GetRelates.ResPart.newBuilder().addAllRoleTypes(
-                                roleTypes.stream().map(Type::protoType).collect(toList()))
-                ));
-            }
-
-            public static TransactionProto.Transaction.ResPart getRelatesExplicitResPart(
-                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.RoleType> roleTypes) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setRelationTypeGetRelatesExplicitResPart(
-                        ConceptProto.RelationType.GetRelatesExplicit.ResPart.newBuilder().addAllRoleTypes(
-                                roleTypes.stream().map(Type::protoType).collect(toList()))
+                                roleTypes.stream().map(Type::protoRoleType).collect(toList()))
                 ));
             }
 
@@ -625,26 +724,26 @@ public class ResponseBuilder {
                     UUID reqID, @Nullable com.vaticle.typedb.core.concept.type.RoleType roleType) {
                 ConceptProto.RelationType.GetRelatesForRoleLabel.Res.Builder res =
                         ConceptProto.RelationType.GetRelatesForRoleLabel.Res.newBuilder();
-                if (roleType != null) res.setRoleType(protoType(roleType));
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesForRoleLabelRes(res));
+                if (roleType != null) res.setRoleType(protoRoleType(roleType));
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setRelationTypeGetRelatesForRoleLabelRes(res));
             }
 
             public static TransactionProto.Transaction.Res getRelatesOverriddenRes(
                     UUID reqID, @Nullable com.vaticle.typedb.core.concept.type.RoleType roleType) {
                 ConceptProto.RelationType.GetRelatesOverridden.Res.Builder res =
                         ConceptProto.RelationType.GetRelatesOverridden.Res.newBuilder();
-                if (roleType != null) res.setRoleType(protoType(roleType));
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeGetRelatesOverriddenRes(res));
+                if (roleType != null) res.setRoleType(protoRoleType(roleType));
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setRelationTypeGetRelatesOverriddenRes(res));
             }
 
             public static TransactionProto.Transaction.Res setRelatesRes(UUID reqID) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeSetRelatesRes(
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setRelationTypeSetRelatesRes(
                         ConceptProto.RelationType.SetRelates.Res.getDefaultInstance()
                 ));
             }
 
             public static TransactionProto.Transaction.Res unsetRelatesRes(UUID reqID) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setRelationTypeUnsetRelatesRes(
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setRelationTypeUnsetRelatesRes(
                         ConceptProto.RelationType.UnsetRelates.Res.getDefaultInstance()
                 ));
             }
@@ -671,43 +770,69 @@ public class ResponseBuilder {
                 }
             }
 
+            public static TransactionProto.Transaction.Res getSupertypeRes(
+                    UUID reqID, @Nullable com.vaticle.typedb.core.concept.type.AttributeType supertype) {
+                ConceptProto.AttributeType.GetSupertype.Res.Builder getSupertypeRes = ConceptProto.AttributeType.GetSupertype.Res.newBuilder();
+                if (supertype != null) getSupertypeRes.setAttributeType(protoAttributeType(supertype));
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setAttributeTypeGetSupertypeRes(getSupertypeRes));
+            }
+
+            public static TransactionProto.Transaction.Res setSupertypeRes(UUID reqID) {
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setAttributeTypeSetSupertypeRes(
+                        ConceptProto.AttributeType.SetSupertype.Res.getDefaultInstance()
+                ));
+            }
+
+            public static TransactionProto.Transaction.ResPart getSupertypesResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.AttributeType> types) {
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setAttributeTypeGetSupertypesResPart(
+                        ConceptProto.AttributeType.GetSupertypes.ResPart.newBuilder().addAllAttributeTypes(
+                                types.stream().map(Type::protoAttributeType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.ResPart getSubtypesResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.AttributeType> types) {
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setAttributeTypeGetSubtypesResPart(
+                        ConceptProto.AttributeType.GetSubtypes.ResPart.newBuilder().addAllAttributeTypes(
+                                types.stream().map(Type::protoAttributeType).collect(toList()))));
+            }
+
+            public static TransactionProto.Transaction.ResPart getInstancesResPart(
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Attribute> things) {
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setAttributeTypeGetInstancesResPart(
+                        ConceptProto.AttributeType.GetInstances.ResPart.newBuilder().addAllAttributes(
+                                things.stream().map(Thing::protoAttribute).collect(toList()))));
+            }
+
             public static TransactionProto.Transaction.Res putRes(UUID reqID, Attribute attribute) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setAttributeTypePutRes(
-                        ConceptProto.AttributeType.Put.Res.newBuilder().setAttribute(protoThing(attribute))
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setAttributeTypePutRes(
+                        ConceptProto.AttributeType.Put.Res.newBuilder().setAttribute(protoAttribute(attribute))
                 ));
             }
 
             public static TransactionProto.Transaction.Res getRes(UUID reqID, @Nullable Attribute attribute) {
                 ConceptProto.AttributeType.Get.Res.Builder getAttributeTypeRes = ConceptProto.AttributeType.Get.Res.newBuilder();
-                if (attribute != null) getAttributeTypeRes.setAttribute(protoThing(attribute));
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setAttributeTypeGetRes(getAttributeTypeRes));
+                if (attribute != null) getAttributeTypeRes.setAttribute(protoAttribute(attribute));
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setAttributeTypeGetRes(getAttributeTypeRes));
             }
 
             public static TransactionProto.Transaction.Res getRegexRes(UUID reqID, Pattern regex) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setAttributeTypeGetRegexRes(
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setAttributeTypeGetRegexRes(
                         ConceptProto.AttributeType.GetRegex.Res.newBuilder().setRegex((regex != null) ? regex.pattern() : "")
                 ));
             }
 
             public static TransactionProto.Transaction.Res setRegexRes(UUID reqID) {
-                return typeRes(reqID, ConceptProto.Type.Res.newBuilder().setAttributeTypeSetRegexRes(
+                return thingTypeRes(reqID, ConceptProto.ThingType.Res.newBuilder().setAttributeTypeSetRegexRes(
                         ConceptProto.AttributeType.SetRegex.Res.getDefaultInstance()
                 ));
             }
 
             public static TransactionProto.Transaction.ResPart getOwnersResPart(
                     UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> owners) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setAttributeTypeGetOwnersResPart(
+                return thingTypeResPart(reqID, ConceptProto.ThingType.ResPart.newBuilder().setAttributeTypeGetOwnersResPart(
                         ConceptProto.AttributeType.GetOwners.ResPart.newBuilder().addAllThingTypes(
-                                owners.stream().map(Type::protoType).collect(toList())
-                        )));
-            }
-
-            public static TransactionProto.Transaction.ResPart getOwnersExplicitResPart(
-                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.type.ThingType> owners) {
-                return typeResPart(reqID, ConceptProto.Type.ResPart.newBuilder().setAttributeTypeGetOwnersExplicitResPart(
-                        ConceptProto.AttributeType.GetOwnersExplicit.ResPart.newBuilder().addAllThingTypes(
-                                owners.stream().map(Type::protoType).collect(toList())
+                                owners.stream().map(Type::protoThingType).collect(toList())
                         )));
             }
         }
@@ -716,20 +841,42 @@ public class ResponseBuilder {
     public static class Thing {
 
         public static ConceptProto.Thing protoThing(com.vaticle.typedb.core.concept.thing.Thing thing) {
-            ConceptProto.Thing.Builder protoThing = ConceptProto.Thing.newBuilder()
+            if (thing.isEntity()) return ConceptProto.Thing.newBuilder().setEntity(protoEntity(thing.asEntity())).build();
+            if (thing.isRelation()) return ConceptProto.Thing.newBuilder().setRelation(protoRelation(thing.asRelation())).build();
+            if (thing.isAttribute()) return ConceptProto.Thing.newBuilder().setAttribute(protoAttribute(thing.asAttribute())).build();
+            throw TypeDBException.of(ErrorMessage.Internal.ILLEGAL_STATE);
+        }
+
+        public static ConceptProto.Entity protoEntity(com.vaticle.typedb.core.concept.thing.Entity thing) {
+            ConceptProto.Entity.Builder protoEntity = ConceptProto.Entity.newBuilder()
                     .setIid(ByteString.copyFrom(thing.getIID().getBytes()))
-                    .setType(protoType(thing.getType()))
-                    .setInferred(thing.isInferred());
-            if (thing.isAttribute()) protoThing.setValue(Attribute.attributeValue(thing.asAttribute()));
-            return protoThing.build();
+                    .setEntityType(protoEntityType(thing.getType()))
+                    .setInferred(thing.existence() == INFERRED);
+            return protoEntity.build();
+        }
+
+        public static ConceptProto.Relation protoRelation(com.vaticle.typedb.core.concept.thing.Relation thing) {
+            ConceptProto.Relation.Builder protoRelation = ConceptProto.Relation.newBuilder()
+                    .setIid(ByteString.copyFrom(thing.getIID().getBytes()))
+                    .setRelationType(protoRelationType(thing.getType()))
+                    .setInferred(thing.existence() == INFERRED);
+            return protoRelation.build();
+        }
+
+        public static ConceptProto.Attribute protoAttribute(com.vaticle.typedb.core.concept.thing.Attribute thing) {
+            ConceptProto.Attribute.Builder protoAttribute = ConceptProto.Attribute.newBuilder()
+                    .setIid(ByteString.copyFrom(thing.getIID().getBytes()))
+                    .setAttributeType(protoAttributeType(thing.getType()))
+                    .setInferred(thing.existence() == INFERRED)
+                    .setValue(Attribute.attributeValue(thing.asAttribute()));
+            return protoAttribute.build();
         }
 
         public static TransactionProto.Transaction.Res thingRes(UUID reqID, ConceptProto.Thing.Res.Builder res) {
             return TransactionProto.Transaction.Res.newBuilder().setReqId(UUIDAsByteString(reqID)).setThingRes(res).build();
         }
 
-        public static TransactionProto.Transaction.ResPart thingResPart(
-                UUID reqID, ConceptProto.Thing.ResPart.Builder resPart) {
+        public static TransactionProto.Transaction.ResPart thingResPart(UUID reqID, ConceptProto.Thing.ResPart.Builder resPart) {
             return TransactionProto.Transaction.ResPart.newBuilder().setReqId(UUIDAsByteString(reqID)).setThingResPart(resPart).build();
         }
 
@@ -739,17 +886,11 @@ public class ResponseBuilder {
             ));
         }
 
-        public static TransactionProto.Transaction.Res getTypeRes(UUID reqID, ThingType thingType) {
-            return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setThingGetTypeRes(
-                    ConceptProto.Thing.GetType.Res.newBuilder().setThingType(protoType(thingType))
-            ));
-        }
-
         public static TransactionProto.Transaction.ResPart getHasResPart(
                 UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Attribute> attributes) {
             return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetHasResPart(
                     ConceptProto.Thing.GetHas.ResPart.newBuilder().addAllAttributes(
-                            attributes.stream().map(Thing::protoThing).collect(toList()))
+                            attributes.stream().map(Thing::protoAttribute).collect(toList()))
             ));
         }
 
@@ -769,7 +910,7 @@ public class ResponseBuilder {
                 UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Relation> relations) {
             return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetRelationsResPart(
                     ConceptProto.Thing.GetRelations.ResPart.newBuilder().addAllRelations(
-                            relations.stream().map(Thing::protoThing).collect(toList()))
+                            relations.stream().map(Thing::protoRelation).collect(toList()))
             ));
         }
 
@@ -777,45 +918,45 @@ public class ResponseBuilder {
                 UUID reqID, List<? extends RoleType> roleTypes) {
             return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setThingGetPlayingResPart(
                     ConceptProto.Thing.GetPlaying.ResPart.newBuilder().addAllRoleTypes(
-                            roleTypes.stream().map(Type::protoType).collect(toList()))
+                            roleTypes.stream().map(Type::protoRoleType).collect(toList()))
             ));
         }
 
         public static class Relation {
 
-            public static TransactionProto.Transaction.Res addPlayerRes(UUID reqID) {
-                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationAddPlayerRes(
-                        ConceptProto.Relation.AddPlayer.Res.getDefaultInstance()
+            public static TransactionProto.Transaction.Res addRolePlayerRes(UUID reqID) {
+                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationAddRolePlayerRes(
+                        ConceptProto.Relation.AddRolePlayer.Res.getDefaultInstance()
                 ));
             }
 
-            public static TransactionProto.Transaction.Res removePlayerRes(UUID reqID) {
-                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationRemovePlayerRes(
-                        ConceptProto.Relation.RemovePlayer.Res.getDefaultInstance()
-                ));
-            }
-
-            public static TransactionProto.Transaction.ResPart getPlayersResPart(
-                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> players) {
-                return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetPlayersResPart(
-                        ConceptProto.Relation.GetPlayers.ResPart.newBuilder().addAllThings(
-                                players.stream().map(Thing::protoThing).collect(toList()))
+            public static TransactionProto.Transaction.Res removeRolePlayerRes(UUID reqID) {
+                return thingRes(reqID, ConceptProto.Thing.Res.newBuilder().setRelationRemoveRolePlayerRes(
+                        ConceptProto.Relation.RemoveRolePlayer.Res.getDefaultInstance()
                 ));
             }
 
             public static TransactionProto.Transaction.ResPart getPlayersByRoleTypeResPart(
-                    UUID reqID, List<Pair<RoleType, com.vaticle.typedb.core.concept.thing.Thing>> rolePlayers) {
+                    UUID reqID, List<? extends com.vaticle.typedb.core.concept.thing.Thing> players) {
                 return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetPlayersByRoleTypeResPart(
-                        ConceptProto.Relation.GetPlayersByRoleType.ResPart.newBuilder().addAllRoleTypesWithPlayers(
-                                rolePlayers.stream().map(rp -> ConceptProto.Relation.GetPlayersByRoleType.RoleTypeWithPlayer.newBuilder()
-                                        .setRoleType(protoType(rp.first())).setPlayer(protoThing(rp.second())).build()).collect(toList()))
+                        ConceptProto.Relation.GetPlayersByRoleType.ResPart.newBuilder().addAllThings(
+                                players.stream().map(Thing::protoThing).collect(toList()))
+                ));
+            }
+
+            public static TransactionProto.Transaction.ResPart getRolePlayersResPart(
+                    UUID reqID, List<Pair<RoleType, com.vaticle.typedb.core.concept.thing.Thing>> rolePlayers) {
+                return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetRolePlayersResPart(
+                        ConceptProto.Relation.GetRolePlayers.ResPart.newBuilder().addAllRolePlayers(
+                                rolePlayers.stream().map(rp -> ConceptProto.Relation.RolePlayer.newBuilder()
+                                        .setRoleType(protoRoleType(rp.first())).setPlayer(protoThing(rp.second())).build()).collect(toList()))
                 ));
             }
 
             public static TransactionProto.Transaction.ResPart getRelatingResPart(UUID reqID, List<? extends RoleType> roleTypes) {
                 return thingResPart(reqID, ConceptProto.Thing.ResPart.newBuilder().setRelationGetRelatingResPart(
                         ConceptProto.Relation.GetRelating.ResPart.newBuilder().addAllRoleTypes(
-                                roleTypes.stream().map(Type::protoType).collect(toList()))
+                                roleTypes.stream().map(Type::protoRoleType).collect(toList()))
                 ));
             }
         }
@@ -1003,7 +1144,5 @@ public class ResponseBuilder {
                     .setNumber(numeric(answer.numeric()))
                     .build();
         }
-
     }
-
 }

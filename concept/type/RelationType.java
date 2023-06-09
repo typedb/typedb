@@ -20,22 +20,30 @@ package com.vaticle.typedb.core.concept.type;
 
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
+import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.concept.thing.Relation;
 
 
 public interface RelationType extends ThingType {
 
     @Override
+    RelationType getSupertype();
+
+    @Override
+    Forwardable<? extends RelationType, Order.Asc> getSupertypes();
+
+    @Override
     Forwardable<? extends RelationType, Order.Asc> getSubtypes();
 
     @Override
-    Forwardable<? extends RelationType, Order.Asc> getSubtypesExplicit();
+    Forwardable<? extends RelationType, Order.Asc> getSubtypes(Transitivity transitivity);
 
     @Override
     Forwardable<? extends Relation, Order.Asc> getInstances();
 
     @Override
-    Forwardable<? extends Relation, Order.Asc> getInstancesExplicit();
+    Forwardable<? extends Relation, Order.Asc> getInstances(Transitivity transitivity);
 
     void setSupertype(RelationType superType);
 
@@ -47,15 +55,15 @@ public interface RelationType extends ThingType {
 
     Forwardable<? extends RoleType, Order.Asc> getRelates();
 
-    Forwardable<? extends RoleType, Order.Asc> getRelatesExplicit();
+    Forwardable<? extends RoleType, Order.Asc> getRelates(Transitivity transitivity);
 
     RoleType getRelates(String roleLabel);
 
-    RoleType getRelatesExplicit(String roleLabel);
+    RoleType getRelates(Transitivity transitivity, String roleLabel);
 
     RoleType getRelatesOverridden(String roleLabel);
 
     Relation create();
 
-    Relation create(boolean isInferred);
+    Relation create(Existence existence);
 }

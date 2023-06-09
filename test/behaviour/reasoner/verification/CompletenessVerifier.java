@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 
 class CompletenessVerifier {
 
@@ -92,7 +93,7 @@ class CompletenessVerifier {
 
     private static void validateNonInferred(BoundConjunction boundConjunction) {
         for (Concept concept : boundConjunction.bounds().concepts().values()) {
-            if (concept.isThing() && concept.asThing().isInferred()) {
+            if (concept.isThing() && concept.asThing().existence() == INFERRED) {
                 throw new UnsupportedOperationException(
                         String.format("Completeness testing does not yet support more than one inferred concept " +
                                 "in a query tested against the reasoner. It becomes too " +

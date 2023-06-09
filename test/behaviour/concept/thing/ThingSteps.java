@@ -22,7 +22,6 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.test.behaviour.config.Parameters.RootLabel;
 import com.vaticle.typedb.core.test.behaviour.config.Parameters.ScopedLabel;
-import com.vaticle.typeql.lang.common.TypeQLToken;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -34,6 +33,7 @@ import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.test.behaviour.concept.type.thingtype.ThingTypeSteps.get_thing_type;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
 import static java.util.Objects.isNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -92,12 +92,12 @@ public class ThingSteps {
 
     @Then("entity/attribute/relation {var} get keys contain: {var}")
     public void thing_get_keys_contain(String var1, String var2) {
-        assertTrue(get(var1).getHas(set(TypeQLToken.Annotation.KEY)).anyMatch(k -> k.equals(get(var2))));
+        assertTrue(get(var1).getHas(set(KEY)).anyMatch(k -> k.equals(get(var2))));
     }
 
     @Then("entity/attribute/relation {var} get keys do not contain: {var}")
     public void thing_get_keys_do_not_contain(String var1, String var2) {
-        assertTrue(get(var1).getHas(set(TypeQLToken.Annotation.KEY)).noneMatch(k -> k.equals(get(var2))));
+        assertTrue(get(var1).getHas(set(KEY)).noneMatch(k -> k.equals(get(var2))));
     }
 
     @Then("entity/attribute/relation {var} get attributes contain: {var}")

@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.concept.thing.impl;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.concept.ConceptImpl;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
@@ -35,7 +36,7 @@ import com.vaticle.typedb.core.encoding.iid.PrefixIID;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
 import com.vaticle.typedb.core.graph.vertex.AttributeVertex;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,6 +59,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.T
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.Iterators.single;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.HAS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.PLAYING;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
@@ -111,17 +114,17 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public boolean isInferred() {
-        return readableVertex().isInferred();
+    public Existence existence() {
+        return readableVertex().existence();
     }
 
     @Override
     public void setHas(Attribute attribute) {
-        setHas(attribute, false);
+        setHas(attribute, STORED);
     }
 
     @Override
-    public void setHas(Attribute attribute, boolean isInferred) {
+    public void setHas(Attribute attribute, Existence existence) {
         validateIsNotDeleted();
         AttributeVertex.Write<?> attrVertex = ((AttributeImpl<?>) attribute).writableVertex();
         NavigableSet<ThingType.Owns> owns = getType().getOwns();
@@ -144,7 +147,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
             }
             vertex.graph().exclusiveOwnership(((TypeImpl) this.getType()).vertex, attrVertex);
         }
-        writableVertex().outs().put(HAS, attrVertex, isInferred);
+        writableVertex().outs().put(HAS, attrVertex, existence);
     }
 
     @Override
@@ -156,7 +159,13 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
-    public FunctionalIterator<AttributeImpl<?>> getHas(Set<TypeQLToken.Annotation> ownsAnnotations) {
+    public FunctionalIterator<AttributeImpl<?>> getHas(List<AttributeType> attributeTypes, Set<Annotation> ownsAnnotations) {
+        return getHas(getType().getOwns(ownsAnnotations).stream().map(ThingType.Owns::attributeType)
+                .filter(attributeTypes::contains).toArray(AttributeType[]::new));
+    }
+
+    @Override
+    public FunctionalIterator<AttributeImpl<?>> getHas(Set<Annotation> ownsAnnotations) {
         return getHas(getType().getOwns(ownsAnnotations).stream().map(ThingType.Owns::attributeType).toArray(AttributeType[]::new));
     }
 
@@ -210,13 +219,13 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     @Override
     public boolean hasInferred(Attribute attribute) {
         ThingEdge hasEdge = readableVertex().outs().edge(HAS, ((ThingImpl) attribute).readableVertex());
-        return hasEdge != null && hasEdge.isInferred();
+        return hasEdge != null && hasEdge.existence() == INFERRED;
     }
 
     @Override
     public boolean hasNonInferred(Attribute attribute) {
         ThingEdge hasEdge = readableVertex().outs().edge(HAS, ((ThingImpl) attribute).readableVertex());
-        return hasEdge != null && !hasEdge.isInferred();
+        return hasEdge != null && hasEdge.existence() == STORED;
     }
 
     @Override
@@ -257,7 +266,7 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public void validate() {
-        Set<TypeQLToken.Annotation> keyAnnotation = set(KEY);
+        Set<Annotation> keyAnnotation = set(KEY);
         long requiredKeys = getType().getOwns(keyAnnotation).count();
         if (requiredKeys > 0 && getHas(keyAnnotation).map(Attribute::getType).count() < requiredKeys) {
             Set<AttributeType> missing = getType().getOwns(keyAnnotation).map(ThingType.Owns::attributeType).toSet();
