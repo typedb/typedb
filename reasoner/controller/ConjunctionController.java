@@ -37,6 +37,7 @@ import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.Controller
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
+import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
@@ -49,6 +50,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
@@ -68,14 +70,18 @@ public abstract class ConjunctionController<
     private final Map<Concludable, MappedConcludable> concludableControllers;
     private final Map<Negated, FilteredNegation> negationControllers;
     final ResolvableConjunction conjunction;
+    final ConcurrentHashMap<Set<Variable.Retrievable>, List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>>> compoundStreamRegistries;
+    final Set<Variable.Retrievable> outputVariables;
 
-    ConjunctionController(Driver<CONTROLLER> driver, ResolvableConjunction conjunction, Context context) {
+    ConjunctionController(Driver<CONTROLLER> driver, ResolvableConjunction conjunction, Set<Variable.Retrievable> outputVariables, Context context) {
         super(driver, context, () -> ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")");
         this.conjunction = conjunction;
         this.resolvables = new HashSet<>();
         this.retrievableControllers = new HashMap<>();
         this.concludableControllers = new HashMap<>();
         this.negationControllers = new HashMap<>();
+        this.compoundStreamRegistries = new ConcurrentHashMap<>();
+        this.outputVariables = outputVariables;
     }
 
     @Override
@@ -103,6 +109,14 @@ public abstract class ConjunctionController<
         List<Resolvable<?>> plan = planner().getPlan(conjunction, boundVariables).plan();
         assert resolvables.size() == plan.size() && resolvables.containsAll(plan);
         return plan;
+    }
+
+    List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> getCompoundStreamRegistry(Set<Variable.Retrievable> retrievables) {
+        return compoundStreamRegistries.computeIfAbsent(retrievables, rets -> {
+            List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> registries = new ArrayList<>();
+            getPlan(rets).forEach(r -> registries.add(new ConcurrentHashMap<>()));
+            return registries;
+        });
     }
 
     static ConceptMap merge(ConceptMap into, ConceptMap from) {
@@ -185,6 +199,8 @@ public abstract class ConjunctionController<
 
         final ConceptMap bounds;
         final List<Resolvable<?>> plan;
+        final List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> compoundStreamRegistry;
+        final Set<Variable.Retrievable> outputVariables;
 
         Processor(Driver<PROCESSOR> driver,
                   Driver<? extends ConjunctionController<?, PROCESSOR>> controller,
@@ -194,6 +210,8 @@ public abstract class ConjunctionController<
             this.bounds = bounds;
             this.plan = plan;
             context.perfCounters().conjunctionProcessors.add(1);
+            this.compoundStreamRegistry = controller.actor().getCompoundStreamRegistry(bounds.concepts().keySet());
+            this.outputVariables = controller.actor().outputVariables;
         }
 
         public class CompoundStream extends TransformationStream<ConceptMap, ConceptMap> {
@@ -203,18 +221,28 @@ public abstract class ConjunctionController<
             private final Map<Publisher<ConceptMap>, ConceptMap> publisherPackets;
             private final ConceptMap initialPacket;
             private final AbstractProcessor<?, ?, ?, ?> processor;
+            private final Set<Variable.Retrievable> remainingVariables;
+            private final List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> remainingCompoundStreamRegistries;
+            private final ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>> compoundStreamRegistry;
 
-            CompoundStream(AbstractProcessor<?, ?, ?, ?> processor, List<Resolvable<?>> plan,
+
+            CompoundStream(AbstractProcessor<?, ?, ?, ?> processor,
+                           List<Resolvable<?>> plan, List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> compoundStreamRegistriesForPlan,
                            ConceptMap initialPacket) {
-                super(processor, new SubscriberRegistry.Single<>(), new PublisherRegistry.Multi<>());
+                super(processor, new SubscriberRegistry.Multi<>(), new PublisherRegistry.Multi<>());
                 this.processor = processor;
                 assert plan.size() > 0;
                 this.initialPacket = initialPacket;
                 this.remainingPlan = new ArrayList<>(plan);
+                this.remainingCompoundStreamRegistries = new ArrayList<>(compoundStreamRegistriesForPlan);
+                this.compoundStreamRegistry = this.remainingCompoundStreamRegistries.remove(0);
                 this.publisherPackets = new HashMap<>();
                 this.leadingPublisher = nextCompoundLeader(this.remainingPlan.remove(0), initialPacket);
                 this.leadingPublisher.registerSubscriber(this);
                 processor().context().perfCounters().compoundStreams.add(1);
+                this.remainingVariables = iterate(this.remainingPlan)
+                        .flatMap(resolvable -> iterate(resolvable.retrieves()))
+                        .toSet();
             }
 
             @Override
@@ -223,24 +251,44 @@ public abstract class ConjunctionController<
                 ConceptMap mergedPacket = merge(initialPacket, packet);
                 if (leadingPublisher.equals(publisher)) {
                     if (remainingPlan.size() == 0) {  // For a single item plan
-                        return Either.second(set(mergedPacket));
+                        return Either.second(set(mergedPacket.filter(outputVariables)));
                     } else {
                         Publisher<ConceptMap> follower;  // TODO: Creation of a new publisher should be delegated to the owner of this operation
                         if (remainingPlan.size() == 1) {
-                            follower = nextCompoundLeader(remainingPlan.get(0), mergedPacket);
+                            follower = mergeWithRemainingVars(nextCompoundLeader(remainingPlan.get(0), mergedPacket), mergedPacket);
                         } else {
-                            follower = new CompoundStream(processor, remainingPlan, mergedPacket).buffer();
+                            follower = mergeWithRemainingVars(getOrCreateCompoundStream(mergedPacket), mergedPacket);
                         }
                         publisherPackets.put(follower, mergedPacket);
                         return Either.first(follower);
                     }
                 } else {
-                    ConceptMap compoundedPacket = merge(mergedPacket, publisherPackets.get(publisher));
-                    assert compoundedPacket.equals(merge(publisherPackets.get(publisher), mergedPacket));
-                    return Either.second(set(compoundedPacket));
+
+//                    ConceptMap compoundedPacket = merge(mergedPacket, publisherPackets.get(publisher));
+//                    assert compoundedPacket.equals(merge(publisherPackets.get(publisher), mergedPacket));
+//                    return Either.second(set(compoundedPacket));
+                    // TODO: This is a bad hack for testing. We need to fix it for outputVariables to include the ones in the remaining plan
+                    return Either.second(set(mergedPacket.filter(outputVariables)));
                 }
             }
 
+            private Publisher<ConceptMap> getOrCreateCompoundStream(ConceptMap mergedPacket) {
+                ConceptMap filteredPacket = mergedPacket.filter(remainingVariables);
+                return compoundStreamRegistry.computeIfAbsent(filteredPacket, packet -> {
+                    CompoundStream compoundStream = new CompoundStream(processor, remainingPlan, remainingCompoundStreamRegistries, filteredPacket);
+                    PoolingStream.BufferedFanStream<ConceptMap> bufferedStream = PoolingStream.BufferedFanStream.fanOut(compoundStream.processor);
+                    compoundStream.registerSubscriber(bufferedStream);
+                    return bufferedStream;
+                });
+            }
+
+            private Publisher<ConceptMap> mergeWithRemainingVars(Publisher<ConceptMap> s, ConceptMap mergedPacket) {
+                // TODO: You want to create a transformation stream which cartesian-products the variables which aren't passed down.
+                // This prevents the multi-subscriber problem and (hopefully) gives you the right result
+                Set<Variable.Retrievable> joinVars = iterate(mergedPacket.concepts().keySet()).filter(v -> !remainingVariables.contains(v) && outputVariables.contains(v)).toSet();
+                ConceptMap remainingBounds = mergedPacket.filter(joinVars);
+                return remainingBounds.concepts().isEmpty() ? s : s.map(conceptMap -> merge(conceptMap, remainingBounds));
+            }
         }
 
         private InputPort<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {

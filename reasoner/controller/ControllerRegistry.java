@@ -43,6 +43,7 @@ import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import org.slf4j.Logger;
@@ -58,6 +59,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_TERMINATED_WITH_CAUSE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.util.stream.Collectors.toMap;
 
 public class ControllerRegistry {
@@ -174,16 +176,17 @@ public class ControllerRegistry {
         createRootController(reasonerConsumer, actorFn);
     }
 
-    Driver<NestedConjunctionController> createNestedConjunction(ResolvableConjunction conjunction) {
+    Driver<NestedConjunctionController> createNestedConjunction(ResolvableConjunction conjunction, Set<Variable.Retrievable> outputVariables) {
+        // TODO: get output variables as an argument
         Function<Driver<NestedConjunctionController>, NestedConjunctionController> actorFn =
-                driver -> new NestedConjunctionController(driver, conjunction, controllerContext);
+                driver -> new NestedConjunctionController(driver, conjunction, outputVariables, controllerContext);
         LOG.debug("Create Nested Conjunction for: '{}'", conjunction);
         return createController(actorFn);
     }
 
-    Driver<NestedDisjunctionController> createNestedDisjunction(ResolvableDisjunction disjunction) {
+    Driver<NestedDisjunctionController> createNestedDisjunction(ResolvableDisjunction disjunction, Set<Variable.Retrievable> outputVariables) {
         Function<Driver<NestedDisjunctionController>, NestedDisjunctionController> actorFn =
-                driver -> new NestedDisjunctionController(driver, disjunction, controllerContext);
+                driver -> new NestedDisjunctionController(driver, disjunction, outputVariables, controllerContext);
         LOG.debug("Create Nested Disjunction for: '{}'", disjunction);
         return createController(actorFn);
     }
@@ -233,10 +236,11 @@ public class ControllerRegistry {
     }
 
     ControllerView.FilteredNegation createNegation(Negated negated, ResolvableConjunction conjunction) {
+        Modifiers.Filter commonVariables = filter(conjunction, negated);
         Function<Driver<NegationController>, NegationController> actorFn =
-                driver -> new NegationController(driver, negated, controllerContext);
+                driver -> new NegationController(driver, negated, commonVariables.variables(), controllerContext);
         LOG.debug("Create NegationController for : {}", negated);
-        return ControllerView.negation(createController(actorFn), filter(conjunction, negated));
+        return ControllerView.negation(createController(actorFn), commonVariables);
     }
 
     private static Modifiers.Filter filter(ResolvableConjunction scope, Negated inner) {

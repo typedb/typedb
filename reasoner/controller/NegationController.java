@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Subscriber.F
 import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -49,16 +50,18 @@ public class NegationController extends AbstractController<
         > {
 
     private final Negated negated;
+    private final Set<Identifier.Variable.Retrievable> outputVariables;
     private Driver<NestedDisjunctionController> disjunctionContoller;
 
-    NegationController(Driver<NegationController> driver, Negated negated, Context context) {
+    NegationController(Driver<NegationController> driver, Negated negated, Set<Identifier.Variable.Retrievable> outputVariables, Context context) {
         super(driver, context, () -> NegationController.class.getSimpleName() + "(pattern:" + negated + ")");
         this.negated = negated;
+        this.outputVariables = outputVariables;
     }
 
     @Override
     public void setUpUpstreamControllers() {
-        disjunctionContoller = registry().createNestedDisjunction(negated.disjunction());
+        disjunctionContoller = registry().createNestedDisjunction(negated.disjunction(), outputVariables);
     }
 
     @Override

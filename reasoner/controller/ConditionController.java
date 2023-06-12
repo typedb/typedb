@@ -40,7 +40,7 @@ public class ConditionController extends DisjunctionController<
     private final Rule.Condition condition;
 
     ConditionController(Driver<ConditionController> driver, Rule.Condition condition, Context context) {
-        super(driver, condition.disjunction(), context);
+        super(driver, condition.disjunction(), condition.rule().conclusion().retrievableIds(), context);
         this.condition = condition;
     }
 

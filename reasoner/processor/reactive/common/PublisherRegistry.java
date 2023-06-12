@@ -39,6 +39,8 @@ public abstract class PublisherRegistry<PACKET> {
 
     public abstract int size();
 
+    public abstract boolean contains(Publisher<PACKET> publisher);
+
     public static class Single<PACKET> extends PublisherRegistry<PACKET> {
 
         private Publisher<PACKET> publisher;
@@ -87,6 +89,11 @@ public abstract class PublisherRegistry<PACKET> {
             else return 1;
         }
 
+        @Override
+        public boolean contains(Publisher<PACKET> publisher) {
+            return this.publisher == publisher;
+        }
+
         public Publisher<PACKET> publisher() {
             return publisher;
         }
@@ -125,6 +132,11 @@ public abstract class PublisherRegistry<PACKET> {
         @Override
         public int size() {
             return publisherPullState.size();
+        }
+
+        @Override
+        public boolean contains(Publisher<PACKET> publisher) {
+            return publisherPullState.containsKey(publisher);
         }
 
         @Override

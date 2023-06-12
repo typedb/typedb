@@ -25,10 +25,12 @@ import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 public class RootConjunctionController
@@ -41,7 +43,7 @@ public class RootConjunctionController
     RootConjunctionController(Driver<RootConjunctionController> driver, ResolvableConjunction conjunction,
                               Modifiers.Filter filter, boolean explain,
                               Context context, ReasonerConsumer<ConceptMap> reasonerConsumer) {
-        super(driver, conjunction, context);
+        super(driver, conjunction, filter.variables(), context);
         this.filter = filter;
         this.explain = explain;
         this.reasonerConsumer = reasonerConsumer;
@@ -87,7 +89,7 @@ public class RootConjunctionController
 
         @Override
         public void setUp() {
-            Stream<ConceptMap, ConceptMap> op = new CompoundStream(this, plan, bounds).buffer();
+            Stream<ConceptMap, ConceptMap> op = new CompoundStream(this, plan, compoundStreamRegistry, bounds).buffer();
             if (!explain) op = op.map(conceptMap -> conceptMap.filter(filter));
             op = op.distinct();
             setHubReactive(op);

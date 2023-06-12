@@ -52,18 +52,20 @@ public abstract class DisjunctionController<
         > extends AbstractController<ConceptMap, ConceptMap, OUTPUT, Request, PROCESSOR, CONTROLLER> {
 
     private final List<Pair<ResolvableConjunction, Driver<NestedConjunctionController>>> conjunctionControllers;
+    private final Set<Retrievable> outputVariables;
     ResolvableDisjunction disjunction;
 
-    DisjunctionController(Driver<CONTROLLER> driver, ResolvableDisjunction disjunction, Context context) {
+    DisjunctionController(Driver<CONTROLLER> driver, ResolvableDisjunction disjunction, Set<Identifier.Variable.Retrievable> outputVariables, Context context) {
         super(driver, context, () -> DisjunctionController.class.getSimpleName() + "(pattern:" + disjunction.pattern() + ")");
         this.disjunction = disjunction;
         this.conjunctionControllers = new ArrayList<>();
+        this.outputVariables = outputVariables;
     }
 
     @Override
     protected void setUpUpstreamControllers() {
         disjunction.conjunctions().forEach(conjunction -> {
-            Driver<NestedConjunctionController> controller = registry().createNestedConjunction(conjunction);
+            Driver<NestedConjunctionController> controller = registry().createNestedConjunction(conjunction, outputVariables);
             conjunctionControllers.add(new Pair<>(conjunction, controller));
         });
     }

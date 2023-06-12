@@ -20,16 +20,19 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
+import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
+import java.util.Set;
 import java.util.function.Supplier;
 
 public class NestedDisjunctionController
         extends DisjunctionController<ConceptMap, NestedDisjunctionController.Processor, NestedDisjunctionController>{
 
-    NestedDisjunctionController(Driver<NestedDisjunctionController> driver, ResolvableDisjunction disjunction,
+    NestedDisjunctionController(Driver<NestedDisjunctionController> driver, ResolvableDisjunction disjunction, Set<Identifier.Variable.Retrievable> outputVariables,
                                 Context context) {
-        super(driver, disjunction, context);
+        super(driver, disjunction, outputVariables, context);
     }
 
     @Override
