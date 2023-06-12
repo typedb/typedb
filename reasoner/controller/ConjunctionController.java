@@ -34,6 +34,7 @@ import com.vaticle.typedb.core.reasoner.controller.ConjunctionController.Process
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.FilteredNegation;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.FilteredRetrievable;
 import com.vaticle.typedb.core.reasoner.controller.ControllerRegistry.ControllerView.MappedConcludable;
+import com.vaticle.typedb.core.reasoner.planner.ConjunctionStreamPlan;
 import com.vaticle.typedb.core.reasoner.processor.AbstractProcessor;
 import com.vaticle.typedb.core.reasoner.processor.AbstractRequest;
 import com.vaticle.typedb.core.reasoner.processor.InputPort;
@@ -215,80 +216,78 @@ public abstract class ConjunctionController<
         }
 
         public class CompoundStream extends TransformationStream<ConceptMap, ConceptMap> {
-
-            private final Publisher<ConceptMap> leadingPublisher;
-            private final List<Resolvable<?>> remainingPlan;
-            private final Map<Publisher<ConceptMap>, ConceptMap> publisherPackets;
+            private final ConjunctionStreamPlan.CompoundStreamPlan plan;
             private final ConceptMap initialPacket;
             private final AbstractProcessor<?, ?, ?, ?> processor;
-            private final Set<Variable.Retrievable> remainingVariables;
+            private final Map<Publisher<ConceptMap>, Integer> upstreamIndices;
             private final List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> remainingCompoundStreamRegistries;
-            private final ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>> compoundStreamRegistry;
+            private final ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>> compoundStreamRegistry; // TODO: Move to CompoundStreamPlan?
 
 
             CompoundStream(AbstractProcessor<?, ?, ?, ?> processor,
-                           List<Resolvable<?>> plan, List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> compoundStreamRegistriesForPlan,
+                           ConjunctionStreamPlan.CompoundStreamPlan plan, List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> compoundStreamRegistriesForPlan,
                            ConceptMap initialPacket) {
                 super(processor, new SubscriberRegistry.Multi<>(), new PublisherRegistry.Multi<>());
                 this.processor = processor;
                 assert plan.size() > 0;
                 this.initialPacket = initialPacket;
-                this.remainingPlan = new ArrayList<>(plan);
+                this.plan = plan;
                 this.remainingCompoundStreamRegistries = new ArrayList<>(compoundStreamRegistriesForPlan);
                 this.compoundStreamRegistry = this.remainingCompoundStreamRegistries.remove(0);
-                this.publisherPackets = new HashMap<>();
-                this.leadingPublisher = nextCompoundLeader(this.remainingPlan.remove(0), initialPacket);
-                this.leadingPublisher.registerSubscriber(this);
+                this.upstreamIndices = new HashMap<>();
+                Publisher<ConceptMap> leadingPublisher = spawnPlanElement(plan.ithBranch(0), initialPacket);
+                leadingPublisher.registerSubscriber(this);
+                upstreamIndices.put(leadingPublisher, 0);
                 processor().context().perfCounters().compoundStreams.add(1);
-                this.remainingVariables = iterate(this.remainingPlan)
-                        .flatMap(resolvable -> iterate(resolvable.retrieves()))
-                        .toSet();
+            }
+
+            private Publisher<ConceptMap> spawnPlanElement(ConjunctionStreamPlan planElement, ConceptMap bounds) {
+                ConceptMap extension = filterOutputsWithExplainables(bounds, planElement.extendOutputWithVariables());
+                ConceptMap identifierBounds = bounds.filter(planElement.identifierVariables());
+                Publisher<ConceptMap> publisher;
+                if (planElement.isResolvable()) {
+                    publisher = spawnResolvableElement(planElement.asResolvablePlan().resolvable(), identifierBounds);
+                } else if (planElement.isCompoundStream()) {
+                    publisher = getOrCreateCompoundStream(planElement.asResolvablePlan().resolvable(), identifierBounds);
+                    // TODO
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+
+                return mergeWithRemainingVars(publisher, extension);
             }
 
             @Override
             public Either<Publisher<ConceptMap>, Set<ConceptMap>> accept(Publisher<ConceptMap> publisher,
                                                                          ConceptMap packet) {
                 ConceptMap mergedPacket = merge(initialPacket, packet);
-                if (leadingPublisher.equals(publisher)) {
-                    if (remainingPlan.size() == 0) {  // For a single item plan
-                        return Either.second(set(filterOutputs(mergedPacket, outputVariables)));
-                    } else {
-                        Publisher<ConceptMap> follower;  // TODO: Creation of a new publisher should be delegated to the owner of this operation
-                        if (remainingPlan.size() == 1) {
-                            follower = mergeWithRemainingVars(nextCompoundLeader(remainingPlan.get(0), mergedPacket), mergedPacket);
-                        } else {
-                            follower = mergeWithRemainingVars(getOrCreateCompoundStream(mergedPacket), mergedPacket);
-                        }
-                        publisherPackets.put(follower, mergedPacket);
-                        return Either.first(follower);
-                    }
+                int childIdx = upstreamIndices.get(publisher);
+                if (childIdx == plan.size() - 1) {
+                    return Either.second(set(filterOutputsWithExplainables(mergedPacket, plan.outputVariables())));
                 } else {
-                    return Either.second(set(filterOutputs(mergedPacket, outputVariables)));
+                    Publisher<ConceptMap> follower = spawnPlanElement(plan.ithBranch(childIdx+1), mergedPacket);
+                    return Either.first(follower);
                 }
             }
 
-            private Publisher<ConceptMap> getOrCreateCompoundStream(ConceptMap mergedPacket) {
-                ConceptMap filteredPacket = mergedPacket.filter(remainingVariables);
-                return compoundStreamRegistry.computeIfAbsent(filteredPacket, packet -> {
-                    CompoundStream compoundStream = new CompoundStream(processor, remainingPlan, remainingCompoundStreamRegistries, filteredPacket);
+            private Publisher<ConceptMap> getOrCreateCompoundStream(ConjunctionStreamPlan.CompoundStreamPlan planElement, ConceptMap mergedPacket) {
+                ConceptMap filteredPacket = mergedPacket.filter(planElement.identifierVariables());
+                return planElement.compoundStreamRegistry.computeIfAbsent(filteredPacket, packet -> {
+                    CompoundStream compoundStream = new CompoundStream(processor, plan, remainingCompoundStreamRegistries, filteredPacket);
                     PoolingStream.BufferedFanStream<ConceptMap> bufferedStream = PoolingStream.BufferedFanStream.fanOut(compoundStream.processor);
                     compoundStream.registerSubscriber(bufferedStream);
                     return bufferedStream;
                 });
             }
 
-            private Publisher<ConceptMap> mergeWithRemainingVars(Publisher<ConceptMap> s, ConceptMap mergedPacket) {
-                Set<Variable.Retrievable> joinVars = iterate(mergedPacket.concepts().keySet()).filter(v -> !remainingVariables.contains(v) && outputVariables.contains(v)).toSet();
-                ConceptMap remainingBounds = filterOutputs(mergedPacket, joinVars);
-                return remainingBounds.concepts().isEmpty() ? s : s.map(conceptMap -> merge(conceptMap, remainingBounds));
+            private Publisher<ConceptMap> mergeWithRemainingVars(Publisher<ConceptMap> s, ConceptMap extension) {
+                return remainingBounds.concepts().isEmpty() ? s : s.map(conceptMap -> merge(conceptMap, extension));
             }
 
-            private ConceptMap filterOutputs(ConceptMap packet, Set<Variable.Retrievable> toVariables) {
+            private ConceptMap filterOutputsWithExplainables(ConceptMap packet, Set<Variable.Retrievable> toVariables) {
                 return context().explainEnabled() ? packet : packet.filter(toVariables);
             }
         }
 
-        private InputPort<ConceptMap> nextCompoundLeader(Resolvable<?> planElement, ConceptMap carriedBounds) {
+        private InputPort<ConceptMap> spawnResolvableElement(Resolvable<?> planElement, ConceptMap carriedBounds) {
             InputPort<ConceptMap> input = createInputPort();
             if (planElement.isRetrievable()) {
                 requestConnection(new RetrievableRequest(input.identifier(), driver(), planElement.asRetrievable(),
@@ -366,5 +365,6 @@ public abstract class ConjunctionController<
 
         }
     }
+
 
 }
