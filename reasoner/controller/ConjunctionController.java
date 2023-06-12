@@ -263,11 +263,6 @@ public abstract class ConjunctionController<
                         return Either.first(follower);
                     }
                 } else {
-
-//                    ConceptMap compoundedPacket = merge(mergedPacket, publisherPackets.get(publisher));
-//                    assert compoundedPacket.equals(merge(publisherPackets.get(publisher), mergedPacket));
-//                    return Either.second(set(compoundedPacket));
-                    // TODO: This is a bad hack for testing. We need to fix it for outputVariables to include the ones in the remaining plan
                     return Either.second(set(mergedPacket.filter(outputVariables)));
                 }
             }
@@ -283,8 +278,6 @@ public abstract class ConjunctionController<
             }
 
             private Publisher<ConceptMap> mergeWithRemainingVars(Publisher<ConceptMap> s, ConceptMap mergedPacket) {
-                // TODO: You want to create a transformation stream which cartesian-products the variables which aren't passed down.
-                // This prevents the multi-subscriber problem and (hopefully) gives you the right result
                 Set<Variable.Retrievable> joinVars = iterate(mergedPacket.concepts().keySet()).filter(v -> !remainingVariables.contains(v) && outputVariables.contains(v)).toSet();
                 ConceptMap remainingBounds = mergedPacket.filter(joinVars);
                 return remainingBounds.concepts().isEmpty() ? s : s.map(conceptMap -> merge(conceptMap, remainingBounds));
