@@ -251,7 +251,7 @@ public abstract class ConjunctionController<
                 ConceptMap mergedPacket = merge(initialPacket, packet);
                 if (leadingPublisher.equals(publisher)) {
                     if (remainingPlan.size() == 0) {  // For a single item plan
-                        return Either.second(set(mergedPacket.filter(outputVariables)));
+                        return Either.second(set(filterOutputs(mergedPacket, outputVariables)));
                     } else {
                         Publisher<ConceptMap> follower;  // TODO: Creation of a new publisher should be delegated to the owner of this operation
                         if (remainingPlan.size() == 1) {
@@ -263,7 +263,7 @@ public abstract class ConjunctionController<
                         return Either.first(follower);
                     }
                 } else {
-                    return Either.second(set(mergedPacket.filter(outputVariables)));
+                    return Either.second(set(filterOutputs(mergedPacket, outputVariables)));
                 }
             }
 
@@ -279,8 +279,12 @@ public abstract class ConjunctionController<
 
             private Publisher<ConceptMap> mergeWithRemainingVars(Publisher<ConceptMap> s, ConceptMap mergedPacket) {
                 Set<Variable.Retrievable> joinVars = iterate(mergedPacket.concepts().keySet()).filter(v -> !remainingVariables.contains(v) && outputVariables.contains(v)).toSet();
-                ConceptMap remainingBounds = mergedPacket.filter(joinVars);
+                ConceptMap remainingBounds = filterOutputs(mergedPacket, joinVars);
                 return remainingBounds.concepts().isEmpty() ? s : s.map(conceptMap -> merge(conceptMap, remainingBounds));
+            }
+
+            private ConceptMap filterOutputs(ConceptMap packet, Set<Variable.Retrievable> toVariables) {
+                return context().explainEnabled() ? packet : packet.filter(toVariables);
             }
         }
 

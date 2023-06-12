@@ -99,7 +99,8 @@ public class ControllerRegistry {
         Tracer finalTracer = tracer;
         this.controllerContext = new AbstractController.Context(
                 executorService, this, Actor.driver(driver -> new Monitor(driver, finalTracer), executorService),
-                reasonerPlanner, perfCounters, tracer
+                reasonerPlanner, perfCounters, tracer,
+                context.options().explain()
         );
         this.materialisationController = Actor.driver(driver -> new MaterialisationController(
                 driver, controllerContext, traversalEngine(), conceptManager()), executorService
