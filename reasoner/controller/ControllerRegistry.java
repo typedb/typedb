@@ -237,11 +237,10 @@ public class ControllerRegistry {
     }
 
     ControllerView.FilteredNegation createNegation(Negated negated, ResolvableConjunction conjunction) {
-        Modifiers.Filter commonVariables = filter(conjunction, negated);
         Function<Driver<NegationController>, NegationController> actorFn =
-                driver -> new NegationController(driver, negated, commonVariables.variables(), controllerContext);
+                driver -> new NegationController(driver, negated, controllerContext);
         LOG.debug("Create NegationController for : {}", negated);
-        return ControllerView.negation(createController(actorFn), commonVariables);
+        return ControllerView.negation(createController(actorFn), filter(conjunction, negated));
     }
 
     private static Modifiers.Filter filter(ResolvableConjunction scope, Negated inner) {

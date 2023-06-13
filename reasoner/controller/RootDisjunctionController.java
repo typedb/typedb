@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
@@ -40,7 +41,7 @@ public class RootDisjunctionController
     RootDisjunctionController(Driver<RootDisjunctionController> driver, ResolvableDisjunction disjunction,
                               Modifiers.Filter filter, boolean explain,
                               Context context, ReasonerConsumer<ConceptMap> reasonerConsumer) {
-        super(driver, disjunction, filter.variables(), context);
+        super(driver, disjunction, Collections.intersection(filter.variables(), disjunction.pattern().sharedVariables()), context);
         this.filter = filter;
         this.explain = explain;
         this.reasonerConsumer = reasonerConsumer;

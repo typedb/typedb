@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
@@ -45,7 +46,6 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegis
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -71,8 +71,8 @@ public abstract class ConjunctionController<
     private final Map<Concludable, MappedConcludable> concludableControllers;
     private final Map<Negated, FilteredNegation> negationControllers;
     final ResolvableConjunction conjunction;
-    final ConcurrentHashMap<Set<Variable.Retrievable>, List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>>> compoundStreamRegistries;
     final Set<Variable.Retrievable> outputVariables;
+    final Map<Set<Variable.Retrievable>, ConjunctionStreamPlan> plans;
 
     ConjunctionController(Driver<CONTROLLER> driver, ResolvableConjunction conjunction, Set<Variable.Retrievable> outputVariables, Context context) {
         super(driver, context, () -> ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")");
@@ -81,8 +81,10 @@ public abstract class ConjunctionController<
         this.retrievableControllers = new HashMap<>();
         this.concludableControllers = new HashMap<>();
         this.negationControllers = new HashMap<>();
-        this.compoundStreamRegistries = new ConcurrentHashMap<>();
         this.outputVariables = outputVariables;
+        this.plans = new ConcurrentHashMap<>();
+
+        assert conjunction.pattern().retrieves().containsAll(outputVariables);
     }
 
     @Override
@@ -105,18 +107,12 @@ public abstract class ConjunctionController<
         });
     }
 
-    List<Resolvable<?>> getPlan(Set<Variable.Retrievable> bounds) {
-        Set<com.vaticle.typedb.core.pattern.variable.Variable> boundVariables = iterate(bounds).map(id -> conjunction.pattern().variable(id)).toSet();
-        List<Resolvable<?>> plan = planner().getPlan(conjunction, boundVariables).plan();
-        assert resolvables.size() == plan.size() && resolvables.containsAll(plan);
-        return plan;
-    }
-
-    List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> getCompoundStreamRegistry(Set<Variable.Retrievable> retrievables) {
-        return compoundStreamRegistries.computeIfAbsent(retrievables, rets -> {
-            List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> registries = new ArrayList<>();
-            getPlan(rets).forEach(r -> registries.add(new ConcurrentHashMap<>()));
-            return registries;
+    ConjunctionStreamPlan getPlan(Set<Variable.Retrievable> bounds) {
+        return plans.computeIfAbsent(bounds, inputBounds -> {
+            Set<com.vaticle.typedb.core.pattern.variable.Variable> boundVariables = iterate(inputBounds).map(id -> conjunction.pattern().variable(id)).toSet();
+            List<Resolvable<?>> plan = planner().getPlan(conjunction, boundVariables).plan();
+            assert resolvables.size() == plan.size() && resolvables.containsAll(plan);
+            return ConjunctionStreamPlan.createConjunctionStreamPlan(plan, inputBounds, outputVariables);
         });
     }
 
@@ -199,43 +195,44 @@ public abstract class ConjunctionController<
             extends AbstractProcessor<ConceptMap, ConceptMap, Request<?>, PROCESSOR> {
 
         final ConceptMap bounds;
-        final List<Resolvable<?>> plan;
-        final List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> compoundStreamRegistry;
+        final ConjunctionStreamPlan.CompoundStreamPlan plan;
         final Set<Variable.Retrievable> outputVariables;
 
         Processor(Driver<PROCESSOR> driver,
                   Driver<? extends ConjunctionController<?, PROCESSOR>> controller,
-                  Context context, ConceptMap bounds, List<Resolvable<?>> plan,
+                  Context context, ConceptMap bounds, ConjunctionStreamPlan conjunctionStreamPlan,
                   Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.bounds = bounds;
-            this.plan = plan;
-            context.perfCounters().conjunctionProcessors.add(1);
-            this.compoundStreamRegistry = controller.actor().getCompoundStreamRegistry(bounds.concepts().keySet());
             this.outputVariables = controller.actor().outputVariables;
+
+            if (conjunctionStreamPlan.isResolvable()) {
+                ConjunctionStreamPlan.ResolvablePlan resolvablePlan = conjunctionStreamPlan.asResolvablePlan();
+                this.plan = new ConjunctionStreamPlan.CompoundStreamPlan(Collections.list(resolvablePlan),
+                        resolvablePlan.identifierVariables(), resolvablePlan.extendOutputWithVariables(), resolvablePlan.outputVariables());
+            } else {
+                assert conjunctionStreamPlan.isCompoundStream();
+                this.plan = conjunctionStreamPlan.asCompoundStreamPlan();
+            }
+
+            context.perfCounters().conjunctionProcessors.add(1);
         }
 
         public class CompoundStream extends TransformationStream<ConceptMap, ConceptMap> {
             private final ConjunctionStreamPlan.CompoundStreamPlan plan;
-            private final ConceptMap initialPacket;
+            private final ConceptMap identifierBounds;
             private final AbstractProcessor<?, ?, ?, ?> processor;
             private final Map<Publisher<ConceptMap>, Integer> upstreamIndices;
-            private final List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> remainingCompoundStreamRegistries;
-            private final ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>> compoundStreamRegistry; // TODO: Move to CompoundStreamPlan?
 
 
-            CompoundStream(AbstractProcessor<?, ?, ?, ?> processor,
-                           ConjunctionStreamPlan.CompoundStreamPlan plan, List<ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> compoundStreamRegistriesForPlan,
-                           ConceptMap initialPacket) {
+            CompoundStream(AbstractProcessor<?, ?, ?, ?> processor, ConjunctionStreamPlan.CompoundStreamPlan plan, ConceptMap identifierBounds) {
                 super(processor, new SubscriberRegistry.Multi<>(), new PublisherRegistry.Multi<>());
                 this.processor = processor;
                 assert plan.size() > 0;
-                this.initialPacket = initialPacket;
+                this.identifierBounds = identifierBounds;
                 this.plan = plan;
-                this.remainingCompoundStreamRegistries = new ArrayList<>(compoundStreamRegistriesForPlan);
-                this.compoundStreamRegistry = this.remainingCompoundStreamRegistries.remove(0);
                 this.upstreamIndices = new HashMap<>();
-                Publisher<ConceptMap> leadingPublisher = spawnPlanElement(plan.ithBranch(0), initialPacket);
+                Publisher<ConceptMap> leadingPublisher = spawnPlanElement(plan.ithBranch(0), identifierBounds);
                 leadingPublisher.registerSubscriber(this);
                 upstreamIndices.put(leadingPublisher, 0);
                 processor().context().perfCounters().compoundStreams.add(1);
@@ -248,38 +245,38 @@ public abstract class ConjunctionController<
                 if (planElement.isResolvable()) {
                     publisher = spawnResolvableElement(planElement.asResolvablePlan().resolvable(), identifierBounds);
                 } else if (planElement.isCompoundStream()) {
-                    publisher = getOrCreateCompoundStream(planElement.asResolvablePlan().resolvable(), identifierBounds);
-                    // TODO
+                    publisher = getOrCreateCompoundStream(planElement.asCompoundStreamPlan(), identifierBounds);
                 } else throw TypeDBException.of(ILLEGAL_STATE);
 
-                return mergeWithRemainingVars(publisher, extension);
+                return extendWithBounds(publisher, extension);
             }
 
             @Override
             public Either<Publisher<ConceptMap>, Set<ConceptMap>> accept(Publisher<ConceptMap> publisher,
                                                                          ConceptMap packet) {
-                ConceptMap mergedPacket = merge(initialPacket, packet);
+                ConceptMap mergedPacket = merge(identifierBounds, packet);
                 int childIdx = upstreamIndices.get(publisher);
                 if (childIdx == plan.size() - 1) {
                     return Either.second(set(filterOutputsWithExplainables(mergedPacket, plan.outputVariables())));
                 } else {
-                    Publisher<ConceptMap> follower = spawnPlanElement(plan.ithBranch(childIdx+1), mergedPacket);
+                    Publisher<ConceptMap> follower = spawnPlanElement(plan.ithBranch(childIdx + 1), mergedPacket);
+                    upstreamIndices.put(follower, childIdx+1);
                     return Either.first(follower);
                 }
             }
 
             private Publisher<ConceptMap> getOrCreateCompoundStream(ConjunctionStreamPlan.CompoundStreamPlan planElement, ConceptMap mergedPacket) {
-                ConceptMap filteredPacket = mergedPacket.filter(planElement.identifierVariables());
-                return planElement.compoundStreamRegistry.computeIfAbsent(filteredPacket, packet -> {
-                    CompoundStream compoundStream = new CompoundStream(processor, plan, remainingCompoundStreamRegistries, filteredPacket);
+                ConceptMap identifyingBounds = mergedPacket.filter(planElement.identifierVariables());
+                return planElement.compoundStreamRegistry().computeIfAbsent(identifyingBounds, packet -> {
+                    CompoundStream compoundStream = new CompoundStream(processor, planElement, identifyingBounds);
                     PoolingStream.BufferedFanStream<ConceptMap> bufferedStream = PoolingStream.BufferedFanStream.fanOut(compoundStream.processor);
                     compoundStream.registerSubscriber(bufferedStream);
                     return bufferedStream;
                 });
             }
 
-            private Publisher<ConceptMap> mergeWithRemainingVars(Publisher<ConceptMap> s, ConceptMap extension) {
-                return remainingBounds.concepts().isEmpty() ? s : s.map(conceptMap -> merge(conceptMap, extension));
+            private Publisher<ConceptMap> extendWithBounds(Publisher<ConceptMap> s, ConceptMap extension) {
+                return extension.concepts().isEmpty() ? s : s.map(conceptMap -> merge(conceptMap, extension));
             }
 
             private ConceptMap filterOutputsWithExplainables(ConceptMap packet, Set<Variable.Retrievable> toVariables) {

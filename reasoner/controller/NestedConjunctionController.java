@@ -19,12 +19,11 @@
 package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.reasoner.planner.ConjunctionStreamPlan;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 
-import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -55,14 +54,14 @@ public class NestedConjunctionController extends ConjunctionController<
 
         private NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
                                            Driver<NestedConjunctionController> controller, Context context,
-                                           ConceptMap bounds, List<Resolvable<?>> plan,
+                                           ConceptMap bounds, ConjunctionStreamPlan plan,
                                            Supplier<String> debugName) {
             super(driver, controller, context, bounds, plan, debugName);
         }
 
         @Override
         public void setUp() {
-            Processor<NestedConjunctionProcessor>.CompoundStream conjunctionStream = new CompoundStream(this, plan, compoundStreamRegistry, bounds);
+            Processor<NestedConjunctionProcessor>.CompoundStream conjunctionStream = new CompoundStream(this, plan, bounds);
             PoolingStream.BufferedFanStream<ConceptMap> bufferedFanStream = PoolingStream.BufferedFanStream.fanInFanOut(this);
             conjunctionStream.registerSubscriber(bufferedFanStream);
             setHubReactive(bufferedFanStream);

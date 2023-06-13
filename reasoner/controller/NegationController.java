@@ -50,18 +50,16 @@ public class NegationController extends AbstractController<
         > {
 
     private final Negated negated;
-    private final Set<Identifier.Variable.Retrievable> outputVariables;
     private Driver<NestedDisjunctionController> disjunctionContoller;
 
-    NegationController(Driver<NegationController> driver, Negated negated, Set<Identifier.Variable.Retrievable> outputVariables, Context context) {
+    NegationController(Driver<NegationController> driver, Negated negated, Context context) {
         super(driver, context, () -> NegationController.class.getSimpleName() + "(pattern:" + negated + ")");
         this.negated = negated;
-        this.outputVariables = outputVariables;
     }
 
     @Override
     public void setUpUpstreamControllers() {
-        disjunctionContoller = registry().createNestedDisjunction(negated.disjunction(), outputVariables);
+        disjunctionContoller = registry().createNestedDisjunction(negated.disjunction(), set());
     }
 
     @Override
