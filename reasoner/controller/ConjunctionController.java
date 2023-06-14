@@ -208,7 +208,7 @@ public abstract class ConjunctionController<
 
             if (conjunctionStreamPlan.isResolvable()) {
                 ConjunctionStreamPlan.ResolvablePlan resolvablePlan = conjunctionStreamPlan.asResolvablePlan();
-                this.plan = new ConjunctionStreamPlan.CompoundStreamPlan(Collections.list(resolvablePlan),
+                this.plan = new ConjunctionStreamPlan.CompoundStreamPlan(resolvablePlan, null,
                         resolvablePlan.identifierVariables(), resolvablePlan.extendOutputWithVariables(), resolvablePlan.outputVariables());
             } else {
                 assert conjunctionStreamPlan.isCompoundStream();
@@ -222,19 +222,17 @@ public abstract class ConjunctionController<
             private final ConjunctionStreamPlan.CompoundStreamPlan plan;
             private final ConceptMap identifierBounds;
             private final AbstractProcessor<?, ?, ?, ?> processor;
-            private final Map<Publisher<ConceptMap>, Integer> upstreamIndices;
+            private final Publisher<ConceptMap> leftChild;
 
 
             CompoundStream(AbstractProcessor<?, ?, ?, ?> processor, ConjunctionStreamPlan.CompoundStreamPlan plan, ConceptMap identifierBounds) {
                 super(processor, new SubscriberRegistry.Multi<>(), new PublisherRegistry.Multi<>());
+                assert plan.isCompoundStream();
                 this.processor = processor;
-                assert plan.size() > 0;
                 this.identifierBounds = identifierBounds;
                 this.plan = plan;
-                this.upstreamIndices = new HashMap<>();
-                Publisher<ConceptMap> leadingPublisher = spawnPlanElement(plan.ithBranch(0), identifierBounds);
-                leadingPublisher.registerSubscriber(this);
-                upstreamIndices.put(leadingPublisher, 0);
+                this.leftChild = spawnPlanElement(plan.left(), identifierBounds);
+                leftChild.registerSubscriber(this);
                 processor().context().perfCounters().compoundStreams.add(1);
             }
 
@@ -255,13 +253,11 @@ public abstract class ConjunctionController<
             public Either<Publisher<ConceptMap>, Set<ConceptMap>> accept(Publisher<ConceptMap> publisher,
                                                                          ConceptMap packet) {
                 ConceptMap mergedPacket = merge(identifierBounds, packet);
-                int childIdx = upstreamIndices.get(publisher);
-                if (childIdx == plan.size() - 1) {
-                    return Either.second(set(filterOutputsWithExplainables(mergedPacket, plan.outputVariables())));
-                } else {
-                    Publisher<ConceptMap> follower = spawnPlanElement(plan.ithBranch(childIdx + 1), mergedPacket);
-                    upstreamIndices.put(follower, childIdx+1);
+                if (publisher == leftChild || plan.right() == null) {
+                    Publisher<ConceptMap> follower = spawnPlanElement(plan.right(), mergedPacket);
                     return Either.first(follower);
+                } else {
+                    return Either.second(set(filterOutputsWithExplainables(mergedPacket, plan.outputVariables())));
                 }
             }
 

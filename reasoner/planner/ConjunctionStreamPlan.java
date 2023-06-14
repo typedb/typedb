@@ -18,24 +18,18 @@
 
 package com.vaticle.typedb.core.reasoner.planner;
 
-import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -54,113 +48,50 @@ public class ConjunctionStreamPlan {
 
     public static ConjunctionStreamPlan createConjunctionStreamPlan(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
         Set<Retrievable> conjunctionVariables = iterate(resolvableOrder).flatMap(resolvable -> iterate(resolvable.retrieves())).toSet();
-        assert iterate(inputVariables).allMatch(v -> conjunctionVariables.contains(v) || outputVariables.contains(v));
-        assert iterate(outputVariables).allMatch(v -> conjunctionVariables.contains(v) || inputVariables.contains(v));
-        Set<Retrievable> extension = intersection(inputVariables, outputVariables);
         Set<Retrievable> identifiers = intersection(inputVariables, conjunctionVariables);
-
+        assert resolvableOrder.get(0).retrieves().containsAll(identifiers); // This is where it might all fall apart ;A;
+        Set<Retrievable> joinOutputs = difference(inputVariables, identifiers);
         if (resolvableOrder.size() == 1) {
-            return new ResolvablePlan(resolvableOrder.get(0), identifiers, extension, difference(outputVariables, extension));
+            Set<Retrievable> resolvableOutputs = difference(outputVariables, joinOutputs);
+            return new ResolvablePlan(resolvableOrder.get(0), identifiers, joinOutputs, resolvableOutputs);
         }
 
-        // Chunk them into the children
-        List<List<Resolvable<?>>> chunks = new ArrayList<>();
-        {
-            Set<Retrievable> previouslyBoundVariables = new HashSet<>(inputVariables);
-            Queue<Resolvable<?>> remaining = new LinkedList<>(resolvableOrder);
-            Resolvable<?> firstResolvable = remaining.poll();
-            List<Resolvable<?>> currentChunk = list(firstResolvable);
-            Set<Retrievable> currentChunkVariables = new HashSet<>(firstResolvable.retrieves());
+        Resolvable<?> first = resolvableOrder.get(0);
 
-            while (!remaining.isEmpty()) {
-                Resolvable<?> resolvable = remaining.poll();
-                if (intersection(difference(resolvable.retrieves(), currentChunkVariables), previouslyBoundVariables).size() > 0) {
-                    assert !currentChunk.isEmpty();
-                    chunks.add(currentChunk);
-                    previouslyBoundVariables.addAll(currentChunkVariables);
-                    currentChunk = new ArrayList<>();
-                    currentChunkVariables = new HashSet<>();
-                }
-                currentChunk.add(resolvable);
-                currentChunkVariables.addAll(resolvable.retrieves());
-                if (iterate(resolvable.retrieves()).anyMatch(v -> outputVariables.contains(v) && !inputVariables.contains(v))) {
-                    // If we find a bound, the entire suffix goes to a new level.
-                    chunks.add(currentChunk);
-                    currentChunkVariables = new HashSet<>();
-                    currentChunk = new ArrayList<>(remaining);
-                    remaining.clear();
+        // Find longest suffix which won't have redundant bounds
+        Set<Retrievable> suffixVariables = new HashSet<>();
+        List<Resolvable<?>> left, right;
+        {
+            int i;
+            for (i = resolvableOrder.size() - 1; i >= 1; i--) {
+                suffixVariables.addAll(resolvableOrder.get(i).retrieves()); // remember to split expectedBounds as well
+                if (difference(first.retrieves(), suffixVariables).size() > 0) {
+                    break;
                 }
             }
 
-            assert !currentChunk.isEmpty();
-            chunks.add(currentChunk);
-            if (!remaining.isEmpty()) {
-                chunks.add(new ArrayList<>(remaining));
+            left = new ArrayList<>();
+            right = new ArrayList<>();
+            for (int j = 0; j < resolvableOrder.size(); j++) {
+                if (j <= i) left.add(resolvableOrder.get(j));
+                else right.add(resolvableOrder.get(j));
             }
         }
 
-        // Plan each child
-        List<ConjunctionStreamPlan> subPlans = new ArrayList<>();
+        assert !left.isEmpty() && !right.isEmpty();
+        ConjunctionStreamPlan leftPlan, rightPlan;
         {
-            Queue<List<Resolvable<?>>> remaining = new LinkedList<>(chunks);
-            Set<Retrievable> currentlyBound = new HashSet<>(inputVariables);
+            Set<Retrievable> leftVariables = iterate(left).flatMap(l -> iterate(l.retrieves())).toSet();
+            Set<Retrievable> rightVariables = iterate(right).flatMap(r -> iterate(r.retrieves())).toSet();
 
-            while (!remaining.isEmpty()) {
-                List<Resolvable<?>> chunk = remaining.poll();
-                Set<Retrievable> chunkInputs = new HashSet<>();
-
-                ConjunctionStreamPlan subPlan = ConjunctionStreamPlan.createConjunctionStreamPlan(chunk, chunkInputs, chunkOutputs);
-                subPlans.add(subPlan);
-                currentlyBound.add(subPlan.outputVariables());
-            }
+            Set<Retrievable> leftToRight = union(intersection(leftVariables, rightVariables), outputVariables);
+            Set<Retrievable> leftInputs = intersection(inputVariables, leftVariables);
+            assert union(leftInputs, joinOutputs).equals(inputVariables);
+            leftPlan = createConjunctionStreamPlan(left, leftInputs, leftToRight);
+            rightPlan = createConjunctionStreamPlan(right, leftToRight, outputVariables);
         }
 
-        return new CompoundStreamPlan(subPlans, inputVariables, extension, outputVariables);
-    }
-
-    private static ConjunctionStreamPlan createPlanForChunk(List<Resolvable<?>> currentChunk, Set<Retrievable> previouslyBoundVariables, Set<Retrievable> chunkVariables,
-                                                            Set<Retrievable> parentInputVariables, Set<Retrievable> parentOutputVariables) {
-
-        Set<Retrievable> chunkInputVariables = new HashSet<>();
-        Set<Retrievable> chunkOutputVariables = new HashSet<>();
-
-
-
-        return createConjunctionStreamPlan(currentChunk, chunkInputVariables, chunkOutputVariables);
-    }
-
-    public static ConjunctionStreamPlan createConjunctionStreamPlanOld(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
-        Set<Retrievable> conjunctionVariables = iterate(resolvableOrder).flatMap(resolvable -> iterate(resolvable.retrieves())).toSet();
-        assert iterate(inputVariables).allMatch(v -> conjunctionVariables.contains(v) || outputVariables.contains(v));
-        assert iterate(outputVariables).allMatch(v -> conjunctionVariables.contains(v) || inputVariables.contains(v));
-        Set<Retrievable> extension = intersection(inputVariables, outputVariables);
-        Set<Retrievable> identifiers = intersection(inputVariables, conjunctionVariables);
-
-        // TODO: Optimise. (This just replicates the existing system)
-        List<Resolvable<?>> suffix = new ArrayList<>(resolvableOrder);
-        suffix.remove(0);
-        Set<Retrievable> suffixVariables = iterate(suffix).flatMap(resolvable -> iterate(resolvable.retrieves())).toSet();
-
-        Resolvable<?> leadingResolvable = resolvableOrder.get(0);
-        Set<Retrievable> resolvableIdentifiers = intersection(identifiers, leadingResolvable.retrieves());
-        Set<Retrievable> resolvableOutputs = intersection(leadingResolvable.retrieves(), union(outputVariables, suffixVariables));
-
-        Set<Retrievable> boundsPostResolvable = union(identifiers, resolvableOutputs);
-
-        Set<Retrievable> suffixIdentifiers = intersection(boundsPostResolvable, suffixVariables); // includes the extension ones
-        Set<Retrievable> freshBounds = difference(boundsPostResolvable, identifiers);
-        Set<Retrievable> suffixInputs = union(freshBounds, suffixIdentifiers);
-        Set<Retrievable> suffixOutputs = union(intersection(outputVariables, suffixVariables), freshBounds);
-
-        if (suffix.isEmpty()) {
-            assert inputVariables.equals(union(resolvableIdentifiers, extension)) && outputVariables.equals(union(extension, resolvableOutputs));
-            ResolvablePlan resolvablePlan = new ResolvablePlan(leadingResolvable, resolvableIdentifiers, extension, resolvableOutputs);
-            return resolvablePlan;
-        } else {
-            ResolvablePlan resolvablePlan = new ResolvablePlan(leadingResolvable, resolvableIdentifiers, set(), resolvableOutputs);
-            ConjunctionStreamPlan suffixPlan = createConjunctionStreamPlan(suffix, suffixInputs, suffixOutputs);
-            return new CompoundStreamPlan(list(resolvablePlan, suffixPlan), inputVariables, difference(outputVariables, suffixOutputs), outputVariables);
-        }
+        return new CompoundStreamPlan(leftPlan, rightPlan, identifiers, joinOutputs, outputVariables);
     }
 
     private static Set<Retrievable> union(Set<Retrievable> a, Set<Retrievable> b) {
@@ -233,12 +164,15 @@ public class ConjunctionStreamPlan {
     }
 
     public static class CompoundStreamPlan extends ConjunctionStreamPlan {
-        private final List<ConjunctionStreamPlan> subPlans;
+        private final ConjunctionStreamPlan leftPlan;
+        private final ConjunctionStreamPlan rightPlan;
         private final ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>> compoundStreamRegistry;
 
-        public CompoundStreamPlan(List<ConjunctionStreamPlan> subPlans, Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables) {
+        public CompoundStreamPlan(ConjunctionStreamPlan leftPlan, ConjunctionStreamPlan rightPlan,
+                                  Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables) {
             super(identifierVariables, extendOutputWith, outputVariables);
-            this.subPlans = subPlans;
+            this.leftPlan = leftPlan;
+            this.rightPlan = rightPlan;
             compoundStreamRegistry = new ConcurrentHashMap<>();
         }
 
@@ -252,12 +186,11 @@ public class ConjunctionStreamPlan {
             return this;
         }
 
-        public ConjunctionStreamPlan ithBranch(int i) {
-            return subPlans.get(i);
+        public ConjunctionStreamPlan left() {
+            return leftPlan;
         }
-
-        public int size() {
-            return subPlans.size();
+        public ConjunctionStreamPlan right() {
+            return rightPlan;
         }
 
         public ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>> compoundStreamRegistry() {
