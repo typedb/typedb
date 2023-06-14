@@ -253,7 +253,7 @@ public abstract class ConjunctionController<
             public Either<Publisher<ConceptMap>, Set<ConceptMap>> accept(Publisher<ConceptMap> publisher,
                                                                          ConceptMap packet) {
                 ConceptMap mergedPacket = merge(identifierBounds, packet);
-                if (publisher == leftChild || plan.right() == null) {
+                if (publisher == leftChild && plan.right() != null) {
                     Publisher<ConceptMap> follower = spawnPlanElement(plan.right(), mergedPacket);
                     return Either.first(follower);
                 } else {

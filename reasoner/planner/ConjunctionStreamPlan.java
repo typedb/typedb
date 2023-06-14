@@ -1,3 +1,5 @@
+// I'm just breaking checkstyle so I know I've implemented it but not manually verified it.
+
 /*
  * Copyright (C) 2022 Vaticle
  *
@@ -35,7 +37,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class ConjunctionStreamPlan {
-
     private final Set<Retrievable> identifierVariables; // If the identifier variables match, the results will match
     private final Set<Retrievable> extendOutputWith; // The variables in mergeWithRemainingVars
     private final Set<Retrievable> outputVariables;  // Strip out everything other than these.
@@ -49,7 +50,7 @@ public class ConjunctionStreamPlan {
     public static ConjunctionStreamPlan createConjunctionStreamPlan(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
         Set<Retrievable> conjunctionVariables = iterate(resolvableOrder).flatMap(resolvable -> iterate(resolvable.retrieves())).toSet();
         Set<Retrievable> identifiers = intersection(inputVariables, conjunctionVariables);
-        assert resolvableOrder.get(0).retrieves().containsAll(identifiers); // This is where it might all fall apart ;A;
+        // assert resolvableOrder.get(0).retrieves().containsAll(identifiers); // TODO: Remove: not true for first level
         Set<Retrievable> joinOutputs = difference(inputVariables, identifiers);
         if (resolvableOrder.size() == 1) {
             Set<Retrievable> resolvableOutputs = difference(outputVariables, joinOutputs);
@@ -64,8 +65,8 @@ public class ConjunctionStreamPlan {
         {
             int i;
             for (i = resolvableOrder.size() - 1; i >= 1; i--) {
-                suffixVariables.addAll(resolvableOrder.get(i).retrieves()); // remember to split expectedBounds as well
-                if (difference(first.retrieves(), suffixVariables).size() > 0) {
+                suffixVariables.addAll(resolvableOrder.get(i).retrieves());
+                if (difference(intersection(first.retrieves(), suffixVariables), resolvableOrder.get(i).retrieves()).size() > 0) {
                     break;
                 }
             }
@@ -84,9 +85,9 @@ public class ConjunctionStreamPlan {
             Set<Retrievable> leftVariables = iterate(left).flatMap(l -> iterate(l.retrieves())).toSet();
             Set<Retrievable> rightVariables = iterate(right).flatMap(r -> iterate(r.retrieves())).toSet();
 
-            Set<Retrievable> leftToRight = union(intersection(leftVariables, rightVariables), outputVariables);
+            Set<Retrievable> leftToRight = intersection(leftVariables, union(outputVariables, rightVariables));
             Set<Retrievable> leftInputs = intersection(inputVariables, leftVariables);
-            assert union(leftInputs, joinOutputs).equals(inputVariables);
+            // assert union(leftInputs, joinOutputs).equals(inputVariables); // TODO: Remove: Also not true for first level
             leftPlan = createConjunctionStreamPlan(left, leftInputs, leftToRight);
             rightPlan = createConjunctionStreamPlan(right, leftToRight, outputVariables);
         }
