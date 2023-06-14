@@ -266,6 +266,7 @@ public abstract class ConjunctionController<
                 return planElement.compoundStreamRegistry().computeIfAbsent(identifyingBounds, packet -> {
                     CompoundStream compoundStream = new CompoundStream(processor, planElement, identifyingBounds);
                     PoolingStream.BufferedFanStream<ConceptMap> bufferedStream = PoolingStream.BufferedFanStream.fanOut(compoundStream.processor);
+                    // TODO: Check if this is true - you only need to buffer if extendWithOutput is non-empty.
                     compoundStream.registerSubscriber(bufferedStream);
                     return bufferedStream;
                 });

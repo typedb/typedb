@@ -37,9 +37,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class ConjunctionStreamPlan {
-    private final Set<Retrievable> identifierVariables; // If the identifier variables match, the results will match
-    private final Set<Retrievable> extendOutputWith; // The variables in mergeWithRemainingVars
-    private final Set<Retrievable> outputVariables;  // Strip out everything other than these.
+    protected final Set<Retrievable> identifierVariables; // If the identifier variables match, the results will match
+    protected final Set<Retrievable> extendOutputWith; // The variables in mergeWithRemainingVars
+    protected final Set<Retrievable> outputVariables;  // Strip out everything other than these.
 
     public ConjunctionStreamPlan(Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables) {
         this.identifierVariables = identifierVariables;
@@ -48,6 +48,7 @@ public class ConjunctionStreamPlan {
     }
 
     public static ConjunctionStreamPlan createConjunctionStreamPlan(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
+        // TODO: Check if this is true: If a variable is in the identifiers, it can be removed from the output of the children.
         Set<Retrievable> conjunctionVariables = iterate(resolvableOrder).flatMap(resolvable -> iterate(resolvable.retrieves())).toSet();
         Set<Retrievable> identifiers = intersection(inputVariables, conjunctionVariables);
         // assert resolvableOrder.get(0).retrieves().containsAll(identifiers); // TODO: Remove: not true for first level
@@ -162,6 +163,16 @@ public class ConjunctionStreamPlan {
         public Resolvable<?> resolvable() {
             return resolvable;
         }
+
+        @Override
+        public String toString() {
+            return String.format("{[(%s), (%s), (%s)] :: Resolvable(%s)}",
+                    String.join(", ", iterate(identifierVariables).map(v -> v.toString()).toList()),
+                    String.join(", ", iterate(extendOutputWith).map(v -> v.toString()).toList()),
+                    String.join(", ", iterate(outputVariables).map(v -> v.toString()).toList()),
+                    resolvable.toString()
+            );
+        }
     }
 
     public static class CompoundStreamPlan extends ConjunctionStreamPlan {
@@ -190,12 +201,23 @@ public class ConjunctionStreamPlan {
         public ConjunctionStreamPlan left() {
             return leftPlan;
         }
+
         public ConjunctionStreamPlan right() {
             return rightPlan;
         }
 
         public ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>> compoundStreamRegistry() {
             return compoundStreamRegistry;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("{[(%s), (%s), (%s)] :: [%s ; %s ]}",
+                    String.join(", ", iterate(identifierVariables).map(v -> v.toString()).toList()),
+                    String.join(", ", iterate(extendOutputWith).map(v -> v.toString()).toList()),
+                    String.join(", ", iterate(outputVariables).map(v -> v.toString()).toList()),
+                    leftPlan.toString(),
+                    rightPlan.toString());
         }
     }
 }
