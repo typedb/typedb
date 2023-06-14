@@ -86,11 +86,12 @@ public class ConjunctionStreamPlan {
             Set<Retrievable> leftVariables = iterate(left).flatMap(l -> iterate(l.retrieves())).toSet();
             Set<Retrievable> rightVariables = iterate(right).flatMap(r -> iterate(r.retrieves())).toSet();
 
-            Set<Retrievable> leftToRight = intersection(leftVariables, union(outputVariables, rightVariables));
             Set<Retrievable> leftInputs = intersection(inputVariables, leftVariables);
+            Set<Retrievable> leftOutputs = intersection(leftVariables, union(outputVariables, rightVariables));
+            Set<Retrievable> rightInputs = union(leftOutputs, intersection(inputVariables, rightVariables));
             // assert union(leftInputs, joinOutputs).equals(inputVariables); // TODO: Remove: Also not true for first level
-            leftPlan = createConjunctionStreamPlan(left, leftInputs, leftToRight);
-            rightPlan = createConjunctionStreamPlan(right, leftToRight, outputVariables);
+            leftPlan = createConjunctionStreamPlan(left, leftInputs, leftOutputs);
+            rightPlan = createConjunctionStreamPlan(right, rightInputs, outputVariables);
         }
 
         return new CompoundStreamPlan(leftPlan, rightPlan, identifiers, joinOutputs, outputVariables);
