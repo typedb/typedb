@@ -180,14 +180,12 @@ public class ConjunctionStreamPlan {
     public static class CompoundStreamPlan extends ConjunctionStreamPlan {
         private final ConjunctionStreamPlan leftPlan;
         private final ConjunctionStreamPlan rightPlan;
-        private final ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>> compoundStreamRegistry;
 
         public CompoundStreamPlan(ConjunctionStreamPlan leftPlan, ConjunctionStreamPlan rightPlan,
                                   Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables) {
             super(identifierVariables, extendOutputWith, outputVariables);
             this.leftPlan = leftPlan;
             this.rightPlan = rightPlan;
-            compoundStreamRegistry = new ConcurrentHashMap<>();
         }
 
         @Override
@@ -206,10 +204,6 @@ public class ConjunctionStreamPlan {
 
         public ConjunctionStreamPlan right() {
             return rightPlan;
-        }
-
-        public ConcurrentHashMap<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>> compoundStreamRegistry() {
-            return compoundStreamRegistry;
         }
 
         @Override

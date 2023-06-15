@@ -196,6 +196,7 @@ public abstract class ConjunctionController<
         final ConceptMap bounds;
         final ConjunctionStreamPlan plan;
         final Set<Variable.Retrievable> outputVariables;
+        private final Map<ConjunctionStreamPlan, Map<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> compoundStreamRegistry;
 
         Processor(Driver<PROCESSOR> driver,
                   Driver<? extends ConjunctionController<?, PROCESSOR>> controller,
@@ -205,6 +206,7 @@ public abstract class ConjunctionController<
             this.bounds = bounds;
             this.outputVariables = controller.actor().outputVariables;
             this.plan = conjunctionStreamPlan;
+            this.compoundStreamRegistry = new HashMap<>();
             context.perfCounters().conjunctionProcessors.add(1);
         }
 
@@ -238,7 +240,7 @@ public abstract class ConjunctionController<
                 if (planElement.isResolvable()) {
                     publisher = spawnResolvableElement(planElement.asResolvablePlan(), identifierBounds);
                 } else if (planElement.isCompoundStream()) {
-                    publisher = getOrCreateCompoundStream(planElement.asCompoundStreamPlan(), identifierBounds);
+                    publisher = spawnCompoundStream(planElement.asCompoundStreamPlan(), identifierBounds);
                 } else throw TypeDBException.of(ILLEGAL_STATE);
 
                 // TODO: Filter results to output? and then extend?
@@ -257,23 +259,15 @@ public abstract class ConjunctionController<
                 }
             }
 
-            private Publisher<ConceptMap> getOrCreateCompoundStream(ConjunctionStreamPlan.CompoundStreamPlan planElement, ConceptMap mergedPacket) {
+            private Publisher<ConceptMap> spawnCompoundStream(ConjunctionStreamPlan.CompoundStreamPlan planElement, ConceptMap mergedPacket) {
                 ConceptMap identifyingBounds = mergedPacket.filter(planElement.identifierVariables());
-                return planElement.compoundStreamRegistry().computeIfAbsent(identifyingBounds, packet -> {
+                return compoundStreamRegistry.computeIfAbsent(planElement, _x -> new HashMap<>()).computeIfAbsent(identifyingBounds, packet -> {
                     CompoundStream compoundStream = new CompoundStream(processor, planElement, identifyingBounds);
                     PoolingStream.BufferedFanStream<ConceptMap> bufferedStream = PoolingStream.BufferedFanStream.fanOut(compoundStream.processor);
                     // TODO: Check if this is true - you only need to buffer if extendWithOutput is non-empty.
                     compoundStream.map(conceptMap -> filterOutputsWithExplainables(conceptMap, planElement.outputVariables())).registerSubscriber(bufferedStream);
                     return bufferedStream;
                 });
-            }
-
-            private Publisher<ConceptMap> extendWithBounds(Publisher<ConceptMap> s, ConceptMap extension) {
-                return extension.concepts().isEmpty() ? s : s.map(conceptMap -> merge(conceptMap, extension));
-            }
-
-            private ConceptMap filterOutputsWithExplainables(ConceptMap packet, Set<Variable.Retrievable> toVariables) {
-                return context().explainEnabled() ? packet : packet.filter(toVariables);
             }
 
             private Reactive.Publisher<ConceptMap> spawnResolvableElement(ConjunctionStreamPlan.ResolvablePlan resolvablePlan, ConceptMap carriedBounds) {
@@ -292,6 +286,13 @@ public abstract class ConjunctionController<
                     throw TypeDBException.of(ILLEGAL_STATE);
                 }
                 return input.map(conceptMap -> filterOutputsWithExplainables(conceptMap, resolvablePlan.outputVariables()));
+            }
+            private Publisher<ConceptMap> extendWithBounds(Publisher<ConceptMap> s, ConceptMap extension) {
+                return extension.concepts().isEmpty() ? s : s.map(conceptMap -> merge(conceptMap, extension));
+            }
+
+            private ConceptMap filterOutputsWithExplainables(ConceptMap packet, Set<Variable.Retrievable> toVariables) {
+                return context().explainEnabled() ? packet : packet.filter(toVariables);
             }
         }
 
