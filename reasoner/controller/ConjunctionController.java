@@ -249,6 +249,7 @@ public abstract class ConjunctionController<
             @Override
             public Either<Publisher<ConceptMap>, Set<ConceptMap>> accept(Publisher<ConceptMap> publisher,
                                                                          ConceptMap packet) {
+                context().perfCounters().compoundStreamAccepts.add(1);
                 ConceptMap mergedPacket = merge(identifierBounds, packet);
                 if (publisher == leftChild && plan.isCompoundStream()) {
                     Publisher<ConceptMap> follower = spawnPlanElement(plan.asCompoundStreamPlan().right(), mergedPacket);
@@ -263,7 +264,9 @@ public abstract class ConjunctionController<
                 return compoundStreamRegistry.computeIfAbsent(planElement, _x -> new HashMap<>()).computeIfAbsent(identifyingBounds, packet -> {
                     CompoundStream compoundStream = new CompoundStream(processor, planElement, identifyingBounds);
                     PoolingStream.BufferedFanStream<ConceptMap> bufferedStream = PoolingStream.BufferedFanStream.fanOut(compoundStream.processor);
-                    // TODO: Check if this is true - you only need to buffer if extendWithOutput is non-empty.
+                    // TODO: Check if this is true - you only need to buffer if extendWithOutput is non-empty. (Because then we won't have multiple readers?)
+                    // TODO: Should I create a local copy of planElement.outputVariables so it's not a local creeping into the scope?
+                    //          Plan element will live as long as the processor either way
                     compoundStream.map(conceptMap -> filterOutputsWithExplainables(conceptMap, planElement.outputVariables())).registerSubscriber(bufferedStream);
                     return bufferedStream;
                 });

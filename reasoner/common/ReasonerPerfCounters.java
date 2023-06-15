@@ -22,6 +22,11 @@ import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
 public class ReasonerPerfCounters extends PerfCounters {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerPerfCounters.class);
@@ -30,11 +35,13 @@ public class ReasonerPerfCounters extends PerfCounters {
     public static final String MATERIALISATIONS = "processor_materialisations";
     public static final String CONJUNCTION_PROCESSORS = "processors_conjunction_processors";
     public static final String COMPOUND_STREAMS = "streams_compound_streams";
+    public static final String COMPOUND_STREAM_ACCEPTS = "streams_compound_stream_accepts";
 
     public final PerfCounters.Counter timePlanning;
     public final PerfCounters.Counter materialisations;
     public final PerfCounters.Counter conjunctionProcessors;
     public final PerfCounters.Counter compoundStreams;
+    public final Counter compoundStreamAccepts;
 
     public ReasonerPerfCounters(boolean enabled) {
         super(enabled);
@@ -42,11 +49,31 @@ public class ReasonerPerfCounters extends PerfCounters {
         materialisations = register(MATERIALISATIONS);
         conjunctionProcessors = register(CONJUNCTION_PROCESSORS);
         compoundStreams = register(COMPOUND_STREAMS);
+        compoundStreamAccepts = register(COMPOUND_STREAM_ACCEPTS);
     }
 
     public void logCounters() {
         if (enabled) {
             LOG.debug("Perf counters:\n{}", toString());
+        }
+    }
+
+    private ScheduledFuture<?> printingTask;
+    private ScheduledExecutorService printingTaskService;
+
+    public synchronized void startPrinting() {
+        if (printingTask == null) {
+            printingTaskService = Executors.newScheduledThreadPool(1);
+            printingTask = printingTaskService.scheduleAtFixedRate(this::logCounters, 5, 5, TimeUnit.SECONDS);
+        }
+    }
+
+    public synchronized void stopPrinting() {
+        if (printingTask != null) {
+            printingTask.cancel(false);
+            printingTaskService.shutdown();
+            printingTask = null;
+            printingTaskService = null;
         }
     }
 }
