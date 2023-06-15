@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
@@ -195,7 +194,7 @@ public abstract class ConjunctionController<
             extends AbstractProcessor<ConceptMap, ConceptMap, Request<?>, PROCESSOR> {
 
         final ConceptMap bounds;
-        final ConjunctionStreamPlan.CompoundStreamPlan plan;
+        final ConjunctionStreamPlan plan;
         final Set<Variable.Retrievable> outputVariables;
 
         Processor(Driver<PROCESSOR> driver,
@@ -205,33 +204,28 @@ public abstract class ConjunctionController<
             super(driver, controller, context, debugName);
             this.bounds = bounds;
             this.outputVariables = controller.actor().outputVariables;
-
-            if (conjunctionStreamPlan.isResolvable()) {
-                ConjunctionStreamPlan.ResolvablePlan resolvablePlan = conjunctionStreamPlan.asResolvablePlan();
-                this.plan = new ConjunctionStreamPlan.CompoundStreamPlan(resolvablePlan, null,
-                        resolvablePlan.identifierVariables(), resolvablePlan.extendOutputWithVariables(), resolvablePlan.outputVariables());
-            } else {
-                assert conjunctionStreamPlan.isCompoundStream();
-                this.plan = conjunctionStreamPlan.asCompoundStreamPlan();
-            }
-
+            this.plan = conjunctionStreamPlan;
             context.perfCounters().conjunctionProcessors.add(1);
         }
 
         public class CompoundStream extends TransformationStream<ConceptMap, ConceptMap> {
-            private final ConjunctionStreamPlan.CompoundStreamPlan plan;
+            private final ConjunctionStreamPlan plan;
             private final ConceptMap identifierBounds;
             private final AbstractProcessor<?, ?, ?, ?> processor;
             private final Publisher<ConceptMap> leftChild;
 
 
-            CompoundStream(AbstractProcessor<?, ?, ?, ?> processor, ConjunctionStreamPlan.CompoundStreamPlan plan, ConceptMap identifierBounds) {
+            CompoundStream(AbstractProcessor<?, ?, ?, ?> processor, ConjunctionStreamPlan plan, ConceptMap identifierBounds) {
                 super(processor, new SubscriberRegistry.Multi<>(), new PublisherRegistry.Multi<>());
                 assert plan.isCompoundStream();
                 this.processor = processor;
                 this.identifierBounds = identifierBounds;
                 this.plan = plan;
-                this.leftChild = spawnPlanElement(plan.left(), identifierBounds);
+                if (plan.isCompoundStream()) {
+                    this.leftChild = spawnPlanElement(plan.asCompoundStreamPlan().left(), identifierBounds);
+                } else {
+                    this.leftChild = spawnPlanElement(plan.asResolvablePlan(), identifierBounds);
+                }
                 leftChild.registerSubscriber(this);
                 processor().context().perfCounters().compoundStreams.add(1);
             }
@@ -239,13 +233,15 @@ public abstract class ConjunctionController<
             private Publisher<ConceptMap> spawnPlanElement(ConjunctionStreamPlan planElement, ConceptMap bounds) {
                 ConceptMap extension = filterOutputsWithExplainables(bounds, planElement.extendOutputWithVariables());
                 ConceptMap identifierBounds = bounds.filter(planElement.identifierVariables());
+                assert planElement.identifierVariables().equals(identifierBounds.concepts().keySet());
                 Publisher<ConceptMap> publisher;
                 if (planElement.isResolvable()) {
-                    publisher = spawnResolvableElement(planElement.asResolvablePlan().resolvable(), identifierBounds);
+                    publisher = spawnResolvableElement(planElement.asResolvablePlan(), identifierBounds);
                 } else if (planElement.isCompoundStream()) {
                     publisher = getOrCreateCompoundStream(planElement.asCompoundStreamPlan(), identifierBounds);
                 } else throw TypeDBException.of(ILLEGAL_STATE);
 
+                // TODO: Filter results to output? and then extend?
                 return extendWithBounds(publisher, extension);
             }
 
@@ -253,8 +249,8 @@ public abstract class ConjunctionController<
             public Either<Publisher<ConceptMap>, Set<ConceptMap>> accept(Publisher<ConceptMap> publisher,
                                                                          ConceptMap packet) {
                 ConceptMap mergedPacket = merge(identifierBounds, packet);
-                if (publisher == leftChild && plan.right() != null) {
-                    Publisher<ConceptMap> follower = spawnPlanElement(plan.right(), mergedPacket);
+                if (publisher == leftChild && plan.isCompoundStream()) {
+                    Publisher<ConceptMap> follower = spawnPlanElement(plan.asCompoundStreamPlan().right(), mergedPacket);
                     return Either.first(follower);
                 } else {
                     return Either.second(set(filterOutputsWithExplainables(mergedPacket, plan.outputVariables())));
@@ -267,7 +263,7 @@ public abstract class ConjunctionController<
                     CompoundStream compoundStream = new CompoundStream(processor, planElement, identifyingBounds);
                     PoolingStream.BufferedFanStream<ConceptMap> bufferedStream = PoolingStream.BufferedFanStream.fanOut(compoundStream.processor);
                     // TODO: Check if this is true - you only need to buffer if extendWithOutput is non-empty.
-                    compoundStream.registerSubscriber(bufferedStream);
+                    compoundStream.map(conceptMap -> filterOutputsWithExplainables(conceptMap, planElement.outputVariables())).registerSubscriber(bufferedStream);
                     return bufferedStream;
                 });
             }
@@ -279,23 +275,24 @@ public abstract class ConjunctionController<
             private ConceptMap filterOutputsWithExplainables(ConceptMap packet, Set<Variable.Retrievable> toVariables) {
                 return context().explainEnabled() ? packet : packet.filter(toVariables);
             }
-        }
 
-        private InputPort<ConceptMap> spawnResolvableElement(Resolvable<?> planElement, ConceptMap carriedBounds) {
-            InputPort<ConceptMap> input = createInputPort();
-            if (planElement.isRetrievable()) {
-                requestConnection(new RetrievableRequest(input.identifier(), driver(), planElement.asRetrievable(),
-                        carriedBounds.filter(planElement.retrieves())));
-            } else if (planElement.isConcludable()) {
-                requestConnection(new ConcludableRequest(input.identifier(), driver(), planElement.asConcludable(),
-                        carriedBounds.filter(planElement.retrieves())));
-            } else if (planElement.isNegated()) {
-                requestConnection(new NegatedRequest(input.identifier(), driver(), planElement.asNegated(),
-                        carriedBounds.filter(planElement.retrieves())));
-            } else {
-                throw TypeDBException.of(ILLEGAL_STATE);
+            private Reactive.Publisher<ConceptMap> spawnResolvableElement(ConjunctionStreamPlan.ResolvablePlan resolvablePlan, ConceptMap carriedBounds) {
+                InputPort<ConceptMap> input = createInputPort();
+                Resolvable<?> resolvable = resolvablePlan.resolvable();
+                if (resolvable.isRetrievable()) {
+                    requestConnection(new RetrievableRequest(input.identifier(), driver(), resolvable.asRetrievable(),
+                            carriedBounds.filter(resolvable.retrieves())));
+                } else if (resolvable.isConcludable()) {
+                    requestConnection(new ConcludableRequest(input.identifier(), driver(), resolvable.asConcludable(),
+                            carriedBounds.filter(resolvable.retrieves())));
+                } else if (resolvable.isNegated()) {
+                    requestConnection(new NegatedRequest(input.identifier(), driver(), resolvable.asNegated(),
+                            carriedBounds.filter(resolvable.retrieves())));
+                } else {
+                    throw TypeDBException.of(ILLEGAL_STATE);
+                }
+                return input.map(conceptMap -> filterOutputsWithExplainables(conceptMap, resolvablePlan.outputVariables()));
             }
-            return input;
         }
 
         public static class RetrievableRequest extends Request<Retrievable> {

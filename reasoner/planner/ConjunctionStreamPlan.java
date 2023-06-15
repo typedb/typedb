@@ -48,7 +48,6 @@ public class ConjunctionStreamPlan {
     }
 
     public static ConjunctionStreamPlan createConjunctionStreamPlan(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
-        // TODO: Check if this is true: If a variable is in the identifiers, it can be removed from the output of the children.
         Set<Retrievable> conjunctionVariables = iterate(resolvableOrder).flatMap(resolvable -> iterate(resolvable.retrieves())).toSet();
         Set<Retrievable> identifiers = intersection(inputVariables, conjunctionVariables);
         // assert resolvableOrder.get(0).retrieves().containsAll(identifiers); // TODO: Remove: not true for first level
@@ -85,13 +84,15 @@ public class ConjunctionStreamPlan {
         {
             Set<Retrievable> leftVariables = iterate(left).flatMap(l -> iterate(l.retrieves())).toSet();
             Set<Retrievable> rightVariables = iterate(right).flatMap(r -> iterate(r.retrieves())).toSet();
+            // TODO: Check if this is true: If a variable is in the identifiers, it can be removed from the output of the children.
+            Set<Retrievable> childrenOutput = difference(outputVariables, identifiers);
 
             Set<Retrievable> leftInputs = intersection(inputVariables, leftVariables);
-            Set<Retrievable> leftOutputs = intersection(leftVariables, union(outputVariables, rightVariables));
+            Set<Retrievable> leftOutputs = intersection(leftVariables, union(childrenOutput, rightVariables));
             Set<Retrievable> rightInputs = union(leftOutputs, intersection(inputVariables, rightVariables));
             // assert union(leftInputs, joinOutputs).equals(inputVariables); // TODO: Remove: Also not true for first level
             leftPlan = createConjunctionStreamPlan(left, leftInputs, leftOutputs);
-            rightPlan = createConjunctionStreamPlan(right, rightInputs, outputVariables);
+            rightPlan = createConjunctionStreamPlan(right, rightInputs, childrenOutput);
         }
 
         return new CompoundStreamPlan(leftPlan, rightPlan, identifiers, joinOutputs, outputVariables);
