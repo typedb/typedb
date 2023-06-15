@@ -219,7 +219,6 @@ public abstract class ConjunctionController<
 
             CompoundStream(AbstractProcessor<?, ?, ?, ?> processor, ConjunctionStreamPlan plan, ConceptMap identifierBounds) {
                 super(processor, new SubscriberRegistry.Multi<>(), new PublisherRegistry.Multi<>());
-                assert plan.isCompoundStream();
                 this.processor = processor;
                 this.identifierBounds = identifierBounds;
                 this.plan = plan;
