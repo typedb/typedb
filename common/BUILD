@@ -29,22 +29,22 @@ native_java_libraries(
         "@vaticle_typeql//java/query:query",
 
         # External Maven Dependencies
+        "@maven//:com_google_ortools_ortools_java",
         "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api",
     ],
     mac_deps = [
-        "@maven//:com_google_ortools_ortools_darwin",
-        "@maven//:com_google_ortools_ortools_darwin_java",
+        "@maven//:com_google_ortools_ortools_darwin_x86_64",
+        "@maven//:com_google_ortools_ortools_darwin_aarch64",
     ],
     linux_deps = [
         "@maven//:com_google_ortools_ortools_linux_x86_64",
-        "@maven//:com_google_ortools_ortools_linux_x86_64_java"
+        "@maven//:com_google_ortools_ortools_linux_aarch64",
     ],
     windows_deps = [
         "@maven//:com_google_ortools_ortools_win32_x86_64",
-        "@maven//:com_google_ortools_ortools_win32_x86_64_java"
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-common:{pom_version}"],
 )
