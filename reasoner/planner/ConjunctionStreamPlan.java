@@ -96,19 +96,6 @@ public class ConjunctionStreamPlan {
             // assert union(leftInputs, joinOutputs).equals(inputVariables); // TODO: Remove: Also not true for first level
             leftPlan = createBinaryConjunctionStreamPlan(left, leftInputs, leftOutputs);
             rightPlan = createBinaryConjunctionStreamPlan(right, rightInputs, childrenOutput);
-//            // Wrong way of flattening the plans
-//            {
-//                List<ConjunctionStreamPlan> wronglyFlattenedSubPlans = new ArrayList<>();
-//                iterate(leftPlan, rightPlan).forEachRemaining(nextPlan -> {
-//                    if (nextPlan.isCompoundStream() && nextPlan.extendOutputWith.isEmpty()) {
-//                        wronglyFlattenedSubPlans.addAll(nextPlan.asCompoundStreamPlan().subPlans);
-//                    } else {
-//                        wronglyFlattenedSubPlans.add(nextPlan);
-//                    }
-//                });
-//                if (wronglyFlattenedSubPlans.size() > 0)
-//                    return new CompoundStreamPlan(wronglyFlattenedSubPlans, identifiers, joinOutputs, outputVariables);
-//            }
         }
 
         return new CompoundStreamPlan(Collections.list(leftPlan, rightPlan), identifiers, joinOutputs, outputVariables);

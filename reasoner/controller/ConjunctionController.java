@@ -76,8 +76,6 @@ public abstract class ConjunctionController<
     final Set<Variable.Retrievable> outputVariables;
     final Map<Set<Variable.Retrievable>, ConjunctionStreamPlan> plans;
 
-    final Map<Set<Variable.Retrievable>, PerfCounters.Counter> debug__compoundStreamCounters;
-
     ConjunctionController(Driver<CONTROLLER> driver, ResolvableConjunction conjunction, Set<Variable.Retrievable> outputVariables, Context context) {
         super(driver, context, () -> ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")");
         this.conjunction = conjunction;
@@ -89,7 +87,6 @@ public abstract class ConjunctionController<
         this.plans = new ConcurrentHashMap<>();
 
         assert conjunction.pattern().retrieves().containsAll(outputVariables);
-        debug__compoundStreamCounters = new HashMap<>();
     }
 
     @Override
@@ -114,7 +111,6 @@ public abstract class ConjunctionController<
 
     ConjunctionStreamPlan getPlan(Set<Variable.Retrievable> bounds) {
         return plans.computeIfAbsent(bounds, inputBounds -> {
-            debug__compoundStreamCounters.put(inputBounds, processorContext().perfCounters().register(conjunction + "::" + String.join(",", iterate(inputBounds).map(b -> b.toString()).toList())));
             Set<com.vaticle.typedb.core.pattern.variable.Variable> boundVariables = iterate(inputBounds).map(id -> conjunction.pattern().variable(id)).toSet();
             List<Resolvable<?>> plan = planner().getPlan(conjunction, boundVariables).plan();
             assert resolvables.size() == plan.size() && resolvables.containsAll(plan);
@@ -239,7 +235,6 @@ public abstract class ConjunctionController<
                 this.whichChild = new HashMap<>();
                 this.whichChild.put(leftChild, 0);
                 processor().context().perfCounters().compoundStreams.add(1);
-                ((PerfCounters.Counter)((ConjunctionController)(processor.controller.actor())).debug__compoundStreamCounters.get(new HashSet<>(((ConjunctionController.Processor)processor).bounds.concepts().keySet()))).add(1);
             }
 
             private Publisher<ConceptMap> spawnPlanElement(ConjunctionStreamPlan planElement, ConceptMap bounds) {
