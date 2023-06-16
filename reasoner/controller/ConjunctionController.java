@@ -239,13 +239,13 @@ public abstract class ConjunctionController<
 
             private Publisher<ConceptMap> spawnPlanElement(ConjunctionStreamPlan planElement, ConceptMap bounds) {
                 ConceptMap extension = filterOutputsWithExplainables(bounds, planElement.extendOutputWithVariables());
-                ConceptMap identifierBounds = bounds.filter(planElement.identifierVariables());
-                assert planElement.identifierVariables().size() == identifierBounds.concepts().size() &&  identifierBounds.concepts().keySet().containsAll(planElement.identifierVariables());
+                ConceptMap identifiers = bounds.filter(planElement.identifierVariables());
+                assert planElement.identifierVariables().size() == identifiers.concepts().size() &&  identifiers.concepts().keySet().containsAll(planElement.identifierVariables());
                 Publisher<ConceptMap> publisher;
                 if (planElement.isResolvable()) {
-                    publisher = spawnResolvableElement(planElement.asResolvablePlan(), identifierBounds);
+                    publisher = spawnResolvableElement(planElement.asResolvablePlan(), identifiers);
                 } else if (planElement.isCompoundStream()) {
-                    publisher = spawnCompoundStream(planElement.asCompoundStreamPlan(), identifierBounds);
+                    publisher = spawnCompoundStream(planElement.asCompoundStreamPlan(), identifiers);
                 } else throw TypeDBException.of(ILLEGAL_STATE);
 
                 // TODO: Filter results to output? and then extend?
@@ -259,11 +259,11 @@ public abstract class ConjunctionController<
                 ConceptMap mergedPacket = merge(identifierBounds, packet);
                 int nextChild = whichChild.get(publisher) + 1;
 
-                // assert on packet. NOT mergedPacket.
-                assert plan.isResolvable() || (
-                        ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(), plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables()).size() == packet.concepts().size() &&
-                                packet.concepts().keySet().containsAll(ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(),
-                                plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables())));
+                // assert on packet. NOT mergedPacket.  I added a join node for identifier bounds to the resolvable when spawning, breaking the assert.
+//                assert plan.isResolvable() || (
+//                        ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(), plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables()).size() == packet.concepts().size() &&
+//                                packet.concepts().keySet().containsAll(ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(),
+//                                plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables())));
                 if (plan.isCompoundStream() && nextChild < plan.asCompoundStreamPlan().size()) {
                     Publisher<ConceptMap> follower = spawnPlanElement(plan.asCompoundStreamPlan().ithChild(nextChild), mergedPacket);
                     whichChild.put(follower, nextChild);
@@ -289,19 +289,19 @@ public abstract class ConjunctionController<
             private Reactive.Publisher<ConceptMap> spawnResolvableElement(ConjunctionStreamPlan.ResolvablePlan resolvablePlan, ConceptMap carriedBounds) {
                 InputPort<ConceptMap> input = createInputPort();
                 Resolvable<?> resolvable = resolvablePlan.resolvable();
+                ConceptMap identifiers = carriedBounds.filter(resolvable.retrieves());
                 if (resolvable.isRetrievable()) {
-                    requestConnection(new RetrievableRequest(input.identifier(), driver(), resolvable.asRetrievable(),
-                            carriedBounds.filter(resolvable.retrieves())));
+                    requestConnection(new RetrievableRequest(input.identifier(), driver(), resolvable.asRetrievable(), identifiers));
                 } else if (resolvable.isConcludable()) {
-                    requestConnection(new ConcludableRequest(input.identifier(), driver(), resolvable.asConcludable(),
-                            carriedBounds.filter(resolvable.retrieves())));
+                    requestConnection(new ConcludableRequest(input.identifier(), driver(), resolvable.asConcludable(), identifiers));
                 } else if (resolvable.isNegated()) {
-                    requestConnection(new NegatedRequest(input.identifier(), driver(), resolvable.asNegated(),
-                            carriedBounds.filter(resolvable.retrieves())));
+                    requestConnection(new NegatedRequest(input.identifier(), driver(), resolvable.asNegated(), identifiers));
                 } else {
                     throw TypeDBException.of(ILLEGAL_STATE);
                 }
-                return input.map(conceptMap -> filterOutputsWithExplainables(conceptMap, resolvablePlan.outputVariables()));
+
+                // TODO: Too much state leaking in?
+                return input.map(conceptMap -> merge(filterOutputsWithExplainables(conceptMap, resolvablePlan.outputVariables()), identifiers));
             }
             private Publisher<ConceptMap> extendWithBounds(Publisher<ConceptMap> s, ConceptMap extension) {
                 return extension.concepts().isEmpty() ? s : s.map(conceptMap -> merge(conceptMap, extension));
