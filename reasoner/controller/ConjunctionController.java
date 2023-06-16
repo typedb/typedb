@@ -214,7 +214,7 @@ public abstract class ConjunctionController<
             private final ConjunctionStreamPlan plan;
             private final ConceptMap identifierBounds;
             private final AbstractProcessor<?, ?, ?, ?> processor;
-            private final Publisher<ConceptMap> leftChild;
+            private final Map<Publisher<ConceptMap>, Integer> whichChild;
 
 
             CompoundStream(AbstractProcessor<?, ?, ?, ?> processor, ConjunctionStreamPlan plan, ConceptMap identifierBounds) {
@@ -222,12 +222,15 @@ public abstract class ConjunctionController<
                 this.processor = processor;
                 this.identifierBounds = identifierBounds;
                 this.plan = plan;
+                Publisher<ConceptMap> leftChild;
                 if (plan.isCompoundStream()) {
-                    this.leftChild = spawnPlanElement(plan.asCompoundStreamPlan().left(), identifierBounds);
+                    leftChild = spawnPlanElement(plan.asCompoundStreamPlan().ithChild(0), identifierBounds);
                 } else {
-                    this.leftChild = spawnPlanElement(plan.asResolvablePlan(), identifierBounds);
+                    leftChild = spawnPlanElement(plan.asResolvablePlan(), identifierBounds);
                 }
                 leftChild.registerSubscriber(this);
+                this.whichChild = new HashMap<>();
+                this.whichChild.put(leftChild, 0);
                 processor().context().perfCounters().compoundStreams.add(1);
             }
 
@@ -251,8 +254,10 @@ public abstract class ConjunctionController<
                                                                          ConceptMap packet) {
                 context().perfCounters().compoundStreamAccepts.add(1);
                 ConceptMap mergedPacket = merge(identifierBounds, packet);
-                if (publisher == leftChild && plan.isCompoundStream()) {
-                    Publisher<ConceptMap> follower = spawnPlanElement(plan.asCompoundStreamPlan().right(), mergedPacket);
+                int nextChild = whichChild.get(publisher) + 1;
+                if (plan.isCompoundStream() && nextChild < plan.asCompoundStreamPlan().size()) {
+                    Publisher<ConceptMap> follower = spawnPlanElement(plan.asCompoundStreamPlan().ithChild(nextChild), mergedPacket);
+                    whichChild.put(follower, nextChild);
                     return Either.first(follower);
                 } else {
                     return Either.second(set(filterOutputsWithExplainables(mergedPacket, plan.outputVariables())));

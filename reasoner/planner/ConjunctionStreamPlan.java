@@ -20,6 +20,7 @@
 
 package com.vaticle.typedb.core.reasoner.planner;
 
+import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
@@ -95,7 +96,7 @@ public class ConjunctionStreamPlan {
             rightPlan = createConjunctionStreamPlan(right, rightInputs, childrenOutput);
         }
 
-        return new CompoundStreamPlan(leftPlan, rightPlan, identifiers, joinOutputs, outputVariables);
+        return new CompoundStreamPlan(Collections.list(leftPlan, rightPlan), identifiers, joinOutputs, outputVariables);
     }
 
     private static Set<Retrievable> union(Set<Retrievable> a, Set<Retrievable> b) {
@@ -178,14 +179,11 @@ public class ConjunctionStreamPlan {
     }
 
     public static class CompoundStreamPlan extends ConjunctionStreamPlan {
-        private final ConjunctionStreamPlan leftPlan;
-        private final ConjunctionStreamPlan rightPlan;
-
-        public CompoundStreamPlan(ConjunctionStreamPlan leftPlan, ConjunctionStreamPlan rightPlan,
+        private final List<ConjunctionStreamPlan> subPlans;
+        public CompoundStreamPlan(List<ConjunctionStreamPlan> subPlans,
                                   Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables) {
             super(identifierVariables, extendOutputWith, outputVariables);
-            this.leftPlan = leftPlan;
-            this.rightPlan = rightPlan;
+            this.subPlans = subPlans;
         }
 
         @Override
@@ -198,22 +196,21 @@ public class ConjunctionStreamPlan {
             return this;
         }
 
-        public ConjunctionStreamPlan left() {
-            return leftPlan;
+        public ConjunctionStreamPlan ithChild(int i) {
+            return subPlans.get(i);
         }
 
-        public ConjunctionStreamPlan right() {
-            return rightPlan;
+        public int size() {
+            return subPlans.size();
         }
 
         @Override
         public String toString() {
-            return String.format("{[(%s), (%s), (%s)] :: [%s ; %s ]}",
+            return String.format("{[(%s), (%s), (%s)] :: [%s]}",
                     String.join(", ", iterate(identifierVariables).map(v -> v.toString()).toList()),
                     String.join(", ", iterate(extendOutputWith).map(v -> v.toString()).toList()),
                     String.join(", ", iterate(outputVariables).map(v -> v.toString()).toList()),
-                    leftPlan.toString(),
-                    rightPlan.toString());
+                    String.join(" ; ", iterate(subPlans).map(ConjunctionStreamPlan::toString).toList()));
         }
     }
 }
