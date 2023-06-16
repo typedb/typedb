@@ -291,6 +291,7 @@ public abstract class ConjunctionController<
                 Resolvable<?> resolvable = resolvablePlan.resolvable();
                 ConceptMap identifiers = carriedBounds.filter(resolvable.retrieves());
                 if (resolvable.isRetrievable()) {
+                    // TODO: Maybe add a filter and find a way to re-use the results from retrievables. I think we create a fresh one each time now, which is a loooot of work.
                     requestConnection(new RetrievableRequest(input.identifier(), driver(), resolvable.asRetrievable(), identifiers));
                 } else if (resolvable.isConcludable()) {
                     requestConnection(new ConcludableRequest(input.identifier(), driver(), resolvable.asConcludable(), identifiers));

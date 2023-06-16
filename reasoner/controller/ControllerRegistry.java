@@ -142,6 +142,7 @@ public class ControllerRegistry {
         Driver<C> controller = Actor.driver(actorFn, controllerContext.executorService());
         controllers.add(controller);
         controller.execute(c -> c.initialise());
+        controllerContext.processor().perfCounters().startPrinting();
     }
 
     private <C extends AbstractController<?, ?, ?, ?, ?, C>> Driver<C> createController(Function<Driver<C>, C> actorFn) {
@@ -285,6 +286,7 @@ public class ControllerRegistry {
 
     public void close() {
         controllerContext.tracer().ifPresent(Tracer::finishTrace);
+        controllerContext.processor().perfCounters().stopPrinting();
         controllerContext.processor().perfCounters().logCounters();
     }
 
