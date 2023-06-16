@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -43,6 +44,7 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashMap;
@@ -56,6 +58,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.reasoner.controller.ConcludableController.Processor.Match.withExplainable;
 
 public abstract class ConjunctionController<
@@ -73,6 +76,8 @@ public abstract class ConjunctionController<
     final Set<Variable.Retrievable> outputVariables;
     final Map<Set<Variable.Retrievable>, ConjunctionStreamPlan> plans;
 
+    final Map<Set<Variable.Retrievable>, PerfCounters.Counter> debug__compoundStreamCounters;
+
     ConjunctionController(Driver<CONTROLLER> driver, ResolvableConjunction conjunction, Set<Variable.Retrievable> outputVariables, Context context) {
         super(driver, context, () -> ConjunctionController.class.getSimpleName() + "(pattern:" + conjunction + ")");
         this.conjunction = conjunction;
@@ -84,6 +89,7 @@ public abstract class ConjunctionController<
         this.plans = new ConcurrentHashMap<>();
 
         assert conjunction.pattern().retrieves().containsAll(outputVariables);
+        debug__compoundStreamCounters = new HashMap<>();
     }
 
     @Override
@@ -108,10 +114,11 @@ public abstract class ConjunctionController<
 
     ConjunctionStreamPlan getPlan(Set<Variable.Retrievable> bounds) {
         return plans.computeIfAbsent(bounds, inputBounds -> {
+            debug__compoundStreamCounters.put(inputBounds, processorContext().perfCounters().register(conjunction + "::" + String.join(",", iterate(inputBounds).map(b -> b.toString()).toList())));
             Set<com.vaticle.typedb.core.pattern.variable.Variable> boundVariables = iterate(inputBounds).map(id -> conjunction.pattern().variable(id)).toSet();
             List<Resolvable<?>> plan = planner().getPlan(conjunction, boundVariables).plan();
             assert resolvables.size() == plan.size() && resolvables.containsAll(plan);
-            return ConjunctionStreamPlan.createConjunctionStreamPlan(plan, inputBounds, outputVariables);
+            return ConjunctionStreamPlan.createFlattenedConjunctionStreamPlan(plan, inputBounds, outputVariables);
         });
     }
 
@@ -232,12 +239,13 @@ public abstract class ConjunctionController<
                 this.whichChild = new HashMap<>();
                 this.whichChild.put(leftChild, 0);
                 processor().context().perfCounters().compoundStreams.add(1);
+                ((PerfCounters.Counter)((ConjunctionController)(processor.controller.actor())).debug__compoundStreamCounters.get(new HashSet<>(((ConjunctionController.Processor)processor).bounds.concepts().keySet()))).add(1);
             }
 
             private Publisher<ConceptMap> spawnPlanElement(ConjunctionStreamPlan planElement, ConceptMap bounds) {
                 ConceptMap extension = filterOutputsWithExplainables(bounds, planElement.extendOutputWithVariables());
                 ConceptMap identifierBounds = bounds.filter(planElement.identifierVariables());
-                assert planElement.identifierVariables().equals(identifierBounds.concepts().keySet());
+                assert planElement.identifierVariables().size() == identifierBounds.concepts().size() &&  identifierBounds.concepts().keySet().containsAll(planElement.identifierVariables());
                 Publisher<ConceptMap> publisher;
                 if (planElement.isResolvable()) {
                     publisher = spawnResolvableElement(planElement.asResolvablePlan(), identifierBounds);
@@ -255,6 +263,12 @@ public abstract class ConjunctionController<
                 context().perfCounters().compoundStreamAccepts.add(1);
                 ConceptMap mergedPacket = merge(identifierBounds, packet);
                 int nextChild = whichChild.get(publisher) + 1;
+
+                // assert on packet. NOT mergedPacket.
+                assert plan.isResolvable() || (
+                        ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(), plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables()).size() == packet.concepts().size() &&
+                                packet.concepts().keySet().containsAll(ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(),
+                                plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables())));
                 if (plan.isCompoundStream() && nextChild < plan.asCompoundStreamPlan().size()) {
                     Publisher<ConceptMap> follower = spawnPlanElement(plan.asCompoundStreamPlan().ithChild(nextChild), mergedPacket);
                     whichChild.put(follower, nextChild);

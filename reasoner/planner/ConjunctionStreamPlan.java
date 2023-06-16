@@ -22,16 +22,13 @@ package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
-import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
@@ -48,7 +45,12 @@ public class ConjunctionStreamPlan {
         this.outputVariables = outputVariables;
     }
 
-    public static ConjunctionStreamPlan createConjunctionStreamPlan(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
+    public static ConjunctionStreamPlan createFlattenedConjunctionStreamPlan(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
+        ConjunctionStreamPlan flattened = flatten(createBinaryConjunctionStreamPlan(resolvableOrder, inputVariables, outputVariables));
+        return flattened;
+    }
+
+    private static ConjunctionStreamPlan createBinaryConjunctionStreamPlan(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
         Set<Retrievable> conjunctionVariables = iterate(resolvableOrder).flatMap(resolvable -> iterate(resolvable.retrieves())).toSet();
         Set<Retrievable> identifiers = intersection(inputVariables, conjunctionVariables);
         // assert resolvableOrder.get(0).retrieves().containsAll(identifiers); // TODO: Remove: not true for first level
@@ -86,20 +88,53 @@ public class ConjunctionStreamPlan {
             Set<Retrievable> leftVariables = iterate(left).flatMap(l -> iterate(l.retrieves())).toSet();
             Set<Retrievable> rightVariables = iterate(right).flatMap(r -> iterate(r.retrieves())).toSet();
             // TODO: Check if this is true: If a variable is in the identifiers, it can be removed from the output of the children.
-            Set<Retrievable> childrenOutput = difference(outputVariables, identifiers);
+            Set<Retrievable> childrenOutput = difference(difference(outputVariables, identifiers), joinOutputs);
 
             Set<Retrievable> leftInputs = intersection(inputVariables, leftVariables);
             Set<Retrievable> leftOutputs = intersection(leftVariables, union(childrenOutput, rightVariables));
             Set<Retrievable> rightInputs = union(leftOutputs, intersection(inputVariables, rightVariables));
             // assert union(leftInputs, joinOutputs).equals(inputVariables); // TODO: Remove: Also not true for first level
-            leftPlan = createConjunctionStreamPlan(left, leftInputs, leftOutputs);
-            rightPlan = createConjunctionStreamPlan(right, rightInputs, childrenOutput);
+            leftPlan = createBinaryConjunctionStreamPlan(left, leftInputs, leftOutputs);
+            rightPlan = createBinaryConjunctionStreamPlan(right, rightInputs, childrenOutput);
+//            // Wrong way of flattening the plans
+//            {
+//                List<ConjunctionStreamPlan> wronglyFlattenedSubPlans = new ArrayList<>();
+//                iterate(leftPlan, rightPlan).forEachRemaining(nextPlan -> {
+//                    if (nextPlan.isCompoundStream() && nextPlan.extendOutputWith.isEmpty()) {
+//                        wronglyFlattenedSubPlans.addAll(nextPlan.asCompoundStreamPlan().subPlans);
+//                    } else {
+//                        wronglyFlattenedSubPlans.add(nextPlan);
+//                    }
+//                });
+//                if (wronglyFlattenedSubPlans.size() > 0)
+//                    return new CompoundStreamPlan(wronglyFlattenedSubPlans, identifiers, joinOutputs, outputVariables);
+//            }
         }
 
         return new CompoundStreamPlan(Collections.list(leftPlan, rightPlan), identifiers, joinOutputs, outputVariables);
     }
 
-    private static Set<Retrievable> union(Set<Retrievable> a, Set<Retrievable> b) {
+    private static ConjunctionStreamPlan flatten(ConjunctionStreamPlan conjunctionStreamPlan) {
+        if (conjunctionStreamPlan.isResolvable()) {
+            return conjunctionStreamPlan;
+        } else {
+            CompoundStreamPlan compoundStreamPlan = conjunctionStreamPlan.asCompoundStreamPlan();
+            assert compoundStreamPlan.size() == 2;
+            List<ConjunctionStreamPlan> subPlans = new ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                ConjunctionStreamPlan unflattenedNextPlan = compoundStreamPlan.ithChild(i);
+                if (unflattenedNextPlan.isCompoundStream() && unflattenedNextPlan.asCompoundStreamPlan().canFlatten()) {
+                    subPlans.addAll(flatten(unflattenedNextPlan).asCompoundStreamPlan().subPlans);
+                } else {
+                    subPlans.add(flatten(unflattenedNextPlan));
+                }
+            }
+
+            return new CompoundStreamPlan(subPlans, compoundStreamPlan.identifierVariables(), compoundStreamPlan.extendOutputWithVariables(), compoundStreamPlan.outputVariables());
+        }
+    }
+
+    public static Set<Retrievable> union(Set<Retrievable> a, Set<Retrievable> b) {
         Set<Retrievable> result = new HashSet<>(a);
         result.addAll(b);
         return result;
@@ -183,6 +218,7 @@ public class ConjunctionStreamPlan {
         public CompoundStreamPlan(List<ConjunctionStreamPlan> subPlans,
                                   Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables) {
             super(identifierVariables, extendOutputWith, outputVariables);
+            assert subPlans.size() > 1;
             this.subPlans = subPlans;
         }
 
@@ -198,6 +234,11 @@ public class ConjunctionStreamPlan {
 
         public ConjunctionStreamPlan ithChild(int i) {
             return subPlans.get(i);
+        }
+
+        public boolean canFlatten() {
+            return extendOutputWith.isEmpty() &&
+                    ConjunctionStreamPlan.difference(ConjunctionStreamPlan.intersection(identifierVariables, subPlans.get(1).identifierVariables), subPlans.get(0).identifierVariables).isEmpty();
         }
 
         public int size() {

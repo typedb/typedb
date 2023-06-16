@@ -49,7 +49,7 @@ public abstract class AbstractProcessor<
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractProcessor.class);
 
-    private final Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller;
+    public final Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller;
     private final Context context;
     private final Map<Identifier, InputPort<INPUT>> inputPorts;
     private final Map<Identifier, OutputPort<OUTPUT>> outputPorts;
