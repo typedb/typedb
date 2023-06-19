@@ -224,8 +224,7 @@ public class ConjunctionStreamPlan {
         }
 
         public boolean canFlatten() {
-            return extendOutputWith.isEmpty() &&
-                    ConjunctionStreamPlan.difference(ConjunctionStreamPlan.intersection(identifierVariables, subPlans.get(1).identifierVariables), subPlans.get(0).identifierVariables).isEmpty();
+            return false;
         }
 
         public int size() {
