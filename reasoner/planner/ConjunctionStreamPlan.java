@@ -23,19 +23,24 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class ConjunctionStreamPlan {
     protected final Set<Retrievable> identifierVariables; // If the identifier variables match, the results will match
     protected final Set<Retrievable> extendOutputWith; // The variables in mergeWithRemainingVars
     protected final Set<Retrievable> outputVariables;  // Strip out everything other than these.
+
+    ConjunctionStreamPlan unflattened;
 
     public ConjunctionStreamPlan(Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables) {
         this.identifierVariables = identifierVariables;
@@ -44,7 +49,9 @@ public class ConjunctionStreamPlan {
     }
 
     public static ConjunctionStreamPlan createFlattenedConjunctionStreamPlan(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
-        ConjunctionStreamPlan flattened = flatten(createBinaryConjunctionStreamPlan(resolvableOrder, inputVariables, outputVariables));
+        ConjunctionStreamPlan unflattened = createBinaryConjunctionStreamPlan(resolvableOrder, inputVariables, outputVariables);
+        ConjunctionStreamPlan flattened = flatten(unflattened);
+        flattened.unflattened = unflattened;
         return flattened;
     }
 
@@ -59,6 +66,7 @@ public class ConjunctionStreamPlan {
         }
 
         Resolvable<?> first = resolvableOrder.get(0);
+//        Set<Retrievable> boundAfterFirst = union(first.retrieves(), identifiers); // in case we were called with bounds & this is the first.
 
         // Find longest suffix which won't have redundant bounds
         Set<Retrievable> suffixVariables = new HashSet<>();
@@ -67,6 +75,7 @@ public class ConjunctionStreamPlan {
             int i;
             for (i = resolvableOrder.size() - 1; i >= 1; i--) {
                 suffixVariables.addAll(resolvableOrder.get(i).retrieves());
+                // TODO: Do I need to consider boundsAfterFirst instead of first.retrieves()?
                 if (difference(intersection(first.retrieves(), suffixVariables), resolvableOrder.get(i).retrieves()).size() > 0) {
                     break;
                 }
@@ -108,15 +117,28 @@ public class ConjunctionStreamPlan {
             List<ConjunctionStreamPlan> subPlans = new ArrayList<>();
             for (int i = 0; i < 2; i++) {
                 ConjunctionStreamPlan unflattenedNextPlan = compoundStreamPlan.ithChild(i);
-                if (unflattenedNextPlan.isCompoundStream() && unflattenedNextPlan.asCompoundStreamPlan().canFlatten()) {
+
+                if (unflattenedNextPlan.isCompoundStream() &&
+                        isExclusiveReader(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedNextPlan.asCompoundStreamPlan()) &&
+                        rightChildBoundsSatisfied(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedNextPlan.asCompoundStreamPlan())
+                ) {
                     subPlans.addAll(flatten(unflattenedNextPlan).asCompoundStreamPlan().subPlans);
                 } else {
                     subPlans.add(flatten(unflattenedNextPlan));
                 }
             }
-
             return new CompoundStreamPlan(subPlans, compoundStreamPlan.identifierVariables(), compoundStreamPlan.extendOutputWithVariables(), compoundStreamPlan.outputVariables());
         }
+    }
+
+
+    private static boolean isExclusiveReader(ConjunctionStreamPlan.CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan.CompoundStreamPlan unflattenedNextPlan) {
+//        return false;
+        return unflattenedNextPlan.extendOutputWithVariables().isEmpty() && unflattenedNextPlan.identifierVariables.containsAll(conjunctionStreamPlan.identifierVariables);
+    }
+
+    private static boolean rightChildBoundsSatisfied(ConjunctionStreamPlan.CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan.CompoundStreamPlan unflattenedNextPlan) {
+        return difference(unflattenedNextPlan.ithChild(1).identifierVariables, union(conjunctionStreamPlan.identifierVariables, unflattenedNextPlan.ithChild(0).outputVariables)).isEmpty();
     }
 
     public static Set<Retrievable> union(Set<Retrievable> a, Set<Retrievable> b) {
@@ -200,6 +222,7 @@ public class ConjunctionStreamPlan {
 
     public static class CompoundStreamPlan extends ConjunctionStreamPlan {
         private final List<ConjunctionStreamPlan> subPlans;
+
         public CompoundStreamPlan(List<ConjunctionStreamPlan> subPlans,
                                   Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables) {
             super(identifierVariables, extendOutputWith, outputVariables);
@@ -222,7 +245,23 @@ public class ConjunctionStreamPlan {
         }
 
         public boolean canFlatten() {
-            return false;
+            throw TypeDBException.of(ILLEGAL_STATE); // TODO: Delete if the condition is really that simple
+            // We can be flattened if we have a single reader.
+            // So, if we have no extension variables & our parents identifiers are a subset of ours.
+
+            // OLD
+            // TODO: Reconsider edge cases: When we have multiple readers for the same bounds but no extension variables
+            //  e.g. Disconnected sub-conjunctions  (// If we're disjoint, then our identifiers are empty, so this is an easy fix)
+            //  just after a branch-existence check (A variable which occurs once in a conjunction and is not an output variable).
+//            assert subPlans.size() == 2; // Probably not needed
+//            return extendOutputWithVariables().isEmpty() &&
+//
+//            if (subPlans.size() == 2) { // TODO: Relax binary assumption? Or make a flattened and unflattened class
+//                ConjunctionStreamPlan left = ithChild(0);
+//                ConjunctionStreamPlan right = ithChild(1);
+//                return extendOutputWithVariables().isEmpty() && right.extendOutputWithVariables().isEmpty() &&
+//                        ConjunctionStreamPlan.difference(identifierVariables, left.identifierVariables).isEmpty(); // Can happen only if both children are leaves. We gain little from flattening.
+//            } else return false;
         }
 
         public int size() {
