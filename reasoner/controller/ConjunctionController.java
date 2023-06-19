@@ -82,8 +82,6 @@ public abstract class ConjunctionController<
         this.negationControllers = new HashMap<>();
         this.outputVariables = outputVariables;
         this.plans = new ConcurrentHashMap<>();
-
-        assert conjunction.pattern().retrieves().containsAll(outputVariables);
     }
 
     @Override
@@ -284,7 +282,6 @@ public abstract class ConjunctionController<
                 Resolvable<?> resolvable = resolvablePlan.resolvable();
                 ConceptMap identifiers = carriedBounds.filter(resolvable.retrieves());
                 if (resolvable.isRetrievable()) {
-                    // TODO: Reuse retrievable processors
                     requestConnection(new RetrievableRequest(input.identifier(), driver(), resolvable.asRetrievable(), identifiers));
                 } else if (resolvable.isConcludable()) {
                     requestConnection(new ConcludableRequest(input.identifier(), driver(), resolvable.asConcludable(), identifiers));

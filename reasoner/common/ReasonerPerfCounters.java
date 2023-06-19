@@ -37,10 +37,10 @@ public class ReasonerPerfCounters extends PerfCounters {
     public static final String COMPOUND_STREAMS = "streams_compound_streams";
     public static final String COMPOUND_STREAM_ACCEPTS = "streams_compound_stream_accepts";
 
-    public final PerfCounters.Counter timePlanning;
-    public final PerfCounters.Counter materialisations;
-    public final PerfCounters.Counter conjunctionProcessors;
-    public final PerfCounters.Counter compoundStreams;
+    public final Counter timePlanning;
+    public final Counter materialisations;
+    public final Counter conjunctionProcessors;
+    public final Counter compoundStreams;
     public final Counter compoundStreamAccepts;
 
     public ReasonerPerfCounters(boolean enabled) {
@@ -61,10 +61,10 @@ public class ReasonerPerfCounters extends PerfCounters {
     private ScheduledFuture<?> printingTask;
     private ScheduledExecutorService printingTaskService;
 
-    public synchronized void startPrinting() {
+    public synchronized void startPeriodicPrinting() {
         if (printingTask == null) {
             printingTaskService = Executors.newScheduledThreadPool(1);
-            printingTask = printingTaskService.scheduleAtFixedRate(this::logCounters, 5, 5, TimeUnit.SECONDS);
+            printingTask = printingTaskService.scheduleAtFixedRate(this::logCounters, 10, 10, TimeUnit.SECONDS);
         }
     }
 

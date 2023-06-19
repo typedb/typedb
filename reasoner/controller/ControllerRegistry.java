@@ -229,6 +229,7 @@ public class ControllerRegistry {
     }
 
     ControllerView.FilteredRetrievable createRetrievable(Retrievable retrievable) {
+        // TODO: Support re-using retrievables?
         Function<Driver<RetrievableController>, RetrievableController> actorFn =
                 driver -> new RetrievableController(driver, retrievable, controllerContext);
         LOG.debug("Create RetrievableController: '{}'", retrievable.pattern());
