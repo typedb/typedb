@@ -23,15 +23,17 @@ import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.BloomFilter;
 import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.DBOptions;
+import org.rocksdb.DataBlockIndexType;
+import org.rocksdb.HashSkipListMemTableConfig;
 import org.rocksdb.IndexType;
 import org.rocksdb.LRUCache;
+import org.rocksdb.MemTableConfig;
 import org.rocksdb.Statistics;
 import org.rocksdb.UInt64AddOperator;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.collection.Bytes.KB;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
-import static org.rocksdb.CompressionType.LZ4_COMPRESSION;
 import static org.rocksdb.CompressionType.NO_COMPRESSION;
 
 public class RocksConfiguration {
@@ -142,7 +144,9 @@ public class RocksConfiguration {
          * though we have not provably seen much benefit from these.
          */
         private void configureWriteConcurrency(DBOptions options) {
-            options.setMaxSubcompactions(CoreDatabaseManager.MAX_THREADS).setMaxBackgroundJobs(CoreDatabaseManager.MAX_THREADS)
+            options.setMaxSubcompactions(CoreDatabaseManager.MAX_THREADS)
+                    .setMaxBackgroundCompactions(CoreDatabaseManager.MAX_THREADS)
+                    .setMaxBackgroundJobs(CoreDatabaseManager.MAX_THREADS)
                     .setEnableWriteThreadAdaptiveYield(true)
                     .setAllowConcurrentMemtableWrite(true);
         }
@@ -175,7 +179,7 @@ public class RocksConfiguration {
             writeOptimisedWriteBuffers(options);
             configureSST(options);
             configureCompression(options);
-            options.setTableFormatConfig(tableOptions(true, true));
+            options.setTableFormatConfig(tableOptions(true, true, false));
             return options;
         }
 
@@ -189,7 +193,7 @@ public class RocksConfiguration {
             writeOptimisedWriteBuffers(options);
             configureSST(options);
             configureCompression(options);
-            options.setTableFormatConfig(tableOptions(false, false));
+            options.setTableFormatConfig(tableOptions(false, false, false));
             return options;
         }
 
@@ -203,7 +207,7 @@ public class RocksConfiguration {
             configureSST(options);
             configureCompression(options);
             configurePrefixExtractor(options, Key.Partition.FIXED_START_EDGE.fixedStartBytes().get());
-            options.setTableFormatConfig(tableOptions(true, false));
+            options.setTableFormatConfig(tableOptions(true, false, true));
             return options;
         }
 
@@ -213,7 +217,7 @@ public class RocksConfiguration {
             configureSST(options);
             configureCompression(options);
             configurePrefixExtractor(options, Key.Partition.OPTIMISATION_EDGE.fixedStartBytes().get());
-            options.setTableFormatConfig(tableOptions(true, false));
+            options.setTableFormatConfig(tableOptions(true, false, true));
             return options;
         }
 
@@ -235,13 +239,13 @@ public class RocksConfiguration {
             return options;
         }
 
-        private BlockBasedTableConfig tableOptions(boolean enableFilter, boolean enableWholeKeyFilter) {
+        private BlockBasedTableConfig tableOptions(boolean enableFilter, boolean enableWholeKeyFilter, boolean enablePrefixExtractor) {
             assert enableFilter || !enableWholeKeyFilter;
             BlockBasedTableConfig rocksDBTableOptions = new BlockBasedTableConfig();
             configureBlocks(rocksDBTableOptions);
             rocksDBTableOptions.setEnableIndexCompression(false);
             rocksDBTableOptions.setBlockCache(blockCache);
-            if (enableFilter) configureBloomFilter(rocksDBTableOptions);
+            if (enableFilter) configureBloomFilter(rocksDBTableOptions, enablePrefixExtractor);
             rocksDBTableOptions.setWholeKeyFiltering(enableWholeKeyFilter);
             return rocksDBTableOptions;
         }
@@ -273,11 +277,14 @@ public class RocksConfiguration {
          * without mixed reads (the norm).
          */
         private void writeOptimisedWriteBuffers(ColumnFamilyOptions options) {
-            configureWriteBuffersAndL1(options, 128 * MB, 4);
+            configureWriteBuffersAndL1(options, 64 * MB, 2);
+            options.setMemTableConfig(new HashSkipListMemTableConfig()
+                    .setBucketCount(1_000_000));
         }
 
         private void readOptimisedWriteBuffers(ColumnFamilyOptions options) {
             configureWriteBuffersAndL1(options, 64 * MB, 2);
+            options.setMemTableConfig(new HashSkipListMemTableConfig().setBucketCount(1_000_000));
         }
 
         private void configureWriteBuffersAndL1(ColumnFamilyOptions options, long writeBufferSize, int writeBuffersMaxCount) {
@@ -369,7 +376,7 @@ public class RocksConfiguration {
          */
         private void configureBlocks(BlockBasedTableConfig rocksDBTableOptions) {
             // hardcode block size and format version to avoid relying on RocksDB defaults that could change
-            rocksDBTableOptions.setBlockSize(16 * KB);
+            rocksDBTableOptions.setBlockSize(4 * KB);
             rocksDBTableOptions.setFormatVersion(5);
             rocksDBTableOptions.setIndexBlockRestartInterval(16);
         }
@@ -407,20 +414,23 @@ public class RocksConfiguration {
          * to just full-key filters.
          * Note: prefix extractors are defined directly on Options, not tableOptions
          */
-        private void configureBloomFilter(BlockBasedTableConfig rocksDBTableOptions) {
+        private void configureBloomFilter(BlockBasedTableConfig rocksDBTableOptions, boolean enablePrefixExtractor) {
             // bloom filter is important for good random-read performance
             rocksDBTableOptions.setFilterPolicy(new BloomFilter(10, false));
             // partition bloom filters to avoid needing to have all bloom filters reside in memory - only index over blooms must
-            rocksDBTableOptions.setPartitionFilters(true);
-            // WARNING: this must be set to make partitioned filters take effect
-            rocksDBTableOptions.setIndexType(IndexType.kTwoLevelIndexSearch);
-            rocksDBTableOptions.setOptimizeFiltersForMemory(true);
-            // ensure that the bloom filter partitioning index, plus the data index live in the cache always
-            rocksDBTableOptions.setPinTopLevelIndexAndFilter(true);
-            // L0 index/filter should always be in memory, and is small
-            rocksDBTableOptions.setPinL0FilterAndIndexBlocksInCache(true);
+            rocksDBTableOptions.setPartitionFilters(false);
+            // we must use TwoLevel search to make partitioned filters take effect, and hash search to make prefixes be used
+            if (enablePrefixExtractor) rocksDBTableOptions.setIndexType(IndexType.kHashSearch);
+            else rocksDBTableOptions.setIndexType(IndexType.kBinarySearch);
+
             // to cap memory usage, we must pin filter blocks and indexes in memory
             rocksDBTableOptions.setCacheIndexAndFilterBlocks(true);
+
+//            rocksDBTableOptions.setOptimizeFiltersForMemory(true);
+//            // ensure that the bloom filter partitioning index, plus the data index live in the cache always
+//            rocksDBTableOptions.setPinTopLevelIndexAndFilter(true);
+//            // L0 index/filter should always be in memory, and is small
+//            rocksDBTableOptions.setPinL0FilterAndIndexBlocksInCache(false);
             // use reserved section of block cache for blooms/index - cause massive thrashing if not using the high priority cache section
             // WARNING: must configure block cache with a reserved region for high priority blocks
             rocksDBTableOptions.setCacheIndexAndFilterBlocksWithHighPriority(true);
