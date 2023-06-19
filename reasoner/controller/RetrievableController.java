@@ -37,7 +37,6 @@ public class RetrievableController extends AbstractController<
 
     private final Retrievable retrievable;
 
-    // TODO: Add filter?
     RetrievableController(Driver<RetrievableController> driver, Retrievable retrievable,
                           Context context) {
         super(driver, context, () -> RetrievableController.class.getSimpleName() + "(pattern: " + retrievable + ")");

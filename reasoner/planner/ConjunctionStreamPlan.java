@@ -1,5 +1,3 @@
-// I'm just breaking checkstyle so I know I've implemented it but not manually verified it.
-
 /*
  * Copyright (C) 2022 Vaticle
  *

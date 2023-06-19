@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
@@ -44,7 +43,6 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 
 import java.util.HashMap;
@@ -58,7 +56,6 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.reasoner.controller.ConcludableController.Processor.Match.withExplainable;
 
 public abstract class ConjunctionController<
@@ -248,7 +245,6 @@ public abstract class ConjunctionController<
                     publisher = spawnCompoundStream(planElement.asCompoundStreamPlan(), identifiers);
                 } else throw TypeDBException.of(ILLEGAL_STATE);
 
-                // TODO: Filter results to output? and then extend?
                 return extendWithBounds(publisher, extension);
             }
 
@@ -260,10 +256,10 @@ public abstract class ConjunctionController<
                 int nextChild = whichChild.get(publisher) + 1;
 
                 // assert on packet. NOT mergedPacket.  I added a join node for identifier bounds to the resolvable when spawning, breaking the assert.
-//                assert plan.isResolvable() || (
-//                        ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(), plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables()).size() == packet.concepts().size() &&
-//                                packet.concepts().keySet().containsAll(ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(),
-//                                plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables())));
+                assert plan.isResolvable() || plan.asCompoundStreamPlan().ithChild(nextChild-1).isResolvable() || (
+                        ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(), plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables()).size() == packet.concepts().size() &&
+                                packet.concepts().keySet().containsAll(ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(),
+                                plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables())));
                 if (plan.isCompoundStream() && nextChild < plan.asCompoundStreamPlan().size()) {
                     Publisher<ConceptMap> follower = spawnPlanElement(plan.asCompoundStreamPlan().ithChild(nextChild), mergedPacket);
                     whichChild.put(follower, nextChild);
@@ -278,9 +274,6 @@ public abstract class ConjunctionController<
                 return compoundStreamRegistry.computeIfAbsent(planElement, _x -> new HashMap<>()).computeIfAbsent(identifyingBounds, packet -> {
                     CompoundStream compoundStream = new CompoundStream(processor, planElement, identifyingBounds);
                     PoolingStream.BufferedFanStream<ConceptMap> bufferedStream = PoolingStream.BufferedFanStream.fanOut(compoundStream.processor);
-                    // TODO: Check if this is true - you only need to buffer if extendWithOutput is non-empty. (Because then we won't have multiple readers?)
-                    // TODO: Should I create a local copy of planElement.outputVariables so it's not a local creeping into the scope?
-                    //          Plan element will live as long as the processor either way
                     compoundStream.map(conceptMap -> filterOutputsWithExplainables(conceptMap, planElement.outputVariables())).registerSubscriber(bufferedStream);
                     return bufferedStream;
                 });
@@ -291,7 +284,7 @@ public abstract class ConjunctionController<
                 Resolvable<?> resolvable = resolvablePlan.resolvable();
                 ConceptMap identifiers = carriedBounds.filter(resolvable.retrieves());
                 if (resolvable.isRetrievable()) {
-                    // TODO: Maybe add a filter and find a way to re-use the results from retrievables. I think we create a fresh one each time now, which is a loooot of work.
+                    // TODO: Reuse retrievable processors
                     requestConnection(new RetrievableRequest(input.identifier(), driver(), resolvable.asRetrievable(), identifiers));
                 } else if (resolvable.isConcludable()) {
                     requestConnection(new ConcludableRequest(input.identifier(), driver(), resolvable.asConcludable(), identifiers));
@@ -301,7 +294,6 @@ public abstract class ConjunctionController<
                     throw TypeDBException.of(ILLEGAL_STATE);
                 }
 
-                // TODO: Too much state leaking in?
                 return input.map(conceptMap -> merge(filterOutputsWithExplainables(conceptMap, resolvablePlan.outputVariables()), identifiers));
             }
             private Publisher<ConceptMap> extendWithBounds(Publisher<ConceptMap> s, ConceptMap extension) {
@@ -374,6 +366,4 @@ public abstract class ConjunctionController<
 
         }
     }
-
-
 }

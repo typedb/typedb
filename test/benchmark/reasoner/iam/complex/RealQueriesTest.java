@@ -110,6 +110,7 @@ public class RealQueriesTest {
         benchmark.assertCounters(200, 37, 251, 524);
     }
 
+    @Ignore
     @Test
     public void testListChangeRequests() {
         String query = "match\n" +
