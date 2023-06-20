@@ -290,7 +290,7 @@ public class TypeDBServer implements AutoCloseable {
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
         CoreMigratorClient migrator = CoreMigratorClient.create(subcmdExport.port());
-        boolean success = migrator.exportData(subcmdExport.database(), subcmdExport.file());
+        boolean success = migrator.export(subcmdExport.database(), subcmdExport.schemaFile(), subcmdExport.dataFile());
         System.exit(success ? 0 : 1);
     }
 
@@ -299,7 +299,7 @@ public class TypeDBServer implements AutoCloseable {
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
         CoreMigratorClient migrator = CoreMigratorClient.create(subcmdImport.port());
-        boolean success = migrator.importData(subcmdImport.database(), subcmdImport.file());
+        boolean success = migrator.import_(subcmdImport.database(), subcmdImport.schemaFile(), subcmdImport.dataFile());
         System.exit(success ? 0 : 1);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Vaticle
+ * Copyright (C) 2023 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.migrator.data;
+package com.vaticle.typedb.core.migrator.database;
 
 import com.google.protobuf.Parser;
 import com.vaticle.typedb.core.TypeDB;
@@ -32,6 +32,8 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.migrator.MigratorProto;
+import com.vaticle.typedb.core.migrator.data.DataProto;
+import com.vaticle.typeql.lang.TypeQL;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
@@ -63,7 +65,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.unsignedByte;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_READ_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.IMPORT_CHECKSUM_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.INVALID_DATA;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.MISSING_HEADER;
@@ -75,26 +79,32 @@ import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING_ENCODIN
 import static com.vaticle.typedb.core.migrator.data.DataProto.Item.ItemCase.HEADER;
 import static java.util.Comparator.reverseOrder;
 
-public class DataImporter {
-    private static final Logger LOG = LoggerFactory.getLogger(DataImporter.class);
+public class DatabaseImporter {
+    private static final Logger LOG = LoggerFactory.getLogger(DatabaseImporter.class);
 
     private static final Parser<DataProto.Item> ITEM_PARSER = DataProto.Item.parser();
     private static final int BATCH_SIZE = 1000;
-    private final TypeDB.Session session;
     private final ExecutorService importExecutor;
     private final ExecutorService readerExecutor;
     private final int parallelisation;
-
-    private final Path dataFile;
     private final ConceptTracker conceptTracker;
     private final String version;
     private final Status status;
     private final AtomicBoolean skippedRelations;
     private Checksum checksum;
+    private final TypeDB.DatabaseManager databaseMgr;
+    private final Path dataFile;
+    private final String database;
+    private final Path schemaFile;
+    private TypeDB.Session session;
 
-    public DataImporter(TypeDB.DatabaseManager typedb, String database, Path dataFile, String version) {
+    public DatabaseImporter(TypeDB.DatabaseManager databaseMgr, String database, Path schemaFile, Path dataFile, String version) {
         if (!Files.exists(dataFile)) throw TypeDBException.of(FILE_NOT_FOUND, dataFile);
-        this.session = typedb.session(database, Arguments.Session.Type.DATA);
+        if (!Files.exists(schemaFile)) throw TypeDBException.of(FILE_NOT_FOUND, schemaFile);
+        if (databaseMgr.contains(database)) throw TypeDBException.of(DATABASE_EXISTS, database);
+        this.databaseMgr = databaseMgr;
+        this.database = database;
+        this.schemaFile = schemaFile;
         this.dataFile = dataFile;
         this.version = version;
         assert com.vaticle.typedb.core.concurrent.executor.Executors.isInitialised();
@@ -108,6 +118,8 @@ public class DataImporter {
 
     public void run() {
         try {
+            setupDatabase();
+            session = databaseMgr.session(database, Arguments.Session.Type.DATA);
             Instant start = Instant.now();
             validateHeader();
             new ParallelImport(AttributesAndChecksum::new).executeImport();
@@ -116,15 +128,28 @@ public class DataImporter {
             if (!checksum.verify(status)) throw TypeDBException.of(IMPORT_CHECKSUM_MISMATCH, checksum.mismatch(status));
             Instant end = Instant.now();
             LOG.info("Finished in: " + Duration.between(start, end).getSeconds() + " seconds");
-            LOG.info("Imported: " + status.toString());
+            LOG.info("Imported: " + status);
         } finally {
             importExecutor.shutdownNow();
             readerExecutor.shutdownNow();
         }
     }
 
+    private void setupDatabase() {
+        databaseMgr.create(database);
+        try (TypeDB.Session schemaSession = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
+            try (TypeDB.Transaction txn = schemaSession.transaction(Arguments.Transaction.Type.WRITE)) {
+                String schema = Files.readString(schemaFile);
+                txn.query().define(TypeQL.parseQuery(schema).asDefine());
+                txn.commit();
+            } catch (IOException e) {
+                throw TypeDBException.of(FILE_READ_ERROR, schemaFile);
+            }
+        }
+    }
+
     public void close() {
-        session.close();
+        if (session != null) session.close();
         conceptTracker.close();
     }
 
@@ -315,7 +340,7 @@ public class DataImporter {
                     return 1;
                 case CHECKSUMS:
                     DataProto.Item.Checksums checksums = item.getChecksums();
-                    DataImporter.this.checksum = new Checksum(checksums.getAttributeCount(), checksums.getEntityCount(),
+                    DatabaseImporter.this.checksum = new Checksum(checksums.getAttributeCount(), checksums.getEntityCount(),
                             checksums.getRelationCount(), checksums.getOwnershipCount(), checksums.getRoleCount());
                     return 0;
                 default:

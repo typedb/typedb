@@ -46,24 +46,26 @@ public class CoreMigratorClient {
         return new CoreMigratorClient(stub);
     }
 
-    public boolean importData(String database, Path file) {
+    public boolean import_(String database, Path schemaFile, Path dataFile) {
         MigratorProto.Import.Req req = MigratorProto.Import.Req.newBuilder()
                 .setDatabase(database)
-                .setFilename(file.toAbsolutePath().toString())
+                .setSchemaFile(schemaFile.toAbsolutePath().toString())
+                .setDataFile(dataFile.toAbsolutePath().toString())
                 .build();
         ResponseObserver.Import streamObserver = new ResponseObserver.Import(new ProgressPrinter.Import());
-        stub.importData(req, streamObserver);
+        stub.importDatabase(req, streamObserver);
         streamObserver.await();
         return streamObserver.success();
     }
 
-    public boolean exportData(String database, Path file) {
+    public boolean export(String database, Path schemaFile, Path dataFile) {
         MigratorProto.Export.Req req = MigratorProto.Export.Req.newBuilder()
                 .setDatabase(database)
-                .setFilename(file.toAbsolutePath().toString())
+                .setSchemaFile(schemaFile.toAbsolutePath().toString())
+                .setDataFile(dataFile.toAbsolutePath().toString())
                 .build();
         ResponseObserver.Export streamObserver = new ResponseObserver.Export(new ProgressPrinter.Export());
-        stub.exportData(req, streamObserver);
+        stub.exportDatabase(req, streamObserver);
         streamObserver.await();
         return streamObserver.success();
     }

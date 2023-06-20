@@ -27,14 +27,15 @@ option java_outer_classname = "MigratorProto";
 package migrator;
 
 service Migrator {
-    rpc ExportData(Export.Req) returns (stream Export.Progress);
-    rpc ImportData(Import.Req) returns (stream Import.Progress);
+    rpc ExportDatabase(Export.Req) returns (stream Export.Progress);
+    rpc ImportDatabase(Import.Req) returns (stream Import.Progress);
 }
 
 message Export {
     message Req {
         string database = 1;
-        string filename = 2;
+        string data_file = 2;
+        string schema_file = 3;
     }
 
     message Progress {
@@ -50,7 +51,8 @@ message Export {
 message Import {
     message Req {
         string database = 1;
-        string filename = 2;
+        string data_file = 2;
+        string schema_file = 3;
     }
 
     message Progress {

@@ -691,22 +691,24 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Migrator(1, "The database '%s' was not found.");
         public static final Migrator FILE_NOT_FOUND =
                 new Migrator(2, "The specified file path '%s' could not be found.");
+        public static final Migrator FILE_READ_ERROR =
+                new Migrator(3, "Error reading the file path '%s'.");
         public static final Migrator FILE_NOT_WRITABLE =
-                new Migrator(3, "The specified file '%s' cannot be opened for write.");
+                new Migrator(4, "The specified file '%s' cannot be opened for write.");
         public static final Migrator TYPE_NOT_FOUND =
-                new Migrator(4, "The type '%s' is not defined in the schema.");
+                new Migrator(5, "The type '%s' is not defined in the schema.");
         public static final Migrator ROLE_TYPE_NOT_FOUND =
-                new Migrator(5, "The role type '%s'is not defined for relation type '%s. Please confirm schema was migrated correctly.");
+                new Migrator(6, "The role type '%s'is not defined for relation type '%s. Please confirm schema was migrated correctly.");
         public static final Migrator PLAYER_NOT_FOUND =
-                new Migrator(6, "A player for relation type '%s' was expected but not found.");
+                new Migrator(7, "A player for relation type '%s' was expected but not found.");
         public static final Migrator NO_PLAYERS =
-                new Migrator(7, "The relation of type '%s' with original ID '%s' has no role players");
+                new Migrator(8, "The relation of type '%s' with original ID '%s' has no role players");
         public static final Migrator INVALID_DATA =
-                new Migrator(8, "The data being imported is invalid.");
+                new Migrator(9, "The data being imported is invalid.");
         public static final Migrator MISSING_HEADER =
-                new Migrator(9, "The data being imported is invalid - the header is missing.");
+                new Migrator(10, "The data being imported is invalid - the header is missing.");
         public static final Migrator IMPORT_CHECKSUM_MISMATCH =
-                new Migrator(10, "The import has finished but mismatches the required checksums: '%s");
+                new Migrator(11, "The import has finished but mismatches the required checksums: '%s");
 
         private static final String codePrefix = "MIG";
         private static final String messagePrefix = "Migrator failure";

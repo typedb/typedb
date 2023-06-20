@@ -108,10 +108,12 @@ public class CoreSubcommandParser {
 
         public static final OptionParser.String database =
                 new OptionParser.String("database", "Database to import into.");
-        public static final OptionParser.Path filePath =
-                new OptionParser.Path("file", "Path to data file to import (.typedb format).");
+        public static final OptionParser.Path schemaFile =
+                new OptionParser.Path("schema", "Path to schema file to import.");
+        public static final OptionParser.Path dataFile =
+                new OptionParser.Path("data", "Path to data file to import (.typedb format).");
         public static final OptionParser.Int port = new OptionParser.Int("port", "TypeDB's GRPC port.");
-        private static final Set<OptionParser> parsers = set(database, filePath, port);
+        private static final Set<OptionParser> parsers = set(database, schemaFile, dataFile, port);
 
         public Import() {
             super(tokens, description);
@@ -121,13 +123,13 @@ public class CoreSubcommandParser {
         protected CoreSubcommand.Import parse(Set<Option> options) {
             validateRequiredOptions(parsers, options);
             validateUnrecognisedOptions(parsers, options);
-            return new CoreSubcommand.Import(database.parse(options).get(), filePath.parse(options).get(),
-                    port.parse(options).get());
+            return new CoreSubcommand.Import(database.parse(options).get(), schemaFile.parse(options).get(),
+                    dataFile.parse(options).get(), port.parse(options).get());
         }
 
         @Override
         public List<Help> helpList() {
-            return list(database.help(), filePath.help(), port.help());
+            return list(database.help(), dataFile.help(), port.help());
         }
     }
 
@@ -138,10 +140,12 @@ public class CoreSubcommandParser {
 
         public static final OptionParser.String database =
                 new OptionParser.String("database", "Database to export.");
-        public static final OptionParser.Path filePath =
-                new OptionParser.Path("file", "Path to data file to export to.");
+        public static final OptionParser.Path schemaFile =
+                new OptionParser.Path("schema", "Path to file to export schema to.");
+        public static final OptionParser.Path dataFile =
+                new OptionParser.Path("data", "Path to file to export data to.");
         public static final OptionParser.Int port = new OptionParser.Int("port", "TypeDB's GRPC port.");
-        private static final Set<OptionParser> parsers = set(database, filePath, port);
+        private static final Set<OptionParser> parsers = set(database, schemaFile, dataFile, port);
 
         public Export() {
             super(tokens, description);
@@ -151,13 +155,13 @@ public class CoreSubcommandParser {
         protected CoreSubcommand.Export parse(Set<Option> options) {
             validateRequiredOptions(parsers, options);
             validateUnrecognisedOptions(parsers, options);
-            return new CoreSubcommand.Export(database.parse(options).get(), filePath.parse(options).get(),
-                    port.parse(options).get());
+            return new CoreSubcommand.Export(database.parse(options).get(), schemaFile.parse(options).get(),
+                    dataFile.parse(options).get(), port.parse(options).get());
         }
 
         @Override
         public List<Help> helpList() {
-            return list(database.help(), filePath.help(), port.help());
+            return list(database.help(), dataFile.help(), port.help());
         }
     }
 }

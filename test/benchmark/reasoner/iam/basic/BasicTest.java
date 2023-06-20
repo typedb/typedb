@@ -48,9 +48,8 @@ public class BasicTest {
     @BeforeClass
     public static void setup() throws IOException {
         benchmarker.setUp();
-        benchmarker.loadSchema(COMMON_RESOURCE_DIR.resolve("types.tql"));
+        benchmarker.loadDatabase(COMMON_RESOURCE_DIR.resolve("types.tql"),COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.loadSchema(RESOURCE_DIRECTORY.resolve("basic_test.tql"));
-        benchmarker.importData(COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.warmUp();
     }
 
