@@ -148,7 +148,7 @@ public class RocksConfiguration {
                     .setMaxBackgroundCompactions(CoreDatabaseManager.MAX_THREADS)
                     .setMaxBackgroundJobs(CoreDatabaseManager.MAX_THREADS)
                     .setEnableWriteThreadAdaptiveYield(true)
-                    .setAllowConcurrentMemtableWrite(true);
+                    .setAllowConcurrentMemtableWrite(false);
         }
 
         /**
@@ -341,8 +341,8 @@ public class RocksConfiguration {
         private void configureCompression(ColumnFamilyOptions options) {
             options
                     // best performance-space tradeoff: apply lightweight LZ4 compression to levels that change less
-                    .setCompressionPerLevel(list(NO_COMPRESSION, NO_COMPRESSION, LZ4_COMPRESSION, LZ4_COMPRESSION,
-                            LZ4_COMPRESSION, LZ4_COMPRESSION, LZ4_COMPRESSION));
+                    .setCompressionPerLevel(list(NO_COMPRESSION, NO_COMPRESSION, NO_COMPRESSION, NO_COMPRESSION,
+                            NO_COMPRESSION, NO_COMPRESSION, NO_COMPRESSION));
         }
 
         /**
