@@ -253,7 +253,6 @@ public abstract class ConjunctionController<
                 ConceptMap mergedPacket = merge(identifierBounds, packet);
                 int nextChild = whichChild.get(publisher) + 1;
 
-                // assert on packet. NOT mergedPacket.  I added a join node for identifier bounds to the resolvable when spawning, breaking the assert.
                 assert plan.isResolvable() || plan.asCompoundStreamPlan().ithChild(nextChild-1).isResolvable() || (
                         ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(), plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables()).size() == packet.concepts().size() &&
                                 packet.concepts().keySet().containsAll(ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(),
@@ -267,19 +266,25 @@ public abstract class ConjunctionController<
                 }
             }
 
-            private Publisher<ConceptMap> spawnCompoundStream(ConjunctionStreamPlan.CompoundStreamPlan planElement, ConceptMap mergedPacket) {
-                ConceptMap identifyingBounds = mergedPacket.filter(planElement.identifierVariables());
-                return compoundStreamRegistry.computeIfAbsent(planElement, _x -> new HashMap<>()).computeIfAbsent(identifyingBounds, packet -> {
-                    CompoundStream compoundStream = new CompoundStream(processor, planElement, identifyingBounds);
-                    PoolingStream.BufferedFanStream<ConceptMap> bufferedStream = PoolingStream.BufferedFanStream.fanOut(compoundStream.processor);
-                    compoundStream.map(conceptMap -> filterOutputsWithExplainables(conceptMap, planElement.outputVariables())).registerSubscriber(bufferedStream);
-                    return bufferedStream;
-                });
+            private Publisher<ConceptMap> spawnCompoundStream(ConjunctionStreamPlan.CompoundStreamPlan toSpawn, ConceptMap mergedPacket) {
+                ConceptMap identifyingBounds = mergedPacket.filter(toSpawn.identifierVariables());
+                assert this.plan.isCompoundStream();
+                if (ConjunctionStreamPlan.isExclusiveReader(this.plan.asCompoundStreamPlan(), toSpawn)) {
+                    return new CompoundStream(processor, toSpawn, identifyingBounds)
+                            .map(conceptMap -> filterOutputsWithExplainables(conceptMap, toSpawn.outputVariables()));
+                } else {
+                    return compoundStreamRegistry.computeIfAbsent(toSpawn, _x -> new HashMap<>()).computeIfAbsent(identifyingBounds, packet -> {
+                        CompoundStream compoundStream = new CompoundStream(processor, toSpawn, identifyingBounds);
+                        PoolingStream.BufferedFanStream<ConceptMap> bufferedStream = PoolingStream.BufferedFanStream.fanOut(compoundStream.processor);
+                        compoundStream.map(conceptMap -> filterOutputsWithExplainables(conceptMap, toSpawn.outputVariables())).registerSubscriber(bufferedStream);
+                        return bufferedStream;
+                    });
+                }
             }
 
-            private Reactive.Publisher<ConceptMap> spawnResolvableElement(ConjunctionStreamPlan.ResolvablePlan resolvablePlan, ConceptMap carriedBounds) {
+            private Reactive.Publisher<ConceptMap> spawnResolvableElement(ConjunctionStreamPlan.ResolvablePlan toSpawn, ConceptMap carriedBounds) {
                 InputPort<ConceptMap> input = createInputPort();
-                Resolvable<?> resolvable = resolvablePlan.resolvable();
+                Resolvable<?> resolvable = toSpawn.resolvable();
                 ConceptMap identifiers = carriedBounds.filter(resolvable.retrieves());
                 if (resolvable.isRetrievable()) {
                     requestConnection(new RetrievableRequest(input.identifier(), driver(), resolvable.asRetrievable(), identifiers));
@@ -291,7 +296,7 @@ public abstract class ConjunctionController<
                     throw TypeDBException.of(ILLEGAL_STATE);
                 }
 
-                return input.map(conceptMap -> merge(filterOutputsWithExplainables(conceptMap, resolvablePlan.outputVariables()), identifiers));
+                return input.map(conceptMap -> merge(filterOutputsWithExplainables(conceptMap, toSpawn.outputVariables()), identifiers));
             }
             private Publisher<ConceptMap> extendWithBounds(Publisher<ConceptMap> s, ConceptMap extension) {
                 return extension.concepts().isEmpty() ? s : s.map(conceptMap -> merge(conceptMap, extension));
