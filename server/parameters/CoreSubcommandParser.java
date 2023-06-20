@@ -141,9 +141,9 @@ public class CoreSubcommandParser {
         public static final OptionParser.String database =
                 new OptionParser.String("database", "Database to export.");
         public static final OptionParser.Path schemaFile =
-                new OptionParser.Path("schema", "Path to file to export schema to (using .tql extension).");
+                new OptionParser.Path("schema", "Path to file to export schema to (using .tql format).");
         public static final OptionParser.Path dataFile =
-                new OptionParser.Path("data", "Path to file to export data to (using .typedb extension).");
+                new OptionParser.Path("data", "Path to file to export data to (using .typedb format).");
         public static final OptionParser.Int port = new OptionParser.Int("port", "TypeDB's GRPC port.");
         private static final Set<OptionParser> parsers = set(database, schemaFile, dataFile, port);
 
