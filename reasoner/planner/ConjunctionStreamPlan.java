@@ -56,8 +56,8 @@ public class ConjunctionStreamPlan {
         ConjunctionStreamPlan flattenedOld = flatten(unflattenedOld);
         flattenedOld.unflattened = unflattenedOld;
 
-        return flattenedOld;
-//        return flattenedNew;
+//        return flattenedOld;
+        return flattenedNew;
     }
 
     private static ConjunctionStreamPlan createBinaryConjunctionStreamPlan(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
@@ -372,15 +372,14 @@ public class ConjunctionStreamPlan {
 
                 Set<Retrievable> identifiers = intersection(availableInputs, allUsedVariables);
                 Set<Retrievable> extendOutputWith = difference(availableInputs, allUsedVariables);
-                Set<Retrievable> rightOutputs = difference(requiredOutputs, availableInputs);
+                Set<Retrievable> rightOutputs = difference(requiredOutputs, extendOutputWith); // difference(requiredOutputs, availableInputs); is minimal, but can't be flattened
 
                 Set<Retrievable> leftIdentifiers = intersection(identifiers, leftVariables);
-                Set<Retrievable> rightInputs = intersection(union(identifiers, leftVariables), union(rightVariables, requiredOutputs));
-                Set<Retrievable> leftOutputs = difference(rightInputs, identifiers);
+                Set<Retrievable> rightInputs = intersection(union(identifiers, leftVariables), union(rightVariables, rightOutputs));
+                Set<Retrievable> leftOutputs = intersection(leftVariables, rightInputs); // difference(rightInputs, Identifiers) is minimal, but can't be flattened
 
                 assert union(identifiers, union(rightOutputs, extendOutputWith)).containsAll(requiredOutputs); // TODO: A few more asserts
                 return new VariableSets(identifiers, extendOutputWith, requiredOutputs, leftIdentifiers, leftOutputs, rightInputs, rightOutputs);
-
 //
 //                {
 //                    Set<Retrievable> conjunctionVariables = iterate(resolvableOrder).flatMap(resolvable -> iterate(resolvable.retrieves())).toSet();
