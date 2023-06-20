@@ -118,9 +118,11 @@ public class DatabaseImporter {
 
     public void run() {
         try {
+            LOG.info("Importing into database {}", database);
             createDatabase();
             loadSchema();
             loadData();
+            LOG.info("Finished importing into database {}", database);
         } finally {
             importExecutor.shutdownNow();
             readerExecutor.shutdownNow();

@@ -71,9 +71,10 @@ public class DatabaseExporter {
     }
 
     public void run() {
-        LOG.info("Exporting {} from TypeDB {}", database, version);
+        LOG.info("Exporting database {} from TypeDB {}", database, version);
         writeSchema();
         writeData();
+        LOG.info("Finished exporting database {}.", database);
     }
 
     private void writeSchema() {
