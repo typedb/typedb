@@ -118,34 +118,41 @@ public class DatabaseImporter {
 
     public void run() {
         try {
-            setupDatabase();
-            session = databaseMgr.session(database, Arguments.Session.Type.DATA);
-            Instant start = Instant.now();
-            validateHeader();
-            new ParallelImport(AttributesAndChecksum::new).executeImport();
-            new ParallelImport(EntitiesAndOwnerships::new).executeImport();
-            importRelations();
-            if (!checksum.verify(status)) throw TypeDBException.of(IMPORT_CHECKSUM_MISMATCH, checksum.mismatch(status));
-            Instant end = Instant.now();
-            LOG.info("Finished in: " + Duration.between(start, end).getSeconds() + " seconds");
-            LOG.info("Imported: " + status);
+            createDatabase();
+            loadSchema();
+            loadData();
         } finally {
             importExecutor.shutdownNow();
             readerExecutor.shutdownNow();
         }
     }
 
-    private void setupDatabase() {
+    private void createDatabase() {
         databaseMgr.create(database);
+    }
+
+    private void loadSchema() {
         try (TypeDB.Session schemaSession = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
             try (TypeDB.Transaction txn = schemaSession.transaction(Arguments.Transaction.Type.WRITE)) {
-                String schema = Files.readString(schemaFile);
-                txn.query().define(TypeQL.parseQuery(schema).asDefine());
+                txn.query().define(TypeQL.parseQuery(Files.readString(schemaFile)).asDefine());
                 txn.commit();
             } catch (IOException e) {
                 throw TypeDBException.of(FILE_READ_ERROR, schemaFile);
             }
         }
+    }
+
+    private void loadData() {
+        session = databaseMgr.session(database, Arguments.Session.Type.DATA);
+        Instant start = Instant.now();
+        validateHeader();
+        new ParallelImport(AttributesAndChecksum::new).executeImport();
+        new ParallelImport(EntitiesAndOwnerships::new).executeImport();
+        importRelations();
+        if (!checksum.verify(status)) throw TypeDBException.of(IMPORT_CHECKSUM_MISMATCH, checksum.mismatch(status));
+        Instant end = Instant.now();
+        LOG.info("Finished in: " + Duration.between(start, end).getSeconds() + " seconds");
+        LOG.info("Imported: " + status);
     }
 
     public void close() {
