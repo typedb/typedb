@@ -80,7 +80,7 @@ public class Benchmark {
     }
 
     public void assertCounterLowerBound(String counter, long refValue) {
-            assertTrue( // If this error throws, It's time to revise the bound.
+        assertTrue( // If this error throws, It's time to revise the bound.
                 String.format("[GOOD FAILURE!] Counter %s consistently better than lower bound of %d", counter, Math.round(COUNTER_LOWER_MARGIN * refValue)),
                 iterate(runs).anyMatch(run -> run.reasonerPerfCounters.get(counter) >= Math.round(COUNTER_LOWER_MARGIN * refValue)));
     }
@@ -115,7 +115,7 @@ public class Benchmark {
         @Override
         public String toString() {
             StringBuilder perfCounterStr = new StringBuilder();
-            reasonerPerfCounters.forEach((k,v) -> perfCounterStr.append(String.format("|-- %-40s :\t%d\n", k, v)));
+            reasonerPerfCounters.forEach((k, v) -> perfCounterStr.append(String.format("|-- %-40s :\t%d\n", k, v)));
             return "Benchmark run:\n" +
                     "- TimeTaken      :\t" + timeTaken.toMillis() + " ms\n" +
                     "- Answers        :\t" + answerCount + "\n" +

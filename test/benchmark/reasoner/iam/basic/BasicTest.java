@@ -31,7 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class BasicTest {
-    static final Path RESOURCE_DIRECTORY =  Paths.get("test", "benchmark", "reasoner", "iam", "basic");
+    static final Path RESOURCE_DIRECTORY = Paths.get("test", "benchmark", "reasoner", "iam", "basic");
     private static final Path COMMON_RESOURCE_DIR = Paths.get("test", "benchmark", "reasoner", "iam", "resources");
 
     private static final int NOBJECTS = 52;
@@ -48,7 +48,7 @@ public class BasicTest {
     @BeforeClass
     public static void setup() throws IOException {
         benchmarker.setUp();
-        benchmarker.loadDatabase(COMMON_RESOURCE_DIR.resolve("types.tql"),COMMON_RESOURCE_DIR.resolve("data.typedb"));
+        benchmarker.loadDatabase(COMMON_RESOURCE_DIR.resolve("types.tql"), COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.loadSchema(RESOURCE_DIRECTORY.resolve("basic_test.tql"));
         benchmarker.warmUp();
     }
@@ -224,13 +224,13 @@ public class BasicTest {
     @Test
     public void testQueryTwice() {
         String query = "match\n" +
-                        "(start: $a, end: $b) isa object-pair;\n" +
-                        "(start: $a, end: $b) isa object-pair;\n";
+                "(start: $a, end: $b) isa object-pair;\n" +
+                "(start: $a, end: $b) isa object-pair;\n";
         Benchmark benchmark = new Benchmark("double-join-self", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(3500);
-        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS * NOBJECTS + 2,  NOBJECTS * NOBJECTS + 2);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS * NOBJECTS + 2, NOBJECTS * NOBJECTS + 2);
     }
 }
