@@ -49,11 +49,11 @@ public class ConjunctionStreamPlan {
 
     public static ConjunctionStreamPlan createFlattenedConjunctionStreamPlan(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
         ConjunctionStreamPlan unflattenedNew = new Builder(resolvableOrder, inputVariables, outputVariables).build();
-        ConjunctionStreamPlan flattenedNew = flatten(unflattenedNew);
+        ConjunctionStreamPlan flattenedNew = flatten(unflattenedNew, inputVariables);
         flattenedNew.unflattened = unflattenedNew;
 
         ConjunctionStreamPlan unflattenedOld = createBinaryConjunctionStreamPlan(resolvableOrder, inputVariables, outputVariables);
-        ConjunctionStreamPlan flattenedOld = flatten(unflattenedOld);
+        ConjunctionStreamPlan flattenedOld = flatten(unflattenedOld, inputVariables);
         flattenedOld.unflattened = unflattenedOld;
 
 //        return flattenedOld;
@@ -108,7 +108,7 @@ public class ConjunctionStreamPlan {
         return new CompoundStreamPlan(list(leftPlan, rightPlan), identifiers, joinOutputs, outputVariables);
     }
 
-    private static ConjunctionStreamPlan flatten(ConjunctionStreamPlan conjunctionStreamPlan) {
+    private static ConjunctionStreamPlan flatten(ConjunctionStreamPlan conjunctionStreamPlan, Set<Retrievable> topLevelBounds) {
         if (conjunctionStreamPlan.isResolvable()) {
             return conjunctionStreamPlan;
         } else {
@@ -118,24 +118,24 @@ public class ConjunctionStreamPlan {
             for (int i = 0; i < 2; i++) {
                 ConjunctionStreamPlan unflattenedChild = compoundStreamPlan.ithChild(i);
 
-                if (canFlattenInto(compoundStreamPlan, unflattenedChild)) {
-                    subPlans.addAll(flatten(unflattenedChild).asCompoundStreamPlan().subPlans);
+                if (canFlattenInto(compoundStreamPlan, unflattenedChild, topLevelBounds)) {
+                    subPlans.addAll(flatten(unflattenedChild, topLevelBounds).asCompoundStreamPlan().subPlans);
                 } else {
-                    subPlans.add(flatten(unflattenedChild));
+                    subPlans.add(flatten(unflattenedChild, topLevelBounds));
                 }
             }
             return new CompoundStreamPlan(subPlans, compoundStreamPlan.identifierVariables(), compoundStreamPlan.extendOutputWithVariables(), compoundStreamPlan.outputVariables());
         }
     }
 
-    private static boolean canFlattenInto(ConjunctionStreamPlan.CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan unflattenedChild) {
+    private static boolean canFlattenInto(ConjunctionStreamPlan.CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan unflattenedChild, Set<Retrievable> topLevelBounds) {
         return unflattenedChild.isCompoundStream() &&
-                isExclusiveReader(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedChild.asCompoundStreamPlan()) &&
+                isExclusiveReader(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedChild.asCompoundStreamPlan(), topLevelBounds) &&
                 rightChildBoundsSatisfied(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedChild.asCompoundStreamPlan());
     }
 
-    public static boolean isExclusiveReader(ConjunctionStreamPlan.CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan.CompoundStreamPlan unflattenedNextPlan) {
-        return unflattenedNextPlan.extendOutputWithVariables().isEmpty() && unflattenedNextPlan.identifierVariables.containsAll(conjunctionStreamPlan.identifierVariables);
+    public static boolean isExclusiveReader(ConjunctionStreamPlan.CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan.CompoundStreamPlan unflattenedNextPlan, Set<Retrievable> topLevelBounds) {
+        return unflattenedNextPlan.extendOutputWithVariables().isEmpty() && unflattenedNextPlan.identifierVariables.containsAll(difference(conjunctionStreamPlan.identifierVariables, topLevelBounds));
     }
 
     private static boolean rightChildBoundsSatisfied(ConjunctionStreamPlan.CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan.CompoundStreamPlan unflattenedNextPlan) {
@@ -328,6 +328,30 @@ public class ConjunctionStreamPlan {
             return new Pair<>(left, right);
         }
 
+        public Pair<List<Resolvable<?>>, List<Resolvable<?>>> divideOld(List<Resolvable<?>> subConjunction) {
+            Resolvable<?> first = subConjunction.get(0);
+            Set<Retrievable> suffixVariables = new HashSet<>();
+            List<Resolvable<?>> left, right;
+            {
+                int i;
+                for (i = subConjunction.size() - 1; i >= 1; i--) {
+                    suffixVariables.addAll(subConjunction.get(i).retrieves());
+                    // Why am i using first.retrieves for the intersection and not all of the prefix?
+                    if (difference(intersection(first.retrieves(), suffixVariables), subConjunction.get(i).retrieves()).size() > 0) {
+                        break;
+                    }
+                }
+
+                left = new ArrayList<>();
+                right = new ArrayList<>();
+                for (int j = 0; j < subConjunction.size(); j++) {
+                    if (j <= i) left.add(subConjunction.get(j));
+                    else right.add(subConjunction.get(j));
+                }
+            }
+            return new Pair<>(left, right);
+        }
+
         private int findSplitAfterIndex(List<Resolvable<?>> subConjunction) {
             Set<Retrievable> nextSuffixVariables = new HashSet<>(subConjunction.get(subConjunction.size() - 1).retrieves());
             int r;
@@ -372,11 +396,11 @@ public class ConjunctionStreamPlan {
 
                 Set<Retrievable> identifiers = intersection(availableInputs, allUsedVariables);
                 Set<Retrievable> extendOutputWith = difference(availableInputs, allUsedVariables);
-                Set<Retrievable> rightOutputs = difference(requiredOutputs, extendOutputWith); // difference(requiredOutputs, availableInputs); is minimal, but can't be flattened
+                Set<Retrievable> rightOutputs = difference(requiredOutputs, availableInputs);
 
                 Set<Retrievable> leftIdentifiers = intersection(identifiers, leftVariables);
                 Set<Retrievable> rightInputs = intersection(union(identifiers, leftVariables), union(rightVariables, rightOutputs));
-                Set<Retrievable> leftOutputs = intersection(leftVariables, rightInputs); // difference(rightInputs, Identifiers) is minimal, but can't be flattened
+                Set<Retrievable> leftOutputs = difference(rightInputs, difference(identifiers, leftIdentifiers));
 
                 assert union(identifiers, union(rightOutputs, extendOutputWith)).containsAll(requiredOutputs); // TODO: A few more asserts
                 return new VariableSets(identifiers, extendOutputWith, requiredOutputs, leftIdentifiers, leftOutputs, rightInputs, rightOutputs);
