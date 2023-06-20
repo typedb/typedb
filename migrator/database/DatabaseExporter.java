@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.DATABASE_NOT_FOUND;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_NOT_WRITABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_WRITE_ERROR;
 
 public class DatabaseExporter {
     private static final Logger LOG = LoggerFactory.getLogger(DatabaseExporter.class);
@@ -80,7 +80,7 @@ public class DatabaseExporter {
         try {
             Files.writeString(schemaFile, databaseMgr.get(database).schema());
         } catch (IOException e) {
-            throw TypeDBException.of(FILE_NOT_WRITABLE, schemaFile.toString());
+            throw TypeDBException.of(FILE_WRITE_ERROR, schemaFile.toString());
         }
         LOG.info("Finished exporting schema to {}", schemaFile);
     }
@@ -100,7 +100,7 @@ public class DatabaseExporter {
                 export(outputStream, checksums());
             }
         } catch (IOException e) {
-            throw TypeDBException.of(FILE_NOT_WRITABLE, dataFile.toString());
+            throw TypeDBException.of(FILE_WRITE_ERROR, dataFile.toString());
         }
         LOG.info("Exported " + status.toString());
         LOG.info("Finished exporting data to {}", dataFile);
@@ -240,7 +240,7 @@ public class DatabaseExporter {
         try {
             item.writeDelimitedTo(outputStream);
         } catch (IOException e) {
-            throw TypeDBException.of(FILE_NOT_WRITABLE, dataFile.toString());
+            throw TypeDBException.of(FILE_WRITE_ERROR, dataFile.toString());
         }
     }
 }

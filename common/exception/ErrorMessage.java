@@ -692,9 +692,9 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Migrator FILE_NOT_FOUND =
                 new Migrator(2, "The specified file path '%s' could not be found.");
         public static final Migrator FILE_READ_ERROR =
-                new Migrator(3, "Error reading the file path '%s'.");
-        public static final Migrator FILE_NOT_WRITABLE =
-                new Migrator(4, "The specified file '%s' cannot be opened for write.");
+                new Migrator(3, "Error reading the file at '%s'.");
+        public static final Migrator FILE_WRITE_ERROR =
+                new Migrator(4, "Error writing the file at '%s'.");
         public static final Migrator TYPE_NOT_FOUND =
                 new Migrator(5, "The type '%s' is not defined in the schema.");
         public static final Migrator ROLE_TYPE_NOT_FOUND =
