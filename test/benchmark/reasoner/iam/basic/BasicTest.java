@@ -169,7 +169,7 @@ public class BasicTest {
                         "(start: $c, end: $d) isa object-pair;\n" +
                         "get $a, $d;\n",
                 queryParams.basicTestObject);
-        Benchmark benchmark = new Benchmark("double-join", query, NOBJECTS);
+        Benchmark benchmark = new Benchmark("triple-join-with-projection", query, NOBJECTS);
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
