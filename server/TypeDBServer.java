@@ -254,9 +254,9 @@ public class TypeDBServer implements AutoCloseable {
                     else if (subcmdServer.isVersion()) System.out.println("Version: " + Version.VERSION);
                     else runServer(subcmdServer);
                 } else if (subcmd.get().isImport()) {
-                    runImportData(subcmd.get().asImport());
+                    runImport(subcmd.get().asImport());
                 } else if (subcmd.get().isExport()) {
-                    runExportData(subcmd.get().asExport());
+                    runExport(subcmd.get().asExport());
                 } else throw TypeDBException.of(ILLEGAL_STATE);
             }
         } catch (Exception e) {
@@ -285,21 +285,21 @@ public class TypeDBServer implements AutoCloseable {
         server.serve();
     }
 
-    private static void runExportData(CoreSubcommand.Export subcmdExport) {
+    private static void runExport(CoreSubcommand.Export subcmdExport) {
         ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
         CoreMigratorClient migrator = CoreMigratorClient.create(subcmdExport.port());
-        boolean success = migrator.export(subcmdExport.database(), subcmdExport.schemaFile(), subcmdExport.dataFile());
+        boolean success = migrator.exportDatabase(subcmdExport.database(), subcmdExport.schemaFile(), subcmdExport.dataFile());
         System.exit(success ? 0 : 1);
     }
 
-    private static void runImportData(CoreSubcommand.Import subcmdImport) {
+    private static void runImport(CoreSubcommand.Import subcmdImport) {
         ((LoggerContext) LoggerFactory.getILoggerFactory()).getLogger(ROOT_LOGGER_NAME)
                 .setLevel(ch.qos.logback.classic.Level.WARN);
 
         CoreMigratorClient migrator = CoreMigratorClient.create(subcmdImport.port());
-        boolean success = migrator.import_(subcmdImport.database(), subcmdImport.schemaFile(), subcmdImport.dataFile());
+        boolean success = migrator.importDatabase(subcmdImport.database(), subcmdImport.schemaFile(), subcmdImport.dataFile());
         System.exit(success ? 0 : 1);
     }
 }

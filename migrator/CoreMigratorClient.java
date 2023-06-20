@@ -46,7 +46,7 @@ public class CoreMigratorClient {
         return new CoreMigratorClient(stub);
     }
 
-    public boolean import_(String database, Path schemaFile, Path dataFile) {
+    public boolean importDatabase(String database, Path schemaFile, Path dataFile) {
         MigratorProto.Import.Req req = MigratorProto.Import.Req.newBuilder()
                 .setDatabase(database)
                 .setSchemaFile(schemaFile.toAbsolutePath().toString())
@@ -58,7 +58,7 @@ public class CoreMigratorClient {
         return streamObserver.success();
     }
 
-    public boolean export(String database, Path schemaFile, Path dataFile) {
+    public boolean exportDatabase(String database, Path schemaFile, Path dataFile) {
         MigratorProto.Export.Req req = MigratorProto.Export.Req.newBuilder()
                 .setDatabase(database)
                 .setSchemaFile(schemaFile.toAbsolutePath().toString())
