@@ -18,21 +18,20 @@
 
 package com.vaticle.typedb.core.reasoner.planner;
 
-import com.vaticle.typedb.common.collection.Collections;
+import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class ConjunctionStreamPlan {
@@ -49,10 +48,16 @@ public class ConjunctionStreamPlan {
     }
 
     public static ConjunctionStreamPlan createFlattenedConjunctionStreamPlan(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
-        ConjunctionStreamPlan unflattened = createBinaryConjunctionStreamPlan(resolvableOrder, inputVariables, outputVariables);
-        ConjunctionStreamPlan flattened = flatten(unflattened);
-        flattened.unflattened = unflattened;
-        return flattened;
+        ConjunctionStreamPlan unflattenedNew = new Builder(resolvableOrder, inputVariables, outputVariables).build();
+        ConjunctionStreamPlan flattenedNew = flatten(unflattenedNew);
+        flattenedNew.unflattened = unflattenedNew;
+
+        ConjunctionStreamPlan unflattenedOld = createBinaryConjunctionStreamPlan(resolvableOrder, inputVariables, outputVariables);
+        ConjunctionStreamPlan flattenedOld = flatten(unflattenedOld);
+        flattenedOld.unflattened = unflattenedOld;
+
+        return flattenedOld;
+//        return flattenedNew;
     }
 
     private static ConjunctionStreamPlan createBinaryConjunctionStreamPlan(List<Resolvable<?>> resolvableOrder, Set<Retrievable> inputVariables, Set<Retrievable> outputVariables) {
@@ -64,14 +69,15 @@ public class ConjunctionStreamPlan {
             return new ResolvablePlan(resolvableOrder.get(0), identifiers, joinOutputs, resolvableOutputs);
         }
 
+        // TODO: Revise fully.
         Resolvable<?> first = resolvableOrder.get(0);
-        // Find longest suffix which won't have redundant bounds
         Set<Retrievable> suffixVariables = new HashSet<>();
         List<Resolvable<?>> left, right;
         {
             int i;
             for (i = resolvableOrder.size() - 1; i >= 1; i--) {
                 suffixVariables.addAll(resolvableOrder.get(i).retrieves());
+                // Why am i using first.retrieves for the intersection and not all of the prefix?
                 if (difference(intersection(first.retrieves(), suffixVariables), resolvableOrder.get(i).retrieves()).size() > 0) {
                     break;
                 }
@@ -99,7 +105,7 @@ public class ConjunctionStreamPlan {
             rightPlan = createBinaryConjunctionStreamPlan(right, rightInputs, childrenOutput);
         }
 
-        return new CompoundStreamPlan(Collections.list(leftPlan, rightPlan), identifiers, joinOutputs, outputVariables);
+        return new CompoundStreamPlan(list(leftPlan, rightPlan), identifiers, joinOutputs, outputVariables);
     }
 
     private static ConjunctionStreamPlan flatten(ConjunctionStreamPlan conjunctionStreamPlan) {
@@ -250,6 +256,149 @@ public class ConjunctionStreamPlan {
                     String.join(", ", iterate(extendOutputWith).map(v -> v.toString()).toList()),
                     String.join(", ", iterate(outputVariables).map(v -> v.toString()).toList()),
                     String.join(" ; ", iterate(subPlans).map(ConjunctionStreamPlan::toString).toList()));
+        }
+    }
+
+    private static class Builder {
+        private final List<Resolvable<?>> resolvables;
+        private final Set<Retrievable> inputBounds;
+        private final Set<Retrievable> outputBounds;
+
+        private List<Set<Retrievable>> boundsAt;
+
+        private Builder(List<Resolvable<?>> resolvables, Set<Retrievable> inputBounds, Set<Retrievable> outputBounds) {
+            this.resolvables = resolvables;
+            this.inputBounds = inputBounds;
+            this.outputBounds = outputBounds;
+            boundsAt = new ArrayList<>();
+            Set<Retrievable> runningBounds = new HashSet<>(inputBounds);
+            for (Resolvable<?> resolvable : resolvables) {
+                boundsAt.add(new HashSet<>(runningBounds));
+                iterate(resolvable.retrieves()).filter(Retrievable::isName).forEachRemaining(runningBounds::add);
+            }
+        }
+
+        private ConjunctionStreamPlan build() {
+            return buildRecursivePrefix(resolvables, inputBounds, outputBounds);
+        }
+
+        public ConjunctionStreamPlan buildRecursivePrefix(List<Resolvable<?>> subConjunction, Set<Retrievable> availableInputs, Set<Retrievable> requiredOutputs) {
+            if (subConjunction.size() == 1) {
+                VariableSets variableSets = VariableSets.determineVariableSets(list(), subConjunction, availableInputs, requiredOutputs);
+                //  use resolvableOutputs instead of rightOutputs because this node has to do the job of the parent as well - joining the identifiers
+                Set<Retrievable> resolvableOutputs = difference(requiredOutputs, variableSets.extendOutputWith);
+                return new ResolvablePlan(subConjunction.get(0), variableSets.rightInputs, variableSets.extendOutputWith, resolvableOutputs);
+            } else {
+                Pair<List<Resolvable<?>>, List<Resolvable<?>>> divided = divide(subConjunction);
+                VariableSets variableSets = VariableSets.determineVariableSets(divided.first(), divided.second(), availableInputs, requiredOutputs);
+                ConjunctionStreamPlan leftPlan = buildRecursivePrefix(divided.first(), variableSets.leftIdentifiers, variableSets.leftOutputs);
+                ConjunctionStreamPlan rightPlan = buildRecursiveSuffix(divided.second(), variableSets.rightInputs, variableSets.rightOutputs);
+
+                return new CompoundStreamPlan(list(leftPlan, rightPlan), variableSets.identifiers, variableSets.extendOutputWith, requiredOutputs);
+            }
+        }
+
+        public ConjunctionStreamPlan buildRecursiveSuffix(List<Resolvable<?>> subConjunction, Set<Retrievable> availableInputs, Set<Retrievable> requiredOutputs) {
+            // We should be able to call buildRecursivePrefix and get the same answer.
+            // If we did everything right, we should have an easy build.
+            if (subConjunction.size() == 1) {
+                VariableSets variableSets = VariableSets.determineVariableSets(list(), subConjunction, availableInputs, requiredOutputs);
+                //  use resolvableOutputs instead of rightOutputs because this node has to do the job of the parent as well - joining the identifiers
+                Set<Retrievable> resolvableOutputs = difference(requiredOutputs, variableSets.extendOutputWith);
+                return new ResolvablePlan(subConjunction.get(0), variableSets.rightInputs, variableSets.extendOutputWith, resolvableOutputs);
+            } else {
+                List<Resolvable<?>> suffix = subConjunction.subList(1, subConjunction.size());
+                VariableSets variableSets = VariableSets.determineVariableSets(subConjunction.subList(0, 1), subConjunction.subList(1, subConjunction.size()), availableInputs, requiredOutputs);
+                ConjunctionStreamPlan leftPlan = new ResolvablePlan(subConjunction.get(0), variableSets.leftIdentifiers, set(), variableSets.leftOutputs);
+                ConjunctionStreamPlan rightPlan = buildRecursiveSuffix(suffix, variableSets.rightInputs, variableSets.rightOutputs);
+                return new CompoundStreamPlan(list(leftPlan, rightPlan),
+                        variableSets.identifiers, variableSets.extendOutputWith, requiredOutputs);
+            }
+        }
+
+        public Pair<List<Resolvable<?>>, List<Resolvable<?>>> divide(List<Resolvable<?>> subConjunction) {
+            int splitAfter = findSplitAfterIndex(subConjunction);
+            List<Resolvable<?>> left = new ArrayList<>();
+            List<Resolvable<?>> right = new ArrayList<>();
+            for (int j = 0; j < subConjunction.size(); j++) {
+                if (j <= splitAfter) left.add(subConjunction.get(j));
+                else right.add(subConjunction.get(j));
+            }
+
+            return new Pair<>(left, right);
+        }
+
+        private int findSplitAfterIndex(List<Resolvable<?>> subConjunction) {
+            Set<Retrievable> nextSuffixVariables = new HashSet<>(subConjunction.get(subConjunction.size() - 1).retrieves());
+            int r;
+            for (r = subConjunction.size() - 2; r > 0; r--) { // r > 0 because we need atleast one thing in our left
+                nextSuffixVariables.addAll(subConjunction.get(r).retrieves());
+                Set<Retrievable> subtreeBounds = intersection(boundsAt.get(r), nextSuffixVariables);
+                Set<Retrievable> candidateFirstChildBounds = intersection(subConjunction.get(r).retrieves(), boundsAt.get(r));
+
+                if (!difference(subtreeBounds, candidateFirstChildBounds).isEmpty()) {
+                    break;
+                }
+            }
+            return r;
+        }
+
+        private static class VariableSets {
+
+            public final Set<Retrievable> identifiers;
+            public final Set<Retrievable> extendOutputWith;
+            public final Set<Retrievable> requiredOutputs;
+            public final Set<Retrievable> leftIdentifiers;
+            public final Set<Retrievable> leftOutputs;
+            public final Set<Retrievable> rightInputs;
+            public final Set<Retrievable> rightOutputs;
+
+            public VariableSets(Set<Retrievable> identifiers, Set<Retrievable> extendOutputWith, Set<Retrievable> requiredOutputs,
+                                Set<Retrievable> leftIdentifiers, Set<Retrievable> leftOutputs,
+                                Set<Retrievable> rightInputs, Set<Retrievable> rightOutputs) {
+                this.identifiers = identifiers;
+                this.extendOutputWith = extendOutputWith;
+                this.requiredOutputs = requiredOutputs;
+                this.leftIdentifiers = leftIdentifiers;
+                this.leftOutputs = leftOutputs;
+                this.rightInputs = rightInputs;
+                this.rightOutputs = rightOutputs;
+            }
+
+            private static VariableSets determineVariableSets(List<Resolvable<?>> left, List<Resolvable<?>> right, Set<Retrievable> availableInputs, Set<Retrievable> requiredOutputs) {
+                Set<Retrievable> leftVariables = iterate(left).flatMap(resolvable -> iterate(resolvable.retrieves())).filter(Retrievable::isName).toSet();
+                Set<Retrievable> rightVariables = iterate(right).flatMap(resolvable -> iterate(resolvable.retrieves())).filter(Retrievable::isName).toSet();
+                Set<Retrievable> allUsedVariables = union(leftVariables, rightVariables);
+
+                Set<Retrievable> identifiers = intersection(availableInputs, allUsedVariables);
+                Set<Retrievable> extendOutputWith = difference(availableInputs, allUsedVariables);
+                Set<Retrievable> rightOutputs = difference(requiredOutputs, availableInputs);
+
+                Set<Retrievable> leftIdentifiers = intersection(identifiers, leftVariables);
+                Set<Retrievable> rightInputs = intersection(union(identifiers, leftVariables), union(rightVariables, requiredOutputs));
+                Set<Retrievable> leftOutputs = difference(rightInputs, identifiers);
+
+                assert union(identifiers, union(rightOutputs, extendOutputWith)).containsAll(requiredOutputs); // TODO: A few more asserts
+                return new VariableSets(identifiers, extendOutputWith, requiredOutputs, leftIdentifiers, leftOutputs, rightInputs, rightOutputs);
+
+//
+//                {
+//                    Set<Retrievable> conjunctionVariables = iterate(resolvableOrder).flatMap(resolvable -> iterate(resolvable.retrieves())).toSet();
+//                    Set<Retrievable> identifiers = intersection(inputVariables, conjunctionVariables);
+//                    Set<Retrievable> joinOutputs = difference(inputVariables, identifiers);
+//
+//                    Set<Retrievable> leftVariables = iterate(left).flatMap(l -> iterate(l.retrieves())).toSet();
+//                    Set<Retrievable> rightVariables = iterate(right).flatMap(r -> iterate(r.retrieves())).toSet();
+//                    Set<Retrievable> childrenOutput = difference(difference(outputVariables, identifiers), joinOutputs);
+//
+//                    Set<Retrievable> leftInputs = intersection(inputVariables, leftVariables);
+//                    Set<Retrievable> leftOutputs = intersection(leftVariables, union(childrenOutput, rightVariables));
+//                    Set<Retrievable> rightInputs = union(leftOutputs, intersection(inputVariables, rightVariables));
+//                    leftPlan = createBinaryConjunctionStreamPlan(left, leftInputs, leftOutputs);
+//                    rightPlan = createBinaryConjunctionStreamPlan(right, rightInputs, childrenOutput);
+//                }
+
+            }
         }
     }
 }
