@@ -138,6 +138,10 @@ public class ConjunctionStreamPlan {
         return unflattenedNextPlan.extendOutputWithVariables().isEmpty() && unflattenedNextPlan.identifierVariables.containsAll(difference(conjunctionStreamPlan.identifierVariables, topLevelBounds));
     }
 
+    public static boolean mayProduceDuplicates(CompoundStreamPlan toSpawn) {
+        return true; // TODO
+    }
+
     private static boolean rightChildBoundsSatisfied(ConjunctionStreamPlan.CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan.CompoundStreamPlan unflattenedNextPlan) {
         return difference(unflattenedNextPlan.ithChild(1).identifierVariables, union(conjunctionStreamPlan.identifierVariables, unflattenedNextPlan.ithChild(0).outputVariables)).isEmpty();
     }
