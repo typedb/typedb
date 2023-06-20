@@ -19,13 +19,20 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
 exports_files(
-    ["schema.tql", "data.typedb"],
+    [
+        "schema.tql",
+        "data.typedb",
+    ],
 )
 
 host_compatible_java_test(
     name = "test-migrator",
+    size = "large",
     srcs = ["MigratorTest.java"],
-    test_class = "com.vaticle.typedb.core.migrator.MigratorTest",
+    data = [
+        "data.typedb",
+        ":schema.tql",
+    ],
     native_libraries_deps = [
         "//:typedb",
         "//common:common",
@@ -33,26 +40,21 @@ host_compatible_java_test(
         "//database:database",
         "//migrator:migrator",
     ],
+    test_class = "com.vaticle.typedb.core.migrator.MigratorTest",
     deps = [
         # Internal dependencies
-        "//test/integration/util:util",
+        "//test/integration/util",
         "//server:version",
-
-        # External dependencies from Vaticle
-        "@vaticle_typeql//java:typeql-lang",
-        "@vaticle_typeql//java/query:query",
 
         # External dependencies from Maven
         "@maven//:com_google_protobuf_protobuf_java",
     ],
-    data = [":schema.tql", "data.typedb"],
-    size = "large",
 )
 
 checkstyle_test(
     name = "checkstyle",
     include = glob([
-        "*"
+        "*",
     ]),
     exclude = ["data.typedb"],
     license_type = "agpl-header",
