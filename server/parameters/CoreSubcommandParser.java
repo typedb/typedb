@@ -129,7 +129,7 @@ public class CoreSubcommandParser {
 
         @Override
         public List<Help> helpList() {
-            return list(database.help(), dataFile.help(), port.help());
+            return list(database.help(), schemaFile.help(), dataFile.help(), port.help());
         }
     }
 
@@ -161,7 +161,7 @@ public class CoreSubcommandParser {
 
         @Override
         public List<Help> helpList() {
-            return list(database.help(), dataFile.help(), port.help());
+            return list(database.help(), schemaFile.help(), dataFile.help(), port.help());
         }
     }
 }
