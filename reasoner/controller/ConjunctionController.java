@@ -214,7 +214,6 @@ public abstract class ConjunctionController<
             private final AbstractProcessor<?, ?, ?, ?> processor;
             private final Map<Publisher<ConceptMap>, Integer> whichChild;
 
-
             CompoundStream(AbstractProcessor<?, ?, ?, ?> processor, ConjunctionStreamPlan plan, ConceptMap identifierBounds) {
                 super(processor, new SubscriberRegistry.Multi<>(), new PublisherRegistry.Multi<>());
                 this.processor = processor;
@@ -235,7 +234,7 @@ public abstract class ConjunctionController<
             private Publisher<ConceptMap> spawnPlanElement(ConjunctionStreamPlan planElement, ConceptMap bounds) {
                 ConceptMap extension = filterOutputsWithExplainables(bounds, planElement.extendOutputWithVariables());
                 ConceptMap identifiers = bounds.filter(planElement.identifierVariables());
-                assert planElement.identifierVariables().size() == identifiers.concepts().size() &&  identifiers.concepts().keySet().containsAll(planElement.identifierVariables());
+                assert planElement.identifierVariables().size() == identifiers.concepts().size() && identifiers.concepts().keySet().containsAll(planElement.identifierVariables());
                 Publisher<ConceptMap> publisher;
                 if (planElement.isResolvable()) {
                     publisher = spawnResolvableElement(planElement.asResolvablePlan(), identifiers);
@@ -253,10 +252,12 @@ public abstract class ConjunctionController<
                 ConceptMap mergedPacket = merge(identifierBounds, packet);
                 int nextChild = whichChild.get(publisher) + 1;
 
-                assert plan.isResolvable() || plan.asCompoundStreamPlan().ithChild(nextChild-1).isResolvable() || (
-                        ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(), plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables()).size() == packet.concepts().size() &&
-                                packet.concepts().keySet().containsAll(ConjunctionStreamPlan.union(plan.asCompoundStreamPlan().ithChild(nextChild-1).outputVariables(),
-                                plan.asCompoundStreamPlan().ithChild(nextChild-1).extendOutputWithVariables())));
+                assert plan.isResolvable() || plan.asCompoundStreamPlan().ithChild(nextChild - 1).isResolvable() || (
+                        iterate(packet.concepts().keySet()).allMatch(v ->
+                                plan.asCompoundStreamPlan().ithChild(nextChild - 1).outputVariables().contains(v) ||
+                                        plan.asCompoundStreamPlan().ithChild(nextChild - 1).extendOutputWithVariables().contains(v)) &&
+                                packet.concepts().keySet().containsAll(plan.asCompoundStreamPlan().ithChild(nextChild - 1).outputVariables()) &&
+                                packet.concepts().keySet().containsAll(plan.asCompoundStreamPlan().ithChild(nextChild - 1).extendOutputWithVariables()));
                 if (plan.isCompoundStream() && nextChild < plan.asCompoundStreamPlan().size()) {
                     Publisher<ConceptMap> follower = spawnPlanElement(plan.asCompoundStreamPlan().ithChild(nextChild), mergedPacket);
                     whichChild.put(follower, nextChild);
@@ -269,8 +270,8 @@ public abstract class ConjunctionController<
             private Publisher<ConceptMap> spawnCompoundStream(ConjunctionStreamPlan.CompoundStreamPlan toSpawn, ConceptMap mergedPacket) {
                 ConceptMap identifyingBounds = mergedPacket.filter(toSpawn.identifierVariables());
                 assert this.plan.isCompoundStream();
-                if ( ConjunctionStreamPlan.isExclusiveReader(this.plan.asCompoundStreamPlan(), toSpawn, ((Processor)processor).bounds.concepts().keySet())
-                        && !ConjunctionStreamPlan.mayProduceDuplicates(toSpawn) ) {
+                if (!ConjunctionStreamPlan.mayProduceDuplicates(toSpawn) &&
+                        ConjunctionStreamPlan.isExclusiveReader(this.plan.asCompoundStreamPlan(), toSpawn, ((Processor) processor).bounds.concepts().keySet())) {
                     return new CompoundStream(processor, toSpawn, identifyingBounds)
                             .map(conceptMap -> filterOutputsWithExplainables(conceptMap, toSpawn.outputVariables()));
                 } else {
@@ -299,6 +300,7 @@ public abstract class ConjunctionController<
 
                 return input.map(conceptMap -> merge(filterOutputsWithExplainables(conceptMap, toSpawn.outputVariables()), identifiers));
             }
+
             private Publisher<ConceptMap> extendWithBounds(Publisher<ConceptMap> s, ConceptMap extension) {
                 return extension.concepts().isEmpty() ? s : s.map(conceptMap -> merge(conceptMap, extension));
             }
