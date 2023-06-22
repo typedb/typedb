@@ -68,7 +68,6 @@ public class BenchmarkRunner {
         }
         Files.createDirectory(dataDir);
         databaseMgr = CoreDatabaseManager.open(new Options.Database().dataDir(dataDir).storageDataCacheSize(MB).storageIndexCacheSize(MB));
-        databaseMgr.create(database);
     }
 
     public void tearDown() {
