@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.migrator.data;
+package com.vaticle.typedb.core.migrator.database;
 
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.migrator.MigratorProto;
+import com.vaticle.typedb.core.migrator.data.DataProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,32 +45,49 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.DATABASE_NOT_FOUND;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_NOT_WRITABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_WRITE_ERROR;
 
-public class DataExporter {
-    private static final Logger LOG = LoggerFactory.getLogger(DataExporter.class);
+public class DatabaseExporter {
+    private static final Logger LOG = LoggerFactory.getLogger(DatabaseExporter.class);
 
     private final TypeDB.DatabaseManager databaseMgr;
     private final String database;
-    private final Path filename;
+    private final Path schemaFile;
+    private final Path dataFile;
     private final String version;
     private final Status status;
     private long totalEntityCount;
     private long totalAttributeCount;
     private long totalRelationCount;
 
-    public DataExporter(TypeDB.DatabaseManager databaseMgr, String database, Path filename, String version) {
+    public DatabaseExporter(TypeDB.DatabaseManager databaseMgr, String database, Path schemaFile, Path dataFile, String version) {
         if (!databaseMgr.contains(database)) throw TypeDBException.of(DATABASE_NOT_FOUND, database);
         this.databaseMgr = databaseMgr;
         this.database = database;
-        this.filename = filename;
+        this.schemaFile = schemaFile;
+        this.dataFile = dataFile;
         this.version = version;
         this.status = new Status();
     }
 
     public void run() {
-        LOG.info("Exporting {} from TypeDB {}", database, version);
-        try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(filename))) {
+        LOG.info("Exporting database {} from TypeDB {}", database, version);
+        writeSchema();
+        writeData();
+        LOG.info("Finished exporting database {}.", database);
+    }
+
+    private void writeSchema() {
+        try {
+            Files.writeString(schemaFile, databaseMgr.get(database).schema());
+        } catch (IOException e) {
+            throw TypeDBException.of(FILE_WRITE_ERROR, schemaFile.toString());
+        }
+        LOG.info("Finished exporting schema to {}", schemaFile);
+    }
+
+    private void writeData() {
+        try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(dataFile))) {
             export(outputStream, header());
             try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.DATA);
                  TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
@@ -83,9 +101,10 @@ public class DataExporter {
                 export(outputStream, checksums());
             }
         } catch (IOException e) {
-            throw TypeDBException.of(FILE_NOT_WRITABLE, filename.toString());
+            throw TypeDBException.of(FILE_WRITE_ERROR, dataFile.toString());
         }
         LOG.info("Exported " + status.toString());
+        LOG.info("Finished exporting data to {}", dataFile);
     }
 
     public MigratorProto.Export.Progress getProgress() {
@@ -222,7 +241,7 @@ public class DataExporter {
         try {
             item.writeDelimitedTo(outputStream);
         } catch (IOException e) {
-            throw TypeDBException.of(FILE_NOT_WRITABLE, filename.toString());
+            throw TypeDBException.of(FILE_WRITE_ERROR, dataFile.toString());
         }
     }
 }

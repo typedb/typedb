@@ -31,7 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class ComplexRuleGraphTest {
-    static final Path RESOURCE_DIRECTORY =  Paths.get("test", "benchmark", "reasoner", "iam", "complex");
+    static final Path RESOURCE_DIRECTORY = Paths.get("test", "benchmark", "reasoner", "iam", "complex");
     private static final Path COMMON_RESOURCE_DIR = Paths.get("test", "benchmark", "reasoner", "iam", "resources");
 
     private static final String database = "iam-benchmark-rules";
@@ -45,9 +45,8 @@ public class ComplexRuleGraphTest {
     @BeforeClass
     public static void setup() throws IOException {
         runner.setUp();
-        runner.loadSchema(COMMON_RESOURCE_DIR.resolve("types.tql"));
+        runner.loadDatabase(COMMON_RESOURCE_DIR.resolve("types.tql"), COMMON_RESOURCE_DIR.resolve("data.typedb"));
         runner.loadSchema(RESOURCE_DIRECTORY.resolve("complex-rule-graph-test.tql"));
-        runner.importData(COMMON_RESOURCE_DIR.resolve("data.typedb"));
         runner.warmUp();
     }
 

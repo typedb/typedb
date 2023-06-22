@@ -19,20 +19,17 @@
 package com.vaticle.typedb.core.migrator;
 
 import com.google.protobuf.Parser;
-import com.vaticle.typedb.core.TypeDB;
-import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
-import com.vaticle.typedb.core.migrator.data.DataExporter;
-import com.vaticle.typedb.core.migrator.data.DataImporter;
 import com.vaticle.typedb.core.migrator.data.DataProto;
+import com.vaticle.typedb.core.migrator.database.DatabaseExporter;
+import com.vaticle.typedb.core.migrator.database.DatabaseImporter;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typedb.core.test.integration.util.Util;
-import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.query.TypeQLDefine;
 import org.junit.Test;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -41,6 +38,7 @@ import java.nio.file.Paths;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.Files.readString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -56,37 +54,17 @@ public class MigratorTest {
     private final Path exportDataPath = Paths.get("test/integration/migrator/exported-data.typedb");
 
     @Test
-    public void test_import_export_schema() throws IOException {
-        Util.resetDirectory(dataDir);
-        try (TypeDB.DatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
-            databaseMgr.create(database);
-            String savedSchema = new String(Files.readAllBytes(schemaPath), UTF_8);
-            defineSchema(databaseMgr, savedSchema);
-            String exportedSchema = databaseMgr.get(database).schema();
-            assertEquals(trimSchema(savedSchema), trimSchema(exportedSchema));
-        }
-    }
-
-    @Test
-    public void test_import_export_data() throws IOException {
+    public void test_import_export_database() throws IOException {
         Util.resetDirectory(dataDir);
         try (CoreDatabaseManager databaseMgr = CoreDatabaseManager.open(options)) {
-            databaseMgr.create(database);
-            String schema = new String(Files.readAllBytes(schemaPath), UTF_8);
-            defineSchema(databaseMgr, schema);
-            new DataImporter(databaseMgr, database, dataPath, Version.VERSION).run();
-            new DataExporter(databaseMgr, database, exportDataPath, Version.VERSION).run();
+            new DatabaseImporter(databaseMgr, database, schemaPath, dataPath, Version.VERSION).run();
+            Path exportedSchema = File.createTempFile("exportedSchema", ".tql").toPath();
+            new DatabaseExporter(
+                    databaseMgr, database, exportedSchema,
+                    exportDataPath, Version.VERSION
+            ).run();
+            assertEquals(trimSchema(readString(schemaPath, UTF_8)), trimSchema(readString(exportedSchema, UTF_8)));
             assertEquals(getChecksums(dataPath), getChecksums(exportDataPath));
-        }
-    }
-
-    private void defineSchema(TypeDB.DatabaseManager databaseMgr, String schema) {
-        try (TypeDB.Session session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA)) {
-            try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                TypeQLDefine query = TypeQL.parseQuery(schema);
-                tx.query().define(query);
-                tx.commit();
-            }
         }
     }
 

@@ -95,12 +95,14 @@ public interface CoreSubcommand {
     class Import implements CoreSubcommand {
 
         private final String database;
-        private final Path file;
+        private final Path schemaFile;
+        private final Path dataFile;
         private final int port;
 
-        protected Import(String database, Path file, int port) {
+        protected Import(String database, Path schemaFile, Path dataFile, int port) {
             this.database = database;
-            this.file = file;
+            this.schemaFile = schemaFile;
+            this.dataFile = dataFile;
             this.port = port;
         }
 
@@ -108,8 +110,12 @@ public interface CoreSubcommand {
             return database;
         }
 
-        public Path file() {
-            return file;
+        public Path schemaFile() {
+            return schemaFile;
+        }
+
+        public Path dataFile() {
+            return dataFile;
         }
 
         public int port() {
@@ -130,12 +136,14 @@ public interface CoreSubcommand {
     class Export implements CoreSubcommand {
 
         private final String database;
-        private final Path file;
+        private final Path schemaFile;
+        private final Path dataFile;
         private final int port;
 
-        protected Export(String database, Path file, int port) {
+        protected Export(String database, Path schemaFile, Path dataFile, int port) {
             this.database = database;
-            this.file = file;
+            this.schemaFile = schemaFile;
+            this.dataFile = dataFile;
             this.port = port;
         }
 
@@ -143,8 +151,12 @@ public interface CoreSubcommand {
             return database;
         }
 
-        public Path file() {
-            return file;
+        public Path schemaFile() {
+            return schemaFile;
+        }
+
+        public Path dataFile() {
+            return dataFile;
         }
 
         public int port() {
