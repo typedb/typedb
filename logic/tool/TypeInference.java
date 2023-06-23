@@ -136,24 +136,26 @@ public class TypeInference {
 
     private Map<Identifier.Variable.Name, Set<Label>> namedInferredTypes(Conjunction conjunction) {
         Map<Identifier.Variable.Name, Set<Label>> namedInferences = new HashMap<>();
-        iterate(conjunction.variables()).filter(var -> var.id().isName() && !var.isValue()).forEachRemaining(var ->
-                namedInferences.put(var.id().asName(), var.inferredTypes())
-        );
+        for (Variable var : conjunction.variables()) {
+            if (var.id().isName() && !var.isValue()) namedInferences.put(var.id().asName(), var.inferredTypes());
+        }
         return namedInferences;
     }
 
     private void propagateLabels(Conjunction conj) {
-        iterate(conj.variables()).filter(v -> v.isType() && v.asType().label().isPresent()).forEachRemaining(typeVar -> {
-            Label label = typeVar.asType().label().get().properLabel();
-            if (label.scope().isPresent()) {
-                Set<Label> labels = graphMgr.schema().resolveRoleTypeLabels(label);
-                if (labels.isEmpty()) throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, label.name(), label.scope().get());
-                typeVar.addInferredTypes(labels);
-            } else {
-                if (graphMgr.schema().getType(label) == null) throw TypeDBException.of(TYPE_NOT_FOUND, label);
-                typeVar.addInferredTypes(label);
+        for (Variable v : conj.variables()) {
+            if (v.isType() && v.asType().label().isPresent()) {
+                Label label = v.asType().label().get().properLabel();
+                if (label.scope().isPresent()) {
+                    Set<Label> labels = graphMgr.schema().resolveRoleTypeLabels(label);
+                    if (labels.isEmpty()) throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, label.name(), label.scope().get());
+                    v.addInferredTypes(labels);
+                } else {
+                    if (graphMgr.schema().getType(label) == null) throw TypeDBException.of(TYPE_NOT_FOUND, label);
+                    v.addInferredTypes(label);
+                }
             }
-        });
+        }
     }
 
     private static class InferenceTraversal {
@@ -438,8 +440,9 @@ public class TypeInference {
                     TypeVariable otherVar = register(valueConstraint.asPredicate().predicate().asThingVar().value());
                     registerSubAttribute(otherVar);
                 } else if (valueConstraint.isAssignment()) {
-                    iterate(valueConstraint.asAssignment().variables()).filter(Variable::isThing)
-                            .forEachRemaining(this::registerSubAttribute);
+                    valueConstraint.asAssignment().variables().forEach(v-> {
+                        if (v.isThing()) this.registerSubAttribute(v);
+                    });
                 }
             });
         }

@@ -586,11 +586,14 @@ public class TypeGraph {
      */
     public void commit() {
         assert storage.isSchema();
-        iterate(typesByIID.values()).filter(v -> v.status().equals(Encoding.Status.BUFFERED)).forEachRemaining(v -> {
-            VertexIID.Type newIID = VertexIID.Type.generate(storage.asSchema().schemaKeyGenerator(), v.encoding());
-            committedIIDs.put(v.iid(), newIID);
-            v.iid(newIID);
-        }); // typeByIID no longer contains valid mapping from IID to TypeVertex
+        for (TypeVertex vertex : typesByIID.values()) {
+            if (vertex.status() == Encoding.Status.BUFFERED) {
+                VertexIID.Type newIID = VertexIID.Type.generate(storage.asSchema().schemaKeyGenerator(), vertex.encoding());
+                committedIIDs.put(vertex.iid(), newIID);
+                vertex.iid(newIID);
+            }
+        }
+        // typeByIID no longer contains valid mapping from IID to TypeVertex
         typesByIID.values().forEach(TypeVertex::commit);
         rules.commit();
         clear(); // we now flush the indexes after commit, and we do not expect this Graph.Type to be used again
