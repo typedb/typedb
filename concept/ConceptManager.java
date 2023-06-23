@@ -312,7 +312,7 @@ public final class ConceptManager {
         ).<Thing>map(v -> ThingImpl.of(this, v)).toLists(PARALLELISATION_SPLIT_MINIMUM, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         if (lists.size() == 1) {
-            iterate(lists.get(0)).forEachRemaining(Thing::validate);
+            for (Thing thing : lists.get(0)) thing.validate();
         } else {
             ProducerIterator<Void> validationIterator = produce(async(iterate(lists).map(
                     list -> iterate(list).map(t -> {

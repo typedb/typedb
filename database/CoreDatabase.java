@@ -530,8 +530,9 @@ public class CoreDatabase implements TypeDB.Database {
         private Set<CoreTransaction.Data> commitMayConflict(CoreTransaction.Data txn) {
             if (!txn.dataStorage.hasTrackedWrite()) return set();
             Set<CoreTransaction.Data> mayConflict = new HashSet<>(committing);
-            iterate(committed).filter(committed -> committed.snapshotEnd().get() > txn.snapshotStart())
-                    .forEachRemaining(mayConflict::add);
+            for (CoreTransaction.Data committedTxn : committed) {
+                if (committedTxn.snapshotEnd().get() > txn.snapshotStart()) mayConflict.add(committedTxn);
+            }
             return mayConflict;
         }
 

@@ -99,7 +99,7 @@ public class Conjunction implements Pattern, Cloneable {
 
     private Map<Identifier.Variable, Variable> parseToMap(Set<Variable> variables) {
         HashMap<Identifier.Variable, Variable> map = new HashMap<>();
-        iterate(variables).forEachRemaining(v -> map.put(v.id(), v));
+        variables.forEach(v -> map.put(v.id(), v));
         return unmodifiableMap(map);
     }
 

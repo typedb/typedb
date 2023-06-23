@@ -57,6 +57,7 @@ import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.For
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
+import static java.util.Collections.emptyList;
 
 /**
  * This class would benefit from multiple inheritance/traits massively:
@@ -395,14 +396,21 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
         @Override
         public void deleteAll() {
-            iterate(Encoding.Edge.Thing.Base.values()).forEachRemaining(this::delete);
-            iterate(Encoding.Edge.Thing.Optimised.values()).forEachRemaining(this::delete);
+            for (Encoding.Edge.Thing.Base encoding : Encoding.Edge.Thing.Base.values()) {
+                this.delete(encoding);
+            }
+            for (Encoding.Edge.Thing.Optimised encoding: Encoding.Edge.Thing.Optimised.values()) {
+                this.delete(encoding);
+            }
         }
 
         @Override
         public void commit() {
-            iterate(edges.values()).flatMap(edgeMap -> iterate(edgeMap.values()))
-                    .filter(e -> !e.isInferred()).forEachRemaining(Edge::commit);
+            for (ConcurrentNavigableMap<EDGE_VIEW, ThingEdgeImpl.Buffered> edgeViews : edges.values()) {
+                for (ThingEdgeImpl.Buffered edge : edgeViews.values()) {
+                    if (!edge.isInferred()) edge.commit();
+                }
+            }
         }
 
         public static abstract class Buffered<EDGE_VIEW extends ThingEdge.View<EDGE_VIEW>>
@@ -414,12 +422,12 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
             @Override
             public UnsortedEdgeIterator edge(Encoding.Edge.Thing.Optimised encoding) {
-                return new UnsortedEdgeIterator(iterateBufferedViews(encoding, List.of()).map(ThingEdge.View::edge));
+                return new UnsortedEdgeIterator(iterateBufferedViews(encoding, emptyList()).map(ThingEdge.View::edge));
             }
 
             @Override
             public void delete(Encoding.Edge.Thing encoding) {
-                iterateBufferedViews(encoding, List.of()).forEachRemaining(comparableEdge -> comparableEdge.edge().delete());
+                iterateBufferedViews(encoding, emptyList()).forEachRemaining(comparableEdge -> comparableEdge.edge().delete());
             }
 
             @Override

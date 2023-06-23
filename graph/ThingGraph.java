@@ -545,13 +545,18 @@ public class ThingGraph {
      * anyways, we don't need to parallelise the streams to commit the vertices.
      */
     public void commit() {
-        iterate(thingsByIID.values()).filter(v -> v.status().equals(BUFFERED) && !v.isInferred()).forEachRemaining(v -> {
-            VertexIID.Thing newIID = generate(storage.dataKeyGenerator(), v.type().iid(), v.type().properLabel());
-            committedIIDs.put(v.iid(), newIID);
-            v.iid(newIID);
-        }); // thingsByIID no longer contains valid mapping from IID to TypeVertex
-        thingsByIID.values().stream().filter(v -> !v.isInferred()).forEach(ThingVertex.Write::commit);
-        attributesByIID.valuesIterator().forEachRemaining(AttributeVertex.Write::commit);
+        for (ThingVertex.Write vertex : thingsByIID.values()) {
+            if (vertex.status() == BUFFERED && !vertex.isInferred()) {
+                VertexIID.Thing newIID = generate(storage.dataKeyGenerator(), vertex.type().iid(), vertex.type().properLabel());
+                committedIIDs.put(vertex.iid(), newIID);
+                vertex.iid(newIID);
+            }
+        }
+        // thingsByIID no longer contains valid mapping from IID to TypeVertex
+        for (ThingVertex.Write vertex : thingsByIID.values()) {
+            if (!vertex.isInferred()) vertex.commit();
+        }
+        attributesByIID.commit();
         statistics.commit();
     }
 
@@ -579,6 +584,24 @@ public class ThingGraph {
                     strings.values().iterator(),
                     dateTimes.values().iterator()
             ));
+        }
+
+        public void commit() {
+            for (AttributeVertex.Write<Boolean> vertex : booleans.values()) {
+                vertex.commit();
+            }
+            for (AttributeVertex.Write<Long> vertex : longs.values()) {
+                vertex.commit();
+            }
+            for (AttributeVertex.Write<Double> vertex : doubles.values()) {
+                vertex.commit();
+            }
+            for (AttributeVertex.Write<String> vertex : strings.values()) {
+                vertex.commit();
+            }
+            for (AttributeVertex.Write<LocalDateTime> vertex : dateTimes.values()) {
+                vertex.commit();
+            }
         }
 
         void clear() {
