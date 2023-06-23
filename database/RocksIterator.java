@@ -113,7 +113,7 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
     void initialiseInternalIterator() {
         assert state == State.INIT;
-        this.internalRocksIterator = storage.getInternalRocksIterator(prefix.partition(), usePrefixBloom());
+        this.internalRocksIterator = storage.getInternalRocksIterator(prefix.partition());
         state = State.OPENED;
     }
 
@@ -153,10 +153,6 @@ public abstract class RocksIterator<T extends Key, ORDER extends Order>
 
     Key.Partition partition() {
         return prefix.partition();
-    }
-
-    boolean usePrefixBloom() {
-        return prefix.isFixedStartInPartition();
     }
 
     @Override

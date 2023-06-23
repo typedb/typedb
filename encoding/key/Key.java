@@ -120,10 +120,6 @@ public interface Key extends Comparable<Key> {
             return partition;
         }
 
-        public boolean isFixedStartInPartition() {
-            return partition.fixedStartBytes != null && prefix.length() >= partition.fixedStartBytes;
-        }
-
         public Key.Builder<K> builder() {
             return builder;
         }

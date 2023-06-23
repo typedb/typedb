@@ -65,16 +65,12 @@ public abstract class RocksStorage implements Storage {
     private static final Logger LOG = LoggerFactory.getLogger(RocksStorage.class);
 
     protected final Transaction rocksTransaction;
-    // TODO: use a single read options when 'setAutoPrefixMode(true)' is available on ReadOptions API
     protected final ReadOptions readOptions;
-    protected final ReadOptions readOptionsWithPrefixBloom;
     protected final CorePartitionManager partitionMgr;
     protected final Snapshot snapshot;
     protected final ReadWriteLock deleteCloseSchemaWriteLock;
     protected final ConcurrentSet<RocksIterator<?, ?>> iterators;
-    // TODO: use a single set of iterators when 'setAutoPrefixMode(true)' is available on ReadOptions API
     protected final ConcurrentMap<Partition, ConcurrentLinkedQueue<org.rocksdb.RocksIterator>> recycled;
-    protected final ConcurrentMap<Partition, ConcurrentLinkedQueue<org.rocksdb.RocksIterator>> recycledWithPrefixBloom;
     protected final boolean isReadOnly;
     private final OptimisticTransactionOptions transactionOptions;
     private final WriteOptions writeOptions;
@@ -85,15 +81,12 @@ public abstract class RocksStorage implements Storage {
         this.partitionMgr = partitionMgr;
         iterators = new ConcurrentSet<>();
         recycled = new ConcurrentHashMap<>();
-        recycledWithPrefixBloom = new ConcurrentHashMap<>();
         partitionMgr.partitions().forEach(partition -> recycled.put(partition, new ConcurrentLinkedQueue<>()));
-        partitionMgr.partitions().forEach(partition -> recycledWithPrefixBloom.put(partition, new ConcurrentLinkedQueue<>()));
         writeOptions = new WriteOptions();
         transactionOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
         rocksTransaction = rocksDB.beginTransaction(writeOptions, transactionOptions);
         snapshot = rocksTransaction.getSnapshot();
-        readOptions = new ReadOptions().setSnapshot(snapshot).setTotalOrderSeek(true);
-        readOptionsWithPrefixBloom = new ReadOptions().setSnapshot(snapshot).setTotalOrderSeek(false);
+        readOptions = new ReadOptions().setSnapshot(snapshot).setAutoPrefixMode(true);
         deleteCloseSchemaWriteLock = new StampedLock().asReadWriteLock();
         isOpen = new AtomicBoolean(true);
     }
@@ -127,16 +120,10 @@ public abstract class RocksStorage implements Storage {
         return LOG;
     }
 
-    org.rocksdb.RocksIterator getInternalRocksIterator(Partition partition, boolean usePrefixBloom) {
-        if (usePrefixBloom) {
-            org.rocksdb.RocksIterator iterator = recycledWithPrefixBloom.get(partition).poll();
-            if (iterator != null) return iterator;
-            else return rocksTransaction.getIterator(readOptionsWithPrefixBloom, partitionMgr.get(partition));
-        } else {
-            org.rocksdb.RocksIterator iterator = recycled.get(partition).poll();
-            if (iterator != null) return iterator;
-            else return rocksTransaction.getIterator(readOptions, partitionMgr.get(partition));
-        }
+    org.rocksdb.RocksIterator getInternalRocksIterator(Partition partition) {
+        org.rocksdb.RocksIterator iterator = recycled.get(partition).poll();
+        if (iterator != null) return iterator;
+        else return rocksTransaction.getIterator(readOptions, partitionMgr.get(partition));
     }
 
     <T extends Key, ORDER extends Order> RocksIterator<T, ORDER> createIterator(Key.Prefix<T> prefix, ORDER order) {
@@ -150,11 +137,7 @@ public abstract class RocksStorage implements Storage {
     }
 
     void recycle(RocksIterator<?, ?> rocksIterator) {
-        if (rocksIterator.usePrefixBloom()) {
-            recycledWithPrefixBloom.get(rocksIterator.partition()).add(rocksIterator.internalRocksIterator);
-        } else {
-            recycled.get(rocksIterator.partition()).add(rocksIterator.internalRocksIterator);
-        }
+        recycled.get(rocksIterator.partition()).add(rocksIterator.internalRocksIterator);
     }
 
     void remove(RocksIterator<?, ?> iterator) {
@@ -188,14 +171,11 @@ public abstract class RocksStorage implements Storage {
             if (isOpen.compareAndSet(true, false)) {
                 iterators.parallelStream().forEach(RocksIterator::close);
                 iterators.clear();
-                recycledWithPrefixBloom.values().forEach(iters -> iters.forEach(AbstractImmutableNativeReference::close));
-                recycledWithPrefixBloom.clear();
                 recycled.values().forEach(iters -> iters.forEach(AbstractImmutableNativeReference::close));
                 recycled.clear();
                 rocksTransaction.close();
                 snapshot.close();
                 transactionOptions.close();
-                readOptionsWithPrefixBloom.close();
                 readOptions.close();
                 writeOptions.close();
             }
@@ -268,13 +248,7 @@ public abstract class RocksStorage implements Storage {
             upperBound[upperBound.length - 1] = (byte) (upperBound[upperBound.length - 1] + 1);
             assert upperBound[upperBound.length - 1] != Byte.MIN_VALUE;
 
-            org.rocksdb.RocksIterator iterator;
-            if (prefix.isFixedStartInPartition()) {
-                iterator = rocksTransaction.getIterator(readOptionsWithPrefixBloom, partitionMgr.get(prefix.partition()));
-            } else {
-                iterator = rocksTransaction.getIterator(readOptions, partitionMgr.get(prefix.partition()));
-            }
-            try {
+            try (org.rocksdb.RocksIterator iterator = rocksTransaction.getIterator(readOptions, partitionMgr.get(prefix.partition()))) {
                 deleteCloseSchemaWriteLock.readLock().lock();
                 if (!isOpen()) throw TypeDBException.of(RESOURCE_CLOSED);
                 iterator.seekForPrev(upperBound);
@@ -285,7 +259,6 @@ public abstract class RocksStorage implements Storage {
                     return prefix.builder().build(array);
                 } else return null;
             } finally {
-                iterator.close();
                 deleteCloseSchemaWriteLock.readLock().unlock();
             }
         }
