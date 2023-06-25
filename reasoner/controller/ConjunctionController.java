@@ -252,7 +252,7 @@ public abstract class ConjunctionController<
                 ConceptMap mergedPacket = merge(identifierBounds, packet);
                 int nextChild = whichChild.get(publisher) + 1;
 
-                assert plan.isResolvable() || plan.asCompoundStreamPlan().ithChild(nextChild - 1).isResolvable() || (
+                assert context().explainEnabled() || plan.isResolvable() || plan.asCompoundStreamPlan().ithChild(nextChild - 1).isResolvable() || (
                         iterate(packet.concepts().keySet()).allMatch(v ->
                                 plan.asCompoundStreamPlan().ithChild(nextChild - 1).outputVariables().contains(v) ||
                                         plan.asCompoundStreamPlan().ithChild(nextChild - 1).extendOutputWithVariables().contains(v)) &&
