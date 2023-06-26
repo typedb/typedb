@@ -35,7 +35,7 @@ import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class ConjunctionStreamPlan {
+public abstract class ConjunctionStreamPlan {
     protected final Set<Retrievable> identifierVariables; // If the identifier variables match, the results will match
     protected final Set<Retrievable> extendOutputWith; // The variables in mergeWithRemainingVars
     protected final Set<Retrievable> outputVariables;  // Strip out everything other than these.
@@ -57,15 +57,6 @@ public class ConjunctionStreamPlan {
 
     public static boolean isExclusiveReader(ConjunctionStreamPlan.CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan.CompoundStreamPlan unflattenedNextPlan, Set<Retrievable> topLevelBounds) {
         return unflattenedNextPlan.extendOutputWithVariables().isEmpty() && unflattenedNextPlan.identifierVariables.containsAll(Builder.VariableSets.difference(conjunctionStreamPlan.identifierVariables, topLevelBounds));
-    }
-
-    public static boolean mayProduceDuplicates(CompoundStreamPlan toSpawn) {
-        if (toSpawn.ithChild(toSpawn.size()-1).isResolvable()) {
-            ResolvablePlan resolvablePlan = toSpawn.ithChild(toSpawn.size() - 1).asResolvablePlan();
-            Resolvable<?> resolvable = resolvablePlan.resolvable();
-            return Builder.VariableSets.difference(resolvable.retrieves(), Builder.VariableSets.union(resolvablePlan.identifierVariables, resolvablePlan.extendOutputWith)).size() > 0;
-        } else return false;
-
     }
 
     public boolean isResolvable() {
@@ -96,12 +87,16 @@ public class ConjunctionStreamPlan {
         return extendOutputWith;
     }
 
+    public abstract boolean mayProduceDuplicates();
+
     public static class ResolvablePlan extends ConjunctionStreamPlan {
         private final Resolvable<?> resolvable;
+        private final boolean mayProduceDuplicates;
 
         public ResolvablePlan(Resolvable<?> resolvable, Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables) {
             super(identifierVariables, extendOutputWith, outputVariables);
             this.resolvable = resolvable;
+            this.mayProduceDuplicates = Builder.VariableSets.difference(resolvable.retrieves(), Builder.VariableSets.union(identifierVariables, extendOutputWith)).size() > 0;
         }
 
         @Override
@@ -112,6 +107,11 @@ public class ConjunctionStreamPlan {
         @Override
         public ResolvablePlan asResolvablePlan() {
             return this;
+        }
+
+        @Override
+        public boolean mayProduceDuplicates() {
+            return mayProduceDuplicates;
         }
 
         public Resolvable<?> resolvable() {
@@ -131,12 +131,15 @@ public class ConjunctionStreamPlan {
 
     public static class CompoundStreamPlan extends ConjunctionStreamPlan {
         private final List<ConjunctionStreamPlan> subPlans;
+        private final boolean mayProduceDuplicates;
 
         public CompoundStreamPlan(List<ConjunctionStreamPlan> subPlans,
                                   Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables) {
             super(identifierVariables, extendOutputWith, outputVariables);
             assert subPlans.size() > 1;
             this.subPlans = subPlans;
+            this.mayProduceDuplicates = subPlans.get(subPlans.size()-1).isResolvable() &&
+                    subPlans.get(subPlans.size()-1).asResolvablePlan().mayProduceDuplicates();
         }
 
         @Override
@@ -147,6 +150,11 @@ public class ConjunctionStreamPlan {
         @Override
         public CompoundStreamPlan asCompoundStreamPlan() {
             return this;
+        }
+
+        @Override
+        public boolean mayProduceDuplicates() {
+            return mayProduceDuplicates;
         }
 
         public ConjunctionStreamPlan ithChild(int i) {
