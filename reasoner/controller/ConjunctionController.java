@@ -211,10 +211,10 @@ public abstract class ConjunctionController<
         public class CompoundStream extends TransformationStream<ConceptMap, ConceptMap> {
             private final ConjunctionStreamPlan plan;
             private final ConceptMap identifierBounds;
-            private final AbstractProcessor<?, ?, ?, ?> processor;
+            private final ConjunctionController.Processor processor;
             private final Map<Publisher<ConceptMap>, Integer> whichChild;
 
-            CompoundStream(AbstractProcessor<?, ?, ?, ?> processor, ConjunctionStreamPlan plan, ConceptMap identifierBounds) {
+            CompoundStream(ConjunctionController.Processor processor, ConjunctionStreamPlan plan, ConceptMap identifierBounds) {
                 super(processor, new SubscriberRegistry.Multi<>(), new PublisherRegistry.Multi<>());
                 this.processor = processor;
                 this.identifierBounds = identifierBounds;
@@ -271,7 +271,7 @@ public abstract class ConjunctionController<
                 ConceptMap identifyingBounds = mergedPacket.filter(toSpawn.identifierVariables());
                 assert this.plan.isCompoundStream();
                 if (!ConjunctionStreamPlan.mayProduceDuplicates(toSpawn) &&
-                        ConjunctionStreamPlan.isExclusiveReader(this.plan.asCompoundStreamPlan(), toSpawn, ((Processor) processor).bounds.concepts().keySet())) {
+                        ConjunctionStreamPlan.isExclusiveReader(this.plan.asCompoundStreamPlan(), toSpawn, processor.bounds.concepts().keySet())) {
                     return new CompoundStream(processor, toSpawn, identifyingBounds)
                             .map(conceptMap -> filterOutputsWithExplainables(conceptMap, toSpawn.outputVariables()));
                 } else {

@@ -60,7 +60,12 @@ public class ConjunctionStreamPlan {
     }
 
     public static boolean mayProduceDuplicates(CompoundStreamPlan toSpawn) {
-        return true; // TODO
+        if (toSpawn.ithChild(toSpawn.size()-1).isResolvable()) {
+            ResolvablePlan resolvablePlan = toSpawn.ithChild(toSpawn.size() - 1).asResolvablePlan();
+            Resolvable<?> resolvable = resolvablePlan.resolvable();
+            return Builder.VariableSets.difference(resolvable.retrieves(), Builder.VariableSets.union(resolvablePlan.identifierVariables, resolvablePlan.extendOutputWith)).size() > 0;
+        } else return false;
+
     }
 
     public boolean isResolvable() {
