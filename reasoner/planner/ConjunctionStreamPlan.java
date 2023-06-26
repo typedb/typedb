@@ -39,6 +39,7 @@ public class ConjunctionStreamPlan {
     protected final Set<Retrievable> identifierVariables; // If the identifier variables match, the results will match
     protected final Set<Retrievable> extendOutputWith; // The variables in mergeWithRemainingVars
     protected final Set<Retrievable> outputVariables;  // Strip out everything other than these.
+    private ConjunctionStreamPlan unflattened;
 
     public ConjunctionStreamPlan(Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables) {
         this.identifierVariables = identifierVariables;
@@ -50,6 +51,7 @@ public class ConjunctionStreamPlan {
         Builder builder = new Builder(resolvableOrder, inputVariables, outputVariables);
         ConjunctionStreamPlan unflattened = builder.build();
         ConjunctionStreamPlan flattened = builder.flatten(unflattened);
+        flattened.unflattened = unflattened;
         return flattened;
     }
 
@@ -175,7 +177,7 @@ public class ConjunctionStreamPlan {
             Set<Retrievable> runningBounds = new HashSet<>(inputBounds);
             for (Resolvable<?> resolvable : resolvables) {
                 boundsAt.add(new HashSet<>(runningBounds));
-                iterate(resolvable.retrieves()).filter(Retrievable::isName).forEachRemaining(runningBounds::add);
+                runningBounds.addAll(resolvable.retrieves());
             }
         }
 
@@ -267,7 +269,8 @@ public class ConjunctionStreamPlan {
         private boolean canFlattenInto(ConjunctionStreamPlan.CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan unflattenedChild) {
             return unflattenedChild.isCompoundStream() &&
                     isExclusiveReader(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedChild.asCompoundStreamPlan(), inputBounds) &&
-                    rightChildBoundsSatisfied(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedChild.asCompoundStreamPlan());
+                    rightChildBoundsSatisfied(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedChild.asCompoundStreamPlan()) &&
+                    VariableSets.union(unflattenedChild.asCompoundStreamPlan().ithChild(1).outputVariables(), unflattenedChild.asCompoundStreamPlan().ithChild(1).extendOutputWithVariables()).equals(unflattenedChild.outputVariables());
         }
 
         private static boolean rightChildBoundsSatisfied(ConjunctionStreamPlan.CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan.CompoundStreamPlan unflattenedNextPlan) {
@@ -300,8 +303,8 @@ public class ConjunctionStreamPlan {
             }
 
             private static VariableSets determineVariableSets(List<Resolvable<?>> left, List<Resolvable<?>> right, Set<Retrievable> availableInputs, Set<Retrievable> requiredOutputs) {
-                Set<Retrievable> leftVariables = iterate(left).flatMap(resolvable -> iterate(resolvable.retrieves())).filter(Retrievable::isName).toSet();
-                Set<Retrievable> rightVariables = iterate(right).flatMap(resolvable -> iterate(resolvable.retrieves())).filter(Retrievable::isName).toSet();
+                Set<Retrievable> leftVariables = iterate(left).flatMap(resolvable -> iterate(resolvable.retrieves())).toSet();
+                Set<Retrievable> rightVariables = iterate(right).flatMap(resolvable -> iterate(resolvable.retrieves())).toSet();
                 Set<Retrievable> allUsedVariables = union(leftVariables, rightVariables);
 
                 Set<Retrievable> identifiers = intersection(availableInputs, allUsedVariables);
