@@ -238,7 +238,7 @@ public abstract class ConjunctionController<
             @Override
             public Either<Publisher<ConceptMap>, Set<ConceptMap>> accept(Publisher<ConceptMap> publisher,
                                                                          ConceptMap packet) {
-                context().perfCounters().compoundStreamAccepts.add(1);
+                context().perfCounters().compoundStreamMessagesReceived.add(1);
                 ConceptMap mergedPacket = merge(identifierBounds, packet);
                 int nextChildIndex = childIndex.get(publisher) + 1;
 

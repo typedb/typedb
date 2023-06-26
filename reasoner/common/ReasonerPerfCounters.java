@@ -35,13 +35,13 @@ public class ReasonerPerfCounters extends PerfCounters {
     public static final String MATERIALISATIONS = "processor_materialisations";
     public static final String CONJUNCTION_PROCESSORS = "processors_conjunction_processors";
     public static final String COMPOUND_STREAMS = "streams_compound_streams";
-    public static final String COMPOUND_STREAM_ACCEPTS = "streams_compound_stream_accepts";
+    public static final String COMPOUND_STREAM_MESSAGES_RECEIVED = "streams_compound_stream_messages_received";
 
     public final Counter timePlanning;
     public final Counter materialisations;
     public final Counter conjunctionProcessors;
     public final Counter compoundStreams;
-    public final Counter compoundStreamAccepts;
+    public final Counter compoundStreamMessagesReceived;
 
     public ReasonerPerfCounters(boolean enabled) {
         super(enabled);
@@ -49,7 +49,7 @@ public class ReasonerPerfCounters extends PerfCounters {
         materialisations = register(MATERIALISATIONS);
         conjunctionProcessors = register(CONJUNCTION_PROCESSORS);
         compoundStreams = register(COMPOUND_STREAMS);
-        compoundStreamAccepts = register(COMPOUND_STREAM_ACCEPTS);
+        compoundStreamMessagesReceived = register(COMPOUND_STREAM_MESSAGES_RECEIVED);
     }
 
     public void logCounters() {

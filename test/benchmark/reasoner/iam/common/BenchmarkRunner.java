@@ -165,7 +165,7 @@ public class BenchmarkRunner {
                 ReasonerPerfCounters.MATERIALISATIONS,
                 ReasonerPerfCounters.CONJUNCTION_PROCESSORS,
                 ReasonerPerfCounters.COMPOUND_STREAMS,
-                ReasonerPerfCounters.COMPOUND_STREAM_ACCEPTS
+                ReasonerPerfCounters.COMPOUND_STREAM_MESSAGES_RECEIVED
         );
 
         private final StringBuilder sb;
