@@ -86,7 +86,7 @@ public abstract class RocksStorage implements Storage {
         transactionOptions = new OptimisticTransactionOptions().setSetSnapshot(true);
         rocksTransaction = rocksDB.beginTransaction(writeOptions, transactionOptions);
         snapshot = rocksTransaction.getSnapshot();
-        readOptions = new ReadOptions().setSnapshot(snapshot).setAutoPrefixMode(true);
+        readOptions = new ReadOptions().setSnapshot(snapshot);
         deleteCloseSchemaWriteLock = new StampedLock().asReadWriteLock();
         isOpen = new AtomicBoolean(true);
     }
