@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
-import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;

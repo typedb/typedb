@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.logic.Materialiser.Materialisation;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.function.Supplier;
 

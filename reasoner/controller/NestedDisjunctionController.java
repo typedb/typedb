@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
-import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 

@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.reasoner.controller;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.reasoner.ReasonerConsumer;
-import com.vaticle.typedb.core.reasoner.planner.ConjunctionStreamPlan;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.RootSink;

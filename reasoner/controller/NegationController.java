@@ -31,7 +31,6 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Subscriber.F
 import com.vaticle.typedb.core.reasoner.processor.reactive.TransformationStream;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.PublisherRegistry;
 import com.vaticle.typedb.core.reasoner.processor.reactive.common.SubscriberRegistry;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 
 import java.util.Set;
 import java.util.function.Supplier;

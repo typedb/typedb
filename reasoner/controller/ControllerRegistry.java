@@ -43,7 +43,6 @@ import com.vaticle.typedb.core.reasoner.common.Tracer;
 import com.vaticle.typedb.core.reasoner.planner.ReasonerPlanner;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Monitor;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
-import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import org.slf4j.Logger;
@@ -59,7 +58,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Reasoner.REASONING_TERMINATED_WITH_CAUSE;
-import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static java.util.stream.Collectors.toMap;
 
 public class ControllerRegistry {
