@@ -270,8 +270,7 @@ public abstract class ConjunctionController<
             private Publisher<ConceptMap> spawnCompoundStream(ConjunctionStreamPlan.CompoundStreamPlan toSpawn, ConceptMap mergedPacket) {
                 ConceptMap identifyingBounds = mergedPacket.filter(toSpawn.identifierVariables());
                 assert this.plan.isCompoundStream();
-                if (!toSpawn.mayProduceDuplicates() &&
-                        ConjunctionStreamPlan.isExclusiveReader(this.plan.asCompoundStreamPlan(), toSpawn, processor.bounds.concepts().keySet())) {
+                if ( this.plan.asCompoundStreamPlan().isExclusiveReaderOfChild(toSpawn) && !toSpawn.mayProduceDuplicates()) {
                     return new CompoundStream(processor, toSpawn, identifyingBounds)
                             .map(conceptMap -> filterOutputsWithExplainables(conceptMap, toSpawn.outputVariables()));
                 } else {

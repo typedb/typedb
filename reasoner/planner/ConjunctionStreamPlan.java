@@ -25,8 +25,10 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
@@ -55,8 +57,8 @@ public abstract class ConjunctionStreamPlan {
         return flattened;
     }
 
-    public static boolean isExclusiveReader(ConjunctionStreamPlan.CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan.CompoundStreamPlan unflattenedNextPlan, Set<Retrievable> topLevelBounds) {
-        return unflattenedNextPlan.extendOutputWithVariables().isEmpty() && unflattenedNextPlan.identifierVariables.containsAll(Builder.VariableSets.difference(conjunctionStreamPlan.identifierVariables, topLevelBounds));
+    public static boolean isExclusiveReader(ConjunctionStreamPlan.CompoundStreamPlan reader, ConjunctionStreamPlan.CompoundStreamPlan read, Set<Retrievable> topLevelBounds) {
+        return read.extendOutputWithVariables().isEmpty() && read.identifierVariables.containsAll(Builder.VariableSets.difference(reader.identifierVariables, topLevelBounds));
     }
 
     public boolean isResolvable() {
@@ -132,14 +134,17 @@ public abstract class ConjunctionStreamPlan {
     public static class CompoundStreamPlan extends ConjunctionStreamPlan {
         private final List<ConjunctionStreamPlan> subPlans;
         private final boolean mayProduceDuplicates;
+        private final Map<ConjunctionStreamPlan, Boolean> isExclusiveReaderOfChild;
 
         public CompoundStreamPlan(List<ConjunctionStreamPlan> subPlans,
-                                  Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables) {
+                                  Set<Retrievable> identifierVariables, Set<Retrievable> extendOutputWith, Set<Retrievable> outputVariables,
+                                  Map<ConjunctionStreamPlan, Boolean> isExclusiveReaderOfChild) {
             super(identifierVariables, extendOutputWith, outputVariables);
             assert subPlans.size() > 1;
             this.subPlans = subPlans;
             this.mayProduceDuplicates = subPlans.get(subPlans.size()-1).isResolvable() &&
                     subPlans.get(subPlans.size()-1).asResolvablePlan().mayProduceDuplicates();
+            this.isExclusiveReaderOfChild = isExclusiveReaderOfChild;
         }
 
         @Override
@@ -172,6 +177,10 @@ public abstract class ConjunctionStreamPlan {
                     String.join(", ", iterate(extendOutputWith).map(Identifier.Variable::toString).toList()),
                     String.join(", ", iterate(outputVariables).map(Identifier.Variable::toString).toList()),
                     String.join(" ; ", iterate(subPlans).map(ConjunctionStreamPlan::toString).toList()));
+        }
+
+        public boolean isExclusiveReaderOfChild(ConjunctionStreamPlan child) {
+            return isExclusiveReaderOfChild.getOrDefault(child, false);
         }
     }
 
@@ -210,7 +219,7 @@ public abstract class ConjunctionStreamPlan {
                 ConjunctionStreamPlan leftPlan = buildRecursivePrefix(divided.first(), variableSets.leftIdentifiers, variableSets.leftOutputs);
                 ConjunctionStreamPlan rightPlan = buildRecursiveSuffix(divided.second(), variableSets.rightInputs, variableSets.rightOutputs);
 
-                return new CompoundStreamPlan(list(leftPlan, rightPlan), variableSets.identifiers, variableSets.extendOutputWith, requiredOutputs);
+                return new CompoundStreamPlan(list(leftPlan, rightPlan), variableSets.identifiers, variableSets.extendOutputWith, requiredOutputs, new HashMap<>());
             }
         }
 
@@ -228,7 +237,7 @@ public abstract class ConjunctionStreamPlan {
                 ConjunctionStreamPlan leftPlan = new ResolvablePlan(subConjunction.get(0), variableSets.leftIdentifiers, set(), variableSets.leftOutputs);
                 ConjunctionStreamPlan rightPlan = buildRecursiveSuffix(suffix, variableSets.rightInputs, variableSets.rightOutputs);
                 return new CompoundStreamPlan(list(leftPlan, rightPlan),
-                        variableSets.identifiers, variableSets.extendOutputWith, requiredOutputs);
+                        variableSets.identifiers, variableSets.extendOutputWith, requiredOutputs, new HashMap<>());
             }
         }
 
@@ -263,19 +272,28 @@ public abstract class ConjunctionStreamPlan {
             if (conjunctionStreamPlan.isResolvable()) {
                 return conjunctionStreamPlan;
             } else {
-                CompoundStreamPlan compoundStreamPlan = conjunctionStreamPlan.asCompoundStreamPlan();
-                assert compoundStreamPlan.size() == 2;
+                CompoundStreamPlan asCompoundStreamPlan = conjunctionStreamPlan.asCompoundStreamPlan();
+                assert asCompoundStreamPlan.size() == 2;
                 List<ConjunctionStreamPlan> subPlans = new ArrayList<>();
                 for (int i = 0; i < 2; i++) {
-                    ConjunctionStreamPlan unflattenedChild = compoundStreamPlan.ithChild(i);
+                    ConjunctionStreamPlan unflattenedChild = asCompoundStreamPlan.ithChild(i);
 
-                    if (canFlattenInto(compoundStreamPlan, unflattenedChild)) {
+                    if (canFlattenInto(asCompoundStreamPlan, unflattenedChild)) {
                         subPlans.addAll(flatten(unflattenedChild).asCompoundStreamPlan().subPlans);
                     } else {
                         subPlans.add(flatten(unflattenedChild));
                     }
                 }
-                return new CompoundStreamPlan(subPlans, compoundStreamPlan.identifierVariables(), compoundStreamPlan.extendOutputWithVariables(), compoundStreamPlan.outputVariables());
+
+                Map<ConjunctionStreamPlan, Boolean> isExclusiveReaderOfChild = new HashMap<>();
+                for (int i=0; i< subPlans.size(); i++) {
+                    boolean exclusivelyReadsIthChild = subPlans.get(i).isCompoundStream() ?
+                            ConjunctionStreamPlan.isExclusiveReader(asCompoundStreamPlan, subPlans.get(i).asCompoundStreamPlan(), outputBounds)
+                            : true; // We don't re-use resolvable plans
+                    isExclusiveReaderOfChild.put(subPlans.get(i), exclusivelyReadsIthChild);
+                }
+
+                return new CompoundStreamPlan(subPlans, asCompoundStreamPlan.identifierVariables(), asCompoundStreamPlan.extendOutputWithVariables(), asCompoundStreamPlan.outputVariables(), isExclusiveReaderOfChild);
             }
         }
 
