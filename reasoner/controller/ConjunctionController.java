@@ -224,7 +224,7 @@ public abstract class ConjunctionController<
                 this.identifierBounds = identifierBounds;
                 this.streamPlan = streamPlan;
                 Publisher<ConceptMap> firstChild;
-                if (streamPlan.isCompoundStream()) {
+                if (streamPlan.isCompoundStreamPlan()) {
                     firstChild = spawnPlanElement(streamPlan.asCompoundStreamPlan().childAt(0), identifierBounds);
                 } else {
                     firstChild = spawnPlanElement(streamPlan.asResolvablePlan(), identifierBounds);
@@ -242,14 +242,14 @@ public abstract class ConjunctionController<
                 ConceptMap mergedPacket = merge(identifierBounds, packet);
                 int nextChildIndex = childIndex.get(publisher) + 1;
 
-                assert context().explainEnabled() || streamPlan.isResolvable() || streamPlan.asCompoundStreamPlan().childAt(nextChildIndex - 1).isResolvable() || (
+                assert context().explainEnabled() || streamPlan.isResolvablePlan() || streamPlan.asCompoundStreamPlan().childAt(nextChildIndex - 1).isResolvablePlan() || (
                         iterate(packet.concepts().keySet()).allMatch(v ->
                                 streamPlan.asCompoundStreamPlan().childAt(nextChildIndex - 1).outputs().contains(v) ||
                                         streamPlan.asCompoundStreamPlan().childAt(nextChildIndex - 1).extensions().contains(v)) &&
                                 packet.concepts().keySet().containsAll(streamPlan.asCompoundStreamPlan().childAt(nextChildIndex - 1).outputs()) &&
                                 packet.concepts().keySet().containsAll(streamPlan.asCompoundStreamPlan().childAt(nextChildIndex - 1).extensions()));
 
-                if (streamPlan.isCompoundStream() && nextChildIndex < streamPlan.asCompoundStreamPlan().size()) {
+                if (streamPlan.isCompoundStreamPlan() && nextChildIndex < streamPlan.asCompoundStreamPlan().size()) {
                     Publisher<ConceptMap> follower = spawnPlanElement(streamPlan.asCompoundStreamPlan().childAt(nextChildIndex), mergedPacket);
                     childIndex.put(follower, nextChildIndex);
                     return Either.first(follower);
@@ -263,9 +263,9 @@ public abstract class ConjunctionController<
                 ConceptMap identifiers = availableBounds.filter(planElement.identifiers());
                 assert planElement.identifiers().size() == identifiers.concepts().size() && identifiers.concepts().keySet().containsAll(planElement.identifiers());
                 Publisher<ConceptMap> publisher;
-                if (planElement.isResolvable()) {
+                if (planElement.isResolvablePlan()) {
                     publisher = spawnResolvableElement(planElement.asResolvablePlan(), identifiers);
-                } else if (planElement.isCompoundStream()) {
+                } else if (planElement.isCompoundStreamPlan()) {
                     publisher = spawnCompoundStream(planElement.asCompoundStreamPlan(), identifiers);
                 } else throw TypeDBException.of(ILLEGAL_STATE);
 
@@ -274,7 +274,7 @@ public abstract class ConjunctionController<
 
             private Publisher<ConceptMap> spawnCompoundStream(ConjunctionStreamPlan.CompoundStreamPlan toSpawn, ConceptMap mergedPacket) {
                 ConceptMap identifyingBounds = mergedPacket.filter(toSpawn.identifiers());
-                assert this.streamPlan.isCompoundStream();
+                assert this.streamPlan.isCompoundStreamPlan();
                 if (this.streamPlan.asCompoundStreamPlan().isExclusiveReaderOfChild(toSpawn) && !toSpawn.mayProduceDuplicates()) {
                     return new CompoundStream(processor, toSpawn, identifyingBounds)
                             .map(conceptMap -> filterOutputsWithExplainables(conceptMap, toSpawn.outputs()));
@@ -396,11 +396,11 @@ public abstract class ConjunctionController<
             return read.extensions().isEmpty() && read.identifierVariables.containsAll(Builder.VariableSets.difference(reader.identifierVariables, topLevelBounds));
         }
 
-        public boolean isResolvable() {
+        public boolean isResolvablePlan() {
             return false;
         }
 
-        public boolean isCompoundStream() {
+        public boolean isCompoundStreamPlan() {
             return false;
         }
 
@@ -437,7 +437,7 @@ public abstract class ConjunctionController<
             }
 
             @Override
-            public boolean isResolvable() {
+            public boolean isResolvablePlan() {
                 return true;
             }
 
@@ -477,13 +477,13 @@ public abstract class ConjunctionController<
                 super(identifierVariables, extendOutputWith, outputVariables);
                 assert subPlans.size() > 1;
                 this.subPlans = subPlans;
-                this.mayProduceDuplicates = subPlans.get(subPlans.size() - 1).isResolvable() &&
+                this.mayProduceDuplicates = subPlans.get(subPlans.size() - 1).isResolvablePlan() &&
                         subPlans.get(subPlans.size() - 1).asResolvablePlan().mayProduceDuplicates();
                 this.isExclusiveReaderOfChild = isExclusiveReaderOfChild;
             }
 
             @Override
-            public boolean isCompoundStream() {
+            public boolean isCompoundStreamPlan() {
                 return true;
             }
 
@@ -559,11 +559,8 @@ public abstract class ConjunctionController<
             }
 
             public ConjunctionStreamPlan buildRecursiveSuffix(List<Resolvable<?>> subConjunction, Set<Variable.Retrievable> availableInputs, Set<Variable.Retrievable> requiredOutputs) {
-                // We should be able to call buildRecursivePrefix and get the same answer.
-                // If we did everything right, we should have an easy build.
                 if (subConjunction.size() == 1) {
                     VariableSets variableSets = VariableSets.determineVariableSets(list(), subConjunction, availableInputs, requiredOutputs);
-                    //  use resolvableOutputs instead of rightOutputs because this node has to do the job of the parent as well - joining the identifiers
                     Set<Variable.Retrievable> resolvableOutputs = VariableSets.difference(requiredOutputs, variableSets.extendOutputWith);
                     return new ResolvablePlan(subConjunction.get(0), variableSets.rightInputs, variableSets.extendOutputWith, resolvableOutputs);
                 } else {
@@ -579,7 +576,7 @@ public abstract class ConjunctionController<
             public Pair<List<Resolvable<?>>, List<Resolvable<?>>> divide(List<Resolvable<?>> subConjunction) {
                 int splitAfter;
                 Set<Variable.Retrievable> subtreeVariables = new HashSet<>(subConjunction.get(subConjunction.size() - 1).retrieves());
-                for (splitAfter = subConjunction.size() - 2; splitAfter > 0; splitAfter--) { // r > 0 because we need atleast one thing in our left
+                for (splitAfter = subConjunction.size() - 2; splitAfter > 0; splitAfter--) {
                     subtreeVariables.addAll(subConjunction.get(splitAfter).retrieves());
                     Set<Variable.Retrievable> subtreeBounds = VariableSets.intersection(boundsAt.get(splitAfter), subtreeVariables);
                     Set<Variable.Retrievable> candidateFirstChildBounds = VariableSets.intersection(subConjunction.get(splitAfter).retrieves(), boundsAt.get(splitAfter));
@@ -588,6 +585,7 @@ public abstract class ConjunctionController<
                         break;
                     }
                 }
+                assert splitAfter >= 0;
 
                 List<Resolvable<?>> left = new ArrayList<>();
                 List<Resolvable<?>> right = new ArrayList<>();
@@ -600,7 +598,7 @@ public abstract class ConjunctionController<
             }
 
             private ConjunctionStreamPlan flatten(ConjunctionStreamPlan conjunctionStreamPlan) {
-                if (conjunctionStreamPlan.isResolvable()) {
+                if (conjunctionStreamPlan.isResolvablePlan()) {
                     return conjunctionStreamPlan;
                 } else {
                     CompoundStreamPlan asCompoundStreamPlan = conjunctionStreamPlan.asCompoundStreamPlan();
@@ -618,7 +616,7 @@ public abstract class ConjunctionController<
 
                     Map<ConjunctionStreamPlan, Boolean> isExclusiveReaderOfChild = new HashMap<>();
                     for (ConjunctionStreamPlan subPlan : subPlans) {
-                        boolean exclusivelyReadsIthChild = subPlan.isResolvable() ||  // We don't re-use resolvable plans
+                        boolean exclusivelyReadsIthChild = subPlan.isResolvablePlan() ||  // We don't re-use resolvable plans
                                 ConjunctionStreamPlan.isExclusiveReader(asCompoundStreamPlan, subPlan.asCompoundStreamPlan(), outputBounds);
                         isExclusiveReaderOfChild.put(subPlan, exclusivelyReadsIthChild);
                     }
@@ -628,7 +626,7 @@ public abstract class ConjunctionController<
             }
 
             private boolean canFlattenInto(CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan unflattenedChild) {
-                return unflattenedChild.isCompoundStream() &&
+                return unflattenedChild.isCompoundStreamPlan() &&
                         isExclusiveReader(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedChild.asCompoundStreamPlan(), inputBounds) &&
                         boundsRemainSatisfied(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedChild.asCompoundStreamPlan());
             }
