@@ -197,7 +197,6 @@ public abstract class ConjunctionController<
 
         final ConceptMap bounds;
         final ConjunctionStreamPlan plan;
-        final Set<Variable.Retrievable> outputVariables;
         private final Map<ConjunctionStreamPlan, Map<ConceptMap, PoolingStream.BufferedFanStream<ConceptMap>>> compoundStreamRegistry;
 
         Processor(Driver<PROCESSOR> driver,
@@ -206,7 +205,6 @@ public abstract class ConjunctionController<
                   Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.bounds = bounds;
-            this.outputVariables = controller.actor().outputVariables;
             this.plan = conjunctionStreamPlan;
             this.compoundStreamRegistry = new HashMap<>();
             context.perfCounters().conjunctionProcessors.add(1);
@@ -377,9 +375,9 @@ public abstract class ConjunctionController<
     }
 
     public abstract static class ConjunctionStreamPlan {
-        protected final Set<Variable.Retrievable> identifierVariables; // If the identifier variables match, the results will match
-        protected final Set<Variable.Retrievable> extensionVariables; // The variables in mergeWithRemainingVars
-        protected final Set<Variable.Retrievable> outputVariables;  // Strip out everything other than these.
+        protected final Set<Variable.Retrievable> identifierVariables;
+        protected final Set<Variable.Retrievable> extensionVariables;
+        protected final Set<Variable.Retrievable> outputVariables;
 
         public ConjunctionStreamPlan(Set<Variable.Retrievable> identifierVariables, Set<Variable.Retrievable> extensionVariables, Set<Variable.Retrievable> outputVariables) {
             this.identifierVariables = identifierVariables;
@@ -392,8 +390,8 @@ public abstract class ConjunctionController<
             return builder.flatten(builder.build());
         }
 
-        public static boolean isExclusiveReader(CompoundStreamPlan reader, CompoundStreamPlan read, Set<Variable.Retrievable> topLevelBounds) {
-            return read.extensions().isEmpty() && read.identifierVariables.containsAll(Builder.VariableSets.difference(reader.identifierVariables, topLevelBounds));
+        public static boolean isExclusiveReader(CompoundStreamPlan reader, CompoundStreamPlan read, Set<Variable.Retrievable> processorBounds) {
+            return read.extensions().isEmpty() && read.identifierVariables.containsAll(Builder.VariableSets.difference(reader.identifierVariables, processorBounds));
         }
 
         public boolean isResolvablePlan() {
@@ -467,18 +465,18 @@ public abstract class ConjunctionController<
         }
 
         public static class CompoundStreamPlan extends ConjunctionStreamPlan {
-            private final List<ConjunctionStreamPlan> subPlans;
+            private final List<ConjunctionStreamPlan> childPlan;
             private final boolean mayProduceDuplicates;
             private final Map<ConjunctionStreamPlan, Boolean> isExclusiveReaderOfChild;
 
-            public CompoundStreamPlan(List<ConjunctionStreamPlan> subPlans,
+            public CompoundStreamPlan(List<ConjunctionStreamPlan> childPlan,
                                       Set<Variable.Retrievable> identifierVariables, Set<Variable.Retrievable> extendOutputWith, Set<Variable.Retrievable> outputVariables,
                                       Map<ConjunctionStreamPlan, Boolean> isExclusiveReaderOfChild) {
                 super(identifierVariables, extendOutputWith, outputVariables);
-                assert subPlans.size() > 1;
-                this.subPlans = subPlans;
-                this.mayProduceDuplicates = subPlans.get(subPlans.size() - 1).isResolvablePlan() &&
-                        subPlans.get(subPlans.size() - 1).asResolvablePlan().mayProduceDuplicates();
+                assert childPlan.size() > 1;
+                this.childPlan = childPlan;
+                this.mayProduceDuplicates = childPlan.get(childPlan.size() - 1).isResolvablePlan() &&
+                        childPlan.get(childPlan.size() - 1).asResolvablePlan().mayProduceDuplicates();
                 this.isExclusiveReaderOfChild = isExclusiveReaderOfChild;
             }
 
@@ -498,11 +496,11 @@ public abstract class ConjunctionController<
             }
 
             public ConjunctionStreamPlan childAt(int i) {
-                return subPlans.get(i);
+                return childPlan.get(i);
             }
 
             public int size() {
-                return subPlans.size();
+                return childPlan.size();
             }
 
             @Override
@@ -511,7 +509,7 @@ public abstract class ConjunctionController<
                         String.join(", ", iterate(identifierVariables).map(Variable::toString).toList()),
                         String.join(", ", iterate(extensionVariables).map(Variable::toString).toList()),
                         String.join(", ", iterate(outputVariables).map(Variable::toString).toList()),
-                        String.join(" ; ", iterate(subPlans).map(ConjunctionStreamPlan::toString).toList()));
+                        String.join(" ; ", iterate(childPlan).map(ConjunctionStreamPlan::toString).toList()));
             }
 
             public boolean isExclusiveReaderOfChild(ConjunctionStreamPlan child) {
@@ -521,17 +519,17 @@ public abstract class ConjunctionController<
 
         private static class Builder {
             private final List<Resolvable<?>> resolvables;
-            private final Set<Variable.Retrievable> inputBounds;
-            private final Set<Variable.Retrievable> outputBounds;
+            private final Set<Variable.Retrievable> processorInputs;
+            private final Set<Variable.Retrievable> processorOutputs;
 
             private final List<Set<Variable.Retrievable>> boundsAt;
 
-            private Builder(List<Resolvable<?>> resolvables, Set<Variable.Retrievable> inputBounds, Set<Variable.Retrievable> outputBounds) {
+            private Builder(List<Resolvable<?>> resolvables, Set<Variable.Retrievable> processorInputs, Set<Variable.Retrievable> processorOutputs) {
                 this.resolvables = resolvables;
-                this.inputBounds = inputBounds;
-                this.outputBounds = outputBounds;
+                this.processorInputs = processorInputs;
+                this.processorOutputs = processorOutputs;
                 boundsAt = new ArrayList<>();
-                Set<Variable.Retrievable> runningBounds = new HashSet<>(inputBounds);
+                Set<Variable.Retrievable> runningBounds = new HashSet<>(processorInputs);
                 for (Resolvable<?> resolvable : resolvables) {
                     boundsAt.add(new HashSet<>(runningBounds));
                     runningBounds.addAll(resolvable.retrieves());
@@ -539,37 +537,37 @@ public abstract class ConjunctionController<
             }
 
             private ConjunctionStreamPlan build() {
-                return buildRecursivePrefix(resolvables, inputBounds, outputBounds);
+                return buildPrefix(resolvables, processorInputs, processorOutputs);
             }
 
-            public ConjunctionStreamPlan buildRecursivePrefix(List<Resolvable<?>> subConjunction, Set<Variable.Retrievable> availableInputs, Set<Variable.Retrievable> requiredOutputs) {
-                if (subConjunction.size() == 1) {
-                    VariableSets variableSets = VariableSets.determineVariableSets(list(), subConjunction, availableInputs, requiredOutputs);
+            public ConjunctionStreamPlan buildPrefix(List<Resolvable<?>> prefix, Set<Variable.Retrievable> availableInputs, Set<Variable.Retrievable> requiredOutputs) {
+                if (prefix.size() == 1) {
+                    VariableSets variableSets = VariableSets.determineVariableSets(list(), prefix, availableInputs, requiredOutputs);
                     //  use resolvableOutputs instead of rightOutputs because this node has to do the job of the parent as well - joining the identifiers
-                    Set<Variable.Retrievable> resolvableOutputs = VariableSets.difference(requiredOutputs, variableSets.extendOutputWith);
-                    return new ResolvablePlan(subConjunction.get(0), variableSets.rightInputs, variableSets.extendOutputWith, resolvableOutputs);
+                    Set<Variable.Retrievable> resolvableOutputs = VariableSets.difference(requiredOutputs, variableSets.extensions);
+                    return new ResolvablePlan(prefix.get(0), variableSets.rightInputs, variableSets.extensions, resolvableOutputs);
                 } else {
-                    Pair<List<Resolvable<?>>, List<Resolvable<?>>> divided = divide(subConjunction);
+                    Pair<List<Resolvable<?>>, List<Resolvable<?>>> divided = divide(prefix);
                     VariableSets variableSets = VariableSets.determineVariableSets(divided.first(), divided.second(), availableInputs, requiredOutputs);
-                    ConjunctionStreamPlan leftPlan = buildRecursivePrefix(divided.first(), variableSets.leftIdentifiers, variableSets.leftOutputs);
-                    ConjunctionStreamPlan rightPlan = buildRecursiveSuffix(divided.second(), variableSets.rightInputs, variableSets.rightOutputs);
+                    ConjunctionStreamPlan leftPlan = buildPrefix(divided.first(), variableSets.leftIdentifiers, variableSets.leftOutputs);
+                    ConjunctionStreamPlan rightPlan = buildSuffix(divided.second(), variableSets.rightInputs, variableSets.rightOutputs);
 
-                    return new CompoundStreamPlan(list(leftPlan, rightPlan), variableSets.identifiers, variableSets.extendOutputWith, requiredOutputs, new HashMap<>());
+                    return new CompoundStreamPlan(list(leftPlan, rightPlan), variableSets.identifiers, variableSets.extensions, requiredOutputs, new HashMap<>());
                 }
             }
 
-            public ConjunctionStreamPlan buildRecursiveSuffix(List<Resolvable<?>> subConjunction, Set<Variable.Retrievable> availableInputs, Set<Variable.Retrievable> requiredOutputs) {
-                if (subConjunction.size() == 1) {
-                    VariableSets variableSets = VariableSets.determineVariableSets(list(), subConjunction, availableInputs, requiredOutputs);
-                    Set<Variable.Retrievable> resolvableOutputs = VariableSets.difference(requiredOutputs, variableSets.extendOutputWith);
-                    return new ResolvablePlan(subConjunction.get(0), variableSets.rightInputs, variableSets.extendOutputWith, resolvableOutputs);
+            public ConjunctionStreamPlan buildSuffix(List<Resolvable<?>> suffix, Set<Variable.Retrievable> availableInputs, Set<Variable.Retrievable> requiredOutputs) {
+                if (suffix.size() == 1) {
+                    VariableSets variableSets = VariableSets.determineVariableSets(list(), suffix, availableInputs, requiredOutputs);
+                    Set<Variable.Retrievable> resolvableOutputs = VariableSets.difference(requiredOutputs, variableSets.extensions);
+                    return new ResolvablePlan(suffix.get(0), variableSets.rightInputs, variableSets.extensions, resolvableOutputs);
                 } else {
-                    List<Resolvable<?>> suffix = subConjunction.subList(1, subConjunction.size());
-                    VariableSets variableSets = VariableSets.determineVariableSets(subConjunction.subList(0, 1), subConjunction.subList(1, subConjunction.size()), availableInputs, requiredOutputs);
-                    ConjunctionStreamPlan leftPlan = new ResolvablePlan(subConjunction.get(0), variableSets.leftIdentifiers, set(), variableSets.leftOutputs);
-                    ConjunctionStreamPlan rightPlan = buildRecursiveSuffix(suffix, variableSets.rightInputs, variableSets.rightOutputs);
+                    List<Resolvable<?>> nextSuffix = suffix.subList(1, suffix.size());
+                    VariableSets variableSets = VariableSets.determineVariableSets(suffix.subList(0, 1), suffix.subList(1, suffix.size()), availableInputs, requiredOutputs);
+                    ConjunctionStreamPlan leftPlan = new ResolvablePlan(suffix.get(0), variableSets.leftIdentifiers, set(), variableSets.leftOutputs);
+                    ConjunctionStreamPlan rightPlan = buildSuffix(nextSuffix, variableSets.rightInputs, variableSets.rightOutputs);
                     return new CompoundStreamPlan(list(leftPlan, rightPlan),
-                            variableSets.identifiers, variableSets.extendOutputWith, requiredOutputs, new HashMap<>());
+                            variableSets.identifiers, variableSets.extensions, requiredOutputs, new HashMap<>());
                 }
             }
 
@@ -603,31 +601,31 @@ public abstract class ConjunctionController<
                 } else {
                     CompoundStreamPlan asCompoundStreamPlan = conjunctionStreamPlan.asCompoundStreamPlan();
                     assert asCompoundStreamPlan.size() == 2;
-                    List<ConjunctionStreamPlan> subPlans = new ArrayList<>();
+                    List<ConjunctionStreamPlan> childPlans = new ArrayList<>();
                     for (int i = 0; i < 2; i++) {
                         ConjunctionStreamPlan unflattenedChild = asCompoundStreamPlan.childAt(i);
 
                         if (canFlattenInto(asCompoundStreamPlan, unflattenedChild)) {
-                            subPlans.addAll(flatten(unflattenedChild).asCompoundStreamPlan().subPlans);
+                            childPlans.addAll(flatten(unflattenedChild).asCompoundStreamPlan().childPlan);
                         } else {
-                            subPlans.add(flatten(unflattenedChild));
+                            childPlans.add(flatten(unflattenedChild));
                         }
                     }
 
                     Map<ConjunctionStreamPlan, Boolean> isExclusiveReaderOfChild = new HashMap<>();
-                    for (ConjunctionStreamPlan subPlan : subPlans) {
-                        boolean exclusivelyReadsIthChild = subPlan.isResolvablePlan() ||  // We don't re-use resolvable plans
-                                ConjunctionStreamPlan.isExclusiveReader(asCompoundStreamPlan, subPlan.asCompoundStreamPlan(), outputBounds);
-                        isExclusiveReaderOfChild.put(subPlan, exclusivelyReadsIthChild);
+                    for (ConjunctionStreamPlan child : childPlans) {
+                        boolean exclusivelyReadsIthChild = child.isResolvablePlan() ||  // We don't re-use resolvable plans
+                                ConjunctionStreamPlan.isExclusiveReader(asCompoundStreamPlan, child.asCompoundStreamPlan(), processorOutputs);
+                        isExclusiveReaderOfChild.put(child, exclusivelyReadsIthChild);
                     }
 
-                    return new CompoundStreamPlan(subPlans, asCompoundStreamPlan.identifiers(), asCompoundStreamPlan.extensions(), asCompoundStreamPlan.outputs(), isExclusiveReaderOfChild);
+                    return new CompoundStreamPlan(childPlans, asCompoundStreamPlan.identifiers(), asCompoundStreamPlan.extensions(), asCompoundStreamPlan.outputs(), isExclusiveReaderOfChild);
                 }
             }
 
             private boolean canFlattenInto(CompoundStreamPlan conjunctionStreamPlan, ConjunctionStreamPlan unflattenedChild) {
                 return unflattenedChild.isCompoundStreamPlan() &&
-                        isExclusiveReader(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedChild.asCompoundStreamPlan(), inputBounds) &&
+                        isExclusiveReader(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedChild.asCompoundStreamPlan(), processorInputs) &&
                         boundsRemainSatisfied(conjunctionStreamPlan.asCompoundStreamPlan(), unflattenedChild.asCompoundStreamPlan());
             }
 
@@ -645,18 +643,18 @@ public abstract class ConjunctionController<
             private static class VariableSets {
 
                 public final Set<Variable.Retrievable> identifiers;
-                public final Set<Variable.Retrievable> extendOutputWith;
+                public final Set<Variable.Retrievable> extensions;
                 public final Set<Variable.Retrievable> requiredOutputs;
                 public final Set<Variable.Retrievable> leftIdentifiers;
                 public final Set<Variable.Retrievable> leftOutputs;
                 public final Set<Variable.Retrievable> rightInputs;
                 public final Set<Variable.Retrievable> rightOutputs;
 
-                public VariableSets(Set<Variable.Retrievable> identifiers, Set<Variable.Retrievable> extendOutputWith, Set<Variable.Retrievable> requiredOutputs,
+                public VariableSets(Set<Variable.Retrievable> identifiers, Set<Variable.Retrievable> extensions, Set<Variable.Retrievable> requiredOutputs,
                                     Set<Variable.Retrievable> leftIdentifiers, Set<Variable.Retrievable> leftOutputs,
                                     Set<Variable.Retrievable> rightInputs, Set<Variable.Retrievable> rightOutputs) {
                     this.identifiers = identifiers;
-                    this.extendOutputWith = extendOutputWith;
+                    this.extensions = extensions;
                     this.requiredOutputs = requiredOutputs;
                     this.leftIdentifiers = leftIdentifiers;
                     this.leftOutputs = leftOutputs;
@@ -670,14 +668,14 @@ public abstract class ConjunctionController<
                     Set<Variable.Retrievable> allUsedVariables = union(leftVariables, rightVariables);
 
                     Set<Variable.Retrievable> identifiers = intersection(availableInputs, allUsedVariables);
-                    Set<Variable.Retrievable> extendOutputWith = difference(availableInputs, allUsedVariables);
+                    Set<Variable.Retrievable> extensions = difference(availableInputs, allUsedVariables);
                     Set<Variable.Retrievable> rightOutputs = difference(requiredOutputs, availableInputs);
 
                     Set<Variable.Retrievable> leftIdentifiers = intersection(identifiers, leftVariables);
                     Set<Variable.Retrievable> rightInputs = intersection(union(identifiers, leftVariables), union(rightVariables, rightOutputs));
                     Set<Variable.Retrievable> leftOutputs = difference(rightInputs, difference(identifiers, leftIdentifiers));
 
-                    return new VariableSets(identifiers, extendOutputWith, requiredOutputs, leftIdentifiers, leftOutputs, rightInputs, rightOutputs);
+                    return new VariableSets(identifiers, extensions, requiredOutputs, leftIdentifiers, leftOutputs, rightInputs, rightOutputs);
                 }
 
                 public static Set<Variable.Retrievable> union(Set<Variable.Retrievable> a, Set<Variable.Retrievable> b) {
