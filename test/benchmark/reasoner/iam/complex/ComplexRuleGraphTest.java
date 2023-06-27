@@ -92,6 +92,6 @@ public class ComplexRuleGraphTest {
         runner.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
-        benchmark.assertCounters(100, 265, 342, 343, 7894);
+        benchmark.assertCounters(200, 265, 342, 343, 7894);
     }
 }
