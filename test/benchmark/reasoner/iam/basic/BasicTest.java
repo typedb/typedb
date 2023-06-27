@@ -72,7 +72,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(500);
-        benchmark.assertCounters(10, NACCESS, NACCESS + 1, NACCESS + 1);
+        benchmark.assertCounters(10, NACCESS, NACCESS + 1, NACCESS + 1, 3 * NACCESS);
     }
 
     @Test
@@ -84,7 +84,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1500);
-        benchmark.assertCounters(10, NOBJECTS * NOBJECTS, 2, 2);
+        benchmark.assertCounters(10, NOBJECTS * NOBJECTS, 2, 2, 2 * NOBJECTS * (NOBJECTS+1));
     }
 
     @Test
@@ -96,7 +96,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1500);
-        benchmark.assertCounters(10, NOBJECTS * NOBJECTS, 2, 2);
+        benchmark.assertCounters(10, NOBJECTS * NOBJECTS, 2, 2, 2 * NOBJECTS * (NOBJECTS+1));
     }
 
     @Test
@@ -111,7 +111,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(200);
-        benchmark.assertCounters(10, NOBJECTS, 2, 2);
+        benchmark.assertCounters(10, NOBJECTS, 2, 2, 2 * (NOBJECTS+1));
     }
 
     @Test
@@ -128,7 +128,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(200);
-        benchmark.assertCounters(10, NOBJECTS, 2, NOBJECTS + 3);
+        benchmark.assertCounters(10, NOBJECTS, 2, NOBJECTS + 3, 314);
     }
 
     @Test
@@ -139,7 +139,7 @@ public class BasicTest {
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(4500);
-        benchmark.assertCounters(25, NOBJECTS * NOBJECTS + (NOBJECTS * NOBJECTS * 2 - NOBJECTS), 3, 3);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS + (NOBJECTS * NOBJECTS * 2 - NOBJECTS), 3, 3, 24180);
     }
 
     // More complicated
@@ -156,7 +156,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1500);
-        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS, NOBJECTS + 3);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS, NOBJECTS + 3, 8217);
     }
 
     @Test
@@ -174,7 +174,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1500);
-        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS, NOBJECTS + NOBJECTS + 3);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS, NOBJECTS + NOBJECTS + 3, 151529);
     }
 
     @Test
@@ -190,7 +190,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1500);
-        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, 1 + NOBJECTS * 2, NOBJECTS * 2 + 3);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, 1 + NOBJECTS * 2, NOBJECTS * 2 + 3, 18929);
     }
 
     @Test
@@ -205,7 +205,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(200);
-        benchmark.assertCounters(25, NOBJECTS * 2 - 1, 2 + NOBJECTS, NOBJECTS + 3);
+        benchmark.assertCounters(25, NOBJECTS * 2 - 1, 2 + NOBJECTS, NOBJECTS + 3, 314);
     }
 
     @Test
@@ -220,7 +220,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(500);
-        benchmark.assertCounters(50, NOBJECTS + NOBJECTS, 3, 3 + 2);
+        benchmark.assertCounters(50, NOBJECTS + NOBJECTS, 3, 3 + 2, 5567);
     }
 
     @Test
@@ -236,7 +236,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(500);
-        benchmark.assertCounters(40, NOBJECTS, 2, 3 + 1);
+        benchmark.assertCounters(40, NOBJECTS, 2, 3 + 1, 5514);
     }
 
     @Test
@@ -249,6 +249,6 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(3500);
-        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS * NOBJECTS + 2, NOBJECTS * NOBJECTS + 2);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS * NOBJECTS + 2, NOBJECTS * NOBJECTS + 2, 13572);
     }
 }
