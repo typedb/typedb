@@ -15,9 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-try-import ./.bazel-remote-cache.rc
+load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
+package(default_visibility = ["//visibility:public"])
 
-build --incompatible_strict_action_env --java_language_version=11 --java_runtime_version=remotejdk_11 --javacopt='--release 11' --@io_bazel_rules_docker//transitions:enable=false
-run --incompatible_strict_action_env
-test --incompatible_strict_action_env --test_env=PATH
---java_runtime_version=remotejdk_11
+java_library(
+    name = "steps",
+    srcs = ["UtilSteps.java"],
+    deps = [
+
+        # Internal Repository Dependencies
+        # "@vaticle_typedb_common//:common",
+
+        # External Maven Dependencies
+        "@maven//:junit_junit",
+        "@maven//:io_cucumber_cucumber_java",
+    ],
+)

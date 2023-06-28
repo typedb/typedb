@@ -34,6 +34,7 @@ java_test(
         "//test/behaviour/connection:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/config:parameters",
+        "//test/behaviour/util:steps",
     ],
     data = [
         "@vaticle_typedb_behaviour//typeql/language:insert.feature",
