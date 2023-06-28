@@ -1,4 +1,4 @@
-package com.vaticle.typedb.core.test.behaviour.Util;
+package com.vaticle.typedb.core.test.behaviour.util;
 
 import io.cucumber.java.en.When;
 
