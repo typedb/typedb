@@ -33,3 +33,9 @@ java_library(
         "@maven//:io_cucumber_cucumber_java",
     ],
 )
+
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*"]),
+    license_type = "apache-header",
+)
