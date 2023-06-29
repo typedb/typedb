@@ -64,6 +64,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.controller.ConcludableController.Processor.Match.withExplainable;
+import static java.util.Collections.emptySet;
 
 public abstract class ConjunctionController<
         CONTROLLER extends ConjunctionController<CONTROLLER, PROCESSOR>,
@@ -552,7 +553,6 @@ public abstract class ConjunctionController<
                     VariableSets variableSets = VariableSets.create(divided.first(), divided.second(), availableInputs, requiredOutputs);
                     ConjunctionStreamPlan leftPlan = buildPrefix(divided.first(), variableSets.leftIdentifiers, variableSets.leftOutputs);
                     ConjunctionStreamPlan rightPlan = buildSuffix(divided.second(), variableSets.rightInputs, variableSets.rightOutputs);
-
                     return new CompoundStreamPlan(list(leftPlan, rightPlan), variableSets.identifiers, variableSets.extensions, requiredOutputs, new HashMap<>());
                 }
             }
@@ -565,10 +565,9 @@ public abstract class ConjunctionController<
                 } else {
                     List<Resolvable<?>> nextSuffix = suffix.subList(1, suffix.size());
                     VariableSets variableSets = VariableSets.create(suffix.subList(0, 1), suffix.subList(1, suffix.size()), availableInputs, requiredOutputs);
-                    ConjunctionStreamPlan leftPlan = new ResolvablePlan(suffix.get(0), variableSets.leftIdentifiers, set(), variableSets.leftOutputs);
+                    ConjunctionStreamPlan leftPlan = new ResolvablePlan(suffix.get(0), variableSets.leftIdentifiers, emptySet(), variableSets.leftOutputs);
                     ConjunctionStreamPlan rightPlan = buildSuffix(nextSuffix, variableSets.rightInputs, variableSets.rightOutputs);
-                    return new CompoundStreamPlan(list(leftPlan, rightPlan),
-                            variableSets.identifiers, variableSets.extensions, requiredOutputs, new HashMap<>());
+                    return new CompoundStreamPlan(list(leftPlan, rightPlan), variableSets.identifiers, variableSets.extensions, requiredOutputs, new HashMap<>());
                 }
             }
 
