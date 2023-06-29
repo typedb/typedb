@@ -18,14 +18,14 @@
 
 package com.vaticle.typedb.core.reasoner.processor.reactive.common;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
-import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public abstract class PublisherRegistry<PACKET> {
 
@@ -35,7 +35,7 @@ public abstract class PublisherRegistry<PACKET> {
 
     public abstract boolean setPulling(Publisher<PACKET> publisher);
 
-    public abstract Set<Publisher<PACKET>> nonPulling();
+    public abstract FunctionalIterator<Publisher<PACKET>> nonPulling();
 
     public abstract int size();
 
@@ -77,10 +77,10 @@ public abstract class PublisherRegistry<PACKET> {
         }
 
         @Override
-        public Set<Publisher<PACKET>> nonPulling() {
+        public FunctionalIterator<Publisher<PACKET>> nonPulling() {
             assert publisher != null;
-            if (isPulling) return set();
-            else return set(publisher);
+            if (isPulling) return empty();
+            else return iterate(publisher);
         }
 
         @Override
@@ -140,13 +140,8 @@ public abstract class PublisherRegistry<PACKET> {
         }
 
         @Override
-        public Set<Publisher<PACKET>> nonPulling() {
-            Set<Publisher<PACKET>> nonPulling = new HashSet<>();
-            publisherPullState.keySet().forEach(p -> {
-                if (setPulling(p)) nonPulling.add(p);
-            });
-            return nonPulling;
+        public FunctionalIterator<Publisher<PACKET>> nonPulling() {
+            return iterate(publisherPullState.entrySet()).filter(e -> !e.getValue()).map(Map.Entry::getKey);
         }
     }
-
 }

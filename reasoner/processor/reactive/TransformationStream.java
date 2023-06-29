@@ -45,7 +45,7 @@ public abstract class TransformationStream<INPUT, OUTPUT> extends AbstractStream
     public void pull(Subscriber<OUTPUT> subscriber) {
         publisherDelegate().tracePull(subscriber);
         subscriberRegistry().recordPull(subscriber);
-        publisherRegistry().nonPulling().forEach(this::propagatePull);
+        publisherRegistry().nonPulling().forEachRemaining(this::propagatePull);
     }
 
     @Override

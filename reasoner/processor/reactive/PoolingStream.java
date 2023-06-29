@@ -58,7 +58,7 @@ public abstract class PoolingStream<PACKET> extends AbstractStream<PACKET, PACKE
             subscriberRegistry().setNotPulling(subscriber);  // TODO: This call should always be made when sending to a subscriber, so encapsulate it
             publisherDelegate().subscriberReceive(subscriber, next(subscriber));
         } else {
-            publisherRegistry().nonPulling().forEach(this::propagatePull);
+            publisherRegistry().nonPulling().forEachRemaining(this::propagatePull);
         }
     }
 
