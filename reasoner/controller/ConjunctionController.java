@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
@@ -54,6 +55,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import static com.vaticle.typedb.common.collection.Collections.concatToSet;
+import static com.vaticle.typedb.common.collection.Collections.intersection;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.common.util.Objects.className;
@@ -424,7 +427,7 @@ public abstract class ConjunctionController<
             public ResolvablePlan(Resolvable<?> resolvable, Set<Variable.Retrievable> identifierVariables, Set<Variable.Retrievable> extendOutputWith, Set<Variable.Retrievable> outputVariables) {
                 super(identifierVariables, extendOutputWith, outputVariables);
                 this.resolvable = resolvable;
-                this.mayProduceDuplicates = Builder.VariableSets.difference(resolvable.retrieves(), Builder.VariableSets.union(identifierVariables, extendOutputWith)).size() > 0;
+                this.mayProduceDuplicates = !concatToSet(identifierVariables, extendOutputWith).containsAll(resolvable.retrieves());
             }
 
             @Override
@@ -542,7 +545,7 @@ public abstract class ConjunctionController<
                 if (prefix.size() == 1) {
                     VariableSets variableSets = VariableSets.create(list(), prefix, availableInputs, requiredOutputs);
                     //  use resolvableOutputs instead of rightOutputs because this node has to do the job of the parent as well - joining the identifiers
-                    Set<Variable.Retrievable> resolvableOutputs = VariableSets.difference(requiredOutputs, variableSets.extensions);
+                    Set<Variable.Retrievable> resolvableOutputs = difference(requiredOutputs, variableSets.extensions);
                     return new ResolvablePlan(prefix.get(0), variableSets.rightInputs, variableSets.extensions, resolvableOutputs);
                 } else {
                     Pair<List<Resolvable<?>>, List<Resolvable<?>>> divided = divide(prefix);
@@ -557,7 +560,7 @@ public abstract class ConjunctionController<
             public ConjunctionStreamPlan buildSuffix(List<Resolvable<?>> suffix, Set<Variable.Retrievable> availableInputs, Set<Variable.Retrievable> requiredOutputs) {
                 if (suffix.size() == 1) {
                     VariableSets variableSets = VariableSets.create(list(), suffix, availableInputs, requiredOutputs);
-                    Set<Variable.Retrievable> resolvableOutputs = VariableSets.difference(requiredOutputs, variableSets.extensions);
+                    Set<Variable.Retrievable> resolvableOutputs = difference(requiredOutputs, variableSets.extensions);
                     return new ResolvablePlan(suffix.get(0), variableSets.rightInputs, variableSets.extensions, resolvableOutputs);
                 } else {
                     List<Resolvable<?>> nextSuffix = suffix.subList(1, suffix.size());
@@ -574,10 +577,10 @@ public abstract class ConjunctionController<
                 Set<Variable.Retrievable> suffixVars = new HashSet<>(resolvables.get(resolvables.size() - 1).retrieves());
                 for (splitAfter = resolvables.size() - 2; splitAfter > 0; splitAfter--) {
                     suffixVars.addAll(resolvables.get(splitAfter).retrieves());
-                    Set<Variable.Retrievable> suffixBounds = VariableSets.intersection(boundsBefore.get(splitAfter), suffixVars);
-                    Set<Variable.Retrievable> suffixFirstResolvableBounds = VariableSets.intersection(resolvables.get(splitAfter).retrieves(), boundsBefore.get(splitAfter));
-
-                    if (!VariableSets.difference(suffixBounds, suffixFirstResolvableBounds).isEmpty()) {
+                    Set<Variable.Retrievable> suffixBounds = intersection(boundsBefore.get(splitAfter), suffixVars);
+                    Set<Variable.Retrievable> a = resolvables.get(splitAfter).retrieves();
+                    Set<Variable.Retrievable> suffixFirstResolvableBounds = intersection(a, boundsBefore.get(splitAfter));
+                    if (!suffixFirstResolvableBounds.equals(suffixBounds)) {
                         break;
                     }
                 }
@@ -618,15 +621,15 @@ public abstract class ConjunctionController<
             }
 
             private static boolean isExclusiveReader(CompoundStreamPlan parent, CompoundStreamPlan child, Set<Variable.Retrievable> processorBounds) {
-                return child.extensions().isEmpty() && child.identifierVariables.containsAll(Builder.VariableSets.difference(parent.identifierVariables, processorBounds));
+                return child.extensions().isEmpty() && child.identifierVariables.containsAll(difference(parent.identifierVariables, processorBounds));
             }
 
             private static boolean boundsRemainSatisfied(CompoundStreamPlan parent, CompoundStreamPlan childToFlatten) {
-                return VariableSets.difference(
+                return difference(
                                 childToFlatten.childAt(1).identifierVariables,
-                                VariableSets.union(parent.identifierVariables, childToFlatten.childAt(0).outputVariables))
+                                union(parent.identifierVariables, childToFlatten.childAt(0).outputVariables))
                         .isEmpty() &&
-                        VariableSets.union(
+                        union(
                                         childToFlatten.asCompoundStreamPlan().childAt(1).outputs(),
                                         childToFlatten.asCompoundStreamPlan().childAt(1).extensions())
                                 .equals(childToFlatten.outputs());
@@ -642,9 +645,9 @@ public abstract class ConjunctionController<
                 public final Set<Variable.Retrievable> rightInputs;
                 public final Set<Variable.Retrievable> rightOutputs;
 
-                public VariableSets(Set<Variable.Retrievable> identifiers, Set<Variable.Retrievable> extensions, Set<Variable.Retrievable> requiredOutputs,
-                                    Set<Variable.Retrievable> leftIdentifiers, Set<Variable.Retrievable> leftOutputs,
-                                    Set<Variable.Retrievable> rightInputs, Set<Variable.Retrievable> rightOutputs) {
+                private VariableSets(Set<Variable.Retrievable> identifiers, Set<Variable.Retrievable> extensions, Set<Variable.Retrievable> requiredOutputs,
+                                     Set<Variable.Retrievable> leftIdentifiers, Set<Variable.Retrievable> leftOutputs,
+                                     Set<Variable.Retrievable> rightInputs, Set<Variable.Retrievable> rightOutputs) {
                     this.identifiers = identifiers;
                     this.extensions = extensions;
                     this.requiredOutputs = requiredOutputs;
@@ -664,30 +667,27 @@ public abstract class ConjunctionController<
                     Set<Variable.Retrievable> rightOutputs = difference(requiredOutputs, availableInputs);
 
                     Set<Variable.Retrievable> leftIdentifiers = intersection(identifiers, leftVariables);
-                    Set<Variable.Retrievable> rightInputs = intersection(union(identifiers, leftVariables), union(rightVariables, rightOutputs));
+                    Set<Variable.Retrievable> a = union(identifiers, leftVariables);
+                    Set<Variable.Retrievable> b = union(rightVariables, rightOutputs);
+                    Set<Variable.Retrievable> rightInputs = intersection(a, b);
                     Set<Variable.Retrievable> leftOutputs = difference(rightInputs, difference(identifiers, leftIdentifiers));
 
                     return new VariableSets(identifiers, extensions, requiredOutputs, leftIdentifiers, leftOutputs, rightInputs, rightOutputs);
                 }
 
-                public static Set<Variable.Retrievable> union(Set<Variable.Retrievable> a, Set<Variable.Retrievable> b) {
-                    Set<Variable.Retrievable> result = new HashSet<>(a);
-                    result.addAll(b);
-                    return result;
-                }
-
-                private static Set<Variable.Retrievable> intersection(Set<Variable.Retrievable> a, Set<Variable.Retrievable> b) {
-                    Set<Variable.Retrievable> result = new HashSet<>(a);
-                    result.retainAll(b);
-                    return result;
-                }
-
-                private static Set<Variable.Retrievable> difference(Set<Variable.Retrievable> a, Set<Variable.Retrievable> b) {
-                    Set<Variable.Retrievable> result = new HashSet<>(a);
-                    result.removeAll(b);
-                    return result;
-                }
             }
+        }
+
+        public static Set<Variable.Retrievable> union(Set<Variable.Retrievable> a, Set<Variable.Retrievable> b) {
+            Set<Variable.Retrievable> result = new HashSet<>(a);
+            result.addAll(b);
+            return result;
+        }
+
+        private static Set<Variable.Retrievable> difference(Set<Variable.Retrievable> a, Set<Variable.Retrievable> b) {
+            Set<Variable.Retrievable> result = new HashSet<>(a);
+            result.removeAll(b);
+            return result;
         }
     }
 }
