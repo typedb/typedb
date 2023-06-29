@@ -19,11 +19,10 @@
 package com.vaticle.typedb.core.reasoner.common;
 
 import com.vaticle.typedb.core.common.perfcounter.PerfCounters;
+import com.vaticle.typedb.core.concurrent.executor.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -54,26 +53,22 @@ public class ReasonerPerfCounters extends PerfCounters {
 
     public void logCounters() {
         if (enabled) {
-            LOG.debug("Perf counters:\n{}", toString());
+            LOG.debug("Perf counters:\n{}", this);
         }
     }
 
     private ScheduledFuture<?> printingTask;
-    private ScheduledExecutorService printingTaskService;
 
     public synchronized void startPeriodicPrinting() {
         if (printingTask == null) {
-            printingTaskService = Executors.newScheduledThreadPool(1);
-            printingTask = printingTaskService.scheduleAtFixedRate(this::logCounters, 10, 10, TimeUnit.SECONDS);
+            printingTask = Executors.scheduled().scheduleAtFixedRate(this::logCounters, 10, 10, TimeUnit.SECONDS);
         }
     }
 
     public synchronized void stopPrinting() {
         if (printingTask != null) {
             printingTask.cancel(false);
-            printingTaskService.shutdown();
             printingTask = null;
-            printingTaskService = null;
         }
     }
 }
