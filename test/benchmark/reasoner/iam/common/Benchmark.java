@@ -85,16 +85,18 @@ public class Benchmark {
                 iterate(runs).anyMatch(run -> run.reasonerPerfCounters.get(counter) >= Math.round(COUNTER_LOWER_MARGIN * refValue)));
     }
 
-    public void assertCounters(long planningTimeMillis, long materialisations, long conjunctionProcessors, long compoundStreams) {
+    public void assertCounters(long planningTimeMillis, long materialisations, long conjunctionProcessors, long compoundStreams, long compoundStreamMessagesReceived) {
         assertCounterUpperBound(ReasonerPerfCounters.PLANNING_TIME_NS, planningTimeMillis * 1_000_000);
         assertCounterUpperBound(ReasonerPerfCounters.MATERIALISATIONS, materialisations);
         assertCounterUpperBound(ReasonerPerfCounters.CONJUNCTION_PROCESSORS, conjunctionProcessors);
         assertCounterUpperBound(ReasonerPerfCounters.COMPOUND_STREAMS, compoundStreams);
+        assertCounterUpperBound(ReasonerPerfCounters.COMPOUND_STREAM_MESSAGES_RECEIVED, compoundStreamMessagesReceived);
 
         // Do not assert lower bound for time planning. Times are too variable.
         assertCounterLowerBound(ReasonerPerfCounters.MATERIALISATIONS, materialisations);
         assertCounterLowerBound(ReasonerPerfCounters.CONJUNCTION_PROCESSORS, conjunctionProcessors);
         assertCounterLowerBound(ReasonerPerfCounters.COMPOUND_STREAMS, compoundStreams);
+        assertCounterLowerBound(ReasonerPerfCounters.COMPOUND_STREAM_MESSAGES_RECEIVED, compoundStreamMessagesReceived);
     }
 
     public static class BenchmarkRun {

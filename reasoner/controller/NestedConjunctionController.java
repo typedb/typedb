@@ -19,11 +19,11 @@
 package com.vaticle.typedb.core.reasoner.controller;
 
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
-import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream;
+import com.vaticle.typedb.core.traversal.common.Identifier;
 
-import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 public class NestedConjunctionController extends ConjunctionController<
@@ -32,8 +32,9 @@ public class NestedConjunctionController extends ConjunctionController<
         > {
 
     public NestedConjunctionController(Driver<NestedConjunctionController> driver, ResolvableConjunction conjunction,
+                                       Set<Identifier.Variable.Retrievable> outputVariables,
                                        Context context) {
-        super(driver, conjunction, context);
+        super(driver, conjunction, outputVariables, context);
     }
 
     @Override
@@ -52,7 +53,7 @@ public class NestedConjunctionController extends ConjunctionController<
 
         private NestedConjunctionProcessor(Driver<NestedConjunctionProcessor> driver,
                                            Driver<NestedConjunctionController> controller, Context context,
-                                           ConceptMap bounds, List<Resolvable<?>> plan,
+                                           ConceptMap bounds, ConjunctionStreamPlan plan,
                                            Supplier<String> debugName) {
             super(driver, controller, context, bounds, plan, debugName);
         }

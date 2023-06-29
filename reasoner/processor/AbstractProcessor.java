@@ -49,7 +49,7 @@ public abstract class AbstractProcessor<
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractProcessor.class);
 
-    private final Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller;
+    public final Driver<? extends AbstractController<?, INPUT, OUTPUT, REQ, PROCESSOR, ?>> controller;
     private final Context context;
     private final Map<Identifier, InputPort<INPUT>> inputPorts;
     private final Map<Identifier, OutputPort<OUTPUT>> outputPorts;
@@ -170,11 +170,13 @@ public abstract class AbstractProcessor<
         private final Driver<Monitor> monitor;
         private final Tracer tracer;
         private final ReasonerPerfCounters perfCounters;
+        private final boolean explainEnabled;
 
-        public Context(Driver<Monitor> monitor, @Nullable Tracer tracer, ReasonerPerfCounters perfCounters) {
+        public Context(Driver<Monitor> monitor, @Nullable Tracer tracer, ReasonerPerfCounters perfCounters, boolean explainEnabled) {
             this.monitor = monitor;
             this.tracer = tracer;
             this.perfCounters = perfCounters;
+            this.explainEnabled = explainEnabled;
         }
 
         public Optional<Tracer> tracer() {
@@ -187,6 +189,10 @@ public abstract class AbstractProcessor<
 
         public ReasonerPerfCounters perfCounters() {
             return perfCounters;
+        }
+
+        public boolean explainEnabled() {
+            return explainEnabled;
         }
     }
 

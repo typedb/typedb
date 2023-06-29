@@ -28,6 +28,7 @@ import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Stream;
 
 import java.util.function.Supplier;
 
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanInFanOut;
 
 public class ConditionController extends DisjunctionController<
@@ -40,7 +41,7 @@ public class ConditionController extends DisjunctionController<
     private final Rule.Condition condition;
 
     ConditionController(Driver<ConditionController> driver, Rule.Condition condition, Context context) {
-        super(driver, condition.disjunction(), context);
+        super(driver, condition.disjunction(), iterate(condition.rule().conclusion().retrievableIds()).filter(v -> !v.isAnonymous()).toSet(), context);
         this.condition = condition;
     }
 

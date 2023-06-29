@@ -97,7 +97,8 @@ public class ControllerRegistry {
         Tracer finalTracer = tracer;
         this.controllerContext = new AbstractController.Context(
                 executorService, this, Actor.driver(driver -> new Monitor(driver, finalTracer), executorService),
-                reasonerPlanner, perfCounters, tracer
+                reasonerPlanner, perfCounters, tracer,
+                context.options().explain()
         );
         this.materialisationController = Actor.driver(driver -> new MaterialisationController(
                 driver, controllerContext, traversalEngine(), conceptManager()), executorService
@@ -174,16 +175,16 @@ public class ControllerRegistry {
         createRootController(reasonerConsumer, actorFn);
     }
 
-    Driver<NestedConjunctionController> createNestedConjunction(ResolvableConjunction conjunction) {
+    Driver<NestedConjunctionController> createNestedConjunction(ResolvableConjunction conjunction, Set<Variable.Retrievable> outputVariables) {
         Function<Driver<NestedConjunctionController>, NestedConjunctionController> actorFn =
-                driver -> new NestedConjunctionController(driver, conjunction, controllerContext);
+                driver -> new NestedConjunctionController(driver, conjunction, outputVariables, controllerContext);
         LOG.debug("Create Nested Conjunction for: '{}'", conjunction);
         return createController(actorFn);
     }
 
-    Driver<NestedDisjunctionController> createNestedDisjunction(ResolvableDisjunction disjunction) {
+    Driver<NestedDisjunctionController> createNestedDisjunction(ResolvableDisjunction disjunction, Set<Variable.Retrievable> outputVariables) {
         Function<Driver<NestedDisjunctionController>, NestedDisjunctionController> actorFn =
-                driver -> new NestedDisjunctionController(driver, disjunction, controllerContext);
+                driver -> new NestedDisjunctionController(driver, disjunction, outputVariables, controllerContext);
         LOG.debug("Create Nested Disjunction for: '{}'", disjunction);
         return createController(actorFn);
     }
@@ -226,6 +227,7 @@ public class ControllerRegistry {
     }
 
     ControllerView.FilteredRetrievable createRetrievable(Retrievable retrievable) {
+        // TODO: Support re-using retrievables?
         Function<Driver<RetrievableController>, RetrievableController> actorFn =
                 driver -> new RetrievableController(driver, retrievable, controllerContext);
         LOG.debug("Create RetrievableController: '{}'", retrievable.pattern());
