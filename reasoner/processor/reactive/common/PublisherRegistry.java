@@ -21,7 +21,9 @@ package com.vaticle.typedb.core.reasoner.processor.reactive.common;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.reasoner.processor.reactive.Reactive.Publisher;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
@@ -141,7 +143,11 @@ public abstract class PublisherRegistry<PACKET> {
 
         @Override
         public FunctionalIterator<Publisher<PACKET>> nonPulling() {
-            return iterate(publisherPullState.entrySet()).filter(e -> !e.getValue()).map(Map.Entry::getKey);
+            List<Publisher<PACKET>> nonPulling = new ArrayList<>();
+            publisherPullState.entrySet().forEach(e -> {
+                if (!e.getValue()) nonPulling.add(e.getKey());
+            });
+            return iterate(nonPulling);
         }
     }
 }
