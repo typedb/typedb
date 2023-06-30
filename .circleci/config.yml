@@ -51,7 +51,6 @@ jobs:
       - install-bazel-mac
       - run: bazel test //test/assembly:assembly --test_output=errors
 
-
   test-assembly-windows-zip:
     executor:
       name: win/default
@@ -66,18 +65,8 @@ jobs:
 workflows:
   typedb:
     jobs:
-      - test-assembly-mac-zip:
-          filters:
-            branches:
-              only:
-                - master
-                - development
-      - test-assembly-mac-zip-arm64:
-          filters:
-            branches:
-              only:
-                - master
-                - development
+      - test-assembly-mac-zip
+      - test-assembly-mac-zip-arm64
       - test-assembly-windows-zip:
           filters:
             branches:
