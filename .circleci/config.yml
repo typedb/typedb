@@ -65,7 +65,7 @@ jobs:
 workflows:
   typedb:
     jobs:
-      - test-assembly-mac-zip
+      - test-assembly-mac-zip-x86_64
       - test-assembly-mac-zip-arm64
       - test-assembly-windows-zip:
           filters:
