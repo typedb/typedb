@@ -32,14 +32,25 @@ commands:
       - run: bash ./mac.sh && rm ./mac.sh
 
 jobs:
-  test-assembly-mac-zip:
+  test-assembly-mac-zip-x86_64:
     macos:
-      xcode: "13.4.1"
+      xcode: "14.2.0"
     working_directory: ~/typedb
     steps:
       - checkout
       - install-bazel-mac
       - run: bazel test //test/assembly:assembly --test_output=errors
+
+  test-assembly-mac-zip-arm64:
+    macos:
+      xcode: "14.2.0"
+    resource_class: macos.m1.medium.gen1
+    working_directory: ~/typedb
+    steps:
+      - checkout
+      - install-bazel-mac
+      - run: bazel test //test/assembly:assembly --test_output=errors
+
 
   test-assembly-windows-zip:
     executor:
@@ -56,6 +67,12 @@ workflows:
   typedb:
     jobs:
       - test-assembly-mac-zip:
+          filters:
+            branches:
+              only:
+                - master
+                - development
+      - test-assembly-mac-zip-arm64:
           filters:
             branches:
               only:
