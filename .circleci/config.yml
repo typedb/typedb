@@ -23,12 +23,12 @@ commands:
   install-bazel-linux-x86_64:
     steps:
       - run: curl -OL https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-amd64
-      - run: mv bazelisk-linux-amd64 /usr/local/bin/bazel
+      - run: sudo mv bazelisk-linux-amd64 /usr/local/bin/bazel
 
   install-bazel-linux-arm64:
     steps:
       - run: curl -OL https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-arm64
-      - run: mv bazelisk-linux-arm64 /usr/local/bin/bazel
+      - run: sudo mv bazelisk-linux-arm64 /usr/local/bin/bazel
 
   install-bazel-mac:
     steps:
