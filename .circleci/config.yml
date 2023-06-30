@@ -29,6 +29,7 @@ commands:
     steps:
       - run: curl -OL https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-arm64
       - run: sudo mv bazelisk-linux-arm64 /usr/local/bin/bazel
+      - run: chmod a+x /usr/local/bin/bazel
 
   install-bazel-mac:
     steps:
