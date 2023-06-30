@@ -43,7 +43,7 @@ jobs:
     steps:
       - checkout
       - install-bazel-mac
-      - run: bazel test //test/assembly:assembly --test_output=errors
+      - run: bazel test //test/assembly:assembly --test_output=errors --java_runtime_version=remotejdk_11
 
   test-assembly-mac-zip-arm64:
     macos:
@@ -53,7 +53,7 @@ jobs:
     steps:
       - checkout
       - install-bazel-mac
-      - run: bazel test //test/assembly:assembly --test_output=errors
+      - run: bazel test //test/assembly:assembly --test_output=errors --java_runtime_version=remotejdk_11
 
   test-assembly-linux-zip-arm64:
     machine:
