@@ -47,7 +47,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -85,21 +84,21 @@ public class UnifyIsaConcludableTest {
         session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             tx.query().define(TypeQL.parseQuery("define " +
-                                                        "person sub entity," +
-                                                        "    owns first-name," +
-                                                        "    owns last-name," +
-                                                        "    owns age," +
-                                                        "    plays employment:employee;" +
-                                                        "company sub entity," +
-                                                        "    plays employment:employer;" +
-                                                        "employment sub relation," +
-                                                        "    relates employee," +
-                                                        "    relates employer;" +
-                                                        "name sub attribute, value string, abstract;" +
-                                                        "first-name sub name;" +
-                                                        "last-name sub name;" +
-                                                        "age sub attribute, value long;" +
-                                                        "").asDefine());
+                    "person sub entity," +
+                    "    owns first-name," +
+                    "    owns last-name," +
+                    "    owns age," +
+                    "    plays employment:employee;" +
+                    "company sub entity," +
+                    "    plays employment:employer;" +
+                    "employment sub relation," +
+                    "    relates employee," +
+                    "    relates employer;" +
+                    "name sub attribute, value string, abstract;" +
+                    "first-name sub name;" +
+                    "last-name sub name;" +
+                    "age sub attribute, value long;" +
+                    "").asDefine());
             tx.commit();
         }
     }
@@ -147,16 +146,16 @@ public class UnifyIsaConcludableTest {
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }",
-                               "$x has first-name \"john\"", logicMgr);
+                "$x has first-name \"john\"", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$a", set("$_0"));
-            put("$t", set("$_first-name"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$a", set("$_0")),
+                pair("$t", set("$_first-name"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -172,16 +171,16 @@ public class UnifyIsaConcludableTest {
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }",
-                               "(employee: $x) isa employment", logicMgr);
+                "(employee: $x) isa employment", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$a", set("$_0"));
-            put("$t", set("$_employment"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$a", set("$_0")),
+                pair("$t", set("$_employment"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -197,17 +196,17 @@ public class UnifyIsaConcludableTest {
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule",
-                               "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
-                               "($role-type: $x) isa $rel-type", logicMgr);
+                "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
+                "($role-type: $x) isa $rel-type", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$a", set("$_0"));
-            put("$t", set("$rel-type"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$a", set("$_0")),
+                pair("$t", set("$rel-type"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -234,8 +233,8 @@ public class UnifyIsaConcludableTest {
         assertEquals(0, unifiers.size());
 
         Rule rule3 = createRule("isa-rule-3",
-                                "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
-                                "($role-type: $x) isa $rel-type", logicMgr);
+                "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
+                "($role-type: $x) isa $rel-type", logicMgr);
         unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
 
         assertEquals(0, unifiers.size());
@@ -249,22 +248,22 @@ public class UnifyIsaConcludableTest {
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }",
-                               "$x has first-name \"john\"", logicMgr);
+                "$x has first-name \"john\"", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$a", set("$_0"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$a", set("$_0"))
+        );
         assertEquals(expected, result);
 
         // test requirements
         assertEquals(1, unifier.requirements().types().size());
         assertEquals(1, unifier.requirements().isaExplicit().size());
         assertEquals(set(Label.of("first-name"), Label.of("last-name")),
-                     unifier.requirements().isaExplicit().values().iterator().next());
+                unifier.requirements().isaExplicit().values().iterator().next());
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
@@ -297,9 +296,9 @@ public class UnifyIsaConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$a", set("$_0"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$a", set("$_0"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -333,16 +332,16 @@ public class UnifyIsaConcludableTest {
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule",
-                               "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
-                               "($role-type: $x) isa $rel-type", logicMgr);
+                "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
+                "($role-type: $x) isa $rel-type", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$a", set("$_0"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$a", set("$_0"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -376,19 +375,19 @@ public class UnifyIsaConcludableTest {
         Concludable.Isa queryConcludable = concludables.iterator().next().asIsa();
 
         Rule rule = createRule("isa-rule", "{ $x isa person; }",
-                               "$x has first-name \"john\"", logicMgr);
+                "$x has first-name \"john\"", logicMgr);
 
         List<Unifier> unifiers = queryConcludable.unify(rule.conclusion(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
         Rule rule2 = createRule("isa-rule-2", "{ $x isa person; }",
-                                "(employee: $x) isa employment", logicMgr);
+                "(employee: $x) isa employment", logicMgr);
         unifiers = queryConcludable.unify(rule2.conclusion(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
 
         Rule rule3 = createRule("isa-rule-3",
-                                "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
-                                "($role-type: $x) isa $rel-type", logicMgr);
+                "{ $x isa person; $role-type type employment:employee; $rel-type relates $role-type; }",
+                "($role-type: $x) isa $rel-type", logicMgr);
         unifiers = queryConcludable.unify(rule3.conclusion(), conceptMgr).toList();
         assertEquals(0, unifiers.size());
     }
