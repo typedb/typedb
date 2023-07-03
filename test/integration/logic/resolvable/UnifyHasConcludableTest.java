@@ -47,7 +47,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -85,22 +84,22 @@ public class UnifyHasConcludableTest {
         session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             tx.query().define(TypeQL.parseQuery("define " +
-                                                        "person sub entity," +
-                                                        "    owns first-name," +
-                                                        "    owns last-name," +
-                                                        "    owns age," +
-                                                        "    plays employment:employee;" +
-                                                        "company sub entity," +
-                                                        "    plays employment:employer;" +
-                                                        "employment sub relation," +
-                                                        "    relates employee," +
-                                                        "    relates employer;" +
-                                                        "name sub attribute, value string, abstract;" +
-                                                        "first-name sub name, owns first-name;" + // need a name with a name for one test
-                                                        "last-name sub name;" +
-                                                        "age sub attribute, value long;" +
-                                                        "self-owning-attribute sub attribute, value long, owns self-owning-attribute;" +
-                                                        "").asDefine());
+                    "person sub entity," +
+                    "    owns first-name," +
+                    "    owns last-name," +
+                    "    owns age," +
+                    "    plays employment:employee;" +
+                    "company sub entity," +
+                    "    plays employment:employer;" +
+                    "employment sub relation," +
+                    "    relates employee," +
+                    "    relates employer;" +
+                    "name sub attribute, value string, abstract;" +
+                    "first-name sub name, owns first-name;" + // need a name with a name for one test
+                    "last-name sub name;" +
+                    "age sub attribute, value long;" +
+                    "self-owning-attribute sub attribute, value long, owns self-owning-attribute;" +
+                    "").asDefine());
             tx.commit();
         }
     }
@@ -161,10 +160,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$y", set("$x"));
-            put("$_0", set("$_0"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("$x")),
+                pair("$_0", set("$_0"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -215,10 +214,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$y", set("$x"));
-            put("$_0", set("$a"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("$x")),
+                pair("$_0", set("$a"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -271,10 +270,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$y", set("$x"));
-            put("$a", set("$_0"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("$x")),
+                pair("$a", set("$_0"))
+        );
         assertEquals(expected, result);
 
         // test unifier allows a valid answer
@@ -304,10 +303,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$y", set("$x"));
-            put("$b", set("$a"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("$x")),
+                pair("$b", set("$a"))
+        );
         assertEquals(expected, result);
 
         // test filter allows a valid answer
@@ -337,10 +336,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$y", set("$x"));
-            put("$b", set("$_0"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("$x")),
+                pair("$b", set("$_0"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -383,10 +382,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$y", set("$x"));
-            put("$b", set("$a"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("$x")),
+                pair("$b", set("$a"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -425,10 +424,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$x", set("$a"));
-            put("$y", set("$a"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$x", set("$a")),
+                pair("$y", set("$a"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -449,9 +448,9 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$b", set("$x", "$_0"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$b", set("$x", "$_0"))
+        );
         assertEquals(expected, result);
         // test requirements of one-to-many using valid answer
         Map<Identifier.Variable, Concept> concepts = map(
@@ -483,9 +482,9 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$b", set("$a"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$b", set("$a"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -507,10 +506,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$y", set("$x"));
-            put("$_0", set("$_0"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("$x")),
+                pair("$_0", set("$_0"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -551,10 +550,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$y", set("$x"));
-            put("$_0", set("$n"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("$x")),
+                pair("$_0", set("$n"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -601,10 +600,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$y", set("$x"));
-            put("$_0", set("$a"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("$x")),
+                pair("$_0", set("$a"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -642,10 +641,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$y", set("$x"));
-            put("$_0", set("$a"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("$x")),
+                pair("$_0", set("$a"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -684,10 +683,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$y", set("$x"));
-            put("$_0", set("$n"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("$x")),
+                pair("$_0", set("$n"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -736,10 +735,10 @@ public class UnifyHasConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        HashMap<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$y", set("$x"));
-            put("$_0", set("$n"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("$x")),
+                pair("$_0", set("$n"))
+        );
         assertEquals(expected, result);
 
         // test requirements

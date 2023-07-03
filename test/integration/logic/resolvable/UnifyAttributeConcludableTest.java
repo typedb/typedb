@@ -45,7 +45,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -82,21 +81,21 @@ public class UnifyAttributeConcludableTest {
         session = databaseMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (CoreTransaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
             tx.query().define(TypeQL.parseQuery("define " +
-                                                        "person sub entity," +
-                                                        "    owns first-name," +
-                                                        "    owns last-name," +
-                                                        "    owns age," +
-                                                        "    plays employment:employee;" +
-                                                        "company sub entity," +
-                                                        "    plays employment:employer;" +
-                                                        "employment sub relation," +
-                                                        "    relates employee," +
-                                                        "    relates employer;" +
-                                                        "name sub attribute, value string, abstract;" +
-                                                        "first-name sub name;" +
-                                                        "last-name sub name;" +
-                                                        "age sub attribute, value long;" +
-                                                        "").asDefine());
+                    "person sub entity," +
+                    "    owns first-name," +
+                    "    owns last-name," +
+                    "    owns age," +
+                    "    plays employment:employee;" +
+                    "company sub entity," +
+                    "    plays employment:employer;" +
+                    "employment sub relation," +
+                    "    relates employee," +
+                    "    relates employer;" +
+                    "name sub attribute, value string, abstract;" +
+                    "first-name sub name;" +
+                    "last-name sub name;" +
+                    "age sub attribute, value long;" +
+                    "").asDefine());
             tx.commit();
         }
     }
@@ -115,7 +114,9 @@ public class UnifyAttributeConcludableTest {
     }
 
     @After
-    public void tearDownTransaction() { transaction.close(); }
+    public void tearDownTransaction() {
+        transaction.close();
+    }
 
     private Thing instanceOf(String stringAttributeLabel, String stringValue) {
         AttributeType type = conceptMgr.getAttributeType(stringAttributeLabel);
@@ -135,9 +136,9 @@ public class UnifyAttributeConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put("$a", set("$_0"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$a", set("$_0"))
+        );
         assertEquals(expected, result);
 
         // test requirements
@@ -181,9 +182,9 @@ public class UnifyAttributeConcludableTest {
         assertEquals(1, unifiers.size());
         Unifier unifier = unifiers.get(0);
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
-        Map<String, Set<String>> expected = new HashMap<String, Set<String>>() {{
-            put(var, set("$_0"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair(var, set("$_0"))
+        );
         assertEquals(expected, result);
 
         // test requirements
