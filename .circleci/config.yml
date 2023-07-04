@@ -36,7 +36,7 @@ commands:
       - run: brew install bazelisk
 
 jobs:
-  test-assembly-mac-zip-x86_64:
+  test-assembly-mac-x86_64-zip:
     macos:
       xcode: "14.2.0"
     working_directory: ~/typedb
@@ -45,7 +45,7 @@ jobs:
       - install-bazel-mac
       - run: bazel test //test/assembly:assembly --test_output=errors
 
-  test-assembly-mac-zip-arm64:
+  test-assembly-mac-arm64-zip:
     macos:
       xcode: "14.2.0"
     resource_class: macos.m1.medium.gen1
@@ -55,7 +55,7 @@ jobs:
       - install-bazel-mac
       - run: bazel test //test/assembly:assembly --test_output=errors
 
-  test-assembly-linux-zip-arm64:
+  test-assembly-linux-arm64-zip:
     machine:
       image: ubuntu-2004:current
       resource_class: arm.medium
@@ -79,24 +79,24 @@ jobs:
 workflows:
   typedb:
     jobs:
-      - test-assembly-mac-zip-x86_64:
+      - test-assembly-mac-x86_64-zip:
           filters:
             branches:
               only:
                 - master
                 - development
-      - test-assembly-mac-zip-arm64:
+      - test-assembly-mac-arm64-zip:
           filters:
             branches:
               only:
                 - master
                 - development
-#      - test-assembly-linux-zip-arm64:
-#          filters:
-#            branches:
-#              only:
-#                - master
-#                - development
+      - test-assembly-linux-arm64-zip:
+          filters:
+            branches:
+              only:
+                - master
+                - development
       - test-assembly-windows-zip:
           filters:
             branches:
