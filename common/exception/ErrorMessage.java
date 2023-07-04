@@ -164,18 +164,20 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Database(3, "Attempted to use database manager when it has been closed.");
         public static final Database DATABASE_EXISTS =
                 new Database(4, "The database with the name '%s' already exists.");
+        public static final Database DATABASE_NOT_EMPTY =
+                new Database(5, "The existing database with the name '%s' is not empty.");
         public static final Database DATABASE_NOT_FOUND =
-                new Database(5, "The database with the name '%s' does not exist.");
+                new Database(6, "The database with the name '%s' does not exist.");
         public static final Database DATABASE_DELETED =
-                new Database(6, "Database with the name '%s' has been deleted.");
+                new Database(7, "Database with the name '%s' has been deleted.");
         public static final Database DATABASE_CLOSED =
-                new Database(7, "Attempted to open a new session from the database '%s' that has been closed.");
+                new Database(8, "Attempted to open a new session from the database '%s' that has been closed.");
         public static final Database DATABASE_NAME_RESERVED =
-                new Database(8, "Database name must not start with an underscore.");
+                new Database(9, "Database name must not start with an underscore.");
         public static final Database ROCKS_LOGGER_SHUTDOWN_TIMEOUT =
-                new Database(9, "Background RocksDB properties logger shutdown timed out.");
+                new Database(10, "Background RocksDB properties logger shutdown timed out.");
         public static final Database STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT =
-                new Database(10, "Background statistics corrector shutdowne timed out.");
+                new Database(11, "Background statistics corrector shutdown timed out.");
 
         private static final String codePrefix = "DBS";
         private static final String messagePrefix = "Invalid Database Operation";
