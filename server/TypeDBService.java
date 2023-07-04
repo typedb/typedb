@@ -211,6 +211,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             int duration = (int) Duration.between(start, Instant.now()).toMillis();
             responder.onNext(openRes(sessionSvc.UUID(), duration));
             responder.onCompleted();
+            LOG.debug(
+                    "Opened new session '{}' for database '{}'. Sessions open on server: {}", sessionSvc.UUID(),
+                    request.getDatabase(), sessionServices.size()
+            );
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
             responder.onError(exception(e));
@@ -227,6 +231,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             sessionSvc.close();
             responder.onNext(closeRes());
             responder.onCompleted();
+            LOG.debug(
+                    "Closed session '{}' to database '{}'. Sessions open on server: {}", sessionID,
+                    sessionSvc.session().database().name(), sessionServices.size()
+            );
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
             responder.onError(exception(e));
