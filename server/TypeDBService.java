@@ -83,6 +83,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     }
 
     private void logConnectionStates() {
+        if (sessionServices.isEmpty()) return;
         Map<String, List<String>> databaseConnections = new HashMap<>();
         Instant now = Instant.now();
         sessionServices.forEach((uuid, sessionService) ->
