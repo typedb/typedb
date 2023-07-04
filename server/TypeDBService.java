@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ERROR_LOGGING_CONNECTIONS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PROTOCOL_VERSION_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
@@ -84,27 +85,31 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
 
     private void logConnectionStates() {
         if (sessionServices.isEmpty()) return;
-        Map<String, List<String>> databaseConnections = new HashMap<>();
-        Instant now = Instant.now();
-        sessionServices.forEach((uuid, sessionService) ->
-                databaseConnections.compute(sessionService.session().database().name(), (key, val) -> {
-                    List<String> sessionInfos;
-                    if (val == null) sessionInfos = new ArrayList<>();
-                    else sessionInfos = val;
-                    sessionInfos.add(String.format(
-                            "Session '%s' (open '%d' seconds) has '%d' open transactions",
-                            uuid.toString(), Duration.between(sessionService.openTime(), now).getSeconds(),
-                            sessionService.transactionCount()
-                    ));
-                    return sessionInfos;
-                })
-        );
-        StringBuilder connectionStates = new StringBuilder("Connections");
-        databaseConnections.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
-            connectionStates.append("Database: ").append(entry.getKey()).append("\n");
-            entry.getValue().forEach(state -> connectionStates.append(state).append("\n"));
-        });
-        LOG.debug(connectionStates.toString());
+        try {
+            Map<String, List<String>> databaseConnections = new HashMap<>();
+            Instant now = Instant.now();
+            sessionServices.forEach((uuid, sessionService) ->
+                    databaseConnections.compute(sessionService.session().database().name(), (key, val) -> {
+                        List<String> sessionInfos;
+                        if (val == null) sessionInfos = new ArrayList<>();
+                        else sessionInfos = val;
+                        sessionInfos.add(String.format(
+                                "Session '%s' (open %d seconds) has %d open transaction(s)",
+                                uuid.toString(), Duration.between(sessionService.openTime(), now).getSeconds(),
+                                sessionService.transactionCount()
+                        ));
+                        return sessionInfos;
+                    })
+            );
+            StringBuilder connectionStates = new StringBuilder("Server connections: ").append("\n");
+            databaseConnections.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
+                connectionStates.append("Database '").append(entry.getKey()).append("' has ").append(entry.getValue().size()).append(" sessions:\n");
+                entry.getValue().forEach(state -> connectionStates.append("\t").append(state).append("\n"));
+            });
+            LOG.debug(connectionStates.toString());
+        } catch (Exception e) {
+            LOG.error(ERROR_LOGGING_CONNECTIONS.message(), e);
+        }
     }
 
     @Override
