@@ -62,10 +62,12 @@ public class SessionService implements AutoCloseable {
             if (isOpen.get()) {
                 transactionServices.add(transactionSvc);
                 cancelIdleTimeout();
-                LOG.debug(
-                        "Session '{}' for database '{}' opened transaction. Transactions open in this session: {}.",
-                        UUID(), session.database().name(), transactionServices.size()
-                );
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug(
+                            "Session '{}' for database '{}' opened transaction. Transactions open in this session: {}.",
+                            UUID(), session.database().name(), transactionServices.size()
+                    );
+                }
             } else throw TypeDBException.of(SESSION_CLOSED);
         } finally {
             accessLock.readLock().unlock();

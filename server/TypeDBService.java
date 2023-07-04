@@ -211,10 +211,12 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             int duration = (int) Duration.between(start, Instant.now()).toMillis();
             responder.onNext(openRes(sessionSvc.UUID(), duration));
             responder.onCompleted();
-            LOG.debug(
-                    "Opened new session '{}' for database '{}'. Sessions open on server: {}", sessionSvc.UUID(),
-                    request.getDatabase(), sessionServices.size()
-            );
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(
+                        "Opened new session '{}' for database '{}'. Sessions open on server: {}", sessionSvc.UUID(),
+                        request.getDatabase(), sessionServices.size()
+                );
+            }
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
             responder.onError(exception(e));
