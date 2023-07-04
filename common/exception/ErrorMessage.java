@@ -105,6 +105,9 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Server(34, "Another instance of TypeDB server is already running at this port: '%s'.");
         public static final Server INCOMPATIBLE_JAVA_RUNTIME =
                 new Server(35, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
+        public static final Server ERROR_LOGGING_CONNECTIONS =
+                new Server(36, "An error occurred while logging server connection info.");
+
 
         private static final String codePrefix = "SRV";
         private static final String messagePrefix = "Invalid Server Operation";

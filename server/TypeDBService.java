@@ -21,6 +21,7 @@ import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.server.common.ResponseBuilder;
 import com.vaticle.typedb.protocol.ConnectionProto;
 import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;
@@ -35,14 +36,19 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_DELETED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ERROR_LOGGING_CONNECTIONS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PROTOCOL_VERSION_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
@@ -71,6 +77,39 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public TypeDBService(TypeDB.DatabaseManager databaseMgr) {
         this.databaseMgr = databaseMgr;
         sessionServices = new ConcurrentHashMap<>();
+
+        if (LOG.isDebugEnabled()) {
+            Executors.scheduled().scheduleAtFixedRate(this::logConnectionStates, 0, 1, TimeUnit.MINUTES);
+        }
+    }
+
+    private void logConnectionStates() {
+        if (sessionServices.isEmpty()) return;
+        try {
+            Map<String, List<String>> databaseConnections = new HashMap<>();
+            Instant now = Instant.now();
+            sessionServices.forEach((uuid, sessionService) ->
+                    databaseConnections.compute(sessionService.session().database().name(), (key, val) -> {
+                        List<String> sessionInfos;
+                        if (val == null) sessionInfos = new ArrayList<>();
+                        else sessionInfos = val;
+                        sessionInfos.add(String.format(
+                                "Session '%s' (open %d seconds) has %d open transaction(s)",
+                                uuid.toString(), Duration.between(sessionService.openTime(), now).getSeconds(),
+                                sessionService.transactionCount()
+                        ));
+                        return sessionInfos;
+                    })
+            );
+            StringBuilder connectionStates = new StringBuilder("Server connections: ").append("\n");
+            databaseConnections.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
+                connectionStates.append("Database '").append(entry.getKey()).append("' has ").append(entry.getValue().size()).append(" sessions:\n");
+                entry.getValue().forEach(state -> connectionStates.append("\t").append(state).append("\n"));
+            });
+            LOG.debug(connectionStates.toString());
+        } catch (Exception e) {
+            LOG.error(ERROR_LOGGING_CONNECTIONS.message(), e);
+        }
     }
 
     @Override

@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,6 +45,7 @@ public class SessionService implements AutoCloseable {
     private final TypeDB.Session session;
     private final ReadWriteLock accessLock;
     private final AtomicBoolean isOpen;
+    private final Instant openTime;
     private ScheduledFuture<?> idleTimeoutTask;
 
     public SessionService(TypeDBService typeDBSvc, TypeDB.Session session, Options.Session options) {
@@ -54,6 +56,7 @@ public class SessionService implements AutoCloseable {
         this.isOpen = new AtomicBoolean(true);
         this.transactionServices = new ConcurrentSet<>();
         startIdleTimeout();
+        this.openTime = Instant.now();
     }
 
     void register(TransactionService transactionSvc) {
@@ -110,6 +113,14 @@ public class SessionService implements AutoCloseable {
 
     private boolean isIdleTimeoutActive() {
         return !idleTimeoutTask.isDone();
+    }
+
+    Instant openTime() {
+        return openTime;
+    }
+
+    long transactionCount() {
+        return transactionServices.size();
     }
 
     private void idleTimeout() {
