@@ -65,7 +65,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.unsignedByte;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_EXISTS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_EMPTY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_READ_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.IMPORT_CHECKSUM_MISMATCH;
@@ -101,7 +101,9 @@ public class DatabaseImporter {
     public DatabaseImporter(TypeDB.DatabaseManager databaseMgr, String database, Path schemaFile, Path dataFile, String version) {
         if (!Files.exists(dataFile)) throw TypeDBException.of(FILE_NOT_FOUND, dataFile);
         if (!Files.exists(schemaFile)) throw TypeDBException.of(FILE_NOT_FOUND, schemaFile);
-        if (databaseMgr.contains(database)) throw TypeDBException.of(DATABASE_EXISTS, database);
+        if (databaseMgr.contains(database) && !databaseMgr.get(database).isEmpty()) {
+            throw TypeDBException.of(DATABASE_NOT_EMPTY, database);
+        }
         this.databaseMgr = databaseMgr;
         this.database = database;
         this.schemaFile = schemaFile;
@@ -119,7 +121,7 @@ public class DatabaseImporter {
     public void run() {
         try {
             LOG.info("Importing into database {}", database);
-            createDatabase();
+            mayCreateDatabase();
             loadSchema();
             loadData();
             LOG.info("Finished importing into database {}", database);
@@ -129,8 +131,8 @@ public class DatabaseImporter {
         }
     }
 
-    private void createDatabase() {
-        databaseMgr.create(database);
+    private void mayCreateDatabase() {
+        if (!databaseMgr.contains(database)) databaseMgr.create(database);
     }
 
     private void loadSchema() {

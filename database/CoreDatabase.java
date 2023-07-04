@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
@@ -413,6 +414,13 @@ public class CoreDatabase implements TypeDB.Database {
     @Override
     public String name() {
         return name;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        try (TypeDB.Session session = databaseMgr.session(name, SCHEMA); TypeDB.Transaction tx = session.transaction(READ)) {
+            return tx.concepts().getRootThingType().getSubtypes().allMatch(Type::isRoot);
+        }
     }
 
     @Override
