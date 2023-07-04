@@ -233,10 +233,12 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             sessionSvc.close();
             responder.onNext(closeRes());
             responder.onCompleted();
-            LOG.debug(
-                    "Closed session '{}' to database '{}'. Sessions open on server: {}", sessionID,
-                    sessionSvc.session().database().name(), sessionServices.size()
-            );
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(
+                        "Closed session '{}' for database '{}'. Sessions open on server: {}", sessionID,
+                        sessionSvc.session().database().name(), sessionServices.size()
+                );
+            }
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
             responder.onError(exception(e));
