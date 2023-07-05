@@ -5,15 +5,15 @@ Install & Run: http://docs.vaticle.com/docs/running-typedb/install-and-run
 This version adds support for the `ARM` architecture on Mac and Linux, replaces RocksDB with SpeedDB, improves the UX of export/import, and optimises the reasoner to re-use work more effectively.
 
 ## New Features
-- **Add RPC logging for session and transaction creation** [[https://github.com/vaticle/typedb/pull/6836]]
-  
+- **Add RPC logging for session and transaction creation** [[PR#6836](https://github.com/vaticle/typedb/pull/6836)]
+
   To monitor production instances of TypeDB and TypeDB enterprise more effectively, when using debug logging the server logs open client connections (each sessions and number of transactions each) at a rate of once per minute. When there are no connections, the server does not log to avoid noise in the idle state.
-  
+
   To enable these logs, set a logger for 'com.vaticle.typedb.core.server` to DEBUG in the TypeDB configuration file.
-  
-  
-- **Allow TypeDB migrator to operate over an empty database** [[https://github.com/vaticle/typedb/pull/6835]]
-  
+
+
+- **Allow TypeDB migrator to operate over an empty database** [[PR#6835](https://github.com/vaticle/typedb/pull/6835)]
+ 
   We relax the Importer to operate not only over a non-existent database that is created on the fly, but also over a pre-existing and empty database. This is required because TypeDB Enterprise must create the database first, triggering a leader election, before doing the import against the primary replica.
 
 
