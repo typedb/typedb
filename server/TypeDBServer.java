@@ -230,7 +230,10 @@ public class TypeDBServer implements AutoCloseable {
                 logger().info("Closing server");
                 server.shutdown();
                 logger().info("Shutting down server grpc");
-                server.awaitTermination();
+                if (!server.awaitTermination(10, TimeUnit.SECONDS)) {
+                    logger().info("Forcefully shutting down server grpc");
+                    server.shutdownNow();
+                }
                 logger().info("Closing DatabaseMgr");
                 databaseMgr.close();
                 logger().info("Performing finalisation");
@@ -239,6 +242,8 @@ public class TypeDBServer implements AutoCloseable {
             } catch (InterruptedException e) {
                 logger().error(FAILED_AT_STOPPING.message(), e);
                 Thread.currentThread().interrupt();
+            } catch (Throwable e) {
+                logger().error(FAILED_AT_STOPPING.message(), e);
             }
         }
     }
