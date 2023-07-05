@@ -244,6 +244,8 @@ public class TypeDBServer implements AutoCloseable {
                 Thread.currentThread().interrupt();
             } catch (Throwable e) {
                 logger().error(FAILED_AT_STOPPING.message(), e);
+            } finally {
+                Runtime.getRuntime().halt(1);
             }
         }
     }
