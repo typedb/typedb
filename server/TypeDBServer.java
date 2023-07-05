@@ -51,6 +51,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -74,6 +75,7 @@ public class TypeDBServer implements AutoCloseable {
     protected final io.grpc.Server server;
     protected final boolean debug;
     protected TypeDBService typeDBService;
+    protected AtomicBoolean isOpen;
     private final CoreConfig config;
 
     private static TypeDBServer create(CoreConfig config, boolean debug) {
@@ -117,6 +119,7 @@ public class TypeDBServer implements AutoCloseable {
         Runtime.getRuntime().addShutdownHook(
                 NamedThreadFactory.create(TypeDBServer.class, "shutdown").newThread(this::close)
         );
+        isOpen = new AtomicBoolean(true);
     }
 
     private void verifyJavaVersion() {
@@ -217,19 +220,26 @@ public class TypeDBServer implements AutoCloseable {
 
     @Override
     public synchronized void close() {
-        logger().info("");
-        logger().info("Shutting down {}...", name());
-        try {
-            assert typeDBService != null;
-            typeDBService.close();
-            server.shutdown();
-            server.awaitTermination();
-            databaseMgr.close();
-            System.runFinalization();
-            logger().info("{} has been shutdown", name());
-        } catch (InterruptedException e) {
-            logger().error(FAILED_AT_STOPPING.message(), e);
-            Thread.currentThread().interrupt();
+        if (isOpen.compareAndSet(true, false)) {
+            logger().info("");
+            logger().info("Shutting down {}...", name());
+            try {
+                assert typeDBService != null;
+                logger().info("Closing TypeDB service {}...", name());
+                typeDBService.close();
+                logger().info("Closing server");
+                server.shutdown();
+                logger().info("Shutting down server grpc");
+                server.awaitTermination();
+                logger().info("Closing DatabaseMgr");
+                databaseMgr.close();
+                logger().info("Performing finalisation");
+                System.runFinalization();
+                logger().info("{} has been shutdown", name());
+            } catch (InterruptedException e) {
+                logger().error(FAILED_AT_STOPPING.message(), e);
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
