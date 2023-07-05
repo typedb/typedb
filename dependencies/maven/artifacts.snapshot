@@ -14,12 +14,12 @@
 @maven//:com_google_guava_listenablefuture_9999_0_empty_to_avoid_conflict_with_guava
 @maven//:com_google_http_client_google_http_client_1_34_2
 @maven//:com_google_j2objc_j2objc_annotations_1_3
-@maven//:com_google_ortools_ortools_darwin_8_0_8283
-@maven//:com_google_ortools_ortools_darwin_java_8_0_8283
-@maven//:com_google_ortools_ortools_linux_x86_64_8_0_8283
-@maven//:com_google_ortools_ortools_linux_x86_64_java_8_0_8283
-@maven//:com_google_ortools_ortools_win32_x86_64_8_0_8283
-@maven//:com_google_ortools_ortools_win32_x86_64_java_8_0_8283
+@maven//:com_google_ortools_ortools_darwin_aarch64_9_6_2534
+@maven//:com_google_ortools_ortools_darwin_x86_64_9_6_2534
+@maven//:com_google_ortools_ortools_java_9_6_2534
+@maven//:com_google_ortools_ortools_linux_aarch64_9_6_2534
+@maven//:com_google_ortools_ortools_linux_x86_64_9_6_2534
+@maven//:com_google_ortools_ortools_win32_x86_64_9_6_2534
 @maven//:com_google_protobuf_protobuf_java_3_14_0
 @maven//:commons_codec_commons_codec_1_11
 @maven//:commons_io_commons_io_2_3
@@ -35,6 +35,7 @@
 @maven//:io_cucumber_datatable_3_2_1
 @maven//:io_cucumber_docstring_5_1_3
 @maven//:io_cucumber_tag_expressions_2_0_4
+@maven//:io_github_speedb_io_speedbjni_2_4_1_4
 @maven//:io_grpc_grpc_api_1_43_0
 @maven//:io_grpc_grpc_context_1_43_0
 @maven//:io_grpc_grpc_core_1_43_0
@@ -86,8 +87,8 @@
 @maven//:junit_junit_4_12
 @maven//:net_bytebuddy_byte_buddy_1_6_4
 @maven//:net_bytebuddy_byte_buddy_agent_1_6_4
-@maven//:net_java_dev_jna_jna_5_5_0
-@maven//:net_java_dev_jna_jna_platform_5_5_0
+@maven//:net_java_dev_jna_jna_5_12_1
+@maven//:net_java_dev_jna_jna_platform_5_12_1
 @maven//:org_antlr_antlr4_runtime_4_8
 @maven//:org_apache_httpcomponents_httpclient_4_5_11
 @maven//:org_apache_httpcomponents_httpcore_4_4_13
@@ -100,8 +101,6 @@
 @maven//:org_jetbrains_compose_compiler_compiler_1_3_2
 @maven//:org_mockito_mockito_core_2_6_4
 @maven//:org_objenesis_objenesis_2_5
-@maven//:org_rocksdb_rocksdbjni_6_20_3
-@maven//:org_rocksdb_rocksdbjni_dev_mac_6_20_3
 @maven//:org_slf4j_slf4j_api_1_7_32
 @maven//:org_yaml_snakeyaml_1_25
 @maven//:org_zeroturnaround_zt_exec_1_10

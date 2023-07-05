@@ -28,6 +28,7 @@ public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier {
     private final Actor.Driver<? extends AbstractProcessor<P_IN, P_OUT, ?, ?>> processor;
     private final Reactive reactive;
     private final long scopedId;
+    private int hash = 0;
 
     public ReactiveIdentifier(Actor.Driver<? extends AbstractProcessor<P_IN, P_OUT, ?, ?>> processor,
                               Reactive reactive, long scopedId) {
@@ -48,7 +49,8 @@ public class ReactiveIdentifier<P_IN, P_OUT> implements Reactive.Identifier {
 
     @Override
     public int hashCode() {
-        return Objects.hash(processor, reactive, scopedId);
+        if (hash == 0) hash = Objects.hash(processor, reactive, scopedId);
+        return hash;
     }
 
     @Override

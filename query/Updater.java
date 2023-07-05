@@ -71,8 +71,9 @@ public class Updater {
             insertRegistry.variables().forEach(Inserter::validate);
 
             assert query.match().namedVariablesUnbound().containsAll(query.namedDeleteVariablesUnbound());
-            HashSet<UnboundVariable> filter = new HashSet<>(query.namedDeleteVariablesUnbound());
-            filter.addAll(query.namedInsertVariablesUnbound());
+            Set<UnboundVariable> filter = new HashSet<>(query.match().namedVariablesUnbound());
+            filter.retainAll(query.namedInsertVariablesUnbound());
+            filter.addAll(query.namedDeleteVariablesUnbound());
             Matcher matcher = Matcher.create(reasoner, query.match().get(list(filter)));
             return new Updater(matcher, conceptMgr, deleteRegistry.things(), insertRegistry.things(), context);
         }

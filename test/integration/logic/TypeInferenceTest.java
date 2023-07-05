@@ -43,11 +43,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.vaticle.typedb.common.collection.Collections.map;
+import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Session.Type.DATA;
@@ -119,7 +120,7 @@ public class TypeInferenceTest {
                 .flatMap(var -> var.asThing().relation().get().players().stream()).collect(Collectors.toMap(
                         rp -> rp.player().id().toString(),
                         rp -> rp.inferredRoleTypes().stream().map(Label::scopedName).collect(Collectors.toSet())
-        ));
+                ));
     }
 
     private Disjunction createDisjunction(String matchString) {
@@ -136,11 +137,11 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
         assertTrue(disjunction.isCoherent());
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$_person", set("person"));
-            put("$p", set());
-            put("$a", set());
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$_person", set("person")),
+                pair("$p", set()),
+                pair("$a", set())
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -154,10 +155,10 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$p", set("person", "man", "woman"));
-            put("$_person", set("person"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$p", set("person", "man", "woman")),
+                pair("$_person", set("person"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -171,10 +172,10 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$p", set("person"));
-            put("$_person", set("person"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$p", set("person")),
+                pair("$_person", set("person"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -192,12 +193,12 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expectedExhaustive = new HashMap<>() {{
-            put("$p", set("mammal", "person", "man", "woman", "dog"));
-            put("$q", set("mammal", "person", "man", "woman", "dog"));
-            put("$_entity", set("entity"));
-            put("$_mammal", set("mammal"));
-        }};
+        Map<String, Set<String>> expectedExhaustive = map(
+                pair("$p", set("mammal", "person", "man", "woman", "dog")),
+                pair("$q", set("mammal", "person", "man", "woman", "dog")),
+                pair("$_entity", set("entity")),
+                pair("$_mammal", set("mammal"))
+        );
 
         assertEquals(expectedExhaustive, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -218,10 +219,10 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$p", set("person"));
-            put("$a", set("name", "email"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$p", set("person")),
+                pair("$a", set("name", "email"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -236,11 +237,11 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$p", set("person", "man", "woman", "dog"));
-            put("$_name", set("name"));
-            put("$_0", set("name"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$p", set("person", "man", "woman", "dog")),
+                pair("$_name", set("name")),
+                pair("$_0", set("name"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -267,10 +268,10 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$a", set("nickname", "name"));
-            put("$b", set("nickname", "name"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$a", set("nickname", "name")),
+                pair("$b", set("nickname", "name"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -299,12 +300,12 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expectedExhaustive = new HashMap<>() {{
-            put("$a", set("name", "surname", "nickname", "middlename"));
-            put("$b", set("name", "surname", "nickname", "middlename"));
-            put("$c", set("name", "surname", "nickname", "middlename"));
-            put("$d", set("name", "surname", "nickname", "middlename"));
-        }};
+        Map<String, Set<String>> expectedExhaustive = map(
+                pair("$a", set("name", "surname", "nickname", "middlename")),
+                pair("$b", set("name", "surname", "nickname", "middlename")),
+                pair("$c", set("name", "surname", "nickname", "middlename")),
+                pair("$d", set("name", "surname", "nickname", "middlename"))
+        );
 
         assertEquals(expectedExhaustive, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -319,11 +320,11 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$p", set("person", "man", "woman", "dog"));
-            put("$a", set("name"));
-            put("$_name", set("name"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$p", set("person", "man", "woman", "dog")),
+                pair("$a", set("name")),
+                pair("$_name", set("name"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -340,11 +341,11 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$p", set("triangle", "right-angled-triangle", "square"));
-            put("$a", set("perimeter", "area", "label", "hypotenuse-length"));
-            put("$_shape", set("shape"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$p", set("triangle", "right-angled-triangle", "square")),
+                pair("$a", set("perimeter", "area", "label", "hypotenuse-length")),
+                pair("$_shape", set("shape"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -366,10 +367,10 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$p", set("person"));
-            put("$a", set("name"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$p", set("person")),
+                pair("$a", set("name"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -377,9 +378,9 @@ public class TypeInferenceTest {
     @Test
     public void value_comparision_between_double_long() throws IOException {
         define_custom_schema("define" +
-                                     " house-number sub attribute, value long;" +
-                                     " length sub attribute, value double;" +
-                                     " name sub attribute, value string;"
+                " house-number sub attribute, value long;" +
+                " length sub attribute, value double;" +
+                " name sub attribute, value string;"
         );
 
         TypeInference typeInference = transaction.logic().typeInference();
@@ -388,11 +389,11 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$x", set("house-number", "length"));
-            put("$y", set("house-number", "length"));
-            put("$z", set("name"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$x", set("house-number", "length")),
+                pair("$y", set("house-number", "length")),
+                pair("$z", set("name"))
+        );
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
 
@@ -406,12 +407,12 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$yoko", set("woman"));
-            put("$r", set("marriage"));
-            put("$_marriage:wife", set("marriage:wife"));
-            put("$_marriage", set("marriage"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$yoko", set("woman")),
+                pair("$r", set("marriage")),
+                pair("$_marriage:wife", set("marriage:wife")),
+                pair("$_marriage", set("marriage"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -426,12 +427,12 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$yoko", set("person", "man", "woman"));
-            put("$role", set("marriage:husband", "marriage:wife", "marriage:spouse", "relation:role"));
-            put("$r", set("marriage"));
-            put("$_marriage", set("marriage"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$yoko", set("person", "man", "woman")),
+                pair("$role", set("marriage:husband", "marriage:wife", "marriage:spouse", "relation:role")),
+                pair("$r", set("marriage")),
+                pair("$_marriage", set("marriage"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -446,12 +447,12 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$yoko", set("woman"));
-            put("$r", set("marriage"));
-            put("$m", set("marriage", "relation", "thing"));
-            put("$_relation:wife", set("marriage:wife"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$yoko", set("woman")),
+                pair("$r", set("marriage")),
+                pair("$m", set("marriage", "relation", "thing")),
+                pair("$_relation:wife", set("marriage:wife"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -459,40 +460,40 @@ public class TypeInferenceTest {
     @Test
     public void relation_staggered_role_hierarchy() {
         define_custom_schema("define" +
-                                     " person sub entity," +
-                                     "  plays partnership:partner," +
-                                     "  plays marriage:spouse;" +
-                                     "" +
-                                     " man sub person," +
-                                     "  plays hetero-marriage:husband;" +
-                                     "" +
-                                     " woman sub person," +
-                                     "   plays hetero-marriage:wife;" +
-                                     "" +
-                                     " partnership sub relation," +
-                                     "  relates partner;" +
-                                     "" +
-                                     " marriage sub partnership," +
-                                     "  relates spouse as partner;" +
-                                     "" +
-                                     " hetero-marriage sub marriage," +
-                                     "  relates husband as spouse," +
-                                     "  relates wife as spouse;");
+                " person sub entity," +
+                "  plays partnership:partner," +
+                "  plays marriage:spouse;" +
+                "" +
+                " man sub person," +
+                "  plays hetero-marriage:husband;" +
+                "" +
+                " woman sub person," +
+                "   plays hetero-marriage:wife;" +
+                "" +
+                " partnership sub relation," +
+                "  relates partner;" +
+                "" +
+                " marriage sub partnership," +
+                "  relates spouse as partner;" +
+                "" +
+                " hetero-marriage sub marriage," +
+                "  relates husband as spouse," +
+                "  relates wife as spouse;");
         TypeInference typeInference = transaction.logic().typeInference();
 
         String queryString = "match $r (spouse: $yoko, $role: $john) isa $m; $john isa man;";
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$yoko", set("person", "woman", "man"));
-            put("$john", set("man"));
-            put("$role", set("hetero-marriage:husband", "marriage:spouse", "partnership:partner", "relation:role"));
-            put("$r", set("hetero-marriage", "marriage"));
-            put("$m", set("hetero-marriage", "marriage", "partnership", "relation", "thing"));
-            put("$_relation:spouse", set("marriage:spouse"));
-            put("$_man", set("man"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$yoko", set("person", "woman", "man")),
+                pair("$john", set("man")),
+                pair("$role", set("hetero-marriage:husband", "marriage:spouse", "partnership:partner", "relation:role")),
+                pair("$r", set("hetero-marriage", "marriage")),
+                pair("$m", set("hetero-marriage", "marriage", "partnership", "relation", "thing")),
+                pair("$_relation:spouse", set("marriage:spouse")),
+                pair("$_man", set("man"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -507,11 +508,11 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$yoko", set("woman"));
-            put("$_0", set("marriage"));
-            put("$_relation:wife", set("marriage:wife"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$yoko", set("woman")),
+                pair("$_0", set("marriage")),
+                pair("$_relation:wife", set("marriage:wife"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -526,17 +527,17 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$yoko", set("man", "woman", "person"));
-            put("$_0", set("marriage"));
-            put("$_marriage", set("marriage"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$yoko", set("man", "woman", "person")),
+                pair("$_0", set("marriage")),
+                pair("$_marriage", set("marriage"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
 
-        Map<String, Set<String>> expectedRPTypes = new HashMap<>() {{
-            put("$yoko", set("marriage:spouse", "marriage:wife", "marriage:husband"));
-        }};
+        Map<String, Set<String>> expectedRPTypes = map(
+                pair("$yoko", set("marriage:spouse", "marriage:wife", "marriage:husband"))
+        );
         assertEquals(expectedRPTypes, resolvedRoleTypeMap(disjunction.conjunctions().get(0)));
     }
 
@@ -550,15 +551,15 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$yoko", set("person", "man", "woman"));
-            put("$john", set("man"));
-            put("$role", set("marriage:husband", "marriage:wife", "marriage:spouse", "relation:role"));
-            put("$r", set("marriage"));
-            put("$a", set("person", "man", "woman"));
-            put("$_marriage:husband", set("marriage:husband"));
-            put("$_marriage", set("marriage"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$yoko", set("person", "man", "woman")),
+                pair("$john", set("man")),
+                pair("$role", set("marriage:husband", "marriage:wife", "marriage:spouse", "relation:role")),
+                pair("$r", set("marriage")),
+                pair("$a", set("person", "man", "woman")),
+                pair("$_marriage:husband", set("marriage:husband")),
+                pair("$_marriage", set("marriage"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -575,11 +576,11 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$a", set("name", "email"));
-            put("$p", set("person"));
-            put("$_person", set("person"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$a", set("name", "email")),
+                pair("$p", set("person")),
+                pair("$_person", set("person"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -595,10 +596,10 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$p", set("person", "man", "woman"));
-            put("$_person", set("person"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$p", set("person", "man", "woman")),
+                pair("$_person", set("person"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -621,11 +622,11 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$p", set("man", "greek", "socrates"));
-            put("$q", set("thing", "entity", "animal", "person", "man"));
-            put("$_man", set("man"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$p", set("man", "greek", "socrates")),
+                pair("$q", set("thing", "entity", "animal", "person", "man")),
+                pair("$_man", set("man"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -640,9 +641,9 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$t", set("shape"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$t", set("shape"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -656,12 +657,12 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$john", set("person", "man", "woman"));
-            put("$_0", set("marriage"));
-            put("$_marriage:spouse", set("marriage:spouse"));
-            put("$_marriage", set("marriage"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$john", set("person", "man", "woman")),
+                pair("$_0", set("marriage")),
+                pair("$_marriage:spouse", set("marriage:spouse")),
+                pair("$_marriage", set("marriage"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -686,15 +687,15 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$a", set("person", "chair"));
-            put("$b", set("person", "chair"));
-            put("$c", set("leg-weight"));
-            put("$p", set("person", "chair"));
-            put("$_0", set("leg-weight"));
-            put("$_weight", set("weight"));
-            put("$_leg-weight", set("leg-weight"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$a", set("person", "chair")),
+                pair("$b", set("person", "chair")),
+                pair("$c", set("leg-weight")),
+                pair("$p", set("person", "chair")),
+                pair("$_0", set("leg-weight")),
+                pair("$_weight", set("weight")),
+                pair("$_leg-weight", set("leg-weight"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -702,17 +703,17 @@ public class TypeInferenceTest {
     @Test
     public void has_with_minimal_cycle() {
         define_custom_schema("define " +
-                                     "unit sub attribute, value string, owns unit, owns ref;" +
-                                     "ref sub attribute, value long;");
+                "unit sub attribute, value string, owns unit, owns ref;" +
+                "ref sub attribute, value long;");
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $a has $a;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
-        Map<String, Set<String>> expectedExhaustive = new HashMap<>() {{
-            put("$a", set("unit"));
-        }};
+        Map<String, Set<String>> expectedExhaustive = map(
+                pair("$a", set("unit"))
+        );
 
         assertEquals(expectedExhaustive, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -727,11 +728,11 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$x", set("animal", "mammal", "reptile", "tortoise", "person", "man", "woman", "dog", "name", "email",
-                          "marriage", "triangle", "right-angled-triangle", "square", "perimeter", "area", "hypotenuse-length", "label"));
-            put("$_thing", set("thing"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$x", set("animal", "mammal", "reptile", "tortoise", "person", "man", "woman", "dog", "name", "email",
+                        "marriage", "triangle", "right-angled-triangle", "square", "perimeter", "area", "hypotenuse-length", "label")),
+                pair("$_thing", set("thing"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -754,15 +755,15 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expectedExhaustive = new HashMap<>() {{
-            put("$x", set("man"));
-            put("$y", set("woman"));
-            put("$t", set("thing", "entity", "person"));
-            put("$_0", set("man-name"));
-            put("$_1", set("woman-name"));
-            put("$_man-name", set("man-name"));
-            put("$_woman-name", set("woman-name"));
-        }};
+        Map<String, Set<String>> expectedExhaustive = map(
+                pair("$x", set("man")),
+                pair("$y", set("woman")),
+                pair("$t", set("thing", "entity", "person")),
+                pair("$_0", set("man-name")),
+                pair("$_1", set("woman-name")),
+                pair("$_man-name", set("man-name")),
+                pair("$_woman-name", set("woman-name"))
+        );
 
         assertEquals(expectedExhaustive, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -787,13 +788,13 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$x", set("person", "man", "greek", "socrates"));
-            put("$y", set("person", "man", "greek", "socrates"));
-            put("$z", set("person", "man", "greek", "socrates"));
-            put("$w", set("person", "man", "greek", "socrates"));
-            put("$_person", set("person"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$x", set("person", "man", "greek", "socrates")),
+                pair("$y", set("person", "man", "greek", "socrates")),
+                pair("$z", set("person", "man", "greek", "socrates")),
+                pair("$w", set("person", "man", "greek", "socrates")),
+                pair("$_person", set("person"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -836,13 +837,13 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$t", set("animal", "person"));
-            put("$a", set("tortoise", "man"));
-            put("$b", set("woman"));
-            put("$rel", set("ownership", "marriage"));
-            put("$c", set("ownership-attr", "marriage-attr"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$t", set("animal", "person")),
+                pair("$a", set("tortoise", "man")),
+                pair("$b", set("woman")),
+                pair("$rel", set("ownership", "marriage")),
+                pair("$c", set("ownership-attr", "marriage-attr"))
+        );
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
 
@@ -854,13 +855,13 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$a", set("dog"));
-            put("$_name", set("name"));
-            put("$_label", set("label"));
-            put("$_0", set("name"));
-            put("$_1", set("label"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$a", set("dog")),
+                pair("$_name", set("name")),
+                pair("$_label", set("label")),
+                pair("$_0", set("name")),
+                pair("$_1", set("label"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -882,11 +883,11 @@ public class TypeInferenceTest {
     @Test
     public void overridden_relates_are_valid() {
         define_custom_schema("define" +
-                                     " marriage sub relation, relates spouse;" +
-                                     " hetero-marriage sub marriage," +
-                                     "   relates husband as spouse, relates wife as spouse;" +
-                                     " person sub entity, plays marriage:spouse, plays hetero-marriage:husband," +
-                                     "   plays hetero-marriage:wife;"
+                " marriage sub relation, relates spouse;" +
+                " hetero-marriage sub marriage," +
+                "   relates husband as spouse, relates wife as spouse;" +
+                " person sub entity, plays marriage:spouse, plays hetero-marriage:husband," +
+                "   plays hetero-marriage:wife;"
         );
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match $m (spouse: $x, spouse: $y) isa marriage;";
@@ -894,13 +895,13 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$x", set("person"));
-            put("$y", set("person"));
-            put("$m", set("marriage", "hetero-marriage"));
-            put("$_marriage:spouse", set("marriage:spouse"));
-            put("$_marriage", set("marriage"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$x", set("person")),
+                pair("$y", set("person")),
+                pair("$m", set("marriage", "hetero-marriage")),
+                pair("$_marriage:spouse", set("marriage:spouse")),
+                pair("$_marriage", set("marriage"))
+        );
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
 
@@ -912,50 +913,50 @@ public class TypeInferenceTest {
 
         Disjunction relationDisjunction = createDisjunction(relationString);
         typeInference.applyCombination(relationDisjunction);
-        Map<String, Set<String>> relationExpected = new HashMap<>() {{
-            put("$x", set("friendship", "employment"));
-            put("$_relation", set("relation"));
-        }};
+        Map<String, Set<String>> relationExpected = map(
+                pair("$x", set("friendship", "employment")),
+                pair("$_relation", set("relation"))
+        );
         assertEquals(relationExpected, resolvedTypeMap(relationDisjunction.conjunctions().get(0)));
 
         String attributeString = "match $x isa attribute;";
         Disjunction attributeDisjunction = createDisjunction(attributeString);
         typeInference.applyCombination(attributeDisjunction);
-        Map<String, Set<String>> attributeExpected = new HashMap<>() {{
-            put("$x", set("name", "age", "ref"));
-            put("$_attribute", set("attribute"));
-        }};
+        Map<String, Set<String>> attributeExpected = map(
+                pair("$x", set("name", "age", "ref")),
+                pair("$_attribute", set("attribute"))
+        );
 
         assertEquals(attributeExpected, resolvedTypeMap(attributeDisjunction.conjunctions().get(0)));
 
         String entityString = "match $x isa entity;";
         Disjunction entityDisjunction = createDisjunction(entityString);
         typeInference.applyCombination(entityDisjunction);
-        Map<String, Set<String>> entityExpected = new HashMap<>() {{
-            put("$x", set("person", "company"));
-            put("$_entity", set("entity"));
-        }};
+        Map<String, Set<String>> entityExpected = map(
+                pair("$x", set("person", "company")),
+                pair("$_entity", set("entity"))
+        );
         assertEquals(entityExpected, resolvedTypeMap(entityDisjunction.conjunctions().get(0)));
 
         String roleString = "match ($role: $x) isa relation;";
         Disjunction roleDisjunction = createDisjunction(roleString);
         typeInference.applyCombination(roleDisjunction);
-        Map<String, Set<String>> roleExpected = new HashMap<>() {{
-            put("$role", set("friendship:friend", "employment:employer", "employment:employee", "relation:role"));
-            put("$x", set("person", "company"));
-            put("$_0", set("friendship", "employment"));
-            put("$_relation", set("relation"));
-        }};
+        Map<String, Set<String>> roleExpected = map(
+                pair("$role", set("friendship:friend", "employment:employer", "employment:employee", "relation:role")),
+                pair("$x", set("person", "company")),
+                pair("$_0", set("friendship", "employment")),
+                pair("$_relation", set("relation"))
+        );
         assertEquals(roleExpected, resolvedTypeMap(roleDisjunction.conjunctions().get(0)));
 
         String thingString = "match $x isa thing;";
         Disjunction thingDisjunction = createDisjunction(thingString);
         typeInference.applyCombination(thingDisjunction);
 
-        Map<String, Set<String>> thingExpected = new HashMap<>() {{
-            put("$x", set("person", "company", "friendship", "employment", "name", "age", "ref"));
-            put("$_thing", set("thing"));
-        }};
+        Map<String, Set<String>> thingExpected = map(
+                pair("$x", set("person", "company", "friendship", "employment", "name", "age", "ref")),
+                pair("$_thing", set("thing"))
+        );
         assertEquals(thingExpected, resolvedTypeMap(thingDisjunction.conjunctions().get(0)));
     }
 
@@ -973,12 +974,12 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$x", set("perimeter", "area", "hypotenuse-length"));
-            put("$y", set("perimeter", "area", "hypotenuse-length"));
-            put("$z", set("perimeter", "area", "hypotenuse-length"));
-            put("$w", set("perimeter", "area", "hypotenuse-length"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$x", set("perimeter", "area", "hypotenuse-length")),
+                pair("$y", set("perimeter", "area", "hypotenuse-length")),
+                pair("$z", set("perimeter", "area", "hypotenuse-length")),
+                pair("$w", set("perimeter", "area", "hypotenuse-length"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -1008,10 +1009,10 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$x", set("nickname", "name"));
-            put("$y", set("nickname", "name"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$x", set("nickname", "name")),
+                pair("$y", set("nickname", "name"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -1036,10 +1037,10 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$x", set("person", "company", "friendship", "employment"));
-            put("$y", set("name", "age", "ref"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$x", set("person", "company", "friendship", "employment")),
+                pair("$y", set("name", "age", "ref"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -1052,10 +1053,10 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$x", set("name", "age", "ref"));
-            put("$y", set("name", "age", "ref"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$x", set("name", "age", "ref")),
+                pair("$y", set("name", "age", "ref"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -1063,8 +1064,8 @@ public class TypeInferenceTest {
     @Test
     public void infer_key_attributes() {
         define_custom_schema("define" +
-                                     " person sub entity, owns name @key;" +
-                                     " name sub attribute, value string;"
+                " person sub entity, owns name @key;" +
+                " name sub attribute, value string;"
         );
 
         TypeInference typeInference = transaction.logic().typeInference();
@@ -1073,11 +1074,11 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
-        Map<String, Set<String>> expected = new HashMap<>() {{
-            put("$x", set("person"));
-            put("$_0", set("name"));
-            put("$_name", set("name"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$x", set("person")),
+                pair("$_0", set("name")),
+                pair("$_name", set("name"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -1085,9 +1086,9 @@ public class TypeInferenceTest {
     @Test
     public void role_labels_reduced_by_full_type_resolver() {
         define_custom_schema("define" +
-                                     " person sub entity, plays partnership:partner;" +
-                                     " partnership sub relation, relates partner;" +
-                                     " business sub relation, relates partner;"
+                " person sub entity, plays partnership:partner;" +
+                " partnership sub relation, relates partner;" +
+                " business sub relation, relates partner;"
         );
 
         TypeInference typeInference = transaction.logic().typeInference();
@@ -1107,12 +1108,12 @@ public class TypeInferenceTest {
         TypeInference typeInference = transaction.logic().typeInference();
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
-        HashMap<String, Set<String>> expected = new HashMap<>() {{
-            put("$y", set("marriage", "relation", "thing"));
-            put("$x", set("woman"));
-            put("$role", set("marriage:wife"));
-            put("$_0", set("marriage"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$y", set("marriage", "relation", "thing")),
+                pair("$x", set("woman")),
+                pair("$role", set("marriage:wife")),
+                pair("$_0", set("marriage"))
+        );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -1131,10 +1132,10 @@ public class TypeInferenceTest {
     @Test
     public void cannot_insert_abstract_attributes() {
         define_custom_schema("define " +
-                                     " person sub entity, owns name;" +
-                                     " woman sub person, owns maiden-name as name;" +
-                                     " name sub attribute, value string, abstract;" +
-                                     " maiden-name sub name, value string;");
+                " person sub entity, owns name;" +
+                " woman sub person, owns maiden-name as name;" +
+                " name sub attribute, value string, abstract;" +
+                " maiden-name sub name, value string;");
         String queryString = "match $x isa woman, has name 'smith';";
         Disjunction disjunction = createDisjunction(queryString);
         transaction.logic().typeInference().applyCombination(disjunction);
@@ -1148,9 +1149,9 @@ public class TypeInferenceTest {
     @Test
     public void cannot_insert_if_relation_type_too_general() {
         define_custom_schema("define" +
-                                     " person sub entity, plays marriage:husband, plays marriage:wife;" +
-                                     " partnership sub relation, relates partner;" +
-                                     " marriage sub partnership, relates husband as partner, relates wife as partner;");
+                " person sub entity, plays marriage:husband, plays marriage:wife;" +
+                " partnership sub relation, relates partner;" +
+                " marriage sub partnership, relates husband as partner, relates wife as partner;");
         String queryString = "match $x isa person; (wife: $x) isa partnership;";
         Disjunction disjunction = createDisjunction(queryString);
         transaction.logic().typeInference().applyCombination(disjunction);
@@ -1164,9 +1165,9 @@ public class TypeInferenceTest {
     @Test
     public void cannot_insert_if_role_is_too_general() {
         define_custom_schema("define" +
-                                     " person sub entity, plays marriage:husband, plays marriage:wife;" +
-                                     " partnership sub relation, relates partner;" +
-                                     " marriage sub partnership, relates husband as partner, relates wife as partner;");
+                " person sub entity, plays marriage:husband, plays marriage:wife;" +
+                " partnership sub relation, relates partner;" +
+                " marriage sub partnership, relates husband as partner, relates wife as partner;");
         String queryString = "match $x isa person; (partner: $x) isa marriage;";
         Disjunction disjunction = createDisjunction(queryString);
         transaction.logic().typeInference().applyCombination(disjunction);
@@ -1180,9 +1181,9 @@ public class TypeInferenceTest {
     @Test
     public void variable_relations_allowed_only_if_all_possibilities_are_insertable() {
         define_custom_schema("define" +
-                                     " person sub entity, plays marriage:husband, plays marriage:wife;" +
-                                     " partnership sub relation, relates partner;" +
-                                     " marriage sub partnership, relates husband as partner, relates wife as partner;");
+                " person sub entity, plays marriage:husband, plays marriage:wife;" +
+                " partnership sub relation, relates partner;" +
+                " marriage sub partnership, relates husband as partner, relates wife as partner;");
         transaction.logic().putRule(
                 "marriage-rule",
                 TypeQL.parsePattern("{$x isa person; $t isa marriage;}").asConjunction(),
@@ -1193,29 +1194,29 @@ public class TypeInferenceTest {
     @Test
     public void nested_negation_outer_scope_correctly_reduces_resolved_types() {
         define_custom_schema("define " +
-                                     "person sub entity, plays marriage:spouse;" +
-                                     "woman sub person;" +
-                                     "marriage sub relation, relates spouse;");
+                "person sub entity, plays marriage:spouse;" +
+                "woman sub person;" +
+                "marriage sub relation, relates spouse;");
 
         String minimallyRestricted = "match $x isa person; not { ($x) isa marriage; };";
         Disjunction disjunction = createDisjunction(minimallyRestricted);
         transaction.logic().typeInference().applyCombination(disjunction);
-        HashMap<String, Set<String>> expected = new HashMap<>() {{
-            put("$x", set("person", "woman"));
-            put("$_0", set("marriage"));
-            put("$_marriage", set("marriage"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$x", set("person", "woman")),
+                pair("$_0", set("marriage")),
+                pair("$_marriage", set("marriage"))
+        );
         // test the inner negation
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0).negations().iterator().next().disjunction().conjunctions().get(0)));
 
         String restricted = "match $x isa woman; not { ($x) isa marriage; };";
         Disjunction restrictedDisjunction = createDisjunction(restricted);
         transaction.logic().typeInference().applyCombination(restrictedDisjunction);
-        expected = new HashMap<>() {{
-            put("$x", set("woman"));
-            put("$_0", set("marriage"));
-            put("$_marriage", set("marriage"));
-        }};
+        expected = map(
+                pair("$x", set("woman")),
+                pair("$_0", set("marriage")),
+                pair("$_marriage", set("marriage"))
+        );
         // test the inner negation
         assertEquals(expected, resolvedTypeMap(restrictedDisjunction.conjunctions().get(0).negations().iterator().next().disjunction().conjunctions().get(0)));
     }
@@ -1228,23 +1229,23 @@ public class TypeInferenceTest {
     @Test
     public void nested_negation_is_satisfiable() {
         define_custom_schema("define session sub entity,\n" +
-                                     "          plays reported-fault:parent-session,\n" +
-                                     "          plays unanswered-question:parent-session;\n" +
-                                     "      fault sub entity,\n" +
-                                     "          plays reported-fault:relevant-fault,\n" +
-                                     "          plays fault-identification:identified-fault;\n" +
-                                     "      question sub entity,\n" +
-                                     "          plays fault-identification:identifying-question,\n" +
-                                     "          plays unanswered-question:question-not-answered;\n" +
-                                     "      reported-fault sub relation,\n" +
-                                     "          relates relevant-fault,\n" +
-                                     "          relates parent-session;\n" +
-                                     "      unanswered-question sub relation,\n" +
-                                     "          relates question-not-answered,\n" +
-                                     "          relates parent-session;\n" +
-                                     "      fault-identification sub relation,\n" +
-                                     "          relates identifying-question,\n" +
-                                     "          relates identified-fault;\n"
+                "          plays reported-fault:parent-session,\n" +
+                "          plays unanswered-question:parent-session;\n" +
+                "      fault sub entity,\n" +
+                "          plays reported-fault:relevant-fault,\n" +
+                "          plays fault-identification:identified-fault;\n" +
+                "      question sub entity,\n" +
+                "          plays fault-identification:identifying-question,\n" +
+                "          plays unanswered-question:question-not-answered;\n" +
+                "      reported-fault sub relation,\n" +
+                "          relates relevant-fault,\n" +
+                "          relates parent-session;\n" +
+                "      unanswered-question sub relation,\n" +
+                "          relates question-not-answered,\n" +
+                "          relates parent-session;\n" +
+                "      fault-identification sub relation,\n" +
+                "          relates identifying-question,\n" +
+                "          relates identified-fault;\n"
         );
         String query = "match (relevant-fault: $flt, parent-session: $ts) isa reported-fault;\n" +
                 "          not {\n" +
@@ -1279,22 +1280,22 @@ public class TypeInferenceTest {
         Disjunction disjunction = createDisjunction(query);
         transaction.logic().typeInference().applyCombination(disjunction);
 
-        HashMap<String, Set<String>> expected = new HashMap<>() {{
-            put("$x", set("employment"));
-            put("$rel-type", set("employment"));
-            put("$role-type", set("employment:employee"));
-        }};
+        Map<String, Set<String>> expected = map(
+                pair("$x", set("employment")),
+                pair("$rel-type", set("employment")),
+                pair("$role-type", set("employment:employee"))
+        );
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
 
         query = "match $x isa $t; $t plays $role-type; $role-type type employment:employee;";
         disjunction = createDisjunction(query);
         transaction.logic().typeInference().applyCombination(disjunction);
 
-        expected = new HashMap<>() {{
-            put("$x", set("person"));
-            put("$t", set("person"));
-            put("$role-type", set("employment:employee"));
-        }};
+        expected = map(
+                pair("$x", set("person")),
+                pair("$t", set("person")),
+                pair("$role-type", set("employment:employee"))
+        );
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
 }

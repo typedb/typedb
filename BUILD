@@ -88,7 +88,7 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-zip",
-    targets = ["//server:server-deps-mac", "//server:server-deps-prod", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = ["//server:server-deps-mac", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,

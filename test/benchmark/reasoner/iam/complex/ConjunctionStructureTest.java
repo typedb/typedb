@@ -31,7 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class ConjunctionStructureTest {
-    static final Path RESOURCE_DIRECTORY =  Paths.get("test", "benchmark", "reasoner", "iam", "complex");
+    static final Path RESOURCE_DIRECTORY = Paths.get("test", "benchmark", "reasoner", "iam", "complex");
     private static final Path COMMON_RESOURCE_DIR = Paths.get("test", "benchmark", "reasoner", "iam", "resources");
 
     private static final String database = "iam-benchmark-conjunctions";
@@ -45,9 +45,8 @@ public class ConjunctionStructureTest {
     @BeforeClass
     public static void setup() throws IOException {
         benchmarker.setUp();
-        benchmarker.loadSchema(COMMON_RESOURCE_DIR.resolve("types.tql"));
+        benchmarker.loadDatabase(COMMON_RESOURCE_DIR.resolve("types.tql"), COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.loadSchema(COMMON_RESOURCE_DIR.resolve("rules.tql"));
-        benchmarker.importData(COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.warmUp();
     }
 
@@ -83,7 +82,7 @@ public class ConjunctionStructureTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
-        benchmark.assertCounters(500, 17, 50, 120);
+        benchmark.assertCounters(500, 17, 50, 60, 150);
     }
 
     @Test
@@ -104,6 +103,6 @@ public class ConjunctionStructureTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
-        benchmark.assertCounters(500, 15, 104, 212);
+        benchmark.assertCounters(500, 15, 104, 128, 230);
     }
 }

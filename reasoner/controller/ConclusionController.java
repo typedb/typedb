@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.controller;
 
+import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
@@ -304,7 +305,7 @@ public abstract class ConclusionController<
                     Either<ConceptMap, Map<Variable, Concept>> packet
             ) {
                 if (packet.isFirst()) {
-                    assert packet.first().concepts().keySet().containsAll(conclusionProcessor().rule().condition().disjunction().pattern().sharedVariables());
+                    assert packet.first().concepts().keySet().containsAll(Collections.intersection(conclusionProcessor().rule().conclusion().pattern().retrieves(), conclusionProcessor().rule().condition().disjunction().pattern().sharedVariables()));
                     InputPort<Either<ConceptMap, Materialisation>> materialisationInput = conclusionProcessor().createInputPort();
                     ConceptMap filteredConditionAns = packet.first().filter(conclusionProcessor().rule().conclusion().retrievableIds());
                     conclusionProcessor().mayRequestMaterialiser(new MaterialiserRequest(

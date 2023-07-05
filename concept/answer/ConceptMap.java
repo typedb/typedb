@@ -130,7 +130,6 @@ public class ConceptMap implements Answer {
         return new ConceptMap(filteredMap(concepts, filter)); // TODO this should include explainables?
     }
 
-
     static Map<Retrievable, ? extends Concept> filteredMap(Map<Retrievable, ? extends Concept> concepts, Set<? extends Retrievable> vars) {
         return concepts.entrySet().stream()
                 .filter(e -> vars.contains(e.getKey()))

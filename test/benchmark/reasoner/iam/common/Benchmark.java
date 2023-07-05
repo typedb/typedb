@@ -80,21 +80,23 @@ public class Benchmark {
     }
 
     public void assertCounterLowerBound(String counter, long refValue) {
-            assertTrue( // If this error throws, It's time to revise the bound.
+        assertTrue( // If this error throws, It's time to revise the bound.
                 String.format("[GOOD FAILURE!] Counter %s consistently better than lower bound of %d", counter, Math.round(COUNTER_LOWER_MARGIN * refValue)),
                 iterate(runs).anyMatch(run -> run.reasonerPerfCounters.get(counter) >= Math.round(COUNTER_LOWER_MARGIN * refValue)));
     }
 
-    public void assertCounters(long planningTimeMillis, long materialisations, long conjunctionProcessors, long compoundStreams) {
+    public void assertCounters(long planningTimeMillis, long materialisations, long conjunctionProcessors, long compoundStreams, long compoundStreamMessagesReceived) {
         assertCounterUpperBound(ReasonerPerfCounters.PLANNING_TIME_NS, planningTimeMillis * 1_000_000);
         assertCounterUpperBound(ReasonerPerfCounters.MATERIALISATIONS, materialisations);
         assertCounterUpperBound(ReasonerPerfCounters.CONJUNCTION_PROCESSORS, conjunctionProcessors);
         assertCounterUpperBound(ReasonerPerfCounters.COMPOUND_STREAMS, compoundStreams);
+        assertCounterUpperBound(ReasonerPerfCounters.COMPOUND_STREAM_MESSAGES_RECEIVED, compoundStreamMessagesReceived);
 
         // Do not assert lower bound for time planning. Times are too variable.
         assertCounterLowerBound(ReasonerPerfCounters.MATERIALISATIONS, materialisations);
         assertCounterLowerBound(ReasonerPerfCounters.CONJUNCTION_PROCESSORS, conjunctionProcessors);
         assertCounterLowerBound(ReasonerPerfCounters.COMPOUND_STREAMS, compoundStreams);
+        assertCounterLowerBound(ReasonerPerfCounters.COMPOUND_STREAM_MESSAGES_RECEIVED, compoundStreamMessagesReceived);
     }
 
     public static class BenchmarkRun {
@@ -115,7 +117,7 @@ public class Benchmark {
         @Override
         public String toString() {
             StringBuilder perfCounterStr = new StringBuilder();
-            reasonerPerfCounters.forEach((k,v) -> perfCounterStr.append(String.format("|-- %-40s :\t%d\n", k, v)));
+            reasonerPerfCounters.forEach((k, v) -> perfCounterStr.append(String.format("|-- %-40s :\t%d\n", k, v)));
             return "Benchmark run:\n" +
                     "- TimeTaken      :\t" + timeTaken.toMillis() + " ms\n" +
                     "- Answers        :\t" + answerCount + "\n" +

@@ -40,7 +40,7 @@ public class RootDisjunctionController
     RootDisjunctionController(Driver<RootDisjunctionController> driver, ResolvableDisjunction disjunction,
                               Modifiers.Filter filter, boolean explain,
                               Context context, ReasonerConsumer<ConceptMap> reasonerConsumer) {
-        super(driver, disjunction, context);
+        super(driver, disjunction, filter.variables(), context);
         this.filter = filter;
         this.explain = explain;
         this.reasonerConsumer = reasonerConsumer;

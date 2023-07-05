@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
@@ -416,6 +417,13 @@ public class CoreDatabase implements TypeDB.Database {
     }
 
     @Override
+    public boolean isEmpty() {
+        try (TypeDB.Session session = databaseMgr.session(name, SCHEMA); TypeDB.Transaction tx = session.transaction(READ)) {
+            return tx.concepts().getRootThingType().getSubtypes().allMatch(Type::isRoot);
+        }
+    }
+
+    @Override
     public boolean contains(UUID sessionID) {
         return sessions.containsKey(sessionID);
     }
@@ -530,8 +538,9 @@ public class CoreDatabase implements TypeDB.Database {
         private Set<CoreTransaction.Data> commitMayConflict(CoreTransaction.Data txn) {
             if (!txn.dataStorage.hasTrackedWrite()) return set();
             Set<CoreTransaction.Data> mayConflict = new HashSet<>(committing);
-            iterate(committed).filter(committed -> committed.snapshotEnd().get() > txn.snapshotStart())
-                    .forEachRemaining(mayConflict::add);
+            for (CoreTransaction.Data committedTxn : committed) {
+                if (committedTxn.snapshotEnd().get() > txn.snapshotStart()) mayConflict.add(committedTxn);
+            }
             return mayConflict;
         }
 

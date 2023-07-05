@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.database.CoreTransaction;
-import com.vaticle.typedb.core.migrator.data.DataImporter;
+import com.vaticle.typedb.core.migrator.database.DatabaseImporter;
 import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typeql.lang.TypeQL;
@@ -44,6 +44,7 @@ import java.util.List;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.fail;
 
 public class BenchmarkRunner {
@@ -67,7 +68,6 @@ public class BenchmarkRunner {
         }
         Files.createDirectory(dataDir);
         databaseMgr = CoreDatabaseManager.open(new Options.Database().dataDir(dataDir).storageDataCacheSize(MB).storageIndexCacheSize(MB));
-        databaseMgr.create(database);
     }
 
     public void tearDown() {
@@ -87,11 +87,15 @@ public class BenchmarkRunner {
         return databaseMgr.session(database, Arguments.Session.Type.DATA);
     }
 
+    public void loadDatabase(Path schemaFile, Path dataFile) {
+        new DatabaseImporter(databaseMgr, database, schemaFile, dataFile, Version.VERSION).run();
+    }
+
     public void loadSchema(Path schemaFile) {
         try (TypeDB.Session session = schemaSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 try {
-                    TypeQLDefine defineQuery = TypeQL.parseQuery(Files.readString(schemaFile)).asDefine();
+                    TypeQLDefine defineQuery = TypeQL.parseQuery(Files.readString(schemaFile, UTF_8)).asDefine();
                     tx.query().define(defineQuery);
                 } catch (IOException e) {
                     fail("IOException when loading schema: " + e.getMessage());
@@ -99,10 +103,6 @@ public class BenchmarkRunner {
                 tx.commit();
             }
         }
-    }
-
-    public void importData(Path dataFile) {
-        new DataImporter(databaseMgr, database, dataFile, Version.VERSION).run();
     }
 
     public void warmUp() {
@@ -117,7 +117,7 @@ public class BenchmarkRunner {
             }
         }
         // A dummy reasoning query
-        for (int i=0;i<1;i++) runMatchQuery("match $wr isa warm-up-relation, has warm-up-attribute $wa;");
+        for (int i = 0; i < 1; i++) runMatchQuery("match $wr isa warm-up-relation, has warm-up-attribute $wa;");
         // Warm up all persisted data
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
@@ -127,7 +127,7 @@ public class BenchmarkRunner {
             }
         }
 
-        LOG.info("Warmup took: {} ms", (System.nanoTime() - start)/1_000_000);
+        LOG.info("Warmup took: {} ms", (System.nanoTime() - start) / 1_000_000);
     }
 
     public void runBenchmark(Benchmark benchmark) {
@@ -164,7 +164,8 @@ public class BenchmarkRunner {
                 ReasonerPerfCounters.PLANNING_TIME_NS,
                 ReasonerPerfCounters.MATERIALISATIONS,
                 ReasonerPerfCounters.CONJUNCTION_PROCESSORS,
-                ReasonerPerfCounters.COMPOUND_STREAMS
+                ReasonerPerfCounters.COMPOUND_STREAMS,
+                ReasonerPerfCounters.COMPOUND_STREAM_MESSAGES_RECEIVED
         );
 
         private final StringBuilder sb;

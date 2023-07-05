@@ -38,6 +38,7 @@ import java.util.function.Supplier;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanOut;
+import static java.util.Collections.emptySet;
 
 public class NegationController extends AbstractController<
         ConceptMap,
@@ -58,7 +59,7 @@ public class NegationController extends AbstractController<
 
     @Override
     public void setUpUpstreamControllers() {
-        disjunctionContoller = registry().createNestedDisjunction(negated.disjunction());
+        disjunctionContoller = registry().createNestedDisjunction(negated.disjunction(), emptySet());
     }
 
     @Override

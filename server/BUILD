@@ -111,26 +111,12 @@ java_binary(
     data = [":prepare-server-directories"]
 )
 
-java_binary( # TODO: this target should not be needed if :server-deps-mac can depend directly on :server-mac (lib)
-    name = "server-bin-deps-mac",
-    main_class = "com.vaticle.typedb.core.server.TypeDBServer",
-    runtime_deps = [":server-mac"],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin-deps:{pom_version}"],
-)
-
 java_binary(
     name = "server-bin-linux",
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
     runtime_deps = [":server-linux"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
     data = [":prepare-server-directories"]
-)
-
-java_binary( # TODO: this target should not be needed if :server-deps-linux can depend directly on :server-linux (lib)
-    name = "server-bin-deps-linux",
-    main_class = "com.vaticle.typedb.core.server.TypeDBServer",
-    runtime_deps = [":server-linux"],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin-deps:{pom_version}"],
 )
 
 java_binary(
@@ -141,64 +127,29 @@ java_binary(
     data = [":prepare-server-directories"]
 )
 
-java_binary( # TODO: this target should not be needed if :server-deps-windows can depend directly on :server-windows (lib)
-    name = "server-bin-deps-windows",
-    main_class = "com.vaticle.typedb.core.server.TypeDBServer",
-    runtime_deps = [":server-windows"],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin-deps:{pom_version}"],
-)
-
-java_binary( # TODO: this target should not be needed if :server-deps-prod can depend directly on @maven//:org_rocksdb_rocksdbjni (lib)
-    name = "server-bin-deps-prod",
-    main_class = "com.vaticle.typedb.core.server.TypeDBServer",
-    runtime_deps = ["@maven//:org_rocksdb_rocksdbjni"],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin-deps-prod:{pom_version}"],
-)
-
 java_deps(
     name = "server-deps-mac",
-    target = ":server-bin-deps-mac",
-    java_deps_root = "server/lib/common/",
-    java_deps_root_overrides = {
-        "rocksdbjni-dev-mac-*": "server/lib/dev/",
-    },
+    target = ":server-bin-mac",
+    java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
     maven_name = True,
 )
 
 java_deps(
     name = "server-deps-linux",
-    target = ":server-bin-deps-linux",
-    java_deps_root = "server/lib/common/",
-#    java_deps_root_overrides = {
-#        "rocksdbjni-dev-*": "server/lib/dev/",
-#    },
+    target = ":server-bin-linux",
+    java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
     maven_name = True,
 )
 
 java_deps(
     name = "server-deps-windows",
-    target = ":server-bin-deps-windows",
-    java_deps_root = "server/lib/common/",
-#    java_deps_root_overrides = {
-#        "rocksdbjni-dev-*": "server/lib/dev/",
-#    },
+    target = ":server-bin-windows",
+    java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
     maven_name = True,
 )
-
-java_deps(
-    name = "server-deps-prod",
-    target = ":server-bin-deps-prod",
-    java_deps_root = "server/lib/prod/",
-    visibility = ["//:__pkg__"],
-    maven_name = True,
-)
-
-assemble_deps_common = [
-    ":server-deps-prod",
-]
 
 assemble_files = {
     "//server:config": "server/conf/config.yml",
@@ -227,7 +178,7 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-zip",
-    targets = assemble_deps_common + ["server-deps-mac", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = ["server-deps-mac", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
@@ -286,9 +237,7 @@ assemble_apt(
     installation_dir = "/opt/typedb/core/",
     files = assemble_files,
     empty_dirs = [
-        "opt/typedb/core/server/lib/dev",
-        "opt/typedb/core/server/lib/prod",
-        "opt/typedb/core/server/lib/common",
+        "opt/typedb/core/server/lib/",
         "var/lib/typedb/core/data/"
      ],
     permissions = {
@@ -311,4 +260,3 @@ checkstyle_test(
     include = glob(["*", "*/*", "*/*/*"]),
     license_type = "agpl-header",
 )
-

@@ -32,7 +32,7 @@ proto_library(
 
 proto_library(
     name = "migrator-data",
-    srcs = ["data/data.proto"],
+    srcs = ["database/data.proto"],
 )
 
 java_grpc_compile(
@@ -60,6 +60,7 @@ native_java_libraries(
     deps = [
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/pattern:pattern",
         "@vaticle_typeql//java/common:common",
 
@@ -73,13 +74,13 @@ native_java_libraries(
         "@maven//:org_slf4j_slf4j_api",
     ],
     mac_deps = [
-        "@maven//:org_rocksdb_rocksdbjni_dev_mac"
+        "@maven//:io_github_speedb_io_speedbjni"
     ],
     linux_deps = [
-        "@maven//:org_rocksdb_rocksdbjni",
+        "@maven//:io_github_speedb_io_speedbjni",
     ],
     windows_deps = [
-        "@maven//:org_rocksdb_rocksdbjni",
+        "@maven//:io_github_speedb_io_speedbjni",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-migrator:{pom_version}"],
     visibility = ["//visibility:public"],

@@ -31,7 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class BasicTest {
-    static final Path RESOURCE_DIRECTORY =  Paths.get("test", "benchmark", "reasoner", "iam", "basic");
+    static final Path RESOURCE_DIRECTORY = Paths.get("test", "benchmark", "reasoner", "iam", "basic");
     private static final Path COMMON_RESOURCE_DIR = Paths.get("test", "benchmark", "reasoner", "iam", "resources");
 
     private static final int NOBJECTS = 52;
@@ -48,9 +48,8 @@ public class BasicTest {
     @BeforeClass
     public static void setup() throws IOException {
         benchmarker.setUp();
-        benchmarker.loadSchema(COMMON_RESOURCE_DIR.resolve("types.tql"));
+        benchmarker.loadDatabase(COMMON_RESOURCE_DIR.resolve("types.tql"), COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.loadSchema(RESOURCE_DIRECTORY.resolve("basic_test.tql"));
-        benchmarker.importData(COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.warmUp();
     }
 
@@ -73,7 +72,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(500);
-        benchmark.assertCounters(10, NACCESS, NACCESS + 1, NACCESS + 1);
+        benchmark.assertCounters(10, NACCESS, NACCESS + 1, NACCESS + 1, 3 * NACCESS);
     }
 
     @Test
@@ -85,7 +84,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1500);
-        benchmark.assertCounters(10, NOBJECTS * NOBJECTS, 2, 2);
+        benchmark.assertCounters(10, NOBJECTS * NOBJECTS, 2, 2, 2 * NOBJECTS * (NOBJECTS+1));
     }
 
     @Test
@@ -97,7 +96,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1500);
-        benchmark.assertCounters(10, NOBJECTS * NOBJECTS, 2, 2);
+        benchmark.assertCounters(10, NOBJECTS * NOBJECTS, 2, 2, 2 * NOBJECTS * (NOBJECTS+1));
     }
 
     @Test
@@ -112,7 +111,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(200);
-        benchmark.assertCounters(10, NOBJECTS, 2, 2);
+        benchmark.assertCounters(10, NOBJECTS, 2, 2, 2 * (NOBJECTS+1));
     }
 
     @Test
@@ -129,7 +128,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(200);
-        benchmark.assertCounters(10, NOBJECTS, 2, NOBJECTS + 3);
+        benchmark.assertCounters(10, NOBJECTS, 2, NOBJECTS + 3, 314);
     }
 
     @Test
@@ -140,7 +139,7 @@ public class BasicTest {
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(4500);
-        benchmark.assertCounters(25, NOBJECTS * NOBJECTS + (NOBJECTS * NOBJECTS * 2 - NOBJECTS), 3, 3);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS + (NOBJECTS * NOBJECTS * 2 - NOBJECTS), 3, 3, 24180);
     }
 
     // More complicated
@@ -157,7 +156,25 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1500);
-        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS, NOBJECTS + 3);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS, NOBJECTS + 3, 8217);
+    }
+
+    @Test
+    public void testTripleJoinWithProjection() {
+        String query = String.format(
+                "match\n" +
+                        "$a isa object, has id \"%s\";\n" +
+                        "(start: $a, end: $b) isa object-pair;\n" +
+                        "(start: $b, end: $c) isa object-pair;\n" +
+                        "(start: $c, end: $d) isa object-pair;\n" +
+                        "get $a, $d;\n",
+                queryParams.basicTestObject);
+        Benchmark benchmark = new Benchmark("triple-join-with-projection", query, NOBJECTS);
+        benchmarker.runBenchmark(benchmark);
+
+        benchmark.assertAnswerCountCorrect();
+        benchmark.assertRunningTime(1500);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS, NOBJECTS + NOBJECTS + 3, 151529);
     }
 
     @Test
@@ -173,7 +190,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1500);
-        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, 1 + NOBJECTS * 2, NOBJECTS * 2 + 3);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, 1 + NOBJECTS * 2, NOBJECTS * 2 + 3, 18929);
     }
 
     @Test
@@ -188,7 +205,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(200);
-        benchmark.assertCounters(25, NOBJECTS * 2 - 1, 2 + NOBJECTS, NOBJECTS + 3);
+        benchmark.assertCounters(25, NOBJECTS * 2 - 1, 2 + NOBJECTS, NOBJECTS + 3, 314);
     }
 
     @Test
@@ -203,7 +220,7 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(500);
-        benchmark.assertCounters(50, NOBJECTS + NOBJECTS, 3, 3 + 2);
+        benchmark.assertCounters(50, NOBJECTS + NOBJECTS, 3, 3 + 2, 5567);
     }
 
     @Test
@@ -219,19 +236,19 @@ public class BasicTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(500);
-        benchmark.assertCounters(40, NOBJECTS, 2, 3 + 1);
+        benchmark.assertCounters(40, NOBJECTS, 2, 3 + 1, 5514);
     }
 
     @Test
     public void testQueryTwice() {
         String query = "match\n" +
-                        "(start: $a, end: $b) isa object-pair;\n" +
-                        "(start: $a, end: $b) isa object-pair;\n";
+                "(start: $a, end: $b) isa object-pair;\n" +
+                "(start: $a, end: $b) isa object-pair;\n";
         Benchmark benchmark = new Benchmark("double-join-self", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(3500);
-        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS * NOBJECTS + 2,  NOBJECTS * NOBJECTS + 2);
+        benchmark.assertCounters(25, NOBJECTS * NOBJECTS, NOBJECTS * NOBJECTS + 2, NOBJECTS * NOBJECTS + 2, 13572);
     }
 }

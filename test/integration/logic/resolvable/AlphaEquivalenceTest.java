@@ -44,12 +44,14 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.map;
+import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 public class AlphaEquivalenceTest {
 
@@ -203,7 +205,7 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_equivalent() {
         schema("define parentship sub relation, relates parent, relates child; " +
-                       "person sub entity, plays parentship:parent, plays parentship:child;");
+                "person sub entity, plays parentship:parent, plays parentship:child;");
         Concludable r = concludable("$r(parent: $p, child: $c) isa parentship");
         Concludable q = concludable("$q(parent: $s, child: $t) isa parentship");
         Map<String, String> varNameMap = singleAlphaMap(r, q);
@@ -219,7 +221,7 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_equivalent_with_overlapping_variables() {
         schema("define parentship sub relation, relates parent, relates child; " +
-                       "person sub entity, plays parentship:parent, plays parentship:child;");
+                "person sub entity, plays parentship:parent, plays parentship:child;");
         Concludable r = concludable("$r(parent: $p, child: $c) isa parentship");
         Concludable q = concludable("$r(parent: $s, child: $p) isa parentship");
         Map<String, String> varNameMap = singleAlphaMap(r, q);
@@ -235,7 +237,7 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_equivalent_with_clashing_variables() {
         schema("define parentship sub relation, relates parent, relates child; " +
-                       "person sub entity, plays parentship:parent, plays parentship:child;");
+                "person sub entity, plays parentship:parent, plays parentship:child;");
         Concludable r = concludable("$r(parent: $x, child: $y) isa parentship");
         Concludable q = concludable("$x(parent: $y, child: $r) isa parentship");
         Map<String, String> varNameMap = singleAlphaMap(r, q);
@@ -254,20 +256,20 @@ public class AlphaEquivalenceTest {
         Concludable r = relation(concludable("$r(sibling: $p, sibling: $c) isa siblingship", "$p isa person"));
         Concludable q = relation(concludable("$q(sibling: $s, sibling: $t) isa siblingship", "$s isa person"));
         Set<Map<String, String>> alphaMaps = r.alphaEquals(q).map(AlphaEquivalenceTest::alphaMapToStringMap).toSet();
-        Map<String, String> map1 = new HashMap<String, String>() {{
-            put("$r", "$q");
-            put("$p", "$s");
-            put("$c", "$t");
-            put("$_siblingship:sibling", "$_siblingship:sibling");
-            put("$_siblingship", "$_siblingship");
-        }};
-        Map<String, String> map2 = new HashMap<String, String>() {{
-            put("$r", "$q");
-            put("$p", "$t");
-            put("$c", "$s");
-            put("$_siblingship:sibling", "$_siblingship:sibling");
-            put("$_siblingship", "$_siblingship");
-        }};
+        Map<String, String> map1 = map(
+                pair("$r", "$q"),
+                pair("$p", "$s"),
+                pair("$c", "$t"),
+                pair("$_siblingship:sibling", "$_siblingship:sibling"),
+                pair("$_siblingship", "$_siblingship")
+        );
+        Map<String, String> map2 = map(
+                pair("$r", "$q"),
+                pair("$p", "$t"),
+                pair("$c", "$s"),
+                pair("$_siblingship:sibling", "$_siblingship:sibling"),
+                pair("$_siblingship", "$_siblingship")
+        );
         assertEquals(set(map1, map2), alphaMaps);
         testAlphaEquivalenceSymmetricReflexive(r, q, true);
     }
@@ -277,75 +279,75 @@ public class AlphaEquivalenceTest {
         schema("define siblingship sub relation, relates sibling; person sub entity, plays siblingship:sibling;");
         Concludable r = relation(concludable("$r(sibling: $p, sibling: $c) isa siblingship", "$p isa person"));
         Set<Map<String, String>> alphaMaps = r.alphaEquals(r).map(AlphaEquivalenceTest::alphaMapToStringMap).toSet();
-        Map<String, String> map1 = new HashMap<String, String>() {{
-            put("$r", "$r");
-            put("$p", "$p");
-            put("$c", "$c");
-            put("$_siblingship:sibling", "$_siblingship:sibling");
-            put("$_siblingship", "$_siblingship");
-        }};
-        Map<String, String> map2 = new HashMap<String, String>() {{
-            put("$r", "$r");
-            put("$p", "$c");
-            put("$c", "$p");
-            put("$_siblingship:sibling", "$_siblingship:sibling");
-            put("$_siblingship", "$_siblingship");
-        }};
+        Map<String, String> map1 = map(
+                pair("$r", "$r"),
+                pair("$p", "$p"),
+                pair("$c", "$c"),
+                pair("$_siblingship:sibling", "$_siblingship:sibling"),
+                pair("$_siblingship", "$_siblingship")
+        );
+        Map<String, String> map2 = map(
+                pair("$r", "$r"),
+                pair("$p", "$c"),
+                pair("$c", "$p"),
+                pair("$_siblingship:sibling", "$_siblingship:sibling"),
+                pair("$_siblingship", "$_siblingship")
+        );
         assertEquals(set(map1, map2), alphaMaps);
     }
 
     @Test
     public void test_symmetric_relation_by_roles_has_multiple_reflexive_results() {
         schema("define employment sub relation, relates employee, relates employer; person sub entity, plays " +
-                       "employment:employee, plays employment:employer;");
+                "employment:employee, plays employment:employer;");
         Concludable r = relation(concludable("$r($role1: $p, $role2: $p) isa employment", "$p isa person"));
         Set<Map<String, String>> alphaMaps = r.alphaEquals(r).map(AlphaEquivalenceTest::alphaMapToStringMap).toSet();
-        Map<String, String> map1 = new HashMap<String, String>() {{
-            put("$r", "$r");
-            put("$p", "$p");
-            put("$role1", "$role1");
-            put("$role2", "$role2");
-            put("$_employment", "$_employment");
-        }};
-        Map<String, String> map2 = new HashMap<String, String>() {{
-            put("$r", "$r");
-            put("$p", "$p");
-            put("$role1", "$role2");
-            put("$role2", "$role1");
-            put("$_employment", "$_employment");
-        }};
+        Map<String, String> map1 = map(
+                pair("$r", "$r"),
+                pair("$p", "$p"),
+                pair("$role1", "$role1"),
+                pair("$role2", "$role2"),
+                pair("$_employment", "$_employment")
+        );
+        Map<String, String> map2 = map(
+                pair("$r", "$r"),
+                pair("$p", "$p"),
+                pair("$role1", "$role2"),
+                pair("$role2", "$role1"),
+                pair("$_employment", "$_employment")
+        );
         assertEquals(set(map1, map2), alphaMaps);
     }
 
     @Test
     public void test_symmetric_relation_by_roles_and_roleplayers_has_multiple_reflexive_results() {
         schema("define employment sub relation, relates employee, relates employer; person sub entity, plays " +
-                       "employment:employee, plays employment:employer;");
+                "employment:employee, plays employment:employer;");
         Concludable r = relation(concludable("$r($role1: $p1, $role2: $p2) isa employment", "$p isa person"));
         Set<Map<String, String>> alphaMaps = r.alphaEquals(r).map(AlphaEquivalenceTest::alphaMapToStringMap).toSet();
-        Map<String, String> map1 = new HashMap<String, String>() {{
-            put("$r", "$r");
-            put("$p1", "$p1");
-            put("$p2", "$p2");
-            put("$role1", "$role1");
-            put("$role2", "$role2");
-            put("$_employment", "$_employment");
-        }};
-        Map<String, String> map2 = new HashMap<String, String>() {{
-            put("$r", "$r");
-            put("$p1", "$p2");
-            put("$p2", "$p1");
-            put("$role1", "$role2");
-            put("$role2", "$role1");
-            put("$_employment", "$_employment");
-        }};
+        Map<String, String> map1 = map(
+                pair("$r", "$r"),
+                pair("$p1", "$p1"),
+                pair("$p2", "$p2"),
+                pair("$role1", "$role1"),
+                pair("$role2", "$role2"),
+                pair("$_employment", "$_employment")
+        );
+        Map<String, String> map2 = map(
+                pair("$r", "$r"),
+                pair("$p1", "$p2"),
+                pair("$p2", "$p1"),
+                pair("$role1", "$role2"),
+                pair("$role2", "$role1"),
+                pair("$_employment", "$_employment")
+        );
         assertEquals(set(map1, map2), alphaMaps);
     }
 
     @Test
     public void test_relation_with_duplicate_roleplayers_equivalent() {
         schema("define friendship sub relation, relates friend; " +
-                       "person sub entity, plays friendship:friend;");
+                "person sub entity, plays friendship:friend;");
         Concludable r = concludable("$r(friend: $p, friend: $p) isa friendship");
         Concludable q = concludable("$q(friend: $s, friend: $s) isa friendship");
         Map<String, String> varNameMap = singleAlphaMap(r, q);
@@ -360,7 +362,7 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_with_three_roles_equivalent() {
         schema("define transaction sub relation, relates buyer, relates seller, relates produce; " +
-                       "something sub entity, plays transaction:buyer, plays transaction:seller, plays transaction:produce;");
+                "something sub entity, plays transaction:buyer, plays transaction:seller, plays transaction:produce;");
         Concludable r = concludable("$r(buyer: $p, seller: $c, produce: $u) isa transaction");
         Concludable q = concludable("$q(buyer: $s, seller: $t, produce: $v) isa transaction");
         Map<String, String> varNameMap = singleAlphaMap(r, q);
@@ -378,9 +380,9 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_annotated_with_attribute() {
         schema("define annotation sub attribute, value string; " +
-                       "data-lineage sub relation, relates data, relates source, owns annotation;" +
-                       "data sub entity, plays data-lineage:source, plays data-lineage:data;" +
-                       "employment sub relation, relates employer, relates employee; person sub entity, plays employment:employee, plays employment:employer;");
+                "data-lineage sub relation, relates data, relates source, owns annotation;" +
+                "data sub entity, plays data-lineage:source, plays data-lineage:data;" +
+                "employment sub relation, relates employer, relates employee; person sub entity, plays employment:employee, plays employment:employer;");
         Concludable r1 = concludable("$r1 ($x, $y)");
         Concludable r2 = relation(concludable("$r2 ($x, $y)", "$r2 has $a"));
         testAlphaEquivalenceSymmetricReflexive(r1, r2, false);
@@ -389,7 +391,7 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_with_different_roleplayer_variable_bindings() {
         schema("define employment sub relation, relates employer, relates employee; company sub entity, " +
-                       "plays employment:employer, plays employment:employee;");
+                "plays employment:employer, plays employment:employee;");
         List<Concludable> concludables = iterate(
                 concludable("$r1 (employer: $x, employee: $y)"),
                 concludable("$r2 (employer: $x, employee: $x)"),
@@ -402,8 +404,8 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_with_typed_roleplayers() {
         schema("define employment sub relation, relates employer, relates employee; organisation sub entity, plays " +
-                       "employment:employer, plays employment:employee; company sub organisation; person sub entity, plays " +
-                       "employment:employer, plays employment:employee;");
+                "employment:employer, plays employment:employee; company sub organisation; person sub entity, plays " +
+                "employment:employer, plays employment:employee;");
         List<Concludable> concludables = iterate(
                 relation(concludable("($x, $y)", "$x isa organisation")),
                 relation(concludable("($x, $y)", "$y isa organisation")),
@@ -435,8 +437,8 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_attributes_as_roleplayers() {
         schema("define name sub attribute, value string, plays signature:name; signature sub relation, relates name, " +
-                       "relates form; paper sub entity, plays signature:form; scribble sub attribute, value string, " +
-                       "plays signature:name, plays signature:form;");
+                "relates form; paper sub entity, plays signature:form; scribble sub attribute, value string, " +
+                "plays signature:name, plays signature:form;");
         List<Concludable> concludables = iterate(
                 concludable("$r0 ($x, $y)"),
                 relation(concludable("$r1 ($x, $y)", "$x isa name")),
@@ -492,7 +494,7 @@ public class AlphaEquivalenceTest {
     @Test
     public void test_relation_different_inequivalent_variants() {
         schema("define parentship sub relation, relates parent, relates child; " +
-                       "person sub entity, plays parentship:parent, plays parentship:child;");
+                "person sub entity, plays parentship:parent, plays parentship:child;");
         List<Concludable> concludables = iterate(
                 concludable("($y)"),
                 concludable("($y) isa $type"),

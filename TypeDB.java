@@ -58,6 +58,8 @@ public interface TypeDB {
 
         String name();
 
+        boolean isEmpty();
+
         boolean contains(UUID sessionID);
 
         Session session(UUID sessionID);

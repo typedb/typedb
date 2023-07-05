@@ -139,13 +139,13 @@ public abstract class AbstractController<
         private final Tracer tracer;
 
         Context(ActorExecutorGroup executorService, ControllerRegistry registry, Driver<Monitor> monitor,
-                ReasonerPlanner planner, ReasonerPerfCounters perfCounters, @Nullable Tracer tracer) {
+                ReasonerPlanner planner, ReasonerPerfCounters perfCounters, @Nullable Tracer tracer, boolean explainEnabled) {
             this.executorService = executorService;
             this.registry = registry;
             this.monitor = monitor;
             this.planner = planner;
             this.tracer = tracer;
-            this.processorContext = new AbstractProcessor.Context(monitor, tracer, perfCounters);
+            this.processorContext = new AbstractProcessor.Context(monitor, tracer, perfCounters, explainEnabled);
         }
 
         ActorExecutorGroup executorService() {
