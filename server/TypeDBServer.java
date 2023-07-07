@@ -229,9 +229,6 @@ public class TypeDBServer implements AutoCloseable {
             try {
                 close();
                 System.exit(0);
-            } catch (TypeDBCheckedException ex) {
-                logger().error("Failed to shut down cleanly, performing hard stop.");
-                Runtime.getRuntime().halt(1);
             } catch (Throwable error) {
                 logger().error("Unexpected error during shutdown, performing hard stop.", error);
                 Runtime.getRuntime().halt(1);
