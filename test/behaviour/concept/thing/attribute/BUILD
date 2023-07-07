@@ -60,6 +60,7 @@ java_test(
         "//test/behaviour/connection/database:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/connection/transaction:steps",
+        "//test/behaviour/util:steps",
     ],
     data = [
         "@vaticle_typedb_behaviour//concept/thing:attribute.feature",
