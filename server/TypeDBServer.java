@@ -61,7 +61,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_EXCEPTION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
 import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
@@ -111,9 +111,13 @@ public class TypeDBServer implements AutoCloseable {
         server = rpcServer();
         Thread.setDefaultUncaughtExceptionHandler(
                 (t, e) -> {
-                    logger().error(UNCAUGHT_EXCEPTION.message(t.getName(), e), e);
-                    close();
-                    System.exit(1);
+                    try {
+                        logger().error(UNCAUGHT_ERROR.message(t.getName(), e), e);
+                        close();
+                        System.exit(1);
+                    } catch (Throwable s) {
+                        // unexpected
+                    }
                 }
         );
         Runtime.getRuntime().addShutdownHook(
@@ -221,30 +225,23 @@ public class TypeDBServer implements AutoCloseable {
     @Override
     public synchronized void close() {
         if (isOpen.compareAndSet(true, false)) {
-            logger().info("");
-            logger().info("Shutting down {}...", name());
             try {
+                logger().info("");
+                logger().info("Shutting down {}...", name());
                 assert typeDBService != null;
-                logger().info("Closing TypeDB service {}...", name());
                 typeDBService.close();
-                logger().info("Closing server");
                 server.shutdown();
-                logger().info("Shutting down server grpc");
+                logger().info("Shutting down network layer...");
                 if (!server.awaitTermination(10, TimeUnit.SECONDS)) {
-                    logger().info("Forcefully shutting down server grpc");
                     server.shutdownNow();
                 }
-                logger().info("Closing DatabaseMgr");
+                logger().info("Shutting down storage layer...");
                 databaseMgr.close();
-                logger().info("Performing finalisation");
                 System.runFinalization();
-                logger().info("{} has been shutdown", name());
-            } catch (InterruptedException e) {
-                logger().error(FAILED_AT_STOPPING.message(), e);
-                Thread.currentThread().interrupt();
+                logger().info("{} has been shutdown.", name());
             } catch (Throwable e) {
                 logger().error(FAILED_AT_STOPPING.message(), e);
-            } finally {
+                logger().info("Performing hard exit.");
                 Runtime.getRuntime().halt(1);
             }
         }
