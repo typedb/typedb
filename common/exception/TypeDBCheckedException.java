@@ -37,12 +37,12 @@ public class TypeDBCheckedException extends Exception {
         this.errorMessage = error;
     }
 
-    private TypeDBCheckedException(Exception e) {
+    private TypeDBCheckedException(Throwable e) {
         super(e);
         errorMessage = null;
     }
 
-    public static TypeDBCheckedException of(Exception e) {
+    public static TypeDBCheckedException of(Throwable e) {
         return new TypeDBCheckedException(e);
     }
 

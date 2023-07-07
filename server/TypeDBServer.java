@@ -23,6 +23,7 @@ import com.vaticle.factory.tracing.client.FactoryTracing;
 import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.common.util.Java;
+import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
@@ -58,7 +59,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ALREADY_RUNNING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EXITED_WITH_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_ERROR;
@@ -115,13 +115,22 @@ public class TypeDBServer implements AutoCloseable {
                         logger().error(UNCAUGHT_ERROR.message(t.getName(), e), e);
                         close();
                         System.exit(1);
-                    } catch (Throwable s) {
-                        // unexpected
+                    } catch (TypeDBCheckedException ex) {
+                        logger().error("Failed to shut down cleanly, performing hard stop.");
+                        Runtime.getRuntime().halt(1);
+                    } catch (Throwable error) {
+                        // another thread will do the close
                     }
                 }
         );
         Runtime.getRuntime().addShutdownHook(
-                NamedThreadFactory.create(TypeDBServer.class, "shutdown").newThread(this::close)
+                NamedThreadFactory.create(TypeDBServer.class, "shutdown").newThread(() -> {
+                    try {
+                        close();
+                    } catch (Throwable error) {
+                        logger().error("Error during shutdown: ", error);
+                    }
+                })
         );
         isOpen = new AtomicBoolean(true);
     }
@@ -217,73 +226,70 @@ public class TypeDBServer implements AutoCloseable {
             server.awaitTermination();
         } catch (InterruptedException e) {
             // server is terminated
-            close();
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    @Override
-    public synchronized void close() {
-        if (isOpen.compareAndSet(true, false)) {
             try {
-                logger().info("");
-                logger().info("Shutting down {}...", name());
-                assert typeDBService != null;
-                typeDBService.close();
-                server.shutdown();
-                logger().info("Shutting down network layer...");
-                if (!server.awaitTermination(10, TimeUnit.SECONDS)) {
-                    server.shutdownNow();
-                }
-                logger().info("Shutting down storage layer...");
-                databaseMgr.close();
-                System.runFinalization();
-                logger().info("{} has been shutdown.", name());
-            } catch (Throwable e) {
-                logger().error(FAILED_AT_STOPPING.message(), e);
-                logger().info("Performing hard exit.");
+                close();
+                System.exit(0);
+            } catch (TypeDBCheckedException ex) {
+                logger().error("Failed to shut down cleanly, performing hard stop.");
+                Runtime.getRuntime().halt(1);
+            } catch (Throwable error) {
+                logger().error("Unexpected error during shutdown, performing hard stop.", error);
                 Runtime.getRuntime().halt(1);
             }
         }
     }
 
-    public static void main(String[] args) {
-        try {
-            printASCIILogo();
-
-            CoreConfigParser configParser = new CoreConfigParser();
-            ArgsParser<CoreSubcommand> argsParser = new ArgsParser<CoreSubcommand>()
-                    .subcommand(new CoreSubcommandParser.Server(configParser))
-                    .subcommand(new CoreSubcommandParser.Import())
-                    .subcommand(new CoreSubcommandParser.Export());
-            Optional<CoreSubcommand> subcmd = argsParser.parse(args);
-            if (subcmd.isEmpty()) {
-                LOG.error(UNRECOGNISED_CLI_COMMAND.message(String.join(" ", args)));
-                LOG.error(argsParser.usage());
-                System.exit(1);
-            } else {
-                if (subcmd.get().isServer()) {
-                    CoreSubcommand.Server subcmdServer = subcmd.get().asServer();
-                    if (subcmdServer.isHelp()) System.out.println(argsParser.help());
-                    else if (subcmdServer.isVersion()) System.out.println("Version: " + Version.VERSION);
-                    else runServer(subcmdServer);
-                } else if (subcmd.get().isImport()) {
-                    runImport(subcmd.get().asImport());
-                } else if (subcmd.get().isExport()) {
-                    runExport(subcmd.get().asExport());
-                } else throw TypeDBException.of(ILLEGAL_STATE);
+    @Override
+    public synchronized void close() throws TypeDBCheckedException {
+        if (isOpen.compareAndSet(true, false)) {
+            try {
+                logger().info("");
+                logger().info("Closing {} instance...", name());
+                assert typeDBService != null;
+                typeDBService.close();
+                logger().info("Stopping network layer...");
+                server.shutdown();
+                if (!server.awaitTermination(10, TimeUnit.SECONDS)) {
+                    server.shutdownNow();
+                }
+                logger().info("Stopping storage layer...");
+                databaseMgr.close();
+                System.runFinalization();
+                logger().info("{} instance has been closed.", name());
+            } catch (Throwable e) {
+                logger().error(FAILED_AT_STOPPING.message(), e);
+                throw TypeDBCheckedException.of(e);
             }
-        } catch (Exception e) {
-            if (e instanceof TypeDBException) {
-                LOG.error(e.getMessage());
-            } else {
-                LOG.error(e.getMessage(), e);
-                LOG.error(EXITED_WITH_ERROR.message());
-            }
-            System.exit(1);
         }
+    }
 
-        System.exit(0);
+    public static void main(String[] args) throws IOException {
+        printASCIILogo();
+
+        CoreConfigParser configParser = new CoreConfigParser();
+        ArgsParser<CoreSubcommand> argsParser = new ArgsParser<CoreSubcommand>()
+                .subcommand(new CoreSubcommandParser.Server(configParser))
+                .subcommand(new CoreSubcommandParser.Import())
+                .subcommand(new CoreSubcommandParser.Export());
+        Optional<CoreSubcommand> subcmd = argsParser.parse(args);
+        if (subcmd.isEmpty()) {
+            LOG.error(UNRECOGNISED_CLI_COMMAND.message(String.join(" ", args)));
+            LOG.error(argsParser.usage());
+            System.exit(1);
+        } else {
+            if (subcmd.get().isServer()) {
+                CoreSubcommand.Server subcmdServer = subcmd.get().asServer();
+                if (subcmdServer.isHelp()) System.out.println(argsParser.help());
+                else if (subcmdServer.isVersion()) {
+                    System.out.println("Version: " + Version.VERSION);
+                    System.exit(0);
+                } else runServer(subcmdServer);
+            } else if (subcmd.get().isImport()) {
+                runImport(subcmd.get().asImport());
+            } else if (subcmd.get().isExport()) {
+                runExport(subcmd.get().asExport());
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+        }
     }
 
     private static void runServer(CoreSubcommand.Server subcmdServer) {
