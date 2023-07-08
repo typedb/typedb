@@ -97,19 +97,15 @@ public abstract class ConjunctionController<
         assert resolvables.isEmpty();
         resolvables.addAll(registry().logicManager().compile(conjunction));
 
-        iterate(resolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable).forEachRemaining(c -> {
-            concludableControllers.put(c, registry().getOrCreateConcludable(c));
-        });
-        iterate(resolvables).filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(r -> {
-            retrievableControllers.put(r, registry().createRetrievable(r));
-        });
-        iterate(resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated).forEachRemaining(negated -> {
-            try {
-                negationControllers.put(negated, registry().createNegation(negated, conjunction));
-            } catch (TypeDBException e) {
-                terminate(e);
-            }
-        });
+        iterate(resolvables).filter(Resolvable::isConcludable).map(Resolvable::asConcludable).forEachRemaining(c ->
+                concludableControllers.put(c, registry().getOrCreateConcludable(c))
+        );
+        iterate(resolvables).filter(Resolvable::isRetrievable).map(Resolvable::asRetrievable).forEachRemaining(r ->
+                retrievableControllers.put(r, registry().createRetrievable(r))
+        );
+        iterate(resolvables).filter(Resolvable::isNegated).map(Resolvable::asNegated).forEachRemaining(negated ->
+                negationControllers.put(negated, registry().createNegation(negated, conjunction))
+        );
     }
 
     ConjunctionStreamPlan getPlan(Set<Variable.Retrievable> bounds) {
@@ -625,12 +621,12 @@ public abstract class ConjunctionController<
 
             private static boolean boundsRemainSatisfied(CompoundStreamPlan parent, CompoundStreamPlan childToFlatten) {
                 return difference(
-                                childToFlatten.childAt(1).identifierVariables,
-                                union(parent.identifierVariables, childToFlatten.childAt(0).outputVariables))
+                        childToFlatten.childAt(1).identifierVariables,
+                        union(parent.identifierVariables, childToFlatten.childAt(0).outputVariables))
                         .isEmpty() &&
                         union(
-                                        childToFlatten.asCompoundStreamPlan().childAt(1).outputs(),
-                                        childToFlatten.asCompoundStreamPlan().childAt(1).extensions())
+                                childToFlatten.asCompoundStreamPlan().childAt(1).outputs(),
+                                childToFlatten.asCompoundStreamPlan().childAt(1).extensions())
                                 .equals(childToFlatten.outputs());
             }
 
