@@ -195,7 +195,7 @@ public class AnswerCountEstimator {
                 // Question: Does the tree which minimises the answer count for all variables also minimise it for the queried variables?
                 // Ideally we'd figure out how to do the projection first, and then estimation should just be finding the MST.
                 Map<Variable, Set<LocalModel.EdgeEstimate.Directed>> mdst = findTree(remainingVars, start);
-                estimate *= minVariableEstimate.get(start) * effectiveConnectivityFromMdst(estimateableVariables, mdst, start, 1.0, null).first();
+                estimate *= minVariableEstimate.get(start) * effectiveConnectivityFromTree(estimateableVariables, mdst, start, 1.0, null).first();
             }
             return estimate;
         }
@@ -222,14 +222,14 @@ public class AnswerCountEstimator {
 
         // Returns connectivity, upper-bound for connectivity
         // Something with the adaptive minVariableEstimate and the way we upper bound is being non-deterministic.
-        private Pair<Double, Double> effectiveConnectivityFromMdst(Set<Variable> queryVariables, Map<Variable, Set<LocalModel.EdgeEstimate.Directed>> tree, Variable root, double inputConnectivity, LocalModel.EdgeEstimate.Directed incomingEdge) {
-            double upperBound = queryVariables.contains(root) ? minVariableEstimate.get(root) : 1.0;
+        private Pair<Double, Double> effectiveConnectivityFromTree(Set<Variable> queryVariables, Map<Variable, Set<LocalModel.EdgeEstimate.Directed>> tree, Variable at, double inputConnectivity, LocalModel.EdgeEstimate.Directed incomingEdge) {
+            double upperBound = queryVariables.contains(at) ? minVariableEstimate.get(at) : 1.0;
             double connectivity = inputConnectivity;
 
             Set<LocalModel.EdgeEstimate.Directed> relevantEdges = new HashSet<>();
 
-            for (LocalModel.EdgeEstimate.Directed edge : tree.get(root)) {
-                Pair<Double, Double> branchEstimate = effectiveConnectivityFromMdst(queryVariables, tree, edge.to(), Math.min(minVariableEstimate.get(edge.to()), edge.connectivity()), edge);
+            for (LocalModel.EdgeEstimate.Directed edge : tree.get(at)) {
+                Pair<Double, Double> branchEstimate = effectiveConnectivityFromTree(queryVariables, tree, edge.to(), Math.min(minVariableEstimate.get(edge.to()), edge.connectivity()), edge);
                 if (branchEstimate != null) {
                     connectivity *= branchEstimate.first();
                     upperBound *= branchEstimate.second();
@@ -237,11 +237,11 @@ public class AnswerCountEstimator {
                 }
             }
 
-            boolean isRelevantBranch = queryVariables.contains(root) || relevantEdges.size() > 0;
+            boolean isRelevantBranch = queryVariables.contains(at) || relevantEdges.size() > 0;
             if (!isRelevantBranch) return null;
 
             // Correct for repeated role-players
-            if (root.isThing() && root.asThing().relation().isPresent()) {
+            if (at.isThing() && at.asThing().relation().isPresent()) {
                 if (incomingEdge != null) relevantEdges.add(incomingEdge.reversed());
 
                 Set<Set<LocalModel.EdgeEstimate.Directed>> groupedEdges = iterate(relevantEdges).map(LocalModel.EdgeEstimate.Directed::sameRoleTypeSet).distinct()
