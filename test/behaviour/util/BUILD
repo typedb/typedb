@@ -15,37 +15,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-
-package(default_visibility = ["//visibility:__subpackages__"])
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
+load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_library")
+package(default_visibility = ["//visibility:public"])
 
-java_test(
-    name = "test",
-    srcs = [
-        "InsertTest.java",
-    ],
-    test_class = "com.vaticle.typedb.core.test.behaviour.typeql.language.insert.InsertTest",
+java_library(
+    name = "steps",
+    srcs = ["UtilSteps.java"],
     deps = [
-        # External dependencies from Maven
-        "@maven//:io_cucumber_cucumber_junit",
-    ],
-    runtime_deps = [
-        "//test/behaviour/typeql:steps",
-        "//test/behaviour/connection:steps",
-        "//test/behaviour/connection/session:steps",
-        "//test/behaviour/config:parameters",
-        "//test/behaviour/util:steps",
-    ],
-    data = [
-        "@vaticle_typedb_behaviour//typeql/language:insert.feature",
-    ],
-    size = "medium",
-    visibility = ["//visibility:public"],
-)
 
+        # Internal Repository Dependencies
+        # "@vaticle_typedb_common//:common",
+
+        # External Maven Dependencies
+        "@maven//:junit_junit",
+        "@maven//:io_cucumber_cucumber_java",
+    ],
+)
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["*", "*/*"]),
     license_type = "agpl-header",
 )
