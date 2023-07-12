@@ -27,8 +27,8 @@ def vaticle_dependencies():
 def vaticle_typeql():
     git_repository(
         name = "vaticle_typeql",
-        remote = "https://github.com/vaticle/typeql",
-        tag = "2.18.0",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql
+        remote = "https://github.com/shiladitya-mukherjee/typeql",
+        commit = "cc20e07be18ecddbddcdaf3ae09b0520ec643cbe",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql
     )
 
 def vaticle_typedb_common():
@@ -48,8 +48,8 @@ def vaticle_typedb_protocol():
 def vaticle_typedb_behaviour():
     git_repository(
         name = "vaticle_typedb_behaviour",
-        remote = "https://github.com/vaticle/typedb-behaviour",
-        commit = "90b4addcd71a398e9e52e322021c49310e66a47a" # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
+        remote = "https://github.com/shiladitya-mukherjee/typedb-behaviour",
+        commit = "1cb48d28fa5bd75308260c48c8d4ad478c0a7e49" # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_behaviour
     )
 
 def vaticle_factory_tracing():
