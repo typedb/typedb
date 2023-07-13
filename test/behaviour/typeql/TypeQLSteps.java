@@ -86,15 +86,8 @@ public class TypeQLSteps {
 
     @Given("typeql define")
     public void typeql_define(String defineQueryStatements) {
-        try{
-            TypeQLDefine typeQLQuery = TypeQL.parseQuery(String.join("\n", defineQueryStatements)).asDefine();
-            tx().query().define(typeQLQuery);
-        }
-        catch (Exception e)
-        {
-            System.out.print("hi "+e.getMessage());
-            throw e;
-        }
+        TypeQLDefine typeQLQuery = TypeQL.parseQuery(String.join("\n", defineQueryStatements)).asDefine();
+        tx().query().define(typeQLQuery);
     }
 
     @Given("typeql define; throws exception containing {string}")
