@@ -119,6 +119,7 @@ public class ControllerRegistry {
 
     public void terminate(Throwable cause) {
         if (terminated.compareAndSet(false, true)) {
+            LOG.error("Terminating reasoning due to exception:", cause);
             terminationCause = TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, cause);
             controllers.forEach(actor -> actor.executeNext(a -> a.terminate(terminationCause)));
             materialisationController.executeNext(a -> a.terminate(terminationCause));
