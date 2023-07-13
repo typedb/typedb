@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.test.behaviour.typeql;
 
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
@@ -85,8 +86,15 @@ public class TypeQLSteps {
 
     @Given("typeql define")
     public void typeql_define(String defineQueryStatements) {
-        TypeQLDefine typeQLQuery = TypeQL.parseQuery(String.join("\n", defineQueryStatements)).asDefine();
-        tx().query().define(typeQLQuery);
+        try{
+            TypeQLDefine typeQLQuery = TypeQL.parseQuery(String.join("\n", defineQueryStatements)).asDefine();
+            tx().query().define(typeQLQuery);
+        }
+        catch (Exception e)
+        {
+            System.out.print("hi "+e.getMessage());
+            throw e;
+        }
     }
 
     @Given("typeql define; throws exception containing {string}")
