@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.planner;
 
+import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.cache.CommonCache;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
@@ -25,11 +26,14 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
+import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -44,12 +48,15 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 
 public abstract class ReasonerPlanner {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerPlanner .class);
     final ConceptManager conceptMgr;
     final TraversalEngine traversalEng;
     final LogicManager logicMgr;
     private final boolean explain;
     final CommonCache<CallMode, Plan> planCache;
     final ReasonerPerfCounters perfCounters;
+    private final Set<Either<ResolvableDisjunction, ResolvableConjunction>> roots;
 
     public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, ReasonerPerfCounters perfCounters, boolean explain) {
         this.traversalEng = traversalEng;
@@ -58,6 +65,7 @@ public abstract class ReasonerPlanner {
         this.perfCounters = perfCounters;
         this.explain = explain;
         this.planCache = new CommonCache<>();
+        this.roots = new HashSet<>();
     }
 
     public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, ReasonerPerfCounters perfCounters, boolean explain) {
@@ -75,7 +83,9 @@ public abstract class ReasonerPlanner {
     public void plan(ResolvableConjunction conjunction, Set<Variable> mode) {
         long start = System.nanoTime();
         plan(new CallMode(conjunction, estimateableVariables(mode)));
+        roots.add(Either.second(conjunction));
         perfCounters.timePlanning.add(System.nanoTime() - start);
+        LOG.debug("Plans:\n" + ReadablePlan.prettyString(summarisePlans()));
     }
 
     public void planAllDependencies(Concludable concludable, Set<Variable> mode) {
@@ -176,6 +186,14 @@ public abstract class ReasonerPlanner {
         }
         return calls;
     }
+
+    public Set<ReadablePlan> summarisePlans() {
+        Set<ResolvableConjunction> toSummarise = iterate(roots)
+                .flatMap(root -> root.isFirst() ? iterate(root.first().conjunctions()) : iterate(root.second()))
+                .toSet();
+        return ReadablePlan.summarise(this, toSummarise);
+    }
+
 
     static class CallMode {
         final ResolvableConjunction conjunction;

@@ -55,6 +55,10 @@ log:
       filter: com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters
       level: debug
       output: [ stdout ]
+    reasoner-planner:
+        filter: com.vaticle.typedb.core.reasoner.planner
+        level: debug
+        output: [ stdout, file ]
   debugger:
     reasoner-tracer:
       enable: false
