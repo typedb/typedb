@@ -22,7 +22,6 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
-load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 
 package(default_visibility = ["//visibility:private",])
 
