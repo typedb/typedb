@@ -43,13 +43,15 @@ public class ReadablePlan {
     public final Map<Resolvable<?>, ReadablePlan> nested;
     public final Map<Resolvable<?>, Set<ReadablePlan>> triggeredCalls;
     public final List<Resolvable<?>> evaluationOrder;
+    private final double cost;
 
-    public ReadablePlan(String label, ReasonerPlanner.CallMode callMode, List<Resolvable<?>> evaluationOrder) {
+    public ReadablePlan(String label, ReasonerPlanner.CallMode callMode, List<Resolvable<?>> evaluationOrder, double cost) {
         this.label = label;
         this.callMode = callMode;
         this.nested = new HashMap<>();
         this.triggeredCalls = new HashMap<>();
         this.evaluationOrder = evaluationOrder;
+        this.cost = cost;
     }
 
     static Set<ReadablePlan> summarise(ReasonerPlanner planner, Set<ResolvableConjunction> rootConjunctions) {
@@ -85,6 +87,7 @@ public class ReadablePlan {
     }
 
     private static void prettyString(ReadablePlan toPrint, StringBuilder sb, String nesting) {
+        sb.append("Cost: ").append(toPrint.cost).append("\n");
         for (Resolvable<?> res : toPrint.evaluationOrder) {
             if (res.isRetrievable()) {
                 sb.append(nesting).append("* [RET] ").append(res.pattern().toString().replace('\n', ' ')).append("\n");
@@ -99,7 +102,7 @@ public class ReadablePlan {
                 sb.append(nesting).append("}\n");
             } else throw TypeDBException.of(ILLEGAL_STATE);
         }
-        sb.append("\n");
+        sb.append("---\n");
     }
 
     private static class Summariser {
@@ -133,7 +136,7 @@ public class ReadablePlan {
 
 
             ReasonerPlanner.Plan plan = planner.getPlan(callMode);
-            ReadablePlan readablePlan = new ReadablePlan(label, callMode, plan.plan());
+            ReadablePlan readablePlan = new ReadablePlan(label, callMode, plan.plan(), plan.allCallsCost());
             done.put(callMode, readablePlan);
 
             Set<Variable> runningBounds = new HashSet<>(callMode.mode);
