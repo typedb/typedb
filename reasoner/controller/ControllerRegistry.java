@@ -119,6 +119,7 @@ public class ControllerRegistry {
 
     public void terminate(Throwable cause) {
         if (terminated.compareAndSet(false, true)) {
+            LOG.error("Terminating reasoning due to exception:", cause);
             terminationCause = TypeDBException.of(REASONING_TERMINATED_WITH_CAUSE, cause);
             controllers.forEach(actor -> actor.executeNext(a -> a.terminate(terminationCause)));
             materialisationController.executeNext(a -> a.terminate(terminationCause));
@@ -201,10 +202,10 @@ public class ControllerRegistry {
                     driver -> new ConcludableController.Match(driver, concludable, controllerContext);
             LOG.debug("Create ConcludableController: '{}'", concludable.pattern());
             controllerView = ControllerView.concludable(createController(actorFn), identity(concludable));
-            concludableControllers.put(concludable, controllerView.controller());
             Set<Concludable> concludables = new HashSet<>();
             concludables.add(concludable);
             controllerConcludables.put(controllerView.controller(), concludables);
+            concludableControllers.put(concludable, controllerView.controller());
             controllerView.controller().execute(ConcludableController::initialise);
         }
         return controllerView;
@@ -215,6 +216,9 @@ public class ControllerRegistry {
     }
 
     private Optional<ControllerView.MappedConcludable> getConcludable(Concludable concludable) {
+        // TODO: Due to a lack of synchronisation,
+        //      this does not guarantee that all alpha-equivalent concludables will re-use the same controller.
+        //      We should revisit what we gain out of re-using concludables instead of conclusions.
         for (Map.Entry<Concludable, Driver<ConcludableController.Match>> c : concludableControllers.entrySet()) {
             // TODO: This needs to be optimised from a linear search to use an alpha hash - defer this in case alpha
             //  equivalence is no longer used.
