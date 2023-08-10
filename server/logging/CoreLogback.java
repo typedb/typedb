@@ -37,6 +37,7 @@ import java.util.Map;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_ARCHIVE_SUFFIX;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_MAX_HISTORY;
 
 public class CoreLogback {
 
@@ -121,6 +122,7 @@ public class CoreLogback {
         long directorySize = outputType.fileSizeCap() + outputType.archivesSizeCap();
         policy.setMaxFileSize(new FileSize(outputType.fileSizeCap()));
         policy.setTotalSizeCap(new FileSize(directorySize));
+        policy.setMaxHistory(TYPEDB_LOG_MAX_HISTORY);
         policy.setParent(appender);
         policy.start();
         appender.setRollingPolicy(policy);

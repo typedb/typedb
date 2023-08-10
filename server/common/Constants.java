@@ -29,4 +29,6 @@ public class Constants {
     public static final Path CONFIG_PATH = getTypedbDir().resolve("server/conf/config.yml");
     public static final String TYPEDB_LOG_FILE = "typedb.log";
     public static final String TYPEDB_LOG_FILE_ARCHIVE_SUFFIX = "-%d{yyyy-MM}.%i.log.gz";
+
+    public static final int TYPEDB_LOG_MAX_HISTORY = 10000;
 }
