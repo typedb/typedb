@@ -186,23 +186,23 @@ public class CoreConfig {
 
                 public static class File extends Type {
 
-                    private final Path path;
+                    private final Path baseDirectory;
                     private final long fileSizeLimit;
                     private final YAMLParser.Value.TimePeriodName archiveGrouping;
                     private final YAMLParser.Value.TimePeriod archiveAgeLimit;
                     private final long archivesSizeLimit;
 
-                    File(Path path, long fileSizeLimit, YAMLParser.Value.TimePeriodName archiveGrouping,
+                    File(Path baseDirectory, long fileSizeLimit, YAMLParser.Value.TimePeriodName archiveGrouping,
                          YAMLParser.Value.TimePeriod archiveAgeLimit, long archivesSizeLimit) {
-                        this.path = path;
+                        this.baseDirectory = baseDirectory;
                         this.fileSizeLimit = fileSizeLimit;
                         this.archiveGrouping = archiveGrouping;
                         this.archiveAgeLimit = archiveAgeLimit;
                         this.archivesSizeLimit = archivesSizeLimit;
                     }
 
-                    public Path path() {
-                        return path;
+                    public Path baseDirectory() {
+                        return baseDirectory;
                     }
 
                     public long fileSizeLimit() {

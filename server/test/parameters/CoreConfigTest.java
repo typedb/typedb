@@ -54,7 +54,7 @@ public class CoreConfigTest {
         assertFalse(config.vaticleFactory().enable());
         assertTrue(config.log().output().outputs().containsKey("stdout"));
         assertTrue(config.log().output().outputs().containsKey("file"));
-        assertTrue(config.log().output().outputs().get("file").asFile().path().toString().endsWith("server/logs"));
+        assertTrue(config.log().output().outputs().get("file").asFile().baseDirectory().toString().endsWith("server/logs"));
         assertEquals(50 * Bytes.MB, config.log().output().outputs().get("file").asFile().fileSizeLimit());
         assertEquals(1 * Bytes.GB, config.log().output().outputs().get("file").asFile().archivesSizeLimit());
         assertNotNull(config.log().logger().defaultLogger());
@@ -75,7 +75,7 @@ public class CoreConfigTest {
         assertFalse(config.vaticleFactory().enable());
         assertTrue(config.log().output().outputs().containsKey("stdout"));
         assertTrue(config.log().output().outputs().containsKey("file"));
-        assertTrue(config.log().output().outputs().get("file").asFile().path().isAbsolute());
+        assertTrue(config.log().output().outputs().get("file").asFile().baseDirectory().isAbsolute());
         assertEquals(50 * Bytes.MB, config.log().output().outputs().get("file").asFile().fileSizeLimit());
         assertEquals(1 * Bytes.GB, config.log().output().outputs().get("file").asFile().archivesSizeLimit());
         assertNotNull(config.log().logger().defaultLogger());
@@ -178,7 +178,7 @@ public class CoreConfigTest {
         assertFalse(config.vaticleFactory().enable());
         assertTrue(config.log().output().outputs().containsKey("stdout"));
         assertTrue(config.log().output().outputs().containsKey("file"));
-        assertTrue(config.log().output().outputs().get("file").asFile().path().toString().endsWith("server/alt-logs"));
+        assertTrue(config.log().output().outputs().get("file").asFile().baseDirectory().toString().endsWith("server/alt-logs"));
         assertEquals(50 * Bytes.MB, config.log().output().outputs().get("file").asFile().fileSizeLimit());
         assertEquals(1 * Bytes.GB, config.log().output().outputs().get("file").asFile().archivesSizeLimit());
         assertNotNull(config.log().logger().defaultLogger());

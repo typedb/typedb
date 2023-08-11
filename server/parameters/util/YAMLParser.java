@@ -424,7 +424,7 @@ public class YAMLParser {
 
         private static class Duration {
 
-            private final static String HELP = "[0-9]+[dhms]";
+            private final static String HELP = "<number><d|h|m|s>";
 
             private final static String LENGTH_PART = "^([0-9]+)";
             private final static int LENGTH_GROUP = 1;
@@ -512,7 +512,7 @@ public class YAMLParser {
 
         public static class TimePeriod {
 
-            private static final String HELP = "[0-9]+(" + TimePeriodName.HELP + ")";
+            private static final String HELP = "<number> <" + TimePeriodName.HELP + ">";
 
             private final static String LENGTH_PART = "(^[0-9]+)";
             private final static int LENGTH_GROUP = 1;

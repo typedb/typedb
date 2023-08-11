@@ -35,13 +35,13 @@ log:
       type: file
       base-dir: server/logs
       file-size-limit: 50mb
-      archive-grouping: minute
-      archive-age-limit: 1 hour
+      archive-grouping: month
+      archive-age-limit: 1 year
       archives-size-limit: 1gb
 
   logger:
     default:
-      level: info
+      level: debug
       output: [ stdout, file ]
     typedb:
       filter: com.vaticle.typedb.core

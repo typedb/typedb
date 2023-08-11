@@ -264,7 +264,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
                     private static final Predefined<String> typeParser =
                             predefined("type", "An output that writes to a directory.", restricted(STRING, list(type)));
-                    private static final Predefined<Path> path =
+                    private static final Predefined<Path> baseDirectory =
                             predefined("base-dir", "Directory to write to. Relative paths are relative to distribution path.", PATH);
                     private static final Predefined<Long> fileSizeLimit =
                             predefined("file-size-limit", "Active log file size limit before creating new file (eg. 50mb).", BYTES_SIZE);
@@ -279,7 +279,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                                     BYTES_SIZE
                             ); // TODO reasoner needs to respect this
                     private static final Set<Predefined<?>> parsers = set(
-                            typeParser, path, fileSizeLimit, archiveGrouping, archiveAgeLimit, archivesSizeLimit
+                            typeParser, baseDirectory, fileSizeLimit, archiveGrouping, archiveAgeLimit, archivesSizeLimit
                     );
 
                     @Override
@@ -289,7 +289,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                             String type = typeParser.parse(yaml.asMap(), path);
                             assert File.type.equals(type);
                             return new CoreConfig.Log.Output.Type.File(
-                                    configPathAbsolute(File.path.parse(yaml.asMap(), path)),
+                                    configPathAbsolute(baseDirectory.parse(yaml.asMap(), path)),
                                     fileSizeLimit.parse(yaml.asMap(), path),
                                     archiveGrouping.parse(yaml.asMap(), path),
                                     archiveAgeLimit.parse(yaml.asMap(), path),
@@ -300,7 +300,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
                     @Override
                     public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                        return list(typeParser.help(path), File.path.help(path),
+                        return list(typeParser.help(path), baseDirectory.help(path),
                                 fileSizeLimit.help(path), archiveGrouping.help(path), archiveAgeLimit.help(path),
                                 archivesSizeLimit.help(path));
                     }

@@ -18,33 +18,21 @@
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test")
 
-exports_files(
-    [
-        "schema.tql",
-        "data.typedb",
-    ],
-)
 
 host_compatible_java_test(
-    name = "test-migrator",
+    name = "test-parameters",
     size = "large",
-    srcs = ["MigratorTest.java"],
-    data = [
-        "data.typedb",
-        ":schema.tql",
-    ],
+    srcs = ["ParametersTest.java"],
     native_libraries_deps = [
         "//:typedb",
         "//common:common",
         "//server:server",
         "//database:database",
-        "//migrator:migrator",
     ],
-    test_class = "com.vaticle.typedb.core.migrator.MigratorTest",
+    test_class = "com.vaticle.typedb.core.server.ParametersTest",
     deps = [
         # Internal dependencies
         "//test/integration/util",
-        "//server:version",
 
         # External dependencies from Maven
         "@maven//:com_google_protobuf_protobuf_java",
