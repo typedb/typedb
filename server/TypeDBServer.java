@@ -223,12 +223,6 @@ public class TypeDBServer implements AutoCloseable {
 
     protected void serve() {
         try {
-
-            for (int i = 0; i < 240; i++) {
-                LOG.info("Testing + " + i);
-                Thread.sleep(1000);
-            }
-
             server.awaitTermination();
         } catch (InterruptedException e) {
             // server is terminated
