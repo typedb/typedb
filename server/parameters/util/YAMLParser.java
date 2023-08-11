@@ -403,13 +403,13 @@ public class YAMLParser {
                     String unitStr = matcher.group(UNIT_GROUP);
                     long lenValue = Long.parseLong(lenStr);
                     if (unitStr.equalsIgnoreCase("")) coefficient = 1;
-                    else if (unitStr.equalsIgnoreCase("kb"))
+                    else if (unitStr.equalsIgnoreCase("kb")) {
                         coefficient = com.vaticle.typedb.core.common.collection.Bytes.KB;
-                    else if (unitStr.equalsIgnoreCase("mb"))
+                    } else if (unitStr.equalsIgnoreCase("mb")) {
                         coefficient = com.vaticle.typedb.core.common.collection.Bytes.MB;
-                    else if (unitStr.equalsIgnoreCase("gb"))
+                    } else if (unitStr.equalsIgnoreCase("gb")) {
                         coefficient = com.vaticle.typedb.core.common.collection.Bytes.GB;
-                    else throw new IllegalStateException("Unexpected size unit: " + unitStr);
+                    } else throw new IllegalStateException("Unexpected size unit: " + unitStr);
                     return lenValue * coefficient;
                 } else {
                     throw new IllegalArgumentException("Size [" + size + "] is not in a recognised format.");
@@ -439,14 +439,15 @@ public class YAMLParser {
                     String lenStr = matcher.group(LENGTH_GROUP);
                     String unitStr = matcher.group(UNIT_GROUP);
                     long lenValue = Long.parseLong(lenStr);
-                    if (unitStr.equalsIgnoreCase("d")) duration = java.time.Duration.of(lenValue, ChronoUnit.DAYS);
-                    else if (unitStr.equalsIgnoreCase("h"))
+                    if (unitStr.equalsIgnoreCase("d")) {
+                        duration = java.time.Duration.of(lenValue, ChronoUnit.DAYS);
+                    } else if (unitStr.equalsIgnoreCase("h")) {
                         duration = java.time.Duration.of(lenValue, ChronoUnit.HOURS);
-                    else if (unitStr.equalsIgnoreCase("m"))
+                    } else if (unitStr.equalsIgnoreCase("m")) {
                         duration = java.time.Duration.of(lenValue, ChronoUnit.MINUTES);
-                    else if (unitStr.equalsIgnoreCase("s"))
+                    } else if (unitStr.equalsIgnoreCase("s")) {
                         duration = java.time.Duration.of(lenValue, ChronoUnit.SECONDS);
-                    else throw new IllegalStateException("Unexpected duration unit: " + unitStr);
+                    } else throw new IllegalStateException("Unexpected duration unit: " + unitStr);
                     return duration.toSeconds();
                 } else {
                     throw new IllegalArgumentException("Duration [" + durationString + "] is not in a recognised format.");

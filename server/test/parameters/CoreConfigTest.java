@@ -167,7 +167,7 @@ public class CoreConfigTest {
                 set(
                         new Option("storage.data", "server/alt-data"),
                         new Option("server.address", "0.0.0.0:1730"),
-                        new Option("log.output.file.directory", "server/alt-logs"),
+                        new Option("log.output.file.base-dir", "server/alt-logs"),
                         new Option("log.logger.default.level", "info"),
                         new Option("log.logger.typedb.output", "[file]")
                 ),

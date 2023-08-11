@@ -78,7 +78,7 @@ public class TypeDBServer implements AutoCloseable {
     protected AtomicBoolean isOpen;
     private final CoreConfig config;
 
-    private static TypeDBServer create(CoreConfig config, boolean debug) {
+    static TypeDBServer create(CoreConfig config, boolean debug) {
         configureLogging(new CoreLogback(), config);
         return new TypeDBServer(config, debug, new CoreFactory());
     }

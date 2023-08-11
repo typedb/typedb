@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_ARCHIVE_EXT;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_EXT;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_NAME;
 
@@ -147,7 +148,7 @@ public class CoreLogback {
      * For example, if the pattern is YYYY-MM, then the rollover period is monthly.
      */
     private static String fileNamePattern(Path path, String filePrefix, CoreConfig.Log.Output.Type.File outputType) {
-        return path.toString() + filePrefix + "_%d{" + fileDateFormat(outputType.archiveGrouping()) + "}.%i.log.gz";
+        return path.toString() + filePrefix + "_%d{" + fileDateFormat(outputType.archiveGrouping()) + "}.%i" + TYPEDB_LOG_ARCHIVE_EXT;
     }
 
     private static String fileDateFormat(YAMLParser.Value.TimePeriodName timePeriod) {

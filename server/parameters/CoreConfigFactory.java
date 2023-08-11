@@ -42,7 +42,7 @@ public class CoreConfigFactory {
         return config(new HashSet<>(), parser);
     }
 
-    static CoreConfig config(Set<Option> overrides, CoreConfigParser parser) {
+    public static CoreConfig config(Set<Option> overrides, CoreConfigParser parser) {
         return config(CONFIG_PATH, overrides, parser);
     }
 
