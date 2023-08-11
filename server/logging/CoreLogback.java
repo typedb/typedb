@@ -34,9 +34,10 @@ import com.vaticle.typedb.core.server.parameters.CoreConfig;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.vaticle.typedb.common.util.Double.equalsApproximate;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE;
-import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_ARCHIVE_SUFFIX;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_EXT;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_NAME;
 
 public class CoreLogback {
 
@@ -105,26 +106,63 @@ public class CoreLogback {
     }
 
     protected static RollingFileAppender<ILoggingEvent> fileAppender(String name, LoggerContext context,
-                                                                   LayoutWrappingEncoder<ILoggingEvent> encoder,
-                                                                   TTLLLayout layout, CoreConfig.Log.Output.Type.File outputType) {
+                                                                     LayoutWrappingEncoder<ILoggingEvent> encoder,
+                                                                     TTLLLayout layout, CoreConfig.Log.Output.Type.File outputType) {
         RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
         appender.setContext(context);
         appender.setName(name);
         appender.setAppend(true);
-        String logPath = outputType.asFile().path().resolve(TYPEDB_LOG_FILE).toAbsolutePath().toString();
+        String logPath = outputType.asFile().path().resolve(TYPEDB_LOG_FILE_NAME + TYPEDB_LOG_FILE_EXT).toAbsolutePath().toString();
         appender.setFile(logPath);
         appender.setLayout(layout);
         appender.setEncoder(encoder);
         SizeAndTimeBasedRollingPolicy<?> policy = new SizeAndTimeBasedRollingPolicy<>();
         policy.setContext(context);
-        policy.setFileNamePattern(logPath + TYPEDB_LOG_FILE_ARCHIVE_SUFFIX);
-        long directorySize = outputType.fileSizeCap() + outputType.archivesSizeCap();
-        policy.setMaxFileSize(new FileSize(outputType.fileSizeCap()));
+        String archivePrefix = outputType.asFile().path().resolve(TYPEDB_LOG_FILE_NAME).toAbsolutePath().toString();
+        policy.setFileNamePattern(fileAppenderPattern(archivePrefix, outputType));
+        long directorySize = outputType.fileSizeLimit() + outputType.archivesSizeLimit();
+        policy.setMaxFileSize(new FileSize(outputType.fileSizeLimit()));
         policy.setTotalSizeCap(new FileSize(directorySize));
+        policy.setMaxHistory(ageLimitToPeriods(outputType));
+        policy.setCleanHistoryOnStart(true);
         policy.setParent(appender);
         policy.start();
         appender.setRollingPolicy(policy);
         appender.start();
         return appender;
     }
+
+    private static int ageLimitToPeriods(CoreConfig.Log.Output.Type.File outputType) {
+        long rolloverPeriodSeconds = outputType.archiveGrouping().chronoUnit().getDuration().getSeconds();
+        long archiveAgeLimitSeconds = outputType.archiveAgeLimit().length() *
+                outputType.archiveAgeLimit().timePeriodName().chronoUnit().getDuration().getSeconds();
+        int periods = (int) (archiveAgeLimitSeconds / rolloverPeriodSeconds);
+        long remainder = archiveAgeLimitSeconds % rolloverPeriodSeconds;
+        if (remainder == 0) return periods;
+        else return periods + 1;
+    }
+
+    private static String fileAppenderPattern(String prefix, CoreConfig.Log.Output.Type.File outputType) {
+        return prefix + "_%d{" + fileAppenderPatternFormat(outputType) + "}.%i.log.gz";
+    }
+
+    private static String fileAppenderPatternFormat(CoreConfig.Log.Output.Type.File outputType) {
+        switch (outputType.archiveGrouping()) {
+            case MINUTE:
+                return "yyyyMMdd-HHmm";
+            case HOUR:
+                return "yyyyMMdd-HH";
+            case DAY:
+                return "yyyyMMdd";
+            case WEEK:
+                return "yyyy-ww";
+            case MONTH:
+                return "yyyyMM";
+            case YEAR:
+                return "yyyy";
+            default:
+                throw TypeDBException.of(ILLEGAL_STATE);
+        }
+    }
+
 }

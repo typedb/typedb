@@ -33,12 +33,15 @@ log:
       type: stdout
     file:
       type: file
-      directory: server/logs
-      file-size-cap: 50mb
-      archives-size-cap: 1gb
+      base-dir: server/logs
+      file-size-limit: 50mb
+      archive-grouping: minute
+      archive-age-limit: 2 minutes
+      archives-size-limit: 1gb
+
   logger:
     default:
-      level: warn
+      level: info
       output: [ stdout, file ]
     typedb:
       filter: com.vaticle.typedb.core

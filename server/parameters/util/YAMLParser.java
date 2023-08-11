@@ -26,9 +26,11 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -36,10 +38,12 @@ import java.util.regex.Pattern;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_KEY_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_VALUE_ENUM_UNEXPECTED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_VALUE_UNEXPECTED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_KEY_MISSING;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.joining;
 
 public class YAMLParser {
 
@@ -281,14 +285,14 @@ public class YAMLParser {
                     "<relative or absolute path>"
             );
             public static final Primitive<Long> BYTES_SIZE = new Primitive<>(
-                    (yaml) -> yaml.isString() && Bytes.isValidSizeString(yaml.asString().value()),
+                    (yaml) -> yaml.isString() && Bytes.isValidString(yaml.asString().value()),
                     (yaml) -> Bytes.parse(yaml.asString().value()),
                     "<size>"
             );
             public static final Primitive<Long> DURATION = new Primitive<>(
-                    (yaml) -> yaml.isString() && Duration.isValidDurationString(yaml.asString().value()),
+                    (yaml) -> yaml.isString() && Duration.isValidString(yaml.asString().value()),
                     (yaml) -> Duration.parse(yaml.asString().value()),
-                    "<duration>"
+                    "<" + Duration.HELP + ">"
             );
             public static final Primitive<InetSocketAddress> INET_SOCKET_ADDRESS = new Primitive<>(
                     (yaml) -> {
@@ -307,6 +311,16 @@ public class YAMLParser {
                     (yaml) -> yaml.isList() && iterate(yaml.asList().iterator()).allMatch(YAML::isString),
                     (yaml) -> iterate(yaml.asList().iterator()).map(elem -> elem.asString().value()).toList(),
                     "<[string, ...]>");
+            public static final Primitive<TimePeriodName> TIME_PERIOD_NAME = new Primitive<>(
+                    (yaml) -> yaml.isString() && TimePeriodName.isValidString(yaml.asString().value()),
+                    (yaml) -> TimePeriodName.parse(yaml.asString().value()),
+                    TimePeriodName.HELP
+            );
+            public static final Primitive<TimePeriod> TIME_PERIOD = new Primitive<>(
+                    (yaml) -> yaml.isString() && TimePeriod.isValidString(yaml.asString().value()),
+                    (yaml) -> TimePeriod.parse(yaml.asString().value()),
+                    TimePeriod.HELP
+            );
 
             private final Function<YAML, Boolean> validator;
             private final Function<YAML, T> converter;
@@ -389,9 +403,12 @@ public class YAMLParser {
                     String unitStr = matcher.group(UNIT_GROUP);
                     long lenValue = Long.parseLong(lenStr);
                     if (unitStr.equalsIgnoreCase("")) coefficient = 1;
-                    else if (unitStr.equalsIgnoreCase("kb")) coefficient = com.vaticle.typedb.core.common.collection.Bytes.KB;
-                    else if (unitStr.equalsIgnoreCase("mb")) coefficient = com.vaticle.typedb.core.common.collection.Bytes.MB;
-                    else if (unitStr.equalsIgnoreCase("gb")) coefficient = com.vaticle.typedb.core.common.collection.Bytes.GB;
+                    else if (unitStr.equalsIgnoreCase("kb"))
+                        coefficient = com.vaticle.typedb.core.common.collection.Bytes.KB;
+                    else if (unitStr.equalsIgnoreCase("mb"))
+                        coefficient = com.vaticle.typedb.core.common.collection.Bytes.MB;
+                    else if (unitStr.equalsIgnoreCase("gb"))
+                        coefficient = com.vaticle.typedb.core.common.collection.Bytes.GB;
                     else throw new IllegalStateException("Unexpected size unit: " + unitStr);
                     return lenValue * coefficient;
                 } else {
@@ -399,7 +416,7 @@ public class YAMLParser {
                 }
             }
 
-            private static boolean isValidSizeString(String size) {
+            private static boolean isValidString(String size) {
                 Matcher matcher = FILE_SIZE_PATTERN.matcher(size);
                 return matcher.matches();
             }
@@ -407,11 +424,13 @@ public class YAMLParser {
 
         private static class Duration {
 
-            private final static String LENGTH_PART = "(^[0-9]+)";
+            private final static String HELP = "[0-9]+[dhms]";
+
+            private final static String LENGTH_PART = "^([0-9]+)";
             private final static int LENGTH_GROUP = 1;
-            private final static String UNIT_PART = "([dhms]$)";
+            private final static String UNIT_PART = "([dhms])$";
             private final static int UNIT_GROUP = 2;
-            private static final Pattern DURATION_PATTERN = Pattern.compile(LENGTH_PART + UNIT_PART, Pattern.CASE_INSENSITIVE);
+            private static final Pattern DURATION_PATTERN = Pattern.compile(LENGTH_PART + "\\s*" + UNIT_PART, Pattern.CASE_INSENSITIVE);
 
             private static long parse(String durationString) {
                 Matcher matcher = DURATION_PATTERN.matcher(durationString);
@@ -421,9 +440,12 @@ public class YAMLParser {
                     String unitStr = matcher.group(UNIT_GROUP);
                     long lenValue = Long.parseLong(lenStr);
                     if (unitStr.equalsIgnoreCase("d")) duration = java.time.Duration.of(lenValue, ChronoUnit.DAYS);
-                    else if (unitStr.equalsIgnoreCase("h")) duration = java.time.Duration.of(lenValue, ChronoUnit.HOURS);
-                    else if (unitStr.equalsIgnoreCase("m")) duration = java.time.Duration.of(lenValue, ChronoUnit.MINUTES);
-                    else if (unitStr.equalsIgnoreCase("s")) duration = java.time.Duration.of(lenValue, ChronoUnit.SECONDS);
+                    else if (unitStr.equalsIgnoreCase("h"))
+                        duration = java.time.Duration.of(lenValue, ChronoUnit.HOURS);
+                    else if (unitStr.equalsIgnoreCase("m"))
+                        duration = java.time.Duration.of(lenValue, ChronoUnit.MINUTES);
+                    else if (unitStr.equalsIgnoreCase("s"))
+                        duration = java.time.Duration.of(lenValue, ChronoUnit.SECONDS);
                     else throw new IllegalStateException("Unexpected duration unit: " + unitStr);
                     return duration.toSeconds();
                 } else {
@@ -431,9 +453,108 @@ public class YAMLParser {
                 }
             }
 
-            private static boolean isValidDurationString(String durationString) {
+            private static boolean isValidString(String durationString) {
                 Matcher matcher = DURATION_PATTERN.matcher(durationString);
                 return matcher.matches();
+            }
+        }
+
+        public enum TimePeriodName {
+
+            MINUTE("minute", "minutes", ChronoUnit.MINUTES),
+            HOUR("hour", "hours", ChronoUnit.HOURS),
+            DAY("day", "days", ChronoUnit.DAYS),
+            WEEK("week", "weeks", ChronoUnit.WEEKS),
+            MONTH("month", "months", ChronoUnit.MONTHS),
+            YEAR("year", "years", ChronoUnit.YEARS);
+
+            private static final String HELP = stream(values()).map(TimePeriodName::toString).collect(joining("|"));
+
+            private final String singular;
+            private final String plural;
+            private final ChronoUnit unit;
+
+            TimePeriodName(String singular, String plural, ChronoUnit unit) {
+                this.singular = singular;
+                this.plural = plural;
+                this.unit = unit;
+            }
+
+            private static TimePeriodName parse(String string) {
+                return tryParse(string).orElseThrow(
+                        () -> new IllegalArgumentException("Time period [" + string + "] is not in the defined list: " + Arrays.toString(values()))
+                );
+            }
+
+            private static boolean isValidString(String string) {
+                return tryParse(string).isPresent();
+            }
+
+            private static Optional<TimePeriodName> tryParse(String string) {
+                for (TimePeriodName timePeriodName : values()) {
+                    String canonicalString = string.trim().toLowerCase();
+                    if (canonicalString.equals(timePeriodName.singular) || canonicalString.equals(timePeriodName.plural)) {
+                        return Optional.of(timePeriodName);
+                    }
+                }
+                return Optional.empty();
+            }
+
+            public ChronoUnit chronoUnit() {
+                return unit;
+            }
+
+            @Override
+            public String toString() {
+                return singular + "|" + plural;
+            }
+        }
+
+        public static class TimePeriod {
+
+            private static final String HELP = "[0-9]+(" + TimePeriodName.HELP + ")";
+
+            private final static String LENGTH_PART = "(^[0-9]+)";
+            private final static int LENGTH_GROUP = 1;
+            private final static String PERIOD_NAME_PART = "(\\w*)$";
+            private final static int PERIOD_NAME_GROUP = 2;
+            private static final Pattern PATTERN = Pattern.compile(LENGTH_PART + "\\s*" + PERIOD_NAME_PART, Pattern.CASE_INSENSITIVE);
+
+            private final long length;
+            private final TimePeriodName timePeriodName;
+
+            TimePeriod(long length, TimePeriodName timePeriodName) {
+                this.length = length;
+                this.timePeriodName = timePeriodName;
+            }
+
+            private static TimePeriod parse(String periodString) {
+                return tryParse(periodString).orElseThrow(
+                        () -> new IllegalArgumentException("Period [" + periodString + "] is not in a recognised format.")
+                );
+            }
+
+            private static boolean isValidString(String periodString) {
+                return tryParse(periodString).isPresent();
+            }
+
+            private static Optional<TimePeriod> tryParse(String periodString) {
+                Matcher matcher = PATTERN.matcher(periodString);
+                if (matcher.matches()) {
+                    String lenStr = matcher.group(LENGTH_GROUP);
+                    long lenValue = Long.parseLong(lenStr);
+                    String unitStr = matcher.group(PERIOD_NAME_GROUP);
+                    TimePeriodName periodName = TimePeriodName.parse(unitStr);
+                    return Optional.of(new TimePeriod(lenValue, periodName));
+                } else return Optional.empty();
+            }
+
+            public long length() {
+                return length;
+            }
+
+            public TimePeriodName timePeriodName() {
+                return timePeriodName;
             }
         }
     }

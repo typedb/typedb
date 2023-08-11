@@ -19,11 +19,11 @@
 package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.server.parameters.util.YAMLParser;
 
 import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -170,7 +170,8 @@ public class CoreConfig {
 
                 public static class Stdout extends Type {
 
-                    Stdout() {}
+                    Stdout() {
+                    }
 
                     @Override
                     public boolean isStdout() {
@@ -186,25 +187,38 @@ public class CoreConfig {
                 public static class File extends Type {
 
                     private final Path path;
-                    private final long fileSizeCap;
-                    private final long archivesSizeCap;
+                    private final long fileSizeLimit;
+                    private final YAMLParser.Value.TimePeriodName archiveGrouping;
+                    private final YAMLParser.Value.TimePeriod archiveAgeLimit;
+                    private final long archivesSizeLimit;
 
-                    File(Path path, long fileSizeCap, long archivesSizeCap) {
+                    File(Path path, long fileSizeLimit, YAMLParser.Value.TimePeriodName archiveGrouping,
+                         YAMLParser.Value.TimePeriod archiveAgeLimit, long archivesSizeLimit) {
                         this.path = path;
-                        this.fileSizeCap = fileSizeCap;
-                        this.archivesSizeCap = archivesSizeCap;
+                        this.fileSizeLimit = fileSizeLimit;
+                        this.archiveGrouping = archiveGrouping;
+                        this.archiveAgeLimit = archiveAgeLimit;
+                        this.archivesSizeLimit = archivesSizeLimit;
                     }
 
                     public Path path() {
                         return path;
                     }
 
-                    public long fileSizeCap() {
-                        return fileSizeCap;
+                    public long fileSizeLimit() {
+                        return fileSizeLimit;
                     }
 
-                    public long archivesSizeCap() {
-                        return archivesSizeCap;
+                    public YAMLParser.Value.TimePeriodName archiveGrouping() {
+                        return archiveGrouping;
+                    }
+
+                    public YAMLParser.Value.TimePeriod archiveAgeLimit() {
+                        return archiveAgeLimit;
+                    }
+
+                    public long archivesSizeLimit() {
+                        return archivesSizeLimit;
                     }
 
                     @Override

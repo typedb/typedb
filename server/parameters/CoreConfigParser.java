@@ -43,6 +43,8 @@ import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Pr
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.LIST_STRING;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.PATH;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.STRING;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.TIME_PERIOD_NAME;
+import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.TIME_PERIOD;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.dynamic;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.predefined;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.restricted;
@@ -263,16 +265,22 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                     private static final Predefined<String> typeParser =
                             predefined("type", "An output that writes to a directory.", restricted(STRING, list(type)));
                     private static final Predefined<Path> path =
-                            predefined("directory", "Directory to write to. Relative paths are relative to distribution path.", PATH);
-                    private static final Predefined<Long> fileSizeCap =
-                            predefined("file-size-cap", "Log file size cap before creating new file (eg. 50mb).", BYTES_SIZE);
-                    private static final Predefined<Long> archivesSizeCap =
+                            predefined("base-dir", "Directory to write to. Relative paths are relative to distribution path.", PATH);
+                    private static final Predefined<Long> fileSizeLimit =
+                            predefined("file-size-limit", "Active log file size limit before creating new file (eg. 50mb).", BYTES_SIZE);
+                    private static final Predefined<TimePeriodName> archiveGrouping =
+                            predefined("archive-grouping", "Archive grouping and naming by time period (eg. month implies YYYY-MM)", TIME_PERIOD_NAME);
+                    private static final Predefined<TimePeriod> archiveAgeLimit =
+                            predefined("archive-age-limit", "Archive retention policy by age (eg. keep for 1 year)", TIME_PERIOD);
+                    private static final Predefined<Long> archivesSizeLimit =
                             predefined(
-                                    "archives-size-cap",
-                                    "Total size cap of all archived log files in directory (eg. 1gb).",
+                                    "archives-size-limit",
+                                    "Size limit of all archived log files in directory (eg. 1gb).",
                                     BYTES_SIZE
                             ); // TODO reasoner needs to respect this
-                    private static final Set<Predefined<?>> parsers = set(typeParser, path, fileSizeCap, archivesSizeCap);
+                    private static final Set<Predefined<?>> parsers = set(
+                            typeParser, path, fileSizeLimit, archiveGrouping, archiveAgeLimit, archivesSizeLimit
+                    );
 
                     @Override
                     public CoreConfig.Log.Output.Type.File parse(YAML yaml, String path) {
@@ -282,8 +290,10 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                             assert File.type.equals(type);
                             return new CoreConfig.Log.Output.Type.File(
                                     configPathAbsolute(File.path.parse(yaml.asMap(), path)),
-                                    fileSizeCap.parse(yaml.asMap(), path),
-                                    archivesSizeCap.parse(yaml.asMap(), path)
+                                    fileSizeLimit.parse(yaml.asMap(), path),
+                                    archiveGrouping.parse(yaml.asMap(), path),
+                                    archiveAgeLimit.parse(yaml.asMap(), path),
+                                    archivesSizeLimit.parse(yaml.asMap(), path)
                             );
                         } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
                     }
@@ -291,7 +301,8 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                     @Override
                     public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
                         return list(typeParser.help(path), File.path.help(path),
-                                fileSizeCap.help(path), archivesSizeCap.help(path));
+                                fileSizeLimit.help(path), archiveGrouping.help(path), archiveAgeLimit.help(path),
+                                archivesSizeLimit.help(path));
                     }
                 }
             }

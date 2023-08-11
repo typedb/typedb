@@ -55,8 +55,8 @@ public class CoreConfigTest {
         assertTrue(config.log().output().outputs().containsKey("stdout"));
         assertTrue(config.log().output().outputs().containsKey("file"));
         assertTrue(config.log().output().outputs().get("file").asFile().path().toString().endsWith("server/logs"));
-        assertEquals(50 * Bytes.MB, config.log().output().outputs().get("file").asFile().fileSizeCap());
-        assertEquals(1 * Bytes.GB, config.log().output().outputs().get("file").asFile().archivesSizeCap());
+        assertEquals(50 * Bytes.MB, config.log().output().outputs().get("file").asFile().fileSizeLimit());
+        assertEquals(1 * Bytes.GB, config.log().output().outputs().get("file").asFile().archivesSizeLimit());
         assertNotNull(config.log().logger().defaultLogger());
         assertFalse(config.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("warn", config.log().logger().defaultLogger().level());
@@ -76,8 +76,8 @@ public class CoreConfigTest {
         assertTrue(config.log().output().outputs().containsKey("stdout"));
         assertTrue(config.log().output().outputs().containsKey("file"));
         assertTrue(config.log().output().outputs().get("file").asFile().path().isAbsolute());
-        assertEquals(50 * Bytes.MB, config.log().output().outputs().get("file").asFile().fileSizeCap());
-        assertEquals(1 * Bytes.GB, config.log().output().outputs().get("file").asFile().archivesSizeCap());
+        assertEquals(50 * Bytes.MB, config.log().output().outputs().get("file").asFile().fileSizeLimit());
+        assertEquals(1 * Bytes.GB, config.log().output().outputs().get("file").asFile().archivesSizeLimit());
         assertNotNull(config.log().logger().defaultLogger());
         assertFalse(config.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("warn", config.log().logger().defaultLogger().level());
@@ -179,8 +179,8 @@ public class CoreConfigTest {
         assertTrue(config.log().output().outputs().containsKey("stdout"));
         assertTrue(config.log().output().outputs().containsKey("file"));
         assertTrue(config.log().output().outputs().get("file").asFile().path().toString().endsWith("server/alt-logs"));
-        assertEquals(50 * Bytes.MB, config.log().output().outputs().get("file").asFile().fileSizeCap());
-        assertEquals(1 * Bytes.GB, config.log().output().outputs().get("file").asFile().archivesSizeCap());
+        assertEquals(50 * Bytes.MB, config.log().output().outputs().get("file").asFile().fileSizeLimit());
+        assertEquals(1 * Bytes.GB, config.log().output().outputs().get("file").asFile().archivesSizeLimit());
         assertNotNull(config.log().logger().defaultLogger());
         assertFalse(config.log().logger().defaultLogger().outputs().isEmpty());
         assertEquals("info", config.log().logger().defaultLogger().level());
