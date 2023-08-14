@@ -426,11 +426,11 @@ public class YAMLParser {
 
             private final static String HELP = "<number><d|h|m|s>";
 
-            private final static String LENGTH_PART = "^([0-9]+)";
+            private final static String LENGTH_PART = "([0-9]+)";
             private final static int LENGTH_GROUP = 1;
-            private final static String UNIT_PART = "([dhms])$";
+            private final static String UNIT_PART = "([dhms])";
             private final static int UNIT_GROUP = 2;
-            private static final Pattern DURATION_PATTERN = Pattern.compile(LENGTH_PART + "\\s*" + UNIT_PART, Pattern.CASE_INSENSITIVE);
+            private static final Pattern DURATION_PATTERN = Pattern.compile("^" + LENGTH_PART + "\\s*" + UNIT_PART + "$", Pattern.CASE_INSENSITIVE);
 
             private static long parse(String durationString) {
                 Matcher matcher = DURATION_PATTERN.matcher(durationString);
@@ -515,11 +515,11 @@ public class YAMLParser {
 
             private static final String HELP = "<number> <" + TimePeriodName.HELP + ">";
 
-            private final static String LENGTH_PART = "(^[0-9]+)";
+            private final static String LENGTH_PART = "([0-9]+)";
             private final static int LENGTH_GROUP = 1;
-            private final static String PERIOD_NAME_PART = "(\\w*)$";
+            private final static String PERIOD_NAME_PART = "(\\w*)";
             private final static int PERIOD_NAME_GROUP = 2;
-            private static final Pattern PATTERN = Pattern.compile(LENGTH_PART + "\\s*" + PERIOD_NAME_PART, Pattern.CASE_INSENSITIVE);
+            private static final Pattern PATTERN = Pattern.compile("^" + LENGTH_PART + "\\s*" + PERIOD_NAME_PART + "$", Pattern.CASE_INSENSITIVE);
 
             private final long length;
             private final TimePeriodName timePeriodName;
