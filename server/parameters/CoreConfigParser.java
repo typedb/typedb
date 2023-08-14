@@ -275,7 +275,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                     private static final Predefined<Long> archivesSizeLimit =
                             predefined(
                                     "archives-size-limit",
-                                    "Size limit of all archived log files in directory (eg. 1gb).",
+                                    "Size limit of all archived log files in directory (e.g., 1GB).",
                                     BYTES_SIZE
                             ); // TODO reasoner needs to respect this
                     private static final Set<Predefined<?>> parsers = set(
