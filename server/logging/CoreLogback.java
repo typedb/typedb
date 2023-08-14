@@ -124,9 +124,7 @@ public class CoreLogback {
         long directorySize = outputType.fileSizeLimit() + outputType.archivesSizeLimit();
         policy.setMaxFileSize(new FileSize(outputType.fileSizeLimit()));
         policy.setTotalSizeCap(new FileSize(directorySize));
-        int maxHistory = ageLimitToRolloverPeriods(outputType);
-        System.out.println("COMPUTED MAX HISTORY: " + maxHistory);
-        policy.setMaxHistory(maxHistory);
+        policy.setMaxHistory(ageLimitToRolloverPeriods(outputType));
         policy.setCleanHistoryOnStart(true);
         policy.setParent(appender);
         policy.start();

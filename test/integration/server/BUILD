@@ -44,6 +44,5 @@ checkstyle_test(
     include = glob([
         "*",
     ]),
-    exclude = ["data.typedb"],
     license_type = "agpl-header",
 )
