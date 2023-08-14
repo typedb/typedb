@@ -23,7 +23,7 @@ artifacts = [
     "com.google.code.findbugs:jsr305",
     "com.google.errorprone:error_prone_annotations",
     "com.google.guava:guava",
-    "com.google.guava:listenablefuture",
+#    "com.google.guava:listenablefuture",
     "com.google.ortools:ortools-java",
     "com.google.ortools:ortools-darwin-x86-64",
     "com.google.ortools:ortools-darwin-aarch64",

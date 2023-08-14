@@ -11,7 +11,7 @@
 @maven//:com_google_errorprone_error_prone_annotations_2_4_0
 @maven//:com_google_guava_failureaccess_1_0_1
 @maven//:com_google_guava_guava_30_1_jre
-@maven//:com_google_guava_listenablefuture_1_0
+@maven//:com_google_guava_listenablefuture_9999_0_empty_to_avoid_conflict_with_guava
 @maven//:com_google_http_client_google_http_client_1_34_2
 @maven//:com_google_j2objc_j2objc_annotations_1_3
 @maven//:com_google_ortools_ortools_darwin_aarch64_9_6_2534
@@ -67,13 +67,8 @@
 @maven//:io_netty_netty_resolver_dns_classes_macos_4_1_87_Final
 @maven//:io_netty_netty_resolver_dns_native_macos_osx_aarch_64_4_1_87_Final
 @maven//:io_netty_netty_resolver_dns_native_macos_osx_x86_64_4_1_87_Final
-@maven//:io_netty_netty_tcnative_boringssl_static_2_0_61_Final
-@maven//:io_netty_netty_tcnative_boringssl_static_linux_aarch_64_2_0_61_Final
-@maven//:io_netty_netty_tcnative_boringssl_static_linux_x86_64_2_0_61_Final
-@maven//:io_netty_netty_tcnative_boringssl_static_osx_aarch_64_2_0_61_Final
-@maven//:io_netty_netty_tcnative_boringssl_static_osx_x86_64_2_0_61_Final
-@maven//:io_netty_netty_tcnative_boringssl_static_windows_x86_64_2_0_61_Final
-@maven//:io_netty_netty_tcnative_classes_2_0_61_Final
+@maven//:io_netty_netty_tcnative_boringssl_static_2_0_49_Final
+@maven//:io_netty_netty_tcnative_classes_2_0_49_Final
 @maven//:io_netty_netty_transport_4_1_87_Final
 @maven//:io_netty_netty_transport_classes_epoll_4_1_87_Final
 @maven//:io_netty_netty_transport_classes_kqueue_4_1_87_Final
