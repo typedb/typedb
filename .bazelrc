@@ -17,6 +17,8 @@
 
 try-import ./.bazel-remote-cache.rc
 
+common --@rules_jvm_external//settings:stamp_manifest=False
+
 build --incompatible_strict_action_env --java_language_version=11 --javacopt='--release 11' --@io_bazel_rules_docker//transitions:enable=false --java_runtime_version=remotejdk_11
 run --incompatible_strict_action_env --java_runtime_version=remotejdk_11
 test --incompatible_strict_action_env --test_env=PATH --java_runtime_version=remotejdk_11

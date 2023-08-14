@@ -31,7 +31,6 @@ java_test(
         # e.g. "//test/behaviour/connection/session:steps",
 
         # External Maven Dependencies
-        "@maven//:io_cucumber_cucumber_java",
         "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [

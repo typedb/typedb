@@ -78,7 +78,7 @@ public class TypeDBServer implements AutoCloseable {
     protected AtomicBoolean isOpen;
     private final CoreConfig config;
 
-    private static TypeDBServer create(CoreConfig config, boolean debug) {
+    static TypeDBServer create(CoreConfig config, boolean debug) {
         configureLogging(new CoreLogback(), config);
         return new TypeDBServer(config, debug, new CoreFactory());
     }
@@ -103,7 +103,7 @@ public class TypeDBServer implements AutoCloseable {
                 .dataDir(config.storage().dataDir())
                 .storageDataCacheSize(config.storage().databaseCache().dataSize())
                 .storageIndexCacheSize(config.storage().databaseCache().indexSize())
-                .reasonerDebuggerDir(config.log().debugger().reasonerTracer().output().path())
+                .reasonerDebuggerDir(config.log().debugger().reasonerTracer().output().baseDirectory())
                 .reasonerPerfCounters(config.log().debugger().reasonerPerfCounters().isEnabled());
 
         this.factory = factory;

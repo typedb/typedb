@@ -30,13 +30,16 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
 import ch.qos.logback.core.util.FileSize;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.parameters.CoreConfig;
+import com.vaticle.typedb.core.server.parameters.util.YAMLParser;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE;
-import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_ARCHIVE_SUFFIX;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_ARCHIVE_EXT;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_EXT;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_NAME;
 
 public class CoreLogback {
 
@@ -105,26 +108,66 @@ public class CoreLogback {
     }
 
     protected static RollingFileAppender<ILoggingEvent> fileAppender(String name, LoggerContext context,
-                                                                   LayoutWrappingEncoder<ILoggingEvent> encoder,
-                                                                   TTLLLayout layout, CoreConfig.Log.Output.Type.File outputType) {
+                                                                     LayoutWrappingEncoder<ILoggingEvent> encoder,
+                                                                     TTLLLayout layout, CoreConfig.Log.Output.Type.File outputType) {
         RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
         appender.setContext(context);
         appender.setName(name);
         appender.setAppend(true);
-        String logPath = outputType.asFile().path().resolve(TYPEDB_LOG_FILE).toAbsolutePath().toString();
+        String logPath = outputType.asFile().baseDirectory().resolve(TYPEDB_LOG_FILE_NAME + TYPEDB_LOG_FILE_EXT).toAbsolutePath().toString();
         appender.setFile(logPath);
         appender.setLayout(layout);
         appender.setEncoder(encoder);
         SizeAndTimeBasedRollingPolicy<?> policy = new SizeAndTimeBasedRollingPolicy<>();
         policy.setContext(context);
-        policy.setFileNamePattern(logPath + TYPEDB_LOG_FILE_ARCHIVE_SUFFIX);
-        long directorySize = outputType.fileSizeCap() + outputType.archivesSizeCap();
-        policy.setMaxFileSize(new FileSize(outputType.fileSizeCap()));
+        policy.setFileNamePattern(fileNamePattern(outputType.asFile().baseDirectory(), TYPEDB_LOG_FILE_NAME, outputType));
+        long directorySize = outputType.fileSizeLimit() + outputType.archivesSizeLimit();
+        policy.setMaxFileSize(new FileSize(outputType.fileSizeLimit()));
         policy.setTotalSizeCap(new FileSize(directorySize));
+        policy.setMaxHistory(ageLimitToRolloverPeriods(outputType));
+        policy.setCleanHistoryOnStart(true);
         policy.setParent(appender);
         policy.start();
         appender.setRollingPolicy(policy);
         appender.start();
         return appender;
     }
+
+    private static int ageLimitToRolloverPeriods(CoreConfig.Log.Output.Type.File outputType) {
+        long rolloverPeriodSeconds = outputType.archiveGrouping().chronoUnit().getDuration().getSeconds();
+        long archiveAgeLimitSeconds = outputType.archiveAgeLimit().length() *
+                outputType.archiveAgeLimit().timePeriodName().chronoUnit().getDuration().getSeconds();
+        int periods = (int) (archiveAgeLimitSeconds / rolloverPeriodSeconds);
+        long remainder = archiveAgeLimitSeconds % rolloverPeriodSeconds;
+        if (remainder == 0) return periods;
+        else return periods + 1;
+    }
+
+    /**
+     * Logback configures both the archive naming schema and the rollover period according to the file naming pattern.
+     * For example, if the pattern is YYYY-MM, then the rollover period is monthly.
+     */
+    private static String fileNamePattern(Path path, String filePrefix, CoreConfig.Log.Output.Type.File outputType) {
+        return path.resolve(filePrefix + "_%d{" + fileDateFormat(outputType.archiveGrouping()) + "}.%i" + TYPEDB_LOG_ARCHIVE_EXT).toAbsolutePath().toString();
+    }
+
+    private static String fileDateFormat(YAMLParser.Value.TimePeriodName timePeriod) {
+        switch (timePeriod) {
+            case MINUTE:
+                return "yyyyMMdd-HHmm";
+            case HOUR:
+                return "yyyyMMdd-HH";
+            case DAY:
+                return "yyyyMMdd";
+            case WEEK:
+                return "yyyy-ww";
+            case MONTH:
+                return "yyyyMM";
+            case YEAR:
+                return "yyyy";
+            default:
+                throw TypeDBException.of(ILLEGAL_STATE);
+        }
+    }
+
 }

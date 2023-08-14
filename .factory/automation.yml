@@ -65,6 +65,7 @@ build:
         bazel test //pattern/... --test_output=streamed
         bazel test //logic/... --test_output=streamed
         bazel test //reasoner/... --test_output=streamed
+        bazel test //server/... --test_output=streamed
     test-integration:
       image: vaticle-ubuntu-22.04
       dependencies: [build]

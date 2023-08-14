@@ -31,9 +31,11 @@ log:
       type: stdout
     file:
       type: file
-      directory: server/logs
-      file-size-cap: 50mb
-      archives-size-cap: 1gb
+      base-dir: server/logs
+      file-size-limit: 50mb
+      archive-grouping: month
+      archive-age-limit: 1 year
+      archives-size-limit: 1gb
   logger:
     default:
       level: warn

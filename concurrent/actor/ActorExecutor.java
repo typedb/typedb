@@ -103,6 +103,10 @@ public class ActorExecutor {
         }
     }
 
+    public int outstandingTaskCount() {
+        return submittedTasks.size();
+    }
+
     @NotThreadSafe
     private static class Task implements Comparable<Task> {
 
