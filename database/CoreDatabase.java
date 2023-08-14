@@ -143,7 +143,7 @@ public class CoreDatabase implements TypeDB.Database {
         statisticsCorrector = createStatisticsCorrector();
         sessions = new ConcurrentHashMap<>();
         rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
-                options().storageIndexCacheSize(), LOG.isDebugEnabled(), ROCKS_LOG_PERIOD);
+                options().storageIndexCacheSize(), LOG.isDebugEnabled() || LOG.isTraceEnabled(), ROCKS_LOG_PERIOD);
         schemaLock = new StampedLock();
         schemaLockWriteRequests = new AtomicInteger(0);
         nextTransactionID = new AtomicLong(0);
