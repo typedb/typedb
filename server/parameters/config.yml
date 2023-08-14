@@ -41,7 +41,7 @@ log:
 
   logger:
     default:
-      level: debug
+      level: warn
       output: [ stdout, file ]
     typedb:
       filter: com.vaticle.typedb.core
