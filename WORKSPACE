@@ -81,9 +81,7 @@ unuseddeps_deps()
 # Load @vaticle_bazel_distribution #
 ######################################
 
-#load("@vaticle_dependencies//distribution:deps.bzl", "vaticle_bazel_distribution")
-#vaticle_bazel_distribution()
-load("//dependencies/vaticle:repositories.bzl", "vaticle_bazel_distribution")
+load("@vaticle_dependencies//distribution:deps.bzl", "vaticle_bazel_distribution")
 vaticle_bazel_distribution()
 
 # Load //common
