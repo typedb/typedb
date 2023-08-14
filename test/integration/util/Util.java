@@ -31,13 +31,16 @@ public class Util {
     public static void resetDirectory(Path directory) throws IOException {
         if (Files.exists(directory)) {
             System.out.println("Database directory exists!");
-            Files.walk(directory).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            deleteDirectory(directory);
             System.out.println("Database directory deleted!");
         }
 
         Files.createDirectory(directory);
+        System.out.println("Database directory created: " + directory);
+    }
 
-        System.out.println("Database directory created: " + directory.toString());
+    public static void deleteDirectory(Path directory) throws IOException {
+        Files.walk(directory).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
     }
 
     public static void assertNotNulls(Object... objects) {

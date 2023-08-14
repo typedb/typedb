@@ -29,13 +29,13 @@ host_compatible_java_test(
         "//server:server",
         "//database:database",
     ],
+    data = [
+        "//server:config",
+    ],
     test_class = "com.vaticle.typedb.core.server.ParametersTest",
     deps = [
-        # Internal dependencies
-        "//test/integration/util",
-
-        # External dependencies from Maven
-        "@maven//:com_google_protobuf_protobuf_java",
+        "//test/integration/util:util",
+        "@vaticle_typedb_common//:common",
     ],
 )
 

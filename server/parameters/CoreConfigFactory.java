@@ -46,7 +46,7 @@ public class CoreConfigFactory {
         return config(CONFIG_PATH, overrides, parser);
     }
 
-    static CoreConfig config(Path file, Set<Option> overrides, CoreConfigParser parser) {
+    public static CoreConfig config(Path file, Set<Option> overrides, CoreConfigParser parser) {
         YAML.Map yaml = merge(file, overrides);
         substituteEnvVars(yaml);
         return parser.parse(yaml, "");

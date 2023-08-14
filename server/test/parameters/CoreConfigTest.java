@@ -27,6 +27,8 @@ import org.junit.Test;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.DecimalFormat;
 import java.util.HashSet;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
@@ -36,6 +38,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_VALUE_UNEXPECTED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_KEY_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIGS_UNRECOGNISED;
+import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -44,9 +47,11 @@ import static org.junit.Assert.fail;
 
 public class CoreConfigTest {
 
+    private static final Path CONFIG_PATH_DEFAULT = Paths.get("./server/parameters/config.yml");
+
     @Test
     public void config_file_is_read() {
-        CoreConfig config = CoreConfigFactory.config(new CoreConfigParser());
+        CoreConfig config = CoreConfigFactory.config(CONFIG_PATH_DEFAULT, emptySet(), new CoreConfigParser());
         assertTrue(config.storage().dataDir().toString().endsWith("server/data"));
         assertEquals(new InetSocketAddress("0.0.0.0", 1729), config.server().address());
         assertEquals(500 * Bytes.MB, config.storage().databaseCache().dataSize());
@@ -66,7 +71,7 @@ public class CoreConfigTest {
 
     @Test
     public void minimal_config_with_absolute_paths_is_read() {
-        Path configMinimalAbsPaths = Util.getTypedbDir().resolve("server/test/config/config-minimal-abs-path.yml");
+        Path configMinimalAbsPaths = Paths.get("./server/test/parameters/config/config-minimal-abs-path.yml");
         CoreConfig config = CoreConfigFactory.config(configMinimalAbsPaths, new HashSet<>(), new CoreConfigParser());
         assertTrue(config.storage().dataDir().isAbsolute());
         assertEquals(new InetSocketAddress("0.0.0.0", 1730), config.server().address());
@@ -87,7 +92,7 @@ public class CoreConfigTest {
 
     @Test
     public void config_invalid_path_throws() {
-        Path configMissing = Util.getTypedbDir().resolve("server/test/missing.yml");
+        Path configMissing = Paths.get("server/test/missing.yml");
         try {
             CoreConfigFactory.config(configMissing, new HashSet<>(), new CoreConfigParser());
             fail();
@@ -99,7 +104,7 @@ public class CoreConfigTest {
 
     @Test
     public void config_file_missing_data_throws() {
-        Path configMissingLog = Util.getTypedbDir().resolve("server/test/config/config-missing-data.yml");
+        Path configMissingLog = Paths.get("server/test/parameters/config/config-missing-data.yml");
         try {
             CoreConfigFactory.config(configMissingLog, new HashSet<>(), new CoreConfigParser());
             fail();
@@ -112,7 +117,7 @@ public class CoreConfigTest {
 
     @Test
     public void config_file_missing_debugger_throws() {
-        Path configMissingLogDebugger = Util.getTypedbDir().resolve("server/test/config/config-missing-debugger.yml");
+        Path configMissingLogDebugger = Paths.get("server/test/parameters/config/config-missing-debugger.yml");
         try {
             CoreConfigFactory.config(configMissingLogDebugger, new HashSet<>(), new CoreConfigParser());
             fail();
@@ -125,7 +130,7 @@ public class CoreConfigTest {
 
     @Test
     public void config_file_invalid_output_reference_throws() {
-        Path configInvalidOutput = Util.getTypedbDir().resolve("server/test/config/config-invalid-logger-output.yml");
+        Path configInvalidOutput = Paths.get("server/test/parameters/config/config-invalid-logger-output.yml");
         try {
             CoreConfigFactory.config(configInvalidOutput, new HashSet<>(), new CoreConfigParser());
             fail();
@@ -137,7 +142,7 @@ public class CoreConfigTest {
 
     @Test
     public void config_file_wrong_path_type_throws() {
-        Path configInvalidPathType = Util.getTypedbDir().resolve("server/test/config/config-wrong-path-type.yml");
+        Path configInvalidPathType = Paths.get("server/test/parameters/config/config-wrong-path-type.yml");
         try {
             CoreConfigFactory.config(configInvalidPathType, new HashSet<>(), new CoreConfigParser());
             fail();
@@ -150,7 +155,7 @@ public class CoreConfigTest {
 
     @Test
     public void config_file_unrecognised_option() {
-        Path configUnrecognisedOption = Util.getTypedbDir().resolve("server/test/config/config-unrecognised-option.yml");
+        Path configUnrecognisedOption = Paths.get("server/test/parameters/config/config-unrecognised-option.yml");
         try {
             CoreConfigFactory.config(configUnrecognisedOption, new HashSet<>(), new CoreConfigParser());
             fail();
@@ -164,6 +169,7 @@ public class CoreConfigTest {
     @Test
     public void config_file_accepts_overrides() {
         CoreConfig config = CoreConfigFactory.config(
+                CONFIG_PATH_DEFAULT,
                 set(
                         new Option("storage.data", "server/alt-data"),
                         new Option("server.address", "0.0.0.0:1730"),
@@ -192,12 +198,14 @@ public class CoreConfigTest {
     @Test
     public void overrides_list_can_be_yaml_or_repeated() {
         CoreConfig config = CoreConfigFactory.config(
+                CONFIG_PATH_DEFAULT,
                 set(new Option("log.logger.typedb.output", "[file]")),
                 new CoreConfigParser()
         );
         assertEquals(set("file"), set(config.log().logger().filteredLoggers().get("typedb").outputs()));
 
         CoreConfig configWithRepeatedArgs = CoreConfigFactory.config(
+                CONFIG_PATH_DEFAULT,
                 set(
                         new Option("log.logger.typedb.output", "file"),
                         new Option("log.logger.typedb.output", "stdout")

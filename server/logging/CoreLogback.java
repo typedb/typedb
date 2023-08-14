@@ -124,7 +124,9 @@ public class CoreLogback {
         long directorySize = outputType.fileSizeLimit() + outputType.archivesSizeLimit();
         policy.setMaxFileSize(new FileSize(outputType.fileSizeLimit()));
         policy.setTotalSizeCap(new FileSize(directorySize));
-        policy.setMaxHistory(ageLimitToRolloverPeriods(outputType));
+        int maxHistory = ageLimitToRolloverPeriods(outputType);
+        System.out.println("COMPUTED MAX HISTORY: " + maxHistory);
+        policy.setMaxHistory(maxHistory);
         policy.setCleanHistoryOnStart(true);
         policy.setParent(appender);
         policy.start();
@@ -148,7 +150,7 @@ public class CoreLogback {
      * For example, if the pattern is YYYY-MM, then the rollover period is monthly.
      */
     private static String fileNamePattern(Path path, String filePrefix, CoreConfig.Log.Output.Type.File outputType) {
-        return path.toString() + filePrefix + "_%d{" + fileDateFormat(outputType.archiveGrouping()) + "}.%i" + TYPEDB_LOG_ARCHIVE_EXT;
+        return path.resolve(filePrefix + "_%d{" + fileDateFormat(outputType.archiveGrouping()) + "}.%i" + TYPEDB_LOG_ARCHIVE_EXT).toAbsolutePath().toString();
     }
 
     private static String fileDateFormat(YAMLParser.Value.TimePeriodName timePeriod) {
