@@ -42,7 +42,7 @@ public class ParametersTest {
     private static final Path CONFIG_PATH_DEFAULT = Paths.get("server/parameters/config.yml");
 
     @Test
-    public void test() throws IOException, InterruptedException, TypeDBCheckedException {
+    public void test_log_archive_age_limits() throws IOException, InterruptedException, TypeDBCheckedException {
         Path logDir = null;
         Path dataDir = null;
         TypeDBServer typeDBServer = null;
@@ -75,9 +75,9 @@ public class ParametersTest {
             System.out.println(logArchives.toString());
             assertEquals(2, logArchives.size());
         } finally {
-            if (logDir != null) deleteDirectory(logDir);
-            if (dataDir != null) deleteDirectory(dataDir);
             if (typeDBServer != null) typeDBServer.close();
+            if (dataDir != null) deleteDirectory(dataDir);
+            if (logDir != null) deleteDirectory(logDir);
         }
     }
 
