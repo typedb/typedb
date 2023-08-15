@@ -1,3 +1,3 @@
-Install & Run: http://docs.vaticle.com/docs/running-typedb/install-and-run
+Install & Run: https://typedb.com/docs/typedb/2.x/installation
 
 { release notes }
