@@ -1,76 +1,91 @@
 Install & Run: http://docs.vaticle.com/docs/running-typedb/install-and-run
 
-## Overview
-
-This version adds support for the `ARM` architecture on Mac and Linux, replaces RocksDB with SpeedDB, improves the UX of export/import, and optimises the reasoner to re-use work more effectively.
 
 ## New Features
-- **Add RPC logging for session and transaction creation** [[PR#6836](https://github.com/vaticle/typedb/pull/6836)]
-
-  To monitor production instances of TypeDB and TypeDB enterprise more effectively, when using debug logging the server logs open client connections (each sessions and number of transactions each) at a rate of once per minute. When there are no connections, the server does not log to avoid noise in the idle state.
-
-  To enable these logs, set a logger for 'com.vaticle.typedb.core.server` to DEBUG in the TypeDB configuration file.
 
 
-- **Allow TypeDB migrator to operate over an empty database** [[PR#6835](https://github.com/vaticle/typedb/pull/6835)]
- 
-  We relax the Importer to operate not only over a non-existent database that is created on the fly, but also over a pre-existing and empty database. This is required because TypeDB Enterprise must create the database first, triggering a leader election, before doing the import against the primary replica.
+- **Configure logging to respect size and time limits**
+
+  TypeDB's logger previously could over-run its expected archives size cap. This occurred because the logging framework expected to have both the time and size window configured for either to work correctly.
+
+  TypeDB logger file configuration now has an updated set of options to control both archive retention policies for size and age.
+  ```
+  log:
+    output:
+      file:
+        type: file
+        base-dir: server/logs        // renamed from 'directory'
+        file-size-limit: 50mb        // renamed from 'file-size-cap'
+        archive-grouping: month      // new option, using: minute(s) | hour(s) | day(s) | week(s) | month(s) | year(s)
+        archive-age-limit: 1 year    // new option, using: <N> minute(s) | hour(s) | day(s) | week(s) | month(s) | year(s)
+        archives-size-limit: 1gb     // renamed from 'archives-size-cap'
+  ```
+
+  The `archive-grouping` option configures the rollover and naming policy of archives produced by the logger.
+  The `archive-age-limit` option configures how long each archive files are kept. Note that old archives are only deleted when new ones are produced.
+
+  The execution semantics are that every period of time defined by 'grouping', files exceeding the time limit are asynchronously deleted, and then oldest files are asynchronously deleted until the total size cap is respected.
+
+  In the above example, log files would be compacted into archives monthly, with naming pattern like:
+  ```
+  typedb_202306.0.log.gz
+  typedb_202307.0.log.gz
+  typedb_202308.0.log.gz
+  ...
+  ```
+
+  Where 1 year's worth of log archives are retained.
 
 
-- **Conjunction stream graph optimisation** [[PR#6826](https://github.com/vaticle/typedb/pull/6826)]
-
-  Enable the reasoner to efficiently cache and reuse results of sub-conjunctions where possible. This can dramatically increase the performance of reasoning in some cases with many conjunctions.
 
 
-- **Export and import schema and data file together** [[PR#6827](https://github.com/vaticle/typedb/pull/6827)]
-
-  We improve the UX of importing and exporting data from TypeDB. Previously, we had to export the schema through the TypeDB Console independently, then create the database and define the schema through the Console at import time.
-
-  Now both the import and export commands of TypeDB take two flags: `--schema` and `--data`, which for the export specify where to write the schema and data files to, and for the import specify where to read the schema and data files from.
-
-  We implement validation to ensure that the database that is being imported into does not previously exist. Before, we allowed loading on top of an existing database, which could lead to unpredictable behavior.
-
-  Closes [#6774](https://github.com/vaticle/typedb/issues/6774).
-
-
-- **Native ARM builds for Mac and Linux** [[PR#6824](https://github.com/vaticle/typedb/pull/6824)]
-
-  We upgrade our OR-Tools dependencies to the latest versions, which support both Linux and Mac ARM64 platforms. With these changes, we now have a TypeDB that can run on native ARM platforms such as M1/M2 Macs (`AArch64`) and Linux ARM processors (AWS Graviton, etc.).
-
-
-- **Replace RocskDB with SpeeDB** [[PR#6818](https://github.com/vaticle/typedb/pull/6818)]
-
-  Use SpeeDB instead of RocksDB as the underlying key-value store. It's a drop-in replacement.
+Resolves #6854.
 
 
 
 ## Bugs Fixed
-- **Fix filtering of variables in update query** [[PR#6823](https://github.com/vaticle/typedb/pull/6823)]
 
-  We fix the filtering of variables in an insert clause of update queries to allow inserting new entities.
-
-  Fixes [#6549](https://github.com/vaticle/typedb/issues/6549).
-
-
+- **Disable stamping to fix windows builds**
+  
+  As of #6853 we include an updated version of `rules_jvm_external`, which is used to transform maven dependencies into valid Bazel targets. However, the upgrade to version 5 also included a new default feature called 'stamping' (https://bazel.build/docs/user-manual#workspace-status), which works in general but breaks builds on Windows.
+  
+  This PR disables stamping by default (which supposedly also improves cache hits on remote caches), as well as shortens the Windows build directory to avoid potential long path issues in the future.
+  
+  
+- **Fix NullPointerExceptions during reasoner stream graph construction**
+  Fix a concurrency bug leading to rare NullPointerExceptions during the construction of the reasoner graph.
+  
+  
+- **Fix server hang-ups during shutdown**
+  
+  Under exceptional circumstances, such as when the server runs out of memory, the server could fail to shut down. We modify the server shutdown process and unexpected exception handler to shutdown in several stages, in the most severe case halting the JVM runtime immediately.
+  
+  
+- **Made datetime attribute insert and match time-zone invariant**
+  
+  Enables the BDD tests to check timezone-invariance of inserting and reading datetime attributes.
+  
+  
 
 ## Code Refactors
 
-- **Remove iterators where simple loops would suffice** [[PR#6828](https://github.com/vaticle/typedb/pull/6828)]
-
-  We remove unnecessary usages of iterator objects to do for-each loops that were convenient but marginally slower. This is a minor optimisation, but also very easy to implement in several hot paths.
-
+- **Expose number of outstanding tasks in ActorExecutor**
+  We expose the number of outstanding tasks in an actor executor's queue. This allows us to drop retries messages on TypeDB enterprise to a pile-up of redundant work.
 
 
 ## Other Improvements
-- **Fixed two minor typos in error messages**
   
-  Fix two minor typos in error messages.
-
-- **Optimise publisher registry's state management**
-
-- **Fix Reasoner benchmark setup phase**
-
-- **Simplify the structure of server/lib in assemblies & distributions** [[PR#6821](https://github.com/vaticle/typedb/pull/6821)]
-
-  Simplify the structure of `server/lib` which currently contains 3 folders (`dev`, `prod`, and `common`) to directly contain all dependency jars.
-
+  
+- **Bump vaticle dependencies for jNaCl**
+  Bump vaticle/dependencies to one which includes jNaCL. This is needed for tests in TypeDB enterprise. 
+  
+  
+- **Bump dependencies for typedb-enterprise encryption improvements**
+  Bump netty dependencies for typedb-enterprise encryption changes. 
+  
+  
+- **Merge for 2.19.1 release**
+  
+  Merge for 2.19.1 release.
+  
+    
