@@ -367,4 +367,4 @@ It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 19 Novembe
 For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). 
 Vaticle also provides a commercial license for TypeDB Enterprise - get in touch with our team at commercial@vaticle.com.
 
-Copyright (C) 2022 Vaticle
+Copyright (C) 2023 Vaticle
