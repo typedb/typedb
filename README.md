@@ -8,262 +8,302 @@
 
 # Meet TypeDB (and [TypeQL](https://github.com/vaticle/typeql))
 
-TypeDB is a strongly-typed database with a rich and logical type system. TypeDB empowers you to tackle complex problems, and TypeQL is its query language.
+TypeDB is a strongly typed database with an intelligent reasoning engine to infer new data and a 
+declarative query language based on composable patterns to find it easily.
 
-## A higher level of expressivity
+TypeDB looks beyond relational and NoSQL databases by introducing a strong type system and extending it with inference 
+and pattern matching for simple, yet powerful querying.
 
-TypeDB allows you to model your domain based on logical and object-oriented principles. Composed of entity, relationship, and attribute types, as well as type hierarchies, roles, and rules, TypeDB allows you to think higher-level as opposed to join-tables, columns, documents, vertices, edges, and properties.
+## The benefits of strong typing
 
-### Entity-Relationship Model
+TypeDB brings the benefits of strong typing in modern programming languages to the database, allowing developers to use 
+abstraction, inheritance and polymorphism when modeling and querying data – and finally removing the mismatch between 
+logical and physical data models.
 
-TypeDB allows you to model your domain using the well-known Entity-Relationship model. It is composed of entity types, relation types, and attribute types, with the introduction of role types. TypeDB allows you to leverage the full expressivity of the ER model, and describe your schema through first normal form.
+### Logical data model
 
-```typeql
-define
-
-person sub entity,
-  owns name,
-  plays employment:employee;
-company sub entity,
-  owns name,
-  plays employment:employer;
-employment sub relation,
-  relates employee,
-  relates employer;
-name sub attribute,
-  value string;
-```
-
-### Type Hierarchies
-
-TypeDB allows you to easily model type inheritance into your domain model. Following logical and object-oriented principle, TypeDB allows data types to inherit the behaviours and properties of their supertypes. Complex data structures become reusable, and data interpretation becomes richer through polymorphism.
+Model data naturally – as the entities, relations and attributes defined in an entity-relationship diagram. 
+There's no need for separate logical and physical data models due to database limitations and operational optimizations 
+(e.g., normalization). In TypeDB, the logical data model is the physical data model.
 
 ```typeql
 define
 
-person sub entity,
-  owns first-name,
-  owns last-name;
+# entities
+employee sub entity, 
+   owns full-name, 
+   owns email,
+   plays group-membership:member;
 
-student sub person;
-undergrad sub student;
-postgrad sub student;
+business-unit sub entity, 
+   owns name, 
+   plays group-membership:group;
 
-teacher sub person;
-supervisor sub teacher;
-professor sub teacher;
+# relations
+group-membership sub relation,
+   relates group, 
+   relates member;
+
+# attributes
+full-name sub attribute, value string;
+name sub attribute, value string;
+email sub attribute, value string;
 ```
 
+### Inheritance
 
-### N-ary Relations
-
-In the real world, relations aren't just binary connections between two things. In rich systems, we often need to capture three or more things related with each other at once. Representing them as separate binary relationships would lose information. TypeDB can naturally represent arbitrary number of things as one relation.
-
-```typeql
-match
- 
-$person isa person, has name "Leonardo";
-$character isa character, has name "Jack";
-$movie isa movie;
-(actor: $person, character: $character, movie: $movie) isa cast;
-get $movie;
- 
-answers>>
- 
-$movie isa movie, has name "Titanic";
-```
-
-
-### Nested Relations
-
-Relations are concepts we use to describe the association between two or more things. Sometimes, those things can be relations themselves. TypeDB can represent these structures naturally, as it enables relations to be nested in another relation, allowing you to express the model of your system in the most natural form.
-
-```typeql
-match
- 
-$alice isa person, has name "Alice";
-$bob isa person, has name "Bob";
-$mar ($alice, $bob) isa marriage;
-$city isa city;
-($mar, $city) isa located;
- 
-answers>>
- 
-$city isa city, has name "London";
-```
-
-
-## A higher degree of safety
-
-Types provide a way to describe the logical structures of your data, allowing TypeDB to validate that your code inserts and queries data correctly. Query validation goes beyond static type checking, and includes logical validations of meaningless queries. With strict type-checking errors, you have a dataset that you can trust.
-
-### Logical Data Validation
-
-Inserted data gets validated beyond static type checking of attribute value types. Entities are validated to only have the correct attributes, and relations are validated to only relate things that are logically allowed. TypeDB performs richer validation of inserted entities and relations by evaluating the polymorphic types of the things involved.
-
-```typeql
-insert
-
-$charlie isa person, has name "Charlie";
-$dataCo isa company, has name "DataCo";
-(husband: $charlie, wife: $dataCo) isa marriage; # invalid relation
-
-commit>>
-
-ERROR: invalid data detected during type validation
-```
-
-
-### Logical Query Validation
-
-Read queries executed on TypeDB go through a type resolution process. This process not only optimises the query's execution, but also acts as a static type checker to reject meaningless and unsatisfiable queries, as they are likely a user error.
-
-```typeql
-match
-
-$alice isa person, has name "Alice";
-$bob isa person, has name "Bob";
-($alice, $bob) isa marriage;
-$dataCo isa company, has name "DataCo";
-($bob, $dataCo) isa marriage; # invalid relation
-
-answers>>
-
-ERROR: unsatisfiable query detected during type resolution
-```
-
-## Evolved with logical inference
-
-TypeDB encodes your data for logical interpretation by a reasoning engine. It enables type-inference and rule-inference that creates logical abstractions of data. This allows the discovery of facts and patterns that would otherwise be too hard to find; and complex queries become much simpler.
-
-### Rules
-
-TypeDB allows you to define rules in your schema. This extends the expressivity of your model as it enables the system to derive new conclusions when a certain logical form in your dataset is satisfied. Like functions in programming, rules can chain onto one another, creating abstractions of behaviour at the data level.
+Take advantage of inheritance in the database the same way developers do in applications, and remove one of the most 
+common and painful mismatches between the logical data model and its physical data model. As an added benefit, data 
+can be queried using the same vocabulary which defines it.
 
 ```typeql
 define
 
-rule transitive-location:
-when {
-  (located: $x, locating: $y);
-  (located: $y, locating: $z);
-} then {
-  (located: $x, locating: $z);
-};
+# can be user or group
+subject sub entity, abstract, owns credential;
+
+# can be employee or contractor
+user sub subject, abstract, owns full-name;
+
+# full-name is inherited
+employee sub user, owns salary;
+contractor sub user, owns rate;
+
+# can be users in business unit or role
+user-group sub subject, abstract, owns name;
+
+# name is inherited
+business-unit sub user-group;
+user-role sub user-group;
 ```
 
-### Inference
+### Relations
 
-TypeDB's inference facility translates one query into all of its possible interpretations. This happens through two mechanisms: type-based and rule-based inference. Not only does this derive new conclusions and uncovers relationships that would otherwise be hidden, but it also enables the abstraction of complex patterns into simple queries.
+Contextualize relations, which are now first-class citizens. Relations define one or more roles played by entities, 
+relations and attributes, each with its own name, and optionally have attributes too – just like entities, and well 
+beyond a simple foreign key constraint.
+
+```typeql
+define
+
+subject sub entity, abstract,
+   plays sod-violation:of;
+
+object sub entity, abstract, 
+   plays sod-violation:on;
+
+action sub entity, abstract,
+   plays sod-policy:prohibits;
+
+sod-policy sub relation, 
+   owns name,
+   relates prohibits,
+   plays sod-violation:against;
+
+sod-violation sub relation,
+   relates of,
+   relates on,
+   relates against;
+```
+
+### Multi-valued attributes
+
+Use multi-valued attributes without having to create join tables or parse strings. If a person has multiple hobbies, 
+create multiple hobby attributes. And since attributes exist independently of entities and relations, and are shared, 
+there’s no need to create lookup tables. Simply query the database to find all attributes of a specific type 
+(e.g., hobby).
+
+```typeql
+define
+
+employee sub entity, 
+   owns full-name,
+   owns primary-email,
+   owns email-alias;
+
+full-name sub attribute, value string;
+
+email sub attribute, abstract, value string;
+
+primary-email sub email, value string;
+email-alias sub email, value string;
+
+insert $e isa employee,
+   has full-name "John Doe", 
+   has primary-email "john.doe@vaticle.com",
+   has email-alias "jdoe@vaticle.com",
+   has email-alias "john@vaticle.com";
+```
+
+## The ease of pattern matching
+
+TypeQL is a fully declarative query language based on pattern matching. There is no need for developers to tell TypeDB 
+what to do (e.g., joins). Rather, they use patterns to describe what they're looking for. And because patterns are 
+composable, they can be reused and combined to create new queries.
+
+### Truly declarative
+
+Just describe what you are looking for, and TypeDB will find it. You never have to influence how queries are executed, 
+let alone explicitly tell the database what to do. TypeDB’s query language, TypeQL, is designed specifically for 
+expressing what data looks like, not how to get it. There are no joins, no unions and no need for ordered query logic.
+
+```typeql
+# no need to union employee + contractor
+# or join user to employee|contractor
+match $u isa user;
+
+# no need to recursively traverse a hierarchy of groups
+match
+   $u isa user;
+   $ug isa user-group;
+   $gm (group: $ug, member: $u) isa group-membership;
+
+# no need to specify how permissions are granted
+match
+   $u isa user;
+   $p (subject: $u) isa permission;
+```
+
+### Composable patterns
+
+Combine discrete patterns to describe all of the data which should be included in the results of a query. 
+Rather than rewriting or trying to edit a large, complex statement a la SQL, developers can change the results of 
+TypeQL query by simply adding, removing or substituting patterns – making it so much easier to iterate and troubleshoot 
+queries on the fly.
 
 ```typeql
 match
+   $u isa user, has email "john.doe@vaticle.com";
+   $p (subject: $u, access: $ac) isa permission;
 
-$person isa person;
-$uk isa country, has name "UK";
-($person, $uk) isa location;
-get $person;
+# add file and access patterns to narrow the results to permissions on files
+match
+   $u isa user, has email "john.doe@vaticle.com";
+   $p (subject: $u, access: $ac) isa permission;
+   $f isa file;                                         # narrow to files
+   $ac (object: $f, action: $a) isa access;             # any action on files 
 
-answers>>
-
-$person isa teacher, has name "Alice";
-$person isa postgrad, has name "Bob";
+# add an attribute pattern to further narrow the results to WRITE permissions on files
+match
+   $u isa user, has email "john.doe@vaticle.com";
+   $p (subject: $u, access: $ac) isa permission;   
+   $f isa file;      
+   $ac (object: $f, action: $a) isa access;                               
+   $a has name "WRITE";                                 # narrow to writes
 ```
 
-## A robust, programmatic API
+## The power of inference
 
-TypeDB's API is provided through a gRPC client, built with robust functionalities that REST cannot provide. TypeDB Clients provide stateful objects, Sessions and Transactions, to interact with the database programmatically. The transactions provide ACID guarantees, up to snapshot isolation.
+TypeDB's built-in reasoning engine, a technology previously found only in knowledge-based systems, enables it to infer 
+data on the fly by applying logical rules to existing data – and in turn, allows developers to query highly 
+interconnected data without having to specify where or how to make the connections.
+
+### Polymorphic queries
+
+Feel free to query data based on abstract supertypes. For example, a query on cars (a supertype) will return all sedans, 
+coupes and SUVs (subtypes). And as new subtypes are added (e.g., crossover), they will automatically be included in the 
+results of queries on their supertype – no code changes necessary. There’s no need to be explicit, and query every 
+subtype.
+
+```typeql
+match $e isa employee, has full-name $fn, has salary $sa;
+
+match $c isa contractor, has full-name $fn, has rate $r;
+
+match $u isa user, has full-name $fn;
+
+match $bu isa business-unit, has name $n;
+
+match $ur isa user-role, has name $n;
+
+match $ug isa user-group, has name $n;
+
+match $s isa subject, has credential $cr;
+```
+
+### Implicit data
+
+Don’t worry about modeling data which can be inferred. For example, if a person plays a role in a marriage with no end 
+date, we can infer their relationship status is “Married”. However, there is no need for a relationship status attribute 
+on the person entity. If it doesn't exist, TypeDB’s reasoning engine will temporarily materialize it when queried.
+
+```typeql
+define
+
+# infer implicit READ permission from explicit MODIFY permission
+rule add-read-permission:
+    when {
+        $write isa action, has name "WRITE";
+        $read isa action, has name "READ";
+        $ac_write (object: $obj, action: $write) isa access;
+        $ac_read (object: $obj, action: $read) isa access;
+        (subject: $subj, access: $ac_write) isa permission;
+    } then {
+        (subject: $subj, access: $ac_read) isa permission;
+    };
+```
+
+### Transitive relations
+
+Find data based on the existence of other data, even when you don’t know what that other data is or how its related. 
+It’s often impossible to describe all of the ways in which things are indirectly connected. Thankfully, TypeDB’s 
+reasoning engine can discover and traverse relations on its own, allowing it to infer data on your behalf.
+
+```typeql
+define
+
+# members of a user group are members of other user groups
+# for which their user group is a member
+rule transitive-group-membership:
+   when {
+      (group: $g1, member: $g2) isa group-membership;
+      (group: $g2, member: $s) isa group-membership;
+   } then {
+      (group: $g1, member: $s) isa group-membership;
+   };
+
+# members in a user group inherit its permissions
+rule subject-permission-inheritance:
+   when {
+      $s isa subject;
+      (group: $g, member: $s) isa group-membership;
+      (subject: $g, access: $ac) isa permission;
+   } then {
+      (subject: $s, access: $ac) isa permission;
+   };
+```
 
 ### Simple & Stateful API
 
-TypeDB's API is provided through a gRPC client, providing bi-directional streaming, compression, and strong message typing, that REST APIs could not provide. TypeDB Clients are delivered as libraries in dedicated languages that provide stateful objects, Session and Transactions, for you to interact with the database programmatically.
+TypeDB Driver provide stateful objects, Sessions and Transactions, to interact with the database programmatically. 
+The transactions provide [ACID guarantees](https://typedb.com/docs/typedb/2.x/development/connect#_acid_guarantees), 
+up to snapshot isolation.
 
-#### Java
+TypeDB's Driver API is provided through a gRPC client, providing bi-directional streaming, compression, and strong 
+message typing, that REST APIs could not provide. 
 
-```java
-try (TypeDBClient client = TypeDB.coreClient("localhost:1729")) {
-    try (TypeDBSession session = client.session("my-typedb", DATA)) {
-        try (TypeDBTransaction tx = session.transaction(WRITE)) {
-            tx.query().insert(TypeQL.insert(var().isa("person")));
-            tx.commit();
-        }
-        try (TypeDBTransaction tx = session.transaction(READ)) {
-            Stream<ConceptMap> answers = tx.query().match(TypeQL.match(var("x").isa("person")));
-        }
-    }
-}
-```
+TypeDB Drivers are delivered as libraries in dedicated languages 
+that provide stateful objects, Session and Transactions, for you to interact with the database programmatically.
 
-#### Python
-
-```python
-with TypeDB.core_client("localhost:1729") as client:
-    with client.session("my-typedb", SessionType.DATA) as session:
-        with session.transaction(TransactionType.WRITE) as tx:
-            tx.query().insert("insert $_ isa person;")
-            tx.commit()
-        
-        with session.transaction(TransactionType.READ) as tx:
-            answers: Iterator[ConceptMap] = tx.query().match("match $x isa person")
-```
-
-#### Node.js
-
-```js
-let client, session, tx;
-try {
-    client = TypeDB.coreClient("localhost:1729");
-    session = await client.session("my-typedb");
-    tx = session.transaction(TransactionType.WRITE);
-    tx.query().insert("insert $_ isa person");
-    tx.commit()
-    tx = session.transaction(TransactionType.READ);
-    const answer = tx.query().match("match $x isa person");
-} finally {
-    if (tx) tx.close(); if (session) session.close(); if (client) client.close();
-}
-```
-
-#### Other languages
-
-TypeDB Clients developed by the community:
-- Julia: https://github.com/Humans-of-Julia/TypeDBClient.jl
-
-TypeDB Clients under development by Vaticle:
-- Rust: https://github.com/vaticle/typedb-client-rust
-
-TypeDB Clients under development by the community:
-- C#: https://github.com/typedb-osi/typedb-client-csharp
-- Haskell: https://github.com/typedb-osi/typedb-client-haskell
-- Go: https://github.com/taliesins/typedb-client-go
-
-### ACID Transactions
-
-TypeDB provides ACID guarantees, up to Snapshot Isolation, through of schema validation and consistent transactions. With lightweight optimistic transactions, TypeDB allows a high number of concurrent read and write transactions. With atomic all-or-nothing commits, transactional semantics become easy to reason over.
-
-```
-$ ./typedb console
->
-> transaction my-typedb data write
-my-typedb::data::write> insert $x isa person;
-my-typedb::data::write> rollback
-my-typedb::data::write> insert $x isa person;
-my-typedb::data::write> commit
->
-> transaction my-typedb data read
-my-typedb::data::read> match $x isa person;
-...
-```
+- [Java](https://typedb.com/docs/clients/2.x/java/java-overview)
+- [Python](https://typedb.com/docs/clients/2.x/python/python-overview)
+- [Node.js](https://typedb.com/docs/clients/2.x/node-js/node-js-overview)
+- [Community drivers](https://typedb.com/docs/clients/2.x/other-languages)
 
 ## Download and Run TypeDB
 
-You can download TypeDB from the [Download Centre](https://vaticle.com/download) or [GitHub Releases](https://github.com/vaticle/typedb/releases). Make sure have Java 11 or higher (OpenJDK or Oracle Java) installed. Visit the [installation documentation](https://docs.vaticle.com/docs/running-typedb/install-and-run) to get started.
+You can download TypeDB from the [Releases page](https://typedb.com/docs/typedb/2.x/resources/releases), 
+[Installation guide](https://typedb.com/docs/typedb/2.x/installation), 
+or [GitHub Releases](https://github.com/vaticle/typedb/releases). 
+
+Make sure have Java 11 or higher (OpenJDK or Oracle Java) installed. 
+Visit the [Installation guide](https://typedb.com/docs/typedb/2.x/installation) to get started.
 
 ## Developer Resources
 
-- Documentation: https://docs.vaticle.com
-- Discussion Forum: https://forum.vaticle.com
-- Discord Chat Server: https://vaticle.com/discord
+- Documentation: https://typedb.com/docs
+- Discussion Forum: https://forum.typedb.com/
+- Discord Chat Server: https://typedb.com/discord
 - Community Projects: https://github.com/typedb-osi
 
 ## Compiling TypeDB from Source
@@ -273,7 +313,10 @@ You can download TypeDB from the [Download Centre](https://vaticle.com/download)
 1. Make sure you have the following dependencies installed on your machine:
    - Java JDK 11 or higher
    - Python 3 and Pip 18.1 or higher
-   - [Bazel 5 or higher](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage multiple Bazel versions transparently. Bazelisk runs the appropriate Bazel version for any `bazel` command as specified in [`.bazelversion`](https://github.com/vaticle/typedb/blob/master/.bazelversion) file. In order to install it, follow the platform-specific guide:
+   - [Bazel 5 or higher](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage 
+     multiple Bazel versions transparently. Bazelisk runs the appropriate Bazel version for any `bazel` command as 
+     specified in [`.bazelversion`](https://github.com/vaticle/typedb/blob/master/.bazelversion) file. In order to 
+     install it, follow the platform-specific guide:
      - MacOS: `brew install bazelisk`
      - Linux: `wget https://github.com/bazelbuild/bazelisk/releases/download/v1.4.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel`
 
@@ -297,10 +340,31 @@ You can download TypeDB from the [Download Centre](https://vaticle.com/download)
 
 ## Contributions
 
-TypeDB & TypeQL has been built using various open-source frameworks throughout its evolution. Today TypeDB & TypeQL is built using [RocksDB](https://rocksdb.org), [ANTLR](http://www.antlr.org), [SCIP](https://www.scipopt.org), [Bazel](https://bazel.build), [GRPC](https://grpc.io), and [ZeroMQ](https://zeromq.org), and [Caffeine](https://github.com/ben-manes/caffeine). In the past, TypeDB was enabled by various open-source technologies and communities that we are hugely thankful to: [Apache Cassandra](http://cassandra.apache.org), [Apache Hadoop](https://hadoop.apache.org), [Apache Spark](http://spark.apache.org), [Apache TinkerPop](http://tinkerpop.apache.org), and [JanusGraph](http://janusgraph.org). Thank you!
+TypeDB & TypeQL has been built using various open-source frameworks throughout its evolution. Today TypeDB & TypeQL 
+is built using 
+[Speedb](https://www.speedb.io/),
+[ANTLR](http://www.antlr.org),
+[SCIP](https://www.scipopt.org),
+[Bazel](https://bazel.build),
+[GRPC](https://grpc.io),
+[ZeroMQ](https://zeromq.org), 
+and [Caffeine](https://github.com/ben-manes/caffeine). 
+
+In the past, TypeDB was enabled by various open-source technologies and communities that we are hugely thankful to:
+[RocksDB](https://rocksdb.org),
+[Apache Cassandra](http://cassandra.apache.org), 
+[Apache Hadoop](https://hadoop.apache.org), 
+[Apache Spark](http://spark.apache.org), 
+[Apache TinkerPop](http://tinkerpop.apache.org), 
+and [JanusGraph](http://janusgraph.org). 
+
+Thank you!
 
 ## Licensing
 
-This software is developed by [Vaticle](https://vaticle.com/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 19 November 2007. For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). Vaticle also provides a commercial license for TypeDB Cluster - get in touch with our team at commercial@vaticle.com.
+This software is developed by [Vaticle](https://vaticle.com/).  
+It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 19 November 2007. 
+For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). 
+Vaticle also provides a commercial license for TypeDB Enterprise - get in touch with our team at commercial@vaticle.com.
 
 Copyright (C) 2022 Vaticle
