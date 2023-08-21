@@ -36,6 +36,8 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import static ch.qos.logback.core.CoreConstants.UNBOUNDED_TOTAL_SIZE_CAP;
+import static ch.qos.logback.core.CoreConstants.UNBOUND_HISTORY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_ARCHIVE_EXT;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_EXT;
@@ -121,8 +123,8 @@ public class CoreLogback {
         SizeAndTimeBasedRollingPolicy<?> policy = new SizeAndTimeBasedRollingPolicy<>();
         policy.setContext(context);
         policy.setFileNamePattern(fileNamePattern(outputType.asFile().baseDirectory(), TYPEDB_LOG_FILE_NAME, outputType));
-        long directorySize = outputType.fileSizeLimit() + outputType.archivesSizeLimit();
         policy.setMaxFileSize(new FileSize(outputType.fileSizeLimit()));
+        long directorySize = outputType.archivesSizeLimit() == 0 ? UNBOUNDED_TOTAL_SIZE_CAP : outputType.fileSizeLimit() + outputType.archivesSizeLimit();
         policy.setTotalSizeCap(new FileSize(directorySize));
         policy.setMaxHistory(ageLimitToRolloverPeriods(outputType));
         policy.setCleanHistoryOnStart(true);
@@ -134,13 +136,16 @@ public class CoreLogback {
     }
 
     private static int ageLimitToRolloverPeriods(CoreConfig.Log.Output.Type.File outputType) {
-        long rolloverPeriodSeconds = outputType.archiveGrouping().chronoUnit().getDuration().getSeconds();
-        long archiveAgeLimitSeconds = outputType.archiveAgeLimit().length() *
-                outputType.archiveAgeLimit().timePeriodName().chronoUnit().getDuration().getSeconds();
-        int periods = (int) (archiveAgeLimitSeconds / rolloverPeriodSeconds);
-        long remainder = archiveAgeLimitSeconds % rolloverPeriodSeconds;
-        if (remainder == 0) return periods;
-        else return periods + 1;
+        if (outputType.archiveAgeLimit().length() == 0) return UNBOUND_HISTORY;
+        else {
+            long rolloverPeriodSeconds = outputType.archiveGrouping().chronoUnit().getDuration().getSeconds();
+            long archiveAgeLimitSeconds = outputType.archiveAgeLimit().length() *
+                    outputType.archiveAgeLimit().timePeriodName().chronoUnit().getDuration().getSeconds();
+            int periods = (int) (archiveAgeLimitSeconds / rolloverPeriodSeconds);
+            long remainder = archiveAgeLimitSeconds % rolloverPeriodSeconds;
+            if (remainder == 0) return periods;
+            else return periods + 1;
+        }
     }
 
     /**
