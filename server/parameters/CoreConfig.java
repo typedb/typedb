@@ -191,23 +191,19 @@ public class CoreConfig {
                     private final YAMLParser.Value.TimePeriodName archiveGrouping;
                     private final YAMLParser.Value.TimePeriod archiveAgeLimit;
                     private final long archivesSizeLimit;
-                    private String filename;
-                    private String extension;
+                    private final String filename;
+                    private final String extension;
 
-                    File(Path baseDirectory, long fileSizeLimit, YAMLParser.Value.TimePeriodName archiveGrouping,
+                    File(Path baseDirectory, String filename, String extension,
+                         long fileSizeLimit, YAMLParser.Value.TimePeriodName archiveGrouping,
                          YAMLParser.Value.TimePeriod archiveAgeLimit, long archivesSizeLimit) {
                         this.baseDirectory = baseDirectory;
+                        this.filename = filename;
+                        this.extension = extension;
                         this.fileSizeLimit = fileSizeLimit;
                         this.archiveGrouping = archiveGrouping;
                         this.archiveAgeLimit = archiveAgeLimit;
                         this.archivesSizeLimit = archivesSizeLimit;
-                        this.filename = null;
-                    }
-
-                    Type withFileName(String filename, String extension) {
-                        this.filename = filename;
-                        this.extension = extension;
-                        return this;
                     }
 
                     public Path baseDirectory() {

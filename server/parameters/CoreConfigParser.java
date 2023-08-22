@@ -190,7 +190,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
             public static final String name = "output";
             public static final String description = "Log output definitions.";
 
-            private static final Dynamic<CoreConfig.Log.Output.Type> type = dynamic(Type.description, new Type(TYPEDB_LOG_FILE_NAME, TYPEDB_LOG_FILE_EXT));
+            private static final Dynamic<CoreConfig.Log.Output.Type> type = dynamic(Type.description, new Type());
 
             @Override
             public CoreConfig.Log.Output parse(YAML yaml, String path) {
@@ -210,13 +210,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                         "type", "Type of output to define.", restricted(STRING, list(Stdout.type, File.type))
                 );
                 protected static final Compound<CoreConfig.Log.Output.Type.Stdout> stdout = new Stdout();
-                protected static final Compound<CoreConfig.Log.Output.Type.File> file = new File();
-                private final String filename;
-                private final String extension;
-                protected Type(String filename, String extension) {
-                    this.filename = filename;
-                    this.extension = extension;
-                }
+                protected static final Compound<CoreConfig.Log.Output.Type.File> file = new File(TYPEDB_LOG_FILE_NAME, TYPEDB_LOG_FILE_EXT);
 
                 @Override
                 public CoreConfig.Log.Output.Type parse(YAML yaml, String path) {
@@ -226,7 +220,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                             case Stdout.type:
                                 return stdout.parse(yaml.asMap(), path);
                             case File.type:
-                                return file.parse(yaml.asMap(), path).asFile().withFileName(filename, extension);
+                                return file.parse(yaml.asMap(), path).asFile();
                             default:
                                 throw TypeDBException.of(ILLEGAL_STATE);
                         }
@@ -290,6 +284,14 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                             typeParser, baseDirectory, fileSizeLimit, archiveGrouping, archiveAgeLimit, archivesSizeLimit
                     );
 
+                    private final String filename;
+                    private final String extension;
+                    public File(String filename, String extension) {
+                        super();
+                        this.filename = filename;
+                        this.extension = extension;
+                    }
+
                     @Override
                     public CoreConfig.Log.Output.Type.File parse(YAML yaml, String path) {
                         if (yaml.isMap()) {
@@ -298,6 +300,8 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                             assert File.type.equals(type);
                             return new CoreConfig.Log.Output.Type.File(
                                     configPathAbsolute(baseDirectory.parse(yaml.asMap(), path)),
+                                    filename,
+                                    extension,
                                     fileSizeLimit.parse(yaml.asMap(), path),
                                     archiveGrouping.parse(yaml.asMap(), path),
                                     archiveAgeLimit.parse(yaml.asMap(), path),
