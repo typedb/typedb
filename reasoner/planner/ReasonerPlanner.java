@@ -85,7 +85,7 @@ public abstract class ReasonerPlanner {
         plan(new CallMode(conjunction, estimateableVariables(mode)));
         roots.add(Either.second(conjunction));
         perfCounters.timePlanning.add(System.nanoTime() - start);
-        LOG.debug("Plans:\n" + ReadablePlan.prettyString(summarisePlans()));
+        if (LOG.isDebugEnabled()) LOG.debug("Plans:\n" + ReadablePlan.prettyString(summarisePlans()));
     }
 
     public void planAllDependencies(Concludable concludable, Set<Variable> mode) {

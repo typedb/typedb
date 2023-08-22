@@ -51,21 +51,13 @@ log:
       filter: com.vaticle.typedb.core.database
       level: info # on 'debug' the server will periodically log database storage properties
       output: [ stdout, file ]
-    reasoner-perf-counters:
-      filter: com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters
-      level: debug
-      output: [ stdout ]
-    reasoner-planner:
-        filter: com.vaticle.typedb.core.reasoner.planner
-        level: debug
-        output: [ stdout, file ]
   debugger:
     reasoner-tracer:
       enable: false
       type: reasoner-tracer
       output: file
     reasoner-perf-counters:
-      enable: true
+      enable: false  # logs at debug level on logger `com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters`
       type: reasoner-perf-counters
 
 vaticle-factory:

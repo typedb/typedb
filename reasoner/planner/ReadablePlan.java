@@ -24,6 +24,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -43,15 +45,17 @@ public class ReadablePlan {
     public final Map<Resolvable<?>, ReadablePlan> nested;
     public final Map<Resolvable<?>, Set<ReadablePlan>> triggeredCalls;
     public final List<Resolvable<?>> evaluationOrder;
+    public final Map<Resolvable<?>, Set<Variable>> modes;
     private final double cost;
 
     public ReadablePlan(String label, ReasonerPlanner.CallMode callMode, List<Resolvable<?>> evaluationOrder, double cost) {
         this.label = label;
         this.callMode = callMode;
-        this.nested = new HashMap<>();
-        this.triggeredCalls = new HashMap<>();
         this.evaluationOrder = evaluationOrder;
         this.cost = cost;
+        this.nested = new HashMap<>();
+        this.triggeredCalls = new HashMap<>();
+        this.modes = new HashMap<>();
     }
 
     static Set<ReadablePlan> summarise(ReasonerPlanner planner, Set<ResolvableConjunction> rootConjunctions) {
@@ -60,7 +64,7 @@ public class ReadablePlan {
 
     public static String prettyString(Set<ReadablePlan> rootPlans) {
         StringBuilder sb = new StringBuilder();
-        prettyString(rootPlans , new HashSet<>(), sb);
+        prettyString(rootPlans, new HashSet<>(), sb);
         return sb.toString();
     }
 
@@ -88,21 +92,34 @@ public class ReadablePlan {
 
     private static void prettyString(ReadablePlan toPrint, StringBuilder sb, String nesting) {
         sb.append("Cost: ").append(toPrint.cost).append("\n");
-        for (Resolvable<?> res : toPrint.evaluationOrder) {
+        for (int i = 0; i < toPrint.evaluationOrder.size(); i++) {
+            Resolvable<?> res = toPrint.evaluationOrder.get(i);
+            Set<Variable> bounds = toPrint.modes.get(res);
             if (res.isRetrievable()) {
-                sb.append(nesting).append("* [RET] ").append(res.pattern().toString().replace('\n', ' ')).append("\n");
-            } else if (res.isConcludable()){
-                sb.append(nesting).append("* [CON] ").append(res.pattern().toString().replace('\n', ' ')).append("\n");
+                appendHeader(sb, nesting, i, "RET", bounds);
+                appendPattern(sb, nesting, res.asRetrievable().pattern());
+            } else if (res.isConcludable()) {
+                appendHeader(sb, nesting, i, "CON", bounds);
+                appendPattern(sb, nesting, res.asConcludable().pattern());
                 toPrint.triggeredCalls.get(res).forEach(call -> {
                     sb.append(nesting).append("\t- ").append(call.label).append("::").append(call.callMode.mode).append("\n");
                 });
             } else if (res.isNegated()) {
-                sb.append(nesting).append("* [NEG] {\n");
-                prettyString(toPrint.nested.get(res), sb, nesting+"\t");
+                appendHeader(sb, nesting, i, "NEG", bounds);
+                prettyString(toPrint.nested.get(res), sb, nesting + "\t");
                 sb.append(nesting).append("}\n");
             } else throw TypeDBException.of(ILLEGAL_STATE);
         }
         sb.append("---\n");
+    }
+
+    private static void appendPattern(StringBuilder sb, String nesting, Conjunction pattern) {
+        sb.append(nesting).append(pattern.toString().replace('\n', ' ')).append('\n');
+    }
+
+    private static void appendHeader(StringBuilder sb, String nesting, int resolvableIndex, String resolvableType, Set<Variable> bounds) {
+        sb.append(String.format("%s[%d] %s [bounds: %s]\n", nesting, resolvableIndex, resolvableType,
+                String.join(", ", bounds.stream().map(v -> v.id().toString()).collect(Collectors.toList()))));
     }
 
     private static class Summariser {
@@ -125,7 +142,7 @@ public class ReadablePlan {
             Set<ReadablePlan> rootPlans = new HashSet<>();
             rootConjunctions.forEach(conj -> {
                 ReasonerPlanner.CallMode callMode = new ReasonerPlanner.CallMode(conj, set());
-                ReadablePlan rootPlan =  summarise(callMode, "<user>");
+                ReadablePlan rootPlan = summarise(callMode, "<user>");
                 rootPlans.add(rootPlan);
             });
             return rootPlans;
@@ -140,7 +157,8 @@ public class ReadablePlan {
             done.put(callMode, readablePlan);
 
             Set<Variable> runningBounds = new HashSet<>(callMode.mode);
-            for (Resolvable<?> res: plan.plan()) {
+            for (Resolvable<?> res : plan.plan()) {
+                readablePlan.modes.put(res, runningBounds);
                 if (res.isNegated()) {
                     res.asNegated().disjunction().conjunctions().forEach(nestedConjunction -> {
                         ReasonerPlanner.CallMode nestedCallMode = new ReasonerPlanner.CallMode(nestedConjunction, Collections.intersection(nestedConjunction.pattern().variables(), runningBounds));
