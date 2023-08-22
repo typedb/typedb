@@ -274,7 +274,7 @@ You can download TypeDB from the [Download Centre](https://vaticle.com/download)
    - Java JDK 11 or higher
    - Python 3 and Pip 18.1 or higher
    - [Bazel 5 or higher](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage multiple Bazel versions transparently. Bazelisk runs the appropriate Bazel version for any `bazel` command as specified in [`.bazelversion`](https://github.com/vaticle/typedb/blob/master/.bazelversion) file. In order to install it, follow the platform-specific guide:
-     - MacOS: `brew install bazelbuild/tap/bazelisk`
+     - MacOS: `brew install bazelisk`
      - Linux: `wget https://github.com/bazelbuild/bazelisk/releases/download/v1.4.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel`
 
 2. Depending on your Operating System, you can build TypeDB with either one of the following commands: 
