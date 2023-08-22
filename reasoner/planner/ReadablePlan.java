@@ -69,39 +69,38 @@ public class ReadablePlan {
 
     public static String prettyString(Set<ReadablePlan> rootPlans) {
         StringBuilder sb = new StringBuilder();
-        prettyString(rootPlans, new HashSet<>(), sb);
+        prettyString(Map.of(new Pair<>("<user>", set()), rootPlans), new HashSet<>(), sb);
         return sb.toString();
     }
 
-    private static void prettyString(Set<ReadablePlan> thisLevel, Set<ReadablePlan> seen, StringBuilder sb) {
-        Map<Pair<String, Set<Variable>>, Set<ReadablePlan>> byLabelMode = new HashMap<>();
-        thisLevel.forEach(plan -> {
-            byLabelMode.computeIfAbsent(new Pair<>(plan.label, plan.callMode.mode), key -> new HashSet<>()).add(plan);
-        });
+    private static void prettyString(Map<Pair<String, Set<Variable>>, Set<ReadablePlan>> byLabelMode, Set<Pair<String, Set<Variable>>> seen, StringBuilder sb) {
+        Map<Pair<String, Set<Variable>>, Set<ReadablePlan>> nextLevel = new HashMap<>();
 
-        Set<ReadablePlan> nextLevel = new HashSet<>();
         byLabelMode.forEach((labelMode, plans) -> {
-            sb.append("--\t").append(labelMode.first()).append("::").append(labelMode.second()).append("\t--\n");
-            plans.forEach(singlePlan -> {
-                prettyString(singlePlan, sb, "");
-                nextLevel.addAll(singlePlan.flattenedTriggeredCalls().toList());
+            sb.append("--------------------\t\t").append(labelMode.first()).append("::").append(labelMode.second()).append("\t\t--------------------\n");
+            List<ReadablePlan> planList = new ArrayList<>(plans);
+            planList.forEach(branch -> {
+                prettyString(branch, sb, "");
+                if (branch != planList.get(planList.size()-1)) {
+                    sb.append("- - - - - - - - - - - - - - -NEXT BRANCH- - - - - - - - - - - - - - - - - - - - \n\n");
+                }
+                iterate(branch.resolvableSummaries)
+                        .filter(r -> r.resolvable.isConcludable()).map(r -> (ResolvableSummary.ConcludableSummary)r)
+                        .forEachRemaining(concludableSummary -> {
+                            concludableSummary.triggeredCalls.forEach( (k,v) -> {
+                                if (!nextLevel.containsKey(k)) nextLevel.put(k, v);
+                                assert nextLevel.get(k).equals(v);
+                            } );
+                        });
             });
-            seen.addAll(plans);
+            sb.append("========================================================================================================================\n\n");
+            seen.add(labelMode);
         });
-        nextLevel.removeAll(seen);
-
+        seen.forEach(nextLevel::remove);
         if (!nextLevel.isEmpty()) prettyString(nextLevel, seen, sb);
     }
 
-    private FunctionalIterator<ReadablePlan> flattenedTriggeredCalls() {
-        return iterate(resolvableSummaries)
-                .filter(resolvableSummary -> resolvableSummary.resolvable.isConcludable())
-                .flatMap(r -> iterate(((ResolvableSummary.ConcludableSummary)r).triggeredCalls.values()))
-                .flatMap(Iterators::iterate);
-    }
-
     private static void prettyString(ReadablePlan toPrint, StringBuilder sb, String nesting) {
-        sb.append("-----     -----     -----    START BRANCH    -----     -----     -----     -----\n");
         sb.append("Cost: ").append(toPrint.cost).append("\n");
         for (int i = 0; i < toPrint.resolvableSummaries.size(); i++) {
             ResolvableSummary summary = toPrint.resolvableSummaries.get(i);
@@ -113,9 +112,9 @@ public class ReadablePlan {
             } else if (res.isConcludable()) {
                 appendHeader(sb, nesting, i, "CON", bounds);
                 appendPattern(sb, nesting, res.asConcludable().pattern());
-                ((ResolvableSummary.ConcludableSummary)summary).triggeredCalls.forEach((label, readablePlanSet) -> {
-                    Set<Variable> callbounds = readablePlanSet.stream().findAny().get().callMode.mode;
-                    sb.append(nesting).append("\t- ").append(label).append("::").append(callbounds).append("\n");
+                ((ResolvableSummary.ConcludableSummary)summary).triggeredCalls.forEach((labelMode, readablePlanSet) -> {
+                    assert labelMode.second().equals(readablePlanSet.stream().findAny().get().callMode.mode);
+                    sb.append(nesting).append("\t\t- ").append(labelMode.first()).append("::").append(labelMode.second()).append("\n");
                 });
             } else if (res.isNegated()) {
                 appendHeader(sb, nesting, i, "NEG", bounds);
@@ -123,7 +122,13 @@ public class ReadablePlan {
                 sb.append(nesting).append("}\n");
             } else throw TypeDBException.of(ILLEGAL_STATE);
         }
-        sb.append("-----     -----     -----     END BRANCH     -----     -----     -----     -----\n");
+    }
+
+    private FunctionalIterator<ReadablePlan> flattenedTriggeredCalls() {
+        return iterate(resolvableSummaries)
+                .filter(resolvableSummary -> resolvableSummary.resolvable.isConcludable())
+                .flatMap(r -> iterate(((ResolvableSummary.ConcludableSummary)r).triggeredCalls.values()))
+                .flatMap(Iterators::iterate);
     }
 
     private static void appendPattern(StringBuilder sb, String nesting, Conjunction pattern) {
@@ -131,7 +136,7 @@ public class ReadablePlan {
     }
 
     private static void appendHeader(StringBuilder sb, String nesting, int resolvableIndex, String resolvableType, Set<Variable> bounds) {
-        sb.append(String.format("%s[%d] %s [bounds: %s]\n", nesting, resolvableIndex, resolvableType,
+        sb.append(String.format("%s[%d] %s {%s}\n", nesting, resolvableIndex, resolvableType,
                 bounds.stream().map(v -> v.id().toString()).collect(Collectors.joining(", "))));
     }
 
