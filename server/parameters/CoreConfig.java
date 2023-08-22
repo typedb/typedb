@@ -209,6 +209,7 @@ public class CoreConfig {
                     public Path baseDirectory() {
                         return baseDirectory;
                     }
+
                     public String filename() {
                         return filename;
                     }
