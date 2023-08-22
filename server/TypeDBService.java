@@ -245,7 +245,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
             Options.Session options = applyDefaultOptions(new Options.Session(), request.getOptions());
             TypeDB.Session session = databaseMgr.session(request.getDatabase(), sessionType, options);
-            SessionService sessionSvc = new SessionService(this, session, options);
+            SessionService sessionSvc = createSessionService(session, options);
             sessionServices.put(sessionSvc.UUID(), sessionSvc);
             int duration = (int) Duration.between(start, Instant.now()).toMillis();
             responder.onNext(openRes(sessionSvc.UUID(), duration));
@@ -292,6 +292,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public StreamObserver<TransactionProto.Transaction.Client> transaction(
             StreamObserver<TransactionProto.Transaction.Server> responder) {
         return new TransactionService(this, responder);
+    }
+
+    protected SessionService createSessionService(TypeDB.Session session, Options.Session options) {
+        return new SessionService(this, session, options);
     }
 
     public SessionService session(UUID uuid) {

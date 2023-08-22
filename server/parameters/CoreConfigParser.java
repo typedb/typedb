@@ -35,6 +35,8 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFI
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_YAML_MUST_BE_MAP;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIGS_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_EXT;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_NAME;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.KeyValue.Dynamic;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.KeyValue.Predefined;
 import static com.vaticle.typedb.core.server.parameters.util.YAMLParser.Value.Primitive.BOOLEAN;
@@ -188,7 +190,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
             public static final String name = "output";
             public static final String description = "Log output definitions.";
 
-            private static final Dynamic<CoreConfig.Log.Output.Type> type = dynamic(Type.description, new Type());
+            private static final Dynamic<CoreConfig.Log.Output.Type> type = dynamic(Type.description, new Type(TYPEDB_LOG_FILE_NAME, TYPEDB_LOG_FILE_EXT));
 
             @Override
             public CoreConfig.Log.Output parse(YAML yaml, String path) {
@@ -209,6 +211,12 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                 );
                 protected static final Compound<CoreConfig.Log.Output.Type.Stdout> stdout = new Stdout();
                 protected static final Compound<CoreConfig.Log.Output.Type.File> file = new File();
+                private final String filename;
+                private final String extension;
+                protected Type(String filename, String extension) {
+                    this.filename = filename;
+                    this.extension = extension;
+                }
 
                 @Override
                 public CoreConfig.Log.Output.Type parse(YAML yaml, String path) {
@@ -218,7 +226,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
                             case Stdout.type:
                                 return stdout.parse(yaml.asMap(), path);
                             case File.type:
-                                return file.parse(yaml.asMap(), path);
+                                return file.parse(yaml.asMap(), path).asFile().withFileName(filename, extension);
                             default:
                                 throw TypeDBException.of(ILLEGAL_STATE);
                         }

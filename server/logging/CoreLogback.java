@@ -27,6 +27,7 @@ import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.encoder.LayoutWrappingEncoder;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
+import ch.qos.logback.core.spi.DeferredProcessingAware;
 import ch.qos.logback.core.util.FileSize;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.parameters.CoreConfig;
@@ -40,8 +41,6 @@ import static ch.qos.logback.core.CoreConstants.UNBOUNDED_TOTAL_SIZE_CAP;
 import static ch.qos.logback.core.CoreConstants.UNBOUND_HISTORY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_ARCHIVE_EXT;
-import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_EXT;
-import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_FILE_NAME;
 
 public class CoreLogback {
 
@@ -56,21 +55,20 @@ public class CoreLogback {
 
         Map<String, Appender<ILoggingEvent>> appenders = new HashMap<>();
         logConfig.output().outputs().forEach((name, outputType) ->
-                appenders.put(name, appender(name, logContext, encoder, layout, outputType)));
+                appenders.put(name, appender(name, logContext, encoder, outputType)));
 
         configureRootLogger(logConfig.logger().defaultLogger(), logContext, appenders);
         logConfig.logger().filteredLoggers().values().forEach(l -> configureLogger(l, logContext, appenders));
     }
 
-    protected Appender<ILoggingEvent> appender(String name,
-                                               LoggerContext logContext,
-                                               LayoutWrappingEncoder<ILoggingEvent> encoder,
-                                               TTLLLayout layout,
-                                               CoreConfig.Log.Output.Type outputType) {
+    protected <EVENT extends DeferredProcessingAware> Appender<EVENT> appender(String name,
+                                                                               LoggerContext logContext,
+                                                                               LayoutWrappingEncoder<EVENT> encoder,
+                                                                               CoreConfig.Log.Output.Type outputType) {
         if (outputType.isStdout()) {
-            return consoleAppender(name, logContext, encoder, layout);
+            return consoleAppender(name, logContext, encoder);
         } else if (outputType.isFile()) {
-            return fileAppender(name, logContext, encoder, layout, outputType.asFile());
+            return fileAppender(name, logContext, encoder, outputType.asFile());
         } else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
@@ -97,32 +95,30 @@ public class CoreLogback {
         });
     }
 
-    protected static ConsoleAppender<ILoggingEvent> consoleAppender(String name, LoggerContext context,
-                                                                    LayoutWrappingEncoder<ILoggingEvent> encoder,
-                                                                    TTLLLayout layout) {
-        ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
+    protected static <EVENT extends DeferredProcessingAware> ConsoleAppender<EVENT> consoleAppender(String name, LoggerContext context,
+                                                                    LayoutWrappingEncoder<EVENT> encoder) {
+        ConsoleAppender<EVENT> appender = new ConsoleAppender<>();
         appender.setContext(context);
         appender.setName(name);
         appender.setEncoder(encoder);
-        appender.setLayout(layout);
         appender.start();
         return appender;
     }
 
-    protected static RollingFileAppender<ILoggingEvent> fileAppender(String name, LoggerContext context,
-                                                                     LayoutWrappingEncoder<ILoggingEvent> encoder,
-                                                                     TTLLLayout layout, CoreConfig.Log.Output.Type.File outputType) {
-        RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
+    protected static <EVENT extends DeferredProcessingAware> RollingFileAppender<EVENT> fileAppender(String name, LoggerContext context,
+                                                                     LayoutWrappingEncoder<EVENT> encoder,
+                                                                     CoreConfig.Log.Output.Type.File outputType) {
+        RollingFileAppender<EVENT> appender = new RollingFileAppender<>();
         appender.setContext(context);
         appender.setName(name);
         appender.setAppend(true);
-        String logPath = outputType.asFile().baseDirectory().resolve(TYPEDB_LOG_FILE_NAME + TYPEDB_LOG_FILE_EXT).toAbsolutePath().toString();
+        assert outputType.filename() != null && outputType.extension() != null;
+        String logPath = outputType.asFile().baseDirectory().resolve(outputType.filename() + outputType.extension()).toAbsolutePath().toString();
         appender.setFile(logPath);
-        appender.setLayout(layout);
         appender.setEncoder(encoder);
         SizeAndTimeBasedRollingPolicy<?> policy = new SizeAndTimeBasedRollingPolicy<>();
         policy.setContext(context);
-        policy.setFileNamePattern(fileNamePattern(outputType.asFile().baseDirectory(), TYPEDB_LOG_FILE_NAME, outputType));
+        policy.setFileNamePattern(fileNamePattern(outputType.asFile().baseDirectory(), outputType.filename(), outputType));
         policy.setMaxFileSize(new FileSize(outputType.fileSizeLimit()));
         long directorySize = outputType.archivesSizeLimit() == 0 ? UNBOUNDED_TOTAL_SIZE_CAP : outputType.fileSizeLimit() + outputType.archivesSizeLimit();
         policy.setTotalSizeCap(new FileSize(directorySize));
