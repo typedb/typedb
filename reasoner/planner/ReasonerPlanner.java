@@ -196,7 +196,6 @@ public abstract class ReasonerPlanner {
         return ReadablePlan.summarise(this, toSummarise);
     }
 
-
     static class CallMode {
         final ResolvableConjunction conjunction;
         final Set<Variable> mode;
