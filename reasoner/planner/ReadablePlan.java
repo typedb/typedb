@@ -81,19 +81,17 @@ public class ReadablePlan {
             List<ReadablePlan> planList = new ArrayList<>(plans);
             planList.forEach(branch -> {
                 prettyString(branch, sb, "");
-                if (branch != planList.get(planList.size()-1)) {
+                if (branch != planList.get(planList.size() - 1)) {
                     sb.append("- - - - - - - - - - - - - - -NEXT BRANCH- - - - - - - - - - - - - - - - - - - - \n\n");
                 }
-                iterate(branch.resolvableSummaries)
-                        .filter(r -> r.resolvable.isConcludable()).map(r -> (ResolvableSummary.ConcludableSummary)r)
-                        .forEachRemaining(concludableSummary -> {
-                            concludableSummary.triggeredCalls.forEach( (k,v) -> {
-                                if (!nextLevel.containsKey(k)) nextLevel.put(k, v);
-                                assert nextLevel.get(k).equals(v);
-                            } );
-                        });
+                iterate(branch.resolvableSummaries).forEachRemaining(resolvableSummary -> {
+                    resolvableSummary.triggeredCalls().forEach((k, v) -> {
+                        if (!nextLevel.containsKey(k)) nextLevel.put(k, v);
+                        assert nextLevel.get(k).equals(v);
+                    });
+                });
             });
-            sb.append("========================================================================================================================\n\n");
+            sb.append("\n========================================================================================================================\n");
             seen.add(labelMode);
         });
         seen.forEach(nextLevel::remove);
@@ -112,23 +110,16 @@ public class ReadablePlan {
             } else if (res.isConcludable()) {
                 appendHeader(sb, nesting, i, "CON", bounds);
                 appendPattern(sb, nesting, res.asConcludable().pattern());
-                ((ResolvableSummary.ConcludableSummary)summary).triggeredCalls.forEach((labelMode, readablePlanSet) -> {
+                summary.triggeredCalls().forEach((labelMode, readablePlanSet) -> {
                     assert labelMode.second().equals(readablePlanSet.stream().findAny().get().callMode.mode);
                     sb.append(nesting).append("\t\t- ").append(labelMode.first()).append("::").append(labelMode.second()).append("\n");
                 });
             } else if (res.isNegated()) {
                 appendHeader(sb, nesting, i, "NEG", bounds);
-                prettyString(((ResolvableSummary.NegatedSummary)summary).negatedPlan, sb, nesting + "\t");
+                prettyString(((ResolvableSummary.NegatedSummary) summary).negatedPlan, sb, nesting + "\t");
                 sb.append(nesting).append("}\n");
             } else throw TypeDBException.of(ILLEGAL_STATE);
         }
-    }
-
-    private FunctionalIterator<ReadablePlan> flattenedTriggeredCalls() {
-        return iterate(resolvableSummaries)
-                .filter(resolvableSummary -> resolvableSummary.resolvable.isConcludable())
-                .flatMap(r -> iterate(((ResolvableSummary.ConcludableSummary)r).triggeredCalls.values()))
-                .flatMap(Iterators::iterate);
     }
 
     private static void appendPattern(StringBuilder sb, String nesting, Conjunction pattern) {
@@ -205,6 +196,10 @@ public class ReadablePlan {
             this.mode = mode;
         }
 
+        public Map<Pair<String, Set<Variable>>, Set<ReadablePlan>> triggeredCalls() {
+            return java.util.Collections.EMPTY_MAP;
+        }
+
         public static class ConcludableSummary extends ResolvableSummary {
             private final Map<Pair<String, Set<Variable>>, Set<ReadablePlan>> triggeredCalls;
 
@@ -217,6 +212,11 @@ public class ReadablePlan {
                 Map<Pair<String, Set<Variable>>, Set<ReadablePlan>> byRule = new HashMap<>();
                 triggeredCalls.forEach(r -> byRule.computeIfAbsent(new Pair<>(r.label, r.callMode.mode), l -> new HashSet<>()).add(r));
                 return byRule;
+            }
+
+            @Override
+            public Map<Pair<String, Set<Variable>>, Set<ReadablePlan>> triggeredCalls() {
+                return triggeredCalls;
             }
         }
 
