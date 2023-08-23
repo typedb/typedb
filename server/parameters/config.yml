@@ -57,7 +57,7 @@ log:
       type: reasoner-tracer
       output: file
     reasoner-perf-counters:
-      enable: true
+      enable: false
       type: reasoner-perf-counters
 
 vaticle-factory:
