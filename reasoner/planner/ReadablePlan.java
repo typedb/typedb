@@ -99,7 +99,7 @@ public class ReadablePlan {
     }
 
     private static void prettyString(ReadablePlan toPrint, StringBuilder sb, String nesting) {
-        sb.append("Cost: ").append(toPrint.cost).append("\n");
+        sb.append(nesting).append("Cost: ").append(toPrint.cost).append("\n");
         for (int i = 0; i < toPrint.resolvableSummaries.size(); i++) {
             ResolvableSummary summary = toPrint.resolvableSummaries.get(i);
             Resolvable<?> res = summary.resolvable;
@@ -116,6 +116,7 @@ public class ReadablePlan {
                 });
             } else if (res.isNegated()) {
                 appendHeader(sb, nesting, i, "NEG", bounds);
+                sb.append(nesting).append("{");
                 prettyString(((ResolvableSummary.NegatedSummary) summary).negatedPlan, sb, nesting + "\t");
                 sb.append(nesting).append("}\n");
             } else throw TypeDBException.of(ILLEGAL_STATE);
