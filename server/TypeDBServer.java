@@ -77,10 +77,12 @@ public class TypeDBServer implements AutoCloseable {
     protected TypeDBService typeDBService;
     protected AtomicBoolean isOpen;
     private final CoreConfig config;
+    private final CoreLogback logback;
 
     static TypeDBServer create(CoreConfig config, boolean debug) {
-        configureLogging(new CoreLogback(), config);
-        return new TypeDBServer(config, debug, new CoreFactory());
+        CoreLogback logback = new CoreLogback();
+        configureLogging(logback, config);
+        return new TypeDBServer(config, logback, debug, new CoreFactory());
     }
 
     protected static void configureLogging(CoreLogback logback, CoreConfig config) {
@@ -88,8 +90,9 @@ public class TypeDBServer implements AutoCloseable {
         java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
-    protected TypeDBServer(CoreConfig config, boolean debug, Factory factory) {
+    protected TypeDBServer(CoreConfig config, CoreLogback logback, boolean debug, Factory factory) {
         this.config = config;
+        this.logback = logback;
         this.debug = debug;
 
         verifyJavaVersion();
@@ -192,6 +195,10 @@ public class TypeDBServer implements AutoCloseable {
 
     protected CoreConfig config() {
         return config;
+    }
+
+    protected CoreLogback logback() {
+        return logback;
     }
 
     private InetSocketAddress address() {
