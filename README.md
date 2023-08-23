@@ -12,17 +12,17 @@ TypeDB is a strongly typed database with an intelligent reasoning engine to infe
 declarative query language based on composable patterns to find it easily.
 
 TypeDB looks beyond relational and NoSQL databases by introducing a strong type system and extending it with inference 
-and pattern matching for simple, yet powerful querying.
+and pattern matching for simple yet powerful querying.
 
 ## The benefits of strong typing
 
-TypeDB brings the benefits of strong typing in modern programming languages to the database, allowing developers to use 
-abstraction, inheritance and polymorphism when modeling and querying data – and finally removing the mismatch between 
-logical and physical data models.
+TypeDB brings the benefits of strong typing, found in modern programming languages, to the database. It allows developers to use 
+abstraction, inheritance, and polymorphism when modeling and querying data. 
+TypeDB entirely removes the infamous "[impedance mismatch](https://en.wikipedia.org/wiki/Object%E2%80%93relational_impedance_mismatch)" problem.
 
 ### Logical data model
 
-Model data naturally – as the entities, relations and attributes defined in an entity-relationship diagram. 
+Model data naturally – as the entities, relations, and attributes defined in an entity-relationship diagram. 
 There's no need for separate logical and physical data models due to database limitations and operational optimizations 
 (e.g., normalization). In TypeDB, the logical data model is the physical data model.
 
@@ -52,7 +52,7 @@ email sub attribute, value string;
 
 ### Inheritance
 
-Take advantage of inheritance in the database the same way developers do in applications, and remove one of the most 
+Take advantage of inheritance in the database the same way developers do in OO languages, and remove one of the most 
 common and painful mismatches between the logical data model and its physical data model. As an added benefit, data 
 can be queried using the same vocabulary which defines it.
 
@@ -79,7 +79,7 @@ user-role sub user-group;
 
 ### Relations
 
-Contextualize relations, which are now first-class citizens. Relations define one or more roles played by entities, 
+Contextualize relations, which are first-class citizens in TypeDB. Relations define one or more roles played by entities, 
 relations and attributes, each with its own name, and optionally have attributes too – just like entities, and well 
 beyond a simple foreign key constraint.
 
@@ -108,7 +108,7 @@ sod-violation sub relation,
 
 ### Multi-valued attributes
 
-Use multi-valued attributes without having to create join tables or parse strings. If a person has multiple hobbies, 
+Use multi-valued attributes rather than creating join tables or parse strings. For example, if a person has multiple hobbies, 
 create multiple hobby attributes. And since attributes exist independently of entities and relations, and are shared, 
 there’s no need to create lookup tables. Simply query the database to find all attributes of a specific type 
 (e.g., hobby).
@@ -340,8 +340,8 @@ Visit the [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
 
 ## Contributions
 
-TypeDB & TypeQL has been built using various open-source frameworks throughout its evolution. Today TypeDB & TypeQL 
-is built using 
+TypeDB and TypeQL are built using various open-source frameworks throughout its evolution. Today TypeDB and TypeQL 
+use
 [Speedb](https://www.speedb.io/),
 [ANTLR](http://www.antlr.org),
 [SCIP](https://www.scipopt.org),
@@ -363,7 +363,7 @@ Thank you!
 ## Licensing
 
 This software is developed by [Vaticle](https://vaticle.com/).  
-It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 19 November 2007. 
+It's released under the GNU Affero GENERAL PUBLIC LICENSE version 3 (AGPLv3).
 For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). 
 Vaticle also provides a commercial license for TypeDB Enterprise - get in touch with our team at commercial@vaticle.com.
 
