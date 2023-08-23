@@ -21,8 +21,6 @@ package com.vaticle.typedb.core.reasoner.planner;
 import com.vaticle.typedb.common.collection.Collections;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Negated;
@@ -63,8 +61,8 @@ public class ReadablePlan {
         this.resolvableSummaries = resolvableSummaries;
     }
 
-    static Set<ReadablePlan> summarise(ReasonerPlanner planner, Set<ResolvableConjunction> rootConjunctions) {
-        return new Summariser(planner).summarise(rootConjunctions);
+    static Set<ReadablePlan> summarise(ReasonerPlanner planner, Set<ReasonerPlanner.CallMode> roots) {
+        return new Summariser(planner).summarise(roots);
     }
 
     public static String prettyString(Set<ReadablePlan> rootPlans) {
@@ -148,10 +146,9 @@ public class ReadablePlan {
             });
         }
 
-        public Set<ReadablePlan> summarise(Set<ResolvableConjunction> rootConjunctions) {
+        public Set<ReadablePlan> summarise(Set<ReasonerPlanner.CallMode> roots) {
             Set<ReadablePlan> rootPlans = new HashSet<>();
-            rootConjunctions.forEach(conj -> {
-                ReasonerPlanner.CallMode callMode = new ReasonerPlanner.CallMode(conj, set());
+            roots.forEach(callMode -> {
                 ReadablePlan rootPlan = summarise(callMode, "<user>");
                 rootPlans.add(rootPlan);
             });

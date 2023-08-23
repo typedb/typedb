@@ -18,8 +18,9 @@
 
 package com.vaticle.typedb.core.reasoner.planner;
 
-import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.cache.CommonCache;
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
@@ -36,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -56,7 +58,6 @@ public abstract class ReasonerPlanner {
     private final boolean explain;
     final CommonCache<CallMode, Plan> planCache;
     final ReasonerPerfCounters perfCounters;
-    private final Set<Either<ResolvableDisjunction, ResolvableConjunction>> roots;
 
     public ReasonerPlanner(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, ReasonerPerfCounters perfCounters, boolean explain) {
         this.traversalEng = traversalEng;
@@ -65,7 +66,6 @@ public abstract class ReasonerPlanner {
         this.perfCounters = perfCounters;
         this.explain = explain;
         this.planCache = new CommonCache<>();
-        this.roots = new HashSet<>();
     }
 
     public static ReasonerPlanner create(TraversalEngine traversalEng, ConceptManager conceptMgr, LogicManager logicMgr, ReasonerPerfCounters perfCounters, boolean explain) {
@@ -80,19 +80,27 @@ public abstract class ReasonerPlanner {
         return boundVars.containsAll(dependencies.get(resolvable));
     }
 
-    public void plan(ResolvableConjunction conjunction, Set<Variable> mode) {
+    public void planRoot(ResolvableDisjunction disjunction) {
         long start = System.nanoTime();
-        plan(new CallMode(conjunction, estimateableVariables(mode)));
-        roots.add(Either.second(conjunction));
+        disjunction.conjunctions().forEach(conjunction -> plan(new CallMode(conjunction, Collections.EMPTY_SET)));
         perfCounters.timePlanning.add(System.nanoTime() - start);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Printing reasoner plans:\n" + ReadablePlan.prettyString(summarisePlans()));
-        }
+        logPlans(iterate(disjunction.conjunctions()).map(conjunction -> new CallMode(conjunction, Collections.emptySet())));
     }
 
-    public void planAllDependencies(Concludable concludable, Set<Variable> mode) {
-        triggeredCalls(concludable, estimateableVariables(mode), null)
-                .forEach(callMode -> plan(callMode));
+    public void planRoot(ResolvableConjunction conjunction) {
+        long start = System.nanoTime();
+        CallMode callMode = new CallMode(conjunction, Collections.EMPTY_SET);
+        plan(callMode);
+        perfCounters.timePlanning.add(System.nanoTime() - start);
+        logPlans(Iterators.single(callMode));
+    }
+
+    public void planExplainableRoot(Concludable concludable, Set<Variable> mode) {
+        long start = System.nanoTime();
+        Set<CallMode> triggeredCalls = triggeredCalls(concludable, estimateableVariables(mode), null);
+        triggeredCalls.forEach(this::plan);
+        perfCounters.timePlanning.add(System.nanoTime() - start);
+        logPlans(iterate(triggeredCalls));
     }
 
     public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> mode) {
@@ -189,11 +197,14 @@ public abstract class ReasonerPlanner {
         return calls;
     }
 
-    public Set<ReadablePlan> summarisePlans() {
-        Set<ResolvableConjunction> toSummarise = iterate(roots)
-                .flatMap(root -> root.isFirst() ? iterate(root.first().conjunctions()) : iterate(root.second()))
-                .toSet();
-        return ReadablePlan.summarise(this, toSummarise);
+    private void logPlans(FunctionalIterator<CallMode> roots) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Printing reasoner plans:\n" + ReadablePlan.prettyString(summarisePlans(roots.toSet())));
+        }
+    }
+
+    public Set<ReadablePlan> summarisePlans(Set<CallMode> roots) {
+        return ReadablePlan.summarise(this, roots);
     }
 
     static class CallMode {
