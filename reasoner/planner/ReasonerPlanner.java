@@ -49,7 +49,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 
 public abstract class ReasonerPlanner {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ReasonerPlanner .class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerPlanner.class);
     final ConceptManager conceptMgr;
     final TraversalEngine traversalEng;
     final LogicManager logicMgr;
@@ -85,7 +85,9 @@ public abstract class ReasonerPlanner {
         plan(new CallMode(conjunction, estimateableVariables(mode)));
         roots.add(Either.second(conjunction));
         perfCounters.timePlanning.add(System.nanoTime() - start);
-        if (LOG.isDebugEnabled()) LOG.debug("Plans:\n" + ReadablePlan.prettyString(summarisePlans()));
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Printing reasoner plans:\n" + ReadablePlan.prettyString(summarisePlans()));
+        }
     }
 
     public void planAllDependencies(Concludable concludable, Set<Variable> mode) {

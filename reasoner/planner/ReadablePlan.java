@@ -69,7 +69,9 @@ public class ReadablePlan {
 
     public static String prettyString(Set<ReadablePlan> rootPlans) {
         StringBuilder sb = new StringBuilder();
+        sb.append("================================================= Start reasoner plans =================================================\n");
         prettyString(Map.of(new Pair<>("<user>", set()), rootPlans), new HashSet<>(), sb);
+        sb.append("=================================================  End reasoner plans  =================================================\n");
         return sb.toString();
     }
 
@@ -77,12 +79,12 @@ public class ReadablePlan {
         Map<Pair<String, Set<Variable>>, Set<ReadablePlan>> nextLevel = new HashMap<>();
 
         byLabelMode.forEach((labelMode, plans) -> {
-            sb.append("--------------------\t\t").append(labelMode.first()).append("::").append(labelMode.second()).append("\t\t--------------------\n");
+            sb.append("--------------------------------\t\t").append(labelMode.first()).append("::").append(labelMode.second()).append("\t\t--------------------------------\n");
             List<ReadablePlan> planList = new ArrayList<>(plans);
             planList.forEach(branch -> {
                 prettyString(branch, sb, "");
                 if (branch != planList.get(planList.size() - 1)) {
-                    sb.append("- - - - - - - - - - - - - - -NEXT BRANCH- - - - - - - - - - - - - - - - - - - - \n\n");
+                    sb.append("- - - - - - - - - - - - - - - - - - - - - - - - NEXT BRANCH  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n");
                 }
                 iterate(branch.resolvableSummaries).forEachRemaining(resolvableSummary -> {
                     resolvableSummary.triggeredCalls().forEach((k, v) -> {
