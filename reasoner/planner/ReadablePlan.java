@@ -164,18 +164,20 @@ public class ReadablePlan {
             List<ResolvableSummary> resolvableSummaries = new ArrayList<>();
             Set<Variable> runningBounds = new HashSet<>(callMode.mode);
             for (Resolvable<?> res : plan.plan()) {
-                Set<Variable> resolvableMode = Collections.intersection(runningBounds, res.variables());
                 if (res.isNegated()) {
                     res.asNegated().disjunction().conjunctions().forEach(nestedConjunction -> {
+                        Set<Variable> resolvableMode = Collections.intersection(runningBounds, ReasonerPlanner.estimateableVariables(nestedConjunction.pattern().variables()));
                         ReasonerPlanner.CallMode nestedCallMode = new ReasonerPlanner.CallMode(nestedConjunction, resolvableMode);
                         ReadablePlan nestedPlan = summarise(nestedCallMode, "<negated>");
                         resolvableSummaries.add(new ResolvableSummary.NegatedSummary(res.asNegated(), resolvableMode, nestedPlan));
                     });
                 } else if (res.isConcludable()) {
+                    Set<Variable> resolvableMode = Collections.intersection(runningBounds, ReasonerPlanner.estimateableVariables(res.variables()));
                     Set<ReasonerPlanner.CallMode> triggeredCallModes = planner.triggeredCalls(res.asConcludable(), resolvableMode, null);
                     Set<ReadablePlan> triggeredCalls = iterate(triggeredCallModes).map(cm -> summarise(cm, fromRule.get(cm.conjunction).getLabel())).toSet();
                     resolvableSummaries.add(new ResolvableSummary.ConcludableSummary(res.asConcludable(), resolvableMode, triggeredCalls));
                 } else if (res.isRetrievable()) {
+                    Set<Variable> resolvableMode = Collections.intersection(runningBounds, ReasonerPlanner.estimateableVariables(res.variables()));
                     resolvableSummaries.add(new ResolvableSummary.RetrievableSummary(res.asRetrievable(), resolvableMode));
                 } else throw TypeDBException.of(ILLEGAL_STATE);
 
@@ -197,7 +199,7 @@ public class ReadablePlan {
         }
 
         public Map<Pair<String, Set<Variable>>, Set<ReadablePlan>> triggeredCalls() {
-            return java.util.Collections.EMPTY_MAP;
+            return java.util.Collections.emptyMap();
         }
 
         public static class ConcludableSummary extends ResolvableSummary {

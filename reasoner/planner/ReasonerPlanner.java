@@ -52,6 +52,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 public abstract class ReasonerPlanner {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerPlanner.class);
+
     final ConceptManager conceptMgr;
     final TraversalEngine traversalEng;
     final LogicManager logicMgr;
@@ -82,14 +83,14 @@ public abstract class ReasonerPlanner {
 
     public void planRoot(ResolvableDisjunction disjunction) {
         long start = System.nanoTime();
-        disjunction.conjunctions().forEach(conjunction -> plan(new CallMode(conjunction, Collections.EMPTY_SET)));
+        disjunction.conjunctions().forEach(conjunction -> plan(new CallMode(conjunction, Collections.emptySet())));
         perfCounters.timePlanning.add(System.nanoTime() - start);
         logPlans(iterate(disjunction.conjunctions()).map(conjunction -> new CallMode(conjunction, Collections.emptySet())));
     }
 
     public void planRoot(ResolvableConjunction conjunction) {
         long start = System.nanoTime();
-        CallMode callMode = new CallMode(conjunction, Collections.EMPTY_SET);
+        CallMode callMode = new CallMode(conjunction, Collections.emptySet());
         plan(callMode);
         perfCounters.timePlanning.add(System.nanoTime() - start);
         logPlans(Iterators.single(callMode));
@@ -97,10 +98,10 @@ public abstract class ReasonerPlanner {
 
     public void planExplainableRoot(Concludable concludable, Set<Variable> mode) {
         long start = System.nanoTime();
-        Set<CallMode> triggeredCalls = triggeredCalls(concludable, estimateableVariables(mode), null);
-        triggeredCalls.forEach(this::plan);
+        CallMode callMode = new CallMode(ResolvableConjunction.of(concludable.pattern()), estimateableVariables(concludable.variables()));
+        plan(callMode);
         perfCounters.timePlanning.add(System.nanoTime() - start);
-        logPlans(iterate(triggeredCalls));
+        logPlans(Iterators.single(callMode));
     }
 
     public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> mode) {
