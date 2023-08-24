@@ -19,8 +19,6 @@
 package com.vaticle.typedb.core.reasoner.planner;
 
 import com.vaticle.typedb.core.common.cache.CommonCache;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.Iterators;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.logic.Rule;
@@ -46,6 +44,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.intersection;
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 
@@ -85,23 +84,22 @@ public abstract class ReasonerPlanner {
         long start = System.nanoTime();
         disjunction.conjunctions().forEach(conjunction -> plan(new CallMode(conjunction, Collections.emptySet())));
         perfCounters.timePlanning.add(System.nanoTime() - start);
-        logPlans(iterate(disjunction.conjunctions()).map(conjunction -> new CallMode(conjunction, Collections.emptySet())));
+        logPlans(disjunction.conjunctions(),Collections.emptySet());
     }
 
     public void planRoot(ResolvableConjunction conjunction) {
         long start = System.nanoTime();
-        CallMode callMode = new CallMode(conjunction, Collections.emptySet());
-        plan(callMode);
+        plan(new CallMode(conjunction, Collections.emptySet()));
         perfCounters.timePlanning.add(System.nanoTime() - start);
-        logPlans(Iterators.single(callMode));
+        logPlans(set(conjunction), Collections.emptySet());
     }
 
     public void planExplainableRoot(Concludable concludable, Set<Variable> mode) {
         long start = System.nanoTime();
-        CallMode callMode = new CallMode(ResolvableConjunction.of(concludable.pattern()), estimateableVariables(concludable.variables()));
+        CallMode callMode = new CallMode(ResolvableConjunction.of(concludable.pattern()), estimateableVariables(mode));
         plan(callMode);
         perfCounters.timePlanning.add(System.nanoTime() - start);
-        logPlans(Iterators.single(callMode));
+        logPlans(set(callMode.conjunction), callMode.mode);
     }
 
     public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> mode) {
@@ -198,14 +196,10 @@ public abstract class ReasonerPlanner {
         return calls;
     }
 
-    private void logPlans(FunctionalIterator<CallMode> roots) {
+    private void logPlans(Set<ResolvableConjunction> roots, Set<Variable> mode) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Printing reasoner plans:\n" + ReadablePlan.prettyString(summarisePlans(roots.toSet())));
+            LOG.debug("Printing reasoner plans:\n" + PlanPrinter.format(this, roots, mode));
         }
-    }
-
-    public Set<ReadablePlan> summarisePlans(Set<CallMode> roots) {
-        return ReadablePlan.summarise(this, roots);
     }
 
     static class CallMode {
