@@ -37,47 +37,47 @@ import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 
-public class PlanPrinter {
+public class ReasonerPlanPrinter {
 
     private final ReasonerPlanner planner;
     private final StringBuilder sb;
     private final Set<RuleMode> printed;
 
-    private PlanPrinter(ReasonerPlanner planner) {
+    private ReasonerPlanPrinter(ReasonerPlanner planner) {
         this.planner = planner;
         sb = new StringBuilder();
         printed = new HashSet<>();
     }
 
-    public static String format(ReasonerPlanner planner, Set<ResolvableConjunction> conjunctions, Set<Variable> mode) {
-        return new PlanPrinter(planner).format(set(new RuleMode("<user>", mode, conjunctions)));
+    public static String print(ReasonerPlanner planner, Set<ResolvableConjunction> roots, Set<Variable> mode) {
+        return new ReasonerPlanPrinter(planner).print(set(new RuleMode("<user>", mode, roots)));
     }
 
-    private String format(Set<RuleMode> roots) {
+    private String print(Set<RuleMode> roots) {
         sb.append("================================================= Start reasoner plans =================================================\n");
-        formatRecursive(roots);
+        appendRecursive(roots);
         sb.append("=================================================  End reasoner plans  =================================================\n");
         return sb.toString();
     }
 
-    private void formatRecursive(Set<RuleMode> ruleModes) {
+    private void appendRecursive(Set<RuleMode> ruleModes) {
         Set<RuleMode> triggered = new HashSet<>();
-        ruleModes.forEach(call -> formatRuleMode(call, triggered));
+        ruleModes.forEach(call -> appendRuleMode(call, triggered));
         triggered.removeAll(printed);
-        if (!triggered.isEmpty()) formatRecursive(triggered);
+        if (!triggered.isEmpty()) appendRecursive(triggered);
     }
 
-    private void formatRuleMode(RuleMode ruleMode, Set<RuleMode> triggered) {
+    private void appendRuleMode(RuleMode ruleMode, Set<RuleMode> triggered) {
         appendRuleModeHeader(ruleMode);
         for (int i = 0; i < ruleMode.conjunctions.size(); i++) {
-            formatCallMode(ruleMode.conjunctions.get(i), ruleMode.mode, triggered, "");
+            appendCallMode(ruleMode.conjunctions.get(i), ruleMode.mode, triggered, "");
             if (ruleMode.conjunctions.size() - i > 1) appendBranchSeparator();
         }
         appendRuleModeSeparator();
         printed.add(ruleMode);
     }
 
-    private void formatCallMode(ResolvableConjunction conjunction, Set<Variable> mode, Set<RuleMode> triggered, String nesting) {
+    private void appendCallMode(ResolvableConjunction conjunction, Set<Variable> mode, Set<RuleMode> triggered, String nesting) {
         ReasonerPlanner.Plan plan = planner.getPlan(conjunction, mode);
         Set<Variable> runningBounds = new HashSet<>(mode);
 
@@ -91,17 +91,17 @@ public class PlanPrinter {
                     appendResolvableHeader(nesting, index, "NEG", negationMode);
                     sb.append(nesting).append("{");
                     sb.append(nesting).append("}\n");
-                    formatCallMode(nestedConjunction, negationMode, triggered, nesting + "\t");
+                    appendCallMode(nestedConjunction, negationMode, triggered, nesting + "\t");
                 });
             } else {
                 Set<Variable> resolvableMode = Collections.intersection(runningBounds, ReasonerPlanner.estimateableVariables(res.variables()));
-                formatResolvable(res, i, resolvableMode, triggered, nesting);
+                appendResolvable(res, i, resolvableMode, triggered, nesting);
             }
             if (!res.isNegated()) runningBounds.addAll(ReasonerPlanner.estimateableVariables(res.variables()));
         }
     }
 
-    private void formatResolvable(Resolvable<?> res, int index, Set<Variable> mode, Set<RuleMode> triggered, String nesting) {
+    private void appendResolvable(Resolvable<?> res, int index, Set<Variable> mode, Set<RuleMode> triggered, String nesting) {
         if (res.isRetrievable()) {
             appendResolvableHeader(nesting, index, "RET", mode);
             appendResolvablePattern(nesting, res.asRetrievable().pattern());
@@ -153,12 +153,12 @@ public class PlanPrinter {
     }
 
     private static class RuleMode {
-        public final String label;
-        public final Set<Variable> mode;
-        public final List<ResolvableConjunction> conjunctions;
+        private final String label;
+        private final Set<Variable> mode;
+        private final List<ResolvableConjunction> conjunctions;
         private final int hash;
 
-        public RuleMode(String label, Set<Variable> mode, Set<ResolvableConjunction> conjunctions) {
+        private RuleMode(String label, Set<Variable> mode, Set<ResolvableConjunction> conjunctions) {
             this.label = label;
             this.mode = mode;
             this.conjunctions = new ArrayList<>(conjunctions);

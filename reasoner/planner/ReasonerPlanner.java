@@ -198,7 +198,7 @@ public abstract class ReasonerPlanner {
 
     private void logPlans(Set<ResolvableConjunction> roots, Set<Variable> mode) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Printing reasoner plans:\n" + PlanPrinter.format(this, roots, mode));
+            LOG.debug("Reasoner plans:\n" + ReasonerPlanPrinter.print(this, roots, mode));
         }
     }
 
