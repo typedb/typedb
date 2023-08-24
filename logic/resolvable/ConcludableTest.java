@@ -272,7 +272,7 @@ public class ConcludableTest {
         RelationConstraint relationConstraint = concludables.stream().filter(Concludable::isRelation).findFirst()
                 .get().asRelation().relation();
         IsaConstraint relationIsaConstraint = relationConstraint.owner().isa().get();
-        assertEquals("$_diagnosis", relationIsaConstraint.type().reference().asLabel().syntax());
+        assertEquals("diagnosis", relationIsaConstraint.type().reference().asLabel().syntax());
         assertEquals("diagnosis", relationIsaConstraint.type().label().get().label());
         assertFalse(list(relationConstraint.players()).get(0).player().isa().isPresent());
     }
@@ -288,7 +288,7 @@ public class ConcludableTest {
         RelationConstraint relationConstraint = concludables.stream().filter(Concludable::isRelation).findFirst().get()
                 .asRelation().relation();
         IsaConstraint relationIsaConstraint = relationConstraint.owner().isa().get();
-        assertEquals("$_diagnosis", relationIsaConstraint.type().reference().asLabel().syntax());
+        assertEquals("diagnosis", relationIsaConstraint.type().reference().asLabel().syntax());
         assertEquals("diagnosis", relationIsaConstraint.type().label().get().label());
         assertFalse(list(relationConstraint.players()).get(0).player().isa().isPresent());
     }

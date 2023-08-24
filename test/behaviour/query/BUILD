@@ -23,7 +23,19 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_libr
 host_compatible_java_library(
     name = "steps",
     srcs = [
-        "TypeQLSteps.java"
+        "TypeQLSteps.java",
+    ],
+    native_libraries_deps = [
+        "//concept:concept",
+        "//common:common",
+        "//common/test:util",
+        "//traversal:traversal",
+        "//pattern:pattern",
+    ],
+    visibility = ["//visibility:public"],
+    runtime_deps = [
+        "//test/behaviour/connection/database:steps",
+        "//test/behaviour/connection/transaction:steps",
     ],
     deps = [
         # Package dependencies
@@ -33,26 +45,13 @@ host_compatible_java_library(
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
-        "@vaticle_typeql//java/common:common",
-        "@vaticle_typeql//java/pattern:pattern",
-        "@vaticle_typeql//java/query:query",
+        "@vaticle_typeql//java/common",
+        "@vaticle_typeql//java/query",
 
         # External dependencies from Maven
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
     ],
-    native_libraries_deps = [
-        "//concept:concept",
-        "//common:common",
-        "//common/test:util",
-        "//traversal:traversal",
-        "//pattern:pattern",
-    ],
-    runtime_deps = [
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/transaction:steps",
-    ],
-    visibility = ["//visibility:public"],
 )
 
 checkstyle_test(

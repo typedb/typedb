@@ -21,7 +21,6 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test
 host_compatible_java_test(
     name = "test-reasoner",
     srcs = ["ReasonerTest.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.ReasonerTest",
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
@@ -30,9 +29,10 @@ host_compatible_java_test(
         "//logic:logic",
         "//concept:concept",
     ],
+    test_class = "com.vaticle.typedb.core.reasoner.ReasonerTest",
     deps = [
         # Internal dependencies
-        "//test/integration/util:util",
+        "//test/integration/util",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
@@ -43,7 +43,6 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-explanation",
     srcs = ["ExplanationTest.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.ExplanationTest",
     native_libraries_deps = [
         "//:typedb",
         "//database:database",
@@ -54,9 +53,10 @@ host_compatible_java_test(
         "//reasoner:reasoner",
         "//traversal:traversal",
     ],
+    test_class = "com.vaticle.typedb.core.reasoner.ExplanationTest",
     deps = [
         # Internal dependencies
-        "//test/integration/util:util",
+        "//test/integration/util",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
@@ -67,7 +67,6 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-controller",
     srcs = ["controller/ControllerTest.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.controller.ControllerTest",
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
@@ -80,6 +79,7 @@ host_compatible_java_test(
         "//reasoner:reasoner",
         "//traversal:traversal",
     ],
+    test_class = "com.vaticle.typedb.core.reasoner.controller.ControllerTest",
     deps = [
         "//test/integration/util",
 
@@ -92,7 +92,6 @@ host_compatible_java_test(
 host_compatible_java_test(
     name = "test-answer-count-estimator",
     srcs = ["planner/AnswerCountEstimatorTest.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.planner.AnswerCountEstimatorTest",
     native_libraries_deps = [
         # Internal dependencies
         "//database:database",
@@ -102,22 +101,22 @@ host_compatible_java_test(
         "//pattern:pattern",
         "//logic:logic",
         "//reasoner:reasoner",
-         "//traversal:traversal",
+        "//traversal:traversal",
     ],
+    test_class = "com.vaticle.typedb.core.reasoner.planner.AnswerCountEstimatorTest",
     deps = [
         "//test/integration/util",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java/common",
         "@vaticle_typeql//java:typeql-lang",
-        "@vaticle_typeql//java/pattern:pattern",
     ],
 )
 
 host_compatible_java_test(
     name = "test-recursive-planner",
     srcs = ["planner/RecursivePlannerTest.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.planner.RecursivePlannerTest",
     native_libraries_deps = [
         # Internal dependencies
         "//database:database",
@@ -127,8 +126,9 @@ host_compatible_java_test(
         "//pattern:pattern",
         "//logic:logic",
         "//reasoner:reasoner",
-         "//traversal:traversal",
+        "//traversal:traversal",
     ],
+    test_class = "com.vaticle.typedb.core.reasoner.planner.RecursivePlannerTest",
     deps = [
         "//test/integration/util",
 
@@ -138,11 +138,9 @@ host_compatible_java_test(
     ],
 )
 
-
 host_compatible_java_test(
     name = "test-reasoner-planner",
     srcs = ["planner/ReasonerPlannerTest.java"],
-    test_class = "com.vaticle.typedb.core.reasoner.planner.ReasonerPlannerTest",
     native_libraries_deps = [
         # Internal dependencies
         "//database:database",
@@ -152,8 +150,9 @@ host_compatible_java_test(
         "//pattern:pattern",
         "//logic:logic",
         "//reasoner:reasoner",
-         "//traversal:traversal",
+        "//traversal:traversal",
     ],
+    test_class = "com.vaticle.typedb.core.reasoner.planner.ReasonerPlannerTest",
     deps = [
         "//test/integration/util",
 

@@ -26,6 +26,9 @@ import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
+import com.vaticle.typeql.lang.builder.ConceptVariableBuilder;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
+import com.vaticle.typeql.lang.pattern.statement.ThingStatement;
 
 import java.util.Objects;
 
@@ -48,7 +51,23 @@ public class HasConstraint extends ThingConstraint implements AlphaEquivalent<Ha
 
     static HasConstraint of(ThingVariable owner, com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.Has constraint,
                             VariableRegistry register) {
-        return new HasConstraint(owner, register.register(constraint.attribute()));
+        ThingVariable attr;
+        if (constraint.attribute().isFirst()) {
+            if (constraint.attribute().first().isConceptVar()) {
+                assert constraint.type().isEmpty();
+                attr = register.registerThingVariable(constraint.attribute().first().asConceptVar());
+            } else {
+                assert constraint.type().isPresent();
+                TypeQLVariable.Concept typeVar = TypeQLVariable.Concept.labelVar(constraint.type().get());
+                ThingStatement<?> attrEqValue = ConceptVariableBuilder.hidden()
+                        .eq(constraint.attribute().first().asValueVar())
+                        .isa(typeVar);
+                attr = register.registerStatement(attrEqValue);
+            }
+        } else {
+            attr = register.registerStatement(constraint.attribute().second());
+        }
+        return new HasConstraint(owner, attr);
     }
 
     static HasConstraint of(ThingVariable owner, HasConstraint clone, VariableCloner cloner) {

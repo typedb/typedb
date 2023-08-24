@@ -29,8 +29,8 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
-import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.common.Reference;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -89,7 +89,7 @@ public class ConceptMap implements Answer {
         return contains(Reference.Name.value(name));
     }
 
-    public Concept get(UnboundVariable variable) {
+    public Concept get(TypeQLVariable variable) {
         if (variable.isNamed()) return get(Identifier.Variable.of(variable.reference().asName()));
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
@@ -126,7 +126,7 @@ public class ConceptMap implements Answer {
         return filter(filter.variables());
     }
 
-    public ConceptMap filter(Set<Identifier.Variable.Retrievable> filter) {
+    public ConceptMap filter(Set<? extends Identifier.Variable.Retrievable> filter) {
         return new ConceptMap(filteredMap(concepts, filter)); // TODO this should include explainables?
     }
 
@@ -186,7 +186,7 @@ public class ConceptMap implements Answer {
         }
 
         @Override
-        public Sortable filter(Set<Retrievable> filter) {
+        public Sortable filter(Set<? extends Retrievable> filter) {
             return new Sortable(filteredMap(concepts(), filter), conceptsComparator); // TODO this should include explainables?
         }
 

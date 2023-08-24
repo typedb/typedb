@@ -31,8 +31,8 @@ import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLUndefine;
 import com.vaticle.typeql.lang.query.TypeQLUpdate;
 import org.slf4j.Logger;
@@ -60,11 +60,11 @@ public class QueryManager {
         this.defaultContext = new Context.Query(context, new Options.Query());
     }
 
-    public FunctionalIterator<? extends ConceptMap> match(TypeQLMatch query) {
+    public FunctionalIterator<? extends ConceptMap> match(TypeQLGet query) {
         return match(query, defaultContext);
     }
 
-    public FunctionalIterator<? extends ConceptMap> match(TypeQLMatch query, Context.Query context) {
+    public FunctionalIterator<? extends ConceptMap> match(TypeQLGet query, Context.Query context) {
         try {
             return Matcher.create(reasoner, conceptMgr, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
@@ -76,11 +76,11 @@ public class QueryManager {
         return reasoner.explain(explainableId, defaultContext);
     }
 
-    public Numeric match(TypeQLMatch.Aggregate query) {
+    public Numeric match(TypeQLGet.Aggregate query) {
         return match(query, defaultContext);
     }
 
-    public Numeric match(TypeQLMatch.Aggregate query, Context.Query queryContext) {
+    public Numeric match(TypeQLGet.Aggregate query, Context.Query queryContext) {
         try {
             return Matcher.create(reasoner, conceptMgr, query, queryContext).execute();
         } catch (Exception exception) {
@@ -88,11 +88,11 @@ public class QueryManager {
         }
     }
 
-    public FunctionalIterator<ConceptMapGroup> match(TypeQLMatch.Group query) {
+    public FunctionalIterator<ConceptMapGroup> match(TypeQLGet.Group query) {
         return match(query, defaultContext);
     }
 
-    public FunctionalIterator<ConceptMapGroup> match(TypeQLMatch.Group query, Context.Query queryContext) {
+    public FunctionalIterator<ConceptMapGroup> match(TypeQLGet.Group query, Context.Query queryContext) {
         try {
             return Matcher.create(reasoner, conceptMgr, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
@@ -100,11 +100,11 @@ public class QueryManager {
         }
     }
 
-    public FunctionalIterator<NumericGroup> match(TypeQLMatch.Group.Aggregate query) {
+    public FunctionalIterator<NumericGroup> match(TypeQLGet.Group.Aggregate query) {
         return match(query, defaultContext);
     }
 
-    public FunctionalIterator<NumericGroup> match(TypeQLMatch.Group.Aggregate query, Context.Query queryContext) {
+    public FunctionalIterator<NumericGroup> match(TypeQLGet.Group.Aggregate query, Context.Query queryContext) {
         try {
             return Matcher.create(reasoner, conceptMgr, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {

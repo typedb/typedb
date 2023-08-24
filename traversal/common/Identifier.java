@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.traversal.common;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
+import com.vaticle.typeql.lang.common.Reference;
 
 import javax.annotation.Nullable;
 import java.util.Objects;

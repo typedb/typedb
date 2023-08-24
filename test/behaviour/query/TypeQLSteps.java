@@ -37,12 +37,11 @@ import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.test.ProcedurePermutator;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
-import com.vaticle.typeql.lang.pattern.variable.Variable;
+import com.vaticle.typeql.lang.common.Reference;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLUndefine;
 import com.vaticle.typeql.lang.query.TypeQLUpdate;
 import io.cucumber.java.en.Given;
@@ -159,13 +158,13 @@ public class TypeQLSteps {
         TypeQLInsert typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asInsert();
         clearAnswers();
         answers = tx().query().insert(typeQLQuery).toList();
-        if (typeQLQuery.match().isPresent()) assertQueryPlansCorrect(typeQLQuery.match().get());
+        if (typeQLQuery.match().isPresent()) assertQueryPlansCorrect(typeQLQuery.match().get().get());
     }
 
-    @When("get answers of typeql match")
+    @When("get answers of typeql get")
     public void typeql_match(String typeQLQueryStatements) {
         try {
-            TypeQLMatch typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatch();
+            TypeQLGet typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGet();
             clearAnswers();
             answers = tx().query().match(typeQLQuery).toList();
             assertQueryPlansCorrect(typeQLQuery);
@@ -177,12 +176,11 @@ public class TypeQLSteps {
         }
     }
 
-    private void assertQueryPlansCorrect(TypeQLMatch typeQLQuery) {
-        Disjunction disjunction = Disjunction.create(typeQLQuery.conjunction().normalise());
+    private void assertQueryPlansCorrect(TypeQLGet typeQLQuery) {
+        Disjunction disjunction = Disjunction.create(typeQLQuery.match().conjunction().normalise());
         tx().logic().typeInference().applyCombination(disjunction);
         tx().logic().expressionResolver().resolveExpressions(disjunction);
-        Set<Identifier.Variable.Retrievable> filter = (typeQLQuery.modifiers().filter().isEmpty() ?
-                iterate(typeQLQuery.variables()).map(Variable::asUnbound) : iterate(typeQLQuery.modifiers().filter()))
+        Set<Identifier.Variable.Retrievable> filter = iterate(typeQLQuery.effectiveFilter())
                 .map(unboundVar -> Identifier.Variable.of(unboundVar.reference().asName()))
                 .map(Identifier.Variable::asRetrievable).toSet();
         for (Conjunction conjunction : disjunction.conjunctions()) {
@@ -201,48 +199,48 @@ public class TypeQLSteps {
         }
     }
 
-    @When("typeql match; throws exception")
+    @When("typeql get; throws exception")
     public void typeql_match_throws_exception(String typeQLQueryStatements) {
         assertThrows(() -> typeql_match(typeQLQueryStatements));
     }
 
-    @When("typeql match; throws exception containing {string}")
+    @When("typeql get; throws exception containing {string}")
     public void typeql_match_throws_exception(String exception, String typeQLQueryStatements) {
         assertThrowsWithMessage(() -> typeql_match(typeQLQueryStatements), exception);
     }
 
-    @When("get answer of typeql match aggregate")
+    @When("get answer of typeql get aggregate")
     public void typeql_match_aggregate(String typeQLQueryStatements) {
-        TypeQLMatch.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatchAggregate();
+        TypeQLGet.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGetAggregate();
         clearAnswers();
         numericAnswer = tx().query().match(typeQLQuery);
-        assertQueryPlansCorrect(typeQLQuery.match());
+        assertQueryPlansCorrect(typeQLQuery.get());
     }
 
-    @When("typeql match aggregate; throws exception")
+    @When("typeql get aggregate; throws exception")
     public void typeql_match_aggregate_throws_exception(String typeQLQueryStatements) {
         assertThrows(() -> typeql_match_aggregate(typeQLQueryStatements));
     }
 
-    @When("get answers of typeql match group")
+    @When("get answers of typeql get group")
     public void typeql_match_group(String typeQLQueryStatements) {
-        TypeQLMatch.Group typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatchGroup();
+        TypeQLGet.Group typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGetGroup();
         clearAnswers();
         answerGroups = tx().query().match(typeQLQuery).toList();
-        assertQueryPlansCorrect(typeQLQuery.match());
+        assertQueryPlansCorrect(typeQLQuery.get());
     }
 
-    @When("typeql match group; throws exception")
+    @When("typeql get group; throws exception")
     public void typeql_match_group_throws_exception(String typeQLQueryStatements) {
         assertThrows(() -> typeql_match_group(typeQLQueryStatements));
     }
 
-    @When("get answers of typeql match group aggregate")
+    @When("get answers of typeql get group aggregate")
     public void typeql_match_group_aggregate(String typeQLQueryStatements) {
-        TypeQLMatch.Group.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatchGroupAggregate();
+        TypeQLGet.Group.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGetGroupAggregate();
         clearAnswers();
         numericAnswerGroups = tx().query().match(typeQLQuery).toList();
-        assertQueryPlansCorrect(typeQLQuery.group().match());
+        assertQueryPlansCorrect(typeQLQuery.group().get());
     }
 
     @Then("answer size is: {number}")
@@ -565,19 +563,19 @@ public class TypeQLSteps {
         String templatedQuery = String.join("\n", templatedTypeQLQuery);
         for (ConceptMap answer : answers) {
             String query = applyQueryTemplate(templatedQuery, answer);
-            TypeQLMatch typeQLQuery = TypeQL.parseQuery(query).asMatch();
+            TypeQLGet typeQLQuery = TypeQL.parseQuery(query).asGet();
             long answerSize = tx().query().match(typeQLQuery).toList().size();
             assertEquals(1, answerSize);
         }
     }
 
-    @Then("templated typeql match; throws exception")
+    @Then("templated typeql get; throws exception")
     public void templated_typeql_match_throws_exception(String templatedTypeQLQuery) {
         String templatedQuery = String.join("\n", templatedTypeQLQuery);
         for (ConceptMap answer : answers) {
             String queryString = applyQueryTemplate(templatedQuery, answer);
             assertThrows(() -> {
-                TypeQLMatch query = TypeQL.parseQuery(queryString).asMatch();
+                TypeQLGet query = TypeQL.parseQuery(queryString).asGet();
                 tx().query().match(query).toList();
             });
         }
@@ -588,7 +586,7 @@ public class TypeQLSteps {
         String templatedQuery = String.join("\n", templatedTypeQLQuery);
         for (ConceptMap answer : answers) {
             String queryString = applyQueryTemplate(templatedQuery, answer);
-            TypeQLMatch query = TypeQL.parseQuery(queryString).asMatch();
+            TypeQLGet query = TypeQL.parseQuery(queryString).asGet();
             long answerSize = tx().query().match(query).toList().size();
             assertEquals(0, answerSize);
         }

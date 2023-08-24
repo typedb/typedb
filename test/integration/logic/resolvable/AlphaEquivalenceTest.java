@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
+import com.vaticle.typeql.lang.pattern.statement.Statement;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -99,8 +99,8 @@ public class AlphaEquivalenceTest {
     }
 
     private Concludable concludable(String variableString) {
-        BoundVariable vars = TypeQL.parseVariable(variableString).asVariable();
-        VariableRegistry registry = VariableRegistry.createFromVariables(list(vars), null);
+        Statement statement = TypeQL.parseStatement(variableString);
+        VariableRegistry registry = VariableRegistry.createFromStatements(list(statement), null);
         Conjunction conjunction = new Conjunction(registry.variables(), list());
         inferTypes(conjunction);
         Set<Concludable> concludables = Concludable.create(conjunction);
@@ -109,9 +109,9 @@ public class AlphaEquivalenceTest {
     }
 
     private Set<Concludable> concludable(String... variableStrings) {
-        List<BoundVariable> variables = new ArrayList<>();
-        for (String variableString : variableStrings) variables.add(TypeQL.parseVariable(variableString).asVariable());
-        VariableRegistry registry = VariableRegistry.createFromVariables(variables, null);
+        List<Statement> statements = new ArrayList<>();
+        for (String variableString : variableStrings) statements.add(TypeQL.parseStatement(variableString));
+        VariableRegistry registry = VariableRegistry.createFromStatements(statements, null);
         Conjunction conjunction = new Conjunction(registry.variables(), list());
         inferTypes(conjunction);
         return Concludable.create(conjunction);

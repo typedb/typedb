@@ -41,7 +41,7 @@ import com.vaticle.typedb.core.graph.vertex.impl.TypeVertexImpl;
 import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
-import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
+import com.vaticle.typeql.lang.pattern.statement.ThingStatement;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -656,7 +656,7 @@ public class TypeGraph {
             }
         }
 
-        public RuleStructure create(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+        public RuleStructure create(String label, Conjunction<? extends Pattern> when, ThingStatement<?> then) {
             assert storage.isOpen();
             try {
                 multiLabelLock.readLock().lock();

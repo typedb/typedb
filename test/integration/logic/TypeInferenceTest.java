@@ -31,7 +31,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -124,8 +124,8 @@ public class TypeInferenceTest {
     }
 
     private Disjunction createDisjunction(String matchString) {
-        TypeQLMatch query = TypeQL.parseQuery(matchString);
-        return Disjunction.create(query.conjunction().normalise());
+        TypeQLGet query = TypeQL.parseQuery(matchString).asGet();
+        return Disjunction.create(query.match().conjunction().normalise());
     }
 
     @Test
@@ -1126,7 +1126,7 @@ public class TypeInferenceTest {
         assertThrows(() -> transaction.logic().putRule(
                 "animals-are-named-fido",
                 TypeQL.parsePattern("{$x isa animal;}").asConjunction(),
-                TypeQL.parseVariable("$x has name 'fido'").asThing()));
+                TypeQL.parseStatement("$x has name 'fido'").asThing()));
     }
 
     @Test
@@ -1143,7 +1143,7 @@ public class TypeInferenceTest {
         assertThrows(() -> transaction.logic().putRule(
                 "women-called-smith",
                 TypeQL.parsePattern("{$x isa woman;}").asConjunction(),
-                TypeQL.parseVariable("$x has name 'smith'").asThing()));
+                TypeQL.parseStatement("$x has name 'smith'").asThing()));
     }
 
     @Test
@@ -1159,7 +1159,7 @@ public class TypeInferenceTest {
         assertThrows(() -> transaction.logic().putRule(
                 "marriage-rule",
                 TypeQL.parsePattern("{$x isa person;}").asConjunction(),
-                TypeQL.parseVariable("(wife: $x) isa partnership").asThing()));
+                TypeQL.parseStatement("(wife: $x) isa partnership").asThing()));
     }
 
     @Test
@@ -1175,7 +1175,7 @@ public class TypeInferenceTest {
         assertThrows(() -> transaction.logic().putRule(
                 "marriage-rule",
                 TypeQL.parsePattern("{$x isa person;}").asConjunction(),
-                TypeQL.parseVariable("(partner: $x) isa marriage").asThing()));
+                TypeQL.parseStatement("(partner: $x) isa marriage").asThing()));
     }
 
     @Test
@@ -1187,7 +1187,7 @@ public class TypeInferenceTest {
         transaction.logic().putRule(
                 "marriage-rule",
                 TypeQL.parsePattern("{$x isa person; $t isa marriage;}").asConjunction(),
-                TypeQL.parseVariable("(wife: $x) isa $t").asThing());
+                TypeQL.parseStatement("(wife: $x) isa $t").asThing());
     }
 
 

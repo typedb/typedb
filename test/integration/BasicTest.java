@@ -35,7 +35,7 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Pattern;
-import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
+import com.vaticle.typeql.lang.pattern.statement.ThingStatement;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -332,7 +332,7 @@ public class BasicTest {
                     logicMgr.putRule(
                             "people-have-names",
                             TypeQL.parsePattern("{$x isa person; }").asConjunction(),
-                            TypeQL.parseVariable("$x has name \"i have a name\"").asThing());
+                            TypeQL.parseStatement("$x has name \"i have a name\"").asThing());
                     txn.commit();
                 }
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
@@ -341,9 +341,9 @@ public class BasicTest {
 
                     Rule rule = logicMgr.getRule("people-have-names");
                     Pattern when = rule.getWhenPreNormalised();
-                    ThingVariable<?> then = rule.getThenPreNormalised();
+                    ThingStatement<?> then = rule.getThenPreNormalised();
                     assertEquals(TypeQL.parsePattern("{$x isa person;}"), when);
-                    assertEquals(TypeQL.parseVariable("$x has name \"i have a name\""), then);
+                    assertEquals(TypeQL.parseStatement("$x has name \"i have a name\""), then);
                 }
             }
         }
@@ -370,7 +370,7 @@ public class BasicTest {
                     logicMgr.putRule(
                             "marriage-is-friendship",
                             TypeQL.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }").asConjunction(),
-                            TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                            TypeQL.parseStatement("(friend: $x, friend: $y) isa friendship").asThing());
                     txn.commit();
                 }
                 try (TypeDB.Transaction txn = session.transaction(Arguments.Transaction.Type.READ)) {
@@ -384,9 +384,9 @@ public class BasicTest {
 
                     Rule rule = logicMgr.getRule("marriage-is-friendship");
                     Pattern when = rule.getWhenPreNormalised();
-                    ThingVariable<?> then = rule.getThenPreNormalised();
+                    ThingStatement<?> then = rule.getThenPreNormalised();
                     assertEquals(TypeQL.parsePattern("{$x isa person; $y isa person; (spouse: $x, spouse: $y) isa marriage; }"), when);
-                    assertEquals(TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship"), then);
+                    assertEquals(TypeQL.parseStatement("(friend: $x, friend: $y) isa friendship"), then);
                 }
             }
         }
@@ -821,12 +821,12 @@ public class BasicTest {
                         tx.close();
                         session.close();
                     }).start();
-                    tx.query().match(TypeQL.parseQuery("match $x sub thing;").asMatch());
+                    tx.query().match(TypeQL.parseQuery("match $x sub thing;").asGet());
                 }).start();
             }
             TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA);
             TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
-            tx.query().match(TypeQL.parseQuery("match $x sub thing;").asMatch());
+            tx.query().match(TypeQL.parseQuery("match $x sub thing;").asGet());
         }
     }
 }

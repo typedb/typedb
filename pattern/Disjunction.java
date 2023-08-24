@@ -40,6 +40,7 @@ public class Disjunction implements Pattern, Cloneable {
     private final List<Conjunction> conjunctions;
     private final int hash;
     private final Set<Identifier.Variable.Retrievable> sharedVariables;
+    private final Set<Identifier.Variable.Name> sharedNamedVariables;
 
     public Disjunction(List<Conjunction> conjunctions) {
         this.conjunctions = conjunctions;
@@ -48,6 +49,8 @@ public class Disjunction implements Pattern, Cloneable {
                 .flatMap(conjunction -> iterate(conjunction.retrieves()))
                 .filter(id -> iterate(conjunctions).allMatch(conjunction -> conjunction.retrieves().contains(id)))
                 .toSet();
+        this.sharedNamedVariables = iterate(this.sharedVariables).filter(Identifier::isName)
+                .map(Identifier.Variable::asName).toSet();
     }
 
     public static Disjunction create(
@@ -73,6 +76,10 @@ public class Disjunction implements Pattern, Cloneable {
 
     public Set<Identifier.Variable.Retrievable> sharedVariables() {
         return sharedVariables;
+    }
+
+    public Set<Identifier.Variable.Name> sharedNamedVariables() {
+        return sharedNamedVariables;
     }
 
     @Override

@@ -47,7 +47,8 @@ import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers.Filter;
 import com.vaticle.typedb.core.traversal.common.Modifiers.Sorting;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
+import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -73,6 +74,7 @@ import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISAT
 import static com.vaticle.typedb.core.concurrent.executor.Executors.actor;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
+import static java.util.Collections.emptyList;
 
 public class Reasoner {
 
@@ -99,9 +101,10 @@ public class Reasoner {
         return controllerRegistry;
     }
 
-    public FunctionalIterator<? extends ConceptMap> execute(Disjunction disjunction, TypeQLMatch.Modifiers modifiers, Context.Query context) {
+    public FunctionalIterator<? extends ConceptMap> execute(Disjunction disjunction, List<TypeQLVariable> filterVars,
+                                                            TypeQLQuery.Modifiers modifiers, Context.Query context) {
         inferAndValidateTypes(disjunction);
-        Filter filter = Filter.create(modifiers.filter());
+        Filter filter = filterVars.isEmpty() ? Filter.create(disjunction.sharedNamedVariables()) : Filter.create(filterVars);
         Optional<Sorting> sorting = modifiers.sort().map(Sorting::create);
         sorting.ifPresent(value -> validateSorting(disjunction, value));
         Disjunction answerableDisjunction = filterUnanswerable(disjunction);
@@ -267,7 +270,7 @@ public class Reasoner {
     }
 
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
-        return iterator(bound(conjunction, bounds, logicMgr), Filter.create(list()));
+        return iterator(bound(conjunction, bounds, logicMgr), Filter.create(conjunction.retrieves()));
     }
 
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, Filter filter) {

@@ -60,9 +60,9 @@ public class PlaysConstraint extends TypeConstraint {
 
     static PlaysConstraint of(TypeVariable owner, com.vaticle.typeql.lang.pattern.constraint.TypeConstraint.Plays constraint,
                               VariableRegistry registry) {
-        TypeVariable roleType = registry.register(constraint.role());
-        TypeVariable relationType = constraint.relation().map(registry::register).orElse(null);
-        TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
+        TypeVariable roleType = registry.registerTypeVariable(constraint.role());
+        TypeVariable relationType = constraint.relation().map(registry::registerTypeVariable).orElse(null);
+        TypeVariable overriddenType = constraint.overridden().map(registry::registerTypeVariable).orElse(null);
         return new PlaysConstraint(owner, relationType, roleType, overriddenType);
     }
 

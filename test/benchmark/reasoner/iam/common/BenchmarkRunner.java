@@ -121,9 +121,9 @@ public class BenchmarkRunner {
         // Warm up all persisted data
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                tx.query().match(TypeQL.parseQuery("match $x isa thing;").asMatch()).count();
-                tx.query().match(TypeQL.parseQuery("match $r ($x) isa relation;").asMatch()).count();
-                tx.query().match(TypeQL.parseQuery("match $x has $a;").asMatch()).count();
+                tx.query().match(TypeQL.parseQuery("match $x isa thing;").asGet()).count();
+                tx.query().match(TypeQL.parseQuery("match $r ($x) isa relation;").asGet()).count();
+                tx.query().match(TypeQL.parseQuery("match $x has $a;").asGet()).count();
             }
         }
 
@@ -150,7 +150,7 @@ public class BenchmarkRunner {
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true).reasonerPerfCounters(true))) {
                 Instant start = Instant.now();
-                long nAnswers = tx.query().match(TypeQL.parseQuery(query).asMatch()).count();
+                long nAnswers = tx.query().match(TypeQL.parseQuery(query).asGet()).count();
                 Duration timeTaken = Duration.between(start, Instant.now());
                 run = new Benchmark.BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters());
             }

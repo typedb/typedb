@@ -33,8 +33,7 @@ import com.vaticle.typedb.core.reasoner.benchmark.synthetic.generation.PathTreeG
 import com.vaticle.typedb.core.reasoner.benchmark.synthetic.generation.TransitivityChainGraph;
 import com.vaticle.typedb.core.reasoner.benchmark.synthetic.generation.TransitivityMatrixGraph;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.pattern.variable.UnboundConceptVariable;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,6 +43,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
+import static com.vaticle.typeql.lang.TypeQL.cVar;
 import static junit.framework.TestCase.assertEquals;
 
 public class BenchmarkSmall {
@@ -109,7 +109,7 @@ public class BenchmarkSmall {
                 for (int i = 1; i <= N; i++) {
                     tx.logic().putRule("rule" + i,
                             TypeQL.parsePattern("{ (fromRole: $f, toRole: $t) isa relation" + (i - 1) + "; }").asConjunction(),
-                            TypeQL.parseVariable("(fromRole: $f, toRole: $t) isa relation" + i).asThing());
+                            TypeQL.parseStatement("(fromRole: $f, toRole: $t) isa relation" + i).asThing());
                 }
                 tx.commit();
             }
@@ -176,11 +176,11 @@ public class BenchmarkSmall {
 
         linearGraph.load(N, N);
 
-        TypeQLMatch.Unfiltered match = TypeQL.match(TypeQL.parsePattern("(from: $x, to: $y) isa P"));
+        TypeQLGet.Unmodified get = TypeQL.match(TypeQL.parsePattern("(from: $x, to: $y) isa P")).get();
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
-                Util.timeQuery(match, tx, "full");
-                Util.timeQuery(match.limit(limit), tx, "limit " + limit);
+                Util.timeQuery(get, tx, "full");
+                Util.timeQuery(get.limit(limit), tx, "limit " + limit);
             }
         }
     }
@@ -215,9 +215,9 @@ public class BenchmarkSmall {
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
 
-                TypeQLMatch.Unfiltered query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;"));
+                TypeQLGet.Unmodified query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;")).get();
 
-                TypeQLMatch.Unfiltered query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q; $x has index 'a'; "));
+                TypeQLGet.Unmodified query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q; $x has index 'a'; ")).get();
 
                 assertEquals(answers, Util.timeQuery(query, tx, "full").size());
                 assertEquals(N, Util.timeQuery(query2, tx, "With specific resource").size());
@@ -262,14 +262,14 @@ public class BenchmarkSmall {
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
                 // full result
-                TypeQLMatch.Unfiltered query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;"));
+                TypeQLGet.Unmodified query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;")).get();
 
                 // with specific resource
-                TypeQLMatch.Unfiltered query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x has index 'a';"));
+                TypeQLGet.Unmodified query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x has index 'a';")).get();
 
                 // with substitution
-                Concept id = tx.query().match(TypeQL.parseQuery("match $x has index 'a';").asMatch()).next().get(UnboundConceptVariable.named("x"));
-                TypeQLMatch.Unfiltered query3 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x iid " + id.asThing().getIID().toHexString() + ";"));
+                Concept id = tx.query().match(TypeQL.parseQuery("match $x has index 'a';").asGet()).next().get(cVar("x"));
+                TypeQLGet.Unmodified query3 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x iid " + id.asThing().getIID().toHexString() + ";")).get();
 
                 Util.timeQuery(query, tx, "full");
                 Util.timeQuery(query2, tx, "With specific resource");
@@ -315,7 +315,7 @@ public class BenchmarkSmall {
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
                 // full result
-                TypeQLMatch.Unfiltered query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa diagonal;"));
+                TypeQLGet.Unmodified query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa diagonal;")).get();
                 Util.timeQuery(query, tx, "full");
                 Util.timeQuery(query.limit(limit), tx, "limit " + limit);
             }

@@ -34,7 +34,7 @@ import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.SoundnessException;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,7 +67,7 @@ class SoundnessVerifier {
         return new SoundnessVerifier(materialiser, session);
     }
 
-    void verifyQuery(TypeQLMatch inferenceQuery) {
+    void verifyQuery(TypeQLGet inferenceQuery) {
         try (Transaction tx = session.transaction(Arguments.Transaction.Type.READ,
                 new Options.Transaction().infer(true).explain(true))) {
             collectedExplanations.clear();
@@ -132,7 +132,7 @@ class SoundnessVerifier {
         });
     }
 
-    private void verifyNumberOfExplanations(Transaction tx, TypeQLMatch inferenceQuery, Pair<Conjunction, ConceptMap> deferredBindableConjunction) {
+    private void verifyNumberOfExplanations(Transaction tx, TypeQLGet inferenceQuery, Pair<Conjunction, ConceptMap> deferredBindableConjunction) {
         Set<BoundConcludable> boundConcludable = BoundConjunction.create(
                 deferredBindableConjunction.first(), mapInferredConcepts(deferredBindableConjunction.second())
         ).boundConcludables();

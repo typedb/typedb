@@ -20,27 +20,23 @@ package com.vaticle.typedb.core.graph.structure.impl;
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.encoding.key.Key;
 import com.vaticle.typedb.core.encoding.iid.IndexIID;
 import com.vaticle.typedb.core.encoding.iid.PropertyIID;
 import com.vaticle.typedb.core.encoding.iid.StructureIID;
+import com.vaticle.typedb.core.encoding.key.Key;
+import com.vaticle.typedb.core.graph.TypeGraph;
 import com.vaticle.typedb.core.graph.structure.RuleStructure;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Negation;
 import com.vaticle.typeql.lang.pattern.Pattern;
-import com.vaticle.typeql.lang.pattern.constraint.TypeConstraint;
-import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
-import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
-import com.vaticle.typeql.lang.pattern.variable.Variable;
+import com.vaticle.typeql.lang.pattern.statement.Statement;
+import com.vaticle.typeql.lang.pattern.statement.ThingStatement;
 
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeString;
@@ -56,14 +52,14 @@ public abstract class RuleStructureImpl implements RuleStructure {
     final TypeGraph graph;
     final AtomicBoolean isDeleted;
     final Conjunction<? extends Pattern> when;
-    final ThingVariable<?> then;
+    final ThingStatement<?> then;
     StructureIID.Rule iid;
     String label;
 
     private boolean isModified;
 
     RuleStructureImpl(TypeGraph graph, StructureIID.Rule iid, String label,
-                      Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+                      Conjunction<? extends Pattern> when, ThingStatement<?> then) {
         assert when != null;
         assert then != null;
         this.graph = graph;
@@ -137,13 +133,13 @@ public abstract class RuleStructureImpl implements RuleStructure {
 
     FunctionalIterator<TypeVertex> types() {
         return iterate(when().normalise().patterns()).flatMap(whenNormalised -> {
-            FunctionalIterator<BoundVariable> positiveVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isVariable)
-                    .map(Conjunctable::asVariable);
-            FunctionalIterator<BoundVariable> negativeVariables = iterate(whenNormalised.patterns()).filter(Conjunctable::isNegation)
+            FunctionalIterator<Statement> positiveStatements = iterate(whenNormalised.patterns()).filter(Conjunctable::isStatement)
+                    .map(Conjunctable::asStatement);
+            FunctionalIterator<Statement> negativeStatements = iterate(whenNormalised.patterns()).filter(Conjunctable::isNegation)
                     .flatMap(p -> negationVariables(p.asNegation()));
-            FunctionalIterator<Label> whenPositiveLabels = getTypeLabels(positiveVariables);
-            FunctionalIterator<Label> whenNegativeLabels = getTypeLabels(negativeVariables);
-            FunctionalIterator<Label> thenLabels = getTypeLabels(iterate(then().variables().iterator()));
+            FunctionalIterator<Label> whenPositiveLabels = getTypeLabels(positiveStatements);
+            FunctionalIterator<Label> whenNegativeLabels = getTypeLabels(negativeStatements);
+            FunctionalIterator<Label> thenLabels = getTypeLabels(iterate(then()));
             // filter out invalid labels as if they were truly invalid (eg. not relation:friend) we will catch it validation
             // this lets us index only types the user can actually retrieve as a concept
             return link(whenPositiveLabels, whenNegativeLabels, thenLabels)
@@ -151,37 +147,28 @@ public abstract class RuleStructureImpl implements RuleStructure {
         });
     }
 
-    private FunctionalIterator<BoundVariable> negationVariables(Negation<?> ruleNegation) {
+    private FunctionalIterator<Statement> negationVariables(Negation<?> ruleNegation) {
         assert ruleNegation.patterns().size() == 1 && ruleNegation.patterns().get(0).isDisjunction();
         return iterate(ruleNegation.patterns().get(0).asDisjunction().patterns())
-                .flatMap(pattern -> iterate(pattern.asConjunction().patterns())).map(Pattern::asVariable);
+                .flatMap(pattern -> iterate(pattern.asConjunction().patterns())).map(Pattern::asStatement);
     }
 
-    private FunctionalIterator<Label> getTypeLabels(FunctionalIterator<BoundVariable> variables) {
-        return variables.flatMap(v -> iterate(connectedVars(v, new HashSet<>())))
-                .distinct().filter(v -> v.isBound() && v.asBound().isType()).map(var -> var.asBound().asType().label()).filter(Optional::isPresent)
-                .map(labelConstraint -> {
-                    TypeConstraint.Label label = labelConstraint.get();
-                    if (label.scope().isPresent()) return Label.of(label.label(), label.scope().get());
-                    else return Label.of(label.label());
+    private FunctionalIterator<Label> getTypeLabels(FunctionalIterator<Statement> statements) {
+        return statements.flatMap(s -> iterate(s.variables().iterator()))
+                .distinct().filter(TypeQLVariable::isLabelled).map(v -> {
+                    if (v.reference().asLabel().scope().isPresent()) {
+                        return Label.of(v.reference().asLabel().label(), v.reference().asLabel().scope().get());
+                    } else {
+                        return Label.of(v.reference().asLabel().label());
+                    }
                 });
-    }
-
-    private Set<BoundVariable> connectedVars(BoundVariable var, Set<BoundVariable> visited) {
-        visited.add(var);
-        Set<BoundVariable> vars = iterate(var.constraints()).flatMap(c -> iterate(c.variables())).map(v -> (BoundVariable) v).toSet();
-        if (visited.containsAll(vars)) return visited;
-        else {
-            visited.addAll(vars);
-            return iterate(vars).flatMap(v -> iterate(connectedVars(v, visited))).toSet();
-        }
     }
 
     public static class Buffered extends RuleStructureImpl {
 
         private final AtomicBoolean isCommitted;
 
-        public Buffered(TypeGraph graph, StructureIID.Rule iid, String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+        public Buffered(TypeGraph graph, StructureIID.Rule iid, String label, Conjunction<? extends Pattern> when, ThingStatement<?> then) {
             super(graph, iid, label, when, then);
             this.isCommitted = new AtomicBoolean(false);
             setModified();
@@ -205,7 +192,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         @Override
-        public ThingVariable<?> then() {
+        public ThingStatement<?> then() {
             return then;
         }
 
@@ -262,7 +249,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
                     graph.storage().get(PropertyIID.Structure.of(iid, LABEL)).decodeString(STRING_ENCODING),
                     TypeQL.parsePattern(graph.storage().get(PropertyIID.Structure.of(iid, WHEN))
                             .decodeString(STRING_ENCODING)).asConjunction(),
-                    TypeQL.parseVariable(graph.storage().get(PropertyIID.Structure.of(iid, THEN))
+                    TypeQL.parseStatement(graph.storage().get(PropertyIID.Structure.of(iid, THEN))
                             .decodeString(STRING_ENCODING)).asThing()
             );
         }
@@ -278,7 +265,7 @@ public abstract class RuleStructureImpl implements RuleStructure {
         }
 
         @Override
-        public ThingVariable<?> then() {
+        public ThingStatement<?> then() {
             return then;
         }
 

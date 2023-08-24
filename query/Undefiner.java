@@ -82,7 +82,7 @@ public class Undefiner {
 
     public static Undefiner create(ConceptManager conceptMgr, LogicManager logicMgr,
                                    TypeQLUndefine query, Context.Query context) {
-        Set<TypeVariable> types = VariableRegistry.createFromTypes(query.variables()).types();
+        Set<TypeVariable> types = VariableRegistry.createFromTypes(query.statements()).types();
         iterate(types).flatMap(t -> iterate(t.constraints()))
                 .filter(c -> c.isLabel() && c.asLabel().properLabel().scope().isPresent())
                 .forEachRemaining(c -> conceptMgr.validateNotRoleTypeAlias(c.asLabel().properLabel()));

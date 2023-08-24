@@ -39,8 +39,8 @@ import com.vaticle.typedb.core.traversal.scanner.GraphIterator;
 import com.vaticle.typedb.core.traversal.structure.Structure;
 import com.vaticle.typedb.core.traversal.structure.StructureEdge;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
-import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
+import com.vaticle.typeql.lang.common.Reference;
+import com.vaticle.typeql.lang.common.TypeQLToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -308,7 +308,7 @@ public class GraphProcedure implements PermutationProcedure {
         // ---- manual builder methods ----
 
         public ProcedureVertex.Type labelledType(int order, String label) {
-            ProcedureVertex.Type vertex = registerTypeVertex(Identifier.Variable.of(Reference.label(label)));
+            ProcedureVertex.Type vertex = registerTypeVertex(Identifier.Variable.of(com.vaticle.typeql.lang.common.Reference.label(label)));
             vertex.setOrder(order);
             return vertex;
         }
@@ -526,7 +526,7 @@ public class GraphProcedure implements PermutationProcedure {
             return edge;
         }
 
-        public ProcedureEdge.Argument forwardArgument(ProcedureVertex<?,?> argument, ProcedureVertex.Value result) {
+        public ProcedureEdge.Argument forwardArgument(ProcedureVertex<?, ?> argument, ProcedureVertex.Value result) {
             // backwardArgument is illegal
             ProcedureEdge.Argument edge = new ProcedureEdge.Argument(argument, result, Encoding.Direction.Edge.FORWARD);
             attachEdge(argument, result, edge);

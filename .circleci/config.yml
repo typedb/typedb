@@ -103,9 +103,10 @@ jobs:
     executor:
       name: win/default
       shell: cmd.exe
-    working_directory: ~/typedb
+    working_directory: ~
     steps:
       - checkout
+      - run: mv vaticle_typedb_client_java c
       - run: .circleci\windows\prepare.bat
       - run: .circleci\windows\test-assembly.bat
 

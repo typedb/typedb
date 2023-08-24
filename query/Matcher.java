@@ -32,8 +32,9 @@ import com.vaticle.typedb.core.concept.value.Value;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typeql.lang.common.TypeQLToken;
-import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
+import com.vaticle.typeql.lang.query.TypeQLGet;
+import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -63,18 +64,22 @@ import static java.util.stream.Collectors.groupingBy;
 public class Matcher {
 
     private final Reasoner reasoner;
-    private final TypeQLMatch query;
+    private final TypeQLQuery.MatchClause match;
+    private final List<TypeQLVariable> filter;
+    private final TypeQLQuery.Modifiers modifiers;
     private final Disjunction disjunction;
     private final Context.Query context;
 
-    public Matcher(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch query) {
+    public Matcher(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query) {
         this(reasoner, conceptMgr, query, null);
     }
 
-    public Matcher(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch query, @Nullable Context.Query context) {
+    public Matcher(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query, @Nullable Context.Query context) {
         this.reasoner = reasoner;
-        this.query = query;
-        this.disjunction = Disjunction.create(query.conjunction().normalise());
+        this.match = query.match();
+        this.filter = query.filter();
+        this.modifiers = query.modifiers();
+        this.disjunction = Disjunction.create(query.match().conjunction().normalise());
         this.context = context;
         iterate(disjunction.conjunctions())
                 .flatMap(c -> iterate(c.variables())).flatMap(v -> iterate(v.constraints()))
@@ -84,26 +89,26 @@ public class Matcher {
                 .forEachRemaining(c -> conceptMgr.validateNotRoleTypeAlias(c.asType().asLabel().properLabel()));
     }
 
-    public static Matcher create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch query) {
-        return new Matcher(reasoner, conceptMgr, query);
+    public static Matcher create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query) {
+        return new Matcher(reasoner, query);
     }
 
-    public static Matcher create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch query, Context.Query context) {
-        return new Matcher(reasoner, conceptMgr, query, context);
+    public static Matcher create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query, Context.Query context) {
+        return new Matcher(reasoner, query, context);
     }
 
-    public static Matcher.Aggregator create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch.Aggregate query, Context.Query context) {
-        Matcher matcher = new Matcher(reasoner, conceptMgr, query.match());
+    public static Matcher.Aggregator create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet.Aggregate query, Context.Query context) {
+        Matcher matcher = new Matcher(reasoner, query.get());
         return new Aggregator(matcher, query, context);
     }
 
-    public static Matcher.Group create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch.Group query, Context.Query context) {
-        Matcher matcher = new Matcher(reasoner, conceptMgr, query.match());
+    public static Matcher.Group create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet.Group query, Context.Query context) {
+        Matcher matcher = new Matcher(reasoner, query.get());
         return new Group(matcher, query, context);
     }
 
-    public static Matcher.Group.Aggregator create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch.Group.Aggregate query, Context.Query context) {
-        Matcher matcher = new Matcher(reasoner, conceptMgr, query.group().match());
+    public static Matcher.Group.Aggregator create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet.Group.Aggregate query, Context.Query context) {
+        Matcher matcher = new Matcher(reasoner, query.group().get());
         Group group = new Group(matcher, query.group(), context);
         return new Group.Aggregator(group, query);
     }
@@ -118,16 +123,16 @@ public class Matcher {
     }
 
     FunctionalIterator<? extends ConceptMap> execute(Context.Query context) {
-        return reasoner.execute(disjunction, query.modifiers(), context);
+        return reasoner.execute(disjunction, filter, modifiers, context);
     }
 
     public static class Aggregator {
 
         private final Matcher matcher;
-        private final TypeQLMatch.Aggregate query;
+        private final TypeQLGet.Aggregate query;
         private final Context.Query context;
 
-        public Aggregator(Matcher matcher, TypeQLMatch.Aggregate query, Context.Query context) {
+        public Aggregator(Matcher matcher, TypeQLGet.Aggregate query, Context.Query context) {
             this.matcher = matcher;
             this.query = query;
             this.context = context;
@@ -137,16 +142,16 @@ public class Matcher {
         public Numeric execute() {
             FunctionalIterator<? extends ConceptMap> answers = matcher.execute(context);
             TypeQLToken.Aggregate.Method method = query.method();
-            UnboundVariable var = query.var();
+            TypeQLVariable var = query.var();
             return aggregate(answers, method, var);
         }
 
         static Numeric aggregate(FunctionalIterator<? extends ConceptMap> answers,
-                                 TypeQLToken.Aggregate.Method method, UnboundVariable var) {
+                                 TypeQLToken.Aggregate.Method method, TypeQLVariable var) {
             return answers.stream().collect(aggregator(method, var));
         }
 
-        static Collector<ConceptMap, ?, Numeric> aggregator(TypeQLToken.Aggregate.Method method, UnboundVariable var) {
+        static Collector<ConceptMap, ?, Numeric> aggregator(TypeQLToken.Aggregate.Method method, TypeQLVariable var) {
             Collector<ConceptMap, ?, Numeric> aggregator;
             switch (method) {
                 case COUNT:
@@ -209,7 +214,7 @@ public class Matcher {
             };
         }
 
-        static Collector<ConceptMap, ?, Numeric> max(UnboundVariable var) {
+        static Collector<ConceptMap, ?, Numeric> max(TypeQLVariable var) {
             return new Collector<ConceptMap, OptionalAccumulator<Numeric>, Numeric>() {
 
                 @Override
@@ -245,7 +250,7 @@ public class Matcher {
             };
         }
 
-        static Collector<ConceptMap, ?, Numeric> mean(UnboundVariable var) {
+        static Collector<ConceptMap, ?, Numeric> mean(TypeQLVariable var) {
             return new Collector<ConceptMap, Double[], Numeric>() {
 
                 @Override
@@ -285,7 +290,7 @@ public class Matcher {
             };
         }
 
-        static Collector<ConceptMap, ?, Numeric> median(UnboundVariable var) {
+        static Collector<ConceptMap, ?, Numeric> median(TypeQLVariable var) {
             return new Collector<ConceptMap, MedianCalculator, Numeric>() {
 
                 @Override
@@ -317,7 +322,7 @@ public class Matcher {
             };
         }
 
-        static Collector<ConceptMap, ?, Numeric> min(UnboundVariable var) {
+        static Collector<ConceptMap, ?, Numeric> min(TypeQLVariable var) {
             return new Collector<ConceptMap, OptionalAccumulator<Numeric>, Numeric>() {
 
                 @Override
@@ -353,7 +358,7 @@ public class Matcher {
             };
         }
 
-        static Collector<ConceptMap, ?, Numeric> std(UnboundVariable var) {
+        static Collector<ConceptMap, ?, Numeric> std(TypeQLVariable var) {
             return new Collector<ConceptMap, STDCalculator, Numeric>() {
 
                 @Override
@@ -385,7 +390,7 @@ public class Matcher {
             };
         }
 
-        static Collector<ConceptMap, ?, Numeric> sum(UnboundVariable var) {
+        static Collector<ConceptMap, ?, Numeric> sum(TypeQLVariable var) {
             return new Collector<ConceptMap, OptionalAccumulator<Numeric>, Numeric>() {
 
                 @Override
@@ -421,7 +426,7 @@ public class Matcher {
             };
         }
 
-        private static Numeric numeric(ConceptMap answer, UnboundVariable var) {
+        private static Numeric numeric(ConceptMap answer, TypeQLVariable var) {
             if (var.reference().isNameConcept()) {
                 Attribute attribute = answer.get(var).asAttribute();
                 if (attribute.isLong()) return Numeric.ofLong(attribute.asLong().getValue());
@@ -552,10 +557,10 @@ public class Matcher {
     public static class Group {
 
         private final Matcher matcher;
-        private final TypeQLMatch.Group query;
+        private final TypeQLGet.Group query;
         private final Context.Query context;
 
-        public Group(Matcher matcher, TypeQLMatch.Group query, Context.Query context) {
+        public Group(Matcher matcher, TypeQLGet.Group query, Context.Query context) {
             this.matcher = matcher;
             this.query = query;
             this.context = context;
@@ -573,9 +578,9 @@ public class Matcher {
         public static class Aggregator {
 
             private final Group group;
-            private final TypeQLMatch.Group.Aggregate query;
+            private final TypeQLGet.Group.Aggregate query;
 
-            public Aggregator(Group group, TypeQLMatch.Group.Aggregate query) {
+            public Aggregator(Group group, TypeQLGet.Group.Aggregate query) {
                 this.group = group;
                 this.query = query;
             }

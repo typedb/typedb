@@ -21,7 +21,6 @@ package com.vaticle.typedb.core.pattern;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
 
 import java.util.Objects;
 
@@ -42,7 +41,7 @@ public class Negation implements Pattern, Cloneable {
         Disjunction disjunction = Disjunction.create(typeql.normalise().pattern(), bounds);
         disjunction.conjunctions().forEach(conjunction -> {
             if (iterate(conjunction.variables()).map(Variable::reference)
-                    .filter(Reference::isName).noneMatch(bounds::isBound)) {
+                    .filter(com.vaticle.typeql.lang.common.Reference::isName).noneMatch(bounds::isBound)) {
                 throw TypeDBException.of(UNBOUNDED_NEGATION);
             }
         });

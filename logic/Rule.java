@@ -48,9 +48,9 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
+import com.vaticle.typeql.lang.common.Reference;
 import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.pattern.Pattern;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,7 +110,8 @@ public class Rule {
         return new Rule(structure, logicMgr);
     }
 
-    public static Rule of(String label, com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> when, com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> then,
+    public static Rule of(String label, com.vaticle.typeql.lang.pattern.Conjunction<? extends Pattern> when,
+                          com.vaticle.typeql.lang.pattern.statement.ThingStatement<?> then,
                           GraphManager graphMgr, ConceptManager conceptMgr, LogicManager logicMgr) {
         RuleStructure structure = graphMgr.schema().rules().create(label, when, then);
         Rule rule = new Rule(structure, logicMgr);
@@ -152,7 +153,7 @@ public class Rule {
         structure.delete();
     }
 
-    public com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> getThenPreNormalised() {
+    public com.vaticle.typeql.lang.pattern.statement.ThingStatement<?> getThenPreNormalised() {
         return structure.then();
     }
 
@@ -205,8 +206,8 @@ public class Rule {
         return when;
     }
 
-    private Conjunction thenPattern(com.vaticle.typeql.lang.pattern.variable.ThingVariable<?> thenVariable, LogicManager logicMgr) {
-        Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenVariable)).variables(), list());
+    private Conjunction thenPattern(com.vaticle.typeql.lang.pattern.statement.ThingStatement<?> thenStatement, LogicManager logicMgr) {
+        Conjunction conj = new Conjunction(VariableRegistry.createFromThings(list(thenStatement)).variables(), list());
         Map<Identifier.Variable.Name, Set<Label>> whenTypes = new HashMap<>();
         iterate(conj.variables()).filter(var -> !var.isValue()).map(Variable::id).filter(Identifier::isName).forEachRemaining(thenVar -> {
             Set<Label> whenTypesForVar = iterate(when.conjunctions()).flatMap(cj -> iterate(cj.variable(thenVar).inferredTypes())).toSet();

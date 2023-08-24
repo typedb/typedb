@@ -32,8 +32,8 @@ import com.vaticle.typedb.protocol.TransactionProto;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLUndefine;
 import com.vaticle.typeql.lang.query.TypeQLUpdate;
 
@@ -122,27 +122,27 @@ public class QueryService {
     }
 
     private void match(String queryStr, Options.Query options, UUID reqID) {
-        TypeQLMatch query = TypeQL.parseQuery(queryStr).asMatch();
+        TypeQLGet query = TypeQL.parseQuery(queryStr).asGet();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         FunctionalIterator<? extends ConceptMap> answers = queryMgr.match(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> matchResPart(reqID, a));
     }
 
     private void matchAggregate(String queryStr, Options.Query options, UUID reqID) {
-        TypeQLMatch.Aggregate query = TypeQL.parseQuery(queryStr).asMatchAggregate();
+        TypeQLGet.Aggregate query = TypeQL.parseQuery(queryStr).asGetAggregate();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         transactionSvc.respond(matchAggregateRes(reqID, queryMgr.match(query, context)));
     }
 
     private void matchGroup(String queryStr, Options.Query options, UUID reqID) {
-        TypeQLMatch.Group query = TypeQL.parseQuery(queryStr).asMatchGroup();
+        TypeQLGet.Group query = TypeQL.parseQuery(queryStr).asGetGroup();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         FunctionalIterator<ConceptMapGroup> answers = queryMgr.match(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> matchGroupResPart(reqID, a));
     }
 
     private void matchGroupAggregate(String queryStr, Options.Query options, UUID reqID) {
-        TypeQLMatch.Group.Aggregate query = TypeQL.parseQuery(queryStr).asMatchGroupAggregate();
+        TypeQLGet.Group.Aggregate query = TypeQL.parseQuery(queryStr).asGetGroupAggregate();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
         FunctionalIterator<NumericGroup> answers = queryMgr.match(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> matchGroupAggregateResPart(reqID, a));

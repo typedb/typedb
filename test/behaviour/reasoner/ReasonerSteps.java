@@ -29,7 +29,7 @@ import com.vaticle.typedb.core.database.CoreTransaction;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -62,7 +62,7 @@ public class ReasonerSteps {
     public static CoreTransaction reasoningTx;
     public static String DATABASE = "typedb-reasoner-test";
     private static CorrectnessVerifier correctnessVerifier;
-    private static TypeQLMatch typeQLQuery;
+    private static TypeQLGet typeQLQuery;
     private static List<? extends ConceptMap> answers;
 
     @After
@@ -144,7 +144,7 @@ public class ReasonerSteps {
     public void query(String typeQLQueryStatements) {
         try {
             clearReasoningTx();
-            typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatch();
+            typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGet();
             answers = reasoningTx().query().match(typeQLQuery).toList();
         } catch (TypeQLException e) {
             // NOTE: We manually close transaction here, because we want to align with all non-java drivers,
@@ -159,7 +159,7 @@ public class ReasonerSteps {
         try {
             assertNotNull("A typeql query must have been previously loaded in order to test answer equivalence.", typeQLQuery);
             assertNotNull("There are no previous answers to test against; was the reference query ever executed?", answers);
-            Set<? extends ConceptMap> newAnswers = reasoningTx().query().match(TypeQL.parseQuery(equivalentQuery).asMatch()).toSet();
+            Set<? extends ConceptMap> newAnswers = reasoningTx().query().match(TypeQL.parseQuery(equivalentQuery).asGet()).toSet();
             assertEquals(set(answers), newAnswers);
         } catch (TypeQLException e) {
             // NOTE: We manually close transaction here, because we want to align with all non-java drivers,

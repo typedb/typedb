@@ -44,9 +44,9 @@ import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
-import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -100,14 +100,16 @@ public class Inserter {
     public static Inserter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLInsert query, Context.Query context) {
         Matcher matcher = null;
         if (query.match().isPresent()) {
-            TypeQLMatch.Unfiltered match = query.match().get();
-            List<UnboundVariable> filter = new ArrayList<>(match.namedVariablesUnbound());
-            filter.retainAll(query.namedVariablesUnbound());
+            TypeQLGet.Unmodified get = query.match().get().get();
+            List<TypeQLVariable> filter = new ArrayList<>(query.match().get().namedVariables());
+            filter.retainAll(query.namedVariables());
             assert !filter.isEmpty();
-            matcher = Matcher.create(reasoner, conceptMgr, match.get(filter));
+            matcher = Matcher.create(reasoner, conceptMgr, get.match().get(filter));
         }
-        VariableRegistry registry = VariableRegistry.createFromThings(query.variables());
-        for (Variable variable : registry.variables()) validate(variable, matcher);
+        VariableRegistry registry = VariableRegistry.createFromThings(query.statements());
+            for (Variable var : registry.variables()) {
+                validate(var, matcher);
+            }
         return new Inserter(matcher, conceptMgr, registry.things(), context);
     }
 

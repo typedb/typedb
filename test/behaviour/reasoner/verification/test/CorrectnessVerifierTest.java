@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessV
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.CompletenessException;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.SoundnessException;
 import com.vaticle.typedb.core.test.integration.util.Util;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,11 +42,11 @@ import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.test.Util.assertNotThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typeql.lang.TypeQL.and;
+import static com.vaticle.typeql.lang.TypeQL.cVar;
 import static com.vaticle.typeql.lang.TypeQL.define;
 import static com.vaticle.typeql.lang.TypeQL.parseQuery;
 import static com.vaticle.typeql.lang.TypeQL.rule;
 import static com.vaticle.typeql.lang.TypeQL.type;
-import static com.vaticle.typeql.lang.TypeQL.cVar;
 import static com.vaticle.typeql.lang.common.TypeQLArg.ValueType.BOOLEAN;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ATTRIBUTE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Type.ENTITY;
@@ -92,7 +92,7 @@ public class CorrectnessVerifierTest {
 
     @Test
     public void testCorrectnessPassesForEmployableExample() {
-        TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
+        TypeQLGet inferenceQuery = parseQuery("match $x has employable true;").asGet();
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             CorrectnessVerifier correctnessVerifier = CorrectnessVerifier.initialise(session);
             correctnessVerifier.verifyCorrectness(inferenceQuery);
@@ -102,7 +102,7 @@ public class CorrectnessVerifierTest {
 
     @Test
     public void testSoundnessThrowsWhenRuleTriggersTooOftenEmployableExample() {
-        TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
+        TypeQLGet inferenceQuery = parseQuery("match $x has employable true;").asGet();
         CorrectnessVerifier correctnessVerifier;
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             correctnessVerifier = CorrectnessVerifier.initialise(session);
@@ -117,7 +117,7 @@ public class CorrectnessVerifierTest {
 
     @Test
     public void testCompletenessThrowsWhenRuleIsNotTriggeredEmployableExample() {
-        TypeQLMatch inferenceQuery = parseQuery("match $x has employable true;").asMatch();
+        TypeQLGet inferenceQuery = parseQuery("match $x has employable true;").asGet();
         CorrectnessVerifier correctnessVerifier;
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             correctnessVerifier = CorrectnessVerifier.initialise(session);

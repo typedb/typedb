@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.reasoner.Reasoner;
-import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
 import com.vaticle.typeql.lang.query.TypeQLUpdate;
 
 import java.util.HashSet;
@@ -60,16 +60,16 @@ public class Updater {
     }
 
     public static Updater create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLUpdate query, Context.Query context) {
-        VariableRegistry deleteRegistry = VariableRegistry.createFromThings(query.deleteVariables(), false);
+        VariableRegistry deleteRegistry = VariableRegistry.createFromThings(query.deleteStatements(), false);
         deleteRegistry.variables().forEach(Deleter::validate);
 
-        assert query.match().namedVariablesUnbound().containsAll(query.namedDeleteVariablesUnbound());
-        Set<UnboundVariable> filter = new HashSet<>(query.match().namedVariablesUnbound());
-        filter.retainAll(query.namedInsertVariablesUnbound());
-        filter.addAll(query.namedDeleteVariablesUnbound());
-        Matcher matcher = Matcher.create(reasoner, conceptMgr, query.match().get(list(filter)));
+        assert query.match().get().namedVariables().containsAll(query.namedDeleteVariables());
+        Set<TypeQLVariable> filter = new HashSet<>(query.match().get().namedVariables());
+        filter.retainAll(query.namedInsertVariables());
+        filter.addAll(query.namedDeleteVariables());
+        Matcher matcher = Matcher.create(reasoner, conceptMgr, query.match().get().get(list(filter)));
 
-        VariableRegistry insertRegistry = VariableRegistry.createFromThings(query.insertVariables());
+        VariableRegistry insertRegistry = VariableRegistry.createFromThings(query.insertStatements());
         insertRegistry.variables().forEach(var -> Inserter.validate(var, matcher));
         return new Updater(matcher, conceptMgr, deleteRegistry.things(), insertRegistry.things(), context);
     }

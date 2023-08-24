@@ -119,17 +119,17 @@ public class ExpressionResolver {
     }
 
     private Expression<?> compileExpression(
-            com.vaticle.typeql.lang.pattern.variable.builder.Expression expr,
+            com.vaticle.typeql.lang.pattern.expression.Expression expr,
             Map<Identifier, Encoding.ValueType<?>> varTypes
     ) {
-        if (expr.isConceptVariable()) {
-            Identifier.Variable id = Identifier.Variable.of(expr.asConceptVariable().reference().asName().asConcept());
+        if (expr.isConceptVar()) {
+            Identifier.Variable id = Identifier.Variable.of(expr.asConceptVar().reference().asName().asConcept());
             return ExpressionFactory.var(id, varTypes.get(id));
-        } else if (expr.isValueVariable()) {
-            Identifier.Variable id = Identifier.Variable.of(expr.asValueVariable().reference().asName().asValue());
+        } else if (expr.isValueVar()) {
+            Identifier.Variable id = Identifier.Variable.of(expr.asValueVar().reference().asName().asValue());
             return ExpressionFactory.var(id, varTypes.get(id));
         } else if (expr.isConstant()) {
-            com.vaticle.typeql.lang.pattern.variable.builder.Expression.Constant<?> constant = expr.asConstant();
+            com.vaticle.typeql.lang.pattern.expression.Expression.Constant<?> constant = expr.asConstant();
             return ExpressionFactory.constant(constant);
         } else if (expr.isOperation()) {
             Expression<?> first = compileExpression(expr.asOperation().operands().first(), varTypes);
@@ -144,7 +144,7 @@ public class ExpressionResolver {
     }
 
     private <T> List<Expression<T>> convertArgsToSingleType(
-            com.vaticle.typeql.lang.pattern.variable.builder.Expression expr, List<? extends Expression<?>> exprArgs
+            com.vaticle.typeql.lang.pattern.expression.Expression expr, List<? extends Expression<?>> exprArgs
     ) {
         assert !exprArgs.isEmpty();
         Encoding.ValueType<T> valueType = commonValueType(expr, exprArgs);
@@ -164,7 +164,7 @@ public class ExpressionResolver {
     }
 
     private <T> Encoding.ValueType<T> commonValueType(
-            com.vaticle.typeql.lang.pattern.variable.builder.Expression expr, List<? extends Expression<?>> exprArgs
+            com.vaticle.typeql.lang.pattern.expression.Expression expr, List<? extends Expression<?>> exprArgs
     ) {
         Encoding.ValueType<?> valueType = null;
         Expression<?> valueTypeSource = null;

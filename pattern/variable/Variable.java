@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.pattern.Pattern;
 import com.vaticle.typedb.core.pattern.constraint.Constraint;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
+import com.vaticle.typeql.lang.common.Reference;
 
 import java.util.HashSet;
 import java.util.Objects;
