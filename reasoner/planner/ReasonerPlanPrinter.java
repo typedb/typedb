@@ -119,14 +119,6 @@ public class ReasonerPlanPrinter {
         sb.append("--------------------------------\t\t").append(ruleMode.label).append("::").append(ruleMode.mode).append("\t\t--------------------------------\n");
     }
 
-    private void appendBranchSeparator() {
-        sb.append("- - - - - - - - - - - - - - - - - - - - - - - - NEXT BRANCH  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n");
-    }
-
-    private void appendRuleModeSeparator() {
-        sb.append("\n========================================================================================================================\n");
-    }
-
     private void appendResolvableHeader(String nesting, int resolvableIndex, String resolvableType, Set<Variable> bounds) {
         sb.append(String.format("%s[%d] %s {%s}\n", nesting, resolvableIndex, resolvableType,
                 bounds.stream().map(v -> v.id().toString()).collect(Collectors.joining(", "))));
@@ -134,6 +126,14 @@ public class ReasonerPlanPrinter {
 
     private void appendResolvablePattern(String nesting, Conjunction pattern) {
         sb.append(nesting).append('\t').append(pattern.toString().replace('\n', ' ')).append('\n');
+    }
+
+    private void appendBranchSeparator() {
+        sb.append("- - - - - - - - - - - - - - - - - - - - - - - - NEXT BRANCH  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n");
+    }
+
+    private void appendRuleModeSeparator() {
+        sb.append("\n========================================================================================================================\n");
     }
 
     private Set<RuleMode> triggeredRuleModes(Concludable concludable, Set<Variable> mode) {
