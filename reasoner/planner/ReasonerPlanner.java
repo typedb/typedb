@@ -84,14 +84,14 @@ public abstract class ReasonerPlanner {
         long start = System.nanoTime();
         disjunction.conjunctions().forEach(conjunction -> plan(new CallMode(conjunction, Collections.emptySet())));
         perfCounters.timePlanning.add(System.nanoTime() - start);
-        logPlans(disjunction.conjunctions(),Collections.emptySet());
+        mayLogPlans(disjunction.conjunctions(),Collections.emptySet());
     }
 
     public void planRoot(ResolvableConjunction conjunction) {
         long start = System.nanoTime();
         plan(new CallMode(conjunction, Collections.emptySet()));
         perfCounters.timePlanning.add(System.nanoTime() - start);
-        logPlans(set(conjunction), Collections.emptySet());
+        mayLogPlans(set(conjunction), Collections.emptySet());
     }
 
     public void planExplainableRoot(Concludable concludable, Set<Variable> mode) {
@@ -99,7 +99,7 @@ public abstract class ReasonerPlanner {
         CallMode callMode = new CallMode(ResolvableConjunction.of(concludable.pattern()), estimateableVariables(mode));
         plan(callMode);
         perfCounters.timePlanning.add(System.nanoTime() - start);
-        logPlans(set(callMode.conjunction), callMode.mode);
+        mayLogPlans(set(callMode.conjunction), callMode.mode);
     }
 
     public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> mode) {
@@ -196,7 +196,7 @@ public abstract class ReasonerPlanner {
         return calls;
     }
 
-    private void logPlans(Set<ResolvableConjunction> roots, Set<Variable> mode) {
+    private void mayLogPlans(Set<ResolvableConjunction> roots, Set<Variable> mode) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Reasoner plans:\n" + ReasonerPlanPrinter.print(this, roots, mode));
         }
