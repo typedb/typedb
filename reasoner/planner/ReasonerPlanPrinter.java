@@ -41,7 +41,7 @@ public class ReasonerPlanPrinter {
 
     private final ReasonerPlanner planner;
     private final StringBuilder sb;
-    private final Set<RuleMode> printed;
+    private final Set<LabelGroup> printed;
 
     private ReasonerPlanPrinter(ReasonerPlanner planner) {
         this.planner = planner;
@@ -50,34 +50,34 @@ public class ReasonerPlanPrinter {
     }
 
     public static String print(ReasonerPlanner planner, Set<ResolvableConjunction> roots, Set<Variable> mode) {
-        return new ReasonerPlanPrinter(planner).print(set(new RuleMode("<user>", mode, roots)));
+        return new ReasonerPlanPrinter(planner).print(set(new LabelGroup("<user>", mode, roots)));
     }
 
-    private String print(Set<RuleMode> roots) {
+    private String print(Set<LabelGroup> roots) {
         sb.append("================================================= Start reasoner plans =================================================\n");
         appendRecursive(roots);
         sb.append("=================================================  End reasoner plans  =================================================\n");
         return sb.toString();
     }
 
-    private void appendRecursive(Set<RuleMode> ruleModes) {
-        Set<RuleMode> triggered = new HashSet<>();
-        ruleModes.forEach(call -> appendRuleMode(call, triggered));
+    private void appendRecursive(Set<LabelGroup> labelGroups) {
+        Set<LabelGroup> triggered = new HashSet<>();
+        labelGroups.forEach(call -> appendLabelGroup(call, triggered));
         triggered.removeAll(printed);
         if (!triggered.isEmpty()) appendRecursive(triggered);
     }
 
-    private void appendRuleMode(RuleMode ruleMode, Set<RuleMode> triggered) {
-        appendRuleModeHeader(ruleMode);
-        for (int i = 0; i < ruleMode.conjunctions.size(); i++) {
-            appendCallMode(ruleMode.conjunctions.get(i), ruleMode.mode, triggered, "");
-            if (ruleMode.conjunctions.size() - i > 1) appendBranchSeparator();
+    private void appendLabelGroup(LabelGroup labelGroup, Set<LabelGroup> triggered) {
+        appendLabelGroupHeader(labelGroup);
+        for (int i = 0; i < labelGroup.conjunctions.size(); i++) {
+            appendCallMode(labelGroup.conjunctions.get(i), labelGroup.mode, triggered, "");
+            if (labelGroup.conjunctions.size() - i > 1) appendBranchSeparator();
         }
-        appendRuleModeSeparator();
-        printed.add(ruleMode);
+        appendLabelGroupSeparator();
+        printed.add(labelGroup);
     }
 
-    private void appendCallMode(ResolvableConjunction conjunction, Set<Variable> mode, Set<RuleMode> triggered, String nesting) {
+    private void appendCallMode(ResolvableConjunction conjunction, Set<Variable> mode, Set<LabelGroup> triggered, String nesting) {
         ReasonerPlanner.Plan plan = planner.getPlan(conjunction, mode);
         Set<Variable> runningBounds = new HashSet<>(mode);
 
@@ -101,22 +101,22 @@ public class ReasonerPlanPrinter {
         }
     }
 
-    private void appendResolvable(Resolvable<?> res, int index, Set<Variable> mode, Set<RuleMode> triggered, String nesting) {
+    private void appendResolvable(Resolvable<?> res, int index, Set<Variable> mode, Set<LabelGroup> triggered, String nesting) {
         if (res.isRetrievable()) {
             appendResolvableHeader(nesting, index, "RET", mode);
             appendResolvablePattern(nesting, res.asRetrievable().pattern());
         } else if (res.isConcludable()) {
             appendResolvableHeader(nesting, index, "CON", mode);
             appendResolvablePattern(nesting, res.asConcludable().pattern());
-            triggeredRuleModes(res.asConcludable(), mode).forEach((ruleMode) -> {
-                triggered.add(ruleMode);
-                sb.append(nesting).append("\t\t- ").append(ruleMode.label).append("::").append(ruleMode.mode).append("\n");
+            triggeredLabelGroups(res.asConcludable(), mode).forEach((labelGroup) -> {
+                triggered.add(labelGroup);
+                sb.append(nesting).append("\t\t- ").append(labelGroup.label).append("::").append(labelGroup.mode).append("\n");
             });
         }
     }
 
-    private void appendRuleModeHeader(RuleMode ruleMode) {
-        sb.append("--------------------------------\t\t").append(ruleMode.label).append("::").append(ruleMode.mode).append("\t\t--------------------------------\n");
+    private void appendLabelGroupHeader(LabelGroup labelGroup) {
+        sb.append("--------------------------------\t\t").append(labelGroup.label).append("::").append(labelGroup.mode).append("\t\t--------------------------------\n");
     }
 
     private void appendResolvableHeader(String nesting, int resolvableIndex, String resolvableType, Set<Variable> bounds) {
@@ -132,11 +132,11 @@ public class ReasonerPlanPrinter {
         sb.append("- - - - - - - - - - - - - - - - - - - - - - - - NEXT BRANCH  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n");
     }
 
-    private void appendRuleModeSeparator() {
+    private void appendLabelGroupSeparator() {
         sb.append("\n========================================================================================================================\n");
     }
 
-    private Set<RuleMode> triggeredRuleModes(Concludable concludable, Set<Variable> mode) {
+    private Set<LabelGroup> triggeredLabelGroups(Concludable concludable, Set<Variable> mode) {
         Map<ResolvableConjunction, String> labels = new HashMap<>();
         planner.logicMgr.applicableRules(concludable).keySet().forEach(rule -> {
             rule.condition().disjunction().conjunctions().forEach(conjunction -> labels.put(conjunction, rule.getLabel()));
@@ -147,18 +147,18 @@ public class ReasonerPlanPrinter {
             builder.computeIfAbsent(new Pair<>(labels.get(callMode.conjunction), callMode.mode), labelMode -> new HashSet<>()).add(callMode.conjunction);
         });
 
-        Set<RuleMode> triggeredRuleModes = new HashSet<>();
-        builder.forEach((labelMode, conjunctions) -> triggeredRuleModes.add(new RuleMode(labelMode.first(), labelMode.second(), conjunctions)));
-        return triggeredRuleModes;
+        Set<LabelGroup> triggeredLabelGroups = new HashSet<>();
+        builder.forEach((labelMode, conjunctions) -> triggeredLabelGroups.add(new LabelGroup(labelMode.first(), labelMode.second(), conjunctions)));
+        return triggeredLabelGroups;
     }
 
-    private static class RuleMode {
+    private static class LabelGroup {
         private final String label;
         private final Set<Variable> mode;
         private final List<ResolvableConjunction> conjunctions;
         private final int hash;
 
-        private RuleMode(String label, Set<Variable> mode, Set<ResolvableConjunction> conjunctions) {
+        private LabelGroup(String label, Set<Variable> mode, Set<ResolvableConjunction> conjunctions) {
             this.label = label;
             this.mode = mode;
             this.conjunctions = new ArrayList<>(conjunctions);
@@ -174,7 +174,7 @@ public class ReasonerPlanPrinter {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            RuleMode that = (RuleMode) o;
+            LabelGroup that = (LabelGroup) o;
             return label.equals(that.label) && mode.equals(that.mode);
         }
     }
