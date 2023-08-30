@@ -80,6 +80,7 @@ public class RetrievableController extends AbstractController<
                                      Supplier<String> debugName) {
             super(driver, controller, context, debugName);
             this.traversalSupplier = traversalSupplier;
+            context().perfCounters().retrievableProcessors.add(1);
         }
 
         @Override

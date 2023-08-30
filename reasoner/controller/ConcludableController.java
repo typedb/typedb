@@ -148,7 +148,7 @@ public abstract class ConcludableController<INPUT, OUTPUT,
             Set<com.vaticle.typedb.core.pattern.variable.Variable> boundVariables = Iterators.iterate(bounds.concepts().keySet())
                     .map(id -> concludable.pattern().variable(id))
                     .filter(v -> v != null).toSet();
-            planner().planAllDependencies(concludable, boundVariables);
+            planner().planExplainableRoot(concludable, boundVariables);
             setUpUpstreamControllers();
             getOrCreateProcessor(bounds);
         }
