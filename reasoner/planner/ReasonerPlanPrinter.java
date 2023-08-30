@@ -50,7 +50,7 @@ public class ReasonerPlanPrinter {
     }
 
     public static String print(ReasonerPlanner planner, Set<ResolvableConjunction> roots, Set<Variable> mode) {
-        return new ReasonerPlanPrinter(planner).print(set(new CallGroup("<user>", mode, roots)));
+        return new ReasonerPlanPrinter(planner).print(set(new CallGroup("(root-query)", mode, roots)));
     }
 
     private String print(Set<CallGroup> roots) {
@@ -70,8 +70,9 @@ public class ReasonerPlanPrinter {
     private void appendCallGroup(CallGroup callGroup, Set<CallGroup> triggered) {
         appendCallGroupHeader(callGroup);
         for (int i = 0; i < callGroup.conjunctions.size(); i++) {
-            appendCallMode(callGroup.conjunctions.get(i), callGroup.mode, triggered, "");
-            if (callGroup.conjunctions.size() - i > 1) appendBranchSeparator();
+            sb.append("Branch ").append(i+1).append(":").append("\n");
+            appendCallMode(callGroup.conjunctions.get(i), callGroup.mode, triggered, "|\t");
+            sb.append("\n");
         }
         appendCallGroupSeparator();
         printed.add(callGroup);
@@ -80,33 +81,31 @@ public class ReasonerPlanPrinter {
     private void appendCallMode(ResolvableConjunction conjunction, Set<Variable> mode, Set<CallGroup> triggered, String nesting) {
         ReasonerPlanner.Plan plan = planner.getPlan(conjunction, mode);
         Set<Variable> runningBounds = new HashSet<>(mode);
-
-        sb.append(nesting).append("Cost: ").append(plan.allCallsCost()).append("\n");
+        sb.append(nesting).append("Cost for all ").append(mode).append(":\t").append(plan.allCallsCost()).append("\n");
         for (int i = 0; i < plan.plan().size(); i++) {
             Resolvable<?> res = plan.plan().get(i);
             if (res.isNegated()) {
                 final int index = i;
                 res.asNegated().disjunction().conjunctions().forEach(nestedConjunction -> {
                     Set<Variable> negationMode = Collections.intersection(runningBounds, ReasonerPlanner.estimateableVariables(nestedConjunction.pattern().variables()));
-                    appendResolvableHeader(nesting, index, "NEG", negationMode);
-                    sb.append(nesting).append("{");
-                    sb.append(nesting).append("}\n");
-                    appendCallMode(nestedConjunction, negationMode, triggered, nesting + "\t");
+                    appendResolvableHeader(nesting, index, "NEGATION", negationMode);
+                    appendCallMode(nestedConjunction, negationMode, triggered, nesting + "|\t");
                 });
             } else {
                 Set<Variable> resolvableMode = Collections.intersection(runningBounds, ReasonerPlanner.estimateableVariables(res.variables()));
                 appendResolvable(res, i, resolvableMode, triggered, nesting);
             }
             if (!res.isNegated()) runningBounds.addAll(ReasonerPlanner.estimateableVariables(res.variables()));
+            sb.append(nesting).append("\n");
         }
     }
 
     private void appendResolvable(Resolvable<?> res, int index, Set<Variable> mode, Set<CallGroup> triggered, String nesting) {
         if (res.isRetrievable()) {
-            appendResolvableHeader(nesting, index, "RET", mode);
+            appendResolvableHeader(nesting, index, "RETRIEVABLE", mode);
             appendResolvablePattern(nesting, res.asRetrievable().pattern());
         } else if (res.isConcludable()) {
-            appendResolvableHeader(nesting, index, "CON", mode);
+            appendResolvableHeader(nesting, index, "CONCLUDABLE", mode);
             appendResolvablePattern(nesting, res.asConcludable().pattern());
             triggeredCallGroups(res.asConcludable(), mode).forEach((callGroup) -> {
                 triggered.add(callGroup);
@@ -116,24 +115,19 @@ public class ReasonerPlanPrinter {
     }
 
     private void appendCallGroupHeader(CallGroup callGroup) {
-        sb.append("--------------------------------\t\t").append(callGroup.label).append("::").append(callGroup.mode).append("\t\t--------------------------------\n");
+        sb.append(callGroup.label).append("::").append(callGroup.mode).append("\n\n");
     }
 
     private void appendResolvableHeader(String nesting, int resolvableIndex, String resolvableType, Set<Variable> bounds) {
-        sb.append(String.format("%s[%d] %s {%s}\n", nesting, resolvableIndex, resolvableType,
-                bounds.stream().map(v -> v.id().toString()).collect(Collectors.joining(", "))));
+        sb.append(String.format("%s[%d]\t%s\t%s\n", nesting, resolvableIndex, resolvableType, bounds));
     }
 
     private void appendResolvablePattern(String nesting, Conjunction pattern) {
         sb.append(nesting).append('\t').append(pattern.toString().replace('\n', ' ')).append('\n');
     }
 
-    private void appendBranchSeparator() {
-        sb.append("- - - - - - - - - - - - - - - - - - - - - - - - NEXT BRANCH  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n");
-    }
-
     private void appendCallGroupSeparator() {
-        sb.append("\n========================================================================================================================\n");
+        sb.append("\n------------------------------------------------------------------------------------------------------------------------\n");
     }
 
     private Set<CallGroup> triggeredCallGroups(Concludable concludable, Set<Variable> mode) {
