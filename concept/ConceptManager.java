@@ -204,6 +204,14 @@ public final class ConceptManager {
         else return null;
     }
 
+    public Type getType(Label label) {
+        TypeVertex vertex = graphMgr.schema().getType(label);
+        if (vertex != null) {
+            if (label.scope().isPresent()) return convertRoleType(vertex);
+            else return convertThingType(vertex);
+        } else return null;
+    }
+
     public ThingType getThingType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
         if (vertex != null) return convertThingType(vertex);
