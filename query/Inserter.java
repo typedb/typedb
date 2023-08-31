@@ -258,7 +258,6 @@ public class Inserter {
 
         private Thing insertIsa(IsaConstraint isaConstraint, ThingVariable var) {
             try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_isa")) {
-                assert isaConstraint.type().label().isPresent();
                 Type type = getType(isaConstraint.type());
                 if (!type.isThingType()) {
                     throw TypeDBException.of(THING_INSERT_ISA_NOT_THING_TYPE, type.getLabel());
