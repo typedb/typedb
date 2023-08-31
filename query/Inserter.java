@@ -120,15 +120,10 @@ public class Inserter {
 
     public static void validate(Variable var) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
-//            if (var.isType()) validate(var.asType());
             if (var.isThing()) validate(var.asThing());
             else if (var.isValue()) validate(var.asValue());
         }
     }
-
-//    private static void validate(TypeVariable var) {
-//        if (!var.reference().isLabel()) throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_INSERT, var.reference());
-//    }
 
     private static void validate(ThingVariable var) {
         Identifier id = var.id();
