@@ -402,46 +402,42 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new ThingWrite(14, "Attempted to re-insert pre-existing thing of matched variable '%s' as a new instance (isa) of type '%s'.");
         public static final ThingWrite THING_ISA_MISSING =
                 new ThingWrite(15, "The thing variable '%s' cannot be inserted as a new instance without providing its type (isa).");
-        public static final ThingWrite ILLEGAL_TYPE_VARIABLE_IN_INSERT =
-                new ThingWrite(16, "Illegal type variable '%s' found in insert query. Types can only be referred to by their labels in insert queries or then clauses.");
-        public static final ThingWrite ILLEGAL_TYPE_VARIABLE_IN_DELETE =
-                new ThingWrite(17, "Illegal type variable '%s' found in delete query. Types can only be referred to by their labels in delete queries or then clauses.");
         public static final ThingWrite ILLEGAL_ANONYMOUS_RELATION_IN_DELETE =
-                new ThingWrite(18, "Illegal anonymous relation in delete query: '%s'.  You must match the relation variable by name, and then delete it.");
+                new ThingWrite(16, "Illegal anonymous relation in delete query: '%s'.  You must match the relation variable by name, and then delete it.");
         public static final ThingWrite ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE =
-                new ThingWrite(19, "Illegal anonymous variable in delete query: '%s'.  You can only delete named variables that were matched.");
+                new ThingWrite(17, "Illegal anonymous variable in delete query: '%s'.  You can only delete named variables that were matched.");
         public static final ThingWrite INVALID_DELETE_THING =
-                new ThingWrite(20, "The thing '%s' cannot be deleted, as the provided type '%s' is not its direct type nor supertype.");
+                new ThingWrite(18, "The thing '%s' cannot be deleted, as the provided type '%s' is not its direct type nor supertype.");
         public static final ThingWrite INVALID_DELETE_THING_DIRECT =
-                new ThingWrite(21, "The thing '%s' cannot be deleted, as the provided direct type '%s' is not valid.");
+                new ThingWrite(19, "The thing '%s' cannot be deleted, as the provided direct type '%s' is not valid.");
         public static final ThingWrite INVALID_DELETE_HAS =
-                new ThingWrite(22, "Invalid attempt to delete attribute ownership. The thing '%s' does not have attribute '%s'.");
+                new ThingWrite(20, "Invalid attempt to delete attribute ownership. The thing '%s' does not have attribute '%s'.");
         public static final ThingWrite ILLEGAL_IS_CONSTRAINT =
-                new ThingWrite(23, "The 'is' constraint, e.g. used in '%s', is not accepted in an insert/delete query.");
+                new ThingWrite(21, "The 'is' constraint, e.g. used in '%s', is not accepted in an insert/delete query.");
         public static final ThingWrite ATTRIBUTE_VALUE_TOO_MANY =
-                new ThingWrite(24, "Unable to insert attribute '%s' of type '%s' with more than one value operations.");
+                new ThingWrite(22, "Unable to insert attribute '%s' of type '%s' with more than one value operations.");
         public static final ThingWrite ATTRIBUTE_VALUE_MISSING =
-                new ThingWrite(25, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
+                new ThingWrite(23, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
         public static final ThingWrite INSERT_RELATION_CONSTRAINT_TOO_MANY =
-                new ThingWrite(26, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
+                new ThingWrite(24, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
         public static final ThingWrite RELATION_CONSTRAINT_MISSING =
-                new ThingWrite(27, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
+                new ThingWrite(25, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
         public static final ThingWrite ROLE_TYPE_AMBIGUOUS =
-                new ThingWrite(28, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
+                new ThingWrite(26, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
         public static final ThingWrite ROLE_TYPE_MISSING =
-                new ThingWrite(29, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
+                new ThingWrite(27, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
         public static final ThingWrite ROLE_TYPE_MISMATCH =
-                new ThingWrite(30, "The type '%s' cannot be used as a role type.");
+                new ThingWrite(28, "The type '%s' cannot be used as a role type.");
         public static final ThingWrite MAX_INSTANCE_REACHED =
-                new ThingWrite(31, "The maximum number of instances for type '%s' has been reached: '%s'");
+                new ThingWrite(29, "The maximum number of instances for type '%s' has been reached: '%s'");
         public static final ThingWrite DELETE_RELATION_CONSTRAINT_TOO_MANY =
-                new ThingWrite(32, "Could not perform delete of role players due to multiple relation constraints being present for relation '%s'.");
+                new ThingWrite(30, "Could not perform delete of role players due to multiple relation constraints being present for relation '%s'.");
         public static final ThingWrite DELETE_ROLEPLAYER_NOT_PRESENT =
-                new ThingWrite(33, "Could not delete roleplayer '%s' as relation '%s' does not relate it.");
+                new ThingWrite(31, "Could not delete roleplayer '%s' as relation '%s' does not relate it.");
         public static final ThingWrite ILLEGAL_VALUE_VARIABLE_IN_DELETE =
-                new ThingWrite(34, "Illegal value variable '%s' found in delete query. Value variables may not be used in delete queries.");
+                new ThingWrite(32, "Illegal value variable '%s' found in delete query. Value variables may not be used in delete queries.");
         public static final ThingWrite ILLEGAL_VALUE_CONSTRAINT_IN_INSERT =
-                new ThingWrite(35, "Illegal value constraint found in insert query on variable '%s'. Value variables are only permitted to specify attribute values.");
+                new ThingWrite(33, "Illegal value constraint found in insert query on variable '%s'. Value variables are only permitted to specify attribute values.");
 
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
