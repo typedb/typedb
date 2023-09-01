@@ -292,18 +292,16 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Pattern(17, "Could not infer compatible types for the match pattern:\n '%s'\n, due to the included pattern:\n'%s'.");
         public static final Pattern INFERENCE_INCOHERENT_VALUE_TYPES =
                 new Pattern(18, "Could not infer compatible types for the pattern:\n'%s'\n, due to contradicting attribute value types for:\n'%s'.");
-        public static final Pattern ILLEGAL_INSERT_WITH_ABSTRACT_TYPE =
-                new Pattern(19, "The type '%s' is abstract and cannot be used in insert clauses.");
         public static final Pattern UNRECOGNISED_ANNOTATION =
-                new Pattern(20, "The annotation '%s' is not recognised.");
+                new Pattern(19, "The annotation '%s' is not recognised.");
         public static final Pattern VARIABLE_NAME_CONFLICT =
-                new Pattern(21, "The variable name '%s' was used both for a concept variable and a value variable.");
+                new Pattern(20, "The variable name '%s' was used both for a concept variable and a value variable.");
         public static final Pattern VALUE_VARIABLE_UNASSIGNED =
-                new Pattern(22, "The value variable '%s' is never assigned to.");
+                new Pattern(21, "The value variable '%s' is never assigned to.");
         public static final Pattern VALUE_VARIABLE_DUPLICATE_ASSIGMENT =
-                new Pattern(23, "The value variable '%s' can only have one assignment in the first scope it is used in.");
+                new Pattern(22, "The value variable '%s' can only have one assignment in the first scope it is used in.");
         public static final Pattern VALUE_ASSIGNMENT_CYCLE =
-                new Pattern(24, "A cyclic assignment between value variables was detected: '%s'.");
+                new Pattern(23, "A cyclic assignment between value variables was detected: '%s'.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";

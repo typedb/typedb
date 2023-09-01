@@ -23,9 +23,9 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.pattern.Conjunction;
@@ -35,8 +35,8 @@ import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IIDConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
-import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.PredicateConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.OwnsConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.PlaysConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.RegexConstraint;
@@ -44,9 +44,9 @@ import com.vaticle.typedb.core.pattern.constraint.type.RelatesConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.SubConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.ValueTypeConstraint;
-import com.vaticle.typedb.core.pattern.variable.ValueVariable;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.ValueVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -64,9 +64,8 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INFERENCE_INCOHERENT_VALUE_TYPES;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.ILLEGAL_INSERT_WITH_ABSTRACT_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INFERENCE_INCOHERENT_MATCH_SUB_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INFERENCE_INCOHERENT_VALUE_TYPES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -102,7 +101,7 @@ public class TypeInference {
     }
 
     public void applyCombination(Conjunction conjunction, Map<Identifier.Variable.Name, Set<Label>> bounds, boolean insertable) {
-        propagateLabels(conjunction, insertable);
+        propagateLabels(conjunction);
         if (!bounds.isEmpty()) applyBounds(conjunction, bounds);
         Map<Identifier.Variable.Name, Set<Label>> inferredTypes = new HashMap<>(bounds);
         if (!isSchemaQuery(conjunction)) {
@@ -115,7 +114,7 @@ public class TypeInference {
     public FunctionalIterator<Map<Identifier.Variable.Name, Label>> getPermutations(Conjunction conjunction,
                                                                                     boolean insertable,
                                                                                     Set<Identifier.Variable.Name> filter) {
-        propagateLabels(conjunction, insertable);
+        propagateLabels(conjunction);
         return new InferenceTraversal(conjunction, insertable, graphMgr, traversalEng)
                 .typePermutations(iterate(filter).filter(id -> !conjunction.variable(id).isValue()).toSet());
     }
@@ -141,7 +140,7 @@ public class TypeInference {
         return namedInferences;
     }
 
-    private void propagateLabels(Conjunction conj, boolean insertable) {
+    private void propagateLabels(Conjunction conj) {
         iterate(conj.variables()).flatMap(v -> iterate(v.constraints())).flatMap(c -> iterate(c.variables())).distinct()
                 .forEachRemaining(v -> {
                     if (v.isType() && v.asType().label().isPresent()) {
@@ -151,16 +150,10 @@ public class TypeInference {
                             if (labels.isEmpty()) {
                                 throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, label.name(), label.scope().get());
                             }
-                            if (insertable && iterate(labels).anyMatch(l -> graphMgr.schema().getType(l).isAbstract())) {
-                                throw TypeDBException.of(ILLEGAL_INSERT_WITH_ABSTRACT_TYPE, label);
-                            }
                             v.addInferredTypes(labels);
                         } else {
-                            TypeVertex type = graphMgr.schema().getType(label);
-                            if (type == null) {
+                            if (graphMgr.schema().getType(label) == null) {
                                 throw TypeDBException.of(TYPE_NOT_FOUND, label);
-                            } else if (insertable && type.isAbstract()) {
-                                throw TypeDBException.of(ILLEGAL_INSERT_WITH_ABSTRACT_TYPE, label);
                             }
                             v.addInferredTypes(label);
                         }
