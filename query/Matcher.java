@@ -101,6 +101,10 @@ public class Matcher {
         return new Group.Aggregator(group, query);
     }
 
+    public Disjunction disjunction() {
+        return disjunction;
+    }
+
     public FunctionalIterator<? extends ConceptMap> execute() {
         assert context != null;
         return execute(context);

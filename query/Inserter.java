@@ -62,6 +62,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.A
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_TOO_MANY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CONSTRAINT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_UNBOUND_TYPE_VAR_IN_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_VALUE_CONSTRAINT_IN_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INSERT_RELATION_CONSTRAINT_TOO_MANY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_MISSING;
@@ -102,9 +103,6 @@ public class Inserter {
 
     public static Inserter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLInsert query, Context.Query context) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            VariableRegistry registry = VariableRegistry.createFromThings(query.variables());
-            registry.variables().forEach(Inserter::validate);
-
             Matcher matcher = null;
             if (query.match().isPresent()) {
                 TypeQLMatch.Unfiltered match = query.match().get();
@@ -113,15 +111,24 @@ public class Inserter {
                 assert !filter.isEmpty();
                 matcher = Matcher.create(reasoner, match.get(filter));
             }
-
+            VariableRegistry registry = VariableRegistry.createFromThings(query.variables());
+            for (Variable variable : registry.variables()) validate(variable, matcher);
             return new Inserter(matcher, conceptMgr, registry.things(), context);
         }
     }
 
-    public static void validate(Variable var) {
+    public static void validate(Variable var, @Nullable Matcher matcher) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
-            if (var.isThing()) validate(var.asThing());
+            if (var.isType()) validate(var.asType(), matcher);
+            else if (var.isThing()) validate(var.asThing());
             else if (var.isValue()) validate(var.asValue());
+        }
+    }
+
+    private static void validate(TypeVariable var, @Nullable Matcher matcher) {
+        if (var.id().isName() &&
+                (matcher == null || !matcher.disjunction().sharedVariables().contains(var.id().asName()))) {
+            throw TypeDBException.of(ILLEGAL_UNBOUND_TYPE_VAR_IN_INSERT, var.id());
         }
     }
 
