@@ -60,8 +60,8 @@ import java.util.Set;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INCOHERENT_PATTERN;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INCOHERENT_SUB_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INFERENCE_INCOHERENT_MATCH_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INFERENCE_INCOHERENT_MATCH_SUB_PATTERN;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.SORT_ATTRIBUTE_NOT_COMPARABLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.cartesian;
 import static com.vaticle.typedb.core.common.iterator.Iterators.empty;
@@ -138,9 +138,9 @@ public class Reasoner {
         if (!disjunction.isCoherent()) {
             Set<Conjunction> causes = incoherentConjunctions(disjunction);
             if (set(disjunction.conjunctions()).equals(causes)) {
-                throw TypeDBException.of(INCOHERENT_PATTERN, disjunction);
+                throw TypeDBException.of(INFERENCE_INCOHERENT_MATCH_PATTERN, disjunction);
             } else {
-                throw TypeDBException.of(INCOHERENT_SUB_PATTERN, disjunction, causes);
+                throw TypeDBException.of(INFERENCE_INCOHERENT_MATCH_SUB_PATTERN, disjunction, causes);
             }
         }
     }

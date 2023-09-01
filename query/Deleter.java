@@ -138,7 +138,6 @@ public class Deleter {
 
         private void delete(ThingVariable var) {
             try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
-                validate(var);
                 Thing thing = matched.get(var.reference().asName()).asThing();
                 if (!var.has().isEmpty()) deleteHas(var, thing);
                 if (var.relation().isPresent()) deleteRelation(var, thing.asRelation());
@@ -152,7 +151,6 @@ public class Deleter {
                     Reference.Name attRef = hasConstraint.attribute().reference().asName();
                     Attribute att = matched.get(attRef).asAttribute();
                     if (thing.getHas(att.getType()).anyMatch(a -> a.equals(att))) thing.unsetHas(att);
-                    else throw TypeDBException.of(INVALID_DELETE_HAS, var.reference(), attRef);
                 }
             }
         }
@@ -170,7 +168,9 @@ public class Deleter {
                         } else {
                             roleType = tryInferRoleType(relation, player, rolePlayer);
                         }
-                        relation.removePlayer(roleType, player);
+                        if (relation.getPlayers(roleType).anyMatch(t -> t.equals(player))) {
+                            relation.removePlayer(roleType, player);
+                        }
                     });
                 } else {
                     throw TypeDBException.of(DELETE_RELATION_CONSTRAINT_TOO_MANY, var.reference());
