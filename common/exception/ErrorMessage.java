@@ -443,7 +443,9 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final ThingWrite ILLEGAL_VALUE_VARIABLE_IN_DELETE =
                 new ThingWrite(35, "Illegal value variable '%s' found in delete query. Value variables may not be used in delete queries.");
         public static final ThingWrite ILLEGAL_VALUE_CONSTRAINT_IN_INSERT =
-                new ThingWrite(36, "Illegal value constraint found in insert query on variable '%s'. Value variables are only permitted to specify attribute values.");
+                new ThingWrite(36, "Illegal value constraint found in the insert query on variable '%s'. Value variables are only permitted to specify attribute values.");
+        public static final ThingWrite ILLEGAL_UNBOUND_TYPE_VAR_IN_INSERT =
+                new ThingWrite(37, "Type variable '%s' found in the insert query must retrieved by the match previously.");
 
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
