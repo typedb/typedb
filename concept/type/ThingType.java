@@ -87,6 +87,8 @@ public interface ThingType extends Type {
 
     void unsetPlays(RoleType roleType);
 
+    boolean plays(RoleType roleType);
+
     Forwardable<RoleType, Order.Asc> getPlays();
 
     Forwardable<RoleType, Order.Asc> getPlaysExplicit();
