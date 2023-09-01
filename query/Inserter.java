@@ -33,8 +33,6 @@ import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.value.Value;
-import com.vaticle.typedb.core.logic.LogicManager;
-import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.constraint.common.Predicate;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
@@ -83,7 +81,6 @@ import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
 import static com.vaticle.typedb.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
 import static com.vaticle.typedb.core.query.common.Util.tryInferRoleType;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
-import static java.util.Collections.emptyList;
 
 public class Inserter {
 
