@@ -179,180 +179,180 @@ public class Inserter {
         return iterate(iterate(matches).map(matched -> new Operation(conceptMgr, matched, variables).execute()).toList());
     }
 
-public static class Operation {
+    public static class Operation {
 
-    private static final String TRACE_PREFIX = "operation.";
+        private static final String TRACE_PREFIX = "operation.";
 
-    private final ConceptManager conceptMgr;
-    private final ConceptMap matched;
-    private final Set<ThingVariable> variables;
-    private final Map<Retrievable, Thing> inserted;
+        private final ConceptManager conceptMgr;
+        private final ConceptMap matched;
+        private final Set<ThingVariable> variables;
+        private final Map<Retrievable, Thing> inserted;
 
-    Operation(ConceptManager conceptMgr, ConceptMap matched, Set<ThingVariable> variables) {
-        this.conceptMgr = conceptMgr;
-        this.matched = matched;
-        this.variables = variables;
-        this.inserted = new HashMap<>();
-    }
-
-    public ConceptMap execute() {
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            variables.forEach(this::insert);
-            matched.forEach((id, concept) -> {
-                if (concept.isThing()) inserted.putIfAbsent(id, concept.asThing());
-            });
-            return new ConceptMap(inserted);
+        Operation(ConceptManager conceptMgr, ConceptMap matched, Set<ThingVariable> variables) {
+            this.conceptMgr = conceptMgr;
+            this.matched = matched;
+            this.variables = variables;
+            this.inserted = new HashMap<>();
         }
-    }
 
-    private boolean matchedContains(Variable var) {
-        return var.reference().isNameConcept() && matched.contains(var.reference().asName().asConcept());
-    }
-
-    public Thing matchedGet(ThingVariable var) {
-        return matched.get(var.reference().asName()).asThing();
-    }
-
-    public Type matchedGet(TypeVariable var) {
-        return matched.get(var.reference().asName()).asType();
-    }
-
-    private Thing insert(ThingVariable var) {
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
-            assert var.id().isRetrievable(); // thing variables are always retrieved
-            Thing thing;
-            Retrievable id = var.id();
-
-            if (id.isName() && (thing = inserted.get(id)) != null) return thing;
-            else if (matchedContains(var) && var.constraints().isEmpty()) return matchedGet(var);
-
-            if (matchedContains(var)) {
-                thing = matchedGet(var);
-                if (var.isa().isPresent() && !thing.getType().equals(getType(var.isa().get().type()))) {
-                    throw TypeDBException.of(THING_ISA_REINSERTION, id, var.isa().get().type());
-                }
-            } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
-            else throw TypeDBException.of(THING_ISA_MISSING, id);
-            assert thing != null;
-
-            inserted.put(id, thing);
-            if (var.relation().isPresent()) insertRolePlayers(thing.asRelation(), var);
-            if (!var.has().isEmpty()) insertHas(thing, var.has());
-            return thing;
-        }
-    }
-
-    public Type getType(TypeVariable variable) {
-        if (matchedContains(variable)) {
-            return matchedGet(variable.asType());
-        } else {
-            return getThingType(variable.label().get());
-        }
-    }
-
-    public ThingType getThingType(LabelConstraint labelConstraint) {
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing_type")) {
-            ThingType thingType = conceptMgr.getThingType(labelConstraint.label());
-            if (thingType == null) throw TypeDBException.of(TYPE_NOT_FOUND, labelConstraint.label());
-            else return thingType.asThingType();
-        }
-    }
-
-    private Thing insertIsa(IsaConstraint isaConstraint, ThingVariable var) {
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_isa")) {
-            Type type = getType(isaConstraint.type());
-            if (!type.isThingType()) {
-                throw TypeDBException.of(THING_INSERT_ISA_NOT_THING_TYPE, type.getLabel());
-            }
-
-            if (type.isEntityType()) {
-                return type.asEntityType().create();
-            } else if (type.isRelationType()) {
-                if (var.relation().isPresent()) return type.asRelationType().create();
-                else throw TypeDBException.of(RELATION_CONSTRAINT_MISSING, var.reference());
-            } else if (type.isAttributeType()) {
-                return insertAttribute(type.asAttributeType(), var);
-            } else if (type.isThingType() && type.isRoot()) {
-                throw TypeDBException.of(ILLEGAL_ABSTRACT_WRITE, Thing.class.getSimpleName(), type.getLabel());
-            } else {
-                assert false;
-                return null;
-            }
-        }
-    }
-
-    private Attribute insertAttribute(AttributeType attributeType, ThingVariable var) {
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_attribute")) {
-            if (var.predicates().size() > 1) {
-                throw TypeDBException.of(ATTRIBUTE_VALUE_TOO_MANY, var.reference(), attributeType.getLabel());
-            } else if (var.predicates().isEmpty()) {
-                throw TypeDBException.of(ATTRIBUTE_VALUE_MISSING, var.reference(), attributeType.getLabel());
-            } else {
-                Predicate<?> predicate = var.predicates().iterator().next().predicate();
-                if (predicate.predicate().equals(EQ) && predicate.isConstant()) {
-                    switch (attributeType.getValueType()) {
-                        case LONG:
-                            return attributeType.asLong().put(predicate.asConstant().asLong().value());
-                        case DOUBLE:
-                            return attributeType.asDouble().put(predicate.asConstant().asDouble().value());
-                        case BOOLEAN:
-                            return attributeType.asBoolean().put(predicate.asConstant().asBoolean().value());
-                        case STRING:
-                            return attributeType.asString().put(predicate.asConstant().asString().value());
-                        case DATETIME:
-                            return attributeType.asDateTime().put(predicate.asConstant().asDateTime().value());
-                        default:
-                            assert false;
-                            return null;
-                    }
-                } else if (predicate.predicate().equals(EQ) && predicate.isValueVar()) {
-                    Value<?> value = matched.get(predicate.asValueVar().value().id()).asValue();
-                    switch (attributeType.getValueType()) {
-                        case LONG:
-                            return attributeType.asLong().put(value.asLong().value());
-                        case DOUBLE:
-                            return attributeType.asDouble().put(value.asDouble().value());
-                        case BOOLEAN:
-                            return attributeType.asBoolean().put(value.asBoolean().value());
-                        case STRING:
-                            return attributeType.asString().put(value.asString().value());
-                        case DATETIME:
-                            return attributeType.asDateTime().put(value.asDateTime().value());
-                        default:
-                            assert false;
-                            return null;
-                    }
-                } else throw TypeDBException.of(ILLEGAL_STATE);
-            }
-        }
-    }
-
-    private void insertRolePlayers(Relation relation, ThingVariable var) {
-        assert var.relation().isPresent();
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "extend_relation")) {
-            if (var.relation().isPresent()) {
-                var.relation().get().players().forEach(rolePlayer -> {
-                    Thing player = insert(rolePlayer.player());
-                    RoleType roleType;
-                    if (rolePlayer.roleType().isPresent() && rolePlayer.roleType().get().id().isName()) {
-                        Type type = getType(rolePlayer.roleType().get());
-                        if (!type.isRoleType()) throw TypeDBException.of(ROLE_TYPE_MISMATCH, type.getLabel());
-                        else roleType = type.asRoleType();
-                    } else {
-                        roleType = tryInferRoleType(relation, player, rolePlayer);
-                    }
-                    relation.addPlayer(roleType, player);
+        public ConceptMap execute() {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
+                variables.forEach(this::insert);
+                matched.forEach((id, concept) -> {
+                    if (concept.isThing()) inserted.putIfAbsent(id, concept.asThing());
                 });
-            } else { // var.relation().size() > 1
-                throw TypeDBException.of(INSERT_RELATION_CONSTRAINT_TOO_MANY, var.reference());
+                return new ConceptMap(inserted);
+            }
+        }
+
+        private boolean matchedContains(Variable var) {
+            return var.reference().isNameConcept() && matched.contains(var.reference().asName().asConcept());
+        }
+
+        public Thing matchedGet(ThingVariable var) {
+            return matched.get(var.reference().asName()).asThing();
+        }
+
+        public Type matchedGet(TypeVariable var) {
+            return matched.get(var.reference().asName()).asType();
+        }
+
+        private Thing insert(ThingVariable var) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
+                assert var.id().isRetrievable(); // thing variables are always retrieved
+                Thing thing;
+                Retrievable id = var.id();
+
+                if (id.isName() && (thing = inserted.get(id)) != null) return thing;
+                else if (matchedContains(var) && var.constraints().isEmpty()) return matchedGet(var);
+
+                if (matchedContains(var)) {
+                    thing = matchedGet(var);
+                    if (var.isa().isPresent() && !thing.getType().equals(getType(var.isa().get().type()))) {
+                        throw TypeDBException.of(THING_ISA_REINSERTION, id, var.isa().get().type());
+                    }
+                } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
+                else throw TypeDBException.of(THING_ISA_MISSING, id);
+                assert thing != null;
+
+                inserted.put(id, thing);
+                if (var.relation().isPresent()) insertRolePlayers(thing.asRelation(), var);
+                if (!var.has().isEmpty()) insertHas(thing, var.has());
+                return thing;
+            }
+        }
+
+        public Type getType(TypeVariable variable) {
+            if (matchedContains(variable)) {
+                return matchedGet(variable.asType());
+            } else {
+                return getThingType(variable.label().get());
+            }
+        }
+
+        public ThingType getThingType(LabelConstraint labelConstraint) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing_type")) {
+                ThingType thingType = conceptMgr.getThingType(labelConstraint.label());
+                if (thingType == null) throw TypeDBException.of(TYPE_NOT_FOUND, labelConstraint.label());
+                else return thingType.asThingType();
+            }
+        }
+
+        private Thing insertIsa(IsaConstraint isaConstraint, ThingVariable var) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_isa")) {
+                Type type = getType(isaConstraint.type());
+                if (!type.isThingType()) {
+                    throw TypeDBException.of(THING_INSERT_ISA_NOT_THING_TYPE, type.getLabel());
+                }
+
+                if (type.isEntityType()) {
+                    return type.asEntityType().create();
+                } else if (type.isRelationType()) {
+                    if (var.relation().isPresent()) return type.asRelationType().create();
+                    else throw TypeDBException.of(RELATION_CONSTRAINT_MISSING, var.reference());
+                } else if (type.isAttributeType()) {
+                    return insertAttribute(type.asAttributeType(), var);
+                } else if (type.isThingType() && type.isRoot()) {
+                    throw TypeDBException.of(ILLEGAL_ABSTRACT_WRITE, Thing.class.getSimpleName(), type.getLabel());
+                } else {
+                    assert false;
+                    return null;
+                }
+            }
+        }
+
+        private Attribute insertAttribute(AttributeType attributeType, ThingVariable var) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_attribute")) {
+                if (var.predicates().size() > 1) {
+                    throw TypeDBException.of(ATTRIBUTE_VALUE_TOO_MANY, var.reference(), attributeType.getLabel());
+                } else if (var.predicates().isEmpty()) {
+                    throw TypeDBException.of(ATTRIBUTE_VALUE_MISSING, var.reference(), attributeType.getLabel());
+                } else {
+                    Predicate<?> predicate = var.predicates().iterator().next().predicate();
+                    if (predicate.predicate().equals(EQ) && predicate.isConstant()) {
+                        switch (attributeType.getValueType()) {
+                            case LONG:
+                                return attributeType.asLong().put(predicate.asConstant().asLong().value());
+                            case DOUBLE:
+                                return attributeType.asDouble().put(predicate.asConstant().asDouble().value());
+                            case BOOLEAN:
+                                return attributeType.asBoolean().put(predicate.asConstant().asBoolean().value());
+                            case STRING:
+                                return attributeType.asString().put(predicate.asConstant().asString().value());
+                            case DATETIME:
+                                return attributeType.asDateTime().put(predicate.asConstant().asDateTime().value());
+                            default:
+                                assert false;
+                                return null;
+                        }
+                    } else if (predicate.predicate().equals(EQ) && predicate.isValueVar()) {
+                        Value<?> value = matched.get(predicate.asValueVar().value().id()).asValue();
+                        switch (attributeType.getValueType()) {
+                            case LONG:
+                                return attributeType.asLong().put(value.asLong().value());
+                            case DOUBLE:
+                                return attributeType.asDouble().put(value.asDouble().value());
+                            case BOOLEAN:
+                                return attributeType.asBoolean().put(value.asBoolean().value());
+                            case STRING:
+                                return attributeType.asString().put(value.asString().value());
+                            case DATETIME:
+                                return attributeType.asDateTime().put(value.asDateTime().value());
+                            default:
+                                assert false;
+                                return null;
+                        }
+                    } else throw TypeDBException.of(ILLEGAL_STATE);
+                }
+            }
+        }
+
+        private void insertRolePlayers(Relation relation, ThingVariable var) {
+            assert var.relation().isPresent();
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "extend_relation")) {
+                if (var.relation().isPresent()) {
+                    var.relation().get().players().forEach(rolePlayer -> {
+                        Thing player = insert(rolePlayer.player());
+                        RoleType roleType;
+                        if (rolePlayer.roleType().isPresent() && rolePlayer.roleType().get().id().isName()) {
+                            Type type = getType(rolePlayer.roleType().get());
+                            if (!type.isRoleType()) throw TypeDBException.of(ROLE_TYPE_MISMATCH, type.getLabel());
+                            else roleType = type.asRoleType();
+                        } else {
+                            roleType = tryInferRoleType(relation, player, rolePlayer);
+                        }
+                        relation.addPlayer(roleType, player);
+                    });
+                } else { // var.relation().size() > 1
+                    throw TypeDBException.of(INSERT_RELATION_CONSTRAINT_TOO_MANY, var.reference());
+                }
+            }
+        }
+
+        private void insertHas(Thing thing, Set<HasConstraint> hasConstraints) {
+            try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_has")) {
+                hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute()));
             }
         }
     }
-
-    private void insertHas(Thing thing, Set<HasConstraint> hasConstraints) {
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_has")) {
-            hasConstraints.forEach(has -> thing.setHas(insert(has.attribute()).asAttribute()));
-        }
-    }
-}
 }
