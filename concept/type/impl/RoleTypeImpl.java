@@ -225,11 +225,6 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         }
 
         @Override
-        void unsetAbstract() {
-            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
-        }
-
-        @Override
         void setSupertype(RoleType superType) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
