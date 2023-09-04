@@ -88,13 +88,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
             throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
         }
         vertex.isAbstract(true);
-        declaredRoles().forEachRemaining(RoleTypeImpl::setAbstract);
     }
 
     @Override
     public void unsetAbstract() {
         vertex.isAbstract(false);
-        declaredRoles().forEachRemaining(RoleTypeImpl::unsetAbstract);
     }
 
     @Override
@@ -136,7 +134,6 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
             RoleTypeImpl roleType;
             if (roleTypeVertex == null) {
                 roleType = RoleTypeImpl.of(conceptMgr, roleLabel, vertex.label());
-                if (this.isAbstract()) roleType.setAbstract();
                 vertex.outs().put(RELATES, roleType.vertex);
             } else {
                 roleType = (RoleTypeImpl) conceptMgr.convertRoleType(roleTypeVertex);

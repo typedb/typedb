@@ -67,14 +67,6 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         return new RoleTypeImpl(conceptMgr, label, relation);
     }
 
-    void setAbstract() {
-        vertex.isAbstract(true);
-    }
-
-    void unsetAbstract() {
-        vertex.isAbstract(false);
-    }
-
     void setSupertype(RoleType superType) {
         setSuperTypeVertex(((RoleTypeImpl) superType).vertex);
     }
