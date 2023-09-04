@@ -93,6 +93,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void unsetAbstract() {
         vertex.isAbstract(false);
+        declaredRoles().forEachRemaining(RoleTypeImpl::unsetAbstract);
     }
 
     @Override

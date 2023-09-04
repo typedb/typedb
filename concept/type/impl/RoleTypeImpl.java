@@ -67,6 +67,10 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
         return new RoleTypeImpl(conceptMgr, label, relation);
     }
 
+    void unsetAbstract() {
+        vertex.isAbstract(false);
+    }
+
     void setSupertype(RoleType superType) {
         setSuperTypeVertex(((RoleTypeImpl) superType).vertex);
     }
@@ -221,6 +225,11 @@ public class RoleTypeImpl extends TypeImpl implements RoleType {
 
         @Override
         public void setLabel(String label) {
+            throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
+        }
+
+        @Override
+        void unsetAbstract() {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
