@@ -61,7 +61,7 @@ public class CoreLogback {
         logConfig.logger().filteredLoggers().values().forEach(l -> configureLogger(l, logContext, appenders));
     }
 
-    protected <EVENT extends DeferredProcessingAware> Appender<EVENT> appender(String name,
+    public <EVENT extends DeferredProcessingAware> Appender<EVENT> appender(String name,
                                                                                LoggerContext logContext,
                                                                                LayoutWrappingEncoder<EVENT> encoder,
                                                                                CoreConfig.Log.Output.Type outputType) {
