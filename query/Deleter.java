@@ -29,9 +29,9 @@ import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
-import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.ValueVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
@@ -46,17 +46,19 @@ import java.util.Set;
 
 import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.DELETE_RELATION_CONSTRAINT_TOO_MANY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.HAS_TYPE_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ANONYMOUS_RELATION_IN_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CONSTRAINT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_VALUE_VARIABLE_IN_DELETE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_HAS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INVALID_DELETE_THING_DIRECT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.PLAYING_TYPE_MISMATCH;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.RELATING_TYPE_MISMATCH;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static com.vaticle.typedb.core.query.common.Util.getRoleType;
+import static com.vaticle.typedb.core.query.common.Util.tryInferRoleType;
 
 public class Deleter {
 
@@ -86,14 +88,9 @@ public class Deleter {
 
     public static void validate(Variable var) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
-            if (var.isType()) validate(var.asType());
-            else if (var.isValue()) validate(var.asValue());
-            else validate(var.asThing());
+            if (var.isValue()) validate(var.asValue());
+            else if (var.isThing()) validate(var.asThing());
         }
-    }
-
-    private static void validate(TypeVariable var) {
-        if (!var.reference().isLabel()) throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_DELETE, var.reference());
     }
 
     private static void validate(ValueVariable var) {
@@ -143,7 +140,6 @@ public class Deleter {
 
         private void delete(ThingVariable var) {
             try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
-                validate(var);
                 Thing thing = matched.get(var.reference().asName()).asThing();
                 if (!var.has().isEmpty()) deleteHas(var, thing);
                 if (var.relation().isPresent()) deleteRelation(var, thing.asRelation());
@@ -156,8 +152,10 @@ public class Deleter {
                 for (HasConstraint hasConstraint : var.has()) {
                     Reference.Name attRef = hasConstraint.attribute().reference().asName();
                     Attribute att = matched.get(attRef).asAttribute();
+                    if (thing.getType().getOwns(att.getType()).isEmpty()) {
+                        throw TypeDBException.of(HAS_TYPE_MISMATCH, thing.getType().getLabel(), att.getType().getLabel());
+                    }
                     if (thing.getHas(att.getType()).anyMatch(a -> a.equals(att))) thing.unsetHas(att);
-                    else throw TypeDBException.of(INVALID_DELETE_HAS, var.reference(), attRef);
                 }
             }
         }
@@ -167,8 +165,22 @@ public class Deleter {
                 if (var.relation().isPresent()) {
                     var.relation().get().players().forEach(rolePlayer -> {
                         Thing player = matched.get(rolePlayer.player().reference().asName()).asThing();
-                        RoleType roleType = getRoleType(relation, player, rolePlayer);
-                        relation.removePlayer(roleType, player);
+                        RoleType roleType;
+                        if (rolePlayer.roleType().isPresent() && rolePlayer.roleType().get().id().isName()) {
+                            Type type = matched.get(rolePlayer.roleType().get().id().asRetrievable()).asType();
+                            if (!type.isRoleType()) throw TypeDBException.of(ROLE_TYPE_MISMATCH, type.getLabel());
+                            else roleType = type.asRoleType();
+                        } else {
+                            roleType = tryInferRoleType(relation, player, rolePlayer);
+                        }
+                        if (relation.getType().getRelates(roleType.getLabel().name()) == null) {
+                            throw TypeDBException.of(RELATING_TYPE_MISMATCH, relation.getType().getLabel(), roleType.getLabel());
+                        } else if (!player.getType().plays(roleType)) {
+                            throw TypeDBException.of(PLAYING_TYPE_MISMATCH, player.getType().getLabel(), roleType.getLabel());
+                        }
+                        if (relation.getPlayers(roleType).anyMatch(t -> t.equals(player))) {
+                            relation.removePlayer(roleType, player);
+                        }
                     });
                 } else {
                     throw TypeDBException.of(DELETE_RELATION_CONSTRAINT_TOO_MANY, var.reference());
@@ -181,7 +193,12 @@ public class Deleter {
                 Thing thing = detached.get(var);
                 ThingType type = thing.getType();
                 if (var.isa().isPresent() && !thing.isDeleted()) {
-                    Label typeLabel = var.isa().get().type().label().get().properLabel();
+                    Label typeLabel;
+                    if (var.isa().get().type().id().isName()) {
+                        typeLabel = matched.get(var.isa().get().type().id().asRetrievable()).asType().getLabel();
+                    } else {
+                        typeLabel = var.isa().get().type().label().get().properLabel();
+                    }
                     if (var.isa().get().isExplicit()) {
                         if (type.getLabel().equals(typeLabel)) thing.delete();
                         else throw TypeDBException.of(INVALID_DELETE_THING_DIRECT, var.reference(), typeLabel);

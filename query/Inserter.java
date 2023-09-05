@@ -31,6 +31,7 @@ import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.value.Value;
 import com.vaticle.typedb.core.pattern.constraint.common.Predicate;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
@@ -61,11 +62,13 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.A
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ATTRIBUTE_VALUE_TOO_MANY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CONSTRAINT;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_TYPE_VARIABLE_IN_INSERT;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_UNBOUND_TYPE_VAR_IN_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_VALUE_CONSTRAINT_IN_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INSERT_RELATION_CONSTRAINT_TOO_MANY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_MISSING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_INSERT_ISA_NOT_THING_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_ISA_REINSERTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
@@ -77,7 +80,7 @@ import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
 import static com.vaticle.typedb.core.query.QueryManager.PARALLELISATION_SPLIT_MIN;
-import static com.vaticle.typedb.core.query.common.Util.getRoleType;
+import static com.vaticle.typedb.core.query.common.Util.tryInferRoleType;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 
 public class Inserter {
@@ -100,9 +103,6 @@ public class Inserter {
 
     public static Inserter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLInsert query, Context.Query context) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            VariableRegistry registry = VariableRegistry.createFromThings(query.variables());
-            registry.variables().forEach(Inserter::validate);
-
             Matcher matcher = null;
             if (query.match().isPresent()) {
                 TypeQLMatch.Unfiltered match = query.match().get();
@@ -111,22 +111,25 @@ public class Inserter {
                 assert !filter.isEmpty();
                 matcher = Matcher.create(reasoner, match.get(filter));
             }
-
+            VariableRegistry registry = VariableRegistry.createFromThings(query.variables());
+            for (Variable variable : registry.variables()) validate(variable, matcher);
             return new Inserter(matcher, conceptMgr, registry.things(), context);
         }
     }
 
-    public static void validate(Variable var) {
+    public static void validate(Variable var, @Nullable Matcher matcher) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "validate")) {
-            if (var.isType()) validate(var.asType());
+            if (var.isType()) validate(var.asType(), matcher);
             else if (var.isThing()) validate(var.asThing());
             else if (var.isValue()) validate(var.asValue());
-            else throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
-    private static void validate(TypeVariable var) {
-        if (!var.reference().isLabel()) throw TypeDBException.of(ILLEGAL_TYPE_VARIABLE_IN_INSERT, var.reference());
+    private static void validate(TypeVariable var, @Nullable Matcher matcher) {
+        if (var.id().isName() &&
+                (matcher == null || !matcher.disjunction().sharedVariables().contains(var.id().asName()))) {
+            throw TypeDBException.of(ILLEGAL_UNBOUND_TYPE_VAR_IN_INSERT, var.id());
+        }
     }
 
     private static void validate(ThingVariable var) {
@@ -202,12 +205,16 @@ public class Inserter {
             }
         }
 
-        private boolean matchedContains(ThingVariable var) {
+        private boolean matchedContains(Variable var) {
             return var.reference().isNameConcept() && matched.contains(var.reference().asName().asConcept());
         }
 
         public Thing matchedGet(ThingVariable var) {
             return matched.get(var.reference().asName()).asThing();
+        }
+
+        public Type matchedGet(TypeVariable var) {
+            return matched.get(var.reference().asName()).asType();
         }
 
         private Thing insert(ThingVariable var) {
@@ -221,7 +228,7 @@ public class Inserter {
 
                 if (matchedContains(var)) {
                     thing = matchedGet(var);
-                    if (var.isa().isPresent() && !thing.getType().equals(getThingType(var.isa().get().type().label().get()))) {
+                    if (var.isa().isPresent() && !thing.getType().equals(getType(var.isa().get().type()))) {
                         throw TypeDBException.of(THING_ISA_REINSERTION, id, var.isa().get().type());
                     }
                 } else if (var.isa().isPresent()) thing = insertIsa(var.isa().get(), var);
@@ -235,6 +242,14 @@ public class Inserter {
             }
         }
 
+        public Type getType(TypeVariable variable) {
+            if (matchedContains(variable)) {
+                return matchedGet(variable.asType());
+            } else {
+                return getThingType(variable.label().get());
+            }
+        }
+
         public ThingType getThingType(LabelConstraint labelConstraint) {
             try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing_type")) {
                 ThingType thingType = conceptMgr.getThingType(labelConstraint.label());
@@ -245,18 +260,20 @@ public class Inserter {
 
         private Thing insertIsa(IsaConstraint isaConstraint, ThingVariable var) {
             try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert_isa")) {
-                assert isaConstraint.type().label().isPresent();
-                ThingType thingType = getThingType(isaConstraint.type().label().get());
+                Type type = getType(isaConstraint.type());
+                if (!type.isThingType()) {
+                    throw TypeDBException.of(THING_INSERT_ISA_NOT_THING_TYPE, type.getLabel());
+                }
 
-                if (thingType.isEntityType()) {
-                    return thingType.asEntityType().create();
-                } else if (thingType.isRelationType()) {
-                    if (var.relation().isPresent()) return thingType.asRelationType().create();
+                if (type.isEntityType()) {
+                    return type.asEntityType().create();
+                } else if (type.isRelationType()) {
+                    if (var.relation().isPresent()) return type.asRelationType().create();
                     else throw TypeDBException.of(RELATION_CONSTRAINT_MISSING, var.reference());
-                } else if (thingType.isAttributeType()) {
-                    return insertAttribute(thingType.asAttributeType(), var);
-                } else if (thingType.isThingType() && thingType.isRoot()) {
-                    throw TypeDBException.of(ILLEGAL_ABSTRACT_WRITE, Thing.class.getSimpleName(), thingType.getLabel());
+                } else if (type.isAttributeType()) {
+                    return insertAttribute(type.asAttributeType(), var);
+                } else if (type.isThingType() && type.isRoot()) {
+                    throw TypeDBException.of(ILLEGAL_ABSTRACT_WRITE, Thing.class.getSimpleName(), type.getLabel());
                 } else {
                     assert false;
                     return null;
@@ -316,7 +333,14 @@ public class Inserter {
                 if (var.relation().isPresent()) {
                     var.relation().get().players().forEach(rolePlayer -> {
                         Thing player = insert(rolePlayer.player());
-                        RoleType roleType = getRoleType(relation, player, rolePlayer);
+                        RoleType roleType;
+                        if (rolePlayer.roleType().isPresent() && rolePlayer.roleType().get().id().isName()) {
+                            Type type = getType(rolePlayer.roleType().get());
+                            if (!type.isRoleType()) throw TypeDBException.of(ROLE_TYPE_MISMATCH, type.getLabel());
+                            else roleType = type.asRoleType();
+                        } else {
+                            roleType = tryInferRoleType(relation, player, rolePlayer);
+                        }
                         relation.addPlayer(roleType, player);
                     });
                 } else { // var.relation().size() > 1

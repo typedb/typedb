@@ -39,7 +39,7 @@ public class Util {
 
     private static final String TRACE_PREFIX = "util.";
 
-    public static RoleType getRoleType(Relation relation, Thing player, RelationConstraint.RolePlayer rolePlayer) {
+    public static RoleType tryInferRoleType(Relation relation, Thing player, RelationConstraint.RolePlayer rolePlayer) {
         try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_role_type")) {
             RoleType roleType;
             Set<? extends RoleType> inferred;

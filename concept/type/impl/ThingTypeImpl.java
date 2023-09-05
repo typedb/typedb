@@ -407,6 +407,13 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
+    public boolean plays(RoleType roleType) {
+        if (isRoot()) return false;
+        assert getSupertype() != null;
+        return graphMgr().schema().playedRoleTypes(vertex).contains(((RoleTypeImpl)roleType).vertex);
+    }
+
+    @Override
     public Forwardable<RoleType, Order.Asc> getPlays() {
         if (isRoot()) return emptySorted();
         assert getSupertype() != null;

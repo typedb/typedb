@@ -25,13 +25,17 @@ import com.vaticle.typedb.core.logic.Rule;
 import com.vaticle.typedb.core.logic.resolvable.Concludable;
 import com.vaticle.typedb.core.logic.resolvable.Resolvable;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
+import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
+import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -40,10 +44,14 @@ import java.util.Objects;
 import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.intersection;
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 
 public abstract class ReasonerPlanner {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerPlanner.class);
+
     final ConceptManager conceptMgr;
     final TraversalEngine traversalEng;
     final LogicManager logicMgr;
@@ -72,15 +80,26 @@ public abstract class ReasonerPlanner {
         return boundVars.containsAll(dependencies.get(resolvable));
     }
 
-    public void plan(ResolvableConjunction conjunction, Set<Variable> mode) {
+    public void planRoot(ResolvableDisjunction disjunction) {
         long start = System.nanoTime();
-        plan(new CallMode(conjunction, estimateableVariables(mode)));
+        disjunction.conjunctions().forEach(conjunction -> plan(new CallMode(conjunction, Collections.emptySet())));
         perfCounters.timePlanning.add(System.nanoTime() - start);
+        mayLogPlans(disjunction.conjunctions(),Collections.emptySet());
     }
 
-    public void planAllDependencies(Concludable concludable, Set<Variable> mode) {
-        triggeredCalls(concludable, estimateableVariables(mode), null)
-                .forEach(callMode -> plan(callMode));
+    public void planRoot(ResolvableConjunction conjunction) {
+        long start = System.nanoTime();
+        plan(new CallMode(conjunction, Collections.emptySet()));
+        perfCounters.timePlanning.add(System.nanoTime() - start);
+        mayLogPlans(set(conjunction), Collections.emptySet());
+    }
+
+    public void planExplainableRoot(Concludable concludable, Set<Variable> mode) {
+        long start = System.nanoTime();
+        CallMode callMode = new CallMode(ResolvableConjunction.of(concludable.pattern()), estimateableVariables(mode));
+        plan(callMode);
+        perfCounters.timePlanning.add(System.nanoTime() - start);
+        mayLogPlans(set(callMode.conjunction), callMode.mode);
     }
 
     public Plan getPlan(ResolvableConjunction conjunction, Set<Variable> mode) {
@@ -175,6 +194,12 @@ public abstract class ReasonerPlanner {
             }
         }
         return calls;
+    }
+
+    private void mayLogPlans(Set<ResolvableConjunction> roots, Set<Variable> mode) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Reasoner plans:\n" + ReasonerPlanPrinter.print(this, roots, mode));
+        }
     }
 
     static class CallMode {

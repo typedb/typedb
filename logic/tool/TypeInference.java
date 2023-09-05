@@ -23,9 +23,9 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
+import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.pattern.Conjunction;
@@ -35,8 +35,8 @@ import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IIDConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.IsaConstraint;
-import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.thing.PredicateConstraint;
+import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.OwnsConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.PlaysConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.RegexConstraint;
@@ -44,9 +44,9 @@ import com.vaticle.typedb.core.pattern.constraint.type.RelatesConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.SubConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.ValueTypeConstraint;
-import com.vaticle.typedb.core.pattern.variable.ValueVariable;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
+import com.vaticle.typedb.core.pattern.variable.ValueVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
@@ -54,9 +54,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
-import com.vaticle.typeql.lang.common.TypeQLToken;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -66,8 +64,8 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INCOHERENT_PATTERN_VARIABLE_VALUE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INCOHERENT_SUB_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INFERENCE_INCOHERENT_MATCH_SUB_PATTERN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.INFERENCE_INCOHERENT_VALUE_TYPES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -91,7 +89,7 @@ public class TypeInference {
     }
 
     private void applyCombination(Disjunction disjunction, Map<Identifier.Variable.Name, Set<Label>> bounds) {
-       disjunction.conjunctions().forEach(conjunction -> applyCombination(conjunction, bounds, false));
+        disjunction.conjunctions().forEach(conjunction -> applyCombination(conjunction, bounds, false));
     }
 
     public void applyCombination(Conjunction conjunction) {
@@ -143,19 +141,24 @@ public class TypeInference {
     }
 
     private void propagateLabels(Conjunction conj) {
-        for (Variable v : conj.variables()) {
-            if (v.isType() && v.asType().label().isPresent()) {
-                Label label = v.asType().label().get().properLabel();
-                if (label.scope().isPresent()) {
-                    Set<Label> labels = graphMgr.schema().resolveRoleTypeLabels(label);
-                    if (labels.isEmpty()) throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, label.name(), label.scope().get());
-                    v.addInferredTypes(labels);
-                } else {
-                    if (graphMgr.schema().getType(label) == null) throw TypeDBException.of(TYPE_NOT_FOUND, label);
-                    v.addInferredTypes(label);
-                }
-            }
-        }
+        iterate(conj.variables()).flatMap(v -> iterate(v.constraints())).flatMap(c -> iterate(c.variables())).distinct()
+                .forEachRemaining(v -> {
+                    if (v.isType() && v.asType().label().isPresent()) {
+                        Label label = v.asType().label().get().properLabel();
+                        if (label.scope().isPresent()) {
+                            Set<Label> labels = graphMgr.schema().resolveRoleTypeLabels(label);
+                            if (labels.isEmpty()) {
+                                throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, label.name(), label.scope().get());
+                            }
+                            v.addInferredTypes(labels);
+                        } else {
+                            if (graphMgr.schema().getType(label) == null) {
+                                throw TypeDBException.of(TYPE_NOT_FOUND, label);
+                            }
+                            v.addInferredTypes(label);
+                        }
+                    }
+                });
     }
 
     private static class InferenceTraversal {
@@ -197,7 +200,7 @@ public class TypeInference {
             sortVars.forEach(var -> sortOrder.put(var, Order.Asc.ASC));
             traversal.modifiers().filter(inferenceFilter).sorting(Modifiers.Sorting.create(sortVars, sortOrder));
             return traversalEng.iterator(traversal).filter(vertexMap ->
-                !iterate(vertexMap.map().entrySet()).anyMatch(e -> thingInferenceVars().contains(e.getKey()) && e.getValue().asType().isAbstract())
+                    !iterate(vertexMap.map().entrySet()).anyMatch(e -> thingInferenceVars().contains(e.getKey()) && e.getValue().asType().isAbstract())
             ).map(vertexMap -> {
                 Map<Identifier.Variable.Name, Label> labels = new HashMap<>();
                 vertexMap.forEach((id, vertex) -> {
@@ -381,7 +384,7 @@ public class TypeInference {
             TypeVertex type = graphMgr.schema().convert(VertexIID.Thing.of(constraint.iid()).type());
             if (type == null) {
                 conjunction.setCoherent(false);
-                throw TypeDBException.of(INCOHERENT_SUB_PATTERN, conjunction, constraint);
+                throw TypeDBException.of(INFERENCE_INCOHERENT_MATCH_SUB_PATTERN, conjunction, constraint);
             }
             restrictTypes(resolver.id(), iterate(type).map(TypeVertex::properLabel));
         }
@@ -440,7 +443,7 @@ public class TypeInference {
                     TypeVariable otherVar = register(valueConstraint.asPredicate().predicate().asThingVar().value());
                     registerSubAttribute(otherVar);
                 } else if (valueConstraint.isAssignment()) {
-                    valueConstraint.asAssignment().variables().forEach(v-> {
+                    valueConstraint.asAssignment().variables().forEach(v -> {
                         if (v.isThing()) this.registerSubAttribute(v);
                     });
                 }
@@ -467,7 +470,7 @@ public class TypeInference {
             }
             if (props.valueTypes().isEmpty()) {
                 conjunction.setCoherent(false);
-                throw TypeDBException.of(INCOHERENT_PATTERN_VARIABLE_VALUE, conjunction, inferenceToOriginal.get(id.asRetrievable()));
+                throw TypeDBException.of(INFERENCE_INCOHERENT_VALUE_TYPES, conjunction, inferenceToOriginal.get(id.asRetrievable()));
             }
         }
 
