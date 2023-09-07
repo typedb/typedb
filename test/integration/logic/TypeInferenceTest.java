@@ -138,7 +138,7 @@ public class TypeInferenceTest {
         typeInference.applyCombination(disjunction);
         assertTrue(disjunction.isCoherent());
         Map<String, Set<String>> expected = map(
-                pair("$_person", set("person")),
+                pair("person", set("person")),
                 pair("$p", set()),
                 pair("$a", set())
         );
@@ -157,7 +157,7 @@ public class TypeInferenceTest {
 
         Map<String, Set<String>> expected = map(
                 pair("$p", set("person", "man", "woman")),
-                pair("$_person", set("person"))
+                pair("person", set("person"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -174,7 +174,7 @@ public class TypeInferenceTest {
 
         Map<String, Set<String>> expected = map(
                 pair("$p", set("person")),
-                pair("$_person", set("person"))
+                pair("person", set("person"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -196,8 +196,8 @@ public class TypeInferenceTest {
         Map<String, Set<String>> expectedExhaustive = map(
                 pair("$p", set("mammal", "person", "man", "woman", "dog")),
                 pair("$q", set("mammal", "person", "man", "woman", "dog")),
-                pair("$_entity", set("entity")),
-                pair("$_mammal", set("mammal"))
+                pair("entity", set("entity")),
+                pair("mammal", set("mammal"))
         );
 
         assertEquals(expectedExhaustive, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -239,7 +239,7 @@ public class TypeInferenceTest {
 
         Map<String, Set<String>> expected = map(
                 pair("$p", set("person", "man", "woman", "dog")),
-                pair("$_name", set("name")),
+                pair("name", set("name")),
                 pair("$_0", set("name"))
         );
 
@@ -323,7 +323,7 @@ public class TypeInferenceTest {
         Map<String, Set<String>> expected = map(
                 pair("$p", set("person", "man", "woman", "dog")),
                 pair("$a", set("name")),
-                pair("$_name", set("name"))
+                pair("name", set("name"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -344,7 +344,7 @@ public class TypeInferenceTest {
         Map<String, Set<String>> expected = map(
                 pair("$p", set("triangle", "right-angled-triangle", "square")),
                 pair("$a", set("perimeter", "area", "label", "hypotenuse-length")),
-                pair("$_shape", set("shape"))
+                pair("shape", set("shape"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -410,8 +410,8 @@ public class TypeInferenceTest {
         Map<String, Set<String>> expected = map(
                 pair("$yoko", set("woman")),
                 pair("$r", set("marriage")),
-                pair("$_marriage:wife", set("marriage:wife")),
-                pair("$_marriage", set("marriage"))
+                pair("marriage:wife", set("marriage:wife")),
+                pair("marriage", set("marriage"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -431,7 +431,7 @@ public class TypeInferenceTest {
                 pair("$yoko", set("person", "man", "woman")),
                 pair("$role", set("marriage:husband", "marriage:wife", "marriage:spouse", "relation:role")),
                 pair("$r", set("marriage")),
-                pair("$_marriage", set("marriage"))
+                pair("marriage", set("marriage"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -451,7 +451,7 @@ public class TypeInferenceTest {
                 pair("$yoko", set("woman")),
                 pair("$r", set("marriage")),
                 pair("$m", set("marriage", "relation", "thing")),
-                pair("$_relation:wife", set("marriage:wife"))
+                pair("relation:wife", set("marriage:wife"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -491,8 +491,8 @@ public class TypeInferenceTest {
                 pair("$role", set("hetero-marriage:husband", "marriage:spouse", "partnership:partner", "relation:role")),
                 pair("$r", set("hetero-marriage", "marriage")),
                 pair("$m", set("hetero-marriage", "marriage", "partnership", "relation", "thing")),
-                pair("$_relation:spouse", set("marriage:spouse")),
-                pair("$_man", set("man"))
+                pair("relation:spouse", set("marriage:spouse")),
+                pair("man", set("man"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -511,7 +511,7 @@ public class TypeInferenceTest {
         Map<String, Set<String>> expected = map(
                 pair("$yoko", set("woman")),
                 pair("$_0", set("marriage")),
-                pair("$_relation:wife", set("marriage:wife"))
+                pair("relation:wife", set("marriage:wife"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -530,7 +530,7 @@ public class TypeInferenceTest {
         Map<String, Set<String>> expected = map(
                 pair("$yoko", set("man", "woman", "person")),
                 pair("$_0", set("marriage")),
-                pair("$_marriage", set("marriage"))
+                pair("marriage", set("marriage"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -557,8 +557,8 @@ public class TypeInferenceTest {
                 pair("$role", set("marriage:husband", "marriage:wife", "marriage:spouse", "relation:role")),
                 pair("$r", set("marriage")),
                 pair("$a", set("person", "man", "woman")),
-                pair("$_marriage:husband", set("marriage:husband")),
-                pair("$_marriage", set("marriage"))
+                pair("marriage:husband", set("marriage:husband")),
+                pair("marriage", set("marriage"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -579,7 +579,7 @@ public class TypeInferenceTest {
         Map<String, Set<String>> expected = map(
                 pair("$a", set("name", "email")),
                 pair("$p", set("person")),
-                pair("$_person", set("person"))
+                pair("person", set("person"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -598,7 +598,7 @@ public class TypeInferenceTest {
 
         Map<String, Set<String>> expected = map(
                 pair("$p", set("person", "man", "woman")),
-                pair("$_person", set("person"))
+                pair("person", set("person"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -625,7 +625,7 @@ public class TypeInferenceTest {
         Map<String, Set<String>> expected = map(
                 pair("$p", set("man", "greek", "socrates")),
                 pair("$q", set("thing", "entity", "animal", "person", "man")),
-                pair("$_man", set("man"))
+                pair("man", set("man"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -660,8 +660,8 @@ public class TypeInferenceTest {
         Map<String, Set<String>> expected = map(
                 pair("$john", set("person", "man", "woman")),
                 pair("$_0", set("marriage")),
-                pair("$_marriage:spouse", set("marriage:spouse")),
-                pair("$_marriage", set("marriage"))
+                pair("marriage:spouse", set("marriage:spouse")),
+                pair("marriage", set("marriage"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -693,8 +693,8 @@ public class TypeInferenceTest {
                 pair("$c", set("leg-weight")),
                 pair("$p", set("person", "chair")),
                 pair("$_0", set("leg-weight")),
-                pair("$_weight", set("weight")),
-                pair("$_leg-weight", set("leg-weight"))
+                pair("weight", set("weight")),
+                pair("leg-weight", set("leg-weight"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -731,7 +731,7 @@ public class TypeInferenceTest {
         Map<String, Set<String>> expected = map(
                 pair("$x", set("animal", "mammal", "reptile", "tortoise", "person", "man", "woman", "dog", "name", "email",
                         "marriage", "triangle", "right-angled-triangle", "square", "perimeter", "area", "hypotenuse-length", "label")),
-                pair("$_thing", set("thing"))
+                pair("thing", set("thing"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -761,8 +761,8 @@ public class TypeInferenceTest {
                 pair("$t", set("thing", "entity", "person")),
                 pair("$_0", set("man-name")),
                 pair("$_1", set("woman-name")),
-                pair("$_man-name", set("man-name")),
-                pair("$_woman-name", set("woman-name"))
+                pair("man-name", set("man-name")),
+                pair("woman-name", set("woman-name"))
         );
 
         assertEquals(expectedExhaustive, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -793,7 +793,7 @@ public class TypeInferenceTest {
                 pair("$y", set("person", "man", "greek", "socrates")),
                 pair("$z", set("person", "man", "greek", "socrates")),
                 pair("$w", set("person", "man", "greek", "socrates")),
-                pair("$_person", set("person"))
+                pair("person", set("person"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -857,8 +857,8 @@ public class TypeInferenceTest {
 
         Map<String, Set<String>> expected = map(
                 pair("$a", set("dog")),
-                pair("$_name", set("name")),
-                pair("$_label", set("label")),
+                pair("name", set("name")),
+                pair("label", set("label")),
                 pair("$_0", set("name")),
                 pair("$_1", set("label"))
         );
@@ -899,8 +899,8 @@ public class TypeInferenceTest {
                 pair("$x", set("person")),
                 pair("$y", set("person")),
                 pair("$m", set("marriage", "hetero-marriage")),
-                pair("$_marriage:spouse", set("marriage:spouse")),
-                pair("$_marriage", set("marriage"))
+                pair("marriage:spouse", set("marriage:spouse")),
+                pair("marriage", set("marriage"))
         );
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
     }
@@ -915,7 +915,7 @@ public class TypeInferenceTest {
         typeInference.applyCombination(relationDisjunction);
         Map<String, Set<String>> relationExpected = map(
                 pair("$x", set("friendship", "employment")),
-                pair("$_relation", set("relation"))
+                pair("relation", set("relation"))
         );
         assertEquals(relationExpected, resolvedTypeMap(relationDisjunction.conjunctions().get(0)));
 
@@ -924,7 +924,7 @@ public class TypeInferenceTest {
         typeInference.applyCombination(attributeDisjunction);
         Map<String, Set<String>> attributeExpected = map(
                 pair("$x", set("name", "age", "ref")),
-                pair("$_attribute", set("attribute"))
+                pair("attribute", set("attribute"))
         );
 
         assertEquals(attributeExpected, resolvedTypeMap(attributeDisjunction.conjunctions().get(0)));
@@ -934,7 +934,7 @@ public class TypeInferenceTest {
         typeInference.applyCombination(entityDisjunction);
         Map<String, Set<String>> entityExpected = map(
                 pair("$x", set("person", "company")),
-                pair("$_entity", set("entity"))
+                pair("entity", set("entity"))
         );
         assertEquals(entityExpected, resolvedTypeMap(entityDisjunction.conjunctions().get(0)));
 
@@ -945,7 +945,7 @@ public class TypeInferenceTest {
                 pair("$role", set("friendship:friend", "employment:employer", "employment:employee", "relation:role")),
                 pair("$x", set("person", "company")),
                 pair("$_0", set("friendship", "employment")),
-                pair("$_relation", set("relation"))
+                pair("relation", set("relation"))
         );
         assertEquals(roleExpected, resolvedTypeMap(roleDisjunction.conjunctions().get(0)));
 
@@ -955,7 +955,7 @@ public class TypeInferenceTest {
 
         Map<String, Set<String>> thingExpected = map(
                 pair("$x", set("person", "company", "friendship", "employment", "name", "age", "ref")),
-                pair("$_thing", set("thing"))
+                pair("thing", set("thing"))
         );
         assertEquals(thingExpected, resolvedTypeMap(thingDisjunction.conjunctions().get(0)));
     }
@@ -1077,7 +1077,7 @@ public class TypeInferenceTest {
         Map<String, Set<String>> expected = map(
                 pair("$x", set("person")),
                 pair("$_0", set("name")),
-                pair("$_name", set("name"))
+                pair("name", set("name"))
         );
 
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
@@ -1098,7 +1098,7 @@ public class TypeInferenceTest {
         typeInference.applyCombination(conjunction, false);
         Set<String> expectedResolvedTypes = set("partnership:partner");
 
-        assertEquals(expectedResolvedTypes, resolvedTypeMap(disjunction.conjunctions().get(0)).get("$_relation:partner"));
+        assertEquals(expectedResolvedTypes, resolvedTypeMap(disjunction.conjunctions().get(0)).get("relation:partner"));
     }
 
     @Test
@@ -1204,7 +1204,7 @@ public class TypeInferenceTest {
         Map<String, Set<String>> expected = map(
                 pair("$x", set("person", "woman")),
                 pair("$_0", set("marriage")),
-                pair("$_marriage", set("marriage"))
+                pair("marriage", set("marriage"))
         );
         // test the inner negation
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0).negations().iterator().next().disjunction().conjunctions().get(0)));
@@ -1215,7 +1215,7 @@ public class TypeInferenceTest {
         expected = map(
                 pair("$x", set("woman")),
                 pair("$_0", set("marriage")),
-                pair("$_marriage", set("marriage"))
+                pair("marriage", set("marriage"))
         );
         // test the inner negation
         assertEquals(expected, resolvedTypeMap(restrictedDisjunction.conjunctions().get(0).negations().iterator().next().disjunction().conjunctions().get(0)));
