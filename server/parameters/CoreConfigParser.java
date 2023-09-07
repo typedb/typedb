@@ -82,7 +82,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
     protected static class Common {
 
-        protected static class Output extends Compound<CoreConfig.Common.Output> {
+        public static class Output extends Compound<CoreConfig.Common.Output> {
 
             public static final String name = "output";
             public static final String description = "Log output definitions.";
