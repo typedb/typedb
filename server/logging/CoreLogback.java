@@ -64,7 +64,7 @@ public class CoreLogback {
     public <EVENT extends DeferredProcessingAware> Appender<EVENT> appender(String name,
                                                                                LoggerContext logContext,
                                                                                LayoutWrappingEncoder<EVENT> encoder,
-                                                                               CoreConfig.Log.Output.Type outputType) {
+                                                                               CoreConfig.Common.Output.Type outputType) {
         if (outputType.isStdout()) {
             return consoleAppender(name, logContext, encoder);
         } else if (outputType.isFile()) {
@@ -107,7 +107,7 @@ public class CoreLogback {
 
     protected static <EVENT extends DeferredProcessingAware> RollingFileAppender<EVENT> fileAppender(String name, LoggerContext context,
                                                                      LayoutWrappingEncoder<EVENT> encoder,
-                                                                     CoreConfig.Log.Output.Type.File outputType) {
+                                                                     CoreConfig.Common.Output.Type.File outputType) {
         RollingFileAppender<EVENT> appender = new RollingFileAppender<>();
         appender.setContext(context);
         appender.setName(name);
@@ -131,7 +131,7 @@ public class CoreLogback {
         return appender;
     }
 
-    private static int ageLimitToRolloverPeriods(CoreConfig.Log.Output.Type.File outputType) {
+    private static int ageLimitToRolloverPeriods(CoreConfig.Common.Output.Type.File outputType) {
         if (outputType.archiveAgeLimit().length() == 0) return UNBOUND_HISTORY;
         else {
             long rolloverPeriodSeconds = outputType.archiveGrouping().chronoUnit().getDuration().getSeconds();
@@ -148,7 +148,7 @@ public class CoreLogback {
      * Logback configures both the archive naming schema and the rollover period according to the file naming pattern.
      * For example, if the pattern is YYYY-MM, then the rollover period is monthly.
      */
-    private static String fileNamePattern(Path path, String filePrefix, CoreConfig.Log.Output.Type.File outputType) {
+    private static String fileNamePattern(Path path, String filePrefix, CoreConfig.Common.Output.Type.File outputType) {
         return path.resolve(filePrefix + "_%d{" + fileDateFormat(outputType.archiveGrouping()) + "}.%i" + TYPEDB_LOG_ARCHIVE_EXT).toAbsolutePath().toString();
     }
 

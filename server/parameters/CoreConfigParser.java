@@ -80,6 +80,144 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
         else return Util.getTypedbDir().resolve(path);
     }
 
+    protected static class Common {
+
+        protected static class Output extends Compound<CoreConfig.Common.Output> {
+
+            public static final String name = "output";
+            public static final String description = "Log output definitions.";
+
+            private static final Dynamic<CoreConfig.Common.Output.Type> type = dynamic(Type.description, new Type());
+
+            @Override
+            public CoreConfig.Common.Output parse(YAML yaml, String path) {
+                if (yaml.isMap()) return new CoreConfig.Common.Output(type.parseFrom(yaml.asMap(), path));
+                else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
+            }
+
+            @Override
+            public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
+                return list(type.help(path));
+            }
+
+            protected static class Type extends Compound<CoreConfig.Common.Output.Type> {
+
+                private static final String description = "A named log output definition.";
+                private static final Predefined<String> type = predefined(
+                        "type", "Type of output to define.", restricted(STRING, list(Stdout.type, File.type))
+                );
+                protected static final Compound<CoreConfig.Common.Output.Type.Stdout> stdout = new Stdout();
+                protected static final Compound<CoreConfig.Common.Output.Type.File> file = new File(TYPEDB_LOG_FILE_NAME, TYPEDB_LOG_FILE_EXT);
+
+                @Override
+                public CoreConfig.Common.Output.Type parse(YAML yaml, String path) {
+                    if (yaml.isMap()) {
+                        String value = type.parse(yaml.asMap(), path);
+                        switch (value) {
+                            case Stdout.type:
+                                return stdout.parse(yaml.asMap(), path);
+                            case File.type:
+                                return file.parse(yaml.asMap(), path).asFile();
+                            default:
+                                throw TypeDBException.of(ILLEGAL_STATE);
+                        }
+                    } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
+                }
+
+                @Override
+                public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
+                    return list(new Help(path, Stdout.description, stdout.helpList(path)),
+                            new Help(path, File.description, file.helpList(path)));
+                }
+
+                protected static class Stdout extends Compound<CoreConfig.Common.Output.Type.Stdout> {
+
+                    public static final String type = "stdout";
+                    public static final String description = "Options to configure a log output to stdout.";
+
+                    private static final Predefined<String> typeParser = predefined(
+                            "type", "An output that writes to stdout.", restricted(STRING, list(type))
+                    );
+                    private static final Set<Predefined<?>> parsers = set(typeParser);
+
+                    @Override
+                    public CoreConfig.Common.Output.Type.Stdout parse(YAML yaml, String path) {
+                        if (yaml.isMap()) {
+                            validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
+                            String type = typeParser.parse(yaml.asMap(), path);
+                            assert Stdout.type.equals(type);
+                            return new CoreConfig.Common.Output.Type.Stdout();
+                        } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
+                    }
+
+                    @Override
+                    public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
+                        return list(typeParser.help(path));
+                    }
+                }
+
+                protected static class File extends Compound<CoreConfig.Common.Output.Type.File> {
+
+                    public static final String type = "file";
+                    public static final String description = "Options to configure a log output to files in a directory.";
+
+                    private static final Predefined<String> typeParser =
+                            predefined("type", "An output that writes to a directory.", restricted(STRING, list(type)));
+                    private static final Predefined<Path> baseDirectory =
+                            predefined("base-dir", "Directory to write to. Relative paths are relative to distribution path.", PATH);
+                    private static final Predefined<Long> fileSizeLimit =
+                            predefined("file-size-limit", "Active log file size limit before creating new file (eg. 50mb).", BYTES_SIZE);
+                    private static final Predefined<TimePeriodName> archiveGrouping =
+                            predefined("archive-grouping", "Archive grouping and naming by time period (eg. month implies YYYY-MM)", TIME_PERIOD_NAME);
+                    private static final Predefined<TimePeriod> archiveAgeLimit =
+                            predefined("archive-age-limit", "Archive retention policy by age (eg. keep for 1 year)", TIME_PERIOD);
+                    private static final Predefined<Long> archivesSizeLimit =
+                            predefined(
+                                    "archives-size-limit",
+                                    "Size limit of all archived log files in directory (e.g., 1GB).",
+                                    BYTES_SIZE
+                            ); // TODO reasoner needs to respect this
+                    private static final Set<Predefined<?>> parsers = set(
+                            typeParser, baseDirectory, fileSizeLimit, archiveGrouping, archiveAgeLimit, archivesSizeLimit
+                    );
+
+                    private final String filename;
+                    private final String extension;
+                    public File(String filename, String extension) {
+                        super();
+                        this.filename = filename;
+                        this.extension = extension;
+                    }
+
+                    @Override
+                    public CoreConfig.Common.Output.Type.File parse(YAML yaml, String path) {
+                        if (yaml.isMap()) {
+                            validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
+                            String type = typeParser.parse(yaml.asMap(), path);
+                            assert File.type.equals(type);
+                            return new CoreConfig.Common.Output.Type.File(
+                                    configPathAbsolute(baseDirectory.parse(yaml.asMap(), path)),
+                                    filename,
+                                    extension,
+                                    fileSizeLimit.parse(yaml.asMap(), path),
+                                    archiveGrouping.parse(yaml.asMap(), path),
+                                    archiveAgeLimit.parse(yaml.asMap(), path),
+                                    archivesSizeLimit.parse(yaml.asMap(), path)
+                            );
+                        } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
+                    }
+
+                    @Override
+                    public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
+                        return list(typeParser.help(path), baseDirectory.help(path),
+                                fileSizeLimit.help(path), archiveGrouping.help(path), archiveAgeLimit.help(path),
+                                archivesSizeLimit.help(path));
+                    }
+                }
+            }
+        }
+    }
+
     protected static class Server extends Compound<CoreConfig.Server> {
 
         public static final String name = "server";
@@ -159,8 +297,8 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
         public static final String name = "log";
         public static final String description = "Logging configuration.";
 
-        private static final Predefined<CoreConfig.Log.Output> output =
-                predefined(Output.name, Output.description, new Output());
+        private static final Predefined<CoreConfig.Common.Output> output =
+                predefined(Common.Output.name, Common.Output.description, new Common.Output());
         protected static final Predefined<CoreConfig.Log.Logger> logger =
                 predefined(Logger.name, Logger.description, new Logger());
         protected static final Predefined<CoreConfig.Log.Debugger> debugger =
@@ -171,7 +309,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
         public CoreConfig.Log parse(YAML yaml, String path) {
             if (yaml.isMap()) {
                 validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
-                CoreConfig.Log.Output output = Log.output.parse(yaml.asMap(), path);
+                CoreConfig.Common.Output output = Log.output.parse(yaml.asMap(), path);
                 CoreConfig.Log.Logger logger = Log.logger.parse(yaml.asMap(), path);
                 logger.validateOutputs(output.outputs());
                 CoreConfig.Log.Debugger debugger = Log.debugger.parse(yaml.asMap(), path);
@@ -183,141 +321,6 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
         @Override
         public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
             return list(output.help(path), logger.help(path), debugger.help(path));
-        }
-
-        protected static class Output extends Compound<CoreConfig.Log.Output> {
-
-            public static final String name = "output";
-            public static final String description = "Log output definitions.";
-
-            private static final Dynamic<CoreConfig.Log.Output.Type> type = dynamic(Type.description, new Type());
-
-            @Override
-            public CoreConfig.Log.Output parse(YAML yaml, String path) {
-                if (yaml.isMap()) return new CoreConfig.Log.Output(type.parseFrom(yaml.asMap(), path));
-                else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
-            }
-
-            @Override
-            public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                return list(type.help(path));
-            }
-
-            protected static class Type extends Compound<CoreConfig.Log.Output.Type> {
-
-                private static final String description = "A named log output definition.";
-                private static final Predefined<String> type = predefined(
-                        "type", "Type of output to define.", restricted(STRING, list(Stdout.type, File.type))
-                );
-                protected static final Compound<CoreConfig.Log.Output.Type.Stdout> stdout = new Stdout();
-                protected static final Compound<CoreConfig.Log.Output.Type.File> file = new File(TYPEDB_LOG_FILE_NAME, TYPEDB_LOG_FILE_EXT);
-
-                @Override
-                public CoreConfig.Log.Output.Type parse(YAML yaml, String path) {
-                    if (yaml.isMap()) {
-                        String value = type.parse(yaml.asMap(), path);
-                        switch (value) {
-                            case Stdout.type:
-                                return stdout.parse(yaml.asMap(), path);
-                            case File.type:
-                                return file.parse(yaml.asMap(), path).asFile();
-                            default:
-                                throw TypeDBException.of(ILLEGAL_STATE);
-                        }
-                    } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
-                }
-
-                @Override
-                public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                    return list(new Help(path, Stdout.description, stdout.helpList(path)),
-                            new Help(path, File.description, file.helpList(path)));
-                }
-
-                protected static class Stdout extends Compound<CoreConfig.Log.Output.Type.Stdout> {
-
-                    public static final String type = "stdout";
-                    public static final String description = "Options to configure a log output to stdout.";
-
-                    private static final Predefined<String> typeParser = predefined(
-                            "type", "An output that writes to stdout.", restricted(STRING, list(type))
-                    );
-                    private static final Set<Predefined<?>> parsers = set(typeParser);
-
-                    @Override
-                    public CoreConfig.Log.Output.Type.Stdout parse(YAML yaml, String path) {
-                        if (yaml.isMap()) {
-                            validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
-                            String type = typeParser.parse(yaml.asMap(), path);
-                            assert Stdout.type.equals(type);
-                            return new CoreConfig.Log.Output.Type.Stdout();
-                        } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
-                    }
-
-                    @Override
-                    public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                        return list(typeParser.help(path));
-                    }
-                }
-
-                protected static class File extends Compound<CoreConfig.Log.Output.Type.File> {
-
-                    public static final String type = "file";
-                    public static final String description = "Options to configure a log output to files in a directory.";
-
-                    private static final Predefined<String> typeParser =
-                            predefined("type", "An output that writes to a directory.", restricted(STRING, list(type)));
-                    private static final Predefined<Path> baseDirectory =
-                            predefined("base-dir", "Directory to write to. Relative paths are relative to distribution path.", PATH);
-                    private static final Predefined<Long> fileSizeLimit =
-                            predefined("file-size-limit", "Active log file size limit before creating new file (eg. 50mb).", BYTES_SIZE);
-                    private static final Predefined<TimePeriodName> archiveGrouping =
-                            predefined("archive-grouping", "Archive grouping and naming by time period (eg. month implies YYYY-MM)", TIME_PERIOD_NAME);
-                    private static final Predefined<TimePeriod> archiveAgeLimit =
-                            predefined("archive-age-limit", "Archive retention policy by age (eg. keep for 1 year)", TIME_PERIOD);
-                    private static final Predefined<Long> archivesSizeLimit =
-                            predefined(
-                                    "archives-size-limit",
-                                    "Size limit of all archived log files in directory (e.g., 1GB).",
-                                    BYTES_SIZE
-                            ); // TODO reasoner needs to respect this
-                    private static final Set<Predefined<?>> parsers = set(
-                            typeParser, baseDirectory, fileSizeLimit, archiveGrouping, archiveAgeLimit, archivesSizeLimit
-                    );
-
-                    private final String filename;
-                    private final String extension;
-                    public File(String filename, String extension) {
-                        super();
-                        this.filename = filename;
-                        this.extension = extension;
-                    }
-
-                    @Override
-                    public CoreConfig.Log.Output.Type.File parse(YAML yaml, String path) {
-                        if (yaml.isMap()) {
-                            validatePredefinedKeys(parsers, yaml.asMap().keys(), path);
-                            String type = typeParser.parse(yaml.asMap(), path);
-                            assert File.type.equals(type);
-                            return new CoreConfig.Log.Output.Type.File(
-                                    configPathAbsolute(baseDirectory.parse(yaml.asMap(), path)),
-                                    filename,
-                                    extension,
-                                    fileSizeLimit.parse(yaml.asMap(), path),
-                                    archiveGrouping.parse(yaml.asMap(), path),
-                                    archiveAgeLimit.parse(yaml.asMap(), path),
-                                    archivesSizeLimit.parse(yaml.asMap(), path)
-                            );
-                        } else throw TypeDBException.of(CONFIG_SECTION_MUST_BE_MAP, path);
-                    }
-
-                    @Override
-                    public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                        return list(typeParser.help(path), baseDirectory.help(path),
-                                fileSizeLimit.help(path), archiveGrouping.help(path), archiveAgeLimit.help(path),
-                                archivesSizeLimit.help(path));
-                    }
-                }
-            }
         }
 
         private static class Logger extends Compound<CoreConfig.Log.Logger> {
