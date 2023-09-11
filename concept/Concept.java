@@ -82,4 +82,20 @@ public interface Concept {
     Value<?> asValue();
 
     TypeDBException exception(TypeDBException exception);
+
+    interface Readable {
+
+        boolean isType();
+
+        boolean isAttribute();
+
+        boolean isValue();
+
+        Type asType();
+
+        Attribute asAttribute();
+
+        Value<?> asValue();
+
+    }
 }

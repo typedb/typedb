@@ -51,6 +51,7 @@ import java.util.function.Supplier;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.reasoner.processor.reactive.PoolingStream.BufferedFanStream.fanOut;
 
 public abstract class ConclusionController<
@@ -305,7 +306,11 @@ public abstract class ConclusionController<
                     Either<ConceptMap, Map<Variable, Concept>> packet
             ) {
                 if (packet.isFirst()) {
-                    assert packet.first().concepts().keySet().containsAll(Collections.intersection(conclusionProcessor().rule().conclusion().pattern().retrieves(), conclusionProcessor().rule().condition().disjunction().pattern().sharedVariables()));
+                    assert packet.first().concepts().keySet().containsAll(Collections.intersection(
+                            conclusionProcessor().rule().conclusion().pattern().retrieves(),
+                            iterate(conclusionProcessor().rule().condition().disjunction().pattern().sharedVariables())
+                                    .map(Variable.Retrievable::asRetrievable).toSet()
+                    ));
                     InputPort<Either<ConceptMap, Materialisation>> materialisationInput = conclusionProcessor().createInputPort();
                     ConceptMap filteredConditionAns = packet.first().filter(conclusionProcessor().rule().conclusion().retrievableIds());
                     conclusionProcessor().mayRequestMaterialiser(new MaterialiserRequest(
@@ -346,7 +351,8 @@ public abstract class ConclusionController<
                 }
 
                 @Override
-                protected void mayStoreConditionAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> materialisationInput, ConceptMap conditionAnswer) {}
+                protected void mayStoreConditionAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> materialisationInput, ConceptMap conditionAnswer) {
+                }
 
                 @Override
                 protected Map<Variable, Concept> packageAnswer(Publisher<Either<ConceptMap, Map<Variable, Concept>>> publisher, Map<Variable, Concept> conclusionAnswer) {

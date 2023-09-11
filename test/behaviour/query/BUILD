@@ -39,8 +39,9 @@ host_compatible_java_library(
     ],
     deps = [
         # Package dependencies
-        "//test/behaviour/exception",
         "//test/behaviour/connection:steps",
+        "//test/behaviour/exception",
+        "//test/behaviour/util:util",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
@@ -49,6 +50,7 @@ host_compatible_java_library(
         "@vaticle_typeql//java/query",
 
         # External dependencies from Maven
+        "@maven//:com_eclipsesource_minimal_json_minimal_json",
         "@maven//:junit_junit",
         "@maven//:io_cucumber_cucumber_java",
     ],

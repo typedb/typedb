@@ -32,7 +32,6 @@ import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
-import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.ValueVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
@@ -62,12 +61,12 @@ import static com.vaticle.typedb.core.query.common.Util.tryInferRoleType;
 
 public class Deleter {
 
-    private final Matcher matcher;
+    private final Getter getter;
     private final Set<ThingVariable> variables;
     private final Context.Query context;
 
-    private Deleter(Matcher matcher, Set<ThingVariable> variables, Context.Query context) {
-        this.matcher = matcher;
+    public Deleter(Getter getter, Set<ThingVariable> variables, Context.Query context) {
+        this.getter = getter;
         this.variables = variables;
         this.context = context;
         this.context.producer(Either.first(EXHAUSTIVE));
@@ -78,8 +77,8 @@ public class Deleter {
         registry.variables().forEach(Deleter::validate);
 
         assert query.match().get().namedVariables().containsAll(query.namedVariables());
-        Matcher matcher = Matcher.create(reasoner, conceptMgr, query.match().get().get(query.namedVariables()));
-        return new Deleter(matcher, registry.things(), context);
+        Getter getter = Getter.create(reasoner, conceptMgr, query.match().get().get(query.namedVariables()), context);
+        return new Deleter(getter, registry.things(), context);
     }
 
     public static void validate(Variable var) {
@@ -105,7 +104,7 @@ public class Deleter {
     }
 
     public void execute() {
-        List<? extends ConceptMap> matches = matcher.execute(context).toList();
+        List<? extends ConceptMap> matches = getter.execute(context).toList();
         matches.forEach(matched -> new Operation(matched, variables).executeInPlace());
     }
 

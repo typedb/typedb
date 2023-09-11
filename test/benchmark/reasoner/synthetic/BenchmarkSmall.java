@@ -268,7 +268,7 @@ public class BenchmarkSmall {
                 TypeQLGet.Unmodified query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x has index 'a';")).get();
 
                 // with substitution
-                Concept id = tx.query().match(TypeQL.parseQuery("match $x has index 'a';").asGet()).next().get(cVar("x"));
+                Concept id = tx.query().get(TypeQL.parseQuery("match $x has index 'a';").asGet()).next().get(cVar("x"));
                 TypeQLGet.Unmodified query3 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x iid " + id.asThing().getIID().toHexString() + ";")).get();
 
                 Util.timeQuery(query, tx, "full");

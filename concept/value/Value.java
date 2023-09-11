@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.encoding.Encoding;
 
 import java.time.LocalDateTime;
 
-public interface Value<VALUE> extends Concept {
+public interface Value<VALUE> extends Concept, Concept.Readable {
 
     ByteArray getIID();
 

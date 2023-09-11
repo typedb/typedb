@@ -145,7 +145,7 @@ public class ReasonerSteps {
         try {
             clearReasoningTx();
             typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGet();
-            answers = reasoningTx().query().match(typeQLQuery).toList();
+            answers = reasoningTx().query().get(typeQLQuery).toList();
         } catch (TypeQLException e) {
             // NOTE: We manually close transaction here, because we want to align with all non-java drivers,
             // where parsing happens at server-side which closes transaction if they fail
@@ -159,7 +159,7 @@ public class ReasonerSteps {
         try {
             assertNotNull("A typeql query must have been previously loaded in order to test answer equivalence.", typeQLQuery);
             assertNotNull("There are no previous answers to test against; was the reference query ever executed?", answers);
-            Set<? extends ConceptMap> newAnswers = reasoningTx().query().match(TypeQL.parseQuery(equivalentQuery).asGet()).toSet();
+            Set<? extends ConceptMap> newAnswers = reasoningTx().query().get(TypeQL.parseQuery(equivalentQuery).asGet()).toSet();
             assertEquals(set(answers), newAnswers);
         } catch (TypeQLException e) {
             // NOTE: We manually close transaction here, because we want to align with all non-java drivers,
@@ -177,11 +177,11 @@ public class ReasonerSteps {
 
     @Then("verify answers are consistent across {int} executions")
     public static void verify_answers_are_consistent_across_n_executions(int executionCount) {
-        Set<? extends ConceptMap> oldAnswers = reasoningTx().query().match(typeQLQuery).toSet();
+        Set<? extends ConceptMap> oldAnswers = reasoningTx().query().get(typeQLQuery).toSet();
         for (int i = 0; i < executionCount - 1; i++) {
             try (TypeDB.Transaction transaction = dataSession().transaction(Arguments.Transaction.Type.READ,
                                                                             new Options.Transaction().infer(true))) {
-                Set<? extends ConceptMap> answers = transaction.query().match(typeQLQuery).toSet();
+                Set<? extends ConceptMap> answers = transaction.query().get(typeQLQuery).toSet();
                 assertEquals(oldAnswers, answers);
             }
         }

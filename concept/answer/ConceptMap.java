@@ -45,7 +45,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static java.util.Collections.unmodifiableMap;
 
-public class ConceptMap implements Answer {
+public class ConceptMap {
 
     private final Map<Retrievable, ? extends Concept> concepts;
     private final Explainables explainables;

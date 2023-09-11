@@ -36,7 +36,6 @@ import com.vaticle.typeql.lang.common.TypeQLVariable;
 import com.vaticle.typeql.lang.query.TypeQLGet;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -57,28 +56,29 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNR
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.AGGREGATE_ATTRIBUTE_NOT_NUMBER;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
-import static com.vaticle.typedb.core.query.Matcher.Aggregator.aggregator;
+import static com.vaticle.typedb.core.query.Getter.Aggregator.aggregator;
 import static java.lang.Math.sqrt;
 import static java.util.stream.Collectors.groupingBy;
 
-public class Matcher {
+public class Getter {
 
     private final Reasoner reasoner;
     private final TypeQLQuery.MatchClause match;
-    private final List<TypeQLVariable> filter;
+    private final List<TypeQLVariable> getFilter;
     private final TypeQLQuery.Modifiers modifiers;
     private final Disjunction disjunction;
     private final Context.Query context;
 
-    public Matcher(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query) {
-        this(reasoner, conceptMgr, query, null);
+    public Getter(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query) {
+        this(reasoner, query, null);
     }
 
-    public Matcher(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query, @Nullable Context.Query context) {
+    public Getter(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query, Context.Query context) {
         this.reasoner = reasoner;
         this.match = query.match();
-        this.filter = query.filter();
         this.modifiers = query.modifiers();
+        this.getFilter = new ArrayList<>(query.filter());
+        if (this.modifiers.sort().isPresent()) getFilter.addAll(this.modifiers.sort().get().variables());
         this.disjunction = Disjunction.create(query.match().conjunction().normalise());
         this.context = context;
         iterate(disjunction.conjunctions())
@@ -89,27 +89,27 @@ public class Matcher {
                 .forEachRemaining(c -> conceptMgr.validateNotRoleTypeAlias(c.asType().asLabel().properLabel()));
     }
 
-    public static Matcher create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query) {
-        return new Matcher(reasoner, query);
+    public static Getter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query) {
+        return new Getter(reasoner, conceptMgr, query);
     }
 
-    public static Matcher create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query, Context.Query context) {
-        return new Matcher(reasoner, query, context);
+    public static Getter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query, Context.Query context) {
+        return new Getter(reasoner, conceptMgr, query, context);
     }
 
-    public static Matcher.Aggregator create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet.Aggregate query, Context.Query context) {
-        Matcher matcher = new Matcher(reasoner, query.get());
-        return new Aggregator(matcher, query, context);
+    public static Getter.Aggregator create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet.Aggregate query, Context.Query context) {
+        Getter getter = new Getter(reasoner, conceptMgr, query.get());
+        return new Aggregator(getter, query, context);
     }
 
-    public static Matcher.Group create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet.Group query, Context.Query context) {
-        Matcher matcher = new Matcher(reasoner, query.get());
-        return new Group(matcher, query, context);
+    public static Getter.Group create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet.Group query, Context.Query context) {
+        Getter getter = new Getter(reasoner, conceptMgr, query.get());
+        return new Group(getter, query, context);
     }
 
-    public static Matcher.Group.Aggregator create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet.Group.Aggregate query, Context.Query context) {
-        Matcher matcher = new Matcher(reasoner, query.group().get());
-        Group group = new Group(matcher, query.group(), context);
+    public static Getter.Group.Aggregator create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet.Group.Aggregate query, Context.Query context) {
+        Getter getter = new Getter(reasoner, query.group().get());
+        Group group = new Group(getter, conceptMgr, query.group(), context);
         return new Group.Aggregator(group, query);
     }
 
@@ -123,24 +123,24 @@ public class Matcher {
     }
 
     FunctionalIterator<? extends ConceptMap> execute(Context.Query context) {
-        return reasoner.execute(disjunction, filter, modifiers, context);
+        return reasoner.execute(disjunction, getFilter, modifiers, context);
     }
 
     public static class Aggregator {
 
-        private final Matcher matcher;
+        private final Getter getter;
         private final TypeQLGet.Aggregate query;
         private final Context.Query context;
 
-        public Aggregator(Matcher matcher, TypeQLGet.Aggregate query, Context.Query context) {
-            this.matcher = matcher;
+        public Aggregator(Getter getter, TypeQLGet.Aggregate query, Context.Query context) {
+            this.getter = getter;
             this.query = query;
             this.context = context;
             this.context.producer(Either.first(EXHAUSTIVE));
         }
 
         public Numeric execute() {
-            FunctionalIterator<? extends ConceptMap> answers = matcher.execute(context);
+            FunctionalIterator<? extends ConceptMap> answers = getter.execute(context);
             TypeQLToken.Aggregate.Method method = query.method();
             TypeQLVariable var = query.var();
             return aggregate(answers, method, var);
@@ -556,12 +556,12 @@ public class Matcher {
 
     public static class Group {
 
-        private final Matcher matcher;
+        private final Getter getter;
         private final TypeQLGet.Group query;
         private final Context.Query context;
 
-        public Group(Matcher matcher, TypeQLGet.Group query, Context.Query context) {
-            this.matcher = matcher;
+        public Group(Getter getter, TypeQLGet.Group query, Context.Query context) {
+            this.getter = getter;
             this.query = query;
             this.context = context;
             this.context.producer(Either.first(EXHAUSTIVE));
@@ -570,7 +570,7 @@ public class Matcher {
         public FunctionalIterator<ConceptMapGroup> execute() {
             // TODO: Replace this temporary implementation of TypeQL Match Group query with a native grouping traversal
             List<ConceptMapGroup> answerGroups = new ArrayList<>();
-            matcher.execute(context).stream().collect(groupingBy(a -> a.get(query.var())))
+            getter.execute(context).stream().collect(groupingBy(a -> a.get(query.var())))
                     .forEach((o, cm) -> answerGroups.add(new ConceptMapGroup(o, cm)));
             return iterate(answerGroups);
         }
@@ -588,7 +588,7 @@ public class Matcher {
             public FunctionalIterator<NumericGroup> execute() {
                 // TODO: Replace this temporary implementation of TypeQL Match Group query with a native grouping traversal
                 List<NumericGroup> numericGroups = new ArrayList<>();
-                group.matcher.execute(group.context).stream()
+                group.getter.execute(group.context).stream()
                         .collect(groupingBy(a -> a.get(query.group().var()), aggregator(query.method(), query.var())))
                         .forEach((o, n) -> numericGroups.add(new NumericGroup(o, n)));
                 return iterate(numericGroups);

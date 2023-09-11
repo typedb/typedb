@@ -125,6 +125,8 @@ public interface Thing extends Concept, Comparable<Thing> {
      */
     FunctionalIterator<? extends Attribute> getHas(List<AttributeType> attributeTypes, Set<Annotation> ownsAnnotations);
 
+    FunctionalIterator<? extends Attribute> getHas(List<? extends AttributeType> attributeType);
+
     /**
      * Check whether a Has edge to a given attribute instance exists, and that edge is inferred
      *
@@ -165,6 +167,8 @@ public interface Thing extends Concept, Comparable<Thing> {
      * @return an iterator of {@code Relation} that this {@code Thing} plays a specified role in
      */
     FunctionalIterator<? extends Relation> getRelations(RoleType... roleTypes);
+
+    FunctionalIterator<? extends Relation> getRelations(List<? extends RoleType> roleTypes);
 
     /**
      * Returns true if this {@code Thing} has been deleted.

@@ -17,7 +17,6 @@
 
 Feature: Debugging Space
 
-
   Background: Open connection and create a simple extensible schema
     Given typedb starts
     Given connection opens with default authentication
@@ -33,13 +32,12 @@ Feature: Debugging Space
       person sub entity,
         plays friendship:friend,
         plays employment:employee,
-        owns name,
+        owns person-name,
         owns age,
-        owns ref @key,
-        owns email @unique;
+        owns ref @key;
       company sub entity,
         plays employment:employer,
-        owns name,
+        owns company-name,
         owns ref @key;
       friendship sub relation,
         relates friend,
@@ -48,26 +46,11 @@ Feature: Debugging Space
         relates employee,
         relates employer,
         owns ref @key;
-      name sub attribute, value string;
+      name sub attribute, abstract, value string;
+      person-name sub name;
+      company-name sub name;
       age sub attribute, value long;
       ref sub attribute, value long;
-      email sub attribute, value string;
-      """
-    Given transaction commits
-
-    Given session opens transaction of type: write
-
-
-
-
-  Scenario: when multiple relation instances exist with the same roleplayer, matching that player returns just 1 answer
-    Given typeql define
-      """
-      define
-      residency sub relation,
-        relates resident,
-        owns ref @key;
-      person plays residency:resident;
       """
     Given transaction commits
 
@@ -77,34 +60,23 @@ Feature: Debugging Space
     Given typeql insert
       """
       insert
-      $x isa person, has ref 0;
-      $e (employee: $x) isa employment, has ref 1;
-      $f (friend: $x) isa friendship, has ref 2;
-      $r (resident: $x) isa residency, has ref 3;
+      $p1 isa person, has person-name "Alice", has person-name "Allie", has age 10, has ref 0;
+      $p2 isa person, has person-name "Bob", has ref 1;
+      $c1 isa company, has company-name "Vaticle", has ref 2;
+      $f1 (friend: $p1, friend: $p2) isa friendship, has ref 3;
+      $e1 (employee: $p1, employer: $c1) isa employment, has ref 4;
       """
     Given transaction commits
 
     Given session opens transaction of type: read
-    Given get answers of typeql get
+
+  Scenario: a value can be fetched
+    When get answers of typeql fetch
       """
-      match $r isa relation;
+      match
+      $a isa name;
+      ?v = $a;
+      fetch
+      ?v;
+      sort $a;
       """
-    Given uniquely identify answer concepts
-      | r         |
-      | key:ref:1 |
-      | key:ref:2 |
-      | key:ref:3 |
-    When get answers of typeql get
-      """
-      match ($x) isa relation;
-      """
-    Then uniquely identify answer concepts
-      | x         |
-      | key:ref:0 |
-    When get answers of typeql get
-      """
-      match ($x);
-      """
-    Then uniquely identify answer concepts
-      | x         |
-      | key:ref:0 |

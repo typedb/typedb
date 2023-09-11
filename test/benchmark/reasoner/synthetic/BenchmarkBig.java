@@ -102,7 +102,7 @@ public class BenchmarkBig {
                                                  String relationLabel, int N, TypeDB.Session session) {
         try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
             ConceptVariableBuilder entity = cVar("e");
-            Thing[] instances = transaction.query().match(TypeQL.match(entity.isa(entityLabel)).get())
+            Thing[] instances = transaction.query().get(TypeQL.match(entity.isa(entityLabel)).get())
                     .map(ans -> ans.get(entity))
                     .toList().toArray(new Thing[0]);
 
@@ -210,7 +210,7 @@ public class BenchmarkBig {
 
             try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
                 ConceptVariableBuilder entityVar = cVar("e");
-                Thing[] instances = transaction.query().match(TypeQL.match(entityVar.isa(entityLabel)).get())
+                Thing[] instances = transaction.query().get(TypeQL.match(entityVar.isa(entityLabel)).get())
                         .map(ans -> ans.get(entityVar).asThing())
                         .toList().toArray(new Thing[0]);
 
@@ -325,8 +325,8 @@ public class BenchmarkBig {
 
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
-                Thing firstId = tx.query().match(TypeQL.parseQuery("match $x has index 'first';").asGet()).next().get(ConceptVariableBuilder.named("x")).asThing();
-                Thing lastId = tx.query().match(TypeQL.parseQuery("match $x has index '" + N + "';").asGet()).next().get(ConceptVariableBuilder.named("x")).asThing();
+                Thing firstId = tx.query().get(TypeQL.parseQuery("match $x has index 'first';").asGet()).next().get(ConceptVariableBuilder.named("x")).asThing();
+                Thing lastId = tx.query().get(TypeQL.parseQuery("match $x has index '" + N + "';").asGet()).next().get(ConceptVariableBuilder.named("x")).asThing();
                 String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
                 String queryString = "match " + queryPattern;
                 String subbedQueryString = "match " + queryPattern +

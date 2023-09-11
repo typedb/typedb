@@ -44,15 +44,15 @@ import static com.vaticle.typedb.core.query.QueryManager.PARALLELISATION_SPLIT_M
 
 public class Updater {
 
-    private final Matcher matcher;
+    private final Getter getter;
     private final ConceptManager conceptMgr;
     private final Set<ThingVariable> deleteVariables;
     private final Set<ThingVariable> insertVariables;
     private final Context.Query context;
 
-    public Updater(Matcher matcher, ConceptManager conceptMgr, Set<ThingVariable> deleteVariables,
+    public Updater(Getter getter, ConceptManager conceptMgr, Set<ThingVariable> deleteVariables,
                    Set<ThingVariable> insertVariables, Context.Query context) {
-        this.matcher = matcher;
+        this.getter = getter;
         this.conceptMgr = conceptMgr;
         this.deleteVariables = deleteVariables;
         this.insertVariables = insertVariables;
@@ -67,11 +67,11 @@ public class Updater {
         Set<TypeQLVariable> filter = new HashSet<>(query.match().get().namedVariables());
         filter.retainAll(query.namedInsertVariables());
         filter.addAll(query.namedDeleteVariables());
-        Matcher matcher = Matcher.create(reasoner, conceptMgr, query.match().get().get(list(filter)));
+        Getter getter = Getter.create(reasoner, conceptMgr, query.match().get().get(list(filter)));
 
         VariableRegistry insertRegistry = VariableRegistry.createFromThings(query.insertStatements());
-        insertRegistry.variables().forEach(var -> Inserter.validate(var, matcher));
-        return new Updater(matcher, conceptMgr, deleteRegistry.things(), insertRegistry.things(), context);
+        insertRegistry.variables().forEach(var -> Inserter.validate(var, getter));
+        return new Updater(getter, conceptMgr, deleteRegistry.things(), insertRegistry.things(), context);
     }
 
     public FunctionalIterator<ConceptMap> execute() {
@@ -79,7 +79,7 @@ public class Updater {
     }
 
     private FunctionalIterator<ConceptMap> executeParallel() {
-        List<? extends List<? extends ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+        List<? extends List<? extends ConceptMap>> lists = getter.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         List<ConceptMap> updates;
         if (lists.size() == 1) updates = iterate(lists.get(0)).map(this::executeUpdate).toList();
@@ -90,7 +90,7 @@ public class Updater {
     }
 
     private FunctionalIterator<ConceptMap> executeSerial() {
-        List<? extends ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
+        List<? extends ConceptMap> matches = getter.execute(context).onError(conceptMgr::exception).toList();
         List<ConceptMap> answers = iterate(matches).map(this::executeUpdate).toList();
         return iterate(answers);
     }

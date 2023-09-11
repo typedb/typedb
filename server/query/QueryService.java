@@ -124,27 +124,27 @@ public class QueryService {
     private void match(String queryStr, Options.Query options, UUID reqID) {
         TypeQLGet query = TypeQL.parseQuery(queryStr).asGet();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
-        FunctionalIterator<? extends ConceptMap> answers = queryMgr.match(query, context);
+        FunctionalIterator<? extends ConceptMap> answers = queryMgr.get(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> matchResPart(reqID, a));
     }
 
     private void matchAggregate(String queryStr, Options.Query options, UUID reqID) {
         TypeQLGet.Aggregate query = TypeQL.parseQuery(queryStr).asGetAggregate();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
-        transactionSvc.respond(matchAggregateRes(reqID, queryMgr.match(query, context)));
+        transactionSvc.respond(matchAggregateRes(reqID, queryMgr.get(query, context)));
     }
 
     private void matchGroup(String queryStr, Options.Query options, UUID reqID) {
         TypeQLGet.Group query = TypeQL.parseQuery(queryStr).asGetGroup();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
-        FunctionalIterator<ConceptMapGroup> answers = queryMgr.match(query, context);
+        FunctionalIterator<ConceptMapGroup> answers = queryMgr.get(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> matchGroupResPart(reqID, a));
     }
 
     private void matchGroupAggregate(String queryStr, Options.Query options, UUID reqID) {
         TypeQLGet.Group.Aggregate query = TypeQL.parseQuery(queryStr).asGetGroupAggregate();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
-        FunctionalIterator<NumericGroup> answers = queryMgr.match(query, context);
+        FunctionalIterator<NumericGroup> answers = queryMgr.get(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> matchGroupAggregateResPart(reqID, a));
     }
 

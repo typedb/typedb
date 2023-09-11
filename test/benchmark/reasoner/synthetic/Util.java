@@ -54,7 +54,7 @@ public class Util {
 
     public static List<ConceptMap> timeQuery(TypeQLGet query, TypeDB.Transaction transaction, String msg) {
         final long startTime = System.currentTimeMillis();
-        List<ConceptMap> results = (List<ConceptMap>) transaction.query().match(query).toList();
+        List<ConceptMap> results = (List<ConceptMap>) transaction.query().get(query).toList();
         final long answerTime = System.currentTimeMillis() - startTime;
         System.out.println(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

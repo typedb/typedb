@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.concept.Concept;
 
 import java.util.Objects;
 
-public class NumericGroup implements Answer {
+public class NumericGroup {
     private final Concept owner;
     private final Numeric numeric;
     private final int hash;

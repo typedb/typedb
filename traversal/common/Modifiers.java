@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.traversal.common;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.common.TypeQLVariable;
-import com.vaticle.typeql.lang.query.builder.Sortable;
+import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,7 +34,6 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.map;
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
@@ -138,7 +137,7 @@ public class Modifiers {
             return new Sorting(variables, ascending);
         }
 
-        public static Sorting create(Sortable.Sorting sort) {
+        public static Sorting create(TypeQLQuery.Modifiers.Sorting sort) {
             List<Identifier.Variable.Retrievable> variables = new ArrayList<>();
             Map<Identifier.Variable.Retrievable, Order> ascending = new HashMap<>();
             sort.variables().forEach(typeQLVar -> {

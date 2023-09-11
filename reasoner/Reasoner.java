@@ -74,7 +74,6 @@ import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISAT
 import static com.vaticle.typedb.core.concurrent.executor.Executors.actor;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.produce;
-import static java.util.Collections.emptyList;
 
 public class Reasoner {
 
@@ -104,7 +103,7 @@ public class Reasoner {
     public FunctionalIterator<? extends ConceptMap> execute(Disjunction disjunction, List<TypeQLVariable> filterVars,
                                                             TypeQLQuery.Modifiers modifiers, Context.Query context) {
         inferAndValidateTypes(disjunction);
-        Filter filter = filterVars.isEmpty() ? Filter.create(disjunction.sharedNamedVariables()) : Filter.create(filterVars);
+        Filter filter = filterVars.isEmpty() ? Filter.create(disjunction.sharedVariables()) : Filter.create(filterVars);
         Optional<Sorting> sorting = modifiers.sort().map(Sorting::create);
         sorting.ifPresent(value -> validateSorting(disjunction, value));
         Disjunction answerableDisjunction = filterUnanswerable(disjunction);

@@ -66,6 +66,7 @@ import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Base.PLAYING;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.UNIQUE;
+import static java.util.Collections.emptyList;
 
 public abstract class ThingImpl extends ConceptImpl implements Thing {
 
@@ -253,7 +254,13 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public FunctionalIterator<RelationImpl> getRelations(RoleType... roleTypes) {
-        if (roleTypes.length == 0) {
+        if (roleTypes.length == 0) return getRelations(emptyList());
+        else return getRelations(Arrays.asList(roleTypes));
+    }
+
+    @Override
+    public FunctionalIterator<RelationImpl> getRelations(List<? extends RoleType> roleTypes) {
+        if (roleTypes.size() == 0) {
             return readableVertex().ins().edge(ROLEPLAYER).from().map(v -> RelationImpl.of(conceptMgr, v));
         } else {
             return iterate(roleTypes).flatMap(RoleType::getSubtypes).distinct().flatMap(

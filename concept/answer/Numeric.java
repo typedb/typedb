@@ -30,7 +30,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.NU
 /**
  * A type of Answer object that contains a Number. Will either be a long or a double
  */
-public class Numeric implements Answer, Comparable<Numeric> {
+public class Numeric implements Comparable<Numeric> {
 
     @Nullable
     private final Long longValue;

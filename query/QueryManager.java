@@ -26,11 +26,13 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
 import com.vaticle.typedb.core.concept.answer.Numeric;
 import com.vaticle.typedb.core.concept.answer.NumericGroup;
+import com.vaticle.typedb.core.concept.answer.ReadableConceptTree;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
+import com.vaticle.typeql.lang.query.TypeQLFetch;
 import com.vaticle.typeql.lang.query.TypeQLGet;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
 import com.vaticle.typeql.lang.query.TypeQLUndefine;
@@ -60,13 +62,13 @@ public class QueryManager {
         this.defaultContext = new Context.Query(context, new Options.Query());
     }
 
-    public FunctionalIterator<? extends ConceptMap> match(TypeQLGet query) {
-        return match(query, defaultContext);
+    public FunctionalIterator<? extends ConceptMap> get(TypeQLGet query) {
+        return get(query, defaultContext);
     }
 
-    public FunctionalIterator<? extends ConceptMap> match(TypeQLGet query, Context.Query context) {
+    public FunctionalIterator<? extends ConceptMap> get(TypeQLGet query, Context.Query context) {
         try {
-            return Matcher.create(reasoner, conceptMgr, query, context).execute().onError(conceptMgr::exception);
+            return Getter.create(reasoner, conceptMgr, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
@@ -76,37 +78,49 @@ public class QueryManager {
         return reasoner.explain(explainableId, defaultContext);
     }
 
-    public Numeric match(TypeQLGet.Aggregate query) {
-        return match(query, defaultContext);
+    public Numeric get(TypeQLGet.Aggregate query) {
+        return get(query, defaultContext);
     }
 
-    public Numeric match(TypeQLGet.Aggregate query, Context.Query queryContext) {
+    public Numeric get(TypeQLGet.Aggregate query, Context.Query queryContext) {
         try {
-            return Matcher.create(reasoner, conceptMgr, query, queryContext).execute();
+            return Getter.create(reasoner, conceptMgr, query, queryContext).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
     }
 
-    public FunctionalIterator<ConceptMapGroup> match(TypeQLGet.Group query) {
-        return match(query, defaultContext);
+    public FunctionalIterator<ConceptMapGroup> get(TypeQLGet.Group query) {
+        return get(query, defaultContext);
     }
 
-    public FunctionalIterator<ConceptMapGroup> match(TypeQLGet.Group query, Context.Query queryContext) {
+    public FunctionalIterator<ConceptMapGroup> get(TypeQLGet.Group query, Context.Query queryContext) {
         try {
-            return Matcher.create(reasoner, conceptMgr, query, queryContext).execute().onError(conceptMgr::exception);
+            return Getter.create(reasoner, conceptMgr, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
     }
 
-    public FunctionalIterator<NumericGroup> match(TypeQLGet.Group.Aggregate query) {
-        return match(query, defaultContext);
+    public FunctionalIterator<NumericGroup> get(TypeQLGet.Group.Aggregate query) {
+        return get(query, defaultContext);
     }
 
-    public FunctionalIterator<NumericGroup> match(TypeQLGet.Group.Aggregate query, Context.Query queryContext) {
+    public FunctionalIterator<NumericGroup> get(TypeQLGet.Group.Aggregate query, Context.Query queryContext) {
         try {
-            return Matcher.create(reasoner, conceptMgr, query, queryContext).execute().onError(conceptMgr::exception);
+            return Getter.create(reasoner, conceptMgr, query, queryContext).execute().onError(conceptMgr::exception);
+        } catch (Exception exception) {
+            throw conceptMgr.exception(exception);
+        }
+    }
+
+    public FunctionalIterator<ReadableConceptTree> fetch(TypeQLFetch query) {
+        return fetch(query, defaultContext);
+    }
+
+    public FunctionalIterator<ReadableConceptTree> fetch(TypeQLFetch query, Context.Query queryContext) {
+        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_fetch")) {
+            return Fetcher.create(reasoner, conceptMgr, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }

@@ -18,14 +18,17 @@
 
 package com.vaticle.typedb.core.test.behaviour.query;
 
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
 import com.vaticle.typedb.core.concept.answer.Numeric;
 import com.vaticle.typedb.core.concept.answer.NumericGroup;
-import com.vaticle.typedb.core.concept.value.Value;
+import com.vaticle.typedb.core.concept.answer.ReadableConceptTree;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.value.Value;
 import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.test.behaviour.exception.ScenarioDefinitionException;
@@ -36,10 +39,12 @@ import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.test.ProcedurePermutator;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.common.Reference;
+import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
+import com.vaticle.typeql.lang.query.TypeQLFetch;
 import com.vaticle.typeql.lang.query.TypeQLGet;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
 import com.vaticle.typeql.lang.query.TypeQLUndefine;
@@ -67,17 +72,18 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
-import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
+import static com.vaticle.typedb.core.test.behaviour.util.Util.jsonEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TypeQLSteps {
 
-    private static List<? extends ConceptMap> answers;
+    private static List<? extends ConceptMap> getAnswers;
     private static Numeric numericAnswer;
     private static List<ConceptMapGroup> answerGroups;
     private static List<NumericGroup> numericAnswerGroups;
+    private static List<ReadableConceptTree> fetchAnswers;
     HashMap<String, UniquenessCheck> identifierChecks = new HashMap<>();
     private Map<String, Map<String, String>> rules;
 
@@ -147,7 +153,7 @@ public class TypeQLSteps {
     }
 
     private void clearAnswers() {
-        answers = null;
+        getAnswers = null;
         numericAnswer = null;
         answerGroups = null;
         numericAnswerGroups = null;
@@ -157,7 +163,7 @@ public class TypeQLSteps {
     public void get_answers_of_typeql_insert(String typeQLQueryStatements) {
         TypeQLInsert typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asInsert();
         clearAnswers();
-        answers = tx().query().insert(typeQLQuery).toList();
+        getAnswers = tx().query().insert(typeQLQuery).toList();
         if (typeQLQuery.match().isPresent()) assertQueryPlansCorrect(typeQLQuery.match().get().get());
     }
 
@@ -166,7 +172,7 @@ public class TypeQLSteps {
         try {
             TypeQLGet typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGet();
             clearAnswers();
-            answers = tx().query().match(typeQLQuery).toList();
+            getAnswers = tx().query().get(typeQLQuery).toList();
             assertQueryPlansCorrect(typeQLQuery);
         } catch (TypeQLException e) {
             // NOTE: We manually close transaction here, because we want to align with all non-java drivers,
@@ -213,7 +219,7 @@ public class TypeQLSteps {
     public void typeql_match_aggregate(String typeQLQueryStatements) {
         TypeQLGet.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGetAggregate();
         clearAnswers();
-        numericAnswer = tx().query().match(typeQLQuery);
+        numericAnswer = tx().query().get(typeQLQuery);
         assertQueryPlansCorrect(typeQLQuery.get());
     }
 
@@ -226,7 +232,7 @@ public class TypeQLSteps {
     public void typeql_match_group(String typeQLQueryStatements) {
         TypeQLGet.Group typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGetGroup();
         clearAnswers();
-        answerGroups = tx().query().match(typeQLQuery).toList();
+        answerGroups = tx().query().get(typeQLQuery).toList();
         assertQueryPlansCorrect(typeQLQuery.get());
     }
 
@@ -239,25 +245,25 @@ public class TypeQLSteps {
     public void typeql_match_group_aggregate(String typeQLQueryStatements) {
         TypeQLGet.Group.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGetGroupAggregate();
         clearAnswers();
-        numericAnswerGroups = tx().query().match(typeQLQuery).toList();
+        numericAnswerGroups = tx().query().get(typeQLQuery).toList();
         assertQueryPlansCorrect(typeQLQuery.group().get());
     }
 
     @Then("answer size is: {number}")
     public void answer_quantity_assertion(int expectedAnswers) {
-        assertEquals(String.format("Expected [%d] answers, but got [%d]", expectedAnswers, answers.size()),
-                expectedAnswers, answers.size());
+        assertEquals(String.format("Expected [%d] answers, but got [%d]", expectedAnswers, getAnswers.size()),
+                expectedAnswers, getAnswers.size());
     }
 
     @Then("uniquely identify answer concepts")
     public void uniquely_identify_answer_concepts(List<Map<String, String>> answerConcepts) {
         assertEquals(
                 String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers.",
-                        answerConcepts.size(), answers.size()),
-                answerConcepts.size(), answers.size()
+                        answerConcepts.size(), getAnswers.size()),
+                answerConcepts.size(), getAnswers.size()
         );
 
-        for (ConceptMap answer : answers) {
+        for (ConceptMap answer : getAnswers) {
             List<Map<String, String>> matchingIdentifiers = new ArrayList<>();
 
             for (Map<String, String> answerIdentifier : answerConcepts) {
@@ -278,11 +284,11 @@ public class TypeQLSteps {
     public void order_of_answer_concepts_is(List<Map<String, String>> answersIdentifiers) {
         assertEquals(
                 String.format("The number of identifier entries (rows) should match the number of answers, but found %d identifier entries and %d answers.",
-                        answersIdentifiers.size(), answers.size()),
-                answersIdentifiers.size(), answers.size()
+                        answersIdentifiers.size(), getAnswers.size()),
+                answersIdentifiers.size(), getAnswers.size()
         );
-        for (int i = 0; i < answers.size(); i++) {
-            ConceptMap answer = answers.get(i);
+        for (int i = 0; i < getAnswers.size(); i++) {
+            ConceptMap answer = getAnswers.get(i);
             Map<String, String> answerIdentifiers = answersIdentifiers.get(i);
             assertTrue(
                     String.format("The answer at index %d does not match the identifier entry (row) at index %d.", i, i),
@@ -313,7 +319,7 @@ public class TypeQLSteps {
                 .collect(Collectors.toSet());
 
         assertEquals(String.format("Expected [%d] answer groups, but found [%d].",
-                answerIdentifierGroups.size(), answerGroups.size()),
+                        answerIdentifierGroups.size(), answerGroups.size()),
                 answerIdentifierGroups.size(), answerGroups.size()
         );
 
@@ -484,6 +490,28 @@ public class TypeQLSteps {
         return true;
     }
 
+    @Then("get answers of typeql fetch")
+    public void get_answers_of_typeql_fetch(String query) {
+        TypeQLFetch fetchQuery = TypeQL.parseQuery(query).asFetch();
+        fetchAnswers = tx().query().fetch(fetchQuery).toList();
+    }
+
+    @Then("typeql fetch; throws exception")
+    public void typeql_fetch_throws_exception(String query) {
+        assertThrows(() -> {
+            TypeQLFetch fetchQuery = TypeQL.parseQuery(query).asFetch();
+            tx().query().fetch(fetchQuery).toList();
+        });
+    }
+
+    @Then("fetch answers are")
+    public void fetch_answers_are(String answerJSON) {
+        JsonValue json = Json.parse(answerJSON);
+        String fetchJSON = fetchAnswers.stream().map(ReadableConceptTree::toJSON)
+                .collect(Collectors.joining(",", "[", "]"));
+        assertTrue(jsonEquals(json, Json.parse(fetchJSON), false));
+    }
+
     @Then("rules are")
     public void rules_are(Map<String, Map<String, String>> rules) {
         this.rules = rules;
@@ -561,10 +589,10 @@ public class TypeQLSteps {
     @Then("each answer satisfies")
     public void each_answer_satisfies(String templatedTypeQLQuery) {
         String templatedQuery = String.join("\n", templatedTypeQLQuery);
-        for (ConceptMap answer : answers) {
+        for (ConceptMap answer : getAnswers) {
             String query = applyQueryTemplate(templatedQuery, answer);
             TypeQLGet typeQLQuery = TypeQL.parseQuery(query).asGet();
-            long answerSize = tx().query().match(typeQLQuery).toList().size();
+            long answerSize = tx().query().get(typeQLQuery).toList().size();
             assertEquals(1, answerSize);
         }
     }
@@ -572,11 +600,11 @@ public class TypeQLSteps {
     @Then("templated typeql get; throws exception")
     public void templated_typeql_match_throws_exception(String templatedTypeQLQuery) {
         String templatedQuery = String.join("\n", templatedTypeQLQuery);
-        for (ConceptMap answer : answers) {
+        for (ConceptMap answer : getAnswers) {
             String queryString = applyQueryTemplate(templatedQuery, answer);
             assertThrows(() -> {
                 TypeQLGet query = TypeQL.parseQuery(queryString).asGet();
-                tx().query().match(query).toList();
+                tx().query().get(query).toList();
             });
         }
     }
@@ -584,10 +612,10 @@ public class TypeQLSteps {
     @Then("each answer does not satisfy")
     public void each_answer_does_not_satisfy(String templatedTypeQLQuery) {
         String templatedQuery = String.join("\n", templatedTypeQLQuery);
-        for (ConceptMap answer : answers) {
+        for (ConceptMap answer : getAnswers) {
             String queryString = applyQueryTemplate(templatedQuery, answer);
             TypeQLGet query = TypeQL.parseQuery(queryString).asGet();
-            long answerSize = tx().query().match(query).toList().size();
+            long answerSize = tx().query().get(query).toList().size();
             assertEquals(0, answerSize);
         }
     }

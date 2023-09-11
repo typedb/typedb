@@ -72,7 +72,7 @@ class SoundnessVerifier {
                 new Options.Transaction().infer(true).explain(true))) {
             collectedExplanations.clear();
             // recursively collects explanations, partially verifies the answer.
-            tx.query().match(inferenceQuery).forEachRemaining(ans -> verifyAnswerAndCollectExplanations(ans, tx));
+            tx.query().get(inferenceQuery).forEachRemaining(ans -> verifyAnswerAndCollectExplanations(ans, tx));
 
             // We can only verify an explanation once all concepts in it's condition have been "mapped"
             // Concepts are mapped when an explanation containing them in the conclusion is verified.
