@@ -19,35 +19,36 @@
 package com.vaticle.typedb.core.concept.answer;
 
 import com.vaticle.typedb.core.concept.Concept;
+import com.vaticle.typedb.core.concept.value.Value;
 
 import java.util.Objects;
+import java.util.Optional;
 
-public class NumericGroup {
+public class ValueGroup {
     private final Concept owner;
-    private final Numeric numeric;
+    private final Optional<Value<?>> value; // note: optionality conveys empty group with invalid value
     private final int hash;
 
-    public NumericGroup(Concept owner, Numeric numeric) {
+    public ValueGroup(Concept owner, Optional<Value<?>> value) {
         this.owner = owner;
-        this.numeric = numeric;
-        this.hash = Objects.hash(this.owner, this.numeric);
+        this.value = value;
+        this.hash = Objects.hash(this.owner, this.value);
     }
 
     public Concept owner() {
         return this.owner;
     }
 
-    public Numeric numeric() {
-        return this.numeric;
+    public Optional<Value<?>> value() {
+        return this.value;
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        NumericGroup a2 = (NumericGroup) obj;
-        return this.owner.equals(a2.owner) &&
-                this.numeric.equals(a2.numeric);
+        ValueGroup that = (ValueGroup) obj;
+        return this.owner.equals(that.owner) && this.value.equals(that.value);
     }
 
     @Override

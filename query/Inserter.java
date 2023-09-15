@@ -51,6 +51,7 @@ import com.vaticle.typeql.lang.query.TypeQLInsert;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -101,10 +102,13 @@ public class Inserter {
         Getter getter = null;
         if (query.match().isPresent()) {
             TypeQLGet.Unmodified get = query.match().get().get();
-            List<TypeQLVariable> filter = new ArrayList<>(query.match().get().namedVariables());
+            Set<TypeQLVariable> filter = new HashSet<>(query.match().get().namedVariables());
             filter.retainAll(query.namedVariables());
             assert !filter.isEmpty();
-            getter = Getter.create(reasoner, conceptMgr, get.match().get(filter), context);
+            if (query.modifiers().sort().isPresent()) {
+                filter.addAll(query.modifiers().sort().get().variables());
+            }
+            getter = Getter.create(reasoner, conceptMgr, get.match().get(new ArrayList<>(filter)).modifiers(query.modifiers()), context);
         }
         VariableRegistry registry = VariableRegistry.createFromThings(query.statements());
         for (Variable var : registry.variables()) {

@@ -85,6 +85,12 @@ public interface Concept {
 
     interface Readable {
 
+        String KEY_TYPE = "type";
+        String KEY_ROOT = "root";
+        String KEY_LABEL = "label";
+        String KEY_VALUE = "value";
+        String KEY_VALUE_TYPE = "value_type";
+
         boolean isType();
 
         boolean isAttribute();

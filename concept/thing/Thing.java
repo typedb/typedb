@@ -123,9 +123,7 @@ public interface Thing extends Concept, Comparable<Thing> {
      *
      * @return an iterator of {@code Attribute} instances owned by this {@code Thing}
      */
-    FunctionalIterator<? extends Attribute> getHas(List<AttributeType> attributeTypes, Set<Annotation> ownsAnnotations);
-
-    FunctionalIterator<? extends Attribute> getHas(List<? extends AttributeType> attributeType);
+    FunctionalIterator<? extends Attribute> getHas(List<? extends AttributeType> attributeTypes, Set<Annotation> ownsAnnotations);
 
     /**
      * Check whether a Has edge to a given attribute instance exists, and that edge is inferred

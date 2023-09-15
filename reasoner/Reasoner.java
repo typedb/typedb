@@ -47,7 +47,6 @@ import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers.Filter;
 import com.vaticle.typedb.core.traversal.common.Modifiers.Sorting;
-import com.vaticle.typeql.lang.common.TypeQLVariable;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import java.util.Comparator;
@@ -100,13 +99,18 @@ public class Reasoner {
         return controllerRegistry;
     }
 
-    public FunctionalIterator<? extends ConceptMap> execute(Disjunction disjunction, List<TypeQLVariable> filterVars,
-                                                            TypeQLQuery.Modifiers modifiers, Context.Query context) {
-        inferAndValidateTypes(disjunction);
-        Filter filter = filterVars.isEmpty() ? Filter.create(disjunction.sharedVariables()) : Filter.create(filterVars);
+    public FunctionalIterator<? extends ConceptMap> execute(Disjunction disjunction, List<Identifier.Variable.Name> filterVars,
+                                                            TypeQLQuery.Modifiers modifiers, Context.Query context,
+                                                            ConceptMap bindings) {
+        Disjunction boundDisjunction;
+        if (!bindings.concepts().isEmpty()) {
+            boundDisjunction = new Disjunction(iterate(disjunction.conjunctions()).map(c -> bound(c, bindings)).toList());
+        } else boundDisjunction = disjunction;
+        inferAndValidateTypes(boundDisjunction);
+        Filter filter = filterVars.isEmpty() ? Filter.create(boundDisjunction.sharedVariables()) : Filter.create(filterVars);
         Optional<Sorting> sorting = modifiers.sort().map(Sorting::create);
-        sorting.ifPresent(value -> validateSorting(disjunction, value));
-        Disjunction answerableDisjunction = filterUnanswerable(disjunction);
+        sorting.ifPresent(value -> validateSorting(boundDisjunction, value));
+        Disjunction answerableDisjunction = filterUnanswerable(boundDisjunction);
         FunctionalIterator<? extends ConceptMap> answers;
         if (answerableDisjunction.conjunctions().isEmpty()) return empty();
         else if (mayReason(answerableDisjunction, context)) {
@@ -269,7 +273,7 @@ public class Reasoner {
     }
 
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, ConceptMap bounds) {
-        return iterator(bound(conjunction, bounds, logicMgr), Filter.create(conjunction.retrieves()));
+        return iterator(bound(conjunction, bounds), Filter.create(conjunction.retrieves()));
     }
 
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, Filter filter) {
@@ -296,7 +300,7 @@ public class Reasoner {
         }
     }
 
-    private Conjunction bound(Conjunction conjunction, ConceptMap bounds, LogicManager logicMgr) {
+    private Conjunction bound(Conjunction conjunction, ConceptMap bounds) {
         Conjunction clone = conjunction.clone();
         Map<Identifier.Variable.Retrievable, Either<Label, ByteArray>> converted = new HashMap<>();
         iterate(bounds.concepts().entrySet()).forEachRemaining(e -> {

@@ -41,7 +41,6 @@ host_compatible_java_library(
         # Package dependencies
         "//test/behaviour/connection:steps",
         "//test/behaviour/exception",
-        "//test/behaviour/util:util",
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",

@@ -391,7 +391,7 @@ public class GraphProcedure implements PermutationProcedure {
         }
 
         public ProcedureEdge.Native.Type.Owns.Forward forwardOwns(
-                ProcedureVertex.Type owner, ProcedureVertex.Type att, Set<Annotation> annotations) {
+                ProcedureVertex.Type owner, ProcedureVertex.Type att, Set<TypeQLToken.Annotation> annotations) {
             ProcedureEdge.Native.Type.Owns.Forward edge =
                     new ProcedureEdge.Native.Type.Owns.Forward(owner, att, annotations);
             attachEdge(owner, att, edge);
@@ -399,7 +399,7 @@ public class GraphProcedure implements PermutationProcedure {
         }
 
         public ProcedureEdge.Native.Type.Owns.Backward backwardOwns(
-                ProcedureVertex.Type att, ProcedureVertex.Type owner, Set<Annotation> annotations) {
+                ProcedureVertex.Type att, ProcedureVertex.Type owner, Set<TypeQLToken.Annotation> annotations) {
             ProcedureEdge.Native.Type.Owns.Backward edge =
                     new ProcedureEdge.Native.Type.Owns.Backward(att, owner, annotations);
             attachEdge(att, owner, edge);

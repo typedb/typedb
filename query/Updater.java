@@ -67,7 +67,10 @@ public class Updater {
         Set<TypeQLVariable> filter = new HashSet<>(query.match().get().namedVariables());
         filter.retainAll(query.namedInsertVariables());
         filter.addAll(query.namedDeleteVariables());
-        Getter getter = Getter.create(reasoner, conceptMgr, query.match().get().get(list(filter)));
+        if (query.modifiers().sort().isPresent()) {
+                filter.addAll(query.modifiers().sort().get().variables());
+            }
+            Getter getter = Getter.create(reasoner, conceptMgr, query.match().get().get(list(filter)).modifiers(query.modifiers()));
 
         VariableRegistry insertRegistry = VariableRegistry.createFromThings(query.insertStatements());
         insertRegistry.variables().forEach(var -> Inserter.validate(var, getter));

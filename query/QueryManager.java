@@ -24,9 +24,9 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
-import com.vaticle.typedb.core.concept.answer.Numeric;
-import com.vaticle.typedb.core.concept.answer.NumericGroup;
 import com.vaticle.typedb.core.concept.answer.ReadableConceptTree;
+import com.vaticle.typedb.core.concept.answer.ValueGroup;
+import com.vaticle.typedb.core.concept.value.Value;
 import com.vaticle.typedb.core.logic.LogicManager;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
@@ -39,6 +39,8 @@ import com.vaticle.typeql.lang.query.TypeQLUndefine;
 import com.vaticle.typeql.lang.query.TypeQLUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
@@ -78,11 +80,11 @@ public class QueryManager {
         return reasoner.explain(explainableId, defaultContext);
     }
 
-    public Numeric get(TypeQLGet.Aggregate query) {
+    public Optional<Value<?>> get(TypeQLGet.Aggregate query) {
         return get(query, defaultContext);
     }
 
-    public Numeric get(TypeQLGet.Aggregate query, Context.Query queryContext) {
+    public Optional<Value<?>> get(TypeQLGet.Aggregate query, Context.Query queryContext) {
         try {
             return Getter.create(reasoner, conceptMgr, query, queryContext).execute();
         } catch (Exception exception) {
@@ -102,11 +104,11 @@ public class QueryManager {
         }
     }
 
-    public FunctionalIterator<NumericGroup> get(TypeQLGet.Group.Aggregate query) {
+    public FunctionalIterator<ValueGroup> get(TypeQLGet.Group.Aggregate query) {
         return get(query, defaultContext);
     }
 
-    public FunctionalIterator<NumericGroup> get(TypeQLGet.Group.Aggregate query, Context.Query queryContext) {
+    public FunctionalIterator<ValueGroup> get(TypeQLGet.Group.Aggregate query, Context.Query queryContext) {
         try {
             return Getter.create(reasoner, conceptMgr, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
@@ -119,7 +121,7 @@ public class QueryManager {
     }
 
     public FunctionalIterator<ReadableConceptTree> fetch(TypeQLFetch query, Context.Query queryContext) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_fetch")) {
+        try {
             return Fetcher.create(reasoner, conceptMgr, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);

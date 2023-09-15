@@ -23,8 +23,7 @@ import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
-import com.vaticle.typedb.core.concept.answer.Numeric;
-import com.vaticle.typedb.core.concept.answer.NumericGroup;
+import com.vaticle.typedb.core.concept.answer.ValueGroup;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.Relation;
@@ -51,6 +50,7 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -223,9 +223,9 @@ public class ResponseBuilder {
                     )));
         }
 
-        public static TransactionProto.Transaction.Res matchAggregateRes(UUID reqID, Numeric answer) {
+        public static TransactionProto.Transaction.Res matchAggregateRes(UUID reqID, Optional<com.vaticle.typedb.core.concept.value.Value<?>> answer) {
             return queryMgrRes(reqID, QueryProto.QueryManager.Res.newBuilder().setMatchAggregateRes(
-                    QueryProto.QueryManager.MatchAggregate.Res.newBuilder().setAnswer(numeric(answer))
+                    QueryProto.QueryManager.MatchAggregate.Res.newBuilder().setAnswer(numeric(answer.get())) // TODO optionality
             ));
         }
 
@@ -236,7 +236,7 @@ public class ResponseBuilder {
             ));
         }
 
-        public static TransactionProto.Transaction.ResPart matchGroupAggregateResPart(UUID reqID, List<NumericGroup> answers) {
+        public static TransactionProto.Transaction.ResPart matchGroupAggregateResPart(UUID reqID, List<ValueGroup> answers) {
             return queryMgrResPart(reqID, QueryProto.QueryManager.ResPart.newBuilder().setMatchGroupAggregateResPart(
                     QueryProto.QueryManager.MatchGroupAggregate.ResPart.newBuilder().addAllAnswers(
                             iterate(answers).map(Answer::numericGroup).toList()))
@@ -1114,22 +1114,25 @@ public class ResponseBuilder {
                     .build();
         }
 
-        public static AnswerProto.Numeric numeric(Numeric answer) {
-            AnswerProto.Numeric.Builder builder = AnswerProto.Numeric.newBuilder();
-            if (answer.isLong()) {
-                builder.setLongValue(answer.asLong());
-            } else if (answer.isDouble()) {
-                builder.setDoubleValue(answer.asDouble());
-            } else if (answer.isNaN()) {
-                builder.setNan(true);
-            }
-            return builder.build();
+        public static AnswerProto.Numeric numeric(com.vaticle.typedb.core.concept.value.Value<?> answer) {
+            // TODO
+//            AnswerProto.Numeric.Builder builder = AnswerProto.Numeric.newBuilder();
+//            if (answer.isLong()) {
+//                builder.setLongValue(answer.asLong());
+//            } else if (answer.isDouble()) {
+//                builder.setDoubleValue(answer.asDouble());
+//            } else if (answer.()) { // TODO optionality
+//                builder.setNan(true);
+//            }
+//            }
+//            return builder.build();
+            return null;
         }
 
-        public static AnswerProto.NumericGroup numericGroup(NumericGroup answer) {
+        public static AnswerProto.NumericGroup numericGroup(ValueGroup answer) {
             return AnswerProto.NumericGroup.newBuilder()
                     .setOwner(Concept.protoConcept(answer.owner()))
-                    .setNumber(numeric(answer.numeric()))
+                    .setNumber(numeric(answer.value().get())) // TODO optionality
                     .build();
         }
     }

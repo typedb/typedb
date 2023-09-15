@@ -28,7 +28,6 @@ import com.vaticle.typedb.core.logic.resolvable.ResolvableConjunction;
 import com.vaticle.typedb.core.logic.resolvable.ResolvableDisjunction;
 import com.vaticle.typedb.core.logic.resolvable.Unifier;
 import com.vaticle.typedb.core.pattern.variable.Variable;
-import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.reasoner.common.ReasonerPerfCounters;
 import com.vaticle.typedb.core.reasoner.controller.ConcludableController;
 import com.vaticle.typedb.core.traversal.TraversalEngine;

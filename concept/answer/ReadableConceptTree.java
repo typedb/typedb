@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Vaticle
+ * Copyright (C) 2022 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,11 +25,17 @@ import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.value.Value;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.concept.Concept.Readable.KEY_LABEL;
+import static com.vaticle.typedb.core.concept.Concept.Readable.KEY_ROOT;
+import static com.vaticle.typedb.core.concept.Concept.Readable.KEY_TYPE;
+import static com.vaticle.typedb.core.concept.Concept.Readable.KEY_VALUE;
+import static com.vaticle.typedb.core.concept.Concept.Readable.KEY_VALUE_TYPE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ATTRIBUTE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ENTITY;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.RELATION;
@@ -79,7 +85,10 @@ public class ReadableConceptTree {
 
         class Map implements Node {
 
-            private static final String SEPARATOR = ": ";
+            private static final String KEY_VALUE_SEPARATOR = ":";
+            private static final String ENTRY_SEPARATOR = ",";
+            private static final String CURLY_LEFT = "{";
+            private static final String CURLY_RIGHT = "}";
 
             private final java.util.Map<String, Node> entries;
 
@@ -112,15 +121,19 @@ public class ReadableConceptTree {
 
             @Override
             public String toJSON() {
-                return "{\n" +
+                return CURLY_LEFT + "\n" +
                         entries.entrySet().stream()
-                                .map(e -> quote(e.getKey()) + SEPARATOR + e.getValue().toString())
-                                .collect(Collectors.joining(",\n", "", "\n")) +
-                        "}";
+                                .map(e -> quote(e.getKey()) + KEY_VALUE_SEPARATOR + e.getValue().toString())
+                                .collect(Collectors.joining(ENTRY_SEPARATOR + "\n", "", "\n")) +
+                        CURLY_RIGHT;
             }
         }
 
         class List implements Node {
+
+            private static final String ELEMENT_SEPARATOR = ",";
+            private static final String SQUARE_LEFT = "[";
+            private static final String SQUARE_RIGHT = "]";
 
             private final java.util.List<? extends Node> nodes;
 
@@ -148,10 +161,10 @@ public class ReadableConceptTree {
 
             @Override
             public String toJSON() {
-                return "[\n" +
+                return SQUARE_LEFT + "\n" +
                         nodes.stream().map(Object::toString)
-                                .collect(Collectors.joining(",\n", "", "\n")) +
-                        "]";
+                                .collect(Collectors.joining(ELEMENT_SEPARATOR + "\n", "", "\n")) +
+                        SQUARE_RIGHT;
             }
         }
 
@@ -159,7 +172,7 @@ public class ReadableConceptTree {
 
             private final T readableConcept;
 
-            public Leaf(T readableConcept) {
+            public Leaf(@Nullable T readableConcept) {
                 this.readableConcept = readableConcept;
             }
 
@@ -172,12 +185,12 @@ public class ReadableConceptTree {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Leaf<?> leaf = (Leaf<?>) o;
-                return readableConcept.equals(leaf.readableConcept);
+                return Objects.equals(readableConcept, leaf.readableConcept);
             }
 
             @Override
             public int hashCode() {
-                return readableConcept.hashCode();
+                return Objects.hashCode(readableConcept);
             }
 
             @Override
@@ -187,17 +200,18 @@ public class ReadableConceptTree {
 
             @Override
             public String toJSON() {
-                if (readableConcept.isType()) return getType(readableConcept.asType());
+                if (readableConcept == null) return "";
+                else if (readableConcept.isType()) return getType(readableConcept.asType());
                 else if (readableConcept.isAttribute()) return getAttribute(readableConcept.asAttribute());
                 else if (readableConcept.isValue()) return getValue(readableConcept.asValue());
                 else throw TypeDBException.of(ILLEGAL_STATE);
             }
 
             private static String getType(Type type) {
-                return "{\n" +
-                        quote("label") + Map.SEPARATOR + quote(type.getLabel().scopedName()) + ",\n" +
-                        quote("root") + Map.SEPARATOR + quote(getRoot(type)) + "\n" +
-                        "}";
+                return Map.CURLY_LEFT + "\n" +
+                        quote(KEY_LABEL) + Map.KEY_VALUE_SEPARATOR + quote(type.getLabel().scopedName()) + Map.ENTRY_SEPARATOR + "\n" +
+                        quote(KEY_ROOT) + Map.KEY_VALUE_SEPARATOR + quote(getRoot(type)) + "\n" +
+                        Map.CURLY_RIGHT;
             }
 
             private static String getRoot(Type type) {
@@ -216,11 +230,11 @@ public class ReadableConceptTree {
                 else if (attribute.isString()) valueString = quote(attribute.asString().getValue());
                 else if (attribute.isDateTime()) valueString = quote(attribute.asDateTime().getValue().toString());
                 else throw TypeDBException.of(ILLEGAL_STATE);
-                return "{\n" +
-                        quote("type") + Map.SEPARATOR + getType(attribute.getType()) + ",\n" +
-                        quote("value") + Map.SEPARATOR + valueString + ",\n" +
-                        quote("value_type") + Map.SEPARATOR + quote(attribute.getType().getValueType().encoding().typeQLValueType().toString()) + "\n" +
-                        "}\n";
+                return Map.CURLY_LEFT + "\n" +
+                        quote(KEY_TYPE) + Map.KEY_VALUE_SEPARATOR + getType(attribute.getType()) + Map.ENTRY_SEPARATOR + "\n" +
+                        quote(KEY_VALUE) + Map.KEY_VALUE_SEPARATOR + valueString +  Map.ENTRY_SEPARATOR + "\n" +
+                        quote(KEY_VALUE_TYPE) + Map.KEY_VALUE_SEPARATOR + quote(attribute.getType().getValueType().encoding().typeQLValueType().toString()) + "\n" +
+                        Map.CURLY_RIGHT;
             }
 
             private static String getValue(Value<?> value) {
@@ -231,10 +245,10 @@ public class ReadableConceptTree {
                 else if (value.isString()) valueString = quote(value.asString().value());
                 else if (value.isDateTime()) valueString = quote(value.asDateTime().value().toString());
                 else throw TypeDBException.of(ILLEGAL_STATE);
-                return "{\n" +
-                        quote("value") + Map.SEPARATOR + valueString + ",\n" +
-                        quote("value_type") + Map.SEPARATOR + quote(value.valueType().typeQLValueType().toString()) + "\n" +
-                        "}\n";
+                return Map.CURLY_LEFT + "\n" +
+                        quote(KEY_VALUE) + Map.KEY_VALUE_SEPARATOR + valueString + Map.ENTRY_SEPARATOR + "\n" +
+                        quote(KEY_VALUE_TYPE) + Map.KEY_VALUE_SEPARATOR + quote(value.valueType().typeQLValueType().toString()) + "\n" +
+                        Map.CURLY_RIGHT;
             }
         }
     }

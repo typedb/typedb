@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Vaticle
+ * Copyright (C) 2022 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -40,11 +40,19 @@ import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.ILLEGAL_ATTRIBUTE_PROJECTION_ATTRIBUTE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.ILLEGAL_ATTRIBUTE_PROJECTION_TYPE_VARIABLE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.PROJECTION_VARIABLE_UNBOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.PROJECTION_VARIABLE_UNNAMED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.SUBQUERY_UNBOUNDED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.VARIABLE_PROJECTION_CONCEPT_NOT_READABLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static java.util.Collections.emptySet;
 
 public class Fetcher {
 
@@ -53,31 +61,35 @@ public class Fetcher {
     private final Context.Query context;
     private final Disjunction match;
     private final TypeQLQuery.Modifiers modifiers;
-    private final List<TypeQLVariable> filter;
+    private final List<Identifier.Variable.Name> filter;
     private final List<Projection> projections;
 
     private Fetcher(Reasoner reasoner, ConceptManager conceptMgr, Disjunction match,
-                    TypeQLQuery.Modifiers modifiers, List<Projection> projections, @Nullable Context.Query context) {
+                    TypeQLQuery.Modifiers modifiers, List<Projection> projections, Context.Query context) {
         this.reasoner = reasoner;
         this.conceptMgr = conceptMgr;
         this.modifiers = modifiers;
         this.match = match;
         this.projections = projections;
         this.filter = iterate(this.projections).flatMap(Projection::namedVariables)
-                .filter(var -> this.match.sharedVariables().contains(Identifier.Variable.of(var.reference().asName())))
+                .filter(varID -> this.match.sharedVariables().contains(varID))
                 .toList();
-        if (this.modifiers.sort().isPresent()) filter.addAll(modifiers.sort().get().variables());
+        if (this.modifiers.sort().isPresent()) {
+            iterate(modifiers.sort().get().variables()).map(v -> Identifier.Variable.of(v.reference().asName()))
+                    .forEachRemaining(filter::add);
+        }
         this.context = context;
     }
 
-    public static Fetcher create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLFetch query) {
-        return create(reasoner, conceptMgr, query, null);
+    public static Fetcher create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLFetch query, Context.Query context) {
+        return create(reasoner, conceptMgr, emptySet(), query, context);
     }
 
-    public static Fetcher create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLFetch query, Context.Query context) {
+    public static Fetcher create(Reasoner reasoner, ConceptManager conceptMgr, Set<Identifier.Variable.Name> bounds,
+                                 TypeQLFetch query, Context.Query context) {
         Disjunction match = Disjunction.create(query.match().conjunction().normalise());
         List<Projection> projections = iterate(query.projections())
-                .map(p -> Projection.create(conceptMgr, match, p)).toList();
+                .map(p -> Projection.create(reasoner, conceptMgr, context, match, bounds, p)).toList();
         return new Fetcher(reasoner, conceptMgr, match, query.modifiers(), projections, context);
     }
 
@@ -85,27 +97,38 @@ public class Fetcher {
         return match;
     }
 
+    public FunctionalIterator<Identifier.Variable.Name> namedVariables() {
+        return iterate(match.sharedVariables())
+                .link(iterate(projections).flatMap(p ->
+                        iterate(p.namedVariables()).map(typeQLVar -> Identifier.Variable.of(typeQLVar.reference().asName()))
+                ));
+    }
+
     public FunctionalIterator<ReadableConceptTree> execute() {
-        assert context != null;
-        return execute(context);
+        return execute(context, new ConceptMap());
     }
 
-    FunctionalIterator<ReadableConceptTree> execute(Context.Query context) {
-        return reasoner.execute(match, filter, modifiers, context).map(this::executeProjections);
+    public FunctionalIterator<ReadableConceptTree> execute(ConceptMap bindings) {
+        return execute(context, bindings);
     }
 
-    private ReadableConceptTree executeProjections(ConceptMap matchAnswer) {
+    FunctionalIterator<ReadableConceptTree> execute(Context.Query context, ConceptMap bindings) {
+        return reasoner.execute(match, filter, modifiers, context, bindings)
+                .map(cm -> executeProjections(cm.merge(bindings)));
+    }
+
+    private ReadableConceptTree executeProjections(ConceptMap concepts) {
         ReadableConceptTree.Node.Map root = new ReadableConceptTree.Node.Map();
         projections.forEach(projection ->
-                root.add(projection.key(), projection.execute(reasoner, conceptMgr, context, matchAnswer))
+                root.add(projection.key(), projection.execute(reasoner, conceptMgr, context, concepts))
         );
         return new ReadableConceptTree(root);
     }
 
     private static abstract class Projection {
 
-        private static Projection create(ConceptManager conceptMgr, Disjunction match,
-                                         TypeQLFetch.Projection typeQLProjection) {
+        private static Projection create(Reasoner reasoner, ConceptManager conceptMgr, Context.Query context, Disjunction match,
+                                         Set<Identifier.Variable.Name> bounds, TypeQLFetch.Projection typeQLProjection) {
             if (typeQLProjection.isVariable()) {
                 return Variable.create(match, typeQLProjection.asVariable().key());
             } else if (typeQLProjection.isAttribute()) {
@@ -114,18 +137,20 @@ public class Fetcher {
                         typeQLProjection.asAttribute().attributes()
                 );
             } else if (typeQLProjection.isSubquery()) {
-                return Subquery.create(
-                        match, typeQLProjection.asSubquery().key(), typeQLProjection.asSubquery().subquery()
+                Set<Identifier.Variable.Name> boundsMerged = new HashSet<>(match.sharedVariables());
+                boundsMerged.addAll(bounds);
+                return Subquery.create(reasoner, conceptMgr, context, boundsMerged,
+                        typeQLProjection.asSubquery().key(), typeQLProjection.asSubquery().subquery()
                 );
             } else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         public abstract String key();
 
-        public abstract FunctionalIterator<TypeQLVariable> namedVariables();
+        public abstract FunctionalIterator<Identifier.Variable.Name> namedVariables();
 
         abstract ReadableConceptTree.Node execute(Reasoner reasoner, ConceptManager conceptMgr, Context.Query context,
-                                                  ConceptMap matchAnswer);
+                                                  ConceptMap concepts);
 
         private static class Variable extends Projection {
 
@@ -139,13 +164,10 @@ public class Fetcher {
 
             public static Projection create(Disjunction match, TypeQLFetch.Key.Var key) {
                 if (!key.typeQLVar().reference().isName()) {
-                    // TODO useful exception
-                    throw new RuntimeException("Projection variable must be named.");
+                    throw TypeDBException.of(PROJECTION_VARIABLE_UNNAMED, key.typeQLVar());
                 } else if (!match.sharedVariables().contains(Identifier.Variable.of(key.typeQLVar().reference().asName()))) {
-                    // TODO throw useful exception
-                    throw new RuntimeException("Projection variable must be bound in the match clause.");
+                    throw TypeDBException.of(PROJECTION_VARIABLE_UNBOUND, key.typeQLVar());
                 }
-
                 return new Variable(key);
             }
 
@@ -155,26 +177,23 @@ public class Fetcher {
             }
 
             @Override
-            public FunctionalIterator<TypeQLVariable> namedVariables() {
-                return iterate(variable);
+            public FunctionalIterator<Identifier.Variable.Name> namedVariables() {
+                return iterate(Identifier.Variable.of(variable.reference().asName()));
             }
 
             @Override
             ReadableConceptTree.Node.Leaf<? extends Concept.Readable> execute(Reasoner reasoner, ConceptManager conceptMgr,
-                                                                              Context.Query context, ConceptMap matchAnswer) {
+                                                                              Context.Query context, ConceptMap concepts) {
                 // runtime type check since polymorphic queries may range over non-readable concepts
-                Concept concept = matchAnswer.get(variable);
+                Concept concept = concepts.get(variable);
                 if (!(concept instanceof Concept.Readable)) {
-                    // TODO throw useful exception
-                    throw new RuntimeException("error");
+                    throw TypeDBException.of(VARIABLE_PROJECTION_CONCEPT_NOT_READABLE, key());
                 }
                 return new ReadableConceptTree.Node.Leaf<>((Concept.Readable) concept);
             }
         }
 
         private static class Attribute extends Projection {
-
-            private static final String TYPE_KEY = "type";
 
             private final TypeQLVariable keyVariable;
             private final TypeQLFetch.Key.Label keyLabel;
@@ -190,17 +209,14 @@ public class Fetcher {
             public static Projection create(ConceptManager conceptMgr, Disjunction match, TypeQLFetch.Key.Var key,
                                             List<Pair<Reference.Label, TypeQLFetch.Key.Label>> attributes) {
                 if (!key.typeQLVar().reference().isName()) {
-                    // TODO useful exception
-                    throw new RuntimeException("Projection variable must be named.");
+                    throw TypeDBException.of(PROJECTION_VARIABLE_UNNAMED, key.typeQLVar());
                 } else {
                     Identifier.Variable.Name id = Identifier.Variable.of(key.typeQLVar().reference().asName());
                     if (!match.sharedVariables().contains(id)) {
-                        // TODO throw useful exception
-                        throw new RuntimeException("Projection variable must be bound in the match clause.");
+                        throw TypeDBException.of(PROJECTION_VARIABLE_UNBOUND, key.typeQLVar());
                     } else if (iterate(match.conjunctions()).flatMap(conj -> iterate(conj.variables()))
                             .anyMatch(var -> var.id().equals(id) && !var.isThing())) {
-                        // TODO proper exception
-                        throw new RuntimeException("Projection variable must represent instances and not types or values.");
+                        throw TypeDBException.of(ILLEGAL_ATTRIBUTE_PROJECTION_TYPE_VARIABLE, key.typeQLVar());
                     }
                 }
 
@@ -208,8 +224,7 @@ public class Fetcher {
                 for (Pair<Reference.Label, TypeQLFetch.Key.Label> pair : attributes) {
                     AttributeType attributeType = conceptMgr.getAttributeType(pair.first().label());
                     if (attributeType == null) {
-                        // TODO throw useful exception
-                        throw new RuntimeException("Unrecognised attribute type '" + pair.first() + "' in attribute projection from '" + key.typeQLVar());
+                        throw TypeDBException.of(ILLEGAL_ATTRIBUTE_PROJECTION_ATTRIBUTE_TYPE, key.typeQLVar(), pair.first());
                     }
                     attrs.add(AttributeFetch.create(attributeType, pair.second()));
                 }
@@ -222,20 +237,20 @@ public class Fetcher {
             }
 
             @Override
-            public FunctionalIterator<TypeQLVariable> namedVariables() {
-                return iterate(keyVariable);
+            public FunctionalIterator<Identifier.Variable.Name> namedVariables() {
+                return iterate(Identifier.Variable.of(keyVariable.reference().asName()));
             }
 
             @Override
             ReadableConceptTree.Node.Map execute(Reasoner reasoner, ConceptManager conceptMgr,
-                                                 Context.Query context, ConceptMap matchAnswer) {
+                                                 Context.Query context, ConceptMap concepts) {
                 ReadableConceptTree.Node.Map entries = new ReadableConceptTree.Node.Map();
-                Thing thing = matchAnswer.get(keyVariable).asThing();
-                entries.add(TYPE_KEY, new ReadableConceptTree.Node.Leaf<>(thing.getType()));
+                Thing thing = concepts.get(keyVariable).asThing();
+                entries.add(Concept.Readable.KEY_TYPE, new ReadableConceptTree.Node.Leaf<>(thing.getType()));
                 attributeFetches.forEach(attrFetch -> entries.add(
                         attrFetch.name(),
                         new ReadableConceptTree.Node.List(
-                                thing.getHas(attrFetch.attributeTypes()).map(ReadableConceptTree.Node.Leaf::new).toList()
+                                thing.getHas(attrFetch.attributeTypes(), emptySet()).map(ReadableConceptTree.Node.Leaf::new).toList()
                         )
                 ));
                 return entries;
@@ -267,29 +282,29 @@ public class Fetcher {
             }
         }
 
-        private static class Subquery extends Projection {
+        private static abstract class Subquery extends Projection {
 
             private final TypeQLFetch.Key.Label key;
-            private final Either<TypeQLFetch, TypeQLGet.Aggregate> subquery;
 
-            private Subquery(TypeQLFetch.Key.Label key, Either<TypeQLFetch, TypeQLGet.Aggregate> subquery) {
+            private Subquery(TypeQLFetch.Key.Label key) {
                 this.key = key;
-                this.subquery = subquery;
             }
 
-            public static Projection create(Disjunction match, TypeQLFetch.Key.Label key,
+            public static Projection create(Reasoner reasoner, ConceptManager conceptMgr, Context.Query context,
+                                            Set<Identifier.Variable.Name> bounds, TypeQLFetch.Key.Label key,
                                             Either<TypeQLFetch, TypeQLGet.Aggregate> subquery) {
-                Set<TypeQLVariable> subqueryVariables;
-                if (subquery.isFirst()) subqueryVariables = subquery.first().match().namedVariables();
-                else subqueryVariables = subquery.second().get().match().namedVariables();
-                // TODO: how to validate against parent's parent's shared variables effectively? Should probably use provided bounds
+                Set<TypeQLVariable> subqueryVariables = subquery.isFirst() ?
+                        subquery.first().match().namedVariables() :
+                        subquery.second().get().match().namedVariables();
                 if (iterate(subqueryVariables).noneMatch(v ->
-                        v.isNamed() && match.sharedVariables().contains(Identifier.Variable.of(v.reference().asName()))
+                        v.isNamed() && bounds.contains(Identifier.Variable.of(v.reference().asName()))
                 )) {
-                    // TODO: proper message
-                    throw new RuntimeException("Fetch subquery labeled '" + key.label() + "' us not bounded by the match clause.");
+                    throw TypeDBException.of(SUBQUERY_UNBOUNDED, key.label());
                 }
-                return new Subquery(key, subquery);
+
+                if (subquery.isFirst()) {
+                    return SubFetch.create(reasoner, conceptMgr, context, bounds, key, subquery.first());
+                } else return SubGetAggregate.create(reasoner, conceptMgr, context, bounds, key, subquery.second());
             }
 
             @Override
@@ -297,25 +312,58 @@ public class Fetcher {
                 return key.label();
             }
 
-            @Override
-            public FunctionalIterator<TypeQLVariable> namedVariables() {
-                return subquery.isFirst() ? iterate(subquery.first().match().namedVariables()) :
-                        iterate(subquery.second().get().match().namedVariables());
+            private static class SubFetch extends Subquery {
+
+                private final Fetcher fetcher;
+
+                private SubFetch(TypeQLFetch.Key.Label key, Fetcher fetcher) {
+                    super(key);
+                    this.fetcher = fetcher;
+                }
+
+                private static SubFetch create(Reasoner reasoner, ConceptManager conceptMgr, Context.Query context,
+                                               Set<Identifier.Variable.Name> bounds, TypeQLFetch.Key.Label key, TypeQLFetch subquery) {
+                    return new SubFetch(key, Fetcher.create(reasoner, conceptMgr, bounds, subquery, context));
+                }
+
+                @Override
+                public FunctionalIterator<Identifier.Variable.Name> namedVariables() {
+                    return fetcher.namedVariables();
+                }
+
+                @Override
+                ReadableConceptTree.Node execute(Reasoner reasoner, ConceptManager conceptMgr, Context.Query context, ConceptMap concepts) {
+                    return new ReadableConceptTree.Node.List(fetcher.execute(concepts).map(ReadableConceptTree::root).toList());
+                }
             }
 
-            @Override
-            ReadableConceptTree.Node execute(Reasoner reasoner, ConceptManager conceptMgr,
-                                             Context.Query context, ConceptMap matchAnswer) {
-                // TODO we have to pass the bounds into the recursive query
-                if (subquery.isFirst()) {
-                    return new ReadableConceptTree.Node.List(
-                            Fetcher.create(reasoner, conceptMgr, subquery.first(), context).execute()
-                                    .map(ReadableConceptTree::root).toList()
-                    );
-                } else {
-                    // TODO numerics should be replaced by Values
-//                    return new ReadableConceptTree.Node.Leaf<>(Getter.create(reasoner, subquery.second(), context).execute());
-                    return null;
+            private static class SubGetAggregate extends Subquery {
+
+                private final Getter.Aggregator getAggregator;
+
+                public SubGetAggregate(TypeQLFetch.Key.Label key, Getter.Aggregator getAggregator) {
+                    super(key);
+                    this.getAggregator = getAggregator;
+                }
+
+                public static SubGetAggregate create(Reasoner reasoner, ConceptManager conceptMgr, Context.Query context,
+                                                     Set<Identifier.Variable.Name> bounds, TypeQLFetch.Key.Label key,
+                                                     TypeQLGet.Aggregate getAggregate) {
+                    if (iterate(getAggregate.get().match().namedVariables())
+                            .noneMatch(v -> bounds.contains(Identifier.Variable.of(v.reference().asName())))) {
+                        throw TypeDBException.of(SUBQUERY_UNBOUNDED, key.label());
+                    }
+                    return new SubGetAggregate(key, Getter.create(reasoner, conceptMgr, getAggregate, context));
+                }
+
+                @Override
+                public FunctionalIterator<Identifier.Variable.Name> namedVariables() {
+                    return iterate(getAggregator.getter().disjunction().sharedVariables());
+                }
+
+                @Override
+                ReadableConceptTree.Node execute(Reasoner reasoner, ConceptManager conceptMgr, Context.Query context, ConceptMap concepts) {
+                    return new ReadableConceptTree.Node.Leaf<>(getAggregator.execute(concepts).orElse(null));
                 }
             }
         }

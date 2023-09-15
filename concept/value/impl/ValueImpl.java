@@ -19,12 +19,14 @@
 package com.vaticle.typedb.core.concept.value.impl;
 
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.ConceptImpl;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.value.Value;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.graph.vertex.ValueVertex;
+import com.vaticle.typedb.core.graph.vertex.impl.ValueVertexImpl;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -41,6 +43,26 @@ public abstract class ValueImpl<VALUE> extends ConceptImpl implements Value<VALU
     ValueImpl(ConceptManager conceptMgr, ValueVertex<VALUE> vertex) {
         super(conceptMgr);
         this.vertex = Objects.requireNonNull(vertex);
+    }
+
+    public static ValueImpl.Boolean of(ConceptManager conceptMgr, boolean value) throws TypeDBCheckedException {
+        return new Boolean(conceptMgr, ValueVertexImpl.of(Encoding.ValueType.BOOLEAN, value).asBoolean());
+    }
+
+    public static ValueImpl.Long of(ConceptManager conceptMgr, long value) throws TypeDBCheckedException {
+        return new Long(conceptMgr, ValueVertexImpl.of(Encoding.ValueType.LONG, value).asLong());
+    }
+
+    public static ValueImpl.Double of(ConceptManager conceptMgr, double value) throws TypeDBCheckedException {
+        return new Double(conceptMgr, ValueVertexImpl.of(Encoding.ValueType.DOUBLE, value).asDouble());
+    }
+
+    public static ValueImpl.String of(ConceptManager conceptMgr, java.lang.String value) throws TypeDBCheckedException {
+        return new String(conceptMgr, ValueVertexImpl.of(Encoding.ValueType.STRING, value).asString());
+    }
+
+    public static ValueImpl.DateTime of(ConceptManager conceptMgr, LocalDateTime value) throws TypeDBCheckedException {
+        return new DateTime(conceptMgr, ValueVertexImpl.of(Encoding.ValueType.DATETIME, value).asDateTime());
     }
 
     public static <T> ValueImpl<?> of(ConceptManager conceptMgr, ValueVertex<T> vertex) {

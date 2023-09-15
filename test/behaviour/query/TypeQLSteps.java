@@ -24,8 +24,7 @@ import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
-import com.vaticle.typedb.core.concept.answer.Numeric;
-import com.vaticle.typedb.core.concept.answer.NumericGroup;
+import com.vaticle.typedb.core.concept.answer.ValueGroup;
 import com.vaticle.typedb.core.concept.answer.ReadableConceptTree;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.value.Value;
@@ -40,7 +39,6 @@ import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.test.ProcedurePermutator;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.Reference;
-import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
@@ -72,7 +70,8 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrowsWithMessage;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
-import static com.vaticle.typedb.core.test.behaviour.util.Util.jsonEquals;
+import static com.vaticle.typedb.core.common.test.Util.jsonEquals;
+import static com.vaticle.typeql.lang.common.TypeQLToken.Annotation.KEY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -80,9 +79,9 @@ import static org.junit.Assert.assertTrue;
 public class TypeQLSteps {
 
     private static List<? extends ConceptMap> getAnswers;
-    private static Numeric numericAnswer;
+    private static Optional<Value<?>> numericAnswer;
     private static List<ConceptMapGroup> answerGroups;
-    private static List<NumericGroup> numericAnswerGroups;
+    private static List<ValueGroup> numericAnswerGroups;
     private static List<ReadableConceptTree> fetchAnswers;
     HashMap<String, UniquenessCheck> identifierChecks = new HashMap<>();
     private Map<String, Map<String, String>> rules;
@@ -300,13 +299,14 @@ public class TypeQLSteps {
     @Then("aggregate value is: {double}")
     public void aggregate_value_is(double expectedAnswer) {
         assertNotNull("The last executed query was not an aggregate query", numericAnswer);
-        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, numericAnswer.asNumber().doubleValue()),
-                expectedAnswer, numericAnswer.asNumber().doubleValue(), 0.001);
+        double asDouble = numericAnswer.get().isDouble() ? numericAnswer.get().asDouble().value() : numericAnswer.get().asLong().value();
+        assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, asDouble),
+                expectedAnswer, asDouble, 0.001);
     }
 
     @Then("aggregate answer is not a number")
     public void aggregate_answer_is_not_a_number() {
-        assertTrue(numericAnswer.isNaN());
+        assertTrue(numericAnswer.isEmpty());
     }
 
     @Then("answer groups are")
@@ -401,13 +401,14 @@ public class TypeQLSteps {
                     throw new IllegalStateException("Unexpected value: " + identifier[0]);
             }
             double expectedAnswer = expectation.getValue();
-            NumericGroup answerGroup = numericAnswerGroups.stream()
+            ValueGroup answerGroup = numericAnswerGroups.stream()
                     .filter(ag -> checker.check(ag.owner()))
                     .findAny()
                     .orElse(null);
             assertNotNull(String.format("The group identifier [%s] does not match any of the answer group owners.", expectation.getKey()), answerGroup);
 
-            double actualAnswer = answerGroup.numeric().asNumber().doubleValue();
+            Value<?> value = answerGroup.value().get();
+            double actualAnswer = value.isDouble() ? value.asDouble().value() : value.asLong().value();
             assertEquals(
                     String.format("Expected answer [%f] for group [%s], but got [%f]",
                             expectedAnswer, expectation.getKey(), actualAnswer),

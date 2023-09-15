@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
-import com.vaticle.typedb.core.concept.answer.NumericGroup;
+import com.vaticle.typedb.core.concept.answer.ValueGroup;
 import com.vaticle.typedb.core.query.QueryManager;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.server.TransactionService;
@@ -144,7 +144,7 @@ public class QueryService {
     private void matchGroupAggregate(String queryStr, Options.Query options, UUID reqID) {
         TypeQLGet.Group.Aggregate query = TypeQL.parseQuery(queryStr).asGetGroupAggregate();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
-        FunctionalIterator<NumericGroup> answers = queryMgr.get(query, context);
+        FunctionalIterator<ValueGroup> answers = queryMgr.get(query, context);
         transactionSvc.stream(answers, reqID, context.options(), a -> matchGroupAggregateResPart(reqID, a));
     }
 

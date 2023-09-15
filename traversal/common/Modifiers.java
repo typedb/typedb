@@ -90,16 +90,11 @@ public class Modifiers {
         }
 
         public static Filter create(Set<? extends Identifier.Variable.Retrievable> variables) {
-            return new Filter(new HashSet<Identifier.Variable.Retrievable>(variables));
+            return new Filter(new HashSet<>(variables));
         }
 
-        public static Filter create(List<TypeQLVariable> typeQLVars) {
-            Set<Identifier.Variable.Retrievable> variables = new HashSet<>();
-            assert iterate(typeQLVars).allMatch(TypeQLVariable::isNamed);
-            iterate(typeQLVars).filter(TypeQLVariable::isNamed)
-                    .map(v -> Identifier.Variable.of(v.reference().asName()))
-                    .forEachRemaining(variables::add);
-            return new Filter(variables);
+        public static Filter create(List<? extends Identifier.Variable.Retrievable> variables) {
+            return new Filter(new HashSet<>(variables));
         }
 
         public Set<Identifier.Variable.Retrievable> variables() {

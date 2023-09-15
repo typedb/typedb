@@ -48,7 +48,6 @@ native_java_libraries(
     deps = [
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_factory_tracing//client:client",
         "@vaticle_typeql//java/builder:builder",
         "@vaticle_typeql//java/common:common",
         "@vaticle_typeql//java/pattern:pattern",

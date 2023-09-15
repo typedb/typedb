@@ -37,9 +37,12 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typeql.lang.common.Reference;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -73,11 +76,19 @@ public class Deleter {
     }
 
     public static Deleter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLDelete query, Context.Query context) {
+
         VariableRegistry registry = VariableRegistry.createFromThings(query.statements(), false);
         registry.variables().forEach(Deleter::validate);
-
         assert query.match().get().namedVariables().containsAll(query.namedVariables());
-        Getter getter = Getter.create(reasoner, conceptMgr, query.match().get().get(query.namedVariables()), context);
+
+        Set<TypeQLVariable> filter = new HashSet<>(query.match().get().namedVariables());
+        filter.retainAll(query.namedVariables());
+        assert !filter.isEmpty();
+        if (query.modifiers().sort().isPresent()) {
+            filter.addAll(query.modifiers().sort().get().variables());
+        }
+
+        Getter getter = Getter.create(reasoner, conceptMgr, query.match().get().get(new ArrayList<>(filter)).modifiers(query.modifiers()), context);
         return new Deleter(getter, registry.things(), context);
     }
 

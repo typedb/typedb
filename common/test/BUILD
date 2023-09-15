@@ -25,6 +25,7 @@ native_java_libraries(
     deps = [
         # External Maven Dependencies
         "@maven//:junit_junit",
+        "@maven//:com_eclipsesource_minimal_json_minimal_json",
     ],
     native_libraries_deps = [
         # Internal dependencies

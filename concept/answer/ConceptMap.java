@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
 
 public class ConceptMap {
@@ -63,6 +64,16 @@ public class ConceptMap {
         this.concepts = concepts;
         this.explainables = explainables;
         this.hash = Objects.hash(this.concepts, this.explainables);
+    }
+
+    public ConceptMap merge(ConceptMap conceptMap) {
+        Map<Retrievable, Concept> mergedConcepts = new HashMap<>(this.concepts);
+        conceptMap.concepts.forEach((id, concept) -> {
+            Concept replaced = mergedConcepts.put(id, concept);
+            assert replaced == null || replaced.equals(concept);
+        });
+        Explainables mergedExplainables = explainables.merge(conceptMap.explainables);
+        return new ConceptMap(mergedConcepts, mergedExplainables);
     }
 
     public boolean contains(Reference.Name variable) {
@@ -296,7 +307,7 @@ public class ConceptMap {
         private final Map<Pair<Retrievable, Retrievable>, Explainable> explainableOwnerships;
 
         public Explainables() {
-            this(unmodifiableMap(new HashMap<>()), unmodifiableMap(new HashMap<>()), unmodifiableMap(new HashMap<>()));
+            this(emptyMap(), emptyMap(), emptyMap());
         }
 
         public Explainables(Map<Retrievable, Explainable> explainableRelations,
@@ -346,6 +357,7 @@ public class ConceptMap {
         }
 
         public Explainables merge(Explainables explainables) {
+            if (isEmpty() && explainables.isEmpty()) return new Explainables();
             Map<Retrievable, Explainable> relations = new HashMap<>(this.explainableRelations);
             Map<Retrievable, Explainable> attributes = new HashMap<>(this.explainableAttributes);
             Map<Pair<Retrievable, Retrievable>, Explainable> ownerships = new HashMap<>((this.explainableOwnerships));
