@@ -175,33 +175,33 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 stream(byteStringAsUUID(req.getReqId()));
                 break;
             case QUERY_MANAGER_REQ:
-                services.query.execute(req);
+                executeQueryRequest(req);
                 break;
             case CONCEPT_MANAGER_REQ:
-                services.concept.execute(req);
+                executeConceptRequest(req);
                 break;
             case LOGIC_MANAGER_REQ:
-                services.logic.execute(req);
+                executeLogicRequest(req);
                 break;
             case THING_REQ:
-                services.thing.execute(req);
+                executeThingRequest(req);
                 break;
             case TYPE_REQ:
-                services.type.execute(req);
+                executeTypeRequest(req);
                 break;
             case RULE_REQ:
-                services.rule.execute(req);
+                executeRuleRequest(req);
                 break;
             default:
                 throw TypeDBException.of(ILLEGAL_ARGUMENT);
         }
     }
 
-    private void open(TransactionProto.Transaction.Req request) {
+    protected void open(TransactionProto.Transaction.Req request) {
         if (isTransactionOpen.get()) throw TypeDBException.of(TRANSACTION_ALREADY_OPENED);
         TransactionProto.Transaction.Open.Req openReq = request.getOpenReq();
         networkLatencyMillis = Math.min(openReq.getNetworkLatencyMillis(), MAX_NETWORK_LATENCY_MILLIS);
-        sessionSvc = sessionService(typeDBSvc, openReq);
+        sessionSvc = sessionService(openReq);
         sessionSvc.register(this);
         options = new Options.Transaction().parent(sessionSvc.options());
         applyDefaultOptions(options, openReq.getOptions());
@@ -212,7 +212,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         scheduledTimeout = scheduled().schedule(this::timeout, options.transactionTimeoutMillis(), MILLISECONDS);
     }
 
-    private static SessionService sessionService(TypeDBService typeDBSvc, TransactionProto.Transaction.Open.Req req) {
+    protected SessionService sessionService(TransactionProto.Transaction.Open.Req req) {
         UUID sessionID = byteStringAsUUID(req.getSessionId());
         SessionService sessionSvc = typeDBSvc.session(sessionID);
         if (sessionSvc == null) throw TypeDBException.of(SESSION_NOT_FOUND, sessionID);
@@ -226,15 +226,39 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         return sessionSvc.session().transaction(type, options);
     }
 
-    private void commit(UUID requestID) {
+    protected void commit(UUID requestID) {
         transaction.commit();
         respond(ResponseBuilder.Transaction.commit(requestID));
         close();
     }
 
-    private void rollback(UUID requestID) {
+    protected void rollback(UUID requestID) {
         transaction.rollback();
         respond(ResponseBuilder.Transaction.rollback(requestID));
+    }
+
+    protected void executeQueryRequest(TransactionProto.Transaction.Req req) {
+        services.query.execute(req);
+    }
+
+    protected void executeConceptRequest(TransactionProto.Transaction.Req req) {
+        services.concept.execute(req);
+    }
+
+    protected void executeLogicRequest(TransactionProto.Transaction.Req req) {
+        services.logic.execute(req);
+    }
+
+    protected void executeThingRequest(TransactionProto.Transaction.Req req) {
+        services.thing.execute(req);
+    }
+
+    protected void executeTypeRequest(TransactionProto.Transaction.Req req) {
+        services.type.execute(req);
+    }
+
+    protected void executeRuleRequest(TransactionProto.Transaction.Req req) {
+        services.rule.execute(req);
     }
 
     public void respond(TransactionProto.Transaction.Res response) {
@@ -267,7 +291,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         else respond(ResponseBuilder.Transaction.stream(requestID, CONTINUE));
     }
 
-    private void stream(UUID requestId) {
+    protected void stream(UUID requestId) {
         ResponseStream<?> stream = streams.get(requestId);
         if (stream == null) throw TypeDBException.of(ITERATION_WITH_UNKNOWN_ID, requestId);
         stream.streamResParts();

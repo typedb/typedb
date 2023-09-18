@@ -151,10 +151,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public void databasesCreate(CoreDatabaseManager.Create.Req request,
                                 StreamObserver<CoreDatabaseManager.Create.Res> responder) {
         try {
-            if (databaseMgr.contains(request.getName())) {
-                throw TypeDBException.of(DATABASE_EXISTS, request.getName());
-            }
-            databaseMgr.create(request.getName());
+            doCreateDatabase(request.getName());
             responder.onNext(createRes());
             responder.onCompleted();
         } catch (RuntimeException e) {
@@ -215,20 +212,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     @Override
     public void databaseDelete(CoreDatabase.Delete.Req request, StreamObserver<CoreDatabase.Delete.Res> responder) {
         try {
-            String databaseName = request.getName();
-            if (!databaseMgr.contains(databaseName)) {
-                throw TypeDBException.of(DATABASE_NOT_FOUND, databaseName);
-            }
-            TypeDB.Database database = databaseMgr.get(databaseName);
-            database.sessions().parallel().forEach(session -> {
-                UUID sessionId = session.uuid();
-                SessionService sessionSvc = sessionServices.get(sessionId);
-                if (sessionSvc != null) {
-                    sessionSvc.close(TypeDBException.of(DATABASE_DELETED, databaseName));
-                    sessionServices.remove(sessionId);
-                }
-            });
-            database.delete();
+            doDeleteDatabase(request.getName());
             responder.onNext(deleteRes());
             responder.onCompleted();
         } catch (RuntimeException e) {
@@ -245,7 +229,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
             Options.Session options = applyDefaultOptions(new Options.Session(), request.getOptions());
             TypeDB.Session session = databaseMgr.session(request.getDatabase(), sessionType, options);
-            SessionService sessionSvc = new SessionService(this, session, options);
+            SessionService sessionSvc = doCreateSessionService(session, options);
             sessionServices.put(sessionSvc.UUID(), sessionSvc);
             int duration = (int) Duration.between(start, Instant.now()).toMillis();
             responder.onNext(openRes(sessionSvc.UUID(), duration));
@@ -292,6 +276,33 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public StreamObserver<TransactionProto.Transaction.Client> transaction(
             StreamObserver<TransactionProto.Transaction.Server> responder) {
         return new TransactionService(this, responder);
+    }
+
+    protected void doCreateDatabase(String databaseName) {
+        if (databaseMgr.contains(databaseName)) {
+            throw TypeDBException.of(DATABASE_EXISTS, databaseName);
+        }
+        databaseMgr.create(databaseName);
+    }
+
+    protected void doDeleteDatabase(String databaseName) {
+        if (!databaseMgr.contains(databaseName)) {
+            throw TypeDBException.of(DATABASE_NOT_FOUND, databaseName);
+        }
+        TypeDB.Database database = databaseMgr.get(databaseName);
+        database.sessions().parallel().forEach(session -> {
+            UUID sessionId = session.uuid();
+            SessionService sessionSvc = sessionServices.get(sessionId);
+            if (sessionSvc != null) {
+                sessionSvc.close(TypeDBException.of(DATABASE_DELETED, databaseName));
+                sessionServices.remove(sessionId);
+            }
+        });
+        database.delete();
+    }
+
+    protected SessionService doCreateSessionService(TypeDB.Session session, Options.Session options) {
+        return new SessionService(this, session, options);
     }
 
     public SessionService session(UUID uuid) {
