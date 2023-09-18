@@ -158,58 +158,58 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
 
     @Override
     public void usersContains(UserManager.Contains.Req request, StreamObserver<UserManager.Contains.Res> responder) {
-        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
-        LOG.error(error_message.message());
-        responder.onError(TypeDBException.of(error_message));
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
     }
 
     @Override
     public void usersCreate(UserManager.Create.Req request, StreamObserver<UserManager.Create.Res> responder) {
-        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
-        LOG.error(error_message.message());
-        responder.onError(TypeDBException.of(error_message));
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
     }
 
     @Override
     public void usersDelete(UserManager.Delete.Req request, StreamObserver<UserManager.Delete.Res> responder) {
-        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
-        LOG.error(error_message.message());
-        responder.onError(TypeDBException.of(error_message));
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
     }
 
     @Override
     public void usersAll(UserManager.All.Req request, StreamObserver<UserManager.All.Res> responder) {
-        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
-        LOG.error(error_message.message());
-        responder.onError(TypeDBException.of(error_message));
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
     }
 
     @Override
     public void usersPasswordSet(UserManager.PasswordSet.Req request, StreamObserver<UserManager.PasswordSet.Res> responder) {
-        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
-        LOG.error(error_message.message());
-        responder.onError(TypeDBException.of(error_message));
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
     }
 
     @Override
     public void usersGet(UserManager.Get.Req request, StreamObserver<UserManager.Get.Res> responder) {
-        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
-        LOG.error(error_message.message());
-        responder.onError(TypeDBException.of(error_message));
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
     }
 
     @Override
     public void userPasswordUpdate(User.PasswordUpdate.Req request, StreamObserver<User.PasswordUpdate.Res> responder) {
-        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
-        LOG.error(error_message.message());
-        responder.onError(TypeDBException.of(error_message));
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
     }
 
     @Override
     public void userToken(User.Token.Req request, StreamObserver<User.Token.Res> responder) {
-        ErrorMessage error_message = USER_MANAGEMENT_NOT_AVAILABLE;
-        LOG.error(error_message.message());
-        responder.onError(TypeDBException.of(error_message));
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
     }
 
     @Override

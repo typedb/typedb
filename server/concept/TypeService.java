@@ -108,69 +108,69 @@ public class TypeService {
     private final TransactionService transactionSvc;
     private final ConceptManager conceptMgr;
 
-    private final EnumMap<ConceptProto.RoleType.Req.ReqCase, BiConsumer<ConceptProto.RoleType.Req, UUID>> role_type_handlers;
-    private final EnumMap<ConceptProto.ThingType.Req.ReqCase, BiConsumer<ConceptProto.ThingType.Req, UUID>> thing_type_handlers;
+    private final EnumMap<ConceptProto.RoleType.Req.ReqCase, BiConsumer<ConceptProto.RoleType.Req, UUID>> roleTypeHandlers;
+    private final EnumMap<ConceptProto.ThingType.Req.ReqCase, BiConsumer<ConceptProto.ThingType.Req, UUID>> thingTypeHandlers;
 
     public TypeService(TransactionService transactionSvc, ConceptManager conceptMgr) {
         this.transactionSvc = transactionSvc;
         this.conceptMgr = conceptMgr;
 
-        role_type_handlers = new EnumMap<>(ConceptProto.RoleType.Req.ReqCase.class);
-        role_type_handlers.put(ROLE_TYPE_DELETE_REQ, this::roleTypeDelete);
-        role_type_handlers.put(ROLE_TYPE_SET_LABEL_REQ, this::roleTypeSetLabel);
-        role_type_handlers.put(ROLE_TYPE_GET_SUPERTYPE_REQ, this::roleTypeGetSupertype);
-        role_type_handlers.put(ROLE_TYPE_GET_SUPERTYPES_REQ, this::roleTypeGetSupertypes);
-        role_type_handlers.put(ROLE_TYPE_GET_SUBTYPES_REQ, this::roleTypeGetSubtypes);
-        role_type_handlers.put(ROLE_TYPE_GET_RELATION_TYPES_REQ, this::roleTypeGetRelationTypes);
-        role_type_handlers.put(ROLE_TYPE_GET_PLAYER_TYPES_REQ, this::roleTypeGetPlayerTypes);
-        role_type_handlers.put(ROLE_TYPE_GET_RELATION_INSTANCES_REQ, this::roleTypeGetRelationInstances);
-        role_type_handlers.put(ROLE_TYPE_GET_PLAYER_INSTANCES_REQ, this::roleTypeGetPlayerInstances);
-        role_type_handlers.put(ConceptProto.RoleType.Req.ReqCase.REQ_NOT_SET, this::requestNotSet);
-        assert role_type_handlers.size() == ConceptProto.RoleType.Req.ReqCase.class.getEnumConstants().length;
+        roleTypeHandlers = new EnumMap<>(ConceptProto.RoleType.Req.ReqCase.class);
+        roleTypeHandlers.put(ROLE_TYPE_DELETE_REQ, this::roleTypeDelete);
+        roleTypeHandlers.put(ROLE_TYPE_SET_LABEL_REQ, this::roleTypeSetLabel);
+        roleTypeHandlers.put(ROLE_TYPE_GET_SUPERTYPE_REQ, this::roleTypeGetSupertype);
+        roleTypeHandlers.put(ROLE_TYPE_GET_SUPERTYPES_REQ, this::roleTypeGetSupertypes);
+        roleTypeHandlers.put(ROLE_TYPE_GET_SUBTYPES_REQ, this::roleTypeGetSubtypes);
+        roleTypeHandlers.put(ROLE_TYPE_GET_RELATION_TYPES_REQ, this::roleTypeGetRelationTypes);
+        roleTypeHandlers.put(ROLE_TYPE_GET_PLAYER_TYPES_REQ, this::roleTypeGetPlayerTypes);
+        roleTypeHandlers.put(ROLE_TYPE_GET_RELATION_INSTANCES_REQ, this::roleTypeGetRelationInstances);
+        roleTypeHandlers.put(ROLE_TYPE_GET_PLAYER_INSTANCES_REQ, this::roleTypeGetPlayerInstances);
+        roleTypeHandlers.put(ConceptProto.RoleType.Req.ReqCase.REQ_NOT_SET, this::requestNotSet);
+        assert roleTypeHandlers.size() == ConceptProto.RoleType.Req.ReqCase.class.getEnumConstants().length;
 
-        thing_type_handlers = new EnumMap<>(ConceptProto.ThingType.Req.ReqCase.class);
-        thing_type_handlers.put(THING_TYPE_DELETE_REQ, this::thingTypeDelete);
-        thing_type_handlers.put(THING_TYPE_SET_LABEL_REQ, this::thingTypeSetLabel);
-        thing_type_handlers.put(THING_TYPE_SET_ABSTRACT_REQ, this::thingTypeSetAbstract);
-        thing_type_handlers.put(THING_TYPE_UNSET_ABSTRACT_REQ, this::thingTypeUnsetAbstract);
-        thing_type_handlers.put(THING_TYPE_GET_OWNS_REQ, this::thingTypeGetOwns);
-        thing_type_handlers.put(THING_TYPE_GET_OWNS_OVERRIDDEN_REQ, this::thingTypeGetOwnsOverridden);
-        thing_type_handlers.put(THING_TYPE_SET_OWNS_REQ, this::thingTypeSetOwns);
-        thing_type_handlers.put(THING_TYPE_UNSET_OWNS_REQ, this::thingTypeUnsetOwns);
-        thing_type_handlers.put(THING_TYPE_GET_PLAYS_REQ, this::thingTypeGetPlays);
-        thing_type_handlers.put(THING_TYPE_GET_PLAYS_OVERRIDDEN_REQ, this::thingTypeGetPlaysOverridden);
-        thing_type_handlers.put(THING_TYPE_SET_PLAYS_REQ, this::thingTypeSetPlays);
-        thing_type_handlers.put(THING_TYPE_UNSET_PLAYS_REQ, this::thingTypeUnsetPlays);
-        thing_type_handlers.put(THING_TYPE_GET_SYNTAX_REQ, this::thingTypeGetSyntax);
-        thing_type_handlers.put(ENTITY_TYPE_CREATE_REQ, this::entityTypeCreate);
-        thing_type_handlers.put(ENTITY_TYPE_GET_SUPERTYPE_REQ, this::entityTypeGetSupertype);
-        thing_type_handlers.put(ENTITY_TYPE_SET_SUPERTYPE_REQ, this::entityTypeSetSupertype);
-        thing_type_handlers.put(ENTITY_TYPE_GET_SUPERTYPES_REQ, this::entityTypeGetSupertypes);
-        thing_type_handlers.put(ENTITY_TYPE_GET_SUBTYPES_REQ, this::entityTypeGetSubtypes);
-        thing_type_handlers.put(ENTITY_TYPE_GET_INSTANCES_REQ, this::entityTypeGetInstances);
-        thing_type_handlers.put(RELATION_TYPE_CREATE_REQ, this::relationTypeCreate);
-        thing_type_handlers.put(RELATION_TYPE_GET_SUPERTYPE_REQ, this::relationTypeGetSupertype);
-        thing_type_handlers.put(RELATION_TYPE_SET_SUPERTYPE_REQ, this::relationTypeSetSupertype);
-        thing_type_handlers.put(RELATION_TYPE_GET_SUPERTYPES_REQ, this::relationTypeGetSupertypes);
-        thing_type_handlers.put(RELATION_TYPE_GET_SUBTYPES_REQ, this::relationTypeGetSubtypes);
-        thing_type_handlers.put(RELATION_TYPE_GET_INSTANCES_REQ, this::relationTypeGetInstances);
-        thing_type_handlers.put(RELATION_TYPE_GET_RELATES_REQ, this::relationTypeGetRelates);
-        thing_type_handlers.put(RELATION_TYPE_GET_RELATES_FOR_ROLE_LABEL_REQ, this::relationTypeGetRelatesForRoleLabel);
-        thing_type_handlers.put(RELATION_TYPE_GET_RELATES_OVERRIDDEN_REQ, this::relationTypeGetRelatesOverridden);
-        thing_type_handlers.put(RELATION_TYPE_SET_RELATES_REQ, this::relationTypeSetRelates);
-        thing_type_handlers.put(RELATION_TYPE_UNSET_RELATES_REQ, this::relationTypeUnsetRelates);
-        thing_type_handlers.put(ATTRIBUTE_TYPE_PUT_REQ, this::attributeTypePut);
-        thing_type_handlers.put(ATTRIBUTE_TYPE_GET_REQ, this::attributeTypeGet);
-        thing_type_handlers.put(ATTRIBUTE_TYPE_GET_SUPERTYPE_REQ, this::attributeTypeGetSupertype);
-        thing_type_handlers.put(ATTRIBUTE_TYPE_SET_SUPERTYPE_REQ, this::attributeTypeSetSupertype);
-        thing_type_handlers.put(ATTRIBUTE_TYPE_GET_SUPERTYPES_REQ, this::attributeTypeGetSupertypes);
-        thing_type_handlers.put(ATTRIBUTE_TYPE_GET_SUBTYPES_REQ, this::attributeTypeGetSubtypes);
-        thing_type_handlers.put(ATTRIBUTE_TYPE_GET_INSTANCES_REQ, this::attributeTypeGetInstances);
-        thing_type_handlers.put(ATTRIBUTE_TYPE_GET_REGEX_REQ, this::attributeTypeGetRegex);
-        thing_type_handlers.put(ATTRIBUTE_TYPE_SET_REGEX_REQ, this::attributeTypeSetRegex);
-        thing_type_handlers.put(ATTRIBUTE_TYPE_GET_OWNERS_REQ, this::attributeTypeGetOwners);
-        thing_type_handlers.put(ConceptProto.ThingType.Req.ReqCase.REQ_NOT_SET, this::requestNotSet);
-        assert thing_type_handlers.size() == ConceptProto.ThingType.Req.ReqCase.class.getEnumConstants().length;
+        thingTypeHandlers = new EnumMap<>(ConceptProto.ThingType.Req.ReqCase.class);
+        thingTypeHandlers.put(THING_TYPE_DELETE_REQ, this::thingTypeDelete);
+        thingTypeHandlers.put(THING_TYPE_SET_LABEL_REQ, this::thingTypeSetLabel);
+        thingTypeHandlers.put(THING_TYPE_SET_ABSTRACT_REQ, this::thingTypeSetAbstract);
+        thingTypeHandlers.put(THING_TYPE_UNSET_ABSTRACT_REQ, this::thingTypeUnsetAbstract);
+        thingTypeHandlers.put(THING_TYPE_GET_OWNS_REQ, this::thingTypeGetOwns);
+        thingTypeHandlers.put(THING_TYPE_GET_OWNS_OVERRIDDEN_REQ, this::thingTypeGetOwnsOverridden);
+        thingTypeHandlers.put(THING_TYPE_SET_OWNS_REQ, this::thingTypeSetOwns);
+        thingTypeHandlers.put(THING_TYPE_UNSET_OWNS_REQ, this::thingTypeUnsetOwns);
+        thingTypeHandlers.put(THING_TYPE_GET_PLAYS_REQ, this::thingTypeGetPlays);
+        thingTypeHandlers.put(THING_TYPE_GET_PLAYS_OVERRIDDEN_REQ, this::thingTypeGetPlaysOverridden);
+        thingTypeHandlers.put(THING_TYPE_SET_PLAYS_REQ, this::thingTypeSetPlays);
+        thingTypeHandlers.put(THING_TYPE_UNSET_PLAYS_REQ, this::thingTypeUnsetPlays);
+        thingTypeHandlers.put(THING_TYPE_GET_SYNTAX_REQ, this::thingTypeGetSyntax);
+        thingTypeHandlers.put(ENTITY_TYPE_CREATE_REQ, this::entityTypeCreate);
+        thingTypeHandlers.put(ENTITY_TYPE_GET_SUPERTYPE_REQ, this::entityTypeGetSupertype);
+        thingTypeHandlers.put(ENTITY_TYPE_SET_SUPERTYPE_REQ, this::entityTypeSetSupertype);
+        thingTypeHandlers.put(ENTITY_TYPE_GET_SUPERTYPES_REQ, this::entityTypeGetSupertypes);
+        thingTypeHandlers.put(ENTITY_TYPE_GET_SUBTYPES_REQ, this::entityTypeGetSubtypes);
+        thingTypeHandlers.put(ENTITY_TYPE_GET_INSTANCES_REQ, this::entityTypeGetInstances);
+        thingTypeHandlers.put(RELATION_TYPE_CREATE_REQ, this::relationTypeCreate);
+        thingTypeHandlers.put(RELATION_TYPE_GET_SUPERTYPE_REQ, this::relationTypeGetSupertype);
+        thingTypeHandlers.put(RELATION_TYPE_SET_SUPERTYPE_REQ, this::relationTypeSetSupertype);
+        thingTypeHandlers.put(RELATION_TYPE_GET_SUPERTYPES_REQ, this::relationTypeGetSupertypes);
+        thingTypeHandlers.put(RELATION_TYPE_GET_SUBTYPES_REQ, this::relationTypeGetSubtypes);
+        thingTypeHandlers.put(RELATION_TYPE_GET_INSTANCES_REQ, this::relationTypeGetInstances);
+        thingTypeHandlers.put(RELATION_TYPE_GET_RELATES_REQ, this::relationTypeGetRelates);
+        thingTypeHandlers.put(RELATION_TYPE_GET_RELATES_FOR_ROLE_LABEL_REQ, this::relationTypeGetRelatesForRoleLabel);
+        thingTypeHandlers.put(RELATION_TYPE_GET_RELATES_OVERRIDDEN_REQ, this::relationTypeGetRelatesOverridden);
+        thingTypeHandlers.put(RELATION_TYPE_SET_RELATES_REQ, this::relationTypeSetRelates);
+        thingTypeHandlers.put(RELATION_TYPE_UNSET_RELATES_REQ, this::relationTypeUnsetRelates);
+        thingTypeHandlers.put(ATTRIBUTE_TYPE_PUT_REQ, this::attributeTypePut);
+        thingTypeHandlers.put(ATTRIBUTE_TYPE_GET_REQ, this::attributeTypeGet);
+        thingTypeHandlers.put(ATTRIBUTE_TYPE_GET_SUPERTYPE_REQ, this::attributeTypeGetSupertype);
+        thingTypeHandlers.put(ATTRIBUTE_TYPE_SET_SUPERTYPE_REQ, this::attributeTypeSetSupertype);
+        thingTypeHandlers.put(ATTRIBUTE_TYPE_GET_SUPERTYPES_REQ, this::attributeTypeGetSupertypes);
+        thingTypeHandlers.put(ATTRIBUTE_TYPE_GET_SUBTYPES_REQ, this::attributeTypeGetSubtypes);
+        thingTypeHandlers.put(ATTRIBUTE_TYPE_GET_INSTANCES_REQ, this::attributeTypeGetInstances);
+        thingTypeHandlers.put(ATTRIBUTE_TYPE_GET_REGEX_REQ, this::attributeTypeGetRegex);
+        thingTypeHandlers.put(ATTRIBUTE_TYPE_SET_REGEX_REQ, this::attributeTypeSetRegex);
+        thingTypeHandlers.put(ATTRIBUTE_TYPE_GET_OWNERS_REQ, this::attributeTypeGetOwners);
+        thingTypeHandlers.put(ConceptProto.ThingType.Req.ReqCase.REQ_NOT_SET, this::requestNotSet);
+        assert thingTypeHandlers.size() == ConceptProto.ThingType.Req.ReqCase.class.getEnumConstants().length;
     }
 
     public void execute(Transaction.Req req) {
@@ -179,13 +179,13 @@ public class TypeService {
         switch (typeReq.getReqCase()) {
             case THING_TYPE_REQ:
                 ConceptProto.ThingType.Req thingTypeReq = typeReq.getThingTypeReq();
-                if (!thing_type_handlers.containsKey(thingTypeReq.getReqCase())) throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
-                thing_type_handlers.get(thingTypeReq.getReqCase()).accept(thingTypeReq, reqID);
+                if (!thingTypeHandlers.containsKey(thingTypeReq.getReqCase())) throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
+                thingTypeHandlers.get(thingTypeReq.getReqCase()).accept(thingTypeReq, reqID);
                 return;
             case ROLE_TYPE_REQ:
                 ConceptProto.RoleType.Req roleTypeReq = typeReq.getRoleTypeReq();
-                if (!role_type_handlers.containsKey(roleTypeReq.getReqCase())) throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
-                role_type_handlers.get(roleTypeReq.getReqCase()).accept(roleTypeReq, reqID);
+                if (!roleTypeHandlers.containsKey(roleTypeReq.getReqCase())) throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
+                roleTypeHandlers.get(roleTypeReq.getReqCase()).accept(roleTypeReq, reqID);
                 return;
             case REQ_NOT_SET:
             default:
