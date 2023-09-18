@@ -35,7 +35,7 @@
 @maven//:io_cucumber_datatable_3_2_1
 @maven//:io_cucumber_docstring_5_1_3
 @maven//:io_cucumber_tag_expressions_2_0_4
-@maven//:io_github_speedb_io_speedbjni_2_4_1_5
+@maven//:io_github_speedb_io_speedbjni_2_6_0
 @maven//:io_grpc_grpc_api_1_43_0
 @maven//:io_grpc_grpc_context_1_43_0
 @maven//:io_grpc_grpc_core_1_43_0
