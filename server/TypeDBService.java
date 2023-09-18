@@ -151,7 +151,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     public void databasesCreate(CoreDatabaseManager.Create.Req request,
                                 StreamObserver<CoreDatabaseManager.Create.Res> responder) {
         try {
-            createDatabase(request.getName());
+            doCreateDatabase(request.getName());
             responder.onNext(createRes());
             responder.onCompleted();
         } catch (RuntimeException e) {
@@ -212,7 +212,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     @Override
     public void databaseDelete(CoreDatabase.Delete.Req request, StreamObserver<CoreDatabase.Delete.Res> responder) {
         try {
-            deleteDatabase(request.getName());
+            doDeleteDatabase(request.getName());
             responder.onNext(deleteRes());
             responder.onCompleted();
         } catch (RuntimeException e) {
@@ -229,7 +229,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             Arguments.Session.Type sessionType = Arguments.Session.Type.of(request.getType().getNumber());
             Options.Session options = applyDefaultOptions(new Options.Session(), request.getOptions());
             TypeDB.Session session = databaseMgr.session(request.getDatabase(), sessionType, options);
-            SessionService sessionSvc = createSessionService(session, options);
+            SessionService sessionSvc = doCreateSessionService(session, options);
             sessionServices.put(sessionSvc.UUID(), sessionSvc);
             int duration = (int) Duration.between(start, Instant.now()).toMillis();
             responder.onNext(openRes(sessionSvc.UUID(), duration));
@@ -278,14 +278,14 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         return new TransactionService(this, responder);
     }
 
-    protected void createDatabase(String databaseName) {
+    protected void doCreateDatabase(String databaseName) {
         if (databaseMgr.contains(databaseName)) {
             throw TypeDBException.of(DATABASE_EXISTS, databaseName);
         }
         databaseMgr.create(databaseName);
     }
 
-    protected void deleteDatabase(String databaseName) {
+    protected void doDeleteDatabase(String databaseName) {
         if (!databaseMgr.contains(databaseName)) {
             throw TypeDBException.of(DATABASE_NOT_FOUND, databaseName);
         }
@@ -301,7 +301,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         database.delete();
     }
 
-    protected SessionService createSessionService(TypeDB.Session session, Options.Session options) {
+    protected SessionService doCreateSessionService(TypeDB.Session session, Options.Session options) {
         return new SessionService(this, session, options);
     }
 
