@@ -391,7 +391,7 @@ public class ResponseBuilder {
 
         public static ConceptProto.Concept protoConcept(com.vaticle.typedb.core.concept.Concept concept) {
             if (concept == null) return null;
-            if (concept.isEntityType()) {
+            else if (concept.isEntityType()) {
                 return ConceptProto.Concept.newBuilder().setEntityType(protoEntityType(concept.asEntityType())).build();
             } else if (concept.isRelationType()) {
                 return ConceptProto.Concept.newBuilder().setRelationType(protoRelationType(concept.asRelationType())).build();
@@ -407,8 +407,7 @@ public class ResponseBuilder {
                 return ConceptProto.Concept.newBuilder().setRelation(protoRelation(concept.asRelation())).build();
             } else if (concept.isAttribute()) {
                 return ConceptProto.Concept.newBuilder().setAttribute(protoAttribute(concept.asAttribute())).build();
-            }
-            throw TypeDBException.of(ErrorMessage.Internal.ILLEGAL_STATE);
+            } else throw TypeDBException.of(ErrorMessage.Internal.ILLEGAL_STATE);
         }
     }
 
@@ -842,9 +841,9 @@ public class ResponseBuilder {
 
         public static ConceptProto.Thing protoThing(com.vaticle.typedb.core.concept.thing.Thing thing) {
             if (thing.isEntity()) return ConceptProto.Thing.newBuilder().setEntity(protoEntity(thing.asEntity())).build();
-            if (thing.isRelation()) return ConceptProto.Thing.newBuilder().setRelation(protoRelation(thing.asRelation())).build();
-            if (thing.isAttribute()) return ConceptProto.Thing.newBuilder().setAttribute(protoAttribute(thing.asAttribute())).build();
-            throw TypeDBException.of(ErrorMessage.Internal.ILLEGAL_STATE);
+            else if (thing.isRelation()) return ConceptProto.Thing.newBuilder().setRelation(protoRelation(thing.asRelation())).build();
+            else if (thing.isAttribute()) return ConceptProto.Thing.newBuilder().setAttribute(protoAttribute(thing.asAttribute())).build();
+            else throw TypeDBException.of(ErrorMessage.Internal.ILLEGAL_STATE);
         }
 
         public static ConceptProto.Entity protoEntity(com.vaticle.typedb.core.concept.thing.Entity thing) {
