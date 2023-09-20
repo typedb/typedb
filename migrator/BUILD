@@ -38,6 +38,7 @@ proto_library(
 java_grpc_library(
     name = "migrator-protocol",
     protos = [":migrator-proto"],
+    visibility = ["//visibility:public"],
 )
 
 java_grpc_library(
