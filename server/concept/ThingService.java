@@ -21,6 +21,7 @@ import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Attribute;
@@ -32,6 +33,7 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.server.TransactionService;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.TransactionProto.Transaction;
@@ -241,8 +243,8 @@ public class ThingService {
     }
 
     private RoleType getRoleType(ConceptProto.RoleType protoRoleType) {
-        RelationType relationType = conceptMgr.getRelationType(protoRoleType.getScope());
-        if (relationType != null) return relationType.getRelates(protoRoleType.getLabel());
+        Type type = conceptMgr.getType(Label.of(protoRoleType.getLabel(), protoRoleType.getScope()));
+        if (type != null) return type.asRoleType();
         else return null;
     }
 
