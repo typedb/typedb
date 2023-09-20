@@ -63,80 +63,7 @@ public class CoreConfig {
         return vaticleFactory;
     }
 
-    public static class Server {
-
-        private final InetSocketAddress address;
-
-        protected Server(InetSocketAddress address) {
-            this.address = address;
-        }
-
-        public InetSocketAddress address() {
-            return address;
-        }
-    }
-
-    public static class Storage {
-
-        private final Path dataDir;
-        private final DatabaseCache databaseCache;
-
-        protected Storage(Path dataDir, DatabaseCache databaseCache) {
-            this.dataDir = dataDir;
-            this.databaseCache = databaseCache;
-        }
-
-        public Path dataDir() {
-            return dataDir;
-        }
-
-        public DatabaseCache databaseCache() {
-            return databaseCache;
-        }
-
-        public static class DatabaseCache {
-
-            private final long dataSize;
-            private final long indexSize;
-
-            DatabaseCache(long dataSize, long indexSize) {
-                this.dataSize = dataSize;
-                this.indexSize = indexSize;
-            }
-
-            public long dataSize() {
-                return dataSize;
-            }
-
-            public long indexSize() {
-                return indexSize;
-            }
-        }
-    }
-
-    public static class Log {
-
-        private final Output output;
-        private final Logger logger;
-        private final Debugger debugger;
-
-        public Log(Output output, Logger logger, Debugger debugger) {
-            this.output = output;
-            this.logger = logger;
-            this.debugger = debugger;
-        }
-
-        public Output output() {
-            return output;
-        }
-
-        public Logger logger() {
-            return logger;
-        }
-
-        public Debugger debugger() {
-            return debugger;
-        }
+    public static class Common {
 
         public static class Output {
 
@@ -191,10 +118,15 @@ public class CoreConfig {
                     private final YAMLParser.Value.TimePeriodName archiveGrouping;
                     private final YAMLParser.Value.TimePeriod archiveAgeLimit;
                     private final long archivesSizeLimit;
+                    private final String filename;
+                    private final String extension;
 
-                    File(Path baseDirectory, long fileSizeLimit, YAMLParser.Value.TimePeriodName archiveGrouping,
+                    File(Path baseDirectory, String filename, String extension,
+                         long fileSizeLimit, YAMLParser.Value.TimePeriodName archiveGrouping,
                          YAMLParser.Value.TimePeriod archiveAgeLimit, long archivesSizeLimit) {
                         this.baseDirectory = baseDirectory;
+                        this.filename = filename;
+                        this.extension = extension;
                         this.fileSizeLimit = fileSizeLimit;
                         this.archiveGrouping = archiveGrouping;
                         this.archiveAgeLimit = archiveAgeLimit;
@@ -203,6 +135,14 @@ public class CoreConfig {
 
                     public Path baseDirectory() {
                         return baseDirectory;
+                    }
+
+                    public String filename() {
+                        return filename;
+                    }
+
+                    public String extension() {
+                        return extension;
                     }
 
                     public long fileSizeLimit() {
@@ -233,6 +173,82 @@ public class CoreConfig {
                 }
             }
         }
+    }
+
+    public static class Server {
+
+        private final InetSocketAddress address;
+
+        protected Server(InetSocketAddress address) {
+            this.address = address;
+        }
+
+        public InetSocketAddress address() {
+            return address;
+        }
+    }
+
+    public static class Storage {
+
+        private final Path dataDir;
+        private final DatabaseCache databaseCache;
+
+        protected Storage(Path dataDir, DatabaseCache databaseCache) {
+            this.dataDir = dataDir;
+            this.databaseCache = databaseCache;
+        }
+
+        public Path dataDir() {
+            return dataDir;
+        }
+
+        public DatabaseCache databaseCache() {
+            return databaseCache;
+        }
+
+        public static class DatabaseCache {
+
+            private final long dataSize;
+            private final long indexSize;
+
+            DatabaseCache(long dataSize, long indexSize) {
+                this.dataSize = dataSize;
+                this.indexSize = indexSize;
+            }
+
+            public long dataSize() {
+                return dataSize;
+            }
+
+            public long indexSize() {
+                return indexSize;
+            }
+        }
+    }
+
+    public static class Log {
+
+        private final Common.Output output;
+        private final Logger logger;
+        private final Debugger debugger;
+
+        public Log(Common.Output output, Logger logger, Debugger debugger) {
+            this.output = output;
+            this.logger = logger;
+            this.debugger = debugger;
+        }
+
+        public Common.Output output() {
+            return output;
+        }
+
+        public Logger logger() {
+            return logger;
+        }
+
+        public Debugger debugger() {
+            return debugger;
+        }
 
         public static class Logger {
 
@@ -244,7 +260,7 @@ public class CoreConfig {
                 this.filteredLoggers = filteredLoggers;
             }
 
-            public void validateOutputs(Map<String, Output.Type> outputs) {
+            public void validateOutputs(Map<String, Common.Output.Type> outputs) {
                 defaultLogger.validateOutputs(outputs);
                 filteredLoggers.values().forEach(logger -> logger.validateOutputs(outputs));
             }
@@ -275,7 +291,7 @@ public class CoreConfig {
                     return outputNames;
                 }
 
-                void validateOutputs(Map<String, Output.Type> outputsAvailable) {
+                void validateOutputs(Map<String, Common.Output.Type> outputsAvailable) {
                     outputNames.forEach(name -> {
                         if (!outputsAvailable.containsKey(name)) {
                             throw TypeDBException.of(CONFIG_LOG_OUTPUT_UNRECOGNISED, name);
@@ -313,7 +329,7 @@ public class CoreConfig {
                 return reasonerTracer;
             }
 
-            public void validateAndSetOutputs(Map<String, Output.Type> outputs) {
+            public void validateAndSetOutputs(Map<String, Common.Output.Type> outputs) {
                 reasonerTracer.validateAndSetOutputs(outputs);
             }
 
@@ -325,14 +341,14 @@ public class CoreConfig {
 
                 private final String outputName;
                 private final boolean enable;
-                private Output.Type.File output;
+                private Common.Output.Type.File output;
 
                 ReasonerTracer(String outputName, boolean enable) {
                     this.outputName = outputName;
                     this.enable = enable;
                 }
 
-                public void validateAndSetOutputs(Map<String, Output.Type> outputs) {
+                public void validateAndSetOutputs(Map<String, Common.Output.Type> outputs) {
                     assert output == null;
                     if (!outputs.containsKey(outputName))
                         throw TypeDBException.of(CONFIG_LOG_OUTPUT_UNRECOGNISED, outputName);
@@ -346,7 +362,7 @@ public class CoreConfig {
                     return enable;
                 }
 
-                public Output.Type.File output() {
+                public Common.Output.Type.File output() {
                     assert output != null;
                     return output;
                 }
