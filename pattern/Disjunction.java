@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.pattern;
 
-import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.ThreadTrace;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
@@ -28,7 +27,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_CLOSE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.CURLY_OPEN;
@@ -39,7 +37,6 @@ import static java.util.stream.Collectors.toList;
 
 public class Disjunction implements Pattern, Cloneable {
 
-    private static final String TRACE_PREFIX = "disjunction.";
     private final List<Conjunction> conjunctions;
     private final int hash;
     private final Set<Identifier.Variable.Retrievable> sharedVariables;
@@ -61,11 +58,9 @@ public class Disjunction implements Pattern, Cloneable {
     public static Disjunction create(
             com.vaticle.typeql.lang.pattern.Disjunction<com.vaticle.typeql.lang.pattern.Conjunction<Conjunctable>> typeql,
             @Nullable VariableRegistry bounds) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            return new Disjunction(typeql.patterns().stream().map(
-                    conjunction -> Conjunction.create(conjunction, bounds)
-            ).collect(toList()));
-        }
+        return new Disjunction(typeql.patterns().stream().map(
+                conjunction -> Conjunction.create(conjunction, bounds)
+        ).collect(toList()));
     }
 
     public List<Conjunction> conjunctions() {

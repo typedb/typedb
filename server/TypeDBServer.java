@@ -19,8 +19,6 @@
 package com.vaticle.typedb.core.server;
 
 import ch.qos.logback.classic.LoggerContext;
-import com.vaticle.factory.tracing.client.FactoryTracing;
-import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.common.util.Java;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
@@ -97,7 +95,6 @@ public class TypeDBServer implements AutoCloseable {
 
         verifyJavaVersion();
         verifyDataDir();
-        configureTracing();
 
         if (debug) logger().info("Running {} in debug mode.", name());
 
@@ -154,21 +151,6 @@ public class TypeDBServer implements AutoCloseable {
 
         if (!Files.isWritable(config.storage().dataDir())) {
             throw TypeDBException.of(DATA_DIRECTORY_NOT_WRITABLE, config.storage().dataDir());
-        }
-    }
-
-    private void configureTracing() {
-        if (config.vaticleFactory().enable()) {
-            assert config.vaticleFactory().uri().isPresent() && config.vaticleFactory().username().isPresent() &&
-                    config.vaticleFactory().token().isPresent();
-            FactoryTracing factoryTracingClient;
-            factoryTracingClient = FactoryTracing.create(
-                    config.vaticleFactory().uri().get(),
-                    config.vaticleFactory().username().get(),
-                    config.vaticleFactory().token().get()
-            ).withLogging();
-            FactoryTracingThreadStatic.setGlobalTracingClient(factoryTracingClient);
-            logger().info("Vaticle Factory tracing is enabled");
         }
     }
 

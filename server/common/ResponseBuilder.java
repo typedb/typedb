@@ -64,14 +64,11 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Logic.Rule.p
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.protoAttribute;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.protoEntity;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.protoRelation;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.protoThing;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoAttributeType;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoEntityType;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoRelationType;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoRoleType;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoThingTypeRoot;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Type.protoType;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Value.protoValue;
 import static java.util.stream.Collectors.toList;
 
 public class ResponseBuilder {
@@ -83,6 +80,12 @@ public class ResponseBuilder {
 
     public static ByteString UUIDAsByteString(UUID uuid) {
         return copyFrom(encodeUUID(uuid).getBytes());
+    }
+
+    public static class Connection {
+        public static ConnectionProto.Connection.Open.Res openRes() {
+            return ConnectionProto.Connection.Open.Res.getDefaultInstance();
+        }
     }
 
     public static class ServerManager {
@@ -962,8 +965,8 @@ public class ResponseBuilder {
 
         public static class Attribute {
 
-            public static ConceptProto.ConceptValue attributeValue(com.vaticle.typedb.core.concept.thing.Attribute attribute) {
-                ConceptProto.ConceptValue.Builder builder = ConceptProto.ConceptValue.newBuilder();
+            public static ConceptProto.Value attributeValue(com.vaticle.typedb.core.concept.thing.Attribute attribute) {
+                ConceptProto.Value.Builder builder = ConceptProto.Value.newBuilder();
                 // attributes don't need to set the value type
                 if (attribute.isString()) {
                     builder.setString(attribute.asString().getValue());
@@ -993,13 +996,6 @@ public class ResponseBuilder {
 
     public static class Value {
 
-        public static ConceptProto.Value protoValue(com.vaticle.typedb.core.concept.value.Value<?> value) {
-            ConceptProto.Value.Builder protoValue = ConceptProto.Value.newBuilder()
-                    .setValueType(valueType(value))
-                    .setValue(value(value));
-            return protoValue.build();
-        }
-
         public static ConceptProto.ValueType valueType(com.vaticle.typedb.core.concept.value.Value<?> value) {
             if (value.isString()) return ConceptProto.ValueType.STRING;
             else if (value.isBoolean()) return ConceptProto.ValueType.BOOLEAN;
@@ -1009,8 +1005,8 @@ public class ResponseBuilder {
             else throw TypeDBException.of(ErrorMessage.Server.BAD_VALUE_TYPE);
         }
 
-        public static ConceptProto.ConceptValue value(com.vaticle.typedb.core.concept.value.Value<?> value) {
-            ConceptProto.ConceptValue.Builder builder = ConceptProto.ConceptValue.newBuilder();
+        public static ConceptProto.Value value(com.vaticle.typedb.core.concept.value.Value<?> value) {
+            ConceptProto.Value.Builder builder = ConceptProto.Value.newBuilder();
             if (value.isString()) builder.setString(value.asString().value());
             else if (value.isLong()) builder.setLong(value.asLong().value());
             else if (value.isBoolean()) builder.setBoolean(value.asBoolean().value());

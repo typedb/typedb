@@ -454,7 +454,7 @@ public class TypeService {
 
     private void attributeTypePut(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         AttributeType attributeType = getAttributeType(thingTypeReq);
-        ConceptProto.Attribute.Value protoValue = thingTypeReq.getAttributeTypePutReq().getValue();
+        ConceptProto.Value protoValue = thingTypeReq.getAttributeTypePutReq().getValue();
 
         Attribute attribute;
         switch (protoValue.getValueCase()) {
@@ -485,7 +485,7 @@ public class TypeService {
 
     private void attributeTypeGet(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         AttributeType attributeType = getAttributeType(thingTypeReq);
-        ConceptProto.Attribute.Value protoValue = thingTypeReq.getAttributeTypeGetReq().getValue();
+        ConceptProto.Value protoValue = thingTypeReq.getAttributeTypeGetReq().getValue();
 
         Attribute attribute;
         switch (protoValue.getValueCase()) {

@@ -25,8 +25,6 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.server.common.ResponseBuilder;
 import com.vaticle.typedb.protocol.ConnectionProto;
-import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;
-import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabaseManager;
 import com.vaticle.typedb.protocol.DatabaseProto.Database;
 import com.vaticle.typedb.protocol.DatabaseProto.DatabaseManager;
 import com.vaticle.typedb.protocol.ServerProto.ServerManager;

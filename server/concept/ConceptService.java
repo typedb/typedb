@@ -118,7 +118,7 @@ public class ConceptService {
 
     private void putAttributeType(ConceptProto.ConceptManager.Req req, UUID reqID) {
         ConceptProto.ConceptManager.PutAttributeType.Req attributeTypeReq = req.getPutAttributeTypeReq();
-        ConceptProto.AttributeType.ValueType valueTypeProto = attributeTypeReq.getValueType();
+        ConceptProto.ValueType valueTypeProto = attributeTypeReq.getValueType();
         AttributeType.ValueType valueType;
         switch (valueTypeProto) {
             case STRING:

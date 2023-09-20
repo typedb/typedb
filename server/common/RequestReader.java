@@ -18,7 +18,6 @@
 package com.vaticle.typedb.core.server.common;
 
 import com.google.protobuf.ByteString;
-import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -94,17 +93,5 @@ public class RequestReader {
             default:
                 throw TypeDBException.of(BAD_VALUE_TYPE, valueType);
         }
-    }
-
-    public static Optional<TracingData> getTracingData(TransactionProto.Transaction.Req request) {
-        if (FactoryTracingThreadStatic.isTracingEnabled()) {
-            Map<String, String> metadata = request.getMetadataMap();
-            String rootID = metadata.get("traceRootId");
-            String parentID = metadata.get("traceParentId");
-            if (rootID != null && parentID != null) {
-                return Optional.of(new TracingData(rootID, parentID));
-            }
-        }
-        return Optional.empty();
     }
 }
