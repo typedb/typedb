@@ -159,14 +159,26 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
     }
 
     @Override
+    public FunctionalIterator<AttributeImpl<?>> getHas() {
+        return getAttributeVertices().map(v -> AttributeImpl.of(conceptMgr, v));
+    }
+
+    @Override
     public FunctionalIterator<AttributeImpl<?>> getHas(List<AttributeType> attributeTypes, Set<Annotation> ownsAnnotations) {
-        return getHas(getType().getOwns(ownsAnnotations).stream().map(ThingType.Owns::attributeType)
+        if (attributeTypes.isEmpty()) return getHas(ownsAnnotations);
+        else return getHas(getType().getOwns(ownsAnnotations).stream().map(ThingType.Owns::attributeType)
                 .filter(attributeTypes::contains).toArray(AttributeType[]::new));
     }
 
     @Override
     public FunctionalIterator<AttributeImpl<?>> getHas(Set<Annotation> ownsAnnotations) {
-        return getHas(getType().getOwns(ownsAnnotations).stream().map(ThingType.Owns::attributeType).toArray(AttributeType[]::new));
+        if (ownsAnnotations.isEmpty()) return getHas();
+        else return getHas(getType().getOwns(ownsAnnotations).stream().map(ThingType.Owns::attributeType).toArray(AttributeType[]::new));
+    }
+
+    @Override
+    public FunctionalIterator<AttributeImpl<?>> getHas(AttributeType attributeType) {
+        return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(conceptMgr, v));
     }
 
     @Override
@@ -194,26 +206,20 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
         return getAttributeVertices(list(attributeType)).map(v -> AttributeImpl.of(conceptMgr, v).asDateTime());
     }
 
-    @Override
-    public FunctionalIterator<AttributeImpl<?>> getHas(AttributeType... attributeTypes) {
-        if (attributeTypes.length == 0) {
-            return getAttributeVertices(Collections.emptyList()).map(v -> AttributeImpl.of(conceptMgr, v));
-        } else {
-            return getAttributeVertices(Arrays.asList(attributeTypes)).map(v -> AttributeImpl.of(conceptMgr, v));
-        }
+    private FunctionalIterator<AttributeImpl<?>> getHas(AttributeType... attributeTypes) {
+        return getAttributeVertices(Arrays.asList(attributeTypes)).map(v -> AttributeImpl.of(conceptMgr, v));
     }
 
-    private FunctionalIterator<? extends AttributeVertex<?>> getAttributeVertices(List<? extends
-            AttributeType> attributeTypes) {
-        if (!attributeTypes.isEmpty()) {
-            return iterate(attributeTypes)
-                    .flatMap(AttributeType::getSubtypes).distinct()
-                    .map(t -> ((TypeImpl) t).vertex)
-                    .flatMap(type -> readableVertex().outs().edge(HAS, PrefixIID.of(type.encoding().instance()), type.iid()).to())
-                    .map(ThingVertex::asAttribute);
-        } else {
-            return readableVertex().outs().edge(HAS).to().map(ThingVertex::asAttribute);
-        }
+    private FunctionalIterator<? extends AttributeVertex<?>> getAttributeVertices() {
+        return readableVertex().outs().edge(HAS).to().map(ThingVertex::asAttribute);
+    }
+
+    private FunctionalIterator<? extends AttributeVertex<?>> getAttributeVertices(List<? extends AttributeType> attributeTypes) {
+        return iterate(attributeTypes)
+                .flatMap(AttributeType::getSubtypes).distinct()
+                .map(t -> ((TypeImpl) t).vertex)
+                .flatMap(type -> readableVertex().outs().edge(HAS, PrefixIID.of(type.encoding().instance()), type.iid()).to())
+                .map(ThingVertex::asAttribute);
     }
 
     @Override

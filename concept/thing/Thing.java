@@ -97,7 +97,11 @@ public interface Thing extends Concept, Comparable<Thing> {
      *
      * @return an iterator of {@code Attribute} instances owned by this {@code Thing}
      */
+    FunctionalIterator<? extends Attribute> getHas();
+
     FunctionalIterator<? extends Attribute> getHas(Set<Annotation> annotations);
+
+    FunctionalIterator<? extends Attribute> getHas(AttributeType attributeType);
 
     FunctionalIterator<? extends Attribute.Boolean> getHas(AttributeType.Boolean attributeType);
 
@@ -119,8 +123,6 @@ public interface Thing extends Concept, Comparable<Thing> {
      *
      * @return an iterator of {@code Attribute} instances owned by this {@code Thing}
      */
-    FunctionalIterator<? extends Attribute> getHas(AttributeType... attributeType);
-
     FunctionalIterator<? extends Attribute> getHas(List<AttributeType> attributeTypes, Set<Annotation> ownsAnnotations);
 
     /**
