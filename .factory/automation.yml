@@ -30,13 +30,6 @@ build:
     filter:
       owner: vaticle
       branch: [master, development]
-    build-analysis:
-      image: vaticle-ubuntu-22.04
-      command: |
-        SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
-          bazel run @vaticle_dependencies//tool/sonarcloud:code-analysis -- \
-          --project-key=vaticle_typedb \
-          --branch=$FACTORY_BRANCH --commit-id=$FACTORY_COMMIT
     dependency-analysis:
       image: vaticle-ubuntu-22.04
       command: |
