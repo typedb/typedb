@@ -126,10 +126,10 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
                                StreamObserver<ConnectionProto.Connection.Open.Res> responder) {
         try {
             if (request.getVersion() != VersionProto.Version.VERSION) {
-                int clientProtocolVersion = request.getVersion() == VersionProto.Version.UNSPECIFIED ?
+                int driverProtocolVersion = request.getVersion() == VersionProto.Version.UNSPECIFIED ?
                         0 : request.getVersion().getNumber();
                 TypeDBException error = TypeDBException.of(
-                        PROTOCOL_VERSION_MISMATCH, VersionProto.Version.VERSION.getNumber(), clientProtocolVersion
+                        PROTOCOL_VERSION_MISMATCH, VersionProto.Version.VERSION.getNumber(), driverProtocolVersion
                 );
                 responder.onError(exception(error));
                 LOG.error(error.getMessage(), error);
