@@ -17,7 +17,6 @@
 
 package com.vaticle.typedb.core.server.query;
 
-import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Context;
@@ -40,7 +39,6 @@ import com.vaticle.typeql.lang.query.TypeQLUpdate;
 
 import java.util.UUID;
 
-import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNKNOWN_REQUEST_TYPE;
 import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
 import static com.vaticle.typedb.core.server.common.RequestReader.applyQueryOptions;
@@ -67,47 +65,45 @@ public class QueryService {
     }
 
     public void execute(TransactionProto.Transaction.Req req) {
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread("query")) {
-            QueryProto.QueryManager.Req queryReq = req.getQueryManagerReq();
-            Options.Query options = new Options.Query();
-            applyDefaultOptions(options, queryReq.getOptions());
-            applyQueryOptions(options, queryReq.getOptions());
-            UUID reqID = byteStringAsUUID(req.getReqId());
-            switch (queryReq.getReqCase()) {
-                case DEFINE_REQ:
-                    this.define(queryReq.getDefineReq().getQuery(), options, reqID);
-                    return;
-                case UNDEFINE_REQ:
-                    this.undefine(queryReq.getUndefineReq().getQuery(), options, reqID);
-                    return;
-                case MATCH_REQ:
-                    this.match(queryReq.getMatchReq().getQuery(), options, reqID);
-                    return;
-                case MATCH_AGGREGATE_REQ:
-                    this.matchAggregate(queryReq.getMatchAggregateReq().getQuery(), options, reqID);
-                    return;
-                case MATCH_GROUP_REQ:
-                    this.matchGroup(queryReq.getMatchGroupReq().getQuery(), options, reqID);
-                    return;
-                case MATCH_GROUP_AGGREGATE_REQ:
-                    this.matchGroupAggregate(queryReq.getMatchGroupAggregateReq().getQuery(), options, reqID);
-                    return;
-                case INSERT_REQ:
-                    this.insert(queryReq.getInsertReq().getQuery(), options, reqID);
-                    return;
-                case DELETE_REQ:
-                    this.delete(queryReq.getDeleteReq().getQuery(), options, reqID);
-                    return;
-                case UPDATE_REQ:
-                    this.update(queryReq.getUpdateReq().getQuery(), options, reqID);
-                    return;
-                case EXPLAIN_REQ:
-                    this.explain(queryReq.getExplainReq().getExplainableId(), reqID);
-                    return;
-                case REQ_NOT_SET:
-                default:
-                    throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
-            }
+        QueryProto.QueryManager.Req queryReq = req.getQueryManagerReq();
+        Options.Query options = new Options.Query();
+        applyDefaultOptions(options, queryReq.getOptions());
+        applyQueryOptions(options, queryReq.getOptions());
+        UUID reqID = byteStringAsUUID(req.getReqId());
+        switch (queryReq.getReqCase()) {
+            case DEFINE_REQ:
+                this.define(queryReq.getDefineReq().getQuery(), options, reqID);
+                return;
+            case UNDEFINE_REQ:
+                this.undefine(queryReq.getUndefineReq().getQuery(), options, reqID);
+                return;
+            case MATCH_REQ:
+                this.match(queryReq.getMatchReq().getQuery(), options, reqID);
+                return;
+            case MATCH_AGGREGATE_REQ:
+                this.matchAggregate(queryReq.getMatchAggregateReq().getQuery(), options, reqID);
+                return;
+            case MATCH_GROUP_REQ:
+                this.matchGroup(queryReq.getMatchGroupReq().getQuery(), options, reqID);
+                return;
+            case MATCH_GROUP_AGGREGATE_REQ:
+                this.matchGroupAggregate(queryReq.getMatchGroupAggregateReq().getQuery(), options, reqID);
+                return;
+            case INSERT_REQ:
+                this.insert(queryReq.getInsertReq().getQuery(), options, reqID);
+                return;
+            case DELETE_REQ:
+                this.delete(queryReq.getDeleteReq().getQuery(), options, reqID);
+                return;
+            case UPDATE_REQ:
+                this.update(queryReq.getUpdateReq().getQuery(), options, reqID);
+                return;
+            case EXPLAIN_REQ:
+                this.explain(queryReq.getExplainReq().getExplainableId(), reqID);
+                return;
+            case REQ_NOT_SET:
+            default:
+                throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
         }
     }
 

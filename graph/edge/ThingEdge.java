@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.graph.edge;
 
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
@@ -40,7 +41,7 @@ public interface ThingEdge extends Edge<Encoding.Edge.Thing, ThingVertex> {
 
     Optional<ThingVertex> optimised();
 
-    boolean isInferred();
+    Existence existence();
 
     View.Forward forwardView();
 

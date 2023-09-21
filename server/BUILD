@@ -21,7 +21,6 @@ load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "assembl
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
-load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
 
 
 package(default_visibility = ["//visibility:private",])
@@ -69,7 +68,6 @@ native_java_libraries(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_factory_tracing//client:client",
         "@vaticle_typeql//java/pattern:pattern",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/query",
@@ -132,7 +130,7 @@ java_deps(
     target = ":server-bin-mac",
     java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
-    maven_name = True,
+    maven_name = False,
 )
 
 java_deps(
@@ -140,7 +138,7 @@ java_deps(
     target = ":server-bin-linux",
     java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
-    maven_name = True,
+    maven_name = False,
 )
 
 java_deps(
@@ -148,7 +146,7 @@ java_deps(
     target = ":server-bin-windows",
     java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
-    maven_name = True,
+    maven_name = False,
 )
 
 assemble_files = {

@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.graph.vertex.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.GraphManager;
@@ -34,6 +35,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.INVALID_THING_VERTEX_CASTING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.ILLEGAL_OPERATION;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ATTRIBUTE;
 
 public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implements ThingVertex {
@@ -68,8 +71,8 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
     }
 
     @Override
-    public boolean isInferred() {
-        return false;
+    public Existence existence() {
+        return STORED;
     }
 
     @Override
@@ -236,11 +239,11 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
 
         public static class Buffered extends ThingVertexImpl.Write {
 
-            private final boolean isInferred;
+            private final Existence existence;
 
-            public Buffered(ThingGraph graph, VertexIID.Thing iid, boolean isInferred) {
+            public Buffered(ThingGraph graph, VertexIID.Thing iid, Existence existence) {
                 super(graph, iid);
-                this.isInferred = isInferred;
+                this.existence = existence;
                 setModified();
             }
 
@@ -260,13 +263,13 @@ public abstract class ThingVertexImpl extends VertexImpl<VertexIID.Thing> implem
             }
 
             @Override
-            public boolean isInferred() {
-                return isInferred;
+            public Existence existence() {
+                return existence;
             }
 
             @Override
             public void commit() {
-                if (isInferred) throw TypeDBException.of(ILLEGAL_OPERATION);
+                if (existence() == INFERRED) throw TypeDBException.of(ILLEGAL_OPERATION);
                 commitVertex();
                 commitEdges();
             }

@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.pattern;
 
-import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.ThreadTrace;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
@@ -39,7 +38,6 @@ import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
 import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
-import com.vaticle.typeql.lang.pattern.variable.builder.Expression;
 import com.vaticle.typeql.lang.pattern.variable.builder.Expression.Constant;
 
 import javax.annotation.Nullable;
@@ -54,7 +52,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -78,7 +75,6 @@ import static java.util.stream.Collectors.toList;
 
 public class Conjunction implements Pattern, Cloneable {
 
-    private static final String TRACE_PREFIX = "conjunction.";
     private final Map<Identifier.Variable, Variable> variableMap;
     private final Set<Variable> variableSet;
     private final List<Negation> negations;
@@ -109,22 +105,20 @@ public class Conjunction implements Pattern, Cloneable {
 
     public static Conjunction create(com.vaticle.typeql.lang.pattern.Conjunction<Conjunctable> typeql,
                                      @Nullable VariableRegistry bounds) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            List<BoundVariable> typeQLVariables = new ArrayList<>();
-            List<com.vaticle.typeql.lang.pattern.Negation<?>> typeQLNegations = new ArrayList<>();
+        List<BoundVariable> typeQLVariables = new ArrayList<>();
+        List<com.vaticle.typeql.lang.pattern.Negation<?>> typeQLNegations = new ArrayList<>();
 
-            typeql.patterns().forEach(conjunctable -> {
-                if (conjunctable.isVariable()) typeQLVariables.add(conjunctable.asVariable());
-                else if (conjunctable.isNegation()) typeQLNegations.add(conjunctable.asNegation());
-                else throw TypeDBException.of(ILLEGAL_STATE);
-            });
+        typeql.patterns().forEach(conjunctable -> {
+            if (conjunctable.isVariable()) typeQLVariables.add(conjunctable.asVariable());
+            else if (conjunctable.isNegation()) typeQLNegations.add(conjunctable.asNegation());
+            else throw TypeDBException.of(ILLEGAL_STATE);
+        });
 
-            if (typeQLVariables.isEmpty() && !typeQLNegations.isEmpty()) throw TypeDBException.of(UNBOUNDED_NEGATION);
-            VariableRegistry registry = VariableRegistry.createFromVariables(typeQLVariables, bounds);
-            List<Negation> typeDBNegations = typeQLNegations.isEmpty() ? list() :
-                    typeQLNegations.stream().map(n -> Negation.create(n, registry)).collect(toList());
-            return new Conjunction(registry.variables(), typeDBNegations);
-        }
+        if (typeQLVariables.isEmpty() && !typeQLNegations.isEmpty()) throw TypeDBException.of(UNBOUNDED_NEGATION);
+        VariableRegistry registry = VariableRegistry.createFromVariables(typeQLVariables, bounds);
+        List<Negation> typeDBNegations = typeQLNegations.isEmpty() ? list() :
+                typeQLNegations.stream().map(n -> Negation.create(n, registry)).collect(toList());
+        return new Conjunction(registry.variables(), typeDBNegations);
     }
 
     public void bound(Map<Identifier.Variable.Retrievable, Either<Label, ByteArray>> bounds) {

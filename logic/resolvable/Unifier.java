@@ -143,12 +143,22 @@ public class Unifier {
         initialConcepts.forEach((id, concept) -> {
             if (id.isName() && concept.isType()) {
                 namedTypeNames.add(id.asName());
-                if (!instanceRequirements.hasRestriction(id)) {
-                    namedTypeSupers.add(concept.asType().getSupertypes().map(t -> t));
+                if (concept.isThingType()) {
+                    if (!instanceRequirements.hasRestriction(id)) {
+                        namedTypeSupers.add(concept.asThingType().getSupertypesWithThing().map(t -> t));
+                    } else {
+                        namedTypeSupers.add(concept.asThingType().getSupertypesWithThing()
+                                .filter(t -> t.equals(instanceRequirements.restriction(id)))
+                                .map(t -> t));
+                    }
                 } else {
-                    namedTypeSupers.add(concept.asType().getSupertypes()
-                            .filter(t -> t.equals(instanceRequirements.restriction(id)))
-                            .map(t -> t));
+                    if (!instanceRequirements.hasRestriction(id)) {
+                        namedTypeSupers.add(concept.asType().getSupertypes().map(t -> t));
+                    } else {
+                        namedTypeSupers.add(concept.asType().getSupertypes()
+                                .filter(t -> t.equals(instanceRequirements.restriction(id)))
+                                .map(t -> t));
+                    }
                 }
             } else fixedConcepts.put(id, concept);
         });

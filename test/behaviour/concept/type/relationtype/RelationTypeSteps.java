@@ -28,6 +28,7 @@ import io.cucumber.java.en.When;
 import java.util.List;
 import java.util.Set;
 
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typedb.core.test.behaviour.connection.ConnectionSteps.tx;
 import static java.util.Objects.isNull;
@@ -120,7 +121,7 @@ public class RelationTypeSteps {
     }
 
     private Set<Parameters.ScopedLabel> relation_type_get_related_explicit_roles_actuals(String relationLabel) {
-        return tx().concepts().getRelationType(relationLabel).getRelatesExplicit()
+        return tx().concepts().getRelationType(relationLabel).getRelates(EXPLICIT)
                 .map(role -> new Parameters.ScopedLabel(role.getLabel())).toSet();
     }
 

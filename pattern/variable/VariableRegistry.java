@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.pattern.variable;
 
-import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
@@ -35,7 +34,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
 import static com.vaticle.typedb.common.collection.Collections.concatToSet;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
@@ -47,8 +45,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.VARI
 import static java.util.Collections.unmodifiableSet;
 
 public class VariableRegistry {
-
-    private static final String TRACE_PREFIX = "variableregistry.";
 
     private final VariableRegistry bounds;
     private final boolean allowDerived;
@@ -84,11 +80,9 @@ public class VariableRegistry {
     }
 
     public static VariableRegistry createFromTypes(List<com.vaticle.typeql.lang.pattern.variable.TypeVariable> variables) {
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "types")) {
-            VariableRegistry registry = new VariableRegistry(null);
-            variables.forEach(registry::register);
-            return registry;
-        }
+        VariableRegistry registry = new VariableRegistry(null);
+        variables.forEach(registry::register);
+        return registry;
     }
 
     public static VariableRegistry createFromThings(List<com.vaticle.typeql.lang.pattern.variable.ThingVariable<?>> variables) {
@@ -96,9 +90,7 @@ public class VariableRegistry {
     }
 
     public static VariableRegistry createFromThings(List<com.vaticle.typeql.lang.pattern.variable.ThingVariable<?>> variables, boolean allowDerived) {
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "things")) {
-            return createFromVariables(variables, null, allowDerived);
-        }
+        return createFromVariables(variables, null, allowDerived);
     }
 
     public static VariableRegistry createFromVariables(List<? extends BoundVariable> variables,
@@ -108,19 +100,17 @@ public class VariableRegistry {
 
     public static VariableRegistry createFromVariables(List<? extends BoundVariable> variables,
                                                        @Nullable VariableRegistry bounds, boolean allowDerived) {
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "variables")) {
-            List<ConceptVariable> unboundedVariables = new ArrayList<>();
-            VariableRegistry registry = new VariableRegistry(bounds, allowDerived);
-            variables.forEach(typeQLVar -> {
-                if (typeQLVar.isThing()) registry.register(typeQLVar.asThing());
-                else if (typeQLVar.isType()) registry.register(typeQLVar.asType());
-                else if (typeQLVar.isValue()) registry.register(typeQLVar.asValue());
-                else if (typeQLVar.isConcept()) unboundedVariables.add(typeQLVar.asConcept());
-                else throw TypeDBException.of(ILLEGAL_STATE);
-            });
-            unboundedVariables.forEach(registry::register);
-            return registry;
-        }
+        List<ConceptVariable> unboundedVariables = new ArrayList<>();
+        VariableRegistry registry = new VariableRegistry(bounds, allowDerived);
+        variables.forEach(typeQLVar -> {
+            if (typeQLVar.isThing()) registry.register(typeQLVar.asThing());
+            else if (typeQLVar.isType()) registry.register(typeQLVar.asType());
+            else if (typeQLVar.isValue()) registry.register(typeQLVar.asValue());
+            else if (typeQLVar.isConcept()) unboundedVariables.add(typeQLVar.asConcept());
+            else throw TypeDBException.of(ILLEGAL_STATE);
+        });
+        unboundedVariables.forEach(registry::register);
+        return registry;
     }
 
     public Variable register(com.vaticle.typeql.lang.pattern.variable.ConceptVariable typeQLVar) {

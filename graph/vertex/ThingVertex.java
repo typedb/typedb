@@ -18,11 +18,12 @@
 
 package com.vaticle.typedb.core.graph.vertex;
 
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
+import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.GraphManager;
 import com.vaticle.typedb.core.graph.ThingGraph;
 import com.vaticle.typedb.core.graph.adjacency.ThingAdjacency;
-import com.vaticle.typedb.core.encoding.Encoding;
-import com.vaticle.typedb.core.encoding.iid.VertexIID;
 
 public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thing> {
 
@@ -62,11 +63,11 @@ public interface ThingVertex extends Vertex<VertexIID.Thing, Encoding.Vertex.Thi
     ThingAdjacency.In ins();
 
     /**
-     * Returns true if this {@code ThingVertex} is a result of inference.
+     * Returns the mode of {@code Existence} of this {@code ThingVertex}.
      *
-     * @return true if this {@code ThingVertex} is a result of inference
+     * @return {@code INFERRED} if this {@code ThingVertex} is a result of inference, {@code STORED} otherwise
      */
-    boolean isInferred();
+    Existence existence();
 
     /**
      * Returns true if this {@code ThingVertex} is an instance of {@code AttributeVertex}.

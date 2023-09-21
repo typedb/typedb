@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.query;
 
-import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.ThreadTrace;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.concept.ConceptManager;
@@ -44,7 +43,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE;
@@ -58,8 +56,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TY
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IS;
 
 public class Definer {
-
-    private static final String TRACE_PREFIX = "definer.";
 
     private final LogicManager logicMgr;
     private final ConceptManager conceptMgr;
@@ -80,59 +76,53 @@ public class Definer {
 
     public static Definer create(ConceptManager conceptMgr, LogicManager logicMgr,
                                  TypeQLDefine query, Context.Query context) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            Set<TypeVariable> types = VariableRegistry.createFromTypes(query.variables()).types();
-            return new Definer(conceptMgr, logicMgr, types, query.rules(), context);
-        }
+        Set<TypeVariable> types = VariableRegistry.createFromTypes(query.variables()).types();
+        return new Definer(conceptMgr, logicMgr, types, query.rules(), context);
     }
 
     public void execute() {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            validateTypeHierarchyIsNotCyclic(variables);
-            variables.forEach(variable -> {
-                if (!defined.contains(variable)) define(variable);
-            });
-            rules.forEach(this::define);
-        }
+        validateTypeHierarchyIsNotCyclic(variables);
+        variables.forEach(variable -> {
+            if (!defined.contains(variable)) define(variable);
+        });
+        rules.forEach(this::define);
     }
 
     private ThingType define(TypeVariable variable) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
-            assert variable.label().isPresent();
-            LabelConstraint labelConstraint = variable.label().get();
+        assert variable.label().isPresent();
+        LabelConstraint labelConstraint = variable.label().get();
 
-            if (labelConstraint.scope().isPresent() && variable.constraints().size() > 1) {
-                throw TypeDBException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, labelConstraint.scopedLabel());
-            } else if (!variable.is().isEmpty()) {
-                throw TypeDBException.of(TYPE_CONSTRAINT_UNACCEPTED, IS);
-            } else if (labelConstraint.scope().isPresent()) return null; // do nothing
-            else if (defined.contains(variable)) return conceptMgr.getThingType(labelConstraint.scopedLabel());
+        if (labelConstraint.scope().isPresent() && variable.constraints().size() > 1) {
+            throw TypeDBException.of(ROLE_DEFINED_OUTSIDE_OF_RELATION, labelConstraint.scopedLabel());
+        } else if (!variable.is().isEmpty()) {
+            throw TypeDBException.of(TYPE_CONSTRAINT_UNACCEPTED, IS);
+        } else if (labelConstraint.scope().isPresent()) return null; // do nothing
+        else if (defined.contains(variable)) return conceptMgr.getThingType(labelConstraint.scopedLabel());
 
-            ThingType type = getThingType(labelConstraint);
-            if (variable.sub().isPresent()) {
-                type = defineSub(type, variable.sub().get(), variable);
-            } else if (variable.valueType().isPresent()) { // && variable.sub().size() == 0
-                String valueType = variable.valueType().get().valueType().name();
-                throw TypeDBException.of(ATTRIBUTE_VALUE_TYPE_MODIFIED, valueType, labelConstraint.label());
-            } else if (type == null) {
-                throw TypeDBException.of(TYPE_NOT_FOUND, labelConstraint.label());
-            }
-
-            if (variable.valueType().isPresent() && !(type.isAttributeType())) {
-                throw TypeDBException.of(ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE, labelConstraint.label());
-            }
-
-            defined.add(variable);
-
-            if (variable.abstractConstraint().isPresent()) defineAbstract(type);
-            if (variable.regex().isPresent()) defineRegex(type.asAttributeType().asString(), variable.regex().get());
-
-            if (!variable.relates().isEmpty()) defineRelates(type.asRelationType(), variable.relates());
-            if (!variable.owns().isEmpty()) defineOwns(type, variable.owns());
-            if (!variable.plays().isEmpty()) definePlays(type, variable.plays());
-
-            return type;
+        ThingType type = getThingType(labelConstraint);
+        if (variable.sub().isPresent()) {
+            type = defineSub(type, variable.sub().get(), variable);
+        } else if (variable.valueType().isPresent()) { // && variable.sub().size() == 0
+            String valueType = variable.valueType().get().valueType().name();
+            throw TypeDBException.of(ATTRIBUTE_VALUE_TYPE_MODIFIED, valueType, labelConstraint.label());
+        } else if (type == null) {
+            throw TypeDBException.of(TYPE_NOT_FOUND, labelConstraint.label());
         }
+
+        if (variable.valueType().isPresent() && !(type.isAttributeType())) {
+            throw TypeDBException.of(ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE, labelConstraint.label());
+        }
+
+        defined.add(variable);
+
+        if (variable.abstractConstraint().isPresent()) defineAbstract(type);
+        if (variable.regex().isPresent()) defineRegex(type.asAttributeType().asString(), variable.regex().get());
+
+        if (!variable.relates().isEmpty()) defineRelates(type.asRelationType(), variable.relates());
+        if (!variable.owns().isEmpty()) defineOwns(type, variable.owns());
+        if (!variable.plays().isEmpty()) definePlays(type, variable.plays());
+
+        return type;
     }
 
     private void validateTypeHierarchyIsNotCyclic(Set<TypeVariable> variables) {
@@ -154,116 +144,100 @@ public class Definer {
     }
 
     private ThingType getThingType(LabelConstraint label) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_thing_type")) {
-            ThingType thingType;
-            if ((thingType = conceptMgr.getThingType(label.label())) != null) return thingType;
-            else return null;
-        }
+        ThingType thingType;
+        if ((thingType = conceptMgr.getThingType(label.label())) != null) return thingType;
+        else return null;
     }
 
     private RoleType getRoleType(LabelConstraint label) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "get_role_type")) {
-            // We always assume that Role Types already exist,
-            // defined by their Relation Types ahead of time
-            assert label.scope().isPresent();
-            ThingType thingType;
-            RoleType roleType;
-            if ((thingType = conceptMgr.getThingType(label.scope().get())) == null) {
-                throw TypeDBException.of(TYPE_NOT_FOUND, label.scope().get());
-            } else if (!thingType.isRelationType()) {
-                throw TypeDBException.of(ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE, label.scopedLabel(), label.scope().get());
-            } else if ((roleType = thingType.asRelationType().getRelates(label.label())) == null) {
-                throw TypeDBException.of(TYPE_NOT_FOUND, label.scopedLabel());
-            }
-            return roleType;
+        // We always assume that Role Types already exist,
+        // defined by their Relation Types ahead of time
+        assert label.scope().isPresent();
+        ThingType thingType;
+        RoleType roleType;
+        if ((thingType = conceptMgr.getThingType(label.scope().get())) == null) {
+            throw TypeDBException.of(TYPE_NOT_FOUND, label.scope().get());
+        } else if (!thingType.isRelationType()) {
+            throw TypeDBException.of(ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE, label.scopedLabel(), label.scope().get());
+        } else if ((roleType = thingType.asRelationType().getRelates(label.label())) == null) {
+            throw TypeDBException.of(TYPE_NOT_FOUND, label.scopedLabel());
         }
+        return roleType;
     }
 
     private ThingType defineSub(ThingType thingType, SubConstraint subConstraint, TypeVariable var) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define_sub")) {
-            LabelConstraint labelConstraint = var.label().get();
-            ThingType supertype = define(subConstraint.type()).asThingType();
-            if (supertype.isEntityType()) {
-                if (thingType == null) thingType = conceptMgr.putEntityType(labelConstraint.label());
-                thingType.asEntityType().setSupertype(supertype.asEntityType());
-            } else if (supertype.isRelationType()) {
-                if (thingType == null) thingType = conceptMgr.putRelationType(labelConstraint.label());
-                thingType.asRelationType().setSupertype(supertype.asRelationType());
-            } else if (supertype.isAttributeType()) {
-                ValueType valueType;
-                if (var.valueType().isPresent()) valueType = ValueType.of(var.valueType().get().valueType());
-                else if (!supertype.isRoot()) valueType = supertype.asAttributeType().getValueType();
-                else throw TypeDBException.of(ATTRIBUTE_VALUE_TYPE_MISSING, labelConstraint.label());
-                if (thingType == null) thingType = conceptMgr.putAttributeType(labelConstraint.label(), valueType);
-                else if (!valueType.equals(thingType.asAttributeType().getValueType())) {
-                    throw TypeDBException.of(ATTRIBUTE_VALUE_TYPE_MODIFIED, valueType, labelConstraint.label());
-                }
-                thingType.asAttributeType().setSupertype(supertype.asAttributeType());
-            } else {
-                throw TypeDBException.of(INVALID_DEFINE_SUB, labelConstraint.scopedLabel(), supertype.getLabel());
+        LabelConstraint labelConstraint = var.label().get();
+        ThingType supertype = define(subConstraint.type()).asThingType();
+        if (supertype.isEntityType()) {
+            if (thingType == null) thingType = conceptMgr.putEntityType(labelConstraint.label());
+            thingType.asEntityType().setSupertype(supertype.asEntityType());
+        } else if (supertype.isRelationType()) {
+            if (thingType == null) thingType = conceptMgr.putRelationType(labelConstraint.label());
+            thingType.asRelationType().setSupertype(supertype.asRelationType());
+        } else if (supertype.isAttributeType()) {
+            ValueType valueType;
+            if (var.valueType().isPresent()) valueType = ValueType.of(var.valueType().get().valueType());
+            else if (!supertype.isRoot()) valueType = supertype.asAttributeType().getValueType();
+            else throw TypeDBException.of(ATTRIBUTE_VALUE_TYPE_MISSING, labelConstraint.label());
+            if (thingType == null) thingType = conceptMgr.putAttributeType(labelConstraint.label(), valueType);
+            else if (!valueType.equals(thingType.asAttributeType().getValueType())) {
+                throw TypeDBException.of(ATTRIBUTE_VALUE_TYPE_MODIFIED, valueType, labelConstraint.label());
             }
-            return thingType;
+            thingType.asAttributeType().setSupertype(supertype.asAttributeType());
+        } else {
+            throw TypeDBException.of(INVALID_DEFINE_SUB, labelConstraint.scopedLabel(), supertype.getLabel());
         }
+        return thingType;
     }
 
     private void defineAbstract(ThingType thingType) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define_abstract")) {
-            thingType.setAbstract();
-        }
+        thingType.setAbstract();
     }
 
     private void defineRegex(AttributeType.String attributeType, RegexConstraint regexConstraint) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define_regex")) {
-            attributeType.setRegex(regexConstraint.regex());
-        }
+        attributeType.setRegex(regexConstraint.regex());
     }
 
     private void defineRelates(RelationType relationType, Set<RelatesConstraint> relatesConstraints) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define_relates")) {
-            relatesConstraints.forEach(relates -> {
-                String roleTypeLabel = relates.role().label().get().label();
-                if (relates.overridden().isPresent()) {
-                    String overriddenTypeLabel = relates.overridden().get().label().get().label();
-                    relationType.setRelates(roleTypeLabel, overriddenTypeLabel);
-                    defined.add(relates.overridden().get());
-                } else {
-                    relationType.setRelates(roleTypeLabel);
-                }
-                defined.add(relates.role());
-            });
-        }
+        relatesConstraints.forEach(relates -> {
+            String roleTypeLabel = relates.role().label().get().label();
+            if (relates.overridden().isPresent()) {
+                String overriddenTypeLabel = relates.overridden().get().label().get().label();
+                relationType.setRelates(roleTypeLabel, overriddenTypeLabel);
+                defined.add(relates.overridden().get());
+            } else {
+                relationType.setRelates(roleTypeLabel);
+            }
+            defined.add(relates.role());
+        });
     }
 
     private void defineOwns(ThingType thingType, Set<OwnsConstraint> ownsConstraints) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define_owns")) {
-            ownsConstraints.forEach(owns -> {
-                AttributeType attributeType = define(owns.attribute()).asAttributeType();
-                if (owns.overridden().isPresent()) {
-                    AttributeType overriddenType = define(owns.overridden().get()).asAttributeType();
-                    thingType.setOwns(attributeType, overriddenType, owns.annotations());
-                } else {
-                    thingType.setOwns(attributeType, owns.annotations());
-                }
-            });
-        }
+        ownsConstraints.forEach(owns -> {
+            AttributeType attributeType = define(owns.attribute()).asAttributeType();
+            if (owns.overridden().isPresent()) {
+                AttributeType overriddenType = define(owns.overridden().get()).asAttributeType();
+                thingType.setOwns(attributeType, overriddenType, owns.annotations());
+            } else {
+                thingType.setOwns(attributeType, owns.annotations());
+            }
+        });
     }
 
     private void definePlays(ThingType thingType, Set<PlaysConstraint> playsConstraints) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define_plays")) {
-            playsConstraints.forEach(plays -> {
-                define(plays.relation().get());
-                LabelConstraint roleTypeLabel = plays.role().label().get();
-                RoleType roleType = getRoleType(roleTypeLabel).asRoleType();
-                if (plays.overridden().isPresent()) {
-                    String overriddenLabelName = plays.overridden().get().label().get().properLabel().name();
-                    Optional<? extends RoleType> overriddenType = roleType.getSupertypes()
-                            .filter(rt -> rt.getLabel().name().equals(overriddenLabelName)).first();
-                    if (overriddenType.isPresent()) thingType.setPlays(roleType, overriddenType.get());
-                    else throw TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE,
-                            thingType.getLabel(), roleTypeLabel.scopedLabel(), overriddenLabelName);
-                } else thingType.setPlays(roleType);
-            });
-        }
+        playsConstraints.forEach(plays -> {
+            define(plays.relation().get());
+            LabelConstraint roleTypeLabel = plays.role().label().get();
+            RoleType roleType = getRoleType(roleTypeLabel).asRoleType();
+            if (plays.overridden().isPresent()) {
+                String overriddenLabelName = plays.overridden().get().label().get().properLabel().name();
+                Optional<? extends RoleType> overriddenType = roleType.getSupertypes()
+                        .filter(rt -> rt.getLabel().name().equals(overriddenLabelName)).first();
+                if (overriddenType.isPresent()) thingType.setPlays(roleType, overriddenType.get());
+                else throw TypeDBException.of(OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE,
+                        thingType.getLabel(), roleTypeLabel.scopedLabel(), overriddenLabelName);
+            } else thingType.setPlays(roleType);
+        });
     }
 
     private void define(com.vaticle.typeql.lang.pattern.schema.Rule rule) {

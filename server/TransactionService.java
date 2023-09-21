@@ -17,16 +17,13 @@
 
 package com.vaticle.typedb.core.server;
 
-import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
-import com.vaticle.typedb.core.server.common.RequestReader;
 import com.vaticle.typedb.core.server.common.ResponseBuilder;
 import com.vaticle.typedb.core.server.common.SynchronizedStreamObserver;
-import com.vaticle.typedb.core.server.common.TracingData;
 import com.vaticle.typedb.core.server.concept.ConceptService;
 import com.vaticle.typedb.core.server.concept.ThingService;
 import com.vaticle.typedb.core.server.concept.TypeService;
@@ -45,7 +42,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -56,9 +52,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
-import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.continueTraceOnThread;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_ARGUMENT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DUPLICATE_REQUEST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.EMPTY_TRANSACTION_REQUEST;
@@ -138,11 +132,9 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     private void execute(TransactionProto.Transaction.Req request) {
-        FactoryTracingThreadStatic.ThreadTrace trace = null;
         Lock accessLock = null;
         try {
             accessLock = acquireRequestLock(request);
-            trace = mayStartTrace(request);
             switch (request.getReqCase()) {
                 case REQ_NOT_SET:
                     throw TypeDBException.of(UNKNOWN_REQUEST_TYPE);
@@ -155,7 +147,6 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         } catch (Throwable error) {
             close(error);
         } finally {
-            mayCloseTrace(trace);
             if (accessLock != null) accessLock.unlock();
         }
     }
@@ -335,21 +326,6 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 break;
         }
         throw TypeDBException.of(ILLEGAL_ARGUMENT);
-    }
-
-    @Nullable
-    private FactoryTracingThreadStatic.ThreadTrace mayStartTrace(TransactionProto.Transaction.Req request) {
-        FactoryTracingThreadStatic.ThreadTrace trace = null;
-        Optional<TracingData> tracingData = RequestReader.getTracingData(request);
-        if (tracingData.isPresent()) {
-            String name = TRACE_PREFIX + request.getReqCase().name().toLowerCase();
-            trace = continueTraceOnThread(tracingData.get().rootID(), tracingData.get().parentID(), name);
-        }
-        return trace;
-    }
-
-    private void mayCloseTrace(@Nullable FactoryTracingThreadStatic.ThreadTrace trace) {
-        if (trace != null) trace.close();
     }
 
     private void timeout() {

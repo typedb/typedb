@@ -23,7 +23,7 @@ import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.graph.TraversalVertex;
 import com.vaticle.typedb.core.traversal.predicate.Predicate;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -103,11 +103,11 @@ public class Structure {
         recordEdge(new StructureEdge.Argument(argument, result));
     }
 
-    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, Set<TypeQLToken.Annotation> annotations) {
+    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, Set<Annotation> annotations) {
         nativeEdge(from, to, encoding, false, annotations);
     }
 
-    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, boolean isTransitive, Set<TypeQLToken.Annotation> annotations) {
+    public void nativeEdge(StructureVertex<?> from, StructureVertex<?> to, Encoding.Edge encoding, boolean isTransitive, Set<Annotation> annotations) {
         StructureEdge.Native<?, ?> edge = new StructureEdge.Native<>(from, to, encoding, isTransitive, annotations);
         recordEdge(edge);
     }

@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.query;
 
-import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Context;
@@ -34,7 +33,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
@@ -46,7 +44,6 @@ import static com.vaticle.typedb.core.query.QueryManager.PARALLELISATION_SPLIT_M
 
 public class Updater {
 
-    private static final String TRACE_PREFIX = "updater.";
     private final Matcher matcher;
     private final ConceptManager conceptMgr;
     private final Set<ThingVariable> deleteVariables;
@@ -63,26 +60,22 @@ public class Updater {
     }
 
     public static Updater create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLUpdate query, Context.Query context) {
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "create")) {
-            VariableRegistry deleteRegistry = VariableRegistry.createFromThings(query.deleteVariables(), false);
-            deleteRegistry.variables().forEach(Deleter::validate);
+        VariableRegistry deleteRegistry = VariableRegistry.createFromThings(query.deleteVariables(), false);
+        deleteRegistry.variables().forEach(Deleter::validate);
 
-            assert query.match().namedVariablesUnbound().containsAll(query.namedDeleteVariablesUnbound());
-            Set<UnboundVariable> filter = new HashSet<>(query.match().namedVariablesUnbound());
-            filter.retainAll(query.namedInsertVariablesUnbound());
-            filter.addAll(query.namedDeleteVariablesUnbound());
-            Matcher matcher = Matcher.create(reasoner, query.match().get(list(filter)));
+        assert query.match().namedVariablesUnbound().containsAll(query.namedDeleteVariablesUnbound());
+        Set<UnboundVariable> filter = new HashSet<>(query.match().namedVariablesUnbound());
+        filter.retainAll(query.namedInsertVariablesUnbound());
+        filter.addAll(query.namedDeleteVariablesUnbound());
+        Matcher matcher = Matcher.create(reasoner, query.match().get(list(filter)));
 
-            VariableRegistry insertRegistry = VariableRegistry.createFromThings(query.insertVariables());
-            insertRegistry.variables().forEach(var -> Inserter.validate(var, matcher));
-            return new Updater(matcher, conceptMgr, deleteRegistry.things(), insertRegistry.things(), context);
-        }
+        VariableRegistry insertRegistry = VariableRegistry.createFromThings(query.insertVariables());
+        insertRegistry.variables().forEach(var -> Inserter.validate(var, matcher));
+        return new Updater(matcher, conceptMgr, deleteRegistry.things(), insertRegistry.things(), context);
     }
 
     public FunctionalIterator<ConceptMap> execute() {
-        try (FactoryTracingThreadStatic.ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "execute")) {
-            return context.options().parallel() ? executeParallel() : executeSerial();
-        }
+        return context.options().parallel() ? executeParallel() : executeSerial();
     }
 
     private FunctionalIterator<ConceptMap> executeParallel() {

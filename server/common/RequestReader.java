@@ -18,7 +18,6 @@
 package com.vaticle.typedb.core.server.common;
 
 import com.google.protobuf.ByteString;
-import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic;
 import com.vaticle.typedb.core.common.collection.ByteArray;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -32,15 +31,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
-import static com.vaticle.typedb.protocol.OptionsProto.Options.ExplainOptCase.EXPLAIN;
-import static com.vaticle.typedb.protocol.OptionsProto.Options.InferOptCase.INFER;
-import static com.vaticle.typedb.protocol.OptionsProto.Options.ParallelOptCase.PARALLEL;
-import static com.vaticle.typedb.protocol.OptionsProto.Options.PrefetchOptCase.PREFETCH;
-import static com.vaticle.typedb.protocol.OptionsProto.Options.PrefetchSizeOptCase.PREFETCH_SIZE;
-import static com.vaticle.typedb.protocol.OptionsProto.Options.SchemaLockAcquireTimeoutOptCase.SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS;
-import static com.vaticle.typedb.protocol.OptionsProto.Options.SessionIdleTimeoutOptCase.SESSION_IDLE_TIMEOUT_MILLIS;
-import static com.vaticle.typedb.protocol.OptionsProto.Options.TraceInferenceOptCase.TRACE_INFERENCE;
-import static com.vaticle.typedb.protocol.OptionsProto.Options.TransactionTimeoutOptCase.TRANSACTION_TIMEOUT_MILLIS;
 
 public class RequestReader {
 
@@ -49,38 +39,38 @@ public class RequestReader {
     }
 
     public static <T extends Options<?, ?>> T applyDefaultOptions(T options, OptionsProto.Options request) {
-        if (request.getInferOptCase().equals(INFER)) {
+        if (request.hasInfer()) {
             options.infer(request.getInfer());
         }
-        if (request.getTraceInferenceOptCase().equals(TRACE_INFERENCE)) {
+        if (request.hasTraceInference()) {
             options.traceInference(request.getTraceInference());
         }
-        if (request.getExplainOptCase().equals(EXPLAIN)) {
+        if (request.hasExplain()) {
             options.explain(request.getExplain());
         }
-        if (request.getParallelOptCase().equals(PARALLEL)) {
+        if (request.hasParallel()) {
             options.parallel(request.getParallel());
         }
-        if (request.getPrefetchSizeOptCase().equals(PREFETCH_SIZE)) {
+        if (request.hasPrefetchSize()) {
             options.prefetchSize(request.getPrefetchSize());
         }
-        if (request.getSessionIdleTimeoutOptCase().equals(SESSION_IDLE_TIMEOUT_MILLIS)) {
+        if (request.hasSessionIdleTimeoutMillis()) {
             options.sessionIdleTimeoutMillis(request.getSessionIdleTimeoutMillis());
         }
-        if (request.getTransactionTimeoutOptCase().equals(TRANSACTION_TIMEOUT_MILLIS)) {
+        if (request.hasTransactionTimeoutMillis()) {
             options.transactionTimeoutMillis(request.getTransactionTimeoutMillis());
         }
-        if (request.getSchemaLockAcquireTimeoutOptCase().equals(SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS)) {
+        if (request.hasSchemaLockAcquireTimeoutMillis()) {
             options.schemaLockTimeoutMillis(request.getSchemaLockAcquireTimeoutMillis());
         }
-        if (request.getReadAnyReplicaOptCase().equals(OptionsProto.Options.ReadAnyReplicaOptCase.READ_ANY_REPLICA)) {
+        if (request.hasReadAnyReplica()) {
             options.readAnyReplica(request.getReadAnyReplica());
         }
         return options;
     }
 
     public static void applyQueryOptions(Options.Query options, OptionsProto.Options request) {
-        if (request.getPrefetchOptCase().equals(PREFETCH)) {
+        if (request.hasPrefetch()) {
             options.prefetch(request.getPrefetch());
         }
     }
@@ -103,17 +93,5 @@ public class RequestReader {
             default:
                 throw TypeDBException.of(BAD_VALUE_TYPE, valueType);
         }
-    }
-
-    public static Optional<TracingData> getTracingData(TransactionProto.Transaction.Req request) {
-        if (FactoryTracingThreadStatic.isTracingEnabled()) {
-            Map<String, String> metadata = request.getMetadataMap();
-            String rootID = metadata.get("traceRootId");
-            String parentID = metadata.get("traceParentId");
-            if (rootID != null && parentID != null) {
-                return Optional.of(new TracingData(rootID, parentID));
-            }
-        }
-        return Optional.empty();
     }
 }

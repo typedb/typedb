@@ -44,6 +44,7 @@ import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 
 public class BoundPattern {
     static class BoundConjunction {
@@ -126,7 +127,7 @@ public class BoundPattern {
             if (unboundConcludable.isIsa() && isInferredAnswer()) {
                 return Optional.of(conjunction.bounds().get(unboundConcludable.asIsa().isa().owner().id()).asThing());
             } else if (unboundConcludable.isHas() &&
-                    conjunction.bounds().get(unboundConcludable.asHas().attribute().id()).asAttribute().isInferred()) {
+                    conjunction.bounds().get(unboundConcludable.asHas().attribute().id()).asAttribute().existence() == INFERRED) {
                 return Optional.of(conjunction.bounds().get(unboundConcludable.asHas().attribute().id()).asAttribute());
             } else if (unboundConcludable.isAttribute() && isInferredAnswer()) {
                 return Optional.of(

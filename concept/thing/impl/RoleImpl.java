@@ -40,7 +40,7 @@ public class RoleImpl {
     void optimise() {
         ThingVertex.Write relation = vertex.ins().edge(RELATING).from().first().get().toWrite();
         ThingVertex.Write player = vertex.ins().edge(PLAYING).from().first().get().toWrite();
-        relation.outs().put(ROLEPLAYER, player, vertex, vertex.isInferred());
+        relation.outs().put(ROLEPLAYER, player, vertex, vertex.existence());
     }
 
     public void delete() {

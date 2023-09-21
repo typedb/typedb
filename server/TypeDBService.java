@@ -18,22 +18,27 @@
 package com.vaticle.typedb.core.server;
 
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
 import com.vaticle.typedb.core.server.common.ResponseBuilder;
 import com.vaticle.typedb.protocol.ConnectionProto;
-import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabase;
-import com.vaticle.typedb.protocol.CoreDatabaseProto.CoreDatabaseManager;
+import com.vaticle.typedb.protocol.DatabaseProto.Database;
+import com.vaticle.typedb.protocol.DatabaseProto.DatabaseManager;
+import com.vaticle.typedb.protocol.ServerProto.ServerManager;
 import com.vaticle.typedb.protocol.SessionProto;
 import com.vaticle.typedb.protocol.TransactionProto;
 import com.vaticle.typedb.protocol.TypeDBGrpc;
+import com.vaticle.typedb.protocol.UserProto.User;
+import com.vaticle.typedb.protocol.UserProto.UserManager;
 import com.vaticle.typedb.protocol.VersionProto;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -51,6 +56,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DAT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ERROR_LOGGING_CONNECTIONS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PROTOCOL_VERSION_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.SERVER_SHUTDOWN;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.USER_MANAGEMENT_NOT_AVAILABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_NOT_FOUND;
 import static com.vaticle.typedb.core.server.common.RequestReader.applyDefaultOptions;
 import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUUID;
@@ -61,6 +67,7 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.Database.typ
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.DatabaseManager.allRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.DatabaseManager.containsRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.DatabaseManager.createRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.DatabaseManager.getRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Session.closeRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Session.openRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Session.pulseRes;
@@ -71,10 +78,12 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(TypeDBService.class);
 
+    private final String address;
     protected final TypeDB.DatabaseManager databaseMgr;
     private final ConcurrentMap<UUID, SessionService> sessionServices;
 
-    public TypeDBService(TypeDB.DatabaseManager databaseMgr) {
+    public TypeDBService(InetSocketAddress address, TypeDB.DatabaseManager databaseMgr) {
+        this.address = address.getHostString() + ":" + address.getPort();
         this.databaseMgr = databaseMgr;
         sessionServices = new ConcurrentHashMap<>();
 
@@ -135,8 +144,74 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     }
 
     @Override
-    public void databasesContains(CoreDatabaseManager.Contains.Req request,
-                                  StreamObserver<CoreDatabaseManager.Contains.Res> responder) {
+    public void serversAll(ServerManager.All.Req request, StreamObserver<ServerManager.All.Res> responder) {
+        try {
+            responder.onNext(ResponseBuilder.ServerManager.allRes(address));
+            responder.onCompleted();
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public void usersContains(UserManager.Contains.Req request, StreamObserver<UserManager.Contains.Res> responder) {
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
+    }
+
+    @Override
+    public void usersCreate(UserManager.Create.Req request, StreamObserver<UserManager.Create.Res> responder) {
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
+    }
+
+    @Override
+    public void usersDelete(UserManager.Delete.Req request, StreamObserver<UserManager.Delete.Res> responder) {
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
+    }
+
+    @Override
+    public void usersAll(UserManager.All.Req request, StreamObserver<UserManager.All.Res> responder) {
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
+    }
+
+    @Override
+    public void usersPasswordSet(UserManager.PasswordSet.Req request, StreamObserver<UserManager.PasswordSet.Res> responder) {
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
+    }
+
+    @Override
+    public void usersGet(UserManager.Get.Req request, StreamObserver<UserManager.Get.Res> responder) {
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
+    }
+
+    @Override
+    public void userPasswordUpdate(User.PasswordUpdate.Req request, StreamObserver<User.PasswordUpdate.Res> responder) {
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
+    }
+
+    @Override
+    public void userToken(User.Token.Req request, StreamObserver<User.Token.Res> responder) {
+        ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
+        LOG.error(errorMessage.message());
+        responder.onError(TypeDBException.of(errorMessage));
+    }
+
+    @Override
+    public void databasesContains(DatabaseManager.Contains.Req request, StreamObserver<DatabaseManager.Contains.Res> responder) {
         try {
             boolean contains = databaseMgr.contains(request.getName());
             responder.onNext(containsRes(contains));
@@ -148,8 +223,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     }
 
     @Override
-    public void databasesCreate(CoreDatabaseManager.Create.Req request,
-                                StreamObserver<CoreDatabaseManager.Create.Res> responder) {
+    public void databasesCreate(DatabaseManager.Create.Req request, StreamObserver<DatabaseManager.Create.Res> responder) {
         try {
             doCreateDatabase(request.getName());
             responder.onNext(createRes());
@@ -161,11 +235,9 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     }
 
     @Override
-    public void databasesAll(CoreDatabaseManager.All.Req request,
-                             StreamObserver<CoreDatabaseManager.All.Res> responder) {
+    public void databasesGet(DatabaseManager.Get.Req request, StreamObserver<DatabaseManager.Get.Res> responder) {
         try {
-            List<String> databaseNames = databaseMgr.all().stream().map(TypeDB.Database::name).collect(toList());
-            responder.onNext(allRes(databaseNames));
+            responder.onNext(getRes(address, request.getName()));
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
@@ -174,7 +246,19 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     }
 
     @Override
-    public void databaseSchema(CoreDatabase.Schema.Req request, StreamObserver<CoreDatabase.Schema.Res> responder) {
+    public void databasesAll(DatabaseManager.All.Req request, StreamObserver<DatabaseManager.All.Res> responder) {
+        try {
+            List<String> databaseNames = databaseMgr.all().stream().map(TypeDB.Database::name).collect(toList());
+            responder.onNext(allRes(address, databaseNames));
+            responder.onCompleted();
+        } catch (RuntimeException e) {
+            LOG.error(e.getMessage(), e);
+            responder.onError(exception(e));
+        }
+    }
+
+    @Override
+    public void databaseSchema(Database.Schema.Req request, StreamObserver<Database.Schema.Res> responder) {
         try {
             String schema = databaseMgr.get(request.getName()).schema();
             responder.onNext(schemaRes(schema));
@@ -186,7 +270,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     }
 
     @Override
-    public void databaseTypeSchema(CoreDatabase.TypeSchema.Req request, StreamObserver<CoreDatabase.TypeSchema.Res> responder) {
+    public void databaseTypeSchema(Database.TypeSchema.Req request, StreamObserver<Database.TypeSchema.Res> responder) {
         try {
             String schema = databaseMgr.get(request.getName()).typeSchema();
             responder.onNext(typeSchemaRes(schema));
@@ -198,7 +282,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     }
 
     @Override
-    public void databaseRuleSchema(CoreDatabase.RuleSchema.Req request, StreamObserver<CoreDatabase.RuleSchema.Res> responder) {
+    public void databaseRuleSchema(Database.RuleSchema.Req request, StreamObserver<Database.RuleSchema.Res> responder) {
         try {
             String schema = databaseMgr.get(request.getName()).ruleSchema();
             responder.onNext(ruleSchemaRes(schema));
@@ -210,7 +294,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
     }
 
     @Override
-    public void databaseDelete(CoreDatabase.Delete.Req request, StreamObserver<CoreDatabase.Delete.Res> responder) {
+    public void databaseDelete(Database.Delete.Req request, StreamObserver<Database.Delete.Res> responder) {
         try {
             doDeleteDatabase(request.getName());
             responder.onNext(deleteRes());

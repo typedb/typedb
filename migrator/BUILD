@@ -21,33 +21,35 @@ load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
-load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
+load("@rules_proto_grpc//java:defs.bzl", "java_grpc_library")
 
 package(default_visibility = ["//visibility:private",])
 
 proto_library(
-    name = "migrator-protocol",
-    srcs = ["migrator.proto"],
+    name = "migrator-proto",
+    srcs = [":migrator.proto"],
 )
 
 proto_library(
+    name = "database-proto",
+    srcs = [":database/data.proto"],
+)
+
+java_grpc_library(
+    name = "migrator-protocol",
+    protos = [":migrator-proto"],
+    visibility = ["//visibility:public"],
+)
+
+java_grpc_library(
     name = "migrator-data",
-    srcs = ["database/data.proto"],
-)
-
-java_grpc_compile(
-    name = "migrator-protocol-src",
-    deps = ["migrator-protocol"],
-)
-
-java_grpc_compile(
-    name = "migrator-data-src",
-    deps = ["migrator-data"],
+    protos = [":database-proto"],
+    visibility = ["//visibility:public"],
 )
 
 native_java_libraries(
     name = "migrator",
-    srcs = [":migrator-protocol-src", ":migrator-data-src"] + glob(["*.java", "*/*.java", "*/*/*.java"]),
+    srcs = glob(["*.java", "*/*.java", "*/*/*.java"]),
     native_libraries_deps = [
         # Internal dependencies
         "//:typedb",
@@ -58,6 +60,9 @@ native_java_libraries(
         "//logic:logic",
     ],
     deps = [
+        ":migrator-protocol",
+        ":migrator-data",
+
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java:typeql-lang",
@@ -91,4 +96,3 @@ checkstyle_test(
     include = glob(["*", "*/*", "*/*/*"]),
     license_type = "agpl-header",
 )
-
