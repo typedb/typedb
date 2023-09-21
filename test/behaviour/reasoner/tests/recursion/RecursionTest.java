@@ -37,20 +37,14 @@ public class RecursionTest {
     //
     // 1) Go to 'Run'
     // 2) Select 'Edit Configurations...'
-    // 3) Select 'Bazel test UndefineTest'
+    // 3) Select 'Bazel test <Name>'
     //
-    // 4) Ensure 'Target Expression' is set correctly:
-    //    a) Use '//<this>/<package>/<name>:test-core' to test against typedb
-    //    b) Use '//<this>/<package>/<name>:test-kgms' to test against typedb-cluster
-    //
-    // 5) Update 'Bazel Flags':
-    //    a) Remove the line that says: '--test_filter=com.vaticle.typedb.core.*'
+    // 4) Update 'Bazel Flags':
+    //    a) Remove the line that says: '--test_filter=...'
     //    b) Use the following Bazel flags:
     //       --cache_test_results=no : to make sure you're not using cache
     //       --test_output=streamed : to make sure all output is printed
     //       --subcommands : to print the low-level commands and execution paths
-    //       --sandbox_debug : to keep the sandbox not deleted after test runs
-    //       --spawn_strategy=standalone : if you're on Mac, tests need permission to access filesystem (to run TypeDB)
     //
-    // 6) Hit the RUN button by selecting the test from the dropdown menu on the top bar
+    // 5) Hit the RUN button by selecting the test from the dropdown menu on the top bar
 }

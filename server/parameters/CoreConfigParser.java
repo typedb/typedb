@@ -224,7 +224,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
         private static final String description = "Server and networking configuration.";
 
         protected static final Predefined<InetSocketAddress> address =
-                predefined("address", "Address to listen for TypeDB Clients on.", INET_SOCKET_ADDRESS);
+                predefined("address", "Address to listen for TypeDB Drivers on.", INET_SOCKET_ADDRESS);
         private static final Set<Predefined<?>> parsers = set(address);
 
         @Override

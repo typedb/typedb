@@ -170,7 +170,7 @@ public class TypeQLSteps {
             answers = tx().query().match(typeQLQuery).toList();
             assertQueryPlansCorrect(typeQLQuery);
         } catch (TypeQLException e) {
-            // NOTE: We manually close transaction here, because we want to align with all non-java clients,
+            // NOTE: We manually close transaction here, because we want to align with all non-java drivers,
             // where parsing happens at server-side which closes transaction if they fail
             tx().close();
             throw e;

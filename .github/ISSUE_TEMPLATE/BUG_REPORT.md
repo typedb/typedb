@@ -16,8 +16,8 @@ Please replace every line in curly brackets { like this } with an appropriate an
 ## Environment
 
 1. OS (where TypeDB server runs): { e.g. Mac OS 10, Windows 10, Ubuntu 16.4, etc. }
-2. TypeDB version (and platform): { e.g. TypeDB 2.0.0, or TypeDB Cluster 2.0.0 on Google Cloud }
-3. TypeDB client: { e.g. client-java, client-python, client-nodejs, or console }
+2. TypeDB version (and platform): { e.g. TypeDB 2.0.0, or TypeDB Enterprise 2.0.0 on Google Cloud }
+3. TypeDB driver: { e.g. driver-java, driver-python, driver-nodejs, driver-rust, or console }
 4. Other environment details:
 
 ## Reproducible Steps
