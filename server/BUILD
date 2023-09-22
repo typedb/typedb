@@ -237,10 +237,8 @@ assemble_apt(
     empty_dirs = [
         "opt/typedb/core/server/lib/",
         "var/lib/typedb/core/data/"
-     ],
-    permissions = {
-        "var/lib/typedb/core/data/": "0777",
-    },
+    ],
+    empty_dirs_permission = "0777",
     symlinks = {
         "opt/typedb/core/server/data": "/var/lib/typedb/core/data/",
     },
