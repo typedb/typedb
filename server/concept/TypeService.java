@@ -367,8 +367,9 @@ public class TypeService {
     }
 
     private void entityTypeGetSubtypes(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
+        Transitivity transitivity = getTransitivity(thingTypeReq.getEntityTypeGetSubtypesReq().getTransitivity());
         transactionSvc.stream(
-                getEntityType(thingTypeReq).getSubtypes(), reqID,
+                getEntityType(thingTypeReq).getSubtypes(transitivity), reqID,
                 types -> ResponseBuilder.Type.EntityType.getSubtypesResPart(reqID, types)
         );
     }
@@ -403,8 +404,9 @@ public class TypeService {
     }
 
     private void relationTypeGetSubtypes(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
+        Transitivity transitivity = getTransitivity(thingTypeReq.getRelationTypeGetSubtypesReq().getTransitivity());
         transactionSvc.stream(
-                getRelationType(thingTypeReq).getSubtypes(), reqID,
+                getRelationType(thingTypeReq).getSubtypes(transitivity), reqID,
                 types -> ResponseBuilder.Type.RelationType.getSubtypesResPart(reqID, types)
         );
     }
@@ -540,8 +542,9 @@ public class TypeService {
             case STRING: attributeType = attributeType.asString(); break;
             case OBJECT: default: break;
         }
+        Transitivity transitivity = getTransitivity(thingTypeReq.getAttributeTypeGetSubtypesReq().getTransitivity());
         transactionSvc.stream(
-                attributeType.getSubtypes(), reqID,
+                attributeType.getSubtypes(transitivity), reqID,
                 types -> ResponseBuilder.Type.AttributeType.getSubtypesResPart(reqID, types)
         );
     }
