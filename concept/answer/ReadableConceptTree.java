@@ -27,9 +27,12 @@ import com.vaticle.typedb.core.concept.value.Value;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.concept.Concept.Readable.KEY_LABEL;
 import static com.vaticle.typedb.core.concept.Concept.Readable.KEY_ROOT;
@@ -83,6 +86,30 @@ public class ReadableConceptTree {
 
         String toJSON();
 
+        default boolean isMap() {
+            return false;
+        }
+
+        default Map asMap() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Map.class));
+        }
+
+        default boolean isList() {
+            return false;
+        }
+
+        default List asList() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(List.class));
+        }
+
+        default boolean isLeaf() {
+            return false;
+        }
+
+        default Leaf<?> asLeaf() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(this.getClass()), className(Leaf.class));
+        }
+
         class Map implements Node {
 
             private static final String KEY_VALUE_SEPARATOR = ":";
@@ -90,15 +117,29 @@ public class ReadableConceptTree {
             private static final String CURLY_LEFT = "{";
             private static final String CURLY_RIGHT = "}";
 
-            private final java.util.Map<String, Node> entries;
+            private final java.util.Map<String, Node> map;
 
             public Map() {
-                this.entries = new HashMap<>();
+                this.map = new HashMap<>();
             }
 
             public void add(String key, Node value) {
-                assert !entries.containsKey(key);
-                entries.put(key, value);
+                assert !map.containsKey(key);
+                map.put(key, value);
+            }
+
+            public java.util.Map<String, Node> map() {
+                return map;
+            }
+
+            @Override
+            public boolean isMap() {
+                return true;
+            }
+
+            @Override
+            public Map asMap() {
+                return this;
             }
 
             @Override
@@ -106,12 +147,12 @@ public class ReadableConceptTree {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 Map map = (Map) o;
-                return entries.equals(map.entries);
+                return this.map.equals(map.map);
             }
 
             @Override
             public int hashCode() {
-                return entries.hashCode();
+                return map.hashCode();
             }
 
             @Override
@@ -122,7 +163,7 @@ public class ReadableConceptTree {
             @Override
             public String toJSON() {
                 return CURLY_LEFT + "\n" +
-                        entries.entrySet().stream()
+                        map.entrySet().stream()
                                 .map(e -> quote(e.getKey()) + KEY_VALUE_SEPARATOR + e.getValue().toString())
                                 .collect(Collectors.joining(ENTRY_SEPARATOR + "\n", "", "\n")) +
                         CURLY_RIGHT;
@@ -135,10 +176,24 @@ public class ReadableConceptTree {
             private static final String SQUARE_LEFT = "[";
             private static final String SQUARE_RIGHT = "]";
 
-            private final java.util.List<? extends Node> nodes;
+            private final java.util.List<? extends Node> list;
 
-            public List(java.util.List<? extends Node> nodes) {
-                this.nodes = nodes;
+            public List(java.util.List<? extends Node> list) {
+                this.list = list;
+            }
+
+            public java.util.List<? extends Node> list() {
+                return list;
+            }
+
+            @Override
+            public boolean isList() {
+                return true;
+            }
+
+            @Override
+            public List asList() {
+                return this;
             }
 
             @Override
@@ -146,12 +201,12 @@ public class ReadableConceptTree {
                 if (this == o) return true;
                 if (o == null || getClass() != o.getClass()) return false;
                 List list = (List) o;
-                return nodes.equals(list.nodes);
+                return this.list.equals(list.list);
             }
 
             @Override
             public int hashCode() {
-                return nodes.hashCode();
+                return list.hashCode();
             }
 
             @Override
@@ -162,7 +217,7 @@ public class ReadableConceptTree {
             @Override
             public String toJSON() {
                 return SQUARE_LEFT + "\n" +
-                        nodes.stream().map(Object::toString)
+                        list.stream().map(Object::toString)
                                 .collect(Collectors.joining(ELEMENT_SEPARATOR + "\n", "", "\n")) +
                         SQUARE_RIGHT;
             }
@@ -178,6 +233,16 @@ public class ReadableConceptTree {
 
             public T readableConcept() {
                 return readableConcept;
+            }
+
+            @Override
+            public boolean isLeaf() {
+                return true;
+            }
+
+            @Override
+            public Leaf<?> asLeaf() {
+                return this;
             }
 
             @Override
