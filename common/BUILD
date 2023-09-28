@@ -35,17 +35,11 @@ native_java_libraries(
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api",
     ],
-    mac_deps = [
-        "@maven//:com_google_ortools_ortools_darwin_x86_64",
-        "@maven//:com_google_ortools_ortools_darwin_aarch64",
-    ],
-    linux_deps = [
-        "@maven//:com_google_ortools_ortools_linux_x86_64",
-        "@maven//:com_google_ortools_ortools_linux_aarch64",
-    ],
-    windows_deps = [
-        "@maven//:com_google_ortools_ortools_win32_x86_64",
-    ],
+    linux_arm64_deps = ["@maven//:com_google_ortools_ortools_linux_aarch64"],
+    linux_x86_64_deps = ["@maven//:com_google_ortools_ortools_linux_x86_64"],
+    mac_arm64_deps = ["@maven//:com_google_ortools_ortools_darwin_aarch64"],
+    mac_x86_64_deps = ["@maven//:com_google_ortools_ortools_darwin_x86_64"],
+    windows_x86_64_deps = ["@maven//:com_google_ortools_ortools_win32_x86_64"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-common:{pom_version}"],
 )
 

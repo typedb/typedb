@@ -23,12 +23,20 @@ typedb_java_test(
     name = "assembly",
     test_class = "com.vaticle.typedb.core.test.assembly.AssemblyTest",
     srcs = ["AssemblyTest.java"],
-    server_mac_artifact = "//server:assemble-mac-zip",
-    server_linux_artifact = "//server:assemble-linux-targz",
-    server_windows_artifact = "//server:assemble-windows-zip",
-    console_mac_artifact = "@vaticle_typedb_console_artifact_mac//file",
-    console_linux_artifact = "@vaticle_typedb_console_artifact_linux//file",
-    console_windows_artifact = "@vaticle_typedb_console_artifact_windows//file",
+    server_artifacts = {
+        "@vaticle_bazel_distribution//platform:is_linux_arm64": "//server:assemble-linux-arm64-targz",
+        "@vaticle_bazel_distribution//platform:is_linux_x86_64": "//server:assemble-linux-x86_64-targz",
+        "@vaticle_bazel_distribution//platform:is_mac_arm64": "//server:assemble-mac-arm64-zip",
+        "@vaticle_bazel_distribution//platform:is_mac_x86_64": "//server:assemble-mac-x86_64-zip",
+        "@vaticle_bazel_distribution//platform:is_windows_x86_64": "//server:assemble-windows-x86_64-zip",
+    },
+    console_artifacts = {
+        "@vaticle_bazel_distribution//platform:is_linux_arm64": "@vaticle_typedb_console_artifact_linux-arm64//file",
+        "@vaticle_bazel_distribution//platform:is_linux_x86_64": "@vaticle_typedb_console_artifact_linux-x86_64//file",
+        "@vaticle_bazel_distribution//platform:is_mac_arm64": "@vaticle_typedb_console_artifact_mac-arm64//file",
+        "@vaticle_bazel_distribution//platform:is_mac_x86_64": "@vaticle_typedb_console_artifact_mac-x86_64//file",
+        "@vaticle_bazel_distribution//platform:is_windows_x86_64": "@vaticle_typedb_console_artifact_windows-x86_64//file",
+    },
     data = [":console-script"],
 )
 
