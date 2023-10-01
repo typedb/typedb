@@ -44,14 +44,11 @@ orbs:
 
 
 commands:
-  install-bazel-linux:
-    parameters:
-      arch:
-        type: string
+  install-bazel-linux-arm64:
     steps:
       - run: |
-          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.arch>>"
-          sudo mv "bazelisk-linux-<<parameters.arch>>" /usr/local/bin/bazel
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-arm64"
+          sudo mv "bazelisk-linux-arm64" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
 
   install-bazel-mac:
