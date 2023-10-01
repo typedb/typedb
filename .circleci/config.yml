@@ -18,18 +18,41 @@
 version: 2.1
 orbs:
   win: circleci/windows@2.0.0
+
+  executors:
+    linux-arm64:
+      machine:
+        image: ubuntu-2204:current
+        resource_class: arm.medium
+      working_directory: ~/typedb-console
+
+    linux-x86_64:
+      machine:
+        image: ubuntu-2204:current
+      working_directory: ~/typedb-console
+
+    mac-arm64:
+      macos:
+        xcode: "14.2.0"
+      resource_class: macos.m1.medium.gen1
+      working_directory: ~/typedb-console
+
+    mac-x86_64:
+      macos:
+        xcode: "14.2.0"
+      working_directory: ~/typedb-console
+
+
 commands:
-
-  install-bazel-linux-x86_64:
+  install-bazel-linux:
+    parameters:
+      arch:
+        type: string
     steps:
-      - run: curl -OL https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-amd64
-      - run: sudo mv bazelisk-linux-amd64 /usr/local/bin/bazel
-
-  install-bazel-linux-arm64:
-    steps:
-      - run: curl -OL https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-arm64
-      - run: sudo mv bazelisk-linux-arm64 /usr/local/bin/bazel
-      - run: chmod a+x /usr/local/bin/bazel
+      - run: |
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-<<parameters.arch>>"
+          sudo mv "bazelisk-linux-<<parameters.arch>>" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
 
   install-bazel-mac:
     steps:

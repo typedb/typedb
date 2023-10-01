@@ -169,13 +169,13 @@ host_compatible_java_test(
     test_class = "com.vaticle.typedb.core.logic.resolvable.AlphaEquivalenceTest",
     native_libraries_deps = [
         "//:typedb",
+        "//common:common",
         "//database:database",
         "//logic:logic",
         "//pattern:pattern",
     ],
     deps = [
         "//test/integration/util",
-        "//common:common-mac",
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java/pattern",

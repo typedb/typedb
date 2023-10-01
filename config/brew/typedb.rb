@@ -17,10 +17,19 @@
 
 # IMPORTANT: any changes to the formula should be propagated to Homebrew/homebrew-core
 class Typedb < Formula
-  desc "Strongly-typed database with a rich and logical type system"
-  homepage "https://vaticle.com"
-  url "https://github.com/vaticle/typedb/releases/download/{version}/typedb-all-mac-{version}.zip"
-  sha256 "{sha256}"
+  desc "Polymorphic database powered by types"
+  homepage "https://typedb.com"
+
+  on_arm do
+    url "https://github.com/vaticle/typedb/releases/download/{version}/typedb-all-mac-arm64-{version}.zip"
+    sha256 "{sha256-arm64}"
+  end
+
+  on_intel do
+    url "https://github.com/vaticle/typedb/releases/download/{version}/typedb-all-mac-x86_64-{version}.zip"
+    sha256 "{sha256-x86_64}"
+  end
+
   license "AGPL-3.0-or-later"
 
   depends_on "openjdk"

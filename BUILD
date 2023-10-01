@@ -67,66 +67,141 @@ permissions = {
 }
 
 artifact_repackage(
-    name = "console-artifact-jars",
-    # Jars produced for all platforms are the same
-    srcs = ["@vaticle_typedb_console_artifact_linux//file"],
+    name = "console-artifact-jars-linux-arm64",
+    srcs = ["@vaticle_typedb_console_artifact_linux-arm64//file"],
     files_to_keep = ["console"],
 )
 
 assemble_targz(
-    name = "assemble-linux-targz",
+    name = "assemble-linux-arm64-targz",
     targets = [
-        ":console-artifact-jars",
-        "//server:server-deps-linux",
+        ":console-artifact-jars-linux-arm64",
+        "//server:server-deps-linux-x86_64",
         "@vaticle_typedb_common//binary:assemble-bash-targz"
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
-    output_filename = "typedb-all-linux",
+    output_filename = "typedb-all-linux-arm64",
 )
 
-assemble_zip(
-    name = "assemble-mac-zip",
-    targets = ["//server:server-deps-mac", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+artifact_repackage(
+    name = "console-artifact-jars-linux-x86_64",
+    srcs = ["@vaticle_typedb_console_artifact_linux-x86_64//file"],
+    files_to_keep = ["console"],
+)
+
+assemble_targz(
+    name = "assemble-linux-x86_64-targz",
+    targets = [
+        ":console-artifact-jars-linux-x86_64",
+        "//server:server-deps-linux-x86_64",
+        "@vaticle_typedb_common//binary:assemble-bash-targz"
+    ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
-    output_filename = "typedb-all-mac",
+    output_filename = "typedb-all-linux-x86_64",
+)
+
+artifact_repackage(
+    name = "console-artifact-jars-mac-arm64",
+    srcs = ["@vaticle_typedb_console_artifact_mac-arm64//file"],
+    files_to_keep = ["console"],
 )
 
 assemble_zip(
-    name = "assemble-windows-zip",
-    targets = ["//server:server-deps-windows", ":console-artifact-jars", "@vaticle_typedb_common//binary:assemble-bat-targz"],
+    name = "assemble-mac-arm64-zip",
+    targets = [
+        "//server:server-deps-mac-arm64",
+        ":console-artifact-jars-mac-arm64",
+        "@vaticle_typedb_common//binary:assemble-bash-targz",
+    ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
-    output_filename = "typedb-all-windows",
+    output_filename = "typedb-all-mac-arm64",
+)
+
+artifact_repackage(
+    name = "console-artifact-jars-mac-x86_64",
+    srcs = ["@vaticle_typedb_console_artifact_mac-x86_64//file"],
+    files_to_keep = ["console"],
+)
+
+assemble_zip(
+    name = "assemble-mac-x86_64-zip",
+    targets = [
+        "//server:server-deps-mac-x86_64",
+        ":console-artifact-jars-mac-x86_64",
+        "@vaticle_typedb_common//binary:assemble-bash-targz",
+    ],
+    additional_files = assemble_files,
+    empty_directories = empty_directories,
+    permissions = permissions,
+    output_filename = "typedb-all-mac-x86_64",
+)
+
+artifact_repackage(
+    name = "console-artifact-jars-windows-x86_64",
+    srcs = ["@vaticle_typedb_console_artifact_windows-x86_64//file"],
+    files_to_keep = ["console"],
+)
+
+assemble_zip(
+    name = "assemble-windows-x86_64-zip",
+    targets = [
+        "//server:server-deps-windows-x86_64",
+        ":console-artifact-jars-windows-x86_64",
+        "@vaticle_typedb_common//binary:assemble-bat-targz",
+    ],
+    additional_files = assemble_files,
+    empty_directories = empty_directories,
+    permissions = permissions,
+    output_filename = "typedb-all-windows-x86_64",
 )
 
 deploy_artifact(
-    name = "deploy-linux-targz",
-    target = ":assemble-linux-targz",
+    name = "deploy-linux-arm64-targz",
+    target = ":assemble-linux-arm64-targz",
     artifact_group = "vaticle_typedb",
-    artifact_name = "typedb-all-linux-{version}.tar.gz",
+    artifact_name = "typedb-all-linux-arm64-{version}.tar.gz",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
 )
 
 deploy_artifact(
-    name = "deploy-mac-zip",
-    target = ":assemble-mac-zip",
+    name = "deploy-linux-x86_64-targz",
+    target = ":assemble-linux-x86_64-targz",
     artifact_group = "vaticle_typedb",
-    artifact_name = "typedb-all-mac-{version}.zip",
+    artifact_name = "typedb-all-linux-x86_64-{version}.tar.gz",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
 )
 
 deploy_artifact(
-    name = "deploy-windows-zip",
-    target = ":assemble-windows-zip",
+    name = "deploy-mac-arm64-zip",
+    target = ":assemble-mac-arm64-zip",
     artifact_group = "vaticle_typedb",
-    artifact_name = "typedb-all-windows-{version}.zip",
+    artifact_name = "typedb-all-mac-arm64-{version}.zip",
+    release = deployment['artifact.release'],
+    snapshot = deployment['artifact.snapshot'],
+)
+
+deploy_artifact(
+    name = "deploy-mac-x86_64-zip",
+    target = ":assemble-mac-x86_64-zip",
+    artifact_group = "vaticle_typedb",
+    artifact_name = "typedb-all-mac-x86_64-{version}.zip",
+    release = deployment['artifact.release'],
+    snapshot = deployment['artifact.snapshot'],
+)
+
+deploy_artifact(
+    name = "deploy-windows-x86_64-zip",
+    target = ":assemble-windows-x86_64-zip",
+    artifact_group = "vaticle_typedb",
+    artifact_name = "typedb-all-windows-x86_64-{version}.zip",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
 )
@@ -134,23 +209,32 @@ deploy_artifact(
 assemble_versioned(
     name = "assemble-versioned-all",
     targets = [
-        ":assemble-linux-targz",
-        ":assemble-mac-zip",
-        ":assemble-windows-zip",
-        "//server:assemble-linux-targz",
-        "//server:assemble-mac-zip",
-        "//server:assemble-windows-zip",
+        ":assemble-linux-arm64-targz",
+        ":assemble-linux-x86_64-targz",
+        ":assemble-mac-arm64-zip",
+        ":assemble-mac-x86_64-zip",
+        ":assemble-windows-x86_64-zip",
+        "//server:assemble-linux-arm64-targz",
+        "//server:assemble-linux-x86_64-targz",
+        "//server:assemble-mac-arm64-zip",
+        "//server:assemble-mac-x86_64-zip",
+        "//server:assemble-windows-x86_64-zip",
     ],
 )
 
 assemble_versioned(
     name = "assemble-versioned-mac",
-    targets = [":assemble-mac-zip"],
+    targets = [":assemble-mac-arm64-zip"],
 )
 
 checksum(
-    name = "checksum-mac",
-    archive = ":assemble-versioned-mac",
+    name = "checksum-mac-arm64",
+    archive = ":assemble-mac-arm64-zip",
+)
+
+checksum(
+    name = "checksum-mac-x86_64",
+    archive = ":assemble-mac-x86_64-zip",
 )
 
 deploy_github(
@@ -169,7 +253,10 @@ deploy_brew(
     snapshot = deployment['brew.snapshot'],
     release = deployment['brew.release'],
     formula = "//config/brew:typedb.rb",
-    checksum = "//:checksum-mac",
+    file_substitutions = {
+        "//:checksum-mac-arm64": "{sha256-arm64}",
+        "//:checksum-mac-x86_64": "{sha256-x86_64}",
+    },
     version_file = "//:VERSION"
 )
 
@@ -181,7 +268,7 @@ assemble_apt(
     depends = [
         "openjdk-11-jre",
         "typedb-server (=%{version})",
-        "typedb-console (=%{@vaticle_typedb_console_artifact_linux})",
+        "typedb-console (=%{@vaticle_typedb_console_artifact_linux-x86_64})",
     ],
     workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
 )
@@ -207,7 +294,7 @@ release_validate_deps(
 docker_container_image(
     name = "assemble-docker",
     base = "@vaticle_ubuntu_image//image",
-    tars = [":assemble-linux-targz"],
+    tars = [":assemble-linux-x86_64-targz"],
     directory = "opt",
     workdir = "/opt/typedb-all-linux",
     ports = ["1729"],
@@ -282,4 +369,3 @@ filegroup(
         "@vaticle_dependencies//tool/unuseddeps:unused-deps",
     ],
 )
-

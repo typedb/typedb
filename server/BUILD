@@ -102,48 +102,80 @@ genrule(
 )
 
 java_binary(
-    name = "server-bin-mac",
+    name = "server-bin-linux-arm64",
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
-    runtime_deps = [":server-mac"],
+    runtime_deps = [":server-linux-arm64"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
     data = [":prepare-server-directories"]
 )
 
 java_binary(
-    name = "server-bin-linux",
+    name = "server-bin-linux-x86_64",
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
-    runtime_deps = [":server-linux"],
+    runtime_deps = [":server-linux-x86_64"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
     data = [":prepare-server-directories"]
 )
 
 java_binary(
-    name = "server-bin-windows",
+    name = "server-bin-mac-arm64",
     main_class = "com.vaticle.typedb.core.server.TypeDBServer",
-    runtime_deps = [":server-windows"],
+    runtime_deps = [":server-mac-arm64"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
+    data = [":prepare-server-directories"]
+)
+
+java_binary(
+    name = "server-bin-mac-x86_64",
+    main_class = "com.vaticle.typedb.core.server.TypeDBServer",
+    runtime_deps = [":server-mac-x86_64"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
+    data = [":prepare-server-directories"]
+)
+
+java_binary(
+    name = "server-bin-windows-x86_64",
+    main_class = "com.vaticle.typedb.core.server.TypeDBServer",
+    runtime_deps = [":server-windows-x86_64"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-server-bin:{pom_version}"],
     data = [":prepare-server-directories"]
 )
 
 java_deps(
-    name = "server-deps-mac",
-    target = ":server-bin-mac",
+    name = "server-deps-linux-arm64",
+    target = ":server-bin-linux-arm64",
     java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
     maven_name = False,
 )
 
 java_deps(
-    name = "server-deps-linux",
-    target = ":server-bin-linux",
+    name = "server-deps-linux-x86_64",
+    target = ":server-bin-linux-x86_64",
     java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
     maven_name = False,
 )
 
 java_deps(
-    name = "server-deps-windows",
-    target = ":server-bin-windows",
+    name = "server-deps-mac-arm64",
+    target = ":server-bin-mac-arm64",
+    java_deps_root = "server/lib/",
+    visibility = ["//:__pkg__"],
+    maven_name = False,
+)
+
+java_deps(
+    name = "server-deps-mac-x86_64",
+    target = ":server-bin-mac-x86_64",
+    java_deps_root = "server/lib/",
+    visibility = ["//:__pkg__"],
+    maven_name = False,
+)
+
+java_deps(
+    name = "server-deps-windows-x86_64",
+    target = ":server-bin-windows-x86_64",
     java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
     maven_name = False,
@@ -165,58 +197,96 @@ permissions = {
 }
 
 assemble_targz(
-    name = "assemble-linux-targz",
-    targets = ["server-deps-linux", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    name = "assemble-linux-arm64-targz",
+    targets = ["server-deps-linux-arm64", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
-    output_filename = "typedb-server-linux",
+    output_filename = "typedb-server-linux-arm64",
+    visibility = ["//:__pkg__", "//test:__subpackages__"]
+)
+
+assemble_targz(
+    name = "assemble-linux-x86_64-targz",
+    targets = ["server-deps-linux-x86_64", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    additional_files = assemble_files,
+    empty_directories = empty_directories,
+    permissions = permissions,
+    output_filename = "typedb-server-linux-x86_64",
     visibility = ["//:__pkg__", "//test:__subpackages__"]
 )
 
 assemble_zip(
-    name = "assemble-mac-zip",
-    targets = ["server-deps-mac", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    name = "assemble-mac-arm64-zip",
+    targets = ["server-deps-mac-arm64", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
-    output_filename = "typedb-server-mac",
+    output_filename = "typedb-server-mac-arm64",
     visibility = ["//:__pkg__", "//test:__subpackages__"]
 )
 
 assemble_zip(
-    name = "assemble-windows-zip",
-    targets = ["server-deps-windows", "@vaticle_typedb_common//binary:assemble-bat-targz"],
+    name = "assemble-mac-x86_64-zip",
+    targets = ["server-deps-mac-x86_64", "@vaticle_typedb_common//binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
-    output_filename = "typedb-server-windows",
+    output_filename = "typedb-server-mac-x86_64",
+    visibility = ["//:__pkg__", "//test:__subpackages__"]
+)
+
+assemble_zip(
+    name = "assemble-windows-x86_64-zip",
+    targets = ["server-deps-windows-x86_64", "@vaticle_typedb_common//binary:assemble-bat-targz"],
+    additional_files = assemble_files,
+    empty_directories = empty_directories,
+    permissions = permissions,
+    output_filename = "typedb-server-windows-x86_64",
     visibility = ["//:__pkg__", "//test:__subpackages__"]
 )
 
 deploy_artifact(
-    name = "deploy-linux-targz",
-    target = ":assemble-linux-targz",
+    name = "deploy-linux-arm64-targz",
+    target = ":assemble-linux-arm64-targz",
     artifact_group = "vaticle_typedb",
-    artifact_name = "typedb-server-linux-{version}.tar.gz",
+    artifact_name = "typedb-server-linux-arm64-{version}.tar.gz",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
 )
 
 deploy_artifact(
-    name = "deploy-mac-zip",
-    target = ":assemble-mac-zip",
+    name = "deploy-linux-x86_64-targz",
+    target = ":assemble-linux-x86_64-targz",
     artifact_group = "vaticle_typedb",
-    artifact_name = "typedb-server-mac-{version}.zip",
+    artifact_name = "typedb-server-linux-x86_64-{version}.tar.gz",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
 )
 
 deploy_artifact(
-    name = "deploy-windows-zip",
-    target = ":assemble-windows-zip",
+    name = "deploy-mac-arm64-zip",
+    target = ":assemble-mac-arm64-zip",
     artifact_group = "vaticle_typedb",
-    artifact_name = "typedb-server-windows-{version}.zip",
+    artifact_name = "typedb-server-mac-arm64-{version}.zip",
+    release = deployment['artifact.release'],
+    snapshot = deployment['artifact.snapshot'],
+)
+
+deploy_artifact(
+    name = "deploy-mac-x86_64-zip",
+    target = ":assemble-mac-x86_64-zip",
+    artifact_group = "vaticle_typedb",
+    artifact_name = "typedb-server-mac-x86_64-{version}.zip",
+    release = deployment['artifact.release'],
+    snapshot = deployment['artifact.snapshot'],
+)
+
+deploy_artifact(
+    name = "deploy-windows-x86_64-zip",
+    target = ":assemble-windows-x86_64-zip",
+    artifact_group = "vaticle_typedb",
+    artifact_name = "typedb-server-windows-x86_64-{version}.zip",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
 )
@@ -231,7 +301,7 @@ assemble_apt(
       "typedb-bin (=%{@vaticle_typedb_common})"
     ],
     workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
-    archives = [":server-deps-linux"],
+    archives = [":server-deps-linux-x86_64"],
     installation_dir = "/opt/typedb/core/",
     files = assemble_files,
     empty_dirs = [
