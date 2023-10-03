@@ -24,24 +24,24 @@ orbs:
 executors:
   linux-arm64:
     machine:
-      image: ubuntu-2204:current
+      image: ubuntu-2004:current
       resource_class: arm.medium
     working_directory: ~/typedb
 
   linux-x86_64:
     machine:
-      image: ubuntu-2204:current
+      image: ubuntu-2004:current
     working_directory: ~/typedb
 
   mac-arm64:
     macos:
-      xcode: "14.2.0"
+      xcode: "13.4.1"
     resource_class: macos.m1.medium.gen1
     working_directory: ~/typedb
 
   mac-x86_64:
     macos:
-      xcode: "14.2.0"
+      xcode: "13.4.1"
     working_directory: ~/typedb
 
 
