@@ -46,6 +46,14 @@ executors:
 
 
 commands:
+
+  install-bazel-linux-x86_64:
+    steps:
+      - run: |
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-amd64"
+          sudo mv "bazelisk-linux-arm64" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
+
   install-bazel-linux-arm64:
     steps:
       - run: |
@@ -83,6 +91,14 @@ jobs:
       - install-bazel-linux-arm64
       - run: bazel test //test/assembly:assembly --test_output=errors
 
+  test-assembly-linux-x86_64-zip:
+    executor: linux-x86_64
+    working_directory: ~/typedb
+    steps:
+      - checkout
+      - install-bazel-linux-x86_64
+      - run: bazel test //test/assembly:assembly --test_output=errors
+
   test-assembly-windows-zip:
     executor:
       name: win/default
@@ -104,6 +120,12 @@ workflows:
                 - master
                 - development
       - test-assembly-mac-arm64-zip:
+          filters:
+            branches:
+              only:
+                - master
+                - development
+      - test-assembly-linux-x86_64-zip:
           filters:
             branches:
               only:

@@ -305,12 +305,12 @@ assemble_apt(
     installation_dir = "/opt/typedb/core/",
     files = assemble_files,
     empty_dirs = [
-        "opt/typedb/core/server/lib/",
-        "var/lib/typedb/core/data/"
+        "/opt/typedb/core/server/lib/",
+        "/var/lib/typedb/core/data/"
     ],
     empty_dirs_permission = "0777",
     symlinks = {
-        "opt/typedb/core/server/data": "/var/lib/typedb/core/data/",
+        "/opt/typedb/core/server/data": "/var/lib/typedb/core/data/",
     },
 )
 

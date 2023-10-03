@@ -132,7 +132,7 @@ build:
         bazel test //test/benchmark/reasoner/iam/complex:test-large-data --test_output=streamed
         bazel test //test/benchmark/reasoner/iam/complex:test-real-queries --test_output=streamed
     test-assembly-linux-targz:
-      image: vaticle-ubuntu-22.04
+      image: vaticle-ubuntu-20.04
       filter:
         owner: vaticle
         branch: [master, development]
@@ -224,13 +224,6 @@ release:
         owner: vaticle
         branch: master
       command: |
-        export PYENV_ROOT="/opt/pyenv"
-        pyenv install 3.7.9
-        pyenv global 3.7.9
-        sudo unlink /usr/bin/python3
-        sudo ln -s $(which python3) /usr/bin/python3
-        sudo ln -s /usr/share/pyshared/lsb_release.py /opt/pyenv/versions/3.7.9/lib/python3.7/site-packages/lsb_release.py
-        python3 -m pip install certifi
         export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
         bazel run --define version=$(cat VERSION) //:deploy-github -- $FACTORY_COMMIT
     deploy-brew:
@@ -251,12 +244,6 @@ release:
       command: |
         export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
-        export PYENV_ROOT="/opt/pyenv"
-        pyenv install 3.7.9
-        pyenv global 3.7.9
-        sudo unlink /usr/bin/python3
-        sudo ln -s $(which python3) /usr/bin/python3
-        sudo ln -s /usr/share/pyshared/lsb_release.py /opt/pyenv/versions/3.7.9/lib/python3.7/site-packages/lsb_release.py
         bazel run --define version=$(cat VERSION) //server:deploy-apt -- release
         bazel run --define version=$(cat VERSION) //:deploy-apt -- release
     deploy-docker:

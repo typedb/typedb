@@ -76,7 +76,7 @@ assemble_targz(
     name = "assemble-linux-arm64-targz",
     targets = [
         ":console-artifact-jars-linux-arm64",
-        "//server:server-deps-linux-x86_64",
+        "//server:server-deps-linux-arm64",
         "@vaticle_typedb_common//binary:assemble-bash-targz"
     ],
     additional_files = assemble_files,
