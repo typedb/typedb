@@ -37,6 +37,7 @@ import com.vaticle.typedb.core.server.parameters.CoreSubcommand;
 import com.vaticle.typedb.core.server.parameters.CoreSubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import io.grpc.netty.NettyServerBuilder;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,6 +162,7 @@ public class TypeDBServer implements AutoCloseable {
         MigratorService migratorService = new MigratorService(databaseMgr, Version.VERSION);
 
         return NettyServerBuilder.forAddress(config.server().address())
+                .withOption(ChannelOption.SO_REUSEADDR, true)
                 .executor(Executors.service())
                 .workerEventLoopGroup(Executors.network())
                 .bossEventLoopGroup(Executors.network())

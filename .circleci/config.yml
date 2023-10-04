@@ -51,7 +51,7 @@ commands:
     steps:
       - run: |
           curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-amd64"
-          sudo mv "bazelisk-linux-arm64" /usr/local/bin/bazel
+          sudo mv "bazelisk-linux-amd64" /usr/local/bin/bazel
           chmod a+x /usr/local/bin/bazel
 
   install-bazel-linux-arm64:

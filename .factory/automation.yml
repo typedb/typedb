@@ -23,7 +23,6 @@ config:
     typedb-common: [build, release]
     typedb-protocol: [build, release]
     typedb-behaviour: [build]
-    factory-tracing: [build, release]
 
 build:
   quality:
