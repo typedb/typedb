@@ -162,7 +162,6 @@ public class TypeDBServer implements AutoCloseable {
         MigratorService migratorService = new MigratorService(databaseMgr, Version.VERSION);
 
         return NettyServerBuilder.forAddress(config.server().address())
-                .withOption(ChannelOption.SO_REUSEADDR, true)
                 .executor(Executors.service())
                 .workerEventLoopGroup(Executors.network())
                 .bossEventLoopGroup(Executors.network())

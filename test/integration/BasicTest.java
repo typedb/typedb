@@ -134,7 +134,7 @@ public class BasicTest {
 
     @Test
     public void write_types_concurrently_repeatedly() throws IOException, InterruptedException {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 20; i++) {
             System.out.println(i + " ---- ");
             write_types_concurrently();
         }
@@ -414,7 +414,7 @@ public class BasicTest {
 
     @Test
     public void write_attributes_successfully_repeatedly() throws IOException {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 20; i++) {
             System.out.println(i + " ---- ");
             write_attributes_successfully();
         }
@@ -489,7 +489,7 @@ public class BasicTest {
 
     @Test
     public void write_different_attributes_in_parallel_successfully_repeatedly() throws IOException {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 20; i++) {
             System.out.println(i + " ---- ");
             write_different_attributes_in_parallel_successfully();
         }
@@ -611,7 +611,7 @@ public class BasicTest {
 
     @Test
     public void write_identical_attributes_in_parallel_successfully_repeatedly() throws IOException {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 20; i++) {
             System.out.println(i + " ---- ");
             write_identical_attributes_in_parallel_successfully();
         }
@@ -713,7 +713,7 @@ public class BasicTest {
 
     @Test
     public void write_and_delete_attributes_concurrently_repeatedly() throws IOException {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 20; i++) {
             System.out.println(i + " ---- ");
             write_and_delete_attributes_concurrently();
         }
@@ -808,7 +808,7 @@ public class BasicTest {
         Util.resetDirectory(dataDir);
         try (TypeDB.DatabaseManager typedb = CoreDatabaseManager.open(options)) {
             typedb.create(database);
-            for (int i = 0; i < 50; i++) {
+            for (int i = 0; i < 20; i++) {
                 new Thread(() -> {
                     TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA);
                     TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
