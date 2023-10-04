@@ -265,12 +265,15 @@ assemble_apt(
     package_name = "typedb-all",
     maintainer = "Vaticle <community@vaticle.com>",
     description = "TypeDB (all)",
+    # typedb-server and typedb-console have arm/intel releases. Apt will find one matching installer's platform
     depends = [
         "openjdk-11-jre",
         "typedb-server (=%{version})",
+        # Note: arbitrarily pick version from the x86_64 console artifact
         "typedb-console (=%{@vaticle_typedb_console_artifact_linux-x86_64})",
     ],
     workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
+    architecture = "all",
 )
 
 deploy_apt(

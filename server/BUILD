@@ -292,7 +292,7 @@ deploy_artifact(
 )
 
 assemble_apt(
-    name = "assemble-linux-apt",
+    name = "assemble-linux-x86_64-apt",
     package_name = "typedb-server",
     maintainer = "Vaticle <community@vaticle.com>",
     description = "TypeDB (server)",
@@ -312,11 +312,43 @@ assemble_apt(
     symlinks = {
         "/opt/typedb/core/server/data": "/var/lib/typedb/core/data/",
     },
+    architecture = "amd64",
+)
+
+assemble_apt(
+    name = "assemble-linux-arm64-apt",
+    package_name = "typedb-server",
+    maintainer = "Vaticle <community@vaticle.com>",
+    description = "TypeDB (server)",
+    depends = [
+      "openjdk-11-jre",
+      "typedb-bin (=%{@vaticle_typedb_common})"
+    ],
+    workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
+    archives = [":server-deps-linux-arm64"],
+    installation_dir = "/opt/typedb/core/",
+    files = assemble_files,
+    empty_dirs = [
+        "/opt/typedb/core/server/lib/",
+        "/var/lib/typedb/core/data/"
+    ],
+    empty_dirs_permission = "0777",
+    symlinks = {
+        "/opt/typedb/core/server/data": "/var/lib/typedb/core/data/",
+    },
+    architecture = "arm64",
 )
 
 deploy_apt(
-    name = "deploy-apt",
-    target = ":assemble-linux-apt",
+    name = "deploy-apt-x86_64",
+    target = ":assemble-linux-x86_64-apt",
+    snapshot = deployment['apt.snapshot'],
+    release = deployment['apt.release']
+)
+
+deploy_apt(
+    name = "deploy-apt-arm64",
+    target = ":assemble-linux-arm64-apt",
     snapshot = deployment['apt.snapshot'],
     release = deployment['apt.release']
 )
