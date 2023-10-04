@@ -23,6 +23,7 @@ import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.EdgeViewIID;
@@ -55,6 +56,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Thing.Optimised.ROLEPLAYER;
 import static java.util.Collections.emptyList;
@@ -342,7 +344,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
                         if (isOut()) owner.graph().edgeCreated(edge); // only record creation in one direction
                         return edge;
                     } else {
-                        assert existingEdge.isInferred() == edge.isInferred();
+                        assert existingEdge.existence() == edge.existence();
                         return existingEdge;
                     }
                 });
@@ -362,11 +364,11 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         }
 
         @Override
-        public ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, boolean isInferred) {
+        public ThingEdgeImpl put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, Existence existence) {
             assert !encoding.isOptimisation();
             ThingEdgeImpl.Buffered edge = isOut()
-                    ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, isInferred)
-                    : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, isInferred);
+                    ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, existence)
+                    : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, existence);
             List<IID> infixes = List.of(adjacent.iid().prefix(), adjacent.iid().type());
             put(encoding, edge, infixes, true);
 
@@ -375,11 +377,11 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
 
         @Override
         public ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, ThingVertex.Write optimised,
-                             boolean isInferred) {
+                             Existence existence) {
             assert encoding.isOptimisation();
             ThingEdgeImpl.Buffered edge = isOut()
-                    ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, optimised, isInferred)
-                    : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, optimised, isInferred);
+                    ? new ThingEdgeImpl.Buffered(encoding, owner, adjacent, optimised, existence)
+                    : new ThingEdgeImpl.Buffered(encoding, adjacent, owner, optimised, existence);
             List<IID> infixes = List.of(optimised.iid().type(), adjacent.iid().prefix(), adjacent.iid().type(), adjacent.iid().key());
             put(encoding, edge, infixes, true);
             return edge;
@@ -408,7 +410,7 @@ public abstract class ThingAdjacencyImpl<EDGE_VIEW extends ThingEdge.View<EDGE_V
         public void commit() {
             for (ConcurrentNavigableMap<EDGE_VIEW, ThingEdgeImpl.Buffered> edgeViews : edges.values()) {
                 for (ThingEdgeImpl.Buffered edge : edgeViews.values()) {
-                    if (!edge.isInferred()) edge.commit();
+                    if (edge.existence() == STORED) edge.commit();
                 }
             }
         }

@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.concept.Concept;
 
 import java.util.List;
@@ -44,7 +45,7 @@ public interface Type extends Concept, Comparable<Type> {
 
     Forwardable<? extends Type, Order.Asc> getSubtypes();
 
-    Forwardable<? extends Type, Order.Asc> getSubtypesExplicit();
+    Forwardable<? extends Type, Order.Asc> getSubtypes(Transitivity transitivity);
 
     List<TypeDBException> exceptions();
 }

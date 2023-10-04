@@ -21,7 +21,6 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 package(
     default_visibility = [
         "//:__pkg__",
-        "//cluster:__pkg__",
         "//database:__pkg__",
         "//server:__pkg__",
         "//test:__subpackages__",
@@ -44,7 +43,6 @@ native_java_libraries(
     deps = [
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
-        "@vaticle_factory_tracing//client:client",
         "@vaticle_typeql//java/common:common",
         "@vaticle_typeql//java:typeql-lang",
         "@vaticle_typeql//java/pattern:pattern",
@@ -63,4 +61,3 @@ checkstyle_test(
     include = glob(["*", "*/*"]),
     license_type = "agpl-header",
 )
-

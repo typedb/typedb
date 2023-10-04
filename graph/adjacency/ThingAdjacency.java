@@ -20,13 +20,14 @@ package com.vaticle.typedb.core.graph.adjacency;
 
 import com.vaticle.typedb.core.common.collection.KeyValue;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
-import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.parameters.Order;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.encoding.Encoding;
+import com.vaticle.typedb.core.encoding.iid.IID;
 import com.vaticle.typedb.core.graph.edge.Edge;
 import com.vaticle.typedb.core.graph.edge.ThingEdge;
-import com.vaticle.typedb.core.encoding.iid.IID;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 
@@ -142,10 +143,10 @@ public interface ThingAdjacency {
          *
          * @param encoding   of the edge that will connect the owner to the adjacent vertex
          * @param adjacent   the adjacent vertex
-         * @param isInferred
+         * @param existence  whether the edge is stored or inferred
          * @return an edge of type {@code encoding} that connects to {@code adjacent}.
          */
-        ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, boolean isInferred);
+        ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, Existence existence);
 
         /**
          * Puts an edge of type {@code encoding} from the owner to an adjacent vertex,
@@ -159,10 +160,10 @@ public interface ThingAdjacency {
          * @param encoding   type of the edge
          * @param adjacent   the adjacent vertex
          * @param optimised  vertex that this optimised edge is compressing
-         * @param isInferred
+         * @param existence  whether the edge is stored or inferred
          * @return an edge of type {@code encoding} that connects to {@code adjacent}.
          */
-        ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, ThingVertex.Write optimised, boolean isInferred);
+        ThingEdge put(Encoding.Edge.Thing encoding, ThingVertex.Write adjacent, ThingVertex.Write optimised, Existence existence);
 
         /**
          * Deletes all edges with a given encoding from the {@code Adjacency} map.

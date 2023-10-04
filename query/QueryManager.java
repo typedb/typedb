@@ -18,7 +18,6 @@
 
 package com.vaticle.typedb.core.query;
 
-import com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.ThreadTrace;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -39,7 +38,6 @@ import com.vaticle.typeql.lang.query.TypeQLUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.vaticle.factory.tracing.client.FactoryTracingThreadStatic.traceOnThread;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_DATA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
@@ -50,7 +48,6 @@ public class QueryManager {
     private static final Logger LOG = LoggerFactory.getLogger(QueryManager.class);
     static final int PARALLELISATION_SPLIT_MIN = 8;
 
-    private static final String TRACE_PREFIX = "query.";
     private final LogicManager logicMgr;
     private final Reasoner reasoner;
     private final ConceptManager conceptMgr;
@@ -68,7 +65,7 @@ public class QueryManager {
     }
 
     public FunctionalIterator<? extends ConceptMap> match(TypeQLMatch query, Context.Query context) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match")) {
+        try {
             return Matcher.create(reasoner, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
@@ -84,7 +81,7 @@ public class QueryManager {
     }
 
     public Numeric match(TypeQLMatch.Aggregate query, Context.Query queryContext) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_aggregate")) {
+        try {
             return Matcher.create(reasoner, query, queryContext).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
@@ -96,7 +93,7 @@ public class QueryManager {
     }
 
     public FunctionalIterator<ConceptMapGroup> match(TypeQLMatch.Group query, Context.Query queryContext) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_group")) {
+        try {
             return Matcher.create(reasoner, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
@@ -108,7 +105,7 @@ public class QueryManager {
     }
 
     public FunctionalIterator<NumericGroup> match(TypeQLMatch.Group.Aggregate query, Context.Query queryContext) {
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "match_group_aggregate")) {
+        try {
             return Matcher.create(reasoner, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
@@ -122,7 +119,7 @@ public class QueryManager {
     public FunctionalIterator<ConceptMap> insert(TypeQLInsert query, Context.Query context) {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "insert")) {
+        try {
             return Inserter.create(reasoner, conceptMgr, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
@@ -136,7 +133,7 @@ public class QueryManager {
     public void delete(TypeQLDelete query, Context.Query context) {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "delete")) {
+        try {
             Deleter.create(reasoner, query, context).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
@@ -150,7 +147,7 @@ public class QueryManager {
     public FunctionalIterator<ConceptMap> update(TypeQLUpdate query, Context.Query context) {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "update")) {
+        try {
             return Updater.create(reasoner, conceptMgr, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
@@ -164,7 +161,7 @@ public class QueryManager {
     public void define(TypeQLDefine query, Context.Query context) {
         if (context.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_SCHEMA_READ_VIOLATION);
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "define")) {
+        try {
             Definer.create(conceptMgr, logicMgr, query, context).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
@@ -178,7 +175,7 @@ public class QueryManager {
     public void undefine(TypeQLUndefine query, Context.Query context) {
         if (context.sessionType().isData()) throw conceptMgr.exception(SESSION_DATA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_SCHEMA_READ_VIOLATION);
-        try (ThreadTrace ignored = traceOnThread(TRACE_PREFIX + "undefine")) {
+        try {
             Undefiner.create(conceptMgr, logicMgr, query, context).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);

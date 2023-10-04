@@ -38,9 +38,9 @@ import com.vaticle.typedb.core.traversal.scanner.CombinationFinder;
 import com.vaticle.typedb.core.traversal.structure.StructureVertex;
 import com.vaticle.typeql.lang.common.TypeQLArg;
 import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -92,7 +92,7 @@ public abstract class GraphTraversal extends Traversal {
         structure.equalEdge(structure.typeVertex(type1), structure.typeVertex(type2));
     }
 
-    public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, Set<TypeQLToken.Annotation> annotations) {
+    public void owns(Identifier.Variable thingType, Identifier.Variable attributeType, Set<Annotation> annotations) {
         if (annotations.contains(KEY)) {
             structure.nativeEdge(structure.typeVertex(thingType), structure.typeVertex(attributeType), OWNS_KEY, annotations);
         } else {

@@ -50,22 +50,14 @@ native_java_libraries(
         # External dependencies from Maven
         "@maven//:com_google_ortools_ortools_java",
         "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:org_slf4j_slf4j_api"
-    ],
-    mac_deps = [
-        "@maven//:com_google_ortools_ortools_darwin_x86_64",
-        "@maven//:com_google_ortools_ortools_darwin_aarch64",
+        "@maven//:org_slf4j_slf4j_api",
         "@maven//:io_github_speedb_io_speedbjni",
     ],
-    linux_deps = [
-        "@maven//:com_google_ortools_ortools_linux_x86_64",
-        "@maven//:com_google_ortools_ortools_linux_aarch64",
-        "@maven//:io_github_speedb_io_speedbjni",
-    ],
-    windows_deps = [
-        "@maven//:com_google_ortools_ortools_win32_x86_64",
-        "@maven//:io_github_speedb_io_speedbjni",
-    ],
+    linux_arm64_deps = ["@maven//:com_google_ortools_ortools_linux_aarch64"],
+    linux_x86_64_deps = ["@maven//:com_google_ortools_ortools_linux_x86_64"],
+    mac_arm64_deps = ["@maven//:com_google_ortools_ortools_darwin_aarch64"],
+    mac_x86_64_deps = ["@maven//:com_google_ortools_ortools_darwin_x86_64"],
+    windows_x86_64_deps = ["@maven//:com_google_ortools_ortools_win32_x86_64"],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-database:{pom_version}"],
     visibility = [ "//visibility:public" ]
 )
@@ -75,4 +67,3 @@ checkstyle_test(
     include = glob(["*"]),
     license_type = "agpl-header",
 )
-

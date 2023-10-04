@@ -70,8 +70,8 @@ public class AptTest {
 
     private void setup() throws InterruptedException, TimeoutException, IOException {
         execute("sudo", "apt-key", "adv", "--keyserver", "keyserver.ubuntu.com", "--recv", pubkey1);
-        execute("sudo", "add-apt-repository", "deb [ arch=all ] " + aptSnapshot + " trusty main");
-        execute("sudo", "add-apt-repository", "deb [ arch=all ] " + aptRelease + " trusty main");
+        execute("sudo", "add-apt-repository", "deb " + aptSnapshot + " trusty main");
+        execute("sudo", "add-apt-repository", "deb " + aptRelease + " trusty main");
         execute("bash", "-c", "curl -L " + pubkey2 + " | sudo apt-key add -");
         execute("bash", "-c", "wget -q -O - " + pubkey3 + " | sudo apt-key add -");
         execute("sudo", "apt", "update");

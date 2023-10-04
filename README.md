@@ -279,16 +279,16 @@ TypeDB Driver provide stateful objects, Sessions and Transactions, to interact w
 The transactions provide [ACID guarantees](https://typedb.com/docs/typedb/2.x/development/connect#_acid_guarantees), 
 up to snapshot isolation.
 
-TypeDB's Driver API is provided through a gRPC client, providing bi-directional streaming, compression, and strong 
+TypeDB's Driver API is provided through a gRPC driver, providing bi-directional streaming, compression, and strong 
 message typing, that REST APIs could not provide. 
 
 TypeDB Drivers are delivered as libraries in dedicated languages 
 that provide stateful objects, Session and Transactions, for you to interact with the database programmatically.
 
-- [Java](https://typedb.com/docs/clients/2.x/java/java-overview)
-- [Python](https://typedb.com/docs/clients/2.x/python/python-overview)
-- [Node.js](https://typedb.com/docs/clients/2.x/node-js/node-js-overview)
-- [Community drivers](https://typedb.com/docs/clients/2.x/other-languages)
+- [Java](https://typedb.com/docs/drivers/2.x/java/java-overview)
+- [Python](https://typedb.com/docs/drivers/2.x/python/python-overview)
+- [Node.js](https://typedb.com/docs/drivers/2.x/node-js/node-js-overview)
+- [Community drivers](https://typedb.com/docs/drivers/2.x/other-languages)
 
 ## Download and Run TypeDB
 

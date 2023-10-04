@@ -43,6 +43,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.traversal.common.Identifier.Variable.anon;
 
 public class Materialiser {
@@ -73,7 +75,7 @@ public class Materialiser {
                 .orElseGet(() -> putAttribute(materialisable.attrType(), materialisable.value()));
         if (materialisable.owner().hasNonInferred(attribute)) return Optional.empty();
         else {
-            materialisable.owner().setHas(attribute, true);
+            materialisable.owner().setHas(attribute, INFERRED);
             return Optional.of(new Materialisation.Has.WithIsa(
                     materialisable.owner(), materialisable.attrType(), attribute)
             );
@@ -94,11 +96,11 @@ public class Materialiser {
     private static Attribute putAttribute(AttributeType attrType, PredicateConstraint valueIdentityConstraint) {
         assert valueIdentityConstraint.predicate().isValueIdentity();
         Predicate.Constant<?> asConstant = valueIdentityConstraint.predicate().asConstant();
-        if (attrType.isDateTime()) return attrType.asDateTime().put(asConstant.asDateTime().value(), true);
-        else if (attrType.isBoolean()) return attrType.asBoolean().put(asConstant.asBoolean().value(), true);
-        else if (attrType.isDouble()) return attrType.asDouble().put(asConstant.asDouble().value(), true);
-        else if (attrType.isLong()) return attrType.asLong().put(asConstant.asLong().value(), true);
-        else if (attrType.isString()) return attrType.asString().put(asConstant.asString().value(), true);
+        if (attrType.isDateTime()) return attrType.asDateTime().put(asConstant.asDateTime().value(), INFERRED);
+        else if (attrType.isBoolean()) return attrType.asBoolean().put(asConstant.asBoolean().value(), INFERRED);
+        else if (attrType.isDouble()) return attrType.asDouble().put(asConstant.asDouble().value(), INFERRED);
+        else if (attrType.isLong()) return attrType.asLong().put(asConstant.asLong().value(), INFERRED);
+        else if (attrType.isString()) return attrType.asString().put(asConstant.asString().value(), INFERRED);
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
 
@@ -106,7 +108,7 @@ public class Materialiser {
         Thing owner = materialisable.owner();
         Attribute attribute = materialisable.attribute();
         if (owner.hasNonInferred(attribute)) return Optional.empty();
-        else owner.setHas(attribute, true);
+        else owner.setHas(attribute, INFERRED);
         return Optional.of(new Materialisation.Has.WithoutIsa(owner, attribute));
     }
 
@@ -119,7 +121,7 @@ public class Materialiser {
         } else {
             while (existingRelations.hasNext()) {
                 Relation preexisting = existingRelations.next();
-                if (!preexisting.isInferred()) return Optional.empty();
+                if (preexisting.existence() == STORED) return Optional.empty();
                 else {
                     if (insertable(preexisting, materialisable)) {
                         return Optional.of(new Materialisation.Relation(preexisting));
@@ -163,10 +165,10 @@ public class Materialiser {
     }
 
     private static Relation insert(Conclusion.Relation.Materialisable materialisable) {
-        Relation relation = materialisable.relationType().create(true);
+        Relation relation = materialisable.relationType().create(INFERRED);
         materialisable.players().forEach((rp, numOccurrences) -> {
             for (int i = 1; i <= numOccurrences; i++) {
-                relation.addPlayer(rp.first(), rp.second(), true);
+                relation.addPlayer(rp.first(), rp.second(), INFERRED);
             }
         });
         return relation;

@@ -147,7 +147,7 @@ public class ReasonerSteps {
             typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asMatch();
             answers = reasoningTx().query().match(typeQLQuery).toList();
         } catch (TypeQLException e) {
-            // NOTE: We manually close transaction here, because we want to align with all non-java clients,
+            // NOTE: We manually close transaction here, because we want to align with all non-java drivers,
             // where parsing happens at server-side which closes transaction if they fail
             clearReasoningTx();
             throw e;
@@ -162,7 +162,7 @@ public class ReasonerSteps {
             Set<? extends ConceptMap> newAnswers = reasoningTx().query().match(TypeQL.parseQuery(equivalentQuery).asMatch()).toSet();
             assertEquals(set(answers), newAnswers);
         } catch (TypeQLException e) {
-            // NOTE: We manually close transaction here, because we want to align with all non-java clients,
+            // NOTE: We manually close transaction here, because we want to align with all non-java drivers,
             // where parsing happens at server-side which closes transaction if they fail
             clearReasoningTx();
             throw e;

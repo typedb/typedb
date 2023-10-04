@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 
 class SoundnessVerifier {
 
@@ -107,7 +108,7 @@ class SoundnessVerifier {
 
     private boolean canExplanationBeVerified(Explanation explanation) {
         return iterate(explanation.conditionAnswer().concepts().values())
-                .filter(c -> c.isThing() && c.asThing().isInferred() && !inferredConceptMapping.containsKey(c))
+                .filter(c -> c.isThing() && c.asThing().existence() == INFERRED && !inferredConceptMapping.containsKey(c))
                 .first().isEmpty();
     }
 
@@ -238,7 +239,7 @@ class SoundnessVerifier {
                 if (inferredConceptMapping.containsKey(concept)) {
                     substituted.put(var, inferredConceptMapping.get(concept));
                 } else {
-                    assert !(concept.isThing() && concept.asThing().isInferred());
+                    assert !(concept.isThing() && concept.asThing().existence() == INFERRED);
                     substituted.put(var, concept);
                 }
             } else {

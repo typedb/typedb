@@ -21,6 +21,8 @@ package com.vaticle.typedb.core.concept.type.impl;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
+import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Relation;
@@ -32,6 +34,7 @@ import com.vaticle.typedb.core.graph.edge.TypeEdge;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +51,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.RO
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_HAS_INSTANCES_SET_ABSTRACT;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.RELATES;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.RELATION_TYPE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.RELATION;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.COMMA;
@@ -84,7 +91,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     @Override
     public void setAbstract() {
         if (isAbstract()) return;
-        if (getInstancesExplicit().first().isPresent()) {
+        if (getInstances(EXPLICIT).first().isPresent()) {
             throw exception(TypeDBException.of(TYPE_HAS_INSTANCES_SET_ABSTRACT, getLabel()));
         }
         vertex.isAbstract(true);
@@ -97,6 +104,18 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     @Override
+    public RelationTypeImpl getSupertype() {
+        return vertex.outs().edge(SUB).to().map(t -> (RelationTypeImpl) conceptMgr.convertRelationType(t)).firstOrNull();
+    }
+
+    @Override
+    public Forwardable<RelationTypeImpl, Order.Asc> getSupertypes() {
+        return iterateSorted(graphMgr().schema().getSupertypes(vertex), ASC)
+                .filter(TypeVertex::isRelationType)
+                .mapSorted(t -> (RelationTypeImpl) conceptMgr.convertRelationType(t), t -> t.vertex, ASC);
+    }
+
+    @Override
     public void setSupertype(RelationType superType) {
         validateIsNotDeleted();
         setSuperTypeVertex(((RelationTypeImpl) superType).vertex);
@@ -104,23 +123,22 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public Forwardable<RelationTypeImpl, Order.Asc> getSubtypes() {
-        return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
-                .mapSorted(v -> (RelationTypeImpl) conceptMgr.convertRelationType(v), relationType -> relationType.vertex, ASC);
+        return getSubtypes(TRANSITIVE);
     }
 
     @Override
-    public Forwardable<RelationTypeImpl, Order.Asc> getSubtypesExplicit() {
-        return super.getSubtypesExplicit(v -> (RelationTypeImpl) conceptMgr.convertRelationType(v));
+    public Forwardable<RelationTypeImpl, Order.Asc> getSubtypes(Transitivity transitivity) {
+        return getSubtypes(transitivity, v -> (RelationTypeImpl) conceptMgr.convertRelationType(v));
     }
 
     @Override
     public Forwardable<RelationImpl, Order.Asc> getInstances() {
-        return instances(v -> RelationImpl.of(conceptMgr, v));
+        return getInstances(TRANSITIVE);
     }
 
     @Override
-    public Forwardable<RelationImpl, Order.Asc> getInstancesExplicit() {
-        return instancesExplicit(v -> RelationImpl.of(conceptMgr, v));
+    public Forwardable<RelationImpl, Order.Asc> getInstances(Transitivity transitivity) {
+        return instances(transitivity, v -> RelationImpl.of(conceptMgr, v));
     }
 
     @Override
@@ -154,7 +172,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         Optional<RoleTypeImpl> inherited;
         assert getSupertype() != null;
         if (declaredRoles().anyMatch(r -> r.getLabel().name().equals(overriddenLabel)) ||
-                !(inherited = getSupertype().asRelationType().getRelates()
+                !(inherited = getSupertype().getRelates()
                         .filter(role -> role.getLabel().name().equals(overriddenLabel)).first()
                 ).isPresent()
         ) {
@@ -173,14 +191,17 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public Forwardable<RoleTypeImpl, Order.Asc> getRelates() {
-        return iterateSorted(graphMgr().schema().relatedRoleTypes(vertex), ASC)
-                .mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), roleType -> roleType.vertex, ASC);
+        return getRelates(TRANSITIVE);
     }
 
     @Override
-    public Forwardable<RoleTypeImpl, Order.Asc> getRelatesExplicit() {
-        return vertex.outs().edge(RELATES).to()
-                .mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), roleType -> roleType.vertex, ASC);
+    public Forwardable<RoleTypeImpl, Order.Asc> getRelates(Transitivity transitivity) {
+        return getRelatesVertices(transitivity).mapSorted(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v), roleType -> roleType.vertex, ASC);
+    }
+
+    Forwardable<TypeVertex, Order.Asc> getRelatesVertices(Transitivity transitivity) {
+        if (transitivity == EXPLICIT) return vertex.outs().edge(RELATES).to();
+        else return iterateSorted(graphMgr().schema().relatedRoleTypes(vertex), ASC);
     }
 
     @Override
@@ -205,6 +226,11 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         return vertex.outs().edge(RELATES).to().map(v -> (RoleTypeImpl) conceptMgr.convertRoleType(v));
     }
 
+    @Override
+    public RoleType getRelates(String roleLabel) {
+        return getRelates(TRANSITIVE, roleLabel);
+    }
+
     /**
      * Get the role type with a given {@code roleLabel} related by this relation type.
      * <p>
@@ -216,20 +242,10 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
      * @return the role type related in this relation
      */
     @Override
-    public RoleType getRelates(String roleLabel) {
-        Optional<RoleTypeImpl> roleType;
+    public RoleType getRelates(Transitivity transitivity, String roleLabel) {
         TypeVertex roleTypeVertex = graphMgr().schema().getType(roleLabel, vertex.label());
-        if (roleTypeVertex != null) {
-            return conceptMgr.convertRoleType(roleTypeVertex);
-        } else if ((roleType = getRelates().filter(role -> role.getLabel().name().equals(roleLabel)).first()).isPresent()) {
-            return roleType.get();
-        } else return null;
-    }
-
-    @Override
-    public RoleType getRelatesExplicit(String roleLabel) {
-        TypeVertex roleTypeVertex = graphMgr().schema().getType(roleLabel, vertex.label());
-        if (roleTypeVertex != null) return conceptMgr.convertRoleType(vertex);
+        if (roleTypeVertex != null) return conceptMgr.convertRoleType(roleTypeVertex);
+        else if (transitivity == TRANSITIVE) return getRelates().filter(role -> role.getLabel().name().equals(roleLabel)).first().orElse(null);
         else return null;
     }
 
@@ -253,13 +269,13 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
 
     @Override
     public RelationImpl create() {
-        return create(false);
+        return create(STORED);
     }
 
     @Override
-    public RelationImpl create(boolean isInferred) {
+    public RelationImpl create(Existence existence) {
         validateCanHaveInstances(Relation.class);
-        ThingVertex.Write instance = graphMgr().data().create(vertex, isInferred);
+        ThingVertex.Write instance = graphMgr().data().create(vertex, existence);
         return RelationImpl.of(conceptMgr, instance);
     }
 
@@ -284,7 +300,7 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
     }
 
     private void writeRelates(StringBuilder builder) {
-        getRelatesExplicit().stream().sorted(comparing(x -> x.getLabel().name())).forEach(roleType -> {
+        getRelates(EXPLICIT).stream().sorted(comparing(x -> x.getLabel().name())).forEach(roleType -> {
             builder.append(COMMA).append(SPACE)
                     .append(TypeQLToken.Constraint.RELATES).append(SPACE)
                     .append(roleType.getLabel().name());
@@ -324,6 +340,16 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
 
         @Override
+        public RelationTypeImpl getSupertype() {
+            return null;
+        }
+
+        @Override
+        public Forwardable<RelationTypeImpl, Order.Asc> getSupertypes() {
+            return iterateSorted(ASC, this);
+        }
+
+        @Override
         public void setSupertype(RelationType superType) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
@@ -344,12 +370,12 @@ public class RelationTypeImpl extends ThingTypeImpl implements RelationType {
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
+        public void setOwns(AttributeType attributeType, Set<Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
+        public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 

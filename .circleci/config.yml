@@ -16,20 +16,50 @@
 #
 
 version: 2.1
+
 orbs:
   win: circleci/windows@2.0.0
+
+
+executors:
+  linux-arm64:
+    machine:
+      image: ubuntu-2004:current
+      resource_class: arm.medium
+    working_directory: ~/typedb
+
+  linux-x86_64:
+    machine:
+      image: ubuntu-2004:current
+    working_directory: ~/typedb
+
+  mac-arm64:
+    macos:
+      xcode: "13.4.1"
+    resource_class: macos.m1.medium.gen1
+    working_directory: ~/typedb
+
+  mac-x86_64:
+    macos:
+      xcode: "13.4.1"
+    working_directory: ~/typedb
+
+
 commands:
 
   install-bazel-linux-x86_64:
     steps:
-      - run: curl -OL https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-amd64
-      - run: sudo mv bazelisk-linux-amd64 /usr/local/bin/bazel
+      - run: |
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-amd64"
+          sudo mv "bazelisk-linux-amd64" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
 
   install-bazel-linux-arm64:
     steps:
-      - run: curl -OL https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-arm64
-      - run: sudo mv bazelisk-linux-arm64 /usr/local/bin/bazel
-      - run: chmod a+x /usr/local/bin/bazel
+      - run: |
+          curl -OL "https://github.com/bazelbuild/bazelisk/releases/download/v1.17.0/bazelisk-linux-arm64"
+          sudo mv "bazelisk-linux-arm64" /usr/local/bin/bazel
+          chmod a+x /usr/local/bin/bazel
 
   install-bazel-mac:
     steps:
@@ -37,8 +67,7 @@ commands:
 
 jobs:
   test-assembly-mac-x86_64-zip:
-    macos:
-      xcode: "14.2.0"
+    executor: mac-x86_64
     working_directory: ~/typedb
     steps:
       - checkout
@@ -46,8 +75,7 @@ jobs:
       - run: bazel test //test/assembly:assembly --test_output=errors
 
   test-assembly-mac-arm64-zip:
-    macos:
-      xcode: "14.2.0"
+    executor: mac-arm64
     resource_class: macos.m1.medium.gen1
     working_directory: ~/typedb
     steps:
@@ -56,13 +84,19 @@ jobs:
       - run: bazel test //test/assembly:assembly --test_output=errors
 
   test-assembly-linux-arm64-zip:
-    machine:
-      image: ubuntu-2004:current
-      resource_class: arm.medium
+    executor: linux-arm64
     working_directory: ~/typedb
     steps:
       - checkout
       - install-bazel-linux-arm64
+      - run: bazel test //test/assembly:assembly --test_output=errors
+
+  test-assembly-linux-x86_64-zip:
+    executor: linux-x86_64
+    working_directory: ~/typedb
+    steps:
+      - checkout
+      - install-bazel-linux-x86_64
       - run: bazel test //test/assembly:assembly --test_output=errors
 
   test-assembly-windows-zip:
@@ -86,6 +120,12 @@ workflows:
                 - master
                 - development
       - test-assembly-mac-arm64-zip:
+          filters:
+            branches:
+              only:
+                - master
+                - development
+      - test-assembly-linux-x86_64-zip:
           filters:
             branches:
               only:

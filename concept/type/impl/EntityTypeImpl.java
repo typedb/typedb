@@ -20,6 +20,8 @@ package com.vaticle.typedb.core.concept.type.impl;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
+import com.vaticle.typedb.core.common.parameters.Concept.Transitivity;
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Entity;
@@ -29,14 +31,17 @@ import com.vaticle.typedb.core.concept.type.EntityType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
-import com.vaticle.typeql.lang.common.TypeQLToken;
+import com.vaticle.typeql.lang.common.TypeQLToken.Annotation;
 
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_ROOT_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROOT_TYPE_MUTATION;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
+import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.SUB;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.ENTITY_TYPE;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ENTITY;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Char.NEW_LINE;
@@ -62,6 +67,18 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
     }
 
     @Override
+    public EntityTypeImpl getSupertype() {
+        return vertex.outs().edge(SUB).to().map(v -> (EntityTypeImpl) conceptMgr.convertEntityType(v)).firstOrNull();
+    }
+
+    @Override
+    public Forwardable<EntityTypeImpl, Order.Asc> getSupertypes() {
+        return iterateSorted(graphMgr().schema().getSupertypes(vertex), ASC)
+                .filter(TypeVertex::isEntityType)
+                .mapSorted(v -> (EntityTypeImpl) conceptMgr.convertEntityType(v), t -> t.vertex, ASC);
+    }
+
+    @Override
     public void setSupertype(EntityType superType) {
         validateIsNotDeleted();
         setSuperTypeVertex(((EntityTypeImpl) superType).vertex);
@@ -69,37 +86,33 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
 
     @Override
     public Forwardable<EntityTypeImpl, Order.Asc> getSubtypes() {
-        return iterateSorted(graphMgr().schema().getSubtypes(vertex), ASC)
-                .mapSorted(
-                        v -> (EntityTypeImpl) conceptMgr.convertEntityType(v).asEntityType(),
-                        entityType -> entityType.vertex, ASC
-                );
+        return getSubtypes(TRANSITIVE);
     }
 
     @Override
-    public Forwardable<EntityTypeImpl, Order.Asc> getSubtypesExplicit() {
-        return super.getSubtypesExplicit(v -> (EntityTypeImpl) conceptMgr.convertEntityType(v).asEntityType());
+    public Forwardable<EntityTypeImpl, Order.Asc> getSubtypes(Transitivity transitivity) {
+        return getSubtypes(transitivity, v -> (EntityTypeImpl) conceptMgr.convertEntityType(v).asEntityType());
     }
 
     @Override
     public Forwardable<EntityImpl, Order.Asc> getInstances() {
-        return instances(v -> EntityImpl.of(conceptMgr, v));
+        return getInstances(TRANSITIVE);
     }
 
     @Override
-    public Forwardable<EntityImpl, Order.Asc> getInstancesExplicit() {
-        return instancesExplicit(v -> EntityImpl.of(conceptMgr, v));
+    public Forwardable<EntityImpl, Order.Asc> getInstances(Transitivity transitivity) {
+        return instances(transitivity, v -> EntityImpl.of(conceptMgr, v));
     }
 
     @Override
     public EntityImpl create() {
-        return create(false);
+        return create(STORED);
     }
 
     @Override
-    public EntityImpl create(boolean isInferred) {
+    public EntityImpl create(Existence existence) {
         validateCanHaveInstances(Entity.class);
-        ThingVertex.Write instance = graphMgr().data().create(vertex, isInferred);
+        ThingVertex.Write instance = graphMgr().data().create(vertex, existence);
         return EntityImpl.of(conceptMgr, instance);
     }
 
@@ -150,7 +163,12 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
 
         @Override
-        public Forwardable<ThingTypeImpl, Order.Asc> getSupertypes() {
+        public EntityTypeImpl getSupertype() {
+            return null;
+        }
+
+        @Override
+        public Forwardable<EntityTypeImpl, Order.Asc> getSupertypes() {
             return iterateSorted(ASC, this);
         }
 
@@ -160,12 +178,12 @@ public class EntityTypeImpl extends ThingTypeImpl implements EntityType {
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, Set<TypeQLToken.Annotation> annotations) {
+        public void setOwns(AttributeType attributeType, Set<Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 
         @Override
-        public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<TypeQLToken.Annotation> annotations) {
+        public void setOwns(AttributeType attributeType, AttributeType overriddenType, Set<Annotation> annotations) {
             throw exception(TypeDBException.of(ROOT_TYPE_MUTATION));
         }
 

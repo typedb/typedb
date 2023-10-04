@@ -44,6 +44,7 @@ host_compatible_java_test(
     deps = [
         # Internal dependencies
         "//test/integration/util",
+        "//migrator:migrator-data",
         "//server:version",
 
         # External dependencies from Maven

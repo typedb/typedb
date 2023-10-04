@@ -36,7 +36,6 @@ import com.vaticle.typedb.core.traversal.common.VertexMap;
 import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.test.ProcedurePermutator;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.common.TypeQLToken;
 import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import com.vaticle.typeql.lang.pattern.variable.Reference;
 import com.vaticle.typeql.lang.pattern.variable.Variable;
@@ -171,7 +170,7 @@ public class TypeQLSteps {
             answers = tx().query().match(typeQLQuery).toList();
             assertQueryPlansCorrect(typeQLQuery);
         } catch (TypeQLException e) {
-            // NOTE: We manually close transaction here, because we want to align with all non-java clients,
+            // NOTE: We manually close transaction here, because we want to align with all non-java drivers,
             // where parsing happens at server-side which closes transaction if they fail
             tx().close();
             throw e;
@@ -722,7 +721,7 @@ public class TypeQLSteps {
                 return false;
             }
 
-            Optional<? extends Attribute> keyOpt = concept.asThing().getHas(set(TypeQLToken.Annotation.KEY))
+            Optional<? extends Attribute> keyOpt = concept.asThing().getHas(set(KEY))
                     .filter(attr -> attr.getType().getLabel().toString().equals(type)).first();
             if (keyOpt.isEmpty()) return false;
             Attribute key = keyOpt.get().asAttribute();
