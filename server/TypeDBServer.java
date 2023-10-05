@@ -37,7 +37,6 @@ import com.vaticle.typedb.core.server.parameters.CoreSubcommand;
 import com.vaticle.typedb.core.server.parameters.CoreSubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import io.grpc.netty.NettyServerBuilder;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +54,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.ALREADY_RUNNING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PORT_IN_USE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
@@ -204,7 +203,7 @@ public class TypeDBServer implements AutoCloseable {
             logger().info("");
         } catch (IOException e) {
             if (e.getCause() != null && e.getCause() instanceof BindException) {
-                throw TypeDBException.of(ALREADY_RUNNING, address());
+                throw TypeDBException.of(PORT_IN_USE, address());
             } else {
                 throw new RuntimeException(e);
             }

@@ -101,8 +101,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Server(32, "Iteration was requested for ID '%s', but this ID does not correspond to an existing query iterator.");
         public static final Server DUPLICATE_REQUEST =
                 new Server(33, "The request with ID '%s' is a duplicate.");
-        public static final Server ALREADY_RUNNING =
-                new Server(34, "Another instance of TypeDB server is already running at this port: '%s'.");
+        public static final Server PORT_IN_USE =
+                new Server(34, "Could not bind to the port since it is in use: '%s'.");
         public static final Server INCOMPATIBLE_JAVA_RUNTIME =
                 new Server(35, "Incompatible Java runtime version: '%s'. Please use Java 11 or above.");
         public static final Server ERROR_LOGGING_CONNECTIONS =
