@@ -31,8 +31,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 
-import static org.junit.Assert.assertTrue;
-
 public class DockerTest {
     private static final int ATTEMPTS = 25;
     private static final int ATTEMPT_SLEEP_MILLIS = 1000;
