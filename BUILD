@@ -305,8 +305,8 @@ docker_container_image(
         "LANG": "C.UTF-8",
         "LC_ALL": "C.UTF-8",
     },
-    cmd = ["/opt/typedb-all-linux/typedb", "server"],
-    volumes = ["/opt/typedb-all-linux/server/data/"],
+    cmd = ["/opt/typedb-all-linux-x86_64/typedb", "server"],
+    volumes = ["/opt/typedb-all-linux-x86_64/server/data/"],
     visibility = ["//test:__subpackages__"],
 )
 

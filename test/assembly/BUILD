@@ -40,10 +40,10 @@ typedb_java_test(
     data = [":console-script"],
 )
 
-java_test(
+typedb_java_test(
     name = "docker",
-    srcs = ["DockerTest.java"],
     test_class = "com.vaticle.typedb.core.test.assembly.DockerTest",
+    srcs = ["DockerTest.java"],
     deps = [
         "@maven//:org_slf4j_slf4j_api",
         "@maven//:org_zeroturnaround_zt_exec",
@@ -51,6 +51,20 @@ java_test(
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
     ],
+    server_artifacts = {
+        "@vaticle_bazel_distribution//platform:is_linux_arm64": "//server:assemble-linux-arm64-targz",
+        "@vaticle_bazel_distribution//platform:is_linux_x86_64": "//server:assemble-linux-x86_64-targz",
+        "@vaticle_bazel_distribution//platform:is_mac_arm64": "//server:assemble-mac-arm64-zip",
+        "@vaticle_bazel_distribution//platform:is_mac_x86_64": "//server:assemble-mac-x86_64-zip",
+        "@vaticle_bazel_distribution//platform:is_windows_x86_64": "//server:assemble-windows-x86_64-zip",
+    },
+    console_artifacts = {
+        "@vaticle_bazel_distribution//platform:is_linux_arm64": "@vaticle_typedb_console_artifact_linux-arm64//file",
+        "@vaticle_bazel_distribution//platform:is_linux_x86_64": "@vaticle_typedb_console_artifact_linux-x86_64//file",
+        "@vaticle_bazel_distribution//platform:is_mac_arm64": "@vaticle_typedb_console_artifact_mac-arm64//file",
+        "@vaticle_bazel_distribution//platform:is_mac_x86_64": "@vaticle_typedb_console_artifact_mac-x86_64//file",
+        "@vaticle_bazel_distribution//platform:is_windows_x86_64": "@vaticle_typedb_console_artifact_windows-x86_64//file",
+    },
     data = [
         "//:assemble-docker.tar"
     ]

@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.test.assembly;
 
+import com.vaticle.typedb.common.test.console.TypeDBConsoleRunner;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,6 @@ import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.StartedProcess;
 
 import java.io.IOException;
-import java.net.Socket;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
@@ -34,6 +34,9 @@ import java.util.concurrent.TimeoutException;
 import static org.junit.Assert.assertTrue;
 
 public class DockerTest {
+    private static final int ATTEMPTS = 25;
+    private static final int ATTEMPT_SLEEP_MILLIS = 1000;
+
     private static final Logger LOG = LoggerFactory.getLogger(DockerTest.class);
     private final ProcessExecutor executor;
     private static final int typeDBPort = 1729;
@@ -52,30 +55,24 @@ public class DockerTest {
                 "--rm", "-t", "-p", String.format("%d:%d", typeDBPort, typeDBPort),
                 "bazel:assemble-docker"
         ).start();
-        waitUntilReady();
-        assertTrue("TypeDB failed to start", typeDBProcess.getProcess().isAlive());
+        TypeDBConsoleRunner consoleRunner = new TypeDBConsoleRunner();
+        testIsReady(consoleRunner);
         typeDBProcess.getProcess().destroy();
     }
 
-    private void waitUntilReady() throws InterruptedException {
+    private void testIsReady(TypeDBConsoleRunner consoleRunner) throws InterruptedException {
         int attempt = 0;
-        while (!isTypeDBServerReady() && attempt < 25) {
-            Thread.sleep(1000);
+        while (!isTypeDBServerReady(consoleRunner) && attempt < ATTEMPTS) {
+            Thread.sleep(ATTEMPT_SLEEP_MILLIS);
             attempt++;
         }
-        if (!isTypeDBServerReady()) {
-            throw new RuntimeException("TypeDB server didn't boot up in the allotted time");
+        if (attempt == ATTEMPTS) {
+            throw new RuntimeException("TypeDB server wasn't reachable in the allocated time of '" + (ATTEMPTS * ATTEMPT_SLEEP_MILLIS) + "' milliseconds.");
         }
     }
 
-    private static boolean isTypeDBServerReady() {
-        try {
-            Socket s = new Socket("localhost", typeDBPort);
-            s.close();
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
+    private static boolean isTypeDBServerReady(TypeDBConsoleRunner consoleRunner) {
+        return consoleRunner.run("--server", "localhost:" + typeDBPort, "--command", "database create docker-test") == 0;
     }
 
     private ProcessResult execute(String... cmd) throws InterruptedException, TimeoutException, IOException {
