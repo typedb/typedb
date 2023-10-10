@@ -79,7 +79,7 @@ public class BenchmarkBig {
         return databaseMgr.session(database, Arguments.Session.Type.DATA);
     }
 
-    final private Random rand = new Random();
+    final private Random rand = new Random(0);
 
     private void loadSchema(String fileName, TypeDB.Session session) {
         String filePath = "test/benchmark/reasoner/synthetic/resources/" + fileName;

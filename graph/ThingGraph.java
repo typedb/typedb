@@ -127,12 +127,12 @@ public class ThingGraph {
     public ThingVertex getReadable(VertexIID.Thing iid) {
         assert storage.isOpen();
         if (iid.encoding().equals(ATTRIBUTE)) return getReadable(iid.asAttribute());
-        else if (!thingsByIID.containsKey(iid) && storage.get(iid) == null) return null;
+        else if (!storage.isReadOnly() && !thingsByIID.containsKey(iid) && storage.get(iid) == null) return null;
         return convertToReadable(iid);
     }
 
     public AttributeVertex<?> getReadable(VertexIID.Attribute<?> iid) {
-        if (!attributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage.get(iid) == null) {
+        if (!storage.isReadOnly() && !attributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage.get(iid) == null) {
             return null;
         }
         return convertToReadable(iid);

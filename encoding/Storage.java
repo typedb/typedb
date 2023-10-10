@@ -34,6 +34,8 @@ public interface Storage {
 
     boolean isOpen();
 
+    boolean isReadOnly();
+
     ByteArray get(Key key);
 
     <T extends Key> T getLastKey(Key.Prefix<T> key);

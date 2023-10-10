@@ -104,6 +104,11 @@ public abstract class RocksStorage implements Storage {
     }
 
     @Override
+    public boolean isReadOnly() {
+        return isReadOnly;
+    }
+
+    @Override
     public <T extends Key> T getLastKey(Key.Prefix<T> prefix) {
         throw exception(ILLEGAL_OPERATION);
     }
