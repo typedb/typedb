@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.server.parameters;
 
 import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.server.common.Util;
 import com.vaticle.typedb.core.server.parameters.util.Option;
 import com.vaticle.typedb.core.server.parameters.util.YAMLParser;
 import org.junit.Test;
@@ -28,7 +27,6 @@ import org.junit.Test;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DecimalFormat;
 import java.util.HashSet;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
@@ -149,7 +147,7 @@ public class CoreConfigTest {
         } catch (TypeDBException e) {
             assert e.code().isPresent();
             assertEquals(CONFIG_VALUE_UNEXPECTED.code(), e.code().get());
-            assertEquals(CONFIG_VALUE_UNEXPECTED.message("storage.data", "123456[int]", YAMLParser.Value.Primitive.PATH.help()), e.getMessage());
+            assertEquals(CONFIG_VALUE_UNEXPECTED.message("storage.data", "123456[int]", YAMLParser.Value.Primitive.PATH.description()), e.getMessage());
         }
     }
 
