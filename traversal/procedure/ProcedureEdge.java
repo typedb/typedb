@@ -971,7 +971,7 @@ public abstract class ProcedureEdge<
                     GraphManager graphMgr, ThingVertex fromVertex, Encoding.Edge.Thing encoding,
                     VertexIID.Thing toIID, Set<Label> allowedToTypes
             ) {
-                ThingVertex toVertex = graphMgr.data().getReadable(toIID);
+                ThingVertex toVertex = graphMgr.data().getReadable(toIID, false);
                 if (toVertex != null && fromVertex.ins().edge(encoding, toVertex) != null &&
                         allowedToTypes.contains(toVertex.type().properLabel())) {
                     return Optional.of(toVertex);
@@ -1031,7 +1031,7 @@ public abstract class ProcedureEdge<
                     ) {
                         assert to.props().hasIID() && to.id().isVariable();
                         VertexIID.Thing iid = params.getIID(to.id().asVariable());
-                        AttributeVertex<?> att = iid.isAttribute() ? graphMgr.data().getReadable(iid.asAttribute()) : null;
+                        AttributeVertex<?> att = iid.isAttribute() ? graphMgr.data().getReadable(iid.asAttribute(), false) : null;
                         if (att != null && to.props().types().contains(att.type().properLabel()) && owner.outs().edge(HAS, att) != null) {
                             return Optional.of(att);
                         } else return Optional.empty();
@@ -1377,7 +1377,7 @@ public abstract class ProcedureEdge<
                             FunctionalIterator<TypeVertex> roleTypes
                     ) {
                         assert to.id().isVariable();
-                        ThingVertex player = graphMgr.data().getReadable(params.getIID(to.id().asVariable()));
+                        ThingVertex player = graphMgr.data().getReadable(params.getIID(to.id().asVariable()), false);
                         List<KeyValue<ThingVertex, ThingVertex>> toAndRole = new ArrayList<>();
                         if (player != null) {
                             roleTypes.forEachRemaining(rt ->
@@ -1463,7 +1463,7 @@ public abstract class ProcedureEdge<
                             FunctionalIterator<TypeVertex> roleTypeVertices
                     ) {
                         assert to.id().isVariable();
-                        ThingVertex relation = graphMgr.data().getReadable(params.getIID(to.id().asVariable()));
+                        ThingVertex relation = graphMgr.data().getReadable(params.getIID(to.id().asVariable()), false);
                         if (relation == null) return emptySorted();
                         else {
                             Forwardable<KeyValue<ThingVertex, ThingVertex>, Order.Asc> iter = roleTypeVertices.mergeMapForwardable(

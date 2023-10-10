@@ -390,7 +390,7 @@ public class TypeInference {
             }
             // WARN: this isn't quite a type inference, but it is a very useful assumption to be able to hold later in the code:
             //       all the IIDs arriving at the query engines are valid vertices.
-            ThingVertex vertex = graphMgr.data().getReadable(iid);
+            ThingVertex vertex = graphMgr.data().getReadable(iid, true);
             if (vertex == null || !vertex.type().equals(type)) {
                 conjunction.setAnswerable(false);
             }
