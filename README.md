@@ -273,7 +273,7 @@ rule subject-permission-inheritance:
    };
 ```
 
-### Simple & Stateful API
+### Simple & stateful API
 
 TypeDB Driver provide stateful objects, Sessions and Transactions, to interact with the database programmatically. 
 The transactions provide [ACID guarantees](https://typedb.com/docs/typedb/2.x/development/connect#_acid_guarantees), 
@@ -290,20 +290,28 @@ that provide stateful objects, Session and Transactions, for you to interact wit
 - [Node.js](https://typedb.com/docs/drivers/2.x/node-js/node-js-overview)
 - [Community drivers](https://typedb.com/docs/drivers/2.x/other-languages)
 
-## Download and Run TypeDB Core
+## TypeDB editions
+
+* [TypeDB Cloud](htttps://cloud.typedb.com) -- DBaaS
+* [TypeDB Enterprise](mailto://sales@vaticle.com) -- Enterprise edition of TypeDB
+* TypeDB Core -- Open-source edition of TypeDB
+
+For a comparison of all three editions, see the [Deploy](https://typedb.com/deploy) page on our website.
+
+## Download and run TypeDB Core
 
 You can download TypeDB from the [GitHub Releases](https://github.com/vaticle/typedb/releases). 
 
 Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) to get started.
 
-## Developer Resources
+## Developer resources
 
 - Documentation: https://typedb.com/docs
 - Discussion Forum: https://forum.typedb.com/
 - Discord Chat Server: https://typedb.com/discord
 - Community Projects: https://github.com/typedb-osi
 
-## Compiling TypeDB Core from Source
+## Compiling TypeDB Core from source
 
 > Note: You DO NOT NEED to compile TypeDB from the source if you just want to use TypeDB. See the _"Download and Run 
 > TypeDB Core"_ section above.
@@ -352,7 +360,7 @@ Thank you!
 
 In the past, TypeDB was enabled by various open-source products and communities that we are hugely thankful to:
 [RocksDB](https://rocksdb.org),
-[ANTLR](http://www.antlr.org),
+[ANTLR](https://www.antlr.org),
 [Apache Cassandra](http://cassandra.apache.org), 
 [Apache Hadoop](https://hadoop.apache.org), 
 [Apache Spark](http://spark.apache.org), 
@@ -366,6 +374,6 @@ It's released under the GNU Affero GENERAL PUBLIC LICENSE version 3 (AGPL v.3.0)
 For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). 
 
 Vaticle also provides a commercial license for TypeDB Enterprise - get in touch with our team at 
-[commercial@vaticle.com](emailto://commercial@vaticle.com).
+[commercial@vaticle.com](emailto://sales@vaticle.com).
 
 Copyright (C) 2023 Vaticle
