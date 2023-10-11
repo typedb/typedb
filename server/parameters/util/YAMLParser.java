@@ -99,14 +99,7 @@ public class YAMLParser {
             }
 
             public Help help(String path) {
-                String childPath = concatenate(path, key());
-                if (valueParser.isPrimitive()) {
-                    return new Value.Primitive.Help(childPath, description(), valueParser.asPrimitive().help());
-                } else if (valueParser.isRestricted()) {
-                    return new Value.Primitive.Help(childPath, description(), valueParser.asRestricted().help());
-                } else {
-                    return new Value.Compound.Help(childPath, description(), valueParser.asCompound().helpList(childPath));
-                }
+                return valueParser.help(concatenate(path, key()), description());
             }
         }
 
@@ -133,13 +126,7 @@ public class YAMLParser {
 
             @Override
             public Help help(String path) {
-                if (valueParser.isPrimitive()) {
-                    return new Value.Primitive.Help(concatenate(path, "<name>"), description(), valueParser.asPrimitive().help());
-                } else if (valueParser.isRestricted()) {
-                    return new Value.Primitive.Help(concatenate(path, "<name>"), description(), valueParser.asRestricted().help());
-                } else {
-                    return new Value.Compound.Help(concatenate(path, "<name>"), description(), valueParser.asCompound().helpList(concatenate(path, "<name>")));
-                }
+                return valueParser.help(concatenate(path, "<name>"), description());
             }
         }
     }
@@ -164,6 +151,14 @@ public class YAMLParser {
             throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Restricted.class));
         }
 
+        public boolean isOptional() {
+            return false;
+        }
+
+        public Optional<?> asOptional() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Optional.class));
+        }
+
         boolean isCompound() {
             return false;
         }
@@ -171,6 +166,8 @@ public class YAMLParser {
         Compound<TYPE> asCompound() {
             throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Compound.class));
         }
+
+        public abstract Help help(String key, String description);
 
         public static abstract class Compound<T> extends Value<T> {
 
@@ -184,6 +181,11 @@ public class YAMLParser {
             @Override
             public Compound<T> asCompound() {
                 return this;
+            }
+
+            @Override
+            public Help help(String key, String description) {
+                return new Help(key, description, helpList(key));
             }
 
             public static class Help implements com.vaticle.typedb.core.server.parameters.util.Help {
@@ -243,8 +245,13 @@ public class YAMLParser {
                 else throw TypeDBException.of(CONFIG_VALUE_ENUM_UNEXPECTED, path, value, allowed);
             }
 
-            public String help() {
-                return "<" + String.join("+", iterate(this.allowed).map(Object::toString).toList()) + ">";
+            public String description() {
+                return String.join("|", iterate(this.allowed).map(Object::toString).toList());
+            }
+
+            @Override
+            public Primitive.Help help(String key, String keyValueDescription) {
+                return new Primitive.Help(key, keyValueDescription, description());
             }
 
             @Override
@@ -254,6 +261,40 @@ public class YAMLParser {
 
             @Override
             Restricted<T> asRestricted() {
+                return this;
+            }
+        }
+
+        public static class Optional<T> extends Value<java.util.Optional<T>> {
+
+            private final Primitive<T> valueParser;
+
+            public Optional(Primitive<T> valueParser) {
+                this.valueParser = valueParser;
+            }
+
+            @Override
+            public java.util.Optional<T> parse(YAML yaml, String path) {
+                if (yaml == null) return java.util.Optional.empty();
+                else return java.util.Optional.of(valueParser.parse(yaml, path));
+            }
+
+            public String description() {
+                return  valueParser.description() + "|null";
+            }
+
+            @Override
+            public Help help(String key, String keyValueDescription) {
+                return new Primitive.Help(key, keyValueDescription, description());
+            }
+
+            @Override
+            public boolean isOptional() {
+                return true;
+            }
+
+            @Override
+            public Optional<T> asOptional() {
                 return this;
             }
         }
@@ -282,7 +323,7 @@ public class YAMLParser {
             public static final Primitive<Path> PATH = new Primitive<>(
                     (yaml) -> yaml.isString(),
                     (yaml) -> Paths.get(yaml.asString().value()),
-                    "<relative or absolute path>"
+                    "<path>"
             );
             public static final Primitive<Long> BYTES_SIZE = new Primitive<>(
                     (yaml) -> yaml.isString() && Bytes.isValidString(yaml.asString().value()),
@@ -314,28 +355,28 @@ public class YAMLParser {
             public static final Primitive<TimePeriodName> TIME_PERIOD_NAME = new Primitive<>(
                     (yaml) -> yaml.isString() && TimePeriodName.isValidString(yaml.asString().value()),
                     (yaml) -> TimePeriodName.parse(yaml.asString().value()),
-                    TimePeriodName.HELP
+                    TimePeriodName.DESCRIPTION
             );
             public static final Primitive<TimePeriod> TIME_PERIOD = new Primitive<>(
                     (yaml) -> yaml.isString() && TimePeriod.isValidString(yaml.asString().value()),
                     (yaml) -> TimePeriod.parse(yaml.asString().value()),
-                    TimePeriod.HELP
+                    TimePeriod.DESCRIPTION
             );
 
             private final Function<YAML, Boolean> validator;
             private final Function<YAML, T> converter;
-            private final String help;
+            private final String description;
 
-            private Primitive(Function<YAML, Boolean> validator, Function<YAML, T> converter, String help) {
+            private Primitive(Function<YAML, Boolean> validator, Function<YAML, T> converter, String description) {
                 this.validator = validator;
                 this.converter = converter;
-                this.help = help;
+                this.description = description;
             }
 
             @Override
             public T parse(YAML yaml, String path) {
                 if (!validator.apply(yaml)) {
-                    throw TypeDBException.of(CONFIG_VALUE_UNEXPECTED, path, yaml, help);
+                    throw TypeDBException.of(CONFIG_VALUE_UNEXPECTED, path, yaml, description);
                 } else {
                     return converter.apply(yaml);
                 }
@@ -351,20 +392,25 @@ public class YAMLParser {
                 return this;
             }
 
-            public String help() {
-                return help;
+            public String description() {
+                return description;
+            }
+
+            @Override
+            public Help help(String key, String keyValueDescription) {
+                return new Help(key, keyValueDescription, description);
             }
 
             public static class Help implements com.vaticle.typedb.core.server.parameters.util.Help {
 
                 private final String path;
-                private final String description;
-                private final String valueHelp;
+                private final String keyValueDescription;
+                private final String valueDescription;
 
-                public Help(String path, String description, String valueHelp) {
+                public Help(String path, String keyValueDescription, String valueDescription) {
                     this.path = path;
-                    this.description = description;
-                    this.valueHelp = valueHelp;
+                    this.keyValueDescription = keyValueDescription;
+                    this.valueDescription = valueDescription;
                 }
 
                 @Override
@@ -374,12 +420,12 @@ public class YAMLParser {
 
                 @Override
                 public String description() {
-                    return description;
+                    return keyValueDescription;
                 }
 
                 @Override
                 public String toString() {
-                    return String.format("\t%-60s \t%s\n", (Option.PREFIX + path + "=" + valueHelp), description);
+                    return String.format("\t%-60s \t%s\n", (Option.PREFIX + path + "=" + valueDescription), keyValueDescription);
                 }
             }
         }
@@ -424,7 +470,7 @@ public class YAMLParser {
 
         private static class Duration {
 
-            private final static String HELP = "<number><d|h|m|s>";
+            private final static String HELP = "<number> d|h|m|s";
 
             private final static String LENGTH_PART = "([0-9]+)";
             private final static int LENGTH_GROUP = 1;
@@ -462,22 +508,24 @@ public class YAMLParser {
 
         public enum TimePeriodName {
 
-            MINUTE("minute", "minutes", ChronoUnit.MINUTES),
-            HOUR("hour", "hours", ChronoUnit.HOURS),
-            DAY("day", "days", ChronoUnit.DAYS),
-            WEEK("week", "weeks", ChronoUnit.WEEKS),
-            MONTH("month", "months", ChronoUnit.MONTHS),
-            YEAR("year", "years", ChronoUnit.YEARS);
+            MINUTE("minute", "s", ChronoUnit.MINUTES),
+            HOUR("hour", "s", ChronoUnit.HOURS),
+            DAY("day", "s", ChronoUnit.DAYS),
+            WEEK("week", "s", ChronoUnit.WEEKS),
+            MONTH("month", "s", ChronoUnit.MONTHS),
+            YEAR("year", "s", ChronoUnit.YEARS);
 
-            private static final String HELP = stream(values()).map(TimePeriodName::toString).collect(joining("|"));
+            private static final String DESCRIPTION = stream(values()).map(TimePeriodName::toString).collect(joining("|"));
 
             private final String singular;
             private final String plural;
+            private final String pluralisationSuffix;
             private final ChronoUnit unit;
 
-            TimePeriodName(String singular, String plural, ChronoUnit unit) {
+            TimePeriodName(String singular, String pluralisationSuffix, ChronoUnit unit) {
                 this.singular = singular;
-                this.plural = plural;
+                this.pluralisationSuffix = pluralisationSuffix;
+                this.plural = singular + this.pluralisationSuffix;
                 this.unit = unit;
             }
 
@@ -491,14 +539,14 @@ public class YAMLParser {
                 return tryParse(string).isPresent();
             }
 
-            private static Optional<TimePeriodName> tryParse(String string) {
+            private static java.util.Optional<TimePeriodName> tryParse(String string) {
                 for (TimePeriodName timePeriodName : values()) {
                     String canonicalString = string.trim().toLowerCase();
                     if (canonicalString.equals(timePeriodName.singular) || canonicalString.equals(timePeriodName.plural)) {
-                        return Optional.of(timePeriodName);
+                        return java.util.Optional.of(timePeriodName);
                     }
                 }
-                return Optional.empty();
+                return java.util.Optional.empty();
             }
 
             public ChronoUnit chronoUnit() {
@@ -507,13 +555,13 @@ public class YAMLParser {
 
             @Override
             public String toString() {
-                return singular + "|" + plural;
+                return singular + "(" + pluralisationSuffix + ")";
             }
         }
 
         public static class TimePeriod {
 
-            private static final String HELP = "<number> <" + TimePeriodName.HELP + ">";
+            private static final String DESCRIPTION = "<number> " + TimePeriodName.DESCRIPTION;
 
             private final static String LENGTH_PART = "([0-9]+)";
             private final static int LENGTH_GROUP = 1;
@@ -539,15 +587,15 @@ public class YAMLParser {
                 return tryParse(periodString).isPresent();
             }
 
-            private static Optional<TimePeriod> tryParse(String periodString) {
+            private static java.util.Optional<TimePeriod> tryParse(String periodString) {
                 Matcher matcher = PATTERN.matcher(periodString);
                 if (matcher.matches()) {
                     String lenStr = matcher.group(LENGTH_GROUP);
                     long lenValue = Long.parseLong(lenStr);
                     String unitStr = matcher.group(PERIOD_NAME_GROUP);
                     TimePeriodName periodName = TimePeriodName.parse(unitStr);
-                    return Optional.of(new TimePeriod(lenValue, periodName));
-                } else return Optional.empty();
+                    return java.util.Optional.of(new TimePeriod(lenValue, periodName));
+                } else return java.util.Optional.empty();
             }
 
             public long length() {
