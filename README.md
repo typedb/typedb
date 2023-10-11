@@ -290,14 +290,11 @@ that provide stateful objects, Session and Transactions, for you to interact wit
 - [Node.js](https://typedb.com/docs/drivers/2.x/node-js/node-js-overview)
 - [Community drivers](https://typedb.com/docs/drivers/2.x/other-languages)
 
-## Download and Run TypeDB
+## Download and Run TypeDB Core
 
-You can download TypeDB from the [Releases page](https://typedb.com/docs/typedb/2.x/resources/releases), 
-[Installation guide](https://typedb.com/docs/typedb/2.x/installation), 
-or [GitHub Releases](https://github.com/vaticle/typedb/releases). 
+You can download TypeDB from the [GitHub Releases](https://github.com/vaticle/typedb/releases). 
 
-Make sure have Java 11 or higher (OpenJDK or Oracle Java) installed. 
-Visit the [Installation guide](https://typedb.com/docs/typedb/2.x/installation) to get started.
+Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) to get started.
 
 ## Developer Resources
 
@@ -320,7 +317,7 @@ Visit the [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
      - MacOS: `brew install bazelisk`
      - Linux: `wget https://github.com/bazelbuild/bazelisk/releases/download/v1.4.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel`
 
-2. Depending on your Operating System, you can build TypeDB with either one of the following commands: 
+2. You can build TypeDB with either one of the following commands, depending on the targeted Operation system: 
    ```sh
    $ bazel build //:assemble-linux-targz
    ```
@@ -340,31 +337,34 @@ Visit the [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
 
 ## Contributions
 
-TypeDB and TypeQL are built using various open-source frameworks throughout its evolution. Today TypeDB and TypeQL 
-use
+TypeDB and TypeQL are built using various open-source frameworks and technologies throughout its evolution. 
+Today TypeDB and TypeQL use
 [Speedb](https://www.speedb.io/),
-[ANTLR](http://www.antlr.org),
+[pest](https://pest.rs/),
 [SCIP](https://www.scipopt.org),
 [Bazel](https://bazel.build),
-[GRPC](https://grpc.io),
+[gRPC](https://grpc.io),
 [ZeroMQ](https://zeromq.org), 
 and [Caffeine](https://github.com/ben-manes/caffeine). 
 
-In the past, TypeDB was enabled by various open-source technologies and communities that we are hugely thankful to:
+Thank you!
+
+In the past, TypeDB was enabled by various open-source products and communities that we are hugely thankful to:
 [RocksDB](https://rocksdb.org),
+[ANTLR](http://www.antlr.org),
 [Apache Cassandra](http://cassandra.apache.org), 
 [Apache Hadoop](https://hadoop.apache.org), 
 [Apache Spark](http://spark.apache.org), 
 [Apache TinkerPop](http://tinkerpop.apache.org), 
 and [JanusGraph](http://janusgraph.org). 
 
-Thank you!
-
 ## Licensing
 
 This software is developed by [Vaticle](https://vaticle.com/).  
-It's released under the GNU Affero GENERAL PUBLIC LICENSE version 3 (AGPLv3).
+It's released under the GNU Affero GENERAL PUBLIC LICENSE version 3 (AGPL v.3.0).
 For license information, please see [LICENSE](https://github.com/vaticle/typedb/blob/master/LICENSE). 
-Vaticle also provides a commercial license for TypeDB Enterprise - get in touch with our team at commercial@vaticle.com.
+
+Vaticle also provides a commercial license for TypeDB Enterprise - get in touch with our team at 
+[commercial@vaticle.com](emailto://commercial@vaticle.com).
 
 Copyright (C) 2023 Vaticle
