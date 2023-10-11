@@ -6,6 +6,18 @@
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typedb-796de3.svg)](https://stackoverflow.com/questions/tagged/typedb)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typeql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/typeql)
 
+* [The benefits of strong typing](#the-benefits-of-strong-typing)
+  * [Logical data model](#logical-data-model) 
+  * [Inheritance](#inheritance)
+  * [Relations](#relations)
+  * [Multi-valued attributes](#multi-valued-attributes)
+* [TypeDB editions](#typedb-editions)
+* [Download TypeDB Core](#download-and-run-typedb-core)
+* [Developer resource](#developer-resources)
+* [Compiling from source](#compiling-typedb-core-from-source)
+* [Contributions](#contributions)
+* [Licensing](#licensing)
+
 # Meet TypeDB (and [TypeQL](https://github.com/vaticle/typeql))
 
 TypeDB is a strongly typed database with an intelligent reasoning engine to infer new data and a 
@@ -292,9 +304,9 @@ that provide stateful objects, Session and Transactions, for you to interact wit
 
 ## TypeDB editions
 
-* [TypeDB Cloud](https://cloud.typedb.com) -- DBaaS
+* [TypeDB Cloud](https://cloud.typedb.com) -- multi-cloud DBaaS
 * [TypeDB Enterprise](mailto://sales@vaticle.com) -- Enterprise edition of TypeDB
-* TypeDB Core -- Open-source edition of TypeDB
+* TypeDB Core -- Open-source edition of TypeDB <--- _This repository_
 
 For a comparison of all three editions, see the [Deploy](https://typedb.com/deploy) page on our website.
 
