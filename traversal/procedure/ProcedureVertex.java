@@ -197,7 +197,7 @@ public abstract class ProcedureVertex<
         ) {
             assert props().hasIID() && id().isVariable() && !props().types().isEmpty();
             Identifier.Variable id = id().asVariable();
-            ThingVertex vertex = graphMgr.data().getReadable(parameters.getIID(id));
+            ThingVertex vertex = graphMgr.data().getReadable(parameters.getIID(id), false);
             if (vertex == null) return emptySorted(order);
             return iterateAndFilter(vertex, parameters, order);
         }

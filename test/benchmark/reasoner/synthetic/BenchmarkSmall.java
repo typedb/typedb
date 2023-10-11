@@ -166,7 +166,7 @@ public class BenchmarkSmall {
      */
     @Test
     public void testTransitiveMatrixLinear() {
-        int N = 10;
+        int N = 30;
         int limit = 100;
 
         TransitivityMatrixGraph linearGraph = new TransitivityMatrixGraph.Linear(databaseMgr, database);

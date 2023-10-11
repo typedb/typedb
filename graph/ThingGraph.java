@@ -26,9 +26,9 @@ import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator.Forwardable;
+import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.common.parameters.Order;
-import com.vaticle.typedb.core.common.parameters.Concept.Existence;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.Storage;
 import com.vaticle.typedb.core.encoding.iid.PartitionedIID;
@@ -63,9 +63,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Encoding.ILL
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
+import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
-import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 import static com.vaticle.typedb.core.encoding.Encoding.Status.BUFFERED;
 import static com.vaticle.typedb.core.encoding.Encoding.Status.PERSISTED;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.BOOLEAN;
@@ -124,15 +124,19 @@ public class ThingGraph {
         return link(thingsByIID.values().iterator(), attributesByIID.valuesIterator());
     }
 
-    public ThingVertex getReadable(VertexIID.Thing iid) {
+    public ThingVertex getReadable(VertexIID.Thing iid, boolean maybeInvalid) {
         assert storage.isOpen();
-        if (iid.encoding().equals(ATTRIBUTE)) return getReadable(iid.asAttribute());
-        else if (!thingsByIID.containsKey(iid) && storage.get(iid) == null) return null;
+        if (iid.encoding().equals(ATTRIBUTE)) return getReadable(iid.asAttribute(), maybeInvalid);
+        else if (!thingsByIID.containsKey(iid) && (maybeInvalid || !storage.isReadOnly()) && storage.get(iid) == null) {
+            // if maybeInvalid or storage is writable, we must check the storage layer
+            return null;
+        }
         return convertToReadable(iid);
     }
 
-    public AttributeVertex<?> getReadable(VertexIID.Attribute<?> iid) {
-        if (!attributesByIID.forValueType(iid.valueType()).containsKey(iid) && storage.get(iid) == null) {
+    public AttributeVertex<?> getReadable(VertexIID.Attribute<?> iid, boolean maybeInvalid) {
+        if (!attributesByIID.forValueType(iid.valueType()).containsKey(iid) && (maybeInvalid || !storage.isReadOnly()) && storage.get(iid) == null) {
+            // if maybeInvalid or storage is writable, we must check the storage layer
             return null;
         }
         return convertToReadable(iid);
