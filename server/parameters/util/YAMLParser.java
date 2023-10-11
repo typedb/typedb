@@ -167,7 +167,7 @@ public class YAMLParser {
             throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Compound.class));
         }
 
-        abstract Help help(String key, String description);
+        public abstract Help help(String key, String description);
 
         public static abstract class Compound<T> extends Value<T> {
 
@@ -184,7 +184,7 @@ public class YAMLParser {
             }
 
             @Override
-            Help help(String key, String description) {
+            public Help help(String key, String description) {
                 return new Help(key, description, helpList(key));
             }
 
@@ -284,7 +284,7 @@ public class YAMLParser {
             }
 
             @Override
-            Help help(String key, String keyValueDescription) {
+            public Help help(String key, String keyValueDescription) {
                 return new Primitive.Help(key, keyValueDescription, description());
             }
 
@@ -323,7 +323,7 @@ public class YAMLParser {
             public static final Primitive<Path> PATH = new Primitive<>(
                     (yaml) -> yaml.isString(),
                     (yaml) -> Paths.get(yaml.asString().value()),
-                    "<relative or absolute path>"
+                    "<path>"
             );
             public static final Primitive<Long> BYTES_SIZE = new Primitive<>(
                     (yaml) -> yaml.isString() && Bytes.isValidString(yaml.asString().value()),

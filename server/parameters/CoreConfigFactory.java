@@ -105,7 +105,8 @@ public class CoreConfigFactory {
     protected static void substituteEnvVars(YAML.Map yaml) {
         for (String key : yaml.keys()) {
             YAML value = yaml.get(key);
-            if (value.isString()) {
+            if (value == null) continue;
+            else if (value.isString()) {
                 String valueStr = value.asString().value();
                 if (valueStr.startsWith("$")) {
                     String envVarName = valueStr.substring(1);
