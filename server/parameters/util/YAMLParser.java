@@ -151,6 +151,14 @@ public class YAMLParser {
             throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Restricted.class));
         }
 
+        public boolean isOptional() {
+            return false;
+        }
+
+        public Optional<?> asOptional() {
+            throw TypeDBException.of(ILLEGAL_CAST, className(getClass()), className(Optional.class));
+        }
+
         boolean isCompound() {
             return false;
         }
@@ -253,6 +261,40 @@ public class YAMLParser {
 
             @Override
             Restricted<T> asRestricted() {
+                return this;
+            }
+        }
+
+        public static class Optional<T> extends Value<java.util.Optional<T>> {
+
+            private final Primitive<T> valueParser;
+
+            public Optional(Primitive<T> valueParser) {
+                this.valueParser = valueParser;
+            }
+
+            @Override
+            public java.util.Optional<T> parse(YAML yaml, String path) {
+                if (yaml == null) return java.util.Optional.empty();
+                else return java.util.Optional.of(valueParser.parse(yaml, path));
+            }
+
+            public String description() {
+                return  valueParser.description() + "|null";
+            }
+
+            @Override
+            Help help(String key, String keyValueDescription) {
+                return new Primitive.Help(key, keyValueDescription, description());
+            }
+
+            @Override
+            public boolean isOptional() {
+                return true;
+            }
+
+            @Override
+            public Optional<T> asOptional() {
                 return this;
             }
         }
@@ -497,14 +539,14 @@ public class YAMLParser {
                 return tryParse(string).isPresent();
             }
 
-            private static Optional<TimePeriodName> tryParse(String string) {
+            private static java.util.Optional<TimePeriodName> tryParse(String string) {
                 for (TimePeriodName timePeriodName : values()) {
                     String canonicalString = string.trim().toLowerCase();
                     if (canonicalString.equals(timePeriodName.singular) || canonicalString.equals(timePeriodName.plural)) {
-                        return Optional.of(timePeriodName);
+                        return java.util.Optional.of(timePeriodName);
                     }
                 }
-                return Optional.empty();
+                return java.util.Optional.empty();
             }
 
             public ChronoUnit chronoUnit() {
@@ -545,15 +587,15 @@ public class YAMLParser {
                 return tryParse(periodString).isPresent();
             }
 
-            private static Optional<TimePeriod> tryParse(String periodString) {
+            private static java.util.Optional<TimePeriod> tryParse(String periodString) {
                 Matcher matcher = PATTERN.matcher(periodString);
                 if (matcher.matches()) {
                     String lenStr = matcher.group(LENGTH_GROUP);
                     long lenValue = Long.parseLong(lenStr);
                     String unitStr = matcher.group(PERIOD_NAME_GROUP);
                     TimePeriodName periodName = TimePeriodName.parse(unitStr);
-                    return Optional.of(new TimePeriod(lenValue, periodName));
-                } else return Optional.empty();
+                    return java.util.Optional.of(new TimePeriod(lenValue, periodName));
+                } else return java.util.Optional.empty();
             }
 
             public long length() {
