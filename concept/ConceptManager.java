@@ -224,7 +224,7 @@ public final class ConceptManager {
     }
 
     public Thing getThing(ByteArray iid) {
-        ThingVertex thingVertex = graphMgr.data().getReadable(VertexIID.Thing.of(iid));
+        ThingVertex thingVertex = graphMgr.data().getReadable(VertexIID.Thing.of(iid), true);
         if (thingVertex != null) return ThingImpl.of(this, thingVertex);
         else return null;
     }

@@ -117,7 +117,7 @@ public class RelationIterator extends AbstractFunctionalIterator<VertexMap> {
 
     private void initPlayers() {
         for (Identifier.Variable.Retrievable playerID : traversal.players()) {
-            ThingVertex playerVertex = graphMgr.data().getReadable(traversal.parameters().getIID(playerID));
+            ThingVertex playerVertex = graphMgr.data().getReadable(traversal.parameters().getIID(playerID), false);
             if (playerVertex != null) {
                 answer.put(playerID, playerVertex);
             } else {

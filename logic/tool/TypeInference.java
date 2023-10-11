@@ -26,6 +26,7 @@ import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.VertexIID;
 import com.vaticle.typedb.core.graph.GraphManager;
+import com.vaticle.typedb.core.graph.vertex.ThingVertex;
 import com.vaticle.typedb.core.graph.vertex.TypeVertex;
 import com.vaticle.typedb.core.logic.LogicCache;
 import com.vaticle.typedb.core.pattern.Conjunction;
@@ -381,10 +382,17 @@ public class TypeInference {
          * We only look at the type prefix because the static type checker (this class) only read schema, not data
          */
         private void registerIID(TypeVariable resolver, IIDConstraint constraint) {
-            TypeVertex type = graphMgr.schema().convert(VertexIID.Thing.of(constraint.iid()).type());
+            VertexIID.Thing iid = VertexIID.Thing.of(constraint.iid());
+            TypeVertex type = graphMgr.schema().convert(iid.type());
             if (type == null) {
                 conjunction.setCoherent(false);
                 throw TypeDBException.of(INFERENCE_INCOHERENT_MATCH_SUB_PATTERN, conjunction, constraint);
+            }
+            // WARN: this isn't quite a type inference, but it is a very useful assumption to be able to hold later in the code:
+            //       all the IIDs arriving at the query engines are valid vertices.
+            ThingVertex vertex = graphMgr.data().getReadable(iid, true);
+            if (vertex == null || !vertex.type().equals(type)) {
+                conjunction.setAnswerable(false);
             }
             restrictTypes(resolver.id(), iterate(type).map(TypeVertex::properLabel));
         }
