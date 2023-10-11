@@ -292,7 +292,7 @@ that provide stateful objects, Session and Transactions, for you to interact wit
 
 ## TypeDB editions
 
-* [TypeDB Cloud](htttps://cloud.typedb.com) -- DBaaS
+* [TypeDB Cloud](https://cloud.typedb.com) -- DBaaS
 * [TypeDB Enterprise](mailto://sales@vaticle.com) -- Enterprise edition of TypeDB
 * TypeDB Core -- Open-source edition of TypeDB
 
@@ -318,27 +318,20 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
 
 1. Make sure you have the following dependencies installed on your machine:
    - Java JDK 11 or higher
-   - Python 3 and Pip 18.1 or higher
-   - [Bazel 5 or higher](http://bazel.build/). We use [Bazelisk](https://github.com/bazelbuild/bazelisk) to manage 
-     multiple Bazel versions transparently. Bazelisk runs the appropriate Bazel version for any `bazel` command as 
-     specified in [`.bazelversion`](https://github.com/vaticle/typedb/blob/master/.bazelversion) file. In order to 
-     install it, follow the platform-specific guide:
-     - MacOS: `brew install bazelisk`
-     - Linux: `wget https://github.com/bazelbuild/bazelisk/releases/download/v1.4.0/bazelisk-linux-amd64 -O /usr/local/bin/bazel`
+   - [Bazel 6 or higher](https://bazel.build/install).
 
-2. You can build TypeDB with either one of the following commands, depending on the targeted Operation system: 
+2. You can build TypeDB with either one of the following commands, depending on the targeted architecture and 
+   Operation system: 
+
    ```sh
-   $ bazel build //:assemble-linux-targz
+   $ bazel build //:assemble-linux-x86_64-targz
+   $ bazel build //:assemble-linux-arm64-targz
+   $ bazel build //:assemble-mac-x86_64-zip
+   $ bazel build //:assemble-mac-arm64-zip
+   $ bazel build //:assemble-windows-x86_64-zip
    ```
-   Outputs to: `bazel-bin/typedb-all-linux.tar.gz`
-   ```sh
-   $ bazel build //:assemble-mac-zip
-   ```
-   Outputs to: `bazel-bin/typedb-all-mac.zip`
-   ```sh
-   $ bazel build //:assemble-windows-zip
-   ```
-   Outputs to: `bazel-bin/typedb-all-windows.zip`
+
+   Outputs to: `bazel-bin/`.
 
 3. If you're on a Mac and would like to run any `bazel test` commands, you will need to install:
    - snappy: `brew install snappy`
