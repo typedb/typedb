@@ -303,9 +303,10 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
 - Discord Chat Server: https://typedb.com/discord
 - Community Projects: https://github.com/typedb-osi
 
-## Compiling TypeDB from Source
+## Compiling TypeDB Core from Source
 
-> Note: You DO NOT NEED to compile TypeDB from the source if you just want to use TypeDB. See the _"Download and Run TypeDB"_ section above.
+> Note: You DO NOT NEED to compile TypeDB from the source if you just want to use TypeDB. See the _"Download and Run 
+> TypeDB Core"_ section above.
 
 1. Make sure you have the following dependencies installed on your machine:
    - Java JDK 11 or higher
