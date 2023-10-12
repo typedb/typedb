@@ -14,20 +14,16 @@ a [strong subtyping system](https://typedb.com/features#strong-type-system),
 a [symbolic reasoning engine](https://typedb.com/features#symbolic-reasoning),
 and a beautiful and elegant [type-theoretic language TypeQL](https://typedb.com/features#modern-language).
 
-* [The benefits of strong typing](#the-benefits-of-strong-typing)
-  * [Logical data model](#logical-data-model) 
-  * [Inheritance](#inheritance)
-  * [Relations](#relations)
-  * [Multi-valued attributes](#multi-valued-attributes)
-* [TypeDB editions](#typedb-editions)
-* [Download TypeDB Core](#download-and-run-typedb-core)
-* [Developer resource](#developer-resources)
-* [Compiling from source](#compiling-typedb-core-from-source)
-* [Contributions](#contributions)
-* [Licensing](#licensing)
+- [Core philosophy of TypeDB](#core-philosophy-of-typedb)
+- [Usage examples of TypeDB](#examples-of-typedb)
+- [Installation and editions](#installation)
+- [Developer resources](#developer-resources)
+- [Licensing](#licensing)
 
 
 ## Core philosophy of TypeDB
+
+### Thinking in polymorphic databases
 
 The data model of TypeDB unifies various schools of thought on databases,
 breaking down the clutter of existing database paradigms into three fundamental ideas:
@@ -39,6 +35,8 @@ data is organized into logical type hierarchies by inheritances, and made interd
 The polymorphic database paradigm is highly generalizable and adaptable,
 and so alleviates many common headaches that we found with existing database systems.
 
+### Concept-centric type system
+
 The type system of TypeDB follows a [conceptual](https://typedb.com/features#conceptual-modeling) data modeling approach,
 which organizes types (based on their function) into three root categories: entities,
 [relations](https://typedb.com/features#expressive-relations),
@@ -48,6 +46,8 @@ and attributes are properties with a value that can interface with (namely, be o
 Interface and inheritance for these types can be combined in various ways,
 leading to a high level of schema expressivity.
 For example, the roles of a relation can also be overwritten by subtypes! 
+
+### Intuitive queries and all-expressive rules
 
 The conceptual data model and type system of TypeDB are complemented by the query language [TypeQL](https://github.com/vaticle/typeql),
 which features a [fully declarative](https://typedb.com/features#modern-language) and highly composable syntax
@@ -59,7 +59,9 @@ This enables teams to cleanly separate their source data from their application 
 often allowing for complex systems to be described by combinations of simple rules
 and enabling high-level insights into these systems.
 
-## Examples of TypeDB
+## Usage examples of TypeDB
+
+### A polymorphic schema
 
 The schema provides a structural blueprint for data organization, ensuring referential integrity in production.
 Extend your data model seamlessly in TypeDB,
@@ -79,6 +81,8 @@ user sub entity,
 employee sub user,
     owns employee-id @key;
 ```
+
+### Polymorphic querying
 
 Use subtyping to write polymorphic queries that return data of multiple types by querying a common supertype.
 The schema is used to automatically resolve queries to retrieve all matching data.
@@ -104,6 +108,8 @@ $user isa $user-type,
     has email $email;
 # This returns all users and their type
 ```
+
+### Logical abstractions
 
 Define rules in your schema using first-order logic to derive new facts from existing data.
 Reasoning can produce complex behavior from simple rules,
@@ -134,28 +140,23 @@ $john isa user, has email "john@vaticle.com";
 # This will return both Cloud and Engineering for $team due to the defined rule
 ```
 
-## TypeDB editions
+## Installation guide
+
+### TypeDB editions
 
 * [TypeDB Cloud](https://cloud.typedb.com) -- multi-cloud DBaaS
 * [TypeDB Enterprise](mailto://sales@vaticle.com) -- Enterprise edition of TypeDB
-* TypeDB Core -- Open-source edition of TypeDB <--- _This repository_
+* **TypeDB Core** -- Open-source edition of TypeDB <--- _This repository_
 
 For a comparison of all three editions, see the [Deploy](https://typedb.com/deploy) page on our website.
 
-## Download and run TypeDB Core
+### Download and run TypeDB Core
 
 You can download TypeDB from the [GitHub Releases](https://github.com/vaticle/typedb/releases). 
 
 Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) to get started.
 
-## Developer resources
-
-- Documentation: https://typedb.com/docs
-- Discussion Forum: https://forum.typedb.com/
-- Discord Chat Server: https://typedb.com/discord
-- Community Projects: https://github.com/typedb-osi
-
-## Compiling TypeDB Core from source
+### Compiling TypeDB Core from source
 
 > Note: You DO NOT NEED to compile TypeDB from the source if you just want to use TypeDB. See the _"Download and Run 
 > TypeDB Core"_ section above.
@@ -180,6 +181,13 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
 3. If you're on a Mac and would like to run any `bazel test` commands, you will need to install:
    - snappy: `brew install snappy`
    - jemalloc: `brew install jemalloc`
+
+## Developer resources
+
+- Documentation: https://typedb.com/docs
+- Discussion Forum: https://forum.typedb.com/
+- Discord Chat Server: https://typedb.com/discord
+- Community Projects: https://github.com/typedb-osi
 
 ## Useful links
 
