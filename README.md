@@ -6,7 +6,7 @@
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typedb-796de3.svg)](https://stackoverflow.com/questions/tagged/typedb)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typeql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/typeql)
 
-[![TypeDB Studio](./docs/typedb2_banner.png)](https://typedb.com/introduction)
+[![TypeDB Studio](./docs/banner.png)](https://typedb.com/introduction)
 
 * [The benefits of strong typing](#the-benefits-of-strong-typing)
   * [Logical data model](#logical-data-model) 
