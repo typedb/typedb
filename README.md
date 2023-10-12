@@ -26,6 +26,7 @@ and a beautiful and elegant [type-theoretic language TypeQL](https://typedb.com/
 * [Contributions](#contributions)
 * [Licensing](#licensing)
 
+
 ## Core philosophy of TypeDB
 
 The data model of TypeDB unifies various schools of thought on databases,
