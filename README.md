@@ -8,6 +8,12 @@
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typedb-796de3.svg)](https://stackoverflow.com/questions/tagged/typedb)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typeql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/typeql)
 
+TypeDB is a [polymorphic](https://typedb.com/features#polymorphic-queries) database with 
+a [conceptual data model](https://typedb.com/features#conceptual-modeling),
+a [strong subtyping system](https://typedb.com/features#strong-type-system),
+a [symbolic reasoning engine](https://typedb.com/features#symbolic-reasoning),
+and a beautiful and elegant [type-theoretic language TypeQL](https://typedb.com/features#modern-language).
+
 * [The benefits of strong typing](#the-benefits-of-strong-typing)
   * [Logical data model](#logical-data-model) 
   * [Inheritance](#inheritance)
@@ -20,289 +26,112 @@
 * [Contributions](#contributions)
 * [Licensing](#licensing)
 
-# Meet TypeDB (and [TypeQL](https://github.com/vaticle/typeql))
+## Core philosophy of TypeDB
 
-TypeDB is a strongly typed database with an intelligent reasoning engine to infer new data and a 
-declarative query language based on composable patterns to find it easily.
+The data model of TypeDB unifies various schools of thought on databases,
+breaking down the clutter of existing database paradigms into three fundamental ideas:
+[types](https://typedb.com/features#strong-type-system),
+[inheritance](https://typedb.com/features#conceptual-modeling),
+and [interfaces](https://typedb.com/features#polymorphic-queries).
+This enables TypeDB to represent data structures polymorphically:
+data is organized into logical type hierarchies by inheritances, and made interdependent via interfaces.
+The polymorphic database paradigm is highly generalizable and adaptable,
+and so alleviates many common headaches that we found with existing database systems.
 
-TypeDB looks beyond relational and NoSQL databases by introducing a strong type system and extending it with inference 
-and pattern matching for simple yet powerful querying.
+The type system of TypeDB follows a [conceptual](https://typedb.com/features#conceptual-modeling) data modeling approach,
+which organizes types (based on their function) into three root categories: entities,
+[relations](https://typedb.com/features#expressive-relations),
+and [attributes](https://typedb.com/features#intuitive-attributes).
+Entities are independent concepts, relations depend on role interfaces played by either entities or relations,
+and attributes are properties with a value that can interface with (namely, be owned by) entities or relations.
+Interface and inheritance for these types can be combined in various ways,
+leading to a high level of schema expressivity.
+For example, the roles of a relation can also be overwritten by subtypes! 
 
-## The benefits of strong typing
+The conceptual data model and type system of TypeDB are complemented by the query language [TypeQL](https://github.com/vaticle/typeql),
+which features a [fully declarative](https://typedb.com/features#modern-language) and highly composable syntax
+closely mirroring the structure of natural language,
+thereby providing a completely new and intuitive experience to querying even the most complex databases.
+TypeDB can even query for data that is not physically stored in the database,
+but instead logically inferred based on user-specified [rules](https://typedb.com/features#symbolic-reasoning).
+This enables teams to cleanly separate their source data from their application logic,
+often allowing for complex systems to be described by combinations of simple rules
+and enabling high-level insights into these systems.
 
-TypeDB brings the benefits of strong typing, found in modern programming languages, to the database. It allows developers to use 
-abstraction, inheritance, and polymorphism when modeling and querying data. 
-TypeDB entirely removes the infamous "[impedance mismatch](https://en.wikipedia.org/wiki/Object%E2%80%93relational_impedance_mismatch)" problem.
+## Examples of TypeDB
 
-### Logical data model
-
-Model data naturally – as the entities, relations, and attributes defined in an entity-relationship diagram. 
-There's no need for separate logical and physical data models due to database limitations and operational optimizations 
-(e.g., normalization). In TypeDB, the logical data model is the physical data model.
-
-```typeql
-define
-
-# entities
-employee sub entity, 
-   owns full-name, 
-   owns email,
-   plays group-membership:member;
-
-business-unit sub entity, 
-   owns name, 
-   plays group-membership:group;
-
-# relations
-group-membership sub relation,
-   relates group, 
-   relates member;
-
-# attributes
-full-name sub attribute, value string;
-name sub attribute, value string;
-email sub attribute, value string;
-```
-
-### Inheritance
-
-Take advantage of inheritance in the database the same way developers do in OO languages, and remove one of the most 
-common and painful mismatches between the logical data model and its physical data model. As an added benefit, data 
-can be queried using the same vocabulary which defines it.
+The schema provides a structural blueprint for data organization, ensuring referential integrity in production.
+Extend your data model seamlessly in TypeDB,
+maintaining integrity during model updates and avoiding any query rewrites or code refactors.
 
 ```typeql
 define
-
-# can be user or group
-subject sub entity, abstract, owns credential;
-
-# can be employee or contractor
-user sub subject, abstract, owns full-name;
-
-# full-name is inherited
-employee sub user, owns salary;
-contractor sub user, owns rate;
-
-# can be users in business unit or role
-user-group sub subject, abstract, owns name;
-
-# name is inherited
-business-unit sub user-group;
-user-role sub user-group;
-```
-
-### Relations
-
-Contextualize relations, which are first-class citizens in TypeDB. Relations define one or more roles played by entities, 
-relations and attributes, each with its own name, and optionally have attributes too – just like entities, and well 
-beyond a simple foreign key constraint.
-
-```typeql
-define
-
-subject sub entity, abstract,
-   plays sod-violation:of;
-
-object sub entity, abstract, 
-   plays sod-violation:on;
-
-action sub entity, abstract,
-   plays sod-policy:prohibits;
-
-sod-policy sub relation, 
-   owns name,
-   relates prohibits,
-   plays sod-violation:against;
-
-sod-violation sub relation,
-   relates of,
-   relates on,
-   relates against;
-```
-
-### Multi-valued attributes
-
-Use multi-valued attributes rather than creating join tables or parse strings. For example, if a person has multiple hobbies, 
-create multiple hobby attributes. And since attributes exist independently of entities and relations, and are shared, 
-there’s no need to create lookup tables. Simply query the database to find all attributes of a specific type 
-(e.g., hobby).
-
-```typeql
-define
-
-employee sub entity, 
-   owns full-name,
-   owns primary-email,
-   owns email-alias;
 
 full-name sub attribute, value string;
+id sub attribute, value string;
+email sub id;
+employee-id sub id;
 
-email sub attribute, abstract, value string;
-
-primary-email sub email, value string;
-email-alias sub email, value string;
-
-insert $e isa employee,
-   has full-name "John Doe", 
-   has primary-email "john.doe@vaticle.com",
-   has email-alias "jdoe@vaticle.com",
-   has email-alias "john@vaticle.com";
+user sub entity,
+    owns full-name,
+    owns email @unique;
+employee sub user,
+    owns employee-id @key;
 ```
 
-## The ease of pattern matching
-
-TypeQL is a fully declarative query language based on pattern matching. There is no need for developers to tell TypeDB 
-what to do (e.g., joins). Rather, they use patterns to describe what they're looking for. And because patterns are 
-composable, they can be reused and combined to create new queries.
-
-### Truly declarative
-
-Just describe what you are looking for, and TypeDB will find it. You never have to influence how queries are executed, 
-let alone explicitly tell the database what to do. TypeDB’s query language, TypeQL, is designed specifically for 
-expressing what data looks like, not how to get it. There are no joins, no unions and no need for ordered query logic.
+Use subtyping to write polymorphic queries that return data of multiple types by querying a common supertype.
+The schema is used to automatically resolve queries to retrieve all matching data.
+Variablize queries to return types, roles, and data.
+New types added to the schema are included in the results of pre-existing queries against their supertype,
+so no refactoring is necessary.
 
 ```typeql
-# no need to union employee + contractor
-# or join user to employee|contractor
-match $u isa user;
+match $user isa user,
+    has full-name $name,
+    has email $email;
+# This returns all users of any type
 
-# no need to recursively traverse a hierarchy of groups
-match
-   $u isa user;
-   $ug isa user-group;
-   $gm (group: $ug, member: $u) isa group-membership;
+match $user isa employee,
+    has full-name $name,
+    has email $email,
+    has employee-id $id;
+# This returns only users who are employees
 
-# no need to specify how permissions are granted
-match
-   $u isa user;
-   $p (subject: $u) isa permission;
+match $user-type sub user;
+$user isa $user-type,
+    has full-name $name,
+    has email $email;
+# This returns all users and their type
 ```
 
-### Composable patterns
-
-Combine discrete patterns to describe all of the data which should be included in the results of a query. 
-Rather than rewriting or trying to edit a large, complex statement a la SQL, developers can change the results of 
-TypeQL query by simply adding, removing or substituting patterns – making it so much easier to iterate and troubleshoot 
-queries on the fly.
-
-```typeql
-match
-   $u isa user, has email "john.doe@vaticle.com";
-   $p (subject: $u, access: $ac) isa permission;
-
-# add file and access patterns to narrow the results to permissions on files
-match
-   $u isa user, has email "john.doe@vaticle.com";
-   $p (subject: $u, access: $ac) isa permission;
-   $f isa file;                                         # narrow to files
-   $ac (object: $f, action: $a) isa access;             # any action on files 
-
-# add an attribute pattern to further narrow the results to WRITE permissions on files
-match
-   $u isa user, has email "john.doe@vaticle.com";
-   $p (subject: $u, access: $ac) isa permission;   
-   $f isa file;      
-   $ac (object: $f, action: $a) isa access;                               
-   $a has name "WRITE";                                 # narrow to writes
-```
-
-## The power of inference
-
-TypeDB's built-in reasoning engine, a technology previously found only in knowledge-based systems, enables it to infer 
-data on the fly by applying logical rules to existing data – and in turn, allows developers to query highly 
-interconnected data without having to specify where or how to make the connections.
-
-### Polymorphic queries
-
-Feel free to query data based on abstract supertypes. For example, a query on cars (a supertype) will return all sedans, 
-coupes and SUVs (subtypes). And as new subtypes are added (e.g., crossover), they will automatically be included in the 
-results of queries on their supertype – no code changes necessary. There’s no need to be explicit, and query every 
-subtype.
-
-```typeql
-match $e isa employee, has full-name $fn, has salary $sa;
-
-match $c isa contractor, has full-name $fn, has rate $r;
-
-match $u isa user, has full-name $fn;
-
-match $bu isa business-unit, has name $n;
-
-match $ur isa user-role, has name $n;
-
-match $ug isa user-group, has name $n;
-
-match $s isa subject, has credential $cr;
-```
-
-### Implicit data
-
-Don’t worry about modeling data which can be inferred. For example, if a person plays a role in a marriage with no end 
-date, we can infer their relationship status is “Married”. However, there is no need for a relationship status attribute 
-on the person entity. If it doesn't exist, TypeDB’s reasoning engine will temporarily materialize it when queried.
+Define rules in your schema using first-order logic to derive new facts from existing data.
+Reasoning can produce complex behavior from simple rules,
+and reasoned facts are generated at query time using the latest data, minimizing disk usage.
+TypeDB's Explanations feature functions on deductive reasoning,
+so inferred data can always be traced back to its root cause.
 
 ```typeql
 define
-
-# infer implicit READ permission from explicit MODIFY permission
-rule add-read-permission:
+rule transitive-team-membership:
     when {
-        $write isa action, has name "WRITE";
-        $read isa action, has name "READ";
-        $ac_write (object: $obj, action: $write) isa access;
-        $ac_read (object: $obj, action: $read) isa access;
-        (subject: $subj, access: $ac_write) isa permission;
+        (team: $team-1, member: $team-2) isa team-membership;
+        (team: $team-2, member: $member) isa team-membership;
     } then {
-        (subject: $subj, access: $ac_read) isa permission;
+        (team: $team-1, member: $member) isa team-membership;
     };
+
+insert
+$john isa user, has email "john@vaticle.com";
+$eng isa team, has name "Engineering ";
+$cloud isa team, has name "Cloud";
+(team: $eng, member: $cloud) isa team-membership;
+(team: $cloud, member: $john) isa team-membership;
+
+match
+$john isa user, has email "john@vaticle.com";
+(team: $team, member: $john) isa team-membership;
+# This will return both Cloud and Engineering for $team due to the defined rule
 ```
-
-### Transitive relations
-
-Find data based on the existence of other data, even when you don’t know what that other data is or how its related. 
-It’s often impossible to describe all of the ways in which things are indirectly connected. Thankfully, TypeDB’s 
-reasoning engine can discover and traverse relations on its own, allowing it to infer data on your behalf.
-
-```typeql
-define
-
-# members of a user group are members of other user groups
-# for which their user group is a member
-rule transitive-group-membership:
-   when {
-      (group: $g1, member: $g2) isa group-membership;
-      (group: $g2, member: $s) isa group-membership;
-   } then {
-      (group: $g1, member: $s) isa group-membership;
-   };
-
-# members in a user group inherit its permissions
-rule subject-permission-inheritance:
-   when {
-      $s isa subject;
-      (group: $g, member: $s) isa group-membership;
-      (subject: $g, access: $ac) isa permission;
-   } then {
-      (subject: $s, access: $ac) isa permission;
-   };
-```
-
-### Simple & stateful API
-
-TypeDB Driver provide stateful objects, Sessions and Transactions, to interact with the database programmatically. 
-The transactions provide [ACID guarantees](https://typedb.com/docs/typedb/2.x/development/connect#_acid_guarantees), 
-up to snapshot isolation.
-
-TypeDB's Driver API is provided through a gRPC driver, providing bi-directional streaming, compression, and strong 
-message typing, that REST APIs could not provide. 
-
-TypeDB Drivers are delivered as libraries in dedicated languages 
-that provide stateful objects, Session and Transactions, for you to interact with the database programmatically.
-
-- [Java](https://typedb.com/docs/drivers/2.x/java/java-overview)
-- [Python](https://typedb.com/docs/drivers/2.x/python/python-overview)
-- [Node.js](https://typedb.com/docs/drivers/2.x/node-js/node-js-overview)
-- [Community drivers](https://typedb.com/docs/drivers/2.x/other-languages)
 
 ## TypeDB editions
 
@@ -350,6 +179,18 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
 3. If you're on a Mac and would like to run any `bazel test` commands, you will need to install:
    - snappy: `brew install snappy`
    - jemalloc: `brew install jemalloc`
+
+## Useful links
+
+If you want to begin your journey with TypeDB, you can explore the following resources:
+
+* [The features](https://typedb.com/features)
+
+* [The philosophy](https://typedb.com/philosophy)
+
+* [The quickstart](https://typedb.com/docs/typedb/2.x/quickstart-guide)
+
+* [The docs](https://typedb.com/docs/typedb/2.x/overview)
 
 ## Contributions
 
