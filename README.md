@@ -6,6 +6,8 @@
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typedb-796de3.svg)](https://stackoverflow.com/questions/tagged/typedb)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typeql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/typeql)
 
+[![TypeDB Studio](./docs/typedb2_banner.png)](https://typedb.com/introduction)
+
 * [The benefits of strong typing](#the-benefits-of-strong-typing)
   * [Logical data model](#logical-data-model) 
   * [Inheritance](#inheritance)
@@ -381,4 +383,4 @@ For license information, please see [LICENSE](https://github.com/vaticle/typedb/
 Vaticle also provides a commercial license for TypeDB Enterprise - get in touch with our team at 
 [commercial@vaticle.com](emailto://sales@vaticle.com).
 
-Copyright (C) 2023 Vaticle
+Copyright (C) 2023 Vaticle.
