@@ -15,9 +15,10 @@ a [symbolic reasoning engine](https://typedb.com/features#symbolic-reasoning),
 and a beautiful and elegant [type-theoretic language TypeQL](https://typedb.com/features#modern-language).
 
 - [Core philosophy of TypeDB](#core-philosophy-of-typedb)
-- [Usage examples of TypeDB](#examples-of-typedb)
-- [Installation and editions](#installation)
-- [Developer resources](#developer-resources)
+- [Usage examples](#usage-examples)
+- [Installation and editions](#installation-and-editions)
+- [Resources](#resources)
+- [Contributions](#contributions)
 - [Licensing](#licensing)
 
 
@@ -59,7 +60,7 @@ This enables teams to cleanly separate their source data from their application 
 often allowing for complex systems to be described by combinations of simple rules
 and enabling high-level insights into these systems.
 
-## Usage examples of TypeDB
+## Usage examples
 
 ### A polymorphic schema
 
@@ -140,7 +141,7 @@ $john isa user, has email "john@vaticle.com";
 # This will return both Cloud and Engineering for $team due to the defined rule
 ```
 
-## Installation guide
+## Installation and editions
 
 ### TypeDB editions
 
@@ -182,24 +183,22 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
    - snappy: `brew install snappy`
    - jemalloc: `brew install jemalloc`
 
-## Developer resources
+## Resources
+
+### Developer resources
 
 - Documentation: https://typedb.com/docs
 - Discussion Forum: https://forum.typedb.com/
 - Discord Chat Server: https://typedb.com/discord
 - Community Projects: https://github.com/typedb-osi
 
-## Useful links
+### Useful links
 
 If you want to begin your journey with TypeDB, you can explore the following resources:
 
-* [The features](https://typedb.com/features)
-
-* [The philosophy](https://typedb.com/philosophy)
-
-* [The quickstart](https://typedb.com/docs/typedb/2.x/quickstart-guide)
-
-* [The docs](https://typedb.com/docs/typedb/2.x/overview)
+* More on TypeDB's [features](https://typedb.com/features)
+* In-depth dive into TypeDB's [philosophy](https://typedb.com/philosophy)
+* Our [TypeDB quickstart](https://typedb.com/docs/typedb/2.x/quickstart-guide)
 
 ## Contributions
 
