@@ -49,7 +49,7 @@ TypeDB schemas are based on a modern type system that natively supports inherita
 
 Interface and inheritance for these types can be combined in many ways, resulting in a highly expressive way of modeling data.
 
-```vba
+```php
 define
 
 full-name sub attribute, value string;
