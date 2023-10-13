@@ -10,11 +10,7 @@
 
 # Introducing TypeDB
 
-TypeDB is a [polymorphic](https://typedb.com/features#polymorphic-queries) database with 
-a [conceptual data model](https://typedb.com/features#conceptual-modeling),
-a [strong subtyping system](https://typedb.com/features#strong-type-system),
-a [symbolic reasoning engine](https://typedb.com/features#symbolic-reasoning),
-and a beautiful and elegant [type-theoretic language TypeQL](https://typedb.com/features#modern-language).
+TypeDB is a [polymorphic](https://typedb.com/features#polymorphic-queries) database with a [conceptual](https://typedb.com/features#conceptual-modeling) data model, a strong [subtyping](https://typedb.com/features#strong-type-system) system, a symbolic [reasoning](https://typedb.com/features#symbolic-reasoning) engine, and a beautiful and elegant [type-theoretic](https://typedb.com/features#modern-language) language TypeQL.
 
 
 ## Polymorphic databases
