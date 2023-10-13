@@ -6,7 +6,9 @@
 [![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff)](https://vaticle.com/discord)
 [![Discussion Forum](https://img.shields.io/discourse/https/forum.vaticle.com/topics.svg)](https://forum.vaticle.com)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typedb-796de3.svg)](https://stackoverflow.com/questions/tagged/typedb)
-[![Stack Overflow](https://img.shields.io/badge/stackoverflow-typeql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/typeql)
+
+
+# Introducing TypeDB
 
 TypeDB is a [polymorphic](https://typedb.com/features#polymorphic-queries) database with 
 a [conceptual data model](https://typedb.com/features#conceptual-modeling),
@@ -14,61 +16,40 @@ a [strong subtyping system](https://typedb.com/features#strong-type-system),
 a [symbolic reasoning engine](https://typedb.com/features#symbolic-reasoning),
 and a beautiful and elegant [type-theoretic language TypeQL](https://typedb.com/features#modern-language).
 
-- [Core philosophy of TypeDB](#core-philosophy-of-typedb)
-- [Usage examples](#usage-examples)
-- [Installation and editions](#installation-and-editions)
-- [Resources](#resources)
-- [Contributions](#contributions)
-- [Licensing](#licensing)
+
+## Polymorphic databases
+
+###  Most data are polymorphic, but support is lacking
+
+Data frequently exhibits polymorphic features in the form of inheritance hierarchies and interface dependencies. TypeDB was conceived to solve the inability of current database paradigms to natively express these polymorphic features.
+
+- Relational schemas have [no native capability for modeling polymorphic data](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database).
+- Unstructured databases eliminate the schemas entirely, but this [prevents declarative data retrieval](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database).
+- [ORMs work around the fundamental problem](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database) by trading off performance.
 
 
-## Core philosophy of TypeDB
+### Providing full support for polymorphism
 
-### Thinking in polymorphic databases
+The three forms of polymorphism in programming languages and data modeling are [interface](https://typedb.com/philosophy#what-defines-a-polymorphic-database), [inheritance](https://typedb.com/philosophy#what-defines-a-polymorphic-database), and [parametric polymorphism](https://typedb.com/philosophy#what-defines-a-polymorphic-database). In order to fully support polymorphism, a database needs to combine three key requirements:
 
-The data model of TypeDB unifies various schools of thought on databases,
-breaking down the clutter of existing database paradigms into three fundamental ideas:
-[types](https://typedb.com/features#strong-type-system),
-[inheritance](https://typedb.com/features#conceptual-modeling),
-and [interfaces](https://typedb.com/features#polymorphic-queries).
-This enables TypeDB to represent data structures polymorphically:
-data is organized into logical type hierarchies by inheritances, and made interdependent via interfaces.
-The polymorphic database paradigm is highly generalizable and adaptable,
-and so alleviates many common headaches that we found with existing database systems.
+- Support for [**polymorphic** **schemas**](https://typedb.com/features#conceptual-modeling) that can express inheritance hierarchies and interface implementations.
+- Implementation of a fully [**variablizable** **query language**](https://typedb.com/features#polymorphic-queries) to support powerful parametric database operations.
+- Integration of an [**inference engine**](https://typedb.com/features#strong-type-system) to interpret variables with respect to the semantic context given by the schema.
 
-### Concept-centric type system
 
-The type system of TypeDB follows a [conceptual](https://typedb.com/features#conceptual-modeling) data modeling approach,
-which organizes types (based on their function) into three root categories: entities,
-[relations](https://typedb.com/features#expressive-relations),
-and [attributes](https://typedb.com/features#intuitive-attributes).
-Entities are independent concepts, relations depend on role interfaces played by either entities or relations,
-and attributes are properties with a value that can interface with (namely, be owned by) entities or relations.
-Interface and inheritance for these types can be combined in various ways,
-leading to a high level of schema expressivity.
-For example, the roles of a relation can also be overwritten by subtypes! 
+## The TypeDB database
 
-### Intuitive queries and all-expressive rules
+### The schema
 
-The conceptual data model and type system of TypeDB are complemented by the query language [TypeQL](https://github.com/vaticle/typeql),
-which features a [fully declarative](https://typedb.com/features#modern-language) and highly composable syntax
-closely mirroring the structure of natural language,
-thereby providing a completely new and intuitive experience to querying even the most complex databases.
-TypeDB can even query for data that is not physically stored in the database,
-but instead logically inferred based on user-specified [rules](https://typedb.com/features#symbolic-reasoning).
-This enables teams to cleanly separate their source data from their application logic,
-often allowing for complex systems to be described by combinations of simple rules
-and enabling high-level insights into these systems.
+TypeDB schemas are based on a modern type system that natively supports inheritance and interfaces, and follows a [conceptual data modeling](https://typedb.com/features#conceptual-modeling) approach, user-defined types subtype (based on their function) three root types: [entities](https://typedb.com/features#conceptual-modeling), [relations](https://typedb.com/features#expressive-relations), and [attributes](https://typedb.com/features#intuitive-attributes).
 
-## Usage examples
+- *Entities* are independent objects,
+- *Relations* depend on their *role* interfaces played by either entities or relations,
+- *Attributes* are properties with a value that can be *owned* by entities or relations.
 
-### A polymorphic schema
+Interface and inheritance for these types can be combined in many ways, resulting in a highly expressive way of modeling data.
 
-The schema provides a structural blueprint for data organization, ensuring referential integrity in production.
-Extend your data model seamlessly in TypeDB,
-maintaining integrity during model updates and avoiding any query rewrites or code refactors.
-
-```typeql
+```elm
 define
 
 full-name sub attribute, value string;
@@ -78,20 +59,23 @@ employee-id sub id;
 
 user sub entity,
     owns full-name,
-    owns email @unique;
+    owns email @unique,
+    plays mentorship:trainee;
 employee sub user,
-    owns employee-id @key;
+    owns employee-id @key,
+    plays mentorship:mentor;
+
+mentorship sub relation,
+    relates mentor,
+    relates trainee;
 ```
 
-### Polymorphic querying
 
-Use subtyping to write polymorphic queries that return data of multiple types by querying a common supertype.
-The schema is used to automatically resolve queries to retrieve all matching data.
-Variablize queries to return types, roles, and data.
-New types added to the schema are included in the results of pre-existing queries against their supertype,
-so no refactoring is necessary.
+### The query language
 
-```typeql
+The query language of TypeDB is [TypeQL](‣). The syntax of TypeQL is fully varializable and provides native support for parametric queries. The language is based on [fully declarative and composable](https://typedb.com/features#modern-language) patterns, closely mirroring the structure of natural language.
+
+```elm
 match $user isa user,
     has full-name $name,
     has email $email;
@@ -110,15 +94,14 @@ $user isa $user-type,
 # This returns all users and their type
 ```
 
-### Logical abstractions
 
-Define rules in your schema using first-order logic to derive new facts from existing data.
-Reasoning can produce complex behavior from simple rules,
-and reasoned facts are generated at query time using the latest data, minimizing disk usage.
-TypeDB's Explanations feature functions on deductive reasoning,
-so inferred data can always be traced back to its root cause.
+### The inference engine
 
-```typeql
+Any query in TypeDB is [semantically validated](https://typedb.com/features#strong-type-system) by TypeDB’s inference engine for consistency with the database schema. This prevents, for example, invalid data inserts before they can affect the integrity of the database.
+
+TypeDB can also work with data that is not physically stored in the database, but instead logically inferred based on user-specified [rules](https://typedb.com/features#symbolic-reasoning). This enables developers to cleanly separate their source data from their application logic, often allowing for complex systems to be described by combinations of simple rules.
+
+```
 define
 rule transitive-team-membership:
     when {
@@ -140,6 +123,19 @@ $john isa user, has email "john@vaticle.com";
 (team: $team, member: $john) isa team-membership;
 # This will return both Cloud and Engineering for $team due to the defined rule
 ```
+ 
+
+## Super-charged database engineering
+
+The data model of TypeDB breaks down the hodgepodge of existing database paradigms into three fundamental ideas: [types](https://typedb.com/features#strong-type-system), [inheritance](https://typedb.com/features#conceptual-modeling), and [interfaces](https://typedb.com/features#polymorphic-queries). This provides a unified way of working with data in the database and applications, and extends to resolve many commonly found issues:
+
+- Benefit from [object model parity](https://typedb.com/#solve-object-relational-mismatch-entirely-within-the-database) when working in object-oriented host languages
+- Allow for [continuous extensibility](https://typedb.com/features#conceptual-modeling) of your data model
+- Work with high-level [logical abstraction](https://typedb.com/features#conceptual-modeling)
+- Guarantee [data-consistency](https://typedb.com/#avoid-data-redundancy-and-ensure-data-consistency-in-real-time) at all times
+- Ensure code clarity for highly complex queries using TypeQL's [near-natural](https://typedb.com/features#modern-language) syntax
+- Achieve consistent and modular development style with TypeQL [fully declarative and composable](https://typedb.com/features#modern-language) queries
+
 
 ## Installation and editions
 
@@ -151,11 +147,13 @@ $john isa user, has email "john@vaticle.com";
 
 For a comparison of all three editions, see the [Deploy](https://typedb.com/deploy) page on our website.
 
+
 ### Download and run TypeDB Core
 
 You can download TypeDB from the [GitHub Releases](https://github.com/vaticle/typedb/releases). 
 
 Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) to get started.
+
 
 ### Compiling TypeDB Core from source
 
@@ -183,6 +181,7 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
    - snappy: `brew install snappy`
    - jemalloc: `brew install jemalloc`
 
+
 ## Resources
 
 ### Developer resources
@@ -192,6 +191,7 @@ Check our [Installation guide](https://typedb.com/docs/typedb/2.x/installation) 
 - Discord Chat Server: https://typedb.com/discord
 - Community Projects: https://github.com/typedb-osi
 
+
 ### Useful links
 
 If you want to begin your journey with TypeDB, you can explore the following resources:
@@ -199,6 +199,9 @@ If you want to begin your journey with TypeDB, you can explore the following res
 * More on TypeDB's [features](https://typedb.com/features)
 * In-depth dive into TypeDB's [philosophy](https://typedb.com/philosophy)
 * Our [TypeDB quickstart](https://typedb.com/docs/typedb/2.x/quickstart-guide)
+* **[TypeQL](https://github.com/vaticle/typeql)**
+* **[TypeDB Studio](https://github.com/vaticle/typedb-studio)**
+
 
 ## Contributions
 
@@ -222,6 +225,7 @@ In the past, TypeDB was enabled by various open-source products and communities 
 [Apache Spark](http://spark.apache.org), 
 [Apache TinkerPop](http://tinkerpop.apache.org), 
 and [JanusGraph](http://janusgraph.org). 
+
 
 ## Licensing
 
