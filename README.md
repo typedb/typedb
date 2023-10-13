@@ -1,11 +1,25 @@
-[![TypeDB Studio](./docs/banner.png)](https://typedb.com/introduction)
+[![TypeDB](./docs/banner.png)](https://typedb.com/introduction)
 
-[![Factory](https://factory.vaticle.com/api/status/vaticle/typedb/badge.svg)](https://factory.vaticle.com/vaticle/typedb)
-[![CircleCI](https://circleci.com/gh/vaticle/typedb/tree/master.svg?style=shield)](https://circleci.com/gh/vaticle/typedb/tree/master)
-[![GitHub release](https://img.shields.io/github/release/vaticle/typedb.svg)](https://github.com/vaticle/typedb/releases/latest)
-[![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff)](https://vaticle.com/discord)
-[![Discussion Forum](https://img.shields.io/discourse/https/forum.vaticle.com/topics.svg)](https://forum.vaticle.com)
-[![Stack Overflow](https://img.shields.io/badge/stackoverflow-typedb-796de3.svg)](https://stackoverflow.com/questions/tagged/typedb)
+<div align="center">
+  <a href="https://factory.vaticle.com/vaticle/typedb">
+    <img alt="Factory" src="https://factory.vaticle.com/api/status/vaticle/typedb/badge.svg" />
+  </a>
+  <a href="https://circleci.com/gh/vaticle/typedb/tree/master">
+    <img alt="CircleCI" src="https://circleci.com/gh/vaticle/typedb/tree/master.svg?style=shield" />
+  </a>
+  <a href="https://github.com/vaticle/typedb/releases/latest">
+    <img alt="GitHub release" src="https://img.shields.io/github/release/vaticle/typedb.svg">
+  </a>
+  <a href="https://vaticle.com/discord">
+    <img alt="Discord" src="https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff" />
+  </a>
+  <a href="https://forum.vaticle.com">
+    <img alt="Discussion Forum" src="https://img.shields.io/discourse/https/forum.vaticle.com/topics.svg" />
+  </a>
+  <a href="https://stackoverflow.com/questions/tagged/typedb">
+    <img alt="Stack Overflow" src="https://img.shields.io/badge/stackoverflow-typedb-796de3.svg">
+  </a>
+</div>
 
 
 # Introducing TypeDB
@@ -15,7 +29,7 @@ TypeDB is a [polymorphic](https://typedb.com/features#polymorphic-queries) datab
 
 ## Polymorphic databases
 
-###  Most data are polymorphic, but support is lacking
+###  Most data is polymorphic, but support is lacking
 
 Data frequently exhibits polymorphic features in the form of inheritance hierarchies and interface dependencies. TypeDB was conceived to solve the inability of current database paradigms to natively express these polymorphic features.
 
@@ -97,7 +111,7 @@ Any query in TypeDB is [semantically validated](https://typedb.com/features#stro
 
 TypeDB can also work with data that is not physically stored in the database, but instead logically inferred based on user-specified [rules](https://typedb.com/features#symbolic-reasoning). This enables developers to cleanly separate their source data from their application logic, often allowing for complex systems to be described by combinations of simple rules.
 
-```
+```php
 define
 rule transitive-team-membership:
     when {
@@ -121,7 +135,7 @@ $john isa user, has email "john@vaticle.com";
 ```
  
 
-## Super-charged database engineering
+## Effective database engineering
 
 The data model of TypeDB breaks down the hodgepodge of existing database paradigms into three fundamental ideas: [types](https://typedb.com/features#strong-type-system), [inheritance](https://typedb.com/features#conceptual-modeling), and [interfaces](https://typedb.com/features#polymorphic-queries). This provides a unified way of working with data in the database and applications, and extends to resolve many commonly found issues:
 
