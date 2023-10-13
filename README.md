@@ -49,7 +49,7 @@ TypeDB schemas are based on a modern type system that natively supports inherita
 
 Interface and inheritance for these types can be combined in many ways, resulting in a highly expressive way of modeling data.
 
-```elm
+```vba
 define
 
 full-name sub attribute, value string;
@@ -75,7 +75,7 @@ mentorship sub relation,
 
 The query language of TypeDB is [TypeQL](‣). The syntax of TypeQL is fully varializable and provides native support for parametric queries. The language is based on [fully declarative and composable](https://typedb.com/features#modern-language) patterns, closely mirroring the structure of natural language.
 
-```elm
+```php
 match $user isa user,
     has full-name $name,
     has email $email;
