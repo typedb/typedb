@@ -29,9 +29,9 @@ TypeDB is a [polymorphic](https://typedb.com/features#polymorphic-queries) datab
 
 ## Polymorphic databases
 
-###  Most data is polymorphic, but support is lacking
+###  Why TypeDB was built
 
-Data frequently exhibits polymorphic features in the form of inheritance hierarchies and interface dependencies. TypeDB was conceived to solve the inability of current database paradigms to natively express these polymorphic features.
+Data frequently exhibits polymorphic features in the form of inheritance hierarchies and interface dependencies. TypeDB was crafted to solve the inability of current database paradigms to natively express these polymorphic features.
 
 - Relational schemas have [no native capability for modeling polymorphic data](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database).
 - Unstructured databases eliminate the schemas entirely, but this [prevents declarative data retrieval](https://typedb.com/philosophy#why-do-we-need-a-polymorphic-database).
@@ -40,24 +40,27 @@ Data frequently exhibits polymorphic features in the form of inheritance hierarc
 
 ### Providing full support for polymorphism
 
-The three forms of polymorphism in programming languages and data modeling are [interface](https://typedb.com/philosophy#what-defines-a-polymorphic-database), [inheritance](https://typedb.com/philosophy#what-defines-a-polymorphic-database), and [parametric polymorphism](https://typedb.com/philosophy#what-defines-a-polymorphic-database). In order to fully support polymorphism, a database needs to combine three key requirements:
+<!-- Polymorphism in programming languages and data modeling comes in the form of [interface](https://typedb.com/philosophy#what-defines-a-polymorphic-database), [inheritance](https://typedb.com/philosophy#what-defines-a-polymorphic-database), and [parametric polymorphism](https://typedb.com/philosophy#what-defines-a-polymorphic-database).  -->
+
+In order to fully support polymorphism, a database needs to implement three key components:
 
 - Support for [**polymorphic** **schemas**](https://typedb.com/features#conceptual-modeling) that can express inheritance hierarchies and interface implementations.
-- Implementation of a fully [**variablizable** **query language**](https://typedb.com/features#polymorphic-queries) to support powerful parametric database operations.
-- Integration of an [**inference engine**](https://typedb.com/features#strong-type-system) to interpret variables with respect to the semantic context given by the schema.
+- Implementation of a fully [**variablizable** **query language**](https://typedb.com/features#polymorphic-queries) to support powerful [parametric](https://typedb.com/philosophy#what-defines-a-polymorphic-database) database operations.
+- Integration of an [**inference engine**](https://typedb.com/features#strong-type-system) to interpret variables in the semantic context given by the schema.
+
 
 
 ## The TypeDB database
 
 ### The schema
 
-TypeDB schemas are based on a modern type system that natively supports inheritance and interfaces, and follows a [conceptual data modeling](https://typedb.com/features#conceptual-modeling) approach, user-defined types subtype (based on their function) three root types: [entities](https://typedb.com/features#conceptual-modeling), [relations](https://typedb.com/features#expressive-relations), and [attributes](https://typedb.com/features#intuitive-attributes).
+TypeDB schemas are based on a modern type system that natively supports inheritance and interfaces, and follows a [conceptual data modeling](https://typedb.com/features#conceptual-modeling) approach, in which user-defined types subtype (based on their function) three root types: [entities](https://typedb.com/features#conceptual-modeling), [relations](https://typedb.com/features#expressive-relations), and [attributes](https://typedb.com/features#intuitive-attributes).
 
 - *Entities* are independent objects,
 - *Relations* depend on their *role* interfaces played by either entities or relations,
 - *Attributes* are properties with a value that can be *owned* by entities or relations.
 
-Interface and inheritance for these types can be combined in many ways, resulting in a highly expressive way of modeling data.
+Interface and inheritance for these types can be combined in many ways, resulting in highly expressive ways of modeling data.
 
 ```php
 define
@@ -83,7 +86,7 @@ mentorship sub relation,
 
 ### The query language
 
-The query language of TypeDB is [TypeQL](‣). The syntax of TypeQL is fully varializable and provides native support for parametric queries. The language is based on [fully declarative and composable](https://typedb.com/features#modern-language) patterns, closely mirroring the structure of natural language.
+The query language of TypeDB is [TypeQL](‣). The syntax of TypeQL is fully variablizable and provides native support for polymorphic queries. The language is based on [fully declarative and composable](https://typedb.com/features#modern-language) patterns, mirroring the structure of natural language.
 
 ```php
 match $user isa user,
@@ -107,7 +110,7 @@ $user isa $user-type,
 
 ### The inference engine
 
-Any query in TypeDB is [semantically validated](https://typedb.com/features#strong-type-system) by TypeDB’s inference engine for consistency with the database schema. This prevents, for example, invalid data inserts before they can affect the integrity of the database.
+Any query in TypeDB is [semantically validated](https://typedb.com/features#strong-type-system) by TypeDB’s inference engine for consistency with the database schema. This prevents invalid schema updates and data inserts before they can affect the integrity of the database.
 
 TypeDB can also work with data that is not physically stored in the database, but instead logically inferred based on user-specified [rules](https://typedb.com/features#symbolic-reasoning). This enables developers to cleanly separate their source data from their application logic, often allowing for complex systems to be described by combinations of simple rules.
 
@@ -137,23 +140,23 @@ $john isa user, has email "john@vaticle.com";
 
 ## Effective database engineering
 
-The data model of TypeDB breaks down the hodgepodge of existing database paradigms into three fundamental ideas: [types](https://typedb.com/features#strong-type-system), [inheritance](https://typedb.com/features#conceptual-modeling), and [interfaces](https://typedb.com/features#polymorphic-queries). This provides a unified way of working with data in the database and applications, and extends to resolve many commonly found issues:
+TypeDB breaks down the patchwork of existing database paradigms into three fundamental ingredients: [types](https://typedb.com/features#strong-type-system), [inheritance](https://typedb.com/features#conceptual-modeling), and [interfaces](https://typedb.com/features#polymorphic-queries). This provides a unified way of working with data across all database applications, that directly impacts development:
 
-- Benefit from [object model parity](https://typedb.com/#solve-object-relational-mismatch-entirely-within-the-database) when working in object-oriented host languages
-- Allow for [continuous extensibility](https://typedb.com/features#conceptual-modeling) of your data model
-- Work with high-level [logical abstraction](https://typedb.com/features#conceptual-modeling)
-- Guarantee [data-consistency](https://typedb.com/#avoid-data-redundancy-and-ensure-data-consistency-in-real-time) at all times
-- Ensure code clarity for highly complex queries using TypeQL's [near-natural](https://typedb.com/features#modern-language) syntax
-- Achieve consistent and modular development style with TypeQL [fully declarative and composable](https://typedb.com/features#modern-language) queries
+- Make use of full [object model parity](https://typedb.com/#solve-object-relational-mismatch-entirely-within-the-database) when working with OOP
+- Ensure [continuous extensibility](https://typedb.com/features#conceptual-modeling) of your data model
+- Work with high-level [logical abstractions](https://typedb.com/features#conceptual-modeling) eliminating the need for physical data modeling
+- Let TypeDB's inference engine guarantee [data-consistency](https://typedb.com/#avoid-data-redundancy-and-ensure-data-consistency-in-real-time) at all times
+- Write high-clarity code with TypeQL's [near-natural](https://typedb.com/features#modern-language) queries even for the most complex databases
+- Unleash the power of [fully declarative and composable](https://typedb.com/features#modern-language) patterns onto your data
 
 
 ## Installation and editions
 
 ### TypeDB editions
 
-* [TypeDB Cloud](https://cloud.typedb.com) -- multi-cloud DBaaS
-* [TypeDB Enterprise](mailto://sales@vaticle.com) -- Enterprise edition of TypeDB
-* **TypeDB Core** -- Open-source edition of TypeDB <--- _This repository_
+* [TypeDB Cloud](https://cloud.typedb.com) — multi-cloud DBaaS
+* [TypeDB Enterprise](mailto://sales@vaticle.com) — Enterprise edition of TypeDB
+* **TypeDB Core** — Open-source edition of TypeDB ← _This repository_
 
 For a comparison of all three editions, see the [Deploy](https://typedb.com/deploy) page on our website.
 
