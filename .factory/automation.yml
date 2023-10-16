@@ -81,25 +81,25 @@ build:
       dependencies: [build]
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //test/behaviour/typeql/language/match/... --test_output=streamed
-        bazel test //test/behaviour/typeql/language/get/... --test_output=streamed
-        bazel test //test/behaviour/typeql/language/expression/... --test_output=streamed
+        bazel test //test/behaviour/query/language/match/... --test_output=streamed
+        bazel test //test/behaviour/query/language/get/... --test_output=streamed
+        bazel test //test/behaviour/query/language/expression/... --test_output=streamed
     test-behaviour-writable:
       image: vaticle-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //test/behaviour/typeql/language/insert/... --test_output=streamed
-        bazel test //test/behaviour/typeql/language/delete/... --test_output=streamed
-        bazel test //test/behaviour/typeql/language/update/... --test_output=streamed
+        bazel test //test/behaviour/query/language/insert/... --test_output=streamed
+        bazel test //test/behaviour/query/language/delete/... --test_output=streamed
+        bazel test //test/behaviour/query/language/update/... --test_output=streamed
     test-behaviour-definable:
       image: vaticle-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //test/behaviour/typeql/language/define/... --test_output=streamed
-        bazel test //test/behaviour/typeql/language/undefine/... --test_output=streamed
-        bazel test //test/behaviour/typeql/language/rule_validation/... --test_output=streamed
+        bazel test //test/behaviour/query/language/define/... --test_output=streamed
+        bazel test //test/behaviour/query/language/undefine/... --test_output=streamed
+        bazel test //test/behaviour/query/language/rule_validation/... --test_output=streamed
     test-behaviour-reasoner:
       image: vaticle-ubuntu-22.04
       dependencies: [build]
