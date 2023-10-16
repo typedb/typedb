@@ -44,6 +44,7 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleRead.RULE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_UNDEFINE_RULE_BODY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_UNDEFINED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_ANNOTATIONS;
@@ -51,8 +52,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.IN
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_OVERRIDE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_OVERRIDE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_SUB;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_TYPE_ALIAS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IS;
 
 public class Undefiner {
@@ -134,9 +138,22 @@ public class Undefiner {
 
     private RoleType getRoleType(LabelConstraint label) {
         assert label.scope().isPresent();
-        ThingType thingType = conceptMgr.getThingType(label.scope().get());
-        if (thingType != null) return thingType.asRelationType().getRelates(label.label());
-        return null;
+        ThingType thingType;
+        RoleType roleType;
+        if ((thingType = conceptMgr.getThingType(label.scope().get())) == null) {
+            throw TypeDBException.of(TYPE_NOT_FOUND, label.scope().get());
+        } else if (!thingType.isRelationType()) {
+            throw TypeDBException.of(ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE, label.scopedLabel(), label.scope().get());
+        } else {
+            roleType = thingType.asRelationType().getRelates(EXPLICIT, label.label());
+            if (roleType == null) {
+                RoleType superRole = thingType.asRelationType().getRelates(TRANSITIVE, label.label());
+                if (superRole != null) {
+                    throw TypeDBException.of(PLAYS_ROLE_TYPE_ALIAS, label.scopedLabel(), superRole.getLabel().scopedName());
+                } return null;
+            }
+            return roleType;
+        }
     }
 
     private void undefineSub(ThingType thingType, SubConstraint subConstraint) {

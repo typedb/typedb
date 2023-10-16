@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.query;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typedb.core.common.parameters.Concept;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -51,8 +52,11 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.AT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_DEFINE_SUB;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_TYPE_ALIAS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IS;
 
 public class Definer {
@@ -149,22 +153,6 @@ public class Definer {
         else return null;
     }
 
-    private RoleType getRoleType(LabelConstraint label) {
-        // We always assume that Role Types already exist,
-        // defined by their Relation Types ahead of time
-        assert label.scope().isPresent();
-        ThingType thingType;
-        RoleType roleType;
-        if ((thingType = conceptMgr.getThingType(label.scope().get())) == null) {
-            throw TypeDBException.of(TYPE_NOT_FOUND, label.scope().get());
-        } else if (!thingType.isRelationType()) {
-            throw TypeDBException.of(ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE, label.scopedLabel(), label.scope().get());
-        } else if ((roleType = thingType.asRelationType().getRelates(label.label())) == null) {
-            throw TypeDBException.of(TYPE_NOT_FOUND, label.scopedLabel());
-        }
-        return roleType;
-    }
-
     private ThingType defineSub(ThingType thingType, SubConstraint subConstraint, TypeVariable var) {
         LabelConstraint labelConstraint = var.label().get();
         ThingType supertype = define(subConstraint.type()).asThingType();
@@ -238,6 +226,28 @@ public class Definer {
                         thingType.getLabel(), roleTypeLabel.scopedLabel(), overriddenLabelName);
             } else thingType.setPlays(roleType);
         });
+    }
+
+    private RoleType getRoleType(LabelConstraint label) {
+        // We always assume that Role Types already exist,
+        // defined by their Relation Types ahead of time
+        assert label.scope().isPresent();
+        ThingType thingType;
+        RoleType roleType;
+        if ((thingType = conceptMgr.getThingType(label.scope().get())) == null) {
+            throw TypeDBException.of(TYPE_NOT_FOUND, label.scope().get());
+        } else if (!thingType.isRelationType()) {
+            throw TypeDBException.of(ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE, label.scopedLabel(), label.scope().get());
+        } else {
+            roleType = thingType.asRelationType().getRelates(EXPLICIT, label.label());
+            if (roleType == null) {
+                RoleType superRole = thingType.asRelationType().getRelates(TRANSITIVE, label.label());
+                if (superRole != null) {
+                    throw TypeDBException.of(PLAYS_ROLE_TYPE_ALIAS, label.scopedLabel(), superRole.getLabel().scopedName());
+                } else throw TypeDBException.of(TYPE_NOT_FOUND, label.scopedLabel());
+            }
+            return roleType;
+        }
     }
 
     private void define(com.vaticle.typeql.lang.pattern.schema.Rule rule) {
