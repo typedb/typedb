@@ -37,7 +37,7 @@ java_test(
         "//test/behaviour/logic/rule:steps",
     ],
     data = [
-        "@vaticle_typedb_behaviour//typeql/language:undefine.feature",
+        "@vaticle_typedb_behaviour//query/language:undefine.feature",
     ],
     size = "medium",
     visibility = ["//visibility:public"],

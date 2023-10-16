@@ -36,7 +36,7 @@ java_test(
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@vaticle_typedb_behaviour//typeql/language:delete.feature",
+        "@vaticle_typedb_behaviour//query/language:delete.feature",
     ],
     size = "large", #TODO: Change back to medium when Query Planner has been optimised.
     visibility = ["//visibility:public"],

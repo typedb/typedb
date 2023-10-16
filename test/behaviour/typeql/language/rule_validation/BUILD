@@ -36,7 +36,7 @@ java_test(
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@vaticle_typedb_behaviour//typeql/language:rule-validation.feature",
+        "@vaticle_typedb_behaviour//query/language:rule-validation.feature",
     ],
     size = "small",
     visibility = ["//visibility:public"],

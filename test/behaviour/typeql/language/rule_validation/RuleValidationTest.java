@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "com.vaticle.typedb.core.test.behaviour",
-        features = "external/vaticle_typedb_behaviour/typeql/language/rule-validation.feature",
+        features = "external/vaticle_typedb_behaviour/query/language/rule-validation.feature",
         tags = "not @ignore and not @ignore-typedb"
 )
 public class RuleValidationTest {

@@ -35,7 +35,7 @@ java_test(
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@vaticle_typedb_behaviour//typeql/language:get.feature",
+        "@vaticle_typedb_behaviour//query/language:get.feature",
     ],
     size = "medium",
     visibility = ["//visibility:public"],

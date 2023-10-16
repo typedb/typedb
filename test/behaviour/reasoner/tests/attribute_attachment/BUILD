@@ -33,7 +33,7 @@ java_test(
         "//test/behaviour/reasoner:steps",
     ],
     data = [
-        "@vaticle_typedb_behaviour//typeql/reasoner:attribute-attachment.feature",
+        "@vaticle_typedb_behaviour//query/reasoner:attribute-attachment.feature",
     ],
 )
 

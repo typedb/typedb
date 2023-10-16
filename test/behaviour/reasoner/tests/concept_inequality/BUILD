@@ -33,7 +33,7 @@ java_test(
         "//test/behaviour/reasoner:steps",
     ],
     data = [
-        "@vaticle_typedb_behaviour//typeql/reasoner:concept-inequality.feature",
+        "@vaticle_typedb_behaviour//query/reasoner:concept-inequality.feature",
     ],
 )
 

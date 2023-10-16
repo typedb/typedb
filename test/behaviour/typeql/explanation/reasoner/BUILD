@@ -36,7 +36,7 @@ java_test(
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@vaticle_typedb_behaviour//typeql/explanation:reasoner.feature",
+        "@vaticle_typedb_behaviour//query/explanation:reasoner.feature",
     ],
     size = "medium",
     visibility = ["//visibility:public"],

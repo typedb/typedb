@@ -33,7 +33,7 @@ java_test(
         "//test/behaviour/reasoner:steps",
     ],
     data = [
-        "@vaticle_typedb_behaviour//typeql/reasoner:type-hierarchy.feature",
+        "@vaticle_typedb_behaviour//query/reasoner:type-hierarchy.feature",
     ],
 )
 

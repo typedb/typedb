@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "com.vaticle.typedb.core.test.behaviour",
-        features = "external/vaticle_typedb_behaviour/typeql/reasoner/variable-roles.feature",
+        features = "external/vaticle_typedb_behaviour/query/reasoner/variable-roles.feature",
         tags = "not @ignore and not @ignore-typedb"
 )
 public class VariableRolesTest {
