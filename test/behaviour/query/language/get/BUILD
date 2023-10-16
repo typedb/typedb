@@ -21,38 +21,24 @@ load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 java_test(
     name = "test",
     srcs = [
-        "DebugTest.java",
+        "GetTest.java",
     ],
-    test_class = "com.vaticle.typedb.core.test.behaviour.debug.DebugTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.query.language.get.GetTest",
     deps = [
-        # Internal dependencies
-
-        # Add your additional debugging dependencies here
-        # e.g. "//test/behaviour/connection/session:steps",
-
-        # External Maven Dependencies
+        # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
-        "//test/behaviour/config:parameters",
-        "//test/behaviour/concept/thing/entity:steps",
-        "//test/behaviour/concept/thing/attribute:steps",
-        "//test/behaviour/concept/thing/relation:steps",
-        "//test/behaviour/concept/type/attributetype:steps",
-        "//test/behaviour/concept/type/relationtype:steps",
-        "//test/behaviour/concept/type/thingtype:steps",
-        "//test/behaviour/connection/database:steps",
-        "//test/behaviour/connection/session:steps",
-        "//test/behaviour/connection/transaction:steps",
         "//test/behaviour/query:steps",
-
-        # --- If testing Reasoner BDD, enable these steps and disable the Connection steps above ---
-#        "//test/behaviour/reasoner:steps"
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/connection/session:steps",
+        "//test/behaviour/config:parameters",
     ],
     data = [
-        ":debug.feature",
+        "@vaticle_typedb_behaviour//query/language:get.feature",
     ],
     size = "medium",
+    visibility = ["//visibility:public"],
 )
 
 checkstyle_test(
