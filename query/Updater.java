@@ -67,7 +67,7 @@ public class Updater {
         Set<UnboundVariable> filter = new HashSet<>(query.match().namedVariablesUnbound());
         filter.retainAll(query.namedInsertVariablesUnbound());
         filter.addAll(query.namedDeleteVariablesUnbound());
-        Matcher matcher = Matcher.create(reasoner, query.match().get(list(filter)));
+        Matcher matcher = Matcher.create(reasoner, conceptMgr, query.match().get(list(filter)));
 
         VariableRegistry insertRegistry = VariableRegistry.createFromThings(query.insertVariables());
         insertRegistry.variables().forEach(var -> Inserter.validate(var, matcher));

@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Relation;
@@ -64,19 +65,19 @@ public class Deleter {
     private final Set<ThingVariable> variables;
     private final Context.Query context;
 
-    public Deleter(Matcher matcher, Set<ThingVariable> variables, Context.Query context) {
+    private Deleter(Matcher matcher, Set<ThingVariable> variables, Context.Query context) {
         this.matcher = matcher;
         this.variables = variables;
         this.context = context;
         this.context.producer(Either.first(EXHAUSTIVE));
     }
 
-    public static Deleter create(Reasoner reasoner, TypeQLDelete query, Context.Query context) {
+    public static Deleter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLDelete query, Context.Query context) {
         VariableRegistry registry = VariableRegistry.createFromThings(query.variables(), false);
         registry.variables().forEach(Deleter::validate);
 
         assert query.match().namedVariablesUnbound().containsAll(query.namedVariablesUnbound());
-        Matcher matcher = Matcher.create(reasoner, query.match().get(query.namedVariablesUnbound()));
+        Matcher matcher = Matcher.create(reasoner, conceptMgr, query.match().get(query.namedVariablesUnbound()));
         return new Deleter(matcher, registry.things(), context);
     }
 

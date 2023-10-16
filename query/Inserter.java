@@ -104,7 +104,7 @@ public class Inserter {
             List<UnboundVariable> filter = new ArrayList<>(match.namedVariablesUnbound());
             filter.retainAll(query.namedVariablesUnbound());
             assert !filter.isEmpty();
-            matcher = Matcher.create(reasoner, match.get(filter));
+            matcher = Matcher.create(reasoner, conceptMgr, match.get(filter));
         }
         VariableRegistry registry = VariableRegistry.createFromThings(query.variables());
         for (Variable variable : registry.variables()) validate(variable, matcher);

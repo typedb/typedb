@@ -19,7 +19,6 @@
 package com.vaticle.typedb.core.query;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.parameters.Concept;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -34,6 +33,7 @@ import com.vaticle.typedb.core.pattern.constraint.type.PlaysConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.RegexConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.RelatesConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.SubConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
@@ -55,8 +55,10 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OV
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_TYPE_ALIAS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
+import static com.vaticle.typedb.core.query.common.Util.validateRoleTypes;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IS;
 
 public class Definer {
@@ -81,6 +83,8 @@ public class Definer {
     public static Definer create(ConceptManager conceptMgr, LogicManager logicMgr,
                                  TypeQLDefine query, Context.Query context) {
         Set<TypeVariable> types = VariableRegistry.createFromTypes(query.variables()).types();
+        validateRoleTypes(conceptMgr, iterate(types).flatMap(t -> iterate(t.constraints()))
+                .filter(TypeConstraint::isLabel).map(TypeConstraint::asLabel));
         return new Definer(conceptMgr, logicMgr, types, query.rules(), context);
     }
 
@@ -229,25 +233,7 @@ public class Definer {
     }
 
     private RoleType getRoleType(LabelConstraint label) {
-        // We always assume that Role Types already exist,
-        // defined by their Relation Types ahead of time
-        assert label.scope().isPresent();
-        ThingType thingType;
-        RoleType roleType;
-        if ((thingType = conceptMgr.getThingType(label.scope().get())) == null) {
-            throw TypeDBException.of(TYPE_NOT_FOUND, label.scope().get());
-        } else if (!thingType.isRelationType()) {
-            throw TypeDBException.of(ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE, label.scopedLabel(), label.scope().get());
-        } else {
-            roleType = thingType.asRelationType().getRelates(EXPLICIT, label.label());
-            if (roleType == null) {
-                RoleType superRole = thingType.asRelationType().getRelates(TRANSITIVE, label.label());
-                if (superRole != null) {
-                    throw TypeDBException.of(PLAYS_ROLE_TYPE_ALIAS, label.scopedLabel(), superRole.getLabel().scopedName());
-                } else throw TypeDBException.of(TYPE_NOT_FOUND, label.scopedLabel());
-            }
-            return roleType;
-        }
+        return conceptMgr.getThingType(label.scope().get()).asRelationType().getRelates(EXPLICIT, label.label());
     }
 
     private void define(com.vaticle.typeql.lang.pattern.schema.Rule rule) {

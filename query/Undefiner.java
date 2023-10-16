@@ -33,6 +33,7 @@ import com.vaticle.typedb.core.pattern.constraint.type.PlaysConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.RegexConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.RelatesConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.SubConstraint;
+import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typeql.lang.query.TypeQLUndefine;
@@ -44,7 +45,6 @@ import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleRead.RULE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.RuleWrite.INVALID_UNDEFINE_RULE_BODY;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_UNDEFINED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_ANNOTATIONS;
@@ -52,11 +52,10 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.IN
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_PLAYS_OVERRIDE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_RELATES_OVERRIDE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_UNDEFINE_SUB;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_TYPE_ALIAS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
-import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
-import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
+import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.query.common.Util.validateRoleTypes;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IS;
 
 public class Undefiner {
@@ -86,6 +85,8 @@ public class Undefiner {
     public static Undefiner create(ConceptManager conceptMgr, LogicManager logicMgr,
                                    TypeQLUndefine query, Context.Query context) {
         Set<TypeVariable> types = VariableRegistry.createFromTypes(query.variables()).types();
+        validateRoleTypes(conceptMgr, iterate(types).flatMap(t -> iterate(t.constraints()))
+                .filter(TypeConstraint::isLabel).map(TypeConstraint::asLabel));
         return new Undefiner(conceptMgr, logicMgr, types, query.rules(), context);
     }
 
@@ -125,8 +126,8 @@ public class Undefiner {
         if (variable.sub().isPresent()) undefineSub(type, variable.sub().get());
         else if (variable.valueType().isPresent()) {
             throw TypeDBException.of(ATTRIBUTE_VALUE_TYPE_UNDEFINED,
-                                     variable.valueType().get().valueType().name(),
-                                     variable.label().get().label());
+                    variable.valueType().get().valueType().name(),
+                    variable.label().get().label());
         }
 
         undefined.add(variable);
@@ -138,22 +139,9 @@ public class Undefiner {
 
     private RoleType getRoleType(LabelConstraint label) {
         assert label.scope().isPresent();
-        ThingType thingType;
-        RoleType roleType;
-        if ((thingType = conceptMgr.getThingType(label.scope().get())) == null) {
-            throw TypeDBException.of(TYPE_NOT_FOUND, label.scope().get());
-        } else if (!thingType.isRelationType()) {
-            throw TypeDBException.of(ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE, label.scopedLabel(), label.scope().get());
-        } else {
-            roleType = thingType.asRelationType().getRelates(EXPLICIT, label.label());
-            if (roleType == null) {
-                RoleType superRole = thingType.asRelationType().getRelates(TRANSITIVE, label.label());
-                if (superRole != null) {
-                    throw TypeDBException.of(PLAYS_ROLE_TYPE_ALIAS, label.scopedLabel(), superRole.getLabel().scopedName());
-                } return null;
-            }
-            return roleType;
-        }
+        ThingType thingType = conceptMgr.getThingType(label.scope().get());
+        if (thingType != null) return thingType.asRelationType().getRelates(label.label());
+        return null;
     }
 
     private void undefineSub(ThingType thingType, SubConstraint subConstraint) {
@@ -190,8 +178,8 @@ public class Undefiner {
                 throw TypeDBException.of(TYPE_NOT_FOUND, relates.role().label().get().label());
             } else if (relates.overridden().isPresent()) {
                 throw TypeDBException.of(INVALID_UNDEFINE_RELATES_OVERRIDE,
-                                         relates.overridden().get().label().get().label(),
-                                         relates.role().label().get());
+                        relates.overridden().get().label().get().label(),
+                        relates.role().label().get());
             } else {
                 relationType.unsetRelates(roleTypeLabel);
                 undefined.add(relates.role());
@@ -206,8 +194,8 @@ public class Undefiner {
                 throw TypeDBException.of(TYPE_NOT_FOUND, owns.attribute().label().get().label());
             } else if (owns.overridden().isPresent()) {
                 throw TypeDBException.of(INVALID_UNDEFINE_OWNS_OVERRIDE,
-                                         owns.overridden().get().label().get().label(),
-                                         owns.attribute().label().get());
+                        owns.overridden().get().label().get().label(),
+                        owns.attribute().label().get());
             } else if (!owns.annotations().isEmpty()) throw TypeDBException.of(INVALID_UNDEFINE_ANNOTATIONS, owns);
             else if (attributeType != null) thingType.unsetOwns(attributeType.asAttributeType());
         });
@@ -220,8 +208,8 @@ public class Undefiner {
                 throw TypeDBException.of(TYPE_NOT_FOUND, plays.role().label().get().label());
             } else if (plays.overridden().isPresent()) {
                 throw TypeDBException.of(INVALID_UNDEFINE_PLAYS_OVERRIDE,
-                                         plays.overridden().get().label().get().label(),
-                                         plays.role().label().get());
+                        plays.overridden().get().label().get().label(),
+                        plays.role().label().get());
             } else if (roleType != null) {
                 thingType.unsetPlays(roleType.asRoleType());
             }
