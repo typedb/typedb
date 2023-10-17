@@ -33,7 +33,6 @@ import com.vaticle.typedb.core.pattern.constraint.type.PlaysConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.RegexConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.RelatesConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.SubConstraint;
-import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typeql.lang.query.TypeQLUndefine;
