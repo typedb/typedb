@@ -51,7 +51,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.AT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.CYCLIC_TYPE_HIERARCHY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.INVALID_DEFINE_SUB;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_TYPE_ALIAS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_ROLE_TYPE_ALIAS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
@@ -242,7 +242,7 @@ public class Definer {
             if (roleType == null) {
                 RoleType superRole = thingType.asRelationType().getRelates(TRANSITIVE, label.label());
                 if (superRole != null) {
-                    throw TypeDBException.of(PLAYS_ROLE_TYPE_ALIAS, label.scopedLabel(), superRole.getLabel().scopedName());
+                    throw TypeDBException.of(ILLEGAL_ROLE_TYPE_ALIAS, label.scopedLabel(), superRole.getLabel().scopedName());
                 } else throw TypeDBException.of(TYPE_NOT_FOUND, label.scopedLabel());
             }
             return roleType;

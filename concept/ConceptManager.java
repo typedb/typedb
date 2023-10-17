@@ -66,7 +66,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_TYPE_ALIAS;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_ROLE_TYPE_ALIAS;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
@@ -340,7 +340,7 @@ public final class ConceptManager {
             if (relationType.asRelationType().getRelates(EXPLICIT, label.name()) == null) {
                 RoleType superRole = relationType.asRelationType().getRelates(TRANSITIVE, label.name());
                 if (superRole != null) {
-                    throw TypeDBException.of(PLAYS_ROLE_TYPE_ALIAS, label.scopedName(), superRole.getLabel().scopedName());
+                    throw TypeDBException.of(ILLEGAL_ROLE_TYPE_ALIAS, label.scopedName(), superRole.getLabel().scopedName());
                 }
             }
         }
