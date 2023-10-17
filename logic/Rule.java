@@ -179,7 +179,7 @@ public class Rule {
                 .flatMap(c -> iterate(c.variables())).flatMap(v -> iterate(v.constraints()))
                 .filter(c -> c.isType() && c.asType().isLabel() && c.asType().asLabel().properLabel().scope().isPresent())
                 // only validate labels that are used outside of relation constraints - this allows role type aliases in relations
-                .filter(label -> iterate(label.owner().constraining()).anyMatch(c -> !(c.isThing() && c.asThing().isRelation())))
+                .filter(label -> label.owner().constraining().isEmpty() || iterate(label.owner().constraining()).anyMatch(c -> !(c.isThing() && c.asThing().isRelation())))
                 .forEachRemaining(c -> conceptMgr.validateNotRoleTypeAlias(c.asType().asLabel().properLabel()));
         validateSatisfiable();
         this.conclusion.validate(logicMgr, conceptMgr);
