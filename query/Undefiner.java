@@ -55,7 +55,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.IN
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
-import static com.vaticle.typedb.core.query.common.Util.validateRoleTypes;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IS;
 
 public class Undefiner {
@@ -85,8 +84,9 @@ public class Undefiner {
     public static Undefiner create(ConceptManager conceptMgr, LogicManager logicMgr,
                                    TypeQLUndefine query, Context.Query context) {
         Set<TypeVariable> types = VariableRegistry.createFromTypes(query.variables()).types();
-        validateRoleTypes(conceptMgr, iterate(types).flatMap(t -> iterate(t.constraints()))
-                .filter(TypeConstraint::isLabel).map(TypeConstraint::asLabel));
+        iterate(types).flatMap(t -> iterate(t.constraints()))
+                .filter(TypeConstraint::isLabel)
+                .forEachRemaining(c -> conceptMgr.validateNotRoleTypeAlias(c.asLabel().properLabel()));
         return new Undefiner(conceptMgr, logicMgr, types, query.rules(), context);
     }
 

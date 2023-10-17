@@ -175,6 +175,10 @@ public class Rule {
     }
 
     public void validate(LogicManager logicMgr, ConceptManager conceptMgr) {
+        iterate(when.conjunctions())
+                .flatMap(c -> iterate(c.variables())).flatMap(v -> iterate(v.constraints()))
+                .filter(c -> c.isType() && c.asType().isLabel())
+                .forEachRemaining(c -> conceptMgr.validateNotRoleTypeAlias(c.asType().asLabel().properLabel()));
         validateSatisfiable();
         this.conclusion.validate(logicMgr, conceptMgr);
     }

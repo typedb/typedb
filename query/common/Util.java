@@ -19,27 +19,19 @@
 package com.vaticle.typedb.core.query.common;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Label;
-import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.thing.Relation;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
-import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.pattern.constraint.thing.RelationConstraint;
-import com.vaticle.typedb.core.pattern.constraint.type.LabelConstraint;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_AMBIGUOUS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_MISSING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.PLAYS_ROLE_TYPE_ALIAS;
-import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
-import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
 
 public class Util {
     public static RoleType tryInferRoleType(Relation relation, Thing player, RelationConstraint.RolePlayer rolePlayer) {
@@ -61,23 +53,5 @@ public class Util {
             throw TypeDBException.of(ROLE_TYPE_MISSING, rolePlayer.player().reference());
         }
         return roleType;
-    }
-
-    public static void validateRoleTypes(ConceptManager conceptMgr, FunctionalIterator<LabelConstraint> labelConstraints) {
-        labelConstraints.filter(c -> c.properLabel().scope().isPresent()).forEachRemaining(label -> {
-            ThingType thingType;
-            if ((thingType = conceptMgr.getThingType(label.scope().get())) == null) {
-                throw TypeDBException.of(TYPE_NOT_FOUND, label.scope().get());
-            } else if (!thingType.isRelationType()) {
-                throw TypeDBException.of(ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE, label.scopedLabel(), label.scope().get());
-            } else {
-                if (thingType.asRelationType().getRelates(EXPLICIT, label.label()) == null) {
-                    RoleType superRole = thingType.asRelationType().getRelates(TRANSITIVE, label.label());
-                    if (superRole != null) {
-                        throw TypeDBException.of(PLAYS_ROLE_TYPE_ALIAS, label.scopedLabel(), superRole.getLabel().scopedName());
-                    }
-                }
-            }
-        });
     }
 }

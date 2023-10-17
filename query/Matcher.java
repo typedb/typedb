@@ -57,7 +57,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingRead.AG
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static com.vaticle.typedb.core.query.Matcher.Aggregator.aggregator;
-import static com.vaticle.typedb.core.query.common.Util.validateRoleTypes;
 import static java.lang.Math.sqrt;
 import static java.util.stream.Collectors.groupingBy;
 
@@ -77,10 +76,10 @@ public class Matcher {
         this.query = query;
         this.disjunction = Disjunction.create(query.conjunction().normalise());
         this.context = context;
-        validateRoleTypes(conceptMgr, iterate(disjunction.conjunctions())
+        iterate(disjunction.conjunctions())
                 .flatMap(c -> iterate(c.variables())).flatMap(v -> iterate(v.constraints()))
                 .filter(c -> c.isType() && c.asType().isLabel())
-                .map(c -> c.asType().asLabel()));
+                .forEachRemaining(c -> conceptMgr.validateNotRoleTypeAlias(c.asType().asLabel().properLabel()));
     }
 
     public static Matcher create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch query) {

@@ -33,7 +33,6 @@ import com.vaticle.typedb.core.pattern.constraint.type.PlaysConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.RegexConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.RelatesConstraint;
 import com.vaticle.typedb.core.pattern.constraint.type.SubConstraint;
-import com.vaticle.typedb.core.pattern.constraint.type.TypeConstraint;
 import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
@@ -58,7 +57,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TY
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
-import static com.vaticle.typedb.core.query.common.Util.validateRoleTypes;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IS;
 
 public class Definer {
