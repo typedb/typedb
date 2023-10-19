@@ -66,7 +66,7 @@ public class QueryManager {
 
     public FunctionalIterator<? extends ConceptMap> match(TypeQLMatch query, Context.Query context) {
         try {
-            return Matcher.create(reasoner, query, context).execute().onError(conceptMgr::exception);
+            return Matcher.create(reasoner, conceptMgr, query, context).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
@@ -82,7 +82,7 @@ public class QueryManager {
 
     public Numeric match(TypeQLMatch.Aggregate query, Context.Query queryContext) {
         try {
-            return Matcher.create(reasoner, query, queryContext).execute();
+            return Matcher.create(reasoner, conceptMgr, query, queryContext).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
@@ -94,7 +94,7 @@ public class QueryManager {
 
     public FunctionalIterator<ConceptMapGroup> match(TypeQLMatch.Group query, Context.Query queryContext) {
         try {
-            return Matcher.create(reasoner, query, queryContext).execute().onError(conceptMgr::exception);
+            return Matcher.create(reasoner, conceptMgr, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
@@ -106,7 +106,7 @@ public class QueryManager {
 
     public FunctionalIterator<NumericGroup> match(TypeQLMatch.Group.Aggregate query, Context.Query queryContext) {
         try {
-            return Matcher.create(reasoner, query, queryContext).execute().onError(conceptMgr::exception);
+            return Matcher.create(reasoner, conceptMgr, query, queryContext).execute().onError(conceptMgr::exception);
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }
@@ -134,7 +134,7 @@ public class QueryManager {
         if (context.sessionType().isSchema()) throw conceptMgr.exception(SESSION_SCHEMA_VIOLATION);
         if (context.transactionType().isRead()) throw conceptMgr.exception(TRANSACTION_DATA_READ_VIOLATION);
         try {
-            Deleter.create(reasoner, query, context).execute();
+            Deleter.create(reasoner, conceptMgr, query, context).execute();
         } catch (Exception exception) {
             throw conceptMgr.exception(exception);
         }

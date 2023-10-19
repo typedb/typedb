@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.test.Util.assertNotThrows;
 import static com.vaticle.typedb.core.common.test.Util.assertThrows;
 import static com.vaticle.typeql.lang.TypeQL.and;
@@ -55,7 +56,8 @@ public class CorrectnessVerifierTest {
     private static final String database = "CorrectnessVerifierTest";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageIndexCacheSize(MB).storageDataCacheSize(MB);
     private CoreDatabaseManager databaseMgr;
 
     @Before

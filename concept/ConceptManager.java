@@ -63,11 +63,15 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_ROLE_TYPE_ALIAS;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
@@ -323,6 +327,23 @@ public final class ConceptManager {
         else if (valueType == STRING) return AttributeTypeImpl.String::new;
         else if (valueType == DATETIME) return AttributeTypeImpl.DateTime::new;
         throw exception(TypeDBException.of(BAD_VALUE_TYPE, valueType));
+    }
+
+    public void validateNotRoleTypeAlias(Label label) {
+        assert label.scope().isPresent();
+        ThingType relationType;
+        if ((relationType = getThingType(label.scope().get())) == null) {
+            throw TypeDBException.of(TYPE_NOT_FOUND, label.scope().get());
+        } else if (!relationType.isRelationType()) {
+            throw TypeDBException.of(ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE, label.scopedName(), label.scope().get());
+        } else {
+            if (relationType.asRelationType().getRelates(EXPLICIT, label.name()) == null) {
+                RoleType superRole = relationType.asRelationType().getRelates(TRANSITIVE, label.name());
+                if (superRole != null) {
+                    throw TypeDBException.of(ILLEGAL_ROLE_TYPE_ALIAS, label.scopedName(), superRole.getLabel().scopedName());
+                }
+            }
+        }
     }
 
     public void validateTypes() {

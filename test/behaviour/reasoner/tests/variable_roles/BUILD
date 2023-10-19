@@ -34,7 +34,7 @@ java_test(
         "//test/behaviour/reasoner:steps",
     ],
     data = [
-        "@vaticle_typedb_behaviour//typeql/reasoner:variable-roles.feature",
+        "@vaticle_typedb_behaviour//query/reasoner:variable-roles.feature",
     ],
 )
 

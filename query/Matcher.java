@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
 import com.vaticle.typedb.core.concept.answer.Numeric;
@@ -66,37 +67,43 @@ public class Matcher {
     private final Disjunction disjunction;
     private final Context.Query context;
 
-    public Matcher(Reasoner reasoner, TypeQLMatch query) {
-        this(reasoner, query, null);
+    public Matcher(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch query) {
+        this(reasoner, conceptMgr, query, null);
     }
 
-    public Matcher(Reasoner reasoner, TypeQLMatch query, @Nullable Context.Query context) {
+    public Matcher(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch query, @Nullable Context.Query context) {
         this.reasoner = reasoner;
         this.query = query;
         this.disjunction = Disjunction.create(query.conjunction().normalise());
         this.context = context;
+        iterate(disjunction.conjunctions())
+                .flatMap(c -> iterate(c.variables())).flatMap(v -> iterate(v.constraints()))
+                .filter(c -> c.isType() && c.asType().isLabel() && c.asType().asLabel().properLabel().scope().isPresent())
+                // only validate labels that are used outside of relation constraints - this allows role type aliases in relations
+                .filter(label -> label.owner().constraining().isEmpty() || iterate(label.owner().constraining()).anyMatch(c -> !(c.isThing() && c.asThing().isRelation())))
+                .forEachRemaining(c -> conceptMgr.validateNotRoleTypeAlias(c.asType().asLabel().properLabel()));
     }
 
-    public static Matcher create(Reasoner reasoner, TypeQLMatch query) {
-        return new Matcher(reasoner, query);
+    public static Matcher create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch query) {
+        return new Matcher(reasoner, conceptMgr, query);
     }
 
-    public static Matcher create(Reasoner reasoner, TypeQLMatch query, Context.Query context) {
-        return new Matcher(reasoner, query, context);
+    public static Matcher create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch query, Context.Query context) {
+        return new Matcher(reasoner, conceptMgr, query, context);
     }
 
-    public static Matcher.Aggregator create(Reasoner reasoner, TypeQLMatch.Aggregate query, Context.Query context) {
-        Matcher matcher = new Matcher(reasoner, query.match());
+    public static Matcher.Aggregator create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch.Aggregate query, Context.Query context) {
+        Matcher matcher = new Matcher(reasoner, conceptMgr, query.match());
         return new Aggregator(matcher, query, context);
     }
 
-    public static Matcher.Group create(Reasoner reasoner, TypeQLMatch.Group query, Context.Query context) {
-        Matcher matcher = new Matcher(reasoner, query.match());
+    public static Matcher.Group create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch.Group query, Context.Query context) {
+        Matcher matcher = new Matcher(reasoner, conceptMgr, query.match());
         return new Group(matcher, query, context);
     }
 
-    public static Matcher.Group.Aggregator create(Reasoner reasoner, TypeQLMatch.Group.Aggregate query, Context.Query context) {
-        Matcher matcher = new Matcher(reasoner, query.group().match());
+    public static Matcher.Group.Aggregator create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLMatch.Group.Aggregate query, Context.Query context) {
+        Matcher matcher = new Matcher(reasoner, conceptMgr, query.group().match());
         Group group = new Group(matcher, query.group(), context);
         return new Group.Aggregator(group, query);
     }
