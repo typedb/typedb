@@ -43,6 +43,7 @@ import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ATTRIBU
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ENTITY;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.RELATION;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.ROLE;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Type.Root.THING;
 
 public class ReadableConceptTree {
 
@@ -280,7 +281,8 @@ public class ReadableConceptTree {
             }
 
             private static String getRoot(Type type) {
-                if (type.isEntityType()) return ENTITY.properLabel().scopedName();
+                if (type.isRoot()) return THING.properLabel().scopedName();
+                else if (type.isEntityType()) return ENTITY.properLabel().scopedName();
                 else if (type.isRelationType()) return RELATION.properLabel().scopedName();
                 else if (type.isAttributeType()) return ATTRIBUTE.properLabel().scopedName();
                 else if (type.isRoleType()) return ROLE.properLabel().scopedName();

@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "FetchTest.java",
     ],
-    test_class = "com.vaticle.typedb.core.test.behaviour.typeql.language.fetch.FetchTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.query.language.fetch.FetchTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",

@@ -23,7 +23,7 @@ java_test(
     srcs = [
         "ModifiersTest.java",
     ],
-    test_class = "com.vaticle.typedb.core.test.behaviour.typeql.language.modifiers.ModifiersTest",
+    test_class = "com.vaticle.typedb.core.test.behaviour.query.language.modifiers.ModifiersTest",
     deps = [
         # External dependencies from Maven
         "@maven//:io_cucumber_cucumber_junit",
