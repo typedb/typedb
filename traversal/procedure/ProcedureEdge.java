@@ -986,7 +986,8 @@ public abstract class ProcedureEdge<
                 assert !to.props().hasIID() && to.props().predicates().isEmpty();
                 ThingVertex relationOrPlayer = fromVertex.asThing();
                 TypeVertex type = relationOrPlayer.type();
-                Set<TypeVertex> roleTypes = type.isRelationType() ?
+                assert encoding == PLAYING || encoding == RELATING;
+                Set<TypeVertex> roleTypes = encoding == RELATING ?
                         graphMgr.schema().relatedRoleTypes(type) : graphMgr.schema().playedRoleTypes(type);
                 return iterate(roleTypes)
                         .filter(rt -> to.props().types().contains(rt.properLabel()))
