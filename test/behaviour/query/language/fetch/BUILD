@@ -29,13 +29,13 @@ java_test(
         "@maven//:io_cucumber_cucumber_junit",
     ],
     runtime_deps = [
-        "//test/behaviour/typeql:steps",
+        "//test/behaviour/query:steps",
         "//test/behaviour/connection:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/config:parameters",
     ],
     data = [
-        "@vaticle_typedb_behaviour//typeql/language:fetch.feature",
+        "@vaticle_typedb_behaviour//query/language:fetch.feature",
     ],
     size = "medium",
     visibility = ["//visibility:public"],

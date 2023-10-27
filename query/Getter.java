@@ -72,7 +72,7 @@ public class Getter {
     private final Context.Query context;
 
     public Getter(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query) {
-        this(reasoner, query, null);
+        this(reasoner, conceptMgr, query, null);
     }
 
     public Getter(Reasoner reasoner, ConceptManager conceptMgr, TypeQLGet query, Context.Query context) {
@@ -115,8 +115,8 @@ public class Getter {
 
     public static Getter.Group.Aggregator create(Reasoner reasoner, ConceptManager conceptMgr,
                                                  TypeQLGet.Group.Aggregate query, Context.Query context) {
-        Getter getter = new Getter(reasoner, query.group().get());
-        Group group = new Group(getter, conceptMgr, query.group(), context);
+        Getter getter = new Getter(reasoner, conceptMgr, query.group().get());
+        Group group = new Group(getter, query.group(), context);
         return new Group.Aggregator(conceptMgr, group, query);
     }
 

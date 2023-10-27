@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Vaticle
+ * Copyright (C) 2023 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.behaviour.typeql.language.modifiers;
+package com.vaticle.typedb.core.test.behaviour.query.language.fetch;
 
 import io.cucumber.junit.Cucumber;
 import io.cucumber.junit.CucumberOptions;
@@ -27,17 +27,17 @@ import org.junit.runner.RunWith;
         strict = true,
         plugin = "pretty",
         glue = "com.vaticle.typedb.core.test.behaviour",
-        features = "external/vaticle_typedb_behaviour/typeql/language/modifiers.feature",
+        features = "external/vaticle_typedb_behaviour/typeql/language/fetch.feature",
         tags = "not @ignore and not @ignore-typedb"
 )
-public class ModifiersTest {
+public class FetchTest {
     // ATTENTION:
     // When you click RUN from within this class through Intellij IDE, it will fail.
     // You can fix it by doing:
     //
     // 1) Go to 'Run'
     // 2) Select 'Edit Configurations...'
-    // 3) Select 'Bazel test MatchTest'
+    // 3) Select 'Bazel test GetTest'
     //
     // 4) Ensure 'Target Expression' is set correctly:
     //    a) Use '//<this>/<package>/<name>:test-core' to test against typedb
