@@ -88,29 +88,34 @@ operation-set sub action,
 
 membership sub relation,
     # abstract,
-    relates parent,
-    relates member;
+    relates base-parent,
+    relates base-member;
 
 group-membership sub membership,
-    relates group as parent;
+    relates group as base-parent,
+    relates member as base-member;
 
 collection-membership sub membership,
-    relates collection as parent;
+    relates collection as base-parent,
+    relates member as base-member;
 
 set-membership sub membership,
-    relates set as parent;
+    relates set as base-parent,
+    relates member as base-member;
 
 ownership sub relation,
     # abstract,
-    relates owned,
-    relates owner;
+    relates base-owned,
+    relates base-owner;
 
 group-ownership sub ownership,
-    relates group as owned,
+    relates group as base-owned,
+    relates owner as base-owner,
     owns ownership-type;
 
 object-ownership sub ownership,
-    relates object as owned,
+    relates object as base-owned,
+    relates owner as base-owner,
     owns ownership-type;
 
 access sub relation,

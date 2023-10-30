@@ -91,6 +91,6 @@ public class LanguageFeaturesTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(100);
-        benchmark.assertCounters(200, 9, 29, 101, 105);
+        benchmark.assertCounters(200, 9, 21, 129, 141);
     }
 }

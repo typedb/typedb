@@ -103,6 +103,6 @@ public class ConjunctionStructureTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
-        benchmark.assertCounters(500, 15, 104, 128, 230);
+        benchmark.assertCounters(500, 22, 69, 102, 165);
     }
 }

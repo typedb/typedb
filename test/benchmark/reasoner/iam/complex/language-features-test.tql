@@ -17,10 +17,17 @@
 
 # Ensure none of the new rules are triggered by only creating rules which conclude test-specific types
 define
-variabilised-membership sub relation, relates parent, relates member; # abstract
-variabilised-collection-membership sub variabilised-membership, relates collection as parent;
-variabilised-set-membership sub variabilised-membership, relates set as parent;
-variabilised-group-membership sub variabilised-membership, relates group as parent;
+variabilised-membership sub relation,
+    relates base-parent, relates base-member; # abstract
+variabilised-collection-membership sub variabilised-membership,
+    relates collection as base-parent,
+    relates member as base-member;
+variabilised-set-membership sub variabilised-membership,
+    relates set as base-parent,
+    relates member as base-member;
+variabilised-group-membership sub variabilised-membership,
+    relates group as base-parent,
+    relates member as base-member;
 
 user-group plays variabilised-group-membership:group;
 subject plays variabilised-group-membership:member;
@@ -47,8 +54,8 @@ when {
         ($parent: $p, $member: $t) isa! $membership;
         ($parent: $t, $member: $m) isa! $membership;
         $membership relates $parent, relates $member;
-        $parent sub variabilised-membership:parent;
-        $member sub variabilised-membership:member;
+        $parent sub variabilised-membership:base-parent;
+        $member sub variabilised-membership:base-member;
 } then {
         ($parent: $p, $member: $m) isa $membership;
 };
