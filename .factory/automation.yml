@@ -76,7 +76,7 @@ build:
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/behaviour/concept/... --test_output=streamed
-    test-behaviour-typeql-read:
+    test-behaviour-query-read:
       image: vaticle-ubuntu-22.04
       dependencies: [build]
       command: |
@@ -94,13 +94,7 @@ build:
         bazel test //test/behaviour/query/language/insert/... --test_output=streamed
         bazel test //test/behaviour/query/language/delete/... --test_output=streamed
         bazel test //test/behaviour/query/language/update/... --test_output=streamed
-    test-behaviour-typeql-modifiers:
-      image: vaticle-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //test/behaviour/typeql/language/modifiers/... --test_output=streamed
-    test-behaviour-typeql-definable:
+    test-behaviour-query-definable:
       image: vaticle-ubuntu-22.04
       dependencies: [build]
       command: |
@@ -143,7 +137,7 @@ build:
       filter:
         owner: vaticle
         branch: [master, development]
-      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-typeql-read, test-behaviour-typeql-write, test-behaviour-typeql-modifiers, test-behaviour-typeql-definable, test-behaviour-reasoner]
+      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-query-read, test-behaviour-query-write, test-behaviour-query-modifiers, test-behaviour-query-definable, test-behaviour-reasoner]
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/assembly:assembly --test_output=streamed
@@ -152,7 +146,7 @@ build:
       filter:
         owner: vaticle
         branch: [master, development]
-      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-typeql-read, test-behaviour-typeql-write, test-behaviour-typeql-modifiers, test-behaviour-typeql-definable, test-behaviour-reasoner]
+      dependencies: [build, build-dependency, test-unit, test-integration, test-behaviour-connection, test-behaviour-concept, test-behaviour-query-read, test-behaviour-query-write, test-behaviour-query-modifiers, test-behaviour-query-definable, test-behaviour-reasoner]
       command: |
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //test/assembly:docker --test_output=streamed

@@ -125,7 +125,6 @@ public class TraversalTest {
                 assertTrue(nextValue <= lastValue);
                 lastValue = nextValue;
             }
-
         }
     }
 

@@ -960,7 +960,7 @@ public class TypeInferenceTest {
         );
         assertEquals(roleExpected, resolvedTypeMap(roleDisjunction.conjunctions().get(0)));
 
-        String thingString = "match $x isa thing; get";
+        String thingString = "match $x isa thing; get;";
         Disjunction thingDisjunction = createDisjunction(thingString);
         typeInference.applyCombination(thingDisjunction);
 
@@ -1211,7 +1211,7 @@ public class TypeInferenceTest {
                 "woman sub person;" +
                 "marriage sub relation, relates spouse;");
 
-        String minimallyRestricted = "match $x isa person; not { ($x) isa marriage; }; ;get";
+        String minimallyRestricted = "match $x isa person; not { ($x) isa marriage; }; get;";
         Disjunction disjunction = createDisjunction(minimallyRestricted);
         transaction.logic().typeInference().applyCombination(disjunction);
         Map<String, Set<String>> expected = map(
