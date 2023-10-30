@@ -123,7 +123,7 @@ public class ExplanationTest {
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
                 List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery(
-                        "match $p1 isa person; { (friend: $p1, friend: $p2) isa friendship;} or { $p1 has name 'Zack'; }; "
+                        "match $p1 isa person; { (friend: $p1, friend: $p2) isa friendship;} or { $p1 has name 'Zack'; }; get; "
                 ).asGet()).toList();
                 assertEquals(3, ans.size());
 
@@ -185,7 +185,7 @@ public class ExplanationTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asGet()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na; get;").asGet()).toList();
                 assertEquals(2, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());
@@ -232,7 +232,7 @@ public class ExplanationTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asGet()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na; get;").asGet()).toList();
                 assertEquals(2, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());
@@ -276,7 +276,7 @@ public class ExplanationTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x has is-still-good $a;").asGet()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x has is-still-good $a; get;").asGet()).toList();
                 assertEquals(3, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());
@@ -342,7 +342,7 @@ public class ExplanationTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x isa user, has permission \"write\";").asGet()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x isa user, has permission \"write\"; get;").asGet()).toList();
                 assertEquals(1, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());
@@ -387,7 +387,7 @@ public class ExplanationTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $r isa location-hierarchy;").asGet()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $r isa location-hierarchy; get;").asGet()).toList();
                 assertEquals(10, ans.size());
 
                 List<? extends ConceptMap> explainableMaps = iterate(ans).filter(answer -> !answer.explainables().isEmpty()).toList();
@@ -471,7 +471,7 @@ public class ExplanationTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match ($x) isa friendship;").asGet()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match ($x) isa friendship; get;").asGet()).toList();
                 assertEquals(2, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());

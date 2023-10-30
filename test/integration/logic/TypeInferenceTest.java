@@ -131,7 +131,7 @@ public class TypeInferenceTest {
     @Test
     public void schema_query_not_resolved_beyond_labels() throws IOException {
         define_standard_schema("basic-schema");
-        String queryString = "match $p sub person, owns $a;";
+        String queryString = "match $p sub person, owns $a; get;";
         TypeInference typeInference = transaction.logic().typeInference();
 
         Disjunction disjunction = createDisjunction(queryString);
@@ -149,7 +149,7 @@ public class TypeInferenceTest {
     @Test
     public void isa_inference() throws IOException {
         define_standard_schema("basic-schema");
-        String queryString = "match $p isa person;";
+        String queryString = "match $p isa person; get;";
         TypeInference typeInference = transaction.logic().typeInference();
 
         Disjunction disjunction = createDisjunction(queryString);
@@ -168,7 +168,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match $p isa! person; ";
+        String queryString = "match $p isa! person; get;";
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
@@ -188,7 +188,8 @@ public class TypeInferenceTest {
         String queryString = "match" +
                 "  $p isa entity;" +
                 "  $p is $q;" +
-                "  $q isa mammal;";
+                "  $q isa mammal;" +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -215,7 +216,7 @@ public class TypeInferenceTest {
         TypeInference typeInference = transaction.logic().typeInference();
 
         // using a person IID, the attribute can only be a name or email, but not a dog label
-        String queryString = "match $p iid " + person.getIID().toHexString() + "; $p has $a;";
+        String queryString = "match $p iid " + person.getIID().toHexString() + "; $p has $a; get;";
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
@@ -232,7 +233,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match $p has name 'bob';";
+        String queryString = "match $p has name 'bob'; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -263,7 +264,8 @@ public class TypeInferenceTest {
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $a has $b;" +
-                "  $b has $a;";
+                "  $b has $a;" +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -295,7 +297,8 @@ public class TypeInferenceTest {
                 "  $a has $b;" +
                 "  $b has $c;" +
                 "  $c has $d;" +
-                "  $d has $a;";
+                "  $d has $a;" +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -315,7 +318,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match $p has name $a;";
+        String queryString = "match $p has name $a; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -336,7 +339,8 @@ public class TypeInferenceTest {
 
         String queryString = "match" +
                 "  $p isa shape;" +
-                "  $p has $a;";
+                "  $p has $a;" +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -362,7 +366,8 @@ public class TypeInferenceTest {
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $p has $a;" +
-                "  $a == 'bob';";
+                "  $a == 'bob';" +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -384,7 +389,7 @@ public class TypeInferenceTest {
         );
 
         TypeInference typeInference = transaction.logic().typeInference();
-        String queryString = "match $x == 1; $y == 1.0; $z == 'bob';";
+        String queryString = "match $x == 1; $y == 1.0; $z == 'bob'; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -402,7 +407,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match $r (wife: $yoko) isa marriage;";
+        String queryString = "match $r (wife: $yoko) isa marriage; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -422,7 +427,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match $r ($role: $yoko) isa marriage;";
+        String queryString = "match $r ($role: $yoko) isa marriage; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -442,7 +447,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match $r (wife: $yoko) isa $m;";
+        String queryString = "match $r (wife: $yoko) isa $m; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -481,7 +486,7 @@ public class TypeInferenceTest {
                 "  relates wife as spouse;");
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match $r (spouse: $yoko, $role: $john) isa $m; $john isa man;";
+        String queryString = "match $r (spouse: $yoko, $role: $john) isa $m; $john isa man; get;";
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
@@ -503,7 +508,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match (wife: $yoko);";
+        String queryString = "match (wife: $yoko); get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -522,7 +527,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match ($yoko) isa marriage;";
+        String queryString = "match ($yoko) isa marriage; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -546,7 +551,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match $r (husband: $john, $role: $yoko, $a) isa marriage;";
+        String queryString = "match $r (husband: $john, $role: $yoko, $a) isa marriage; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -571,7 +576,8 @@ public class TypeInferenceTest {
 
         String queryString = "match" +
                 "  $p isa! person;" +
-                "  $p has $a;";
+                "  $p has $a;" +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -591,7 +597,8 @@ public class TypeInferenceTest {
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $p isa person;" +
-                "  not {$p isa man;};";
+                "  not {$p isa man;};" +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -617,7 +624,8 @@ public class TypeInferenceTest {
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
                 "  $p isa man;" +
-                "  man sub $q;";
+                "  man sub $q;" +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -636,7 +644,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match $t type shape;";
+        String queryString = "match $t type shape; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -652,7 +660,7 @@ public class TypeInferenceTest {
     public void plays_hierarchy() throws IOException {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
-        String queryString = "match (spouse: $john) isa marriage;";
+        String queryString = "match (spouse: $john) isa marriage; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -682,7 +690,7 @@ public class TypeInferenceTest {
         String queryString = "match" +
                 "  $a has weight $c;" +
                 "  $b has leg-weight 5;" +
-                "  $p has weight $c;";
+                "  $p has weight $c; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -707,7 +715,7 @@ public class TypeInferenceTest {
                 "ref sub attribute, value long;");
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match" +
-                "  $a has $a;";
+                "  $a has $a; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -723,7 +731,7 @@ public class TypeInferenceTest {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match $x isa thing;";
+        String queryString = "match $x isa thing; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -750,7 +758,7 @@ public class TypeInferenceTest {
         );
         TypeInference typeInference = transaction.logic().typeInference();
 
-        String queryString = "match $x isa $t; $y isa $t; $x has man-name 'bob'; $y has woman-name 'alice';";
+        String queryString = "match $x isa $t; $y isa $t; $x has man-name 'bob'; $y has woman-name 'alice'; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -783,7 +791,8 @@ public class TypeInferenceTest {
         String queryString = "match $x isa $y;" +
                 "  $y sub $z;" +
                 "  $z sub $w;" +
-                "  $w sub person;";
+                "  $w sub person;" +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -832,7 +841,8 @@ public class TypeInferenceTest {
                 "  ($a, $b) isa $rel; " +
                 "  $rel owns $c; " +
                 "  $a has left-attr true; " +
-                "  $b has right-attr true;";
+                "  $b has right-attr true;" +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -850,7 +860,7 @@ public class TypeInferenceTest {
     @Test
     public void multiple_anonymous_vars() throws IOException {
         define_standard_schema("basic-schema");
-        String queryString = "match $a has name 'fido'; $a has label 'poodle';";
+        String queryString = "match $a has name 'fido'; $a has label 'poodle'; get;";
         TypeInference typeInference = transaction.logic().typeInference();
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -873,7 +883,8 @@ public class TypeInferenceTest {
         TypeInference typeInference = transaction.logic().typeInference();
         String queryString = "match " +
                 " $x isa company;" +
-                " ($x) isa friendship;";
+                " ($x) isa friendship;" +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -890,7 +901,7 @@ public class TypeInferenceTest {
                 "   plays hetero-marriage:wife;"
         );
         TypeInference typeInference = transaction.logic().typeInference();
-        String queryString = "match $m (spouse: $x, spouse: $y) isa marriage;";
+        String queryString = "match $m (spouse: $x, spouse: $y) isa marriage; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -909,7 +920,7 @@ public class TypeInferenceTest {
     public void converts_root_types() throws IOException {
         define_standard_schema("test-type-inference");
         TypeInference typeInference = transaction.logic().typeInference();
-        String relationString = "match $x isa relation;";
+        String relationString = "match $x isa relation; get;";
 
         Disjunction relationDisjunction = createDisjunction(relationString);
         typeInference.applyCombination(relationDisjunction);
@@ -919,7 +930,7 @@ public class TypeInferenceTest {
         );
         assertEquals(relationExpected, resolvedTypeMap(relationDisjunction.conjunctions().get(0)));
 
-        String attributeString = "match $x isa attribute;";
+        String attributeString = "match $x isa attribute; get;";
         Disjunction attributeDisjunction = createDisjunction(attributeString);
         typeInference.applyCombination(attributeDisjunction);
         Map<String, Set<String>> attributeExpected = map(
@@ -929,7 +940,7 @@ public class TypeInferenceTest {
 
         assertEquals(attributeExpected, resolvedTypeMap(attributeDisjunction.conjunctions().get(0)));
 
-        String entityString = "match $x isa entity;";
+        String entityString = "match $x isa entity; get;";
         Disjunction entityDisjunction = createDisjunction(entityString);
         typeInference.applyCombination(entityDisjunction);
         Map<String, Set<String>> entityExpected = map(
@@ -938,7 +949,7 @@ public class TypeInferenceTest {
         );
         assertEquals(entityExpected, resolvedTypeMap(entityDisjunction.conjunctions().get(0)));
 
-        String roleString = "match ($role: $x) isa relation;";
+        String roleString = "match ($role: $x) isa relation; get;";
         Disjunction roleDisjunction = createDisjunction(roleString);
         typeInference.applyCombination(roleDisjunction);
         Map<String, Set<String>> roleExpected = map(
@@ -949,7 +960,7 @@ public class TypeInferenceTest {
         );
         assertEquals(roleExpected, resolvedTypeMap(roleDisjunction.conjunctions().get(0)));
 
-        String thingString = "match $x isa thing;";
+        String thingString = "match $x isa thing; get";
         Disjunction thingDisjunction = createDisjunction(thingString);
         typeInference.applyCombination(thingDisjunction);
 
@@ -969,7 +980,8 @@ public class TypeInferenceTest {
                 " $x == $y;" +
                 " $y == $z;" +
                 " $z == $w;" +
-                " $w == 1;";
+                " $w == 1; " +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -1004,7 +1016,8 @@ public class TypeInferenceTest {
                 " $x == 'bob';" +
                 " $y == $x;" +
                 " $x has $y;" +
-                " $y has $x;";
+                " $y has $x;" +
+                "get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -1021,7 +1034,7 @@ public class TypeInferenceTest {
     public void multiple_value_types_returns_unsatisfiable_error() throws IOException {
         define_standard_schema("basic-schema");
         TypeInference typeInference = transaction.logic().typeInference();
-        String queryString = "match $x == 2; $x == 'bob';";
+        String queryString = "match $x == 2; $x == 'bob'; get;";
         Disjunction disjunction = createDisjunction(queryString);
 
         assertThrows(
@@ -1033,7 +1046,7 @@ public class TypeInferenceTest {
     public void infer_is_attribute_from_ownership() throws IOException {
         define_standard_schema("test-type-inference");
         TypeInference typeInference = transaction.logic().typeInference();
-        String queryString = "match $x has $y;";
+        String queryString = "match $x has $y; get;";
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
@@ -1049,7 +1062,7 @@ public class TypeInferenceTest {
     public void infer_is_attribute_from_having_value() throws IOException {
         define_standard_schema("test-type-inference");
         TypeInference typeInference = transaction.logic().typeInference();
-        String queryString = "match $x == $y;";
+        String queryString = "match $x == $y; get;";
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
 
@@ -1069,7 +1082,7 @@ public class TypeInferenceTest {
         );
 
         TypeInference typeInference = transaction.logic().typeInference();
-        String queryString = "match $x has name 'bob';";
+        String queryString = "match $x has name 'bob'; get;";
 
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -1092,7 +1105,7 @@ public class TypeInferenceTest {
         );
 
         TypeInference typeInference = transaction.logic().typeInference();
-        String queryString = "match (partner: $x);";
+        String queryString = "match (partner: $x); get;";
         Disjunction disjunction = createDisjunction(queryString);
         Conjunction conjunction = disjunction.conjunctions().get(0);
         typeInference.applyCombination(conjunction, false);
@@ -1104,7 +1117,7 @@ public class TypeInferenceTest {
     @Test
     public void roles_can_handle_type_constraints() throws IOException {
         define_standard_schema("basic-schema");
-        String queryString = "match ($role: $x) isa $y; $role type marriage:wife;";
+        String queryString = "match ($role: $x) isa $y; $role type marriage:wife; get;";
         TypeInference typeInference = transaction.logic().typeInference();
         Disjunction disjunction = createDisjunction(queryString);
         typeInference.applyCombination(disjunction);
@@ -1136,7 +1149,7 @@ public class TypeInferenceTest {
                 " woman sub person, owns maiden-name as name;" +
                 " name sub attribute, value string, abstract;" +
                 " maiden-name sub name, value string;");
-        String queryString = "match $x isa woman, has name 'smith';";
+        String queryString = "match $x isa woman, has name 'smith'; get;";
         Disjunction disjunction = createDisjunction(queryString);
         transaction.logic().typeInference().applyCombination(disjunction);
 
@@ -1152,7 +1165,7 @@ public class TypeInferenceTest {
                 " person sub entity, plays marriage:husband, plays marriage:wife;" +
                 " partnership sub relation, relates partner;" +
                 " marriage sub partnership, relates husband as partner, relates wife as partner;");
-        String queryString = "match $x isa person; (wife: $x) isa partnership;";
+        String queryString = "match $x isa person; (wife: $x) isa partnership; get;";
         Disjunction disjunction = createDisjunction(queryString);
         transaction.logic().typeInference().applyCombination(disjunction);
 
@@ -1168,7 +1181,7 @@ public class TypeInferenceTest {
                 " person sub entity, plays marriage:husband, plays marriage:wife;" +
                 " partnership sub relation, relates partner;" +
                 " marriage sub partnership, relates husband as partner, relates wife as partner;");
-        String queryString = "match $x isa person; (partner: $x) isa marriage;";
+        String queryString = "match $x isa person; (partner: $x) isa marriage; get;";
         Disjunction disjunction = createDisjunction(queryString);
         transaction.logic().typeInference().applyCombination(disjunction);
 
@@ -1198,7 +1211,7 @@ public class TypeInferenceTest {
                 "woman sub person;" +
                 "marriage sub relation, relates spouse;");
 
-        String minimallyRestricted = "match $x isa person; not { ($x) isa marriage; };";
+        String minimallyRestricted = "match $x isa person; not { ($x) isa marriage; }; ;get";
         Disjunction disjunction = createDisjunction(minimallyRestricted);
         transaction.logic().typeInference().applyCombination(disjunction);
         Map<String, Set<String>> expected = map(
@@ -1209,7 +1222,7 @@ public class TypeInferenceTest {
         // test the inner negation
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0).negations().iterator().next().disjunction().conjunctions().get(0)));
 
-        String restricted = "match $x isa woman; not { ($x) isa marriage; };";
+        String restricted = "match $x isa woman; not { ($x) isa marriage; }; get;";
         Disjunction restrictedDisjunction = createDisjunction(restricted);
         transaction.logic().typeInference().applyCombination(restrictedDisjunction);
         expected = map(
@@ -1251,7 +1264,8 @@ public class TypeInferenceTest {
                 "          not {\n" +
                 "              (question-not-answered: $ques, parent-session: $ts) isa unanswered-question;\n" +
                 "              ($flt, $ques) isa fault-identification;" +
-                "          };";
+                "          };" +
+                "get;";
         Disjunction disjunction = createDisjunction(query);
         transaction.logic().typeInference().applyCombination(disjunction);
         assertTrue(disjunction.conjunctions().get(0).negations().iterator().next().disjunction().conjunctions().get(0).isCoherent());
@@ -1276,7 +1290,7 @@ public class TypeInferenceTest {
                 "age sub attribute, value long;");
 
 
-        String query = "match $x isa $rel-type; $rel-type relates $role-type; $role-type type employment:employee;";
+        String query = "match $x isa $rel-type; $rel-type relates $role-type; $role-type type employment:employee; get;";
         Disjunction disjunction = createDisjunction(query);
         transaction.logic().typeInference().applyCombination(disjunction);
 
@@ -1287,7 +1301,7 @@ public class TypeInferenceTest {
         );
         assertEquals(expected, resolvedTypeMap(disjunction.conjunctions().get(0)));
 
-        query = "match $x isa $t; $t plays $role-type; $role-type type employment:employee;";
+        query = "match $x isa $t; $t plays $role-type; $role-type type employment:employee; get;";
         disjunction = createDisjunction(query);
         transaction.logic().typeInference().applyCombination(disjunction);
 

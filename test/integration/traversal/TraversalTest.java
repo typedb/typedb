@@ -110,7 +110,7 @@ public class TraversalTest {
             transaction.commit();
         }
         try (CoreTransaction transaction = session.transaction(READ)) {
-            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has age $a;")
+            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has age $a; get;")
                     .asGet().match().conjunction().normalise());
             transaction.logic().typeInference().applyCombination(disjunction);
             Identifier.Variable.Name var = Identifier.Variable.namedConcept("a");
@@ -144,7 +144,7 @@ public class TraversalTest {
             transaction.commit();
         }
         try (CoreTransaction transaction = session.transaction(READ)) {
-            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has is-married $a;")
+            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has is-married $a; get;")
                     .asGet().match().conjunction().normalise());
             transaction.logic().typeInference().applyCombination(disjunction);
             Identifier.Variable.Name var = Identifier.Variable.namedConcept("a");
@@ -173,7 +173,7 @@ public class TraversalTest {
             transaction.commit();
         }
         try (CoreTransaction transaction = session.transaction(READ)) {
-            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has money $a;")
+            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has money $a; get;")
                     .asGet().match().conjunction().normalise());
             transaction.logic().typeInference().applyCombination(disjunction);
             Identifier.Variable.Name var = Identifier.Variable.namedConcept("a");
@@ -211,7 +211,7 @@ public class TraversalTest {
             transaction.commit();
         }
         try (CoreTransaction transaction = session.transaction(READ)) {
-            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has birth-date $a;")
+            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has birth-date $a; get;")
                     .asGet().match().conjunction().normalise());
             transaction.logic().typeInference().applyCombination(disjunction);
             Identifier.Variable.Name var = Identifier.Variable.namedConcept("a");

@@ -94,7 +94,7 @@ public class ReasonerTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x has age-in-days $a;").asGet()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x has age-in-days $a; get;").asGet()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
                     assertEquals("age-in-days", a.getConcept("a").asThing().getType().getLabel().scopedName());
@@ -123,7 +123,7 @@ public class ReasonerTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x has age-in-days $a;").asGet()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x has age-in-days $a; get;").asGet()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
                     assertEquals("age-in-days", a.getConcept("a").asThing().getType().getLabel().scopedName());
@@ -131,10 +131,10 @@ public class ReasonerTest {
                 });
                 assertEquals(2, ans.size());
 
-                List<? extends ConceptMap> ansLimited = txn.query().get(TypeQL.parseQuery("match $x has age-in-days $a; limit 1;").asGet()).toList();
+                List<? extends ConceptMap> ansLimited = txn.query().get(TypeQL.parseQuery("match $x has age-in-days $a; get; limit 1;").asGet()).toList();
                 assertEquals(1, ansLimited.size());
 
-                List<? extends ConceptMap> ansLimitedOffsetted = txn.query().get(TypeQL.parseQuery("match $x has age-in-days $a; offset 1; limit 1;").asGet()).toList();
+                List<? extends ConceptMap> ansLimitedOffsetted = txn.query().get(TypeQL.parseQuery("match $x has age-in-days $a; get; offset 1; limit 1;").asGet()).toList();
                 assertEquals(1, ansLimitedOffsetted.size());
             }
         }
@@ -169,7 +169,7 @@ public class ReasonerTest {
                 RuntimeException exception = new RuntimeException();
                 txn.reasoner().controllerRegistry().terminate(exception);
                 try {
-                    List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x isa is-still-good;").asGet()).toList();
+                    List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x isa is-still-good; get;").asGet()).toList();
                 } catch (TypeDBException e) {
                     assertEquals(e.getCause(), exception);
                     return;
@@ -207,7 +207,7 @@ public class ReasonerTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x has is-still-good $a;").asGet()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x has is-still-good $a; get;").asGet()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
                     assertFalse(a.getConcept("a").asAttribute().asBoolean().getValue());
@@ -250,7 +250,7 @@ public class ReasonerTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asGet()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na; get;").asGet()).toList();
 
                 ans.iterator().forEachRemaining(a -> {
                     assertEquals("friendship", a.getConcept("f").asThing().getType().getLabel().scopedName());
@@ -295,7 +295,7 @@ public class ReasonerTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ)) {
-                String queryString = "match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;";
+                String queryString = "match $f (friend: $p1, friend: $p2) isa friendship; $p1 has name $na; get;";
                 List<? extends ConceptMap> q1Ans = txn.query().get(TypeQL.parseQuery(queryString).asGet()).toList();
                 List<? extends ConceptMap> q2Ans = txn.query().get(TypeQL.parseQuery(queryString).asGet()).toList();
                 assertEquals(2, q1Ans.size());

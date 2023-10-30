@@ -821,12 +821,12 @@ public class BasicTest {
                         tx.close();
                         session.close();
                     }).start();
-                    tx.query().get(TypeQL.parseQuery("match $x sub thing;").asGet());
+                    tx.query().get(TypeQL.parseQuery("match $x sub thing; get;").asGet());
                 }).start();
             }
             TypeDB.Session session = typedb.session(database, Arguments.Session.Type.DATA);
             TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.WRITE);
-            tx.query().get(TypeQL.parseQuery("match $x sub thing;").asGet());
+            tx.query().get(TypeQL.parseQuery("match $x sub thing; get;").asGet());
         }
     }
 }
