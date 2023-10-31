@@ -266,5 +266,10 @@ public abstract class ValueImpl<VALUE> extends ConceptImpl implements Value<VALU
         public ValueImpl.DateTime asDateTime() {
             return this;
         }
+
+        @Override
+        public java.lang.String toString() {
+            return valueType().name() + ":" + DATE_TIME_FORMATTER_MILLIS.format(value());
+        }
     }
 }

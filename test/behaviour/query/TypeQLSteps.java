@@ -304,7 +304,7 @@ public class TypeQLSteps {
                 expectedAnswer, asDouble, 0.001);
     }
 
-    @Then("aggregate answer is not a number")
+    @Then("aggregate answer is empty")
     public void aggregate_answer_is_not_a_number() {
         assertTrue(numericAnswer.isEmpty());
     }
@@ -437,6 +437,12 @@ public class TypeQLSteps {
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
             }
         }
+    }
+
+    @Then("group aggregate answer value is empty")
+    public void group_aggregate_answer_value_not_a_number() {
+        assertEquals("Step requires exactly 1 grouped answer", 1, numericAnswerGroups.size());
+        assertTrue(numericAnswerGroups.get(0).value().isEmpty());
     }
 
     private boolean matchAnswer(Map<String, String> answerIdentifiers, ConceptMap answer) {

@@ -27,13 +27,13 @@ import com.vaticle.typedb.core.concept.value.Value;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.concept.value.Value.DATE_TIME_FORMATTER_MILLIS;
 import static com.vaticle.typedb.core.concept.Concept.Readable.KEY_LABEL;
 import static com.vaticle.typedb.core.concept.Concept.Readable.KEY_ROOT;
 import static com.vaticle.typedb.core.concept.Concept.Readable.KEY_TYPE;
@@ -165,7 +165,7 @@ public class ReadableConceptTree {
             public String toJSON() {
                 return CURLY_LEFT + "\n" +
                         map.entrySet().stream()
-                                .map(e -> quote(e.getKey()) + KEY_VALUE_SEPARATOR + e.getValue().toString())
+                                .map(e -> quote(e.getKey()) + KEY_VALUE_SEPARATOR + e.getValue().toJSON())
                                 .collect(Collectors.joining(ENTRY_SEPARATOR + "\n", "", "\n")) +
                         CURLY_RIGHT;
             }
@@ -295,11 +295,13 @@ public class ReadableConceptTree {
                 else if (attribute.isLong()) valueString = attribute.asLong().getValue().toString();
                 else if (attribute.isDouble()) valueString = attribute.asDouble().getValue().toString();
                 else if (attribute.isString()) valueString = quote(attribute.asString().getValue());
-                else if (attribute.isDateTime()) valueString = quote(attribute.asDateTime().getValue().toString());
+                else if (attribute.isDateTime()) {
+                    valueString = quote(DATE_TIME_FORMATTER_MILLIS.format(attribute.asDateTime().getValue()));
+                }
                 else throw TypeDBException.of(ILLEGAL_STATE);
                 return Map.CURLY_LEFT + "\n" +
                         quote(KEY_TYPE) + Map.KEY_VALUE_SEPARATOR + getType(attribute.getType()) + Map.ENTRY_SEPARATOR + "\n" +
-                        quote(KEY_VALUE) + Map.KEY_VALUE_SEPARATOR + valueString +  Map.ENTRY_SEPARATOR + "\n" +
+                        quote(KEY_VALUE) + Map.KEY_VALUE_SEPARATOR + valueString + Map.ENTRY_SEPARATOR + "\n" +
                         quote(KEY_VALUE_TYPE) + Map.KEY_VALUE_SEPARATOR + quote(attribute.getType().getValueType().encoding().typeQLValueType().toString()) + "\n" +
                         Map.CURLY_RIGHT;
             }
@@ -310,8 +312,9 @@ public class ReadableConceptTree {
                 else if (value.isLong()) valueString = value.asLong().value().toString();
                 else if (value.isDouble()) valueString = value.asDouble().value().toString();
                 else if (value.isString()) valueString = quote(value.asString().value());
-                else if (value.isDateTime()) valueString = quote(value.asDateTime().value().toString());
-                else throw TypeDBException.of(ILLEGAL_STATE);
+                else if (value.isDateTime()) {
+                    valueString = quote(DATE_TIME_FORMATTER_MILLIS.format(value.asDateTime().value()));
+                } else throw TypeDBException.of(ILLEGAL_STATE);
                 return Map.CURLY_LEFT + "\n" +
                         quote(KEY_VALUE) + Map.KEY_VALUE_SEPARATOR + valueString + Map.ENTRY_SEPARATOR + "\n" +
                         quote(KEY_VALUE_TYPE) + Map.KEY_VALUE_SEPARATOR + quote(value.valueType().typeQLValueType().toString()) + "\n" +
