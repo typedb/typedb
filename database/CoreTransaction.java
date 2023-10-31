@@ -324,6 +324,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
                     if (type().isRead()) throw TypeDBException.of(ILLEGAL_COMMIT);
                     else if (graphMgr.schema().isModified()) throw TypeDBException.of(SESSION_DATA_VIOLATION);
 
+                    conceptMgr.cleanupRelations();
                     conceptMgr.validateThings();
                     graphMgr.data().commit();
 

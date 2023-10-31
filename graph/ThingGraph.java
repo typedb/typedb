@@ -120,7 +120,7 @@ public class ThingGraph {
         return statistics;
     }
 
-    public FunctionalIterator<ThingVertex.Write> vertices() {
+    public FunctionalIterator<ThingVertex.Write> writeVertices() {
         return link(thingsByIID.values().iterator(), attributesByIID.valuesIterator());
     }
 

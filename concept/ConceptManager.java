@@ -82,6 +82,7 @@ import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.OBJECT;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.RELATION;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ROLE;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -362,8 +363,15 @@ public final class ConceptManager {
                 .flatMap(t -> t.exceptions().stream()).collect(toList());
     }
 
+    public void cleanupRelations() {
+        graphMgr.data().writeVertices()
+                .filter(v -> v.existence().equals(STORED) && v.isModified() && v.encoding().equals(RELATION))
+                .forEachRemaining(v -> ThingImpl.of(this, v).asRelation().deleteIfNoPlayer());
+
+    }
+
     public void validateThings() {
-        List<List<Thing>> lists = graphMgr.data().vertices().filter(
+        List<List<Thing>> lists = graphMgr.data().writeVertices().filter(
                 v -> v.existence().equals(STORED) && v.isModified() && !v.encoding().equals(ROLE)
         ).<Thing>map(v -> ThingImpl.of(this, v)).toLists(PARALLELISATION_SPLIT_MINIMUM, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();

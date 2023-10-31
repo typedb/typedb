@@ -271,10 +271,8 @@ public abstract class ThingImpl extends ConceptImpl implements Thing {
 
     @Override
     public void delete() {
-        Set<RelationImpl> relations = writableVertex().ins().edge(ROLEPLAYER).from().map(v -> RelationImpl.of(conceptMgr, v)).toSet();
         writableVertex().outs().edge(PLAYING).to().map(RoleImpl::of).forEachRemaining(RoleImpl::delete);
         writableVertex().delete();
-        relations.forEach(RelationImpl::deleteIfNoPlayer);
     }
 
     @Override

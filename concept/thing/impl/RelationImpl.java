@@ -96,7 +96,6 @@ public class RelationImpl extends ThingImpl implements Relation {
         ).to().filter(v -> v.ins().edge(PLAYING, ((ThingImpl) player).writableVertex()) != null).first();
         if (role.isPresent()) {
             RoleImpl.of(role.get()).delete();
-            deleteIfNoPlayer();
         } else {
             throw exception(TypeDBException.of(DELETE_ROLEPLAYER_NOT_PRESENT, player.getType().getLabel(), roleType.getLabel().toString()));
         }
@@ -108,7 +107,7 @@ public class RelationImpl extends ThingImpl implements Relation {
         super.delete();
     }
 
-    void deleteIfNoPlayer() {
+    public void deleteIfNoPlayer() {
         if (!writableVertex().outs().edge(RELATING).to().hasNext()) this.delete();
     }
 
