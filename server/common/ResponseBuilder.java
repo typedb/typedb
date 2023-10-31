@@ -77,6 +77,7 @@ public class ResponseBuilder {
 
     public static StatusRuntimeException exception(Throwable e) {
         if (e instanceof StatusRuntimeException) return (StatusRuntimeException) e;
+        else if (e instanceof NullPointerException) return Status.INTERNAL.withDescription("Null Pointer Exception in TypeDB Server! This is a bug!").asRuntimeException();
         else return Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException();
     }
 
