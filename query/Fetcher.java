@@ -29,6 +29,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ReadableConceptTree;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
+import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typedb.core.traversal.common.Identifier;
@@ -45,13 +46,15 @@ import java.util.List;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.ILLEGAL_ATTRIBUTE_PROJECTION_ATTRIBUTE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.ILLEGAL_ATTRIBUTE_PROJECTION_ATTRIBUTE_TYPE_INVALID;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.ILLEGAL_ATTRIBUTE_PROJECTION_TYPES_NOT_OWNED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.ILLEGAL_ATTRIBUTE_PROJECTION_TYPE_VARIABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.PROJECTION_VARIABLE_UNBOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.PROJECTION_VARIABLE_UNNAMED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.SUBQUERY_UNBOUNDED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.VARIABLE_PROJECTION_CONCEPT_NOT_READABLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
 import static java.util.Collections.emptySet;
 
 public class Fetcher {
@@ -113,8 +116,10 @@ public class Fetcher {
     }
 
     FunctionalIterator<ReadableConceptTree> execute(Context.Query context, ConceptMap bindings) {
-        return reasoner.execute(match, filter, modifiers, context, bindings)
-                .map(cm -> executeProjections(cm.merge(bindings)));
+        FunctionalIterator<? extends ConceptMap> answers = reasoner.execute(match, filter, modifiers, context, bindings);
+        // at this point, type inference is guaranteed to have run
+        projections.forEach(p -> p.validateTypes(conceptMgr, match));
+        return answers.map(cm -> executeProjections(cm.merge(bindings)));
     }
 
     private ReadableConceptTree executeProjections(ConceptMap concepts) {
@@ -152,6 +157,8 @@ public class Fetcher {
         abstract ReadableConceptTree.Node execute(Reasoner reasoner, ConceptManager conceptMgr, Context.Query context,
                                                   ConceptMap concepts);
 
+        abstract void validateTypes(ConceptManager conceptMgr, Disjunction match);
+
         private static class Variable extends Projection {
 
             private final TypeQLVariable variable;
@@ -179,6 +186,11 @@ public class Fetcher {
             @Override
             public FunctionalIterator<Identifier.Variable.Name> namedVariables() {
                 return iterate(Identifier.Variable.of(variable.reference().asName()));
+            }
+
+            @Override
+            void validateTypes(ConceptManager conceptMgr, Disjunction match) {
+                // pass
             }
 
             @Override
@@ -224,7 +236,7 @@ public class Fetcher {
                 for (Pair<Reference.Label, TypeQLFetch.Key.Label> pair : attributes) {
                     AttributeType attributeType = conceptMgr.getAttributeType(pair.first().label());
                     if (attributeType == null) {
-                        throw TypeDBException.of(ILLEGAL_ATTRIBUTE_PROJECTION_ATTRIBUTE_TYPE, key.typeQLVar(), pair.first());
+                        throw TypeDBException.of(ILLEGAL_ATTRIBUTE_PROJECTION_ATTRIBUTE_TYPE_INVALID, key.typeQLVar(), pair.first());
                     }
                     attrs.add(AttributeFetch.create(attributeType, pair.second()));
                 }
@@ -254,6 +266,24 @@ public class Fetcher {
                         )
                 ));
                 return entries;
+            }
+
+            @Override
+            void validateTypes(ConceptManager conceptMgr, Disjunction match) {
+                assert keyVariable.isNamed();
+                Identifier.Variable.Name keyID = Identifier.Variable.of(keyVariable.reference().asName());
+                // for each attribute type, check each possible type from the 'match' variable can own the attribute type or a subtype of it
+                iterate(match.getTypes(keyID)).forEachRemaining(label -> {
+                    ThingType type = conceptMgr.getType(label).asThingType();
+                    Set<? extends AttributeType> ownedTypes = type.getOwnedAttributes(TRANSITIVE);
+                    // one of the subtypes must be in the set of owned types
+                    iterate(this.attributeFetches).forEachRemaining(attributeFetch -> {
+                        if (iterate(attributeFetch.attributeTypes).noneMatch(ownedTypes::contains)) {
+                            throw TypeDBException.of(ILLEGAL_ATTRIBUTE_PROJECTION_TYPES_NOT_OWNED,
+                                    keyVariable, attributeFetch.name(), keyVariable, label);
+                        }
+                    });
+                });
             }
 
             private static class AttributeFetch {
@@ -310,6 +340,12 @@ public class Fetcher {
             @Override
             public String key() {
                 return key.label();
+            }
+
+            @Override
+            void validateTypes(ConceptManager conceptMgr, Disjunction match) {
+                // TODO: we could try to propagate the set of types into the projections and validate that the queries
+                //       may be semantically valid, rather than waiting until execution time.
             }
 
             private static class SubFetch extends Subquery {

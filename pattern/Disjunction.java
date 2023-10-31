@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.pattern;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
@@ -74,6 +76,10 @@ public class Disjunction implements Pattern, Cloneable {
 
     public Set<Identifier.Variable.Name> sharedVariables() {
         return sharedVariables;
+    }
+
+    public FunctionalIterator<Label> getTypes(Identifier.Variable.Name id) {
+        return iterate(conjunctions).flatMap(conjunction -> iterate(conjunction.variable(id).inferredTypes()));
     }
 
     @Override

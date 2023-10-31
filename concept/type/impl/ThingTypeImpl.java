@@ -88,9 +88,9 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.compareSize;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.emptySorted;
 import static com.vaticle.typedb.core.common.iterator.sorted.SortedIterators.Forwardable.iterateSorted;
-import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
+import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.OWNS_KEY;
 import static com.vaticle.typedb.core.encoding.Encoding.Edge.Type.PLAYS;
@@ -110,14 +110,28 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         private NavigableSet<Owns> owns = null;
         private NavigableSet<Owns> ownsExplicit = null;
 
-        NavigableSet<Owns> get(Transitivity transitivity) {
+        private Set<AttributeType> ownedAttributes = null;
+
+        private Set<AttributeType> ownedAttributesExplicit = null;
+
+        NavigableSet<Owns> getOwns(Transitivity transitivity) {
             if (transitivity == EXPLICIT) return ownsExplicit;
             else return owns;
         }
 
-        void put(Transitivity transitivity, NavigableSet<Owns> value) {
+        void putOwns(Transitivity transitivity, NavigableSet<Owns> value) {
             if (transitivity == EXPLICIT) ownsExplicit = value;
             else owns = value;
+        }
+
+        public Set<AttributeType> getOwnedAttributes(Transitivity transitivity) {
+            if (transitivity == EXPLICIT) return ownedAttributesExplicit;
+            else return ownedAttributes;
+        }
+
+        public void putOwnedAttributes(Transitivity transitivity, Set<AttributeType> attributes) {
+            if (transitivity == EXPLICIT) ownedAttributesExplicit = attributes;
+            else ownedAttributes = attributes;
         }
     }
 
@@ -240,7 +254,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
         if (transitivity == EXPLICIT) instances = graphMgr().data().getReadable(vertex, ASC);
         else {
             instances = getSubtypes().filter(t -> !t.isAbstract())
-                .mergeMapForwardable(t -> graphMgr().data().getReadable(t.vertex, ASC), ASC);
+                    .mergeMapForwardable(t -> graphMgr().data().getReadable(t.vertex, ASC), ASC);
         }
         return instances.mapSorted(thingConstructor, ThingImpl::readableVertex, ASC);
     }
@@ -310,8 +324,8 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     @Override
     public NavigableSet<Owns> getOwns(Transitivity transitivity) {
         if (cache != null) {
-            if (cache.get(transitivity) == null) cache.put(transitivity, fetchOwns(transitivity));
-            return cache.get(transitivity);
+            if (cache.getOwns(transitivity) == null) cache.putOwns(transitivity, fetchOwns(transitivity));
+            return cache.getOwns(transitivity);
         } else return fetchOwns(transitivity);
     }
 
@@ -372,6 +386,18 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     }
 
     @Override
+    public Set<AttributeType> getOwnedAttributes(Transitivity transitivity) {
+        if (cache != null) {
+            if (cache.getOwnedAttributes(transitivity) == null) {
+                cache.putOwnedAttributes(transitivity, iterate(getOwns(transitivity)).map(Owns::attributeType).toSet());
+            }
+            return cache.getOwnedAttributes(transitivity);
+        } else {
+            return iterate(getOwns(transitivity)).map(Owns::attributeType).toSet();
+        }
+    }
+
+    @Override
     public void setPlays(RoleType roleType) {
         validateIsNotDeleted();
         if (roleType.isRoot()) {
@@ -416,7 +442,7 @@ public abstract class ThingTypeImpl extends TypeImpl implements ThingType {
     public boolean plays(RoleType roleType) {
         if (isRoot()) return false;
         assert getSupertype() != null;
-        return graphMgr().schema().playedRoleTypes(vertex).contains(((RoleTypeImpl)roleType).vertex);
+        return graphMgr().schema().playedRoleTypes(vertex).contains(((RoleTypeImpl) roleType).vertex);
     }
 
     @Override

@@ -318,13 +318,15 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Projection PROJECTION_VARIABLE_UNBOUND =
                 new Projection(2, "Projection variable '%s' is not bound in the preceding match clause.");
         public static final Projection VARIABLE_PROJECTION_CONCEPT_NOT_READABLE =
-                new Projection(3, "The variable projection '%s' cannot be used to fetch entity or relation instances, these must be mapped to attributes.");
+                new Projection(3, "The variable projection '%s' cannot be used to fetch entity or relation instances. Entities and relations must be mapped to attributes.");
         public static final Projection ILLEGAL_ATTRIBUTE_PROJECTION_TYPE_VARIABLE =
                 new Projection(4, "Illegal attribute projection from type variable '%s'.");
-        public static final Projection ILLEGAL_ATTRIBUTE_PROJECTION_ATTRIBUTE_TYPE =
+        public static final Projection ILLEGAL_ATTRIBUTE_PROJECTION_ATTRIBUTE_TYPE_INVALID =
                 new Projection(5, "Attribute projection from '%s' maps to an invalid attribute type '%s'.");
+        public static final Projection ILLEGAL_ATTRIBUTE_PROJECTION_TYPES_NOT_OWNED =
+                new Projection(6, "Projection from '%s' to attribute type '%s' is illegal, since '%s' could be of type '%s' which does not own the attribute type or any of its subtypes. Constrain the 'match' clause such that all types can own the attribute type or its subtypes.");
         public static final Projection SUBQUERY_UNBOUNDED =
-                new Projection(6, "Subquery labeled '%s' is not bounded by any parent match clause.");
+                new Projection(7, "Subquery labeled '%s' is not bounded by any parent match clause.");
 
 
         private static final String codePrefix = "PRO";

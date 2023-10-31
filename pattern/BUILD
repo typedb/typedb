@@ -33,8 +33,8 @@ package(
 
 native_java_libraries(
     name = "pattern",
-    srcs = glob(
-        ["*.java",
+    srcs = glob([
+        "*.java",
         "constraint/*.java",
         "constraint/common/*.java",
         "constraint/thing/*.java",
@@ -42,9 +42,7 @@ native_java_libraries(
         "constraint/value/*.java",
         "variable/*.java",
         "equivalence/*.java",
-        ],
-        exclude = ["*Test.java", "*/*Test.java"],
-    ),
+    ], exclude = ["*Test.java", "*/*Test.java"],),
     deps = [
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
