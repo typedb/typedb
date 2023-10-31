@@ -226,11 +226,9 @@ public class ResponseBuilder {
         }
 
         public static TransactionProto.Transaction.Res getAggregateRes(UUID reqID, Optional<com.vaticle.typedb.core.concept.value.Value<?>> answer) {
-            return queryMgrRes(reqID, QueryProto.QueryManager.Res.newBuilder().setGetAggregateRes(
-                    QueryProto.QueryManager.GetAggregate.Res.newBuilder().setAnswer(
-                            answer.map(Value::protoValue).orElse(null)
-                    )
-            ));
+            QueryProto.QueryManager.GetAggregate.Res.Builder response = QueryProto.QueryManager.GetAggregate.Res.newBuilder();
+            answer.ifPresent(value -> response.setAnswer(Value.protoValue(value)));
+            return queryMgrRes(reqID, QueryProto.QueryManager.Res.newBuilder().setGetAggregateRes(response));
         }
 
         public static TransactionProto.Transaction.ResPart getGroupResPart(UUID reqID, List<ConceptMapGroup> answers) {
@@ -429,7 +427,7 @@ public class ResponseBuilder {
     public static class Type {
 
         public static ConceptProto.ThingType protoThingType(com.vaticle.typedb.core.concept.type.ThingType type) {
-            var builder = ConceptProto.ThingType.newBuilder();
+            ConceptProto.ThingType.Builder builder = ConceptProto.ThingType.newBuilder();
             if (type.isEntityType()) builder.setEntityType(protoEntityType(type.asEntityType()));
             else if (type.isRelationType()) builder.setRelationType(protoRelationType(type.asRelationType()));
             else if (type.isAttributeType()) builder.setAttributeType(protoAttributeType(type.asAttributeType()));
@@ -1128,10 +1126,9 @@ public class ResponseBuilder {
         }
 
         public static AnswerProto.ValueGroup valueGroup(ValueGroup answer) {
-            return AnswerProto.ValueGroup.newBuilder()
-                    .setOwner(Concept.protoConcept(answer.owner()))
-                    .setValue(answer.value().isPresent() ? Value.protoValue(answer.value().get()) : null)
-                    .build();
+            AnswerProto.ValueGroup.Builder response = AnswerProto.ValueGroup.newBuilder().setOwner(Concept.protoConcept(answer.owner()));
+            answer.value().ifPresent(value -> response.setValue(Value.protoValue(value)));
+            return response.build();
         }
 
         public static AnswerProto.ReadableConceptTree readableConceptTree(ReadableConceptTree answer) {
