@@ -299,7 +299,7 @@ docker_container_image(
     base = "@vaticle_ubuntu_image//image",
     tars = [":assemble-linux-x86_64-targz"],
     directory = "opt",
-    workdir = "/opt/typedb-all-linux",
+    workdir = "/opt/typedb-all-linux-x86_64",
     ports = ["1729"],
     env = {
         "LANG": "C.UTF-8",
