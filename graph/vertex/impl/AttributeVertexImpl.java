@@ -589,6 +589,16 @@ public abstract class AttributeVertexImpl {
         }
 
         @Override
+        public ThingAdjacency.In ins() {
+            return attributeVertex.ins();
+        }
+
+        @Override
+        public ThingAdjacency.Out outs() {
+            return attributeVertex.outs();
+        }
+
+        @Override
         public int compareTo(Vertex<?, ?> other) {
             if (other.isThing() && other.asThing().isAttribute() && other.asThing().asAttribute().isValueSortable()) {
                 ValueSortable<?> asValueSortable = other.asThing().asAttribute().asValueSortable();

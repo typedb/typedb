@@ -167,7 +167,7 @@ public class TypeQLSteps {
     }
 
     @When("get answers of typeql get")
-    public void typeql_match(String typeQLQueryStatements) {
+    public void typeql_get(String typeQLQueryStatements) {
         try {
             TypeQLGet typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGet();
             clearAnswers();
@@ -205,17 +205,17 @@ public class TypeQLSteps {
     }
 
     @When("typeql get; throws exception")
-    public void typeql_match_throws_exception(String typeQLQueryStatements) {
-        assertThrows(() -> typeql_match(typeQLQueryStatements));
+    public void typeql_get_throws_exception(String typeQLQueryStatements) {
+        assertThrows(() -> typeql_get(typeQLQueryStatements));
     }
 
     @When("typeql get; throws exception containing {string}")
-    public void typeql_match_throws_exception(String exception, String typeQLQueryStatements) {
-        assertThrowsWithMessage(() -> typeql_match(typeQLQueryStatements), exception);
+    public void typeql_get_throws_exception(String exception, String typeQLQueryStatements) {
+        assertThrowsWithMessage(() -> typeql_get(typeQLQueryStatements), exception);
     }
 
     @When("get answer of typeql get aggregate")
-    public void typeql_match_aggregate(String typeQLQueryStatements) {
+    public void typeql_get_aggregate(String typeQLQueryStatements) {
         TypeQLGet.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGetAggregate();
         clearAnswers();
         aggregateAnswer = tx().query().get(typeQLQuery);
@@ -223,12 +223,12 @@ public class TypeQLSteps {
     }
 
     @When("typeql get aggregate; throws exception")
-    public void typeql_match_aggregate_throws_exception(String typeQLQueryStatements) {
-        assertThrows(() -> typeql_match_aggregate(typeQLQueryStatements));
+    public void typeql_get_aggregate_throws_exception(String typeQLQueryStatements) {
+        assertThrows(() -> typeql_get_aggregate(typeQLQueryStatements));
     }
 
     @When("get answers of typeql get group")
-    public void typeql_match_group(String typeQLQueryStatements) {
+    public void typeql_get_group(String typeQLQueryStatements) {
         TypeQLGet.Group typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGetGroup();
         clearAnswers();
         groupAnswers = tx().query().get(typeQLQuery).toList();
@@ -236,12 +236,12 @@ public class TypeQLSteps {
     }
 
     @When("typeql get group; throws exception")
-    public void typeql_match_group_throws_exception(String typeQLQueryStatements) {
-        assertThrows(() -> typeql_match_group(typeQLQueryStatements));
+    public void typeql_get_group_throws_exception(String typeQLQueryStatements) {
+        assertThrows(() -> typeql_get_group(typeQLQueryStatements));
     }
 
     @When("get answers of typeql get group aggregate")
-    public void typeql_match_group_aggregate(String typeQLQueryStatements) {
+    public void typeql_get_group_aggregate(String typeQLQueryStatements) {
         TypeQLGet.Group.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGetGroupAggregate();
         clearAnswers();
         groupAggregateAnswers = tx().query().get(typeQLQuery).toList();
@@ -605,7 +605,7 @@ public class TypeQLSteps {
     }
 
     @Then("templated typeql get; throws exception")
-    public void templated_typeql_match_throws_exception(String templatedTypeQLQuery) {
+    public void templated_typeql_get_throws_exception(String templatedTypeQLQuery) {
         String templatedQuery = String.join("\n", templatedTypeQLQuery);
         for (ConceptMap answer : getAnswers) {
             String queryString = applyQueryTemplate(templatedQuery, answer);
