@@ -267,7 +267,7 @@ assemble_apt(
     description = "TypeDB (all)",
     # typedb-server and typedb-console have arm/intel releases. Apt will find one matching installer's platform
     depends = [
-        "openjdk-11-jre",
+        "default-jre",
         "typedb-server (=%{version})",
         # Note: arbitrarily pick version from the x86_64 console artifact
         "typedb-console (=%{@vaticle_typedb_console_artifact_linux-x86_64})",
