@@ -348,7 +348,6 @@ checkstyle_test(
         ".bazel-cache-credential.json",
         "LICENSE",
         "VERSION",
-        "typedb.iml",  # TODO remove when checkstyle_test has .gitignore support
     ],
     license_type = "agpl-header",
 )
