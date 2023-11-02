@@ -33,7 +33,7 @@ import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
 public class ExpressionFactory {
 
-    public static Expression<?> constant(com.vaticle.typeql.lang.pattern.variable.builder.Expression.Constant<?> constant) {
+    public static Expression<?> constant(com.vaticle.typeql.lang.pattern.expression.Expression.Constant<?> constant) {
         if (constant.isBoolean()) return new ExpressionImpl.Constant.Boolean(constant.asBoolean().value());
         else if (constant.isLong()) return new ExpressionImpl.Constant.Long(constant.asLong().value());
         else if (constant.isDouble()) return new ExpressionImpl.Constant.Double(constant.asDouble().value());

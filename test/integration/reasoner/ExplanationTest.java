@@ -112,7 +112,7 @@ public class ExplanationTest {
                 logicMgr.putRule(
                         "marriage-is-friendship",
                         TypeQL.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
-                        TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                        TypeQL.parseStatement("(friend: $x, friend: $y) isa friendship").asThing());
                 txn.commit();
             }
         }
@@ -122,9 +122,9 @@ public class ExplanationTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery(
-                        "match $p1 isa person; { (friend: $p1, friend: $p2) isa friendship;} or { $p1 has name 'Zack'; }; "
-                ).asMatch()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery(
+                        "match $p1 isa person; { (friend: $p1, friend: $p2) isa friendship;} or { $p1 has name 'Zack'; }; get; "
+                ).asGet()).toList();
                 assertEquals(3, ans.size());
 
                 ConceptMap withExplainable;
@@ -175,7 +175,7 @@ public class ExplanationTest {
                 logicMgr.putRule(
                         "marriage-is-friendship",
                         TypeQL.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
-                        TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                        TypeQL.parseStatement("(friend: $x, friend: $y) isa friendship").asThing());
                 txn.commit();
             }
         }
@@ -185,7 +185,7 @@ public class ExplanationTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na; get;").asGet()).toList();
                 assertEquals(2, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());
@@ -218,11 +218,11 @@ public class ExplanationTest {
                 logicMgr.putRule(
                         "marriage-is-friendship",
                         TypeQL.parsePattern("{ $x isa person; $y isa person; (husband: $x, wife: $y) isa marriage; }").asConjunction(),
-                        TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                        TypeQL.parseStatement("(friend: $x, friend: $y) isa friendship").asThing());
                 logicMgr.putRule(
                         "everyone-is-friends",
                         TypeQL.parsePattern("{ $x isa person; $y isa person; not { $x is $y; }; }").asConjunction(),
-                        TypeQL.parseVariable("(friend: $x, friend: $y) isa friendship").asThing());
+                        TypeQL.parseStatement("(friend: $x, friend: $y) isa friendship").asThing());
                 txn.commit();
             }
         }
@@ -232,7 +232,7 @@ public class ExplanationTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na;").asMatch()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match (friend: $p1, friend: $p2) isa friendship; $p1 has name $na; get;").asGet()).toList();
                 assertEquals(2, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());
@@ -259,11 +259,11 @@ public class ExplanationTest {
                 logicMgr.putRule(
                         "old-milk-is-not-good",
                         TypeQL.parsePattern("{ $x isa milk, has age-in-days <= 10; }").asConjunction(),
-                        TypeQL.parseVariable("$x has is-still-good true").asThing());
+                        TypeQL.parseStatement("$x has is-still-good true").asThing());
                 logicMgr.putRule(
                         "all-milk-is-good",
                         TypeQL.parsePattern("{ $x isa milk; }").asConjunction(),
-                        TypeQL.parseVariable("$x has is-still-good true").asThing());
+                        TypeQL.parseStatement("$x has is-still-good true").asThing());
                 txn.commit();
             }
         }
@@ -276,7 +276,7 @@ public class ExplanationTest {
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x has is-still-good $a;").asMatch()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x has is-still-good $a; get;").asGet()).toList();
                 assertEquals(3, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());
@@ -305,27 +305,27 @@ public class ExplanationTest {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 LogicManager logicMgr = txn.logic();
                 txn.query().define(TypeQL.parseQuery("define " +
-                                                             "user sub entity, " +
-                                                             "  plays group-membership:member, " +
-                                                             "  owns permission; " +
-                                                             "user-group sub entity," +
-                                                             "  plays group-membership:user-group," +
-                                                             "  owns permission," +
-                                                             "  owns name; " +
-                                                             "group-membership sub relation," +
-                                                             "  relates member," +
-                                                             "  relates user-group; " +
-                                                             "permission sub attribute, value string;" +
-                                                             "name sub attribute, value string;"
+                        "user sub entity, " +
+                        "  plays group-membership:member, " +
+                        "  owns permission; " +
+                        "user-group sub entity," +
+                        "  plays group-membership:user-group," +
+                        "  owns permission," +
+                        "  owns name; " +
+                        "group-membership sub relation," +
+                        "  relates member," +
+                        "  relates user-group; " +
+                        "permission sub attribute, value string;" +
+                        "name sub attribute, value string;"
                 ).asDefine());
                 logicMgr.putRule(
                         "admin-group-gives-permissions",
                         TypeQL.parsePattern("{ $x isa user; ($x, $g) isa group-membership; $g isa user-group, has name \"admin\", has permission $p; }").asConjunction(),
-                        TypeQL.parseVariable("$x has $p").asThing());
+                        TypeQL.parseStatement("$x has $p").asThing());
                 logicMgr.putRule(
                         "writer-group-gives-permissions",
                         TypeQL.parsePattern("{ $x isa user; ($x, $g) isa group-membership; $g isa user-group, has name \"write\", has permission $p; }").asConjunction(),
-                        TypeQL.parseVariable("$x has $p").asThing());
+                        TypeQL.parseStatement("$x has $p").asThing());
                 txn.commit();
             }
         }
@@ -333,16 +333,16 @@ public class ExplanationTest {
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert " +
-                                                             "$x isa user; " +
-                                                             "$wg isa user-group, has name \"write\", has permission \"write\";" +
-                                                             "(member: $x, user-group: $wg) isa group-membership;" +
-                                                             "$admin isa user-group, has name \"admin\", has permission \"write\", has permission \"delete\";" +
-                                                             "(member: $x, user-group: $admin) isa group-membership;"
+                        "$x isa user; " +
+                        "$wg isa user-group, has name \"write\", has permission \"write\";" +
+                        "(member: $x, user-group: $wg) isa group-membership;" +
+                        "$admin isa user-group, has name \"admin\", has permission \"write\", has permission \"delete\";" +
+                        "(member: $x, user-group: $admin) isa group-membership;"
                 ).asInsert());
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $x isa user, has permission \"write\";").asMatch()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $x isa user, has permission \"write\"; get;").asGet()).toList();
                 assertEquals(1, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());
@@ -357,18 +357,18 @@ public class ExplanationTest {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 LogicManager logicMgr = txn.logic();
                 txn.query().define(TypeQL.parseQuery("define " +
-                                                             "location sub entity, " +
-                                                             "  plays location-hierarchy:superior, " +
-                                                             "  plays location-hierarchy:subordinate; " +
-                                                             "location-hierarchy sub relation," +
-                                                             "  relates superior," +
-                                                             "  relates subordinate;"
+                        "location sub entity, " +
+                        "  plays location-hierarchy:superior, " +
+                        "  plays location-hierarchy:subordinate; " +
+                        "location-hierarchy sub relation," +
+                        "  relates superior," +
+                        "  relates subordinate;"
                 ).asDefine());
                 logicMgr.putRule(
                         "transitive-location",
                         TypeQL.parsePattern("{ (subordinate: $x, superior: $y) isa location-hierarchy;" +
-                                                    "(subordinate: $y, superior: $z) isa location-hierarchy; }").asConjunction(),
-                        TypeQL.parseVariable("(subordinate: $x, superior: $z) isa location-hierarchy").asThing());
+                                "(subordinate: $y, superior: $z) isa location-hierarchy; }").asConjunction(),
+                        TypeQL.parseStatement("(subordinate: $x, superior: $z) isa location-hierarchy").asThing());
                 txn.commit();
             }
         }
@@ -376,18 +376,18 @@ public class ExplanationTest {
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert " +
-                                                             "(subordinate: $a, superior: $b) isa location-hierarchy; " +
-                                                             "(subordinate: $b, superior: $c) isa location-hierarchy; " +
-                                                             "(subordinate: $c, superior: $d) isa location-hierarchy; " +
-                                                             "(subordinate: $d, superior: $e) isa location-hierarchy; " +
-                                                             "$a isa location; $b isa location; $c isa location;" +
-                                                             "$d isa location; $e isa location;"
+                        "(subordinate: $a, superior: $b) isa location-hierarchy; " +
+                        "(subordinate: $b, superior: $c) isa location-hierarchy; " +
+                        "(subordinate: $c, superior: $d) isa location-hierarchy; " +
+                        "(subordinate: $d, superior: $e) isa location-hierarchy; " +
+                        "$a isa location; $b isa location; $c isa location;" +
+                        "$d isa location; $e isa location;"
 
                 ).asInsert());
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match $r isa location-hierarchy;").asMatch()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match $r isa location-hierarchy; get;").asGet()).toList();
                 assertEquals(10, ans.size());
 
                 List<? extends ConceptMap> explainableMaps = iterate(ans).filter(answer -> !answer.explainables().isEmpty()).toList();
@@ -450,12 +450,12 @@ public class ExplanationTest {
                 logicMgr.putRule(
                         "wedding-implies-marriage",
                         TypeQL.parsePattern("{ $x isa person, has gender \"male\"; $y isa person, has gender \"female\"; " +
-                                                    "$l isa city; (male: $x, female: $y, location: $l) isa wedding; }").asConjunction(),
-                        TypeQL.parseVariable("(husband: $x, wife: $y) isa marriage").asThing());
+                                "$l isa city; (male: $x, female: $y, location: $l) isa wedding; }").asConjunction(),
+                        TypeQL.parseStatement("(husband: $x, wife: $y) isa marriage").asThing());
                 logicMgr.putRule(
                         "marriage-is-friendship",
                         TypeQL.parsePattern("{ $a isa person; $b isa person; (husband: $a, wife: $b) isa marriage; }").asConjunction(),
-                        TypeQL.parseVariable("(friend: $a, friend: $b) isa friendship").asThing());
+                        TypeQL.parseStatement("(friend: $a, friend: $b) isa friendship").asThing());
                 txn.commit();
             }
         }
@@ -463,15 +463,15 @@ public class ExplanationTest {
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.WRITE)) {
                 txn.query().insert(TypeQL.parseQuery("insert " +
-                                                             "(male: $x, female: $y, location: $l) isa wedding;" +
-                                                             "$x isa person, has gender \"male\";" +
-                                                             "$y isa person, has gender \"female\";" +
-                                                             "$l isa city;"
+                        "(male: $x, female: $y, location: $l) isa wedding;" +
+                        "$x isa person, has gender \"male\";" +
+                        "$y isa person, has gender \"female\";" +
+                        "$l isa city;"
                 ).asInsert());
                 txn.commit();
             }
             try (CoreTransaction txn = singleThreadElgTransaction(session, Arguments.Transaction.Type.READ, (new Options.Transaction().explain(true)))) {
-                List<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery("match ($x) isa friendship;").asMatch()).toList();
+                List<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery("match ($x) isa friendship; get;").asGet()).toList();
                 assertEquals(2, ans.size());
 
                 assertFalse(ans.get(0).explainables().isEmpty());

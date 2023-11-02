@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.test.integration;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
-import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -105,8 +104,8 @@ public class StringAttributeTest {
                         // TODO escaping this doesn't work in TypeQL parser? It needs to remove the backslashes from parsed queries
                         // String escaped = generated.replace("\\", "\\\\").replace("\"", "\\\"");
                         if (!(generated.contains("\\") || generated.contains("\""))) {
-                            Optional<? extends ConceptMap> ans = txn.query().match(TypeQL.parseQuery(
-                                    "match $a \"" + generated + "\" isa string-value;").asMatch()).first();
+                            Optional<? extends ConceptMap> ans = txn.query().get(TypeQL.parseQuery(
+                                    "match $a \"" + generated + "\" isa string-value; get;").asGet()).first();
                             assertTrue(ans.isPresent());
                             assertEquals(generated, ans.get().getConcept("a").asAttribute().asString().getValue());
                         }

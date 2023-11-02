@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.query;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.AttributeType.ValueType;
@@ -43,7 +44,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
@@ -53,6 +53,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.IN
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.OVERRIDDEN_PLAYED_ROLE_TYPE_NOT_SUPERTYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ROLE_DEFINED_OUTSIDE_OF_RELATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.TYPE_CONSTRAINT_UNACCEPTED;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
 import static com.vaticle.typeql.lang.common.TypeQLToken.Constraint.IS;
 
 public class Definer {
@@ -76,7 +77,7 @@ public class Definer {
 
     public static Definer create(ConceptManager conceptMgr, LogicManager logicMgr,
                                  TypeQLDefine query, Context.Query context) {
-        Set<TypeVariable> types = VariableRegistry.createFromTypes(query.variables()).types();
+        Set<TypeVariable> types = VariableRegistry.createFromTypes(query.statements()).types();
         return new Definer(conceptMgr, logicMgr, types, query.rules(), context);
     }
 
@@ -149,22 +150,6 @@ public class Definer {
         else return null;
     }
 
-    private RoleType getRoleType(LabelConstraint label) {
-        // We always assume that Role Types already exist,
-        // defined by their Relation Types ahead of time
-        assert label.scope().isPresent();
-        ThingType thingType;
-        RoleType roleType;
-        if ((thingType = conceptMgr.getThingType(label.scope().get())) == null) {
-            throw TypeDBException.of(TYPE_NOT_FOUND, label.scope().get());
-        } else if (!thingType.isRelationType()) {
-            throw TypeDBException.of(ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE, label.scopedLabel(), label.scope().get());
-        } else if ((roleType = thingType.asRelationType().getRelates(label.label())) == null) {
-            throw TypeDBException.of(TYPE_NOT_FOUND, label.scopedLabel());
-        }
-        return roleType;
-    }
-
     private ThingType defineSub(ThingType thingType, SubConstraint subConstraint, TypeVariable var) {
         LabelConstraint labelConstraint = var.label().get();
         ThingType supertype = define(subConstraint.type()).asThingType();
@@ -228,6 +213,7 @@ public class Definer {
         playsConstraints.forEach(plays -> {
             define(plays.relation().get());
             LabelConstraint roleTypeLabel = plays.role().label().get();
+            conceptMgr.validateNotRoleTypeAlias(roleTypeLabel.properLabel());
             RoleType roleType = getRoleType(roleTypeLabel).asRoleType();
             if (plays.overridden().isPresent()) {
                 String overriddenLabelName = plays.overridden().get().label().get().properLabel().name();
@@ -238,6 +224,10 @@ public class Definer {
                         thingType.getLabel(), roleTypeLabel.scopedLabel(), overriddenLabelName);
             } else thingType.setPlays(roleType);
         });
+    }
+
+    private RoleType getRoleType(LabelConstraint label) {
+        return conceptMgr.getRelationType(label.scope().get()).getRelates(EXPLICIT, label.label());
     }
 
     private void define(com.vaticle.typeql.lang.pattern.schema.Rule rule) {

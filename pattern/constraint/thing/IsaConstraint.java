@@ -51,7 +51,7 @@ public class IsaConstraint extends ThingConstraint implements AlphaEquivalent<Is
 
     public static IsaConstraint of(ThingVariable owner, com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.Isa constraint,
                                    VariableRegistry registry) {
-        return new IsaConstraint(owner, registry.register(constraint.type()), constraint.isExplicit());
+        return new IsaConstraint(owner, registry.registerTypeVariable(constraint.type()), constraint.isExplicit());
     }
 
     public static IsaConstraint of(ThingVariable owner, IsaConstraint clone, VariableCloner cloner) {

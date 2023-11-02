@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.pattern;
 
+import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
+import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
@@ -39,15 +41,16 @@ public class Disjunction implements Pattern, Cloneable {
 
     private final List<Conjunction> conjunctions;
     private final int hash;
-    private final Set<Identifier.Variable.Retrievable> sharedVariables;
+    private final Set<Identifier.Variable.Name> sharedVariables;
 
     public Disjunction(List<Conjunction> conjunctions) {
         this.conjunctions = conjunctions;
         this.hash = Objects.hash(conjunctions);
         this.sharedVariables = iterate(conjunctions)
                 .flatMap(conjunction -> iterate(conjunction.retrieves()))
-                .filter(id -> iterate(conjunctions).allMatch(conjunction -> conjunction.retrieves().contains(id)))
-                .toSet();
+                .filter(id -> id.isName() && iterate(conjunctions).allMatch(conjunction -> conjunction.retrieves().contains(id)))
+                .map(Identifier.Variable::asName).toSet();
+        // TODO: we should validate that named vars are not assigned to clashing thing/type/value classes (in TypeQL?)
     }
 
     public static Disjunction create(
@@ -71,8 +74,12 @@ public class Disjunction implements Pattern, Cloneable {
         return iterate(conjunctions).allMatch(Conjunction::isCoherent);
     }
 
-    public Set<Identifier.Variable.Retrievable> sharedVariables() {
+    public Set<Identifier.Variable.Name> sharedVariables() {
         return sharedVariables;
+    }
+
+    public FunctionalIterator<Label> getTypes(Identifier.Variable.Name id) {
+        return iterate(conjunctions).flatMap(conjunction -> iterate(conjunction.variable(id).inferredTypes()));
     }
 
     @Override

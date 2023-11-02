@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.concept.Concept;
 
 import java.util.List;
 
-public interface Type extends Concept, Comparable<Type> {
+public interface Type extends Concept, Concept.Readable, Comparable<Type> {
 
     long getInstancesCount();
 

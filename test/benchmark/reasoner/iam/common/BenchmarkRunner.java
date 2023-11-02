@@ -117,13 +117,13 @@ public class BenchmarkRunner {
             }
         }
         // A dummy reasoning query
-        for (int i = 0; i < 1; i++) runMatchQuery("match $wr isa warm-up-relation, has warm-up-attribute $wa;");
+        for (int i = 0; i < 1; i++) runGetQuery("match $wr isa warm-up-relation, has warm-up-attribute $wa; get;");
         // Warm up all persisted data
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ)) {
-                tx.query().match(TypeQL.parseQuery("match $x isa thing;").asMatch()).count();
-                tx.query().match(TypeQL.parseQuery("match $r ($x) isa relation;").asMatch()).count();
-                tx.query().match(TypeQL.parseQuery("match $x has $a;").asMatch()).count();
+                tx.query().get(TypeQL.parseQuery("match $x isa thing; get;").asGet()).count();
+                tx.query().get(TypeQL.parseQuery("match $r ($x) isa relation; get;").asGet()).count();
+                tx.query().get(TypeQL.parseQuery("match $x has $a; get;").asGet()).count();
             }
         }
 
@@ -133,24 +133,24 @@ public class BenchmarkRunner {
     public void runBenchmark(Benchmark benchmark) {
         if (warmupRunForEachQuery) {
             LOG.info("Doing warmup query...");
-            Benchmark.BenchmarkRun warmupRun = runMatchQuery(benchmark.query);
+            Benchmark.BenchmarkRun warmupRun = runGetQuery(benchmark.query);
             LOG.info("Warmup query took {} ms", warmupRun.timeTaken.toMillis());
         }
 
         for (int i = 0; i < benchmark.nRuns; i++) {
-            Benchmark.BenchmarkRun run = runMatchQuery(benchmark.query);
+            Benchmark.BenchmarkRun run = runGetQuery(benchmark.query);
             benchmark.addRun(run);
             LOG.info("Completed run in {} ms; Summary:\n{}", run.timeTaken.toMillis(), run);
         }
         if (csvBuilder != null) csvBuilder.append(benchmark);
     }
 
-    private Benchmark.BenchmarkRun runMatchQuery(String query) {
+    private Benchmark.BenchmarkRun runGetQuery(String query) {
         Benchmark.BenchmarkRun run;
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true).reasonerPerfCounters(true))) {
                 Instant start = Instant.now();
-                long nAnswers = tx.query().match(TypeQL.parseQuery(query).asMatch()).count();
+                long nAnswers = tx.query().get(TypeQL.parseQuery(query).asGet()).count();
                 Duration timeTaken = Duration.between(start, Instant.now());
                 run = new Benchmark.BenchmarkRun(nAnswers, timeTaken, ((CoreTransaction) tx).reasoner().controllerRegistry().perfCounters());
             }

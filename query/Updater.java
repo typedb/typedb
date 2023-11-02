@@ -26,7 +26,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.reasoner.Reasoner;
-import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
 import com.vaticle.typeql.lang.query.TypeQLUpdate;
 
 import java.util.HashSet;
@@ -44,15 +44,15 @@ import static com.vaticle.typedb.core.query.QueryManager.PARALLELISATION_SPLIT_M
 
 public class Updater {
 
-    private final Matcher matcher;
+    private final Getter getter;
     private final ConceptManager conceptMgr;
     private final Set<ThingVariable> deleteVariables;
     private final Set<ThingVariable> insertVariables;
     private final Context.Query context;
 
-    public Updater(Matcher matcher, ConceptManager conceptMgr, Set<ThingVariable> deleteVariables,
+    public Updater(Getter getter, ConceptManager conceptMgr, Set<ThingVariable> deleteVariables,
                    Set<ThingVariable> insertVariables, Context.Query context) {
-        this.matcher = matcher;
+        this.getter = getter;
         this.conceptMgr = conceptMgr;
         this.deleteVariables = deleteVariables;
         this.insertVariables = insertVariables;
@@ -60,18 +60,21 @@ public class Updater {
     }
 
     public static Updater create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLUpdate query, Context.Query context) {
-        VariableRegistry deleteRegistry = VariableRegistry.createFromThings(query.deleteVariables(), false);
+        VariableRegistry deleteRegistry = VariableRegistry.createFromThings(query.deleteStatements(), false);
         deleteRegistry.variables().forEach(Deleter::validate);
 
-        assert query.match().namedVariablesUnbound().containsAll(query.namedDeleteVariablesUnbound());
-        Set<UnboundVariable> filter = new HashSet<>(query.match().namedVariablesUnbound());
-        filter.retainAll(query.namedInsertVariablesUnbound());
-        filter.addAll(query.namedDeleteVariablesUnbound());
-        Matcher matcher = Matcher.create(reasoner, query.match().get(list(filter)));
+        assert query.match().get().namedVariables().containsAll(query.namedDeleteVariables());
+        Set<TypeQLVariable> filter = new HashSet<>(query.match().get().namedVariables());
+        filter.retainAll(query.namedInsertVariables());
+        filter.addAll(query.namedDeleteVariables());
+        if (query.modifiers().sort().isPresent()) {
+                filter.addAll(query.modifiers().sort().get().variables());
+            }
+            Getter getter = Getter.create(reasoner, conceptMgr, query.match().get().get(list(filter)).modifiers(query.modifiers()));
 
-        VariableRegistry insertRegistry = VariableRegistry.createFromThings(query.insertVariables());
-        insertRegistry.variables().forEach(var -> Inserter.validate(var, matcher));
-        return new Updater(matcher, conceptMgr, deleteRegistry.things(), insertRegistry.things(), context);
+        VariableRegistry insertRegistry = VariableRegistry.createFromThings(query.insertStatements());
+        insertRegistry.variables().forEach(var -> Inserter.validate(var, getter));
+        return new Updater(getter, conceptMgr, deleteRegistry.things(), insertRegistry.things(), context);
     }
 
     public FunctionalIterator<ConceptMap> execute() {
@@ -79,7 +82,7 @@ public class Updater {
     }
 
     private FunctionalIterator<ConceptMap> executeParallel() {
-        List<? extends List<? extends ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+        List<? extends List<? extends ConceptMap>> lists = getter.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         List<ConceptMap> updates;
         if (lists.size() == 1) updates = iterate(lists.get(0)).map(this::executeUpdate).toList();
@@ -90,7 +93,7 @@ public class Updater {
     }
 
     private FunctionalIterator<ConceptMap> executeSerial() {
-        List<? extends ConceptMap> matches = matcher.execute(context).onError(conceptMgr::exception).toList();
+        List<? extends ConceptMap> matches = getter.execute(context).onError(conceptMgr::exception).toList();
         List<ConceptMap> answers = iterate(matches).map(this::executeUpdate).toList();
         return iterate(answers);
     }

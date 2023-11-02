@@ -69,7 +69,8 @@ public class LanguageFeaturesTest {
                         "$f isa file, has $path; $path = \"%s\";\n" +
                         "$o isa operation, has $operation; $operation = \"%s\";\n" +
                         "$a (object: $f, action: $o) isa access;\n" +
-                        "$pe (subject: $p, access: $a) isa permission, has validity true;\n",
+                        "$pe (subject: $p, access: $a) isa permission, has validity true;\n" +
+                "get;",
                 queryParams.permissionEmail, queryParams.permissionObject, queryParams.permissionAction);
         Benchmark benchmark = new Benchmark("value-predicate-filtering", query, 1);
         benchmarker.runBenchmark(benchmark);
@@ -84,13 +85,14 @@ public class LanguageFeaturesTest {
         String query = String.format(
                 "match\n" +
                         "$p isa person, has email \"%s\";\n" +
-                        "(group: $g, member: $p) isa variabilised-group-membership;\n",
+                        "(group: $g, member: $p) isa variabilised-group-membership;\n" +
+                "get;",
                 queryParams.permissionEmail);
         Benchmark benchmark = new Benchmark("variabilised-rules", query, 3);
         benchmarker.runBenchmark(benchmark);
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(100);
-        benchmark.assertCounters(200, 9, 29, 101, 105);
+        benchmark.assertCounters(200, 9, 21, 129, 141);
     }
 }

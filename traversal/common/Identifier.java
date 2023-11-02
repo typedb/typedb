@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.traversal.common;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
+import com.vaticle.typeql.lang.common.Reference;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -149,8 +149,12 @@ public abstract class Identifier {
             return new Anonymous(reference, id);
         }
 
-        public static Label label(String label) {
-            return Variable.of(Reference.label(label));
+        public static Label label(String name) {
+            return Variable.of(Reference.label(name));
+        }
+
+        public static Label label(String name, String scope) {
+            return Variable.of(Reference.label(name, scope));
         }
 
         public static Anonymous anon(int id) {

@@ -22,7 +22,7 @@ import com.vaticle.typedb.core.encoding.Encoding;
 import com.vaticle.typedb.core.encoding.iid.StructureIID;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
-import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
+import com.vaticle.typeql.lang.pattern.statement.ThingStatement;
 
 public interface RuleStructure {
 
@@ -46,7 +46,7 @@ public interface RuleStructure {
 
     Conjunction<? extends Pattern> when();
 
-    ThingVariable<?> then();
+    ThingStatement<?> then();
 
     /**
      * Commits this {@code RuleStructure} to be persisted onto storage.

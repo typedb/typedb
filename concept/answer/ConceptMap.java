@@ -29,8 +29,8 @@ import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
-import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.common.Reference;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,9 +43,10 @@ import java.util.stream.Collectors;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.iterator.Iterators.link;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
 
-public class ConceptMap implements Answer {
+public class ConceptMap {
 
     private final Map<Retrievable, ? extends Concept> concepts;
     private final Explainables explainables;
@@ -63,6 +64,16 @@ public class ConceptMap implements Answer {
         this.concepts = concepts;
         this.explainables = explainables;
         this.hash = Objects.hash(this.concepts, this.explainables);
+    }
+
+    public ConceptMap merge(ConceptMap conceptMap) {
+        Map<Retrievable, Concept> mergedConcepts = new HashMap<>(this.concepts);
+        conceptMap.concepts.forEach((id, concept) -> {
+            Concept replaced = mergedConcepts.put(id, concept);
+            assert replaced == null || replaced.equals(concept);
+        });
+        Explainables mergedExplainables = explainables.merge(conceptMap.explainables);
+        return new ConceptMap(mergedConcepts, mergedExplainables);
     }
 
     public boolean contains(Reference.Name variable) {
@@ -89,7 +100,7 @@ public class ConceptMap implements Answer {
         return contains(Reference.Name.value(name));
     }
 
-    public Concept get(UnboundVariable variable) {
+    public Concept get(TypeQLVariable variable) {
         if (variable.isNamed()) return get(Identifier.Variable.of(variable.reference().asName()));
         else throw TypeDBException.of(ILLEGAL_STATE);
     }
@@ -126,7 +137,7 @@ public class ConceptMap implements Answer {
         return filter(filter.variables());
     }
 
-    public ConceptMap filter(Set<Identifier.Variable.Retrievable> filter) {
+    public ConceptMap filter(Set<? extends Identifier.Variable.Retrievable> filter) {
         return new ConceptMap(filteredMap(concepts, filter)); // TODO this should include explainables?
     }
 
@@ -186,7 +197,7 @@ public class ConceptMap implements Answer {
         }
 
         @Override
-        public Sortable filter(Set<Retrievable> filter) {
+        public Sortable filter(Set<? extends Retrievable> filter) {
             return new Sortable(filteredMap(concepts(), filter), conceptsComparator); // TODO this should include explainables?
         }
 
@@ -296,7 +307,7 @@ public class ConceptMap implements Answer {
         private final Map<Pair<Retrievable, Retrievable>, Explainable> explainableOwnerships;
 
         public Explainables() {
-            this(unmodifiableMap(new HashMap<>()), unmodifiableMap(new HashMap<>()), unmodifiableMap(new HashMap<>()));
+            this(emptyMap(), emptyMap(), emptyMap());
         }
 
         public Explainables(Map<Retrievable, Explainable> explainableRelations,
@@ -346,6 +357,7 @@ public class ConceptMap implements Answer {
         }
 
         public Explainables merge(Explainables explainables) {
+            if (isEmpty() && explainables.isEmpty()) return new Explainables();
             Map<Retrievable, Explainable> relations = new HashMap<>(this.explainableRelations);
             Map<Retrievable, Explainable> attributes = new HashMap<>(this.explainableAttributes);
             Map<Pair<Retrievable, Retrievable>, Explainable> ownerships = new HashMap<>((this.explainableOwnerships));

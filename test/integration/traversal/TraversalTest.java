@@ -42,7 +42,7 @@ import com.vaticle.typedb.core.traversal.procedure.GraphProcedure;
 import com.vaticle.typedb.core.traversal.procedure.ProcedureVertex;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.TypeQLToken;
-import com.vaticle.typeql.lang.pattern.variable.builder.Expression;
+import com.vaticle.typeql.lang.pattern.expression.Expression;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
 import org.junit.After;
@@ -110,8 +110,8 @@ public class TraversalTest {
             transaction.commit();
         }
         try (CoreTransaction transaction = session.transaction(READ)) {
-            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has age $a;")
-                    .asMatch().conjunction().normalise());
+            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has age $a; get;")
+                    .asGet().match().conjunction().normalise());
             transaction.logic().typeInference().applyCombination(disjunction);
             Identifier.Variable.Name var = Identifier.Variable.namedConcept("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
@@ -125,7 +125,6 @@ public class TraversalTest {
                 assertTrue(nextValue <= lastValue);
                 lastValue = nextValue;
             }
-
         }
     }
 
@@ -144,8 +143,8 @@ public class TraversalTest {
             transaction.commit();
         }
         try (CoreTransaction transaction = session.transaction(READ)) {
-            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has is-married $a;")
-                    .asMatch().conjunction().normalise());
+            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has is-married $a; get;")
+                    .asGet().match().conjunction().normalise());
             transaction.logic().typeInference().applyCombination(disjunction);
             Identifier.Variable.Name var = Identifier.Variable.namedConcept("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
@@ -173,8 +172,8 @@ public class TraversalTest {
             transaction.commit();
         }
         try (CoreTransaction transaction = session.transaction(READ)) {
-            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has money $a;")
-                    .asMatch().conjunction().normalise());
+            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has money $a; get;")
+                    .asGet().match().conjunction().normalise());
             transaction.logic().typeInference().applyCombination(disjunction);
             Identifier.Variable.Name var = Identifier.Variable.namedConcept("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));
@@ -211,8 +210,8 @@ public class TraversalTest {
             transaction.commit();
         }
         try (CoreTransaction transaction = session.transaction(READ)) {
-            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has birth-date $a;")
-                    .asMatch().conjunction().normalise());
+            Disjunction disjunction = Disjunction.create(TypeQL.parseQuery("match $x isa person, has birth-date $a; get;")
+                    .asGet().match().conjunction().normalise());
             transaction.logic().typeInference().applyCombination(disjunction);
             Identifier.Variable.Name var = Identifier.Variable.namedConcept("a");
             Modifiers.Filter filter = Modifiers.Filter.create(set(var));

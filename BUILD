@@ -267,7 +267,7 @@ assemble_apt(
     description = "TypeDB (all)",
     # typedb-server and typedb-console have arm/intel releases. Apt will find one matching installer's platform
     depends = [
-        "openjdk-11-jre",
+        "default-jre",
         "typedb-server (=%{version})",
         # Note: arbitrarily pick version from the x86_64 console artifact
         "typedb-console (=%{@vaticle_typedb_console_artifact_linux-x86_64})",
@@ -299,7 +299,7 @@ docker_container_image(
     base = "@vaticle_ubuntu_image//image",
     tars = [":assemble-linux-x86_64-targz"],
     directory = "opt",
-    workdir = "/opt/typedb-all-linux",
+    workdir = "/opt/typedb-all-linux-x86_64",
     ports = ["1729"],
     env = {
         "LANG": "C.UTF-8",
@@ -348,7 +348,6 @@ checkstyle_test(
         ".bazel-cache-credential.json",
         "LICENSE",
         "VERSION",
-        "typedb.iml",  # TODO remove when checkstyle_test has .gitignore support
     ],
     license_type = "agpl-header",
 )

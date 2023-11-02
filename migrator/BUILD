@@ -39,12 +39,14 @@ java_grpc_library(
     name = "migrator-protocol",
     protos = [":migrator-proto"],
     visibility = ["//visibility:public"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-migrator-protocol:{pom_version}"],
 )
 
 java_grpc_library(
     name = "migrator-data",
     protos = [":database-proto"],
     visibility = ["//visibility:public"],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-migrator-data:{pom_version}"],
 )
 
 native_java_libraries(

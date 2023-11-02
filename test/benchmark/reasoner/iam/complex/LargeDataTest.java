@@ -66,7 +66,8 @@ public class LargeDataTest {
                 "   $ac1 (object: $o, action: $a1) isa access;\n" +
                 "   $ac2 (object: $o, action: $a2) isa access;\n" +
                 "   $p1 (subject: $s, access: $ac1) isa permission;\n" +
-                "   $p2 (subject: $s, access: $ac2) isa permission;\n";
+                "   $p2 (subject: $s, access: $ac2) isa permission;\n" +
+                "get;";
         Benchmark benchmark = new Benchmark("high-selectivity", query, 4);
         benchmarker.runBenchmark(benchmark);
 
@@ -80,7 +81,8 @@ public class LargeDataTest {
         String query = "match\n" +
                 "   $c isa collection-membership;\n" +
                 "   $s isa set-membership;\n" +
-                "   $g isa group-membership;\n";
+                "   $g isa group-membership;\n" +
+                "get;";
         Benchmark benchmark = new Benchmark("combinatorial-results", query, 133000);
         benchmarker.runBenchmark(benchmark);
 

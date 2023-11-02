@@ -83,6 +83,8 @@ public interface ThingType extends Type {
 
     Forwardable<Owns, Order.Asc> getOwns(Transitivity transitivity, AttributeType.ValueType valueType, Set<Annotation> annotations);
 
+    Set<AttributeType> getOwnedAttributes(Transitivity transitivity);
+
     AttributeType getOwnsOverridden(AttributeType attributeType);
 
     void setPlays(RoleType roleType);

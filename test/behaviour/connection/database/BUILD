@@ -51,7 +51,7 @@ java_test(
         "//test/behaviour/config:parameters",
         "//test/behaviour/connection/transaction:steps",
         "//test/behaviour/connection/session:steps",
-        "//test/behaviour/typeql:steps",
+        "//test/behaviour/query:steps",
     ],
     data = [
         "@vaticle_typedb_behaviour//connection:database.feature",

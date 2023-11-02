@@ -41,7 +41,7 @@ import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -99,9 +99,9 @@ public class ForwardChainingMaterialiser {
         tx.close();
     }
 
-    public Map<Conjunction, FunctionalIterator<ConceptMap>> query(TypeQLMatch inferenceQuery) {
+    public Map<Conjunction, FunctionalIterator<ConceptMap>> query(TypeQLGet inferenceQuery) {
         // TODO: How do we handle disjunctions inside negations and negations in general?
-        Disjunction disjunction = Disjunction.create(inferenceQuery.conjunction().normalise());
+        Disjunction disjunction = Disjunction.create(inferenceQuery.match().conjunction().normalise());
         tx.logic().typeInference().applyCombination(disjunction);
         Map<Conjunction, FunctionalIterator<ConceptMap>> conjunctionAnswers = new HashMap<>();
         disjunction.conjunctions().forEach(conjunction -> conjunctionAnswers.put(conjunction, traverse(conjunction)));

@@ -312,6 +312,32 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         }
     }
 
+    public static class Projection extends ErrorMessage {
+        public static final Projection PROJECTION_VARIABLE_UNNAMED =
+                new Projection(1, "Projection variable '%s' must be named.");
+        public static final Projection PROJECTION_VARIABLE_UNBOUND =
+                new Projection(2, "Projection variable '%s' is not bound in the preceding match clause.");
+        public static final Projection VARIABLE_PROJECTION_CONCEPT_NOT_READABLE =
+                new Projection(3, "The variable projection '%s' cannot be used to fetch entity or relation instances. Entities and relations must be mapped to attributes.");
+        public static final Projection ILLEGAL_ATTRIBUTE_PROJECTION_TYPE_VARIABLE =
+                new Projection(4, "Illegal attribute projection from type variable '%s'.");
+        public static final Projection ILLEGAL_ATTRIBUTE_PROJECTION_ATTRIBUTE_TYPE_INVALID =
+                new Projection(5, "Attribute projection from '%s' maps to an invalid attribute type '%s'.");
+        public static final Projection ILLEGAL_ATTRIBUTE_PROJECTION_TYPES_NOT_OWNED =
+                new Projection(6, "Projection from '%s' to attribute type '%s' is illegal, since '%s' could be of type '%s' which does not own the attribute type or any of its subtypes. Constrain the 'match' clause such that all types can own the attribute type or its subtypes.");
+        public static final Projection SUBQUERY_UNBOUNDED =
+                new Projection(7, "Subquery labeled '%s' is not bounded by any parent match clause.");
+
+
+        private static final String codePrefix = "PRO";
+        private static final String messagePrefix = "Invalid projection operation";
+
+        Projection(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
+    }
+
+
     public static class Expression extends ErrorMessage {
         public static final Expression AMBIGUOUS_VARIABLE_TYPE =
                 new Expression(1, "The variable '%s' has ambiguous value types: '%s'.");
@@ -324,7 +350,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Expression ILLEGAL_CONVERSION =
                 new Expression(5, "The expression '%s' with value type '%s' cannot be converted to type '%s'.");
         public static final Expression ILLEGAL_FUNCTION_ARGUMENT_TYPE =
-                new Expression(6, "The expression function '%s' cannot accept arguments of value type '%s'.");
+              new Expression(6, "The expression function '%s' cannot accept arguments of value type '%s'.");
         public static final Expression ARGUMENT_COUNT_MISMATCH =
                 new Expression(7, "The expression '%s' expects '%s' arguments but received '%s': '%s'.");
         public static final Expression EVALUATION_ERROR =
@@ -423,30 +449,28 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new ThingWrite(24, "Unable to insert attribute '%s' of type '%s' without a value assigned to the variable.");
         public static final ThingWrite INSERT_RELATION_CONSTRAINT_TOO_MANY =
                 new ThingWrite(25, "Unable to insert relation '%s' as it has more than one relation tuple describing the role players.");
-        public static final ThingWrite RELATION_CONSTRAINT_MISSING =
-                new ThingWrite(26, "Unable to insert relation '%s' as it is missing the relation tuple describing the role players.");
         public static final ThingWrite ROLE_TYPE_AMBIGUOUS =
-                new ThingWrite(27, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
+                new ThingWrite(26, "Unable to add role player '%s' to the relation, as there are more than one possible role type it could play.");
         public static final ThingWrite ROLE_TYPE_MISSING =
-                new ThingWrite(28, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
+                new ThingWrite(27, "Unable to add role player '%s' to the relation, as there is no provided or inferrable role type.");
         public static final ThingWrite ROLE_TYPE_MISMATCH =
-                new ThingWrite(29, "The type '%s' cannot be used as a role type.");
+                new ThingWrite(28, "The type '%s' cannot be used as a role type.");
         public static final ThingWrite PLAYING_TYPE_MISMATCH =
-                new ThingWrite(30, "The instance of type '%s' cannot play the role type '%s'.");
+                new ThingWrite(29, "The instance of type '%s' cannot play the role type '%s'.");
         public static final ThingWrite RELATING_TYPE_MISMATCH =
-                new ThingWrite(31, "The relation instance of type '%s' cannot relate the role type '%s'.");
+                new ThingWrite(30, "The relation instance of type '%s' cannot relate the role type '%s'.");
         public static final ThingWrite MAX_INSTANCE_REACHED =
-                new ThingWrite(32, "The maximum number of instances for type '%s' has been reached: '%s'");
+                new ThingWrite(31, "The maximum number of instances for type '%s' has been reached: '%s'");
         public static final ThingWrite DELETE_RELATION_CONSTRAINT_TOO_MANY =
-                new ThingWrite(33, "Could not perform delete of role players due to multiple relation constraints being present for relation '%s'.");
+                new ThingWrite(32, "Could not perform delete of role players due to multiple relation constraints being present for relation '%s'.");
         public static final ThingWrite DELETE_ROLEPLAYER_NOT_PRESENT =
-                new ThingWrite(34, "Could not delete roleplayer '%s' as relation '%s' does not relate it.");
+                new ThingWrite(33, "Could not delete roleplayer '%s' as relation '%s' does not relate it.");
         public static final ThingWrite ILLEGAL_VALUE_VARIABLE_IN_DELETE =
-                new ThingWrite(35, "Illegal value variable '%s' found in delete query. Value variables may not be used in delete queries.");
+                new ThingWrite(34, "Illegal value variable '%s' found in delete query. Value variables may not be used in delete queries.");
         public static final ThingWrite ILLEGAL_VALUE_CONSTRAINT_IN_INSERT =
-                new ThingWrite(36, "Illegal value constraint found in the insert query on variable '%s'. Value variables are only permitted to specify attribute values.");
+                new ThingWrite(35, "Illegal value constraint found in the insert query on variable '%s'. Value variables are only permitted to specify attribute values.");
         public static final ThingWrite ILLEGAL_UNBOUND_TYPE_VAR_IN_INSERT =
-                new ThingWrite(37, "Type variable '%s' found in the insert query must retrieved by the match previously.");
+                new ThingWrite(36, "Type variable '%s' found in the insert query must retrieved by the match previously.");
 
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
@@ -565,52 +589,54 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new TypeWrite(32, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to key.");
         public static final TypeWrite OWNS_UNIQUE_PRECONDITION =
                 new TypeWrite(33, "The attributes of type '%s' are not uniquely owned by instances of type '%s' to convert to unique.");
+        public static final TypeWrite ILLEGAL_ROLE_TYPE_ALIAS =
+                new TypeWrite(34, "The role type '%s' cannot be used as an alias for the inherited role type '%s' - use the inherited role type or define a new role type overriding it with a new name.");
         public static final TypeWrite PLAYS_ROLE_NOT_AVAILABLE =
-                new TypeWrite(34, "Type '%s' cannot declare plays role type '%s' as it has been inherited or overridden and cannot be redeclared.");
+                new TypeWrite(35, "Type '%s' cannot declare plays role type '%s' as it has been inherited or overridden and cannot be redeclared.");
         public static final TypeWrite PLAYS_ABSTRACT_ROLE_TYPE =
-                new TypeWrite(35, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
+                new TypeWrite(36, "The type '%s' is not abstract, and thus cannot play an abstract role type '%s'.");
         public static final TypeWrite RELATION_NO_ROLE =
-                new TypeWrite(36, "The relation type '%s' does not relate any role type.");
+                new TypeWrite(37, "The relation type '%s' does not relate any role type.");
         public static final TypeWrite RELATION_ABSTRACT_ROLE =
-                new TypeWrite(37, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
+                new TypeWrite(38, "The relation type '%s' is not abstract, and thus cannot relate an abstract role type '%s'.");
         public static final TypeWrite RELATION_RELATES_ROLE_FROM_SUPERTYPE =
-                new TypeWrite(38, "The role type '%s' is already declared by a supertype of '%s'.");
+                new TypeWrite(39, "The role type '%s' is already declared by a supertype of '%s'.");
         public static final TypeWrite RELATION_RELATES_ROLE_NOT_AVAILABLE =
-                new TypeWrite(39, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
+                new TypeWrite(40, "The role type '%s' cannot override '%s' as it is either directly related or not inherited.");
         public static final TypeWrite ROLE_DEFINED_OUTSIDE_OF_RELATION =
-                new TypeWrite(40, "The role type '%s' cannot be defined/undefined outside the scope of its relation type.");
+                new TypeWrite(41, "The role type '%s' cannot be defined/undefined outside the scope of its relation type.");
         public static final TypeWrite INVALID_DEFINE_SUB =
-                new TypeWrite(41, "The type '%s' cannot be defined, as the provided supertype '%s' is not a valid thing type.");
+                new TypeWrite(42, "The type '%s' cannot be defined, as the provided supertype '%s' is not a valid thing type.");
         public static final TypeWrite INVALID_UNDEFINE_SUB =
-                new TypeWrite(42, "The type '%s' cannot be undefined, as the provided supertype '%s' is not a valid supertype.");
+                new TypeWrite(43, "The type '%s' cannot be undefined, as the provided supertype '%s' is not a valid supertype.");
         public static final TypeWrite INVALID_UNDEFINE_RELATES_OVERRIDE =
-                new TypeWrite(43, "The overridden related role type '%s' cannot be undefined. You should re-define relating '%s' without overriding.");
+                new TypeWrite(44, "The overridden related role type '%s' cannot be undefined. You should re-define relating '%s' without overriding.");
         public static final TypeWrite INVALID_UNDEFINE_PLAYS_OVERRIDE =
-                new TypeWrite(44, "The overridden played role type '%s' cannot be undefined. You should re-define playing '%s' without overriding.");
+                new TypeWrite(45, "The overridden played role type '%s' cannot be undefined. You should re-define playing '%s' without overriding.");
         public static final TypeWrite INVALID_UNDEFINE_OWNS_OVERRIDE =
-                new TypeWrite(45, "The overridden owned attribute type '%s' cannot be undefined. You should re-define owning '%s' without overriding.");
+                new TypeWrite(46, "The overridden owned attribute type '%s' cannot be undefined. You should re-define owning '%s' without overriding.");
         public static final TypeWrite INVALID_UNDEFINE_ANNOTATIONS =
-                new TypeWrite(46, "Annotations cannot be undefined on '%s'. You should re-define the pattern without the annotations.");
+                new TypeWrite(47, "Annotations cannot be undefined on '%s'. You should re-define the pattern without the annotations.");
         public static final TypeWrite INVALID_UNDEFINE_RELATES_HAS_INSTANCES =
-                new TypeWrite(47, "The role type '%s' cannot be undefined because it is currently played by existing instances.");
+                new TypeWrite(48, "The role type '%s' cannot be undefined because it is currently played by existing instances.");
         public static final TypeWrite INVALID_UNDEFINE_OWNS_HAS_INSTANCES =
-                new TypeWrite(48, "The ability of type '%s' to own attribute type '%s' cannot be undefined because there are data instances using this ownership.");
+                new TypeWrite(49, "The ability of type '%s' to own attribute type '%s' cannot be undefined because there are data instances using this ownership.");
         public static final TypeWrite INVALID_UNDEFINE_PLAYS_HAS_INSTANCES =
-                new TypeWrite(49, "The ability of type '%s' to play role type '%s' cannot be undefined because it is currently played by existing instances.");
+                new TypeWrite(50, "The ability of type '%s' to play role type '%s' cannot be undefined because it is currently played by existing instances.");
         public static final TypeWrite INVALID_UNDEFINE_INHERITED_OWNS =
-                new TypeWrite(50, "The ability of type '%s' to own attribute type '%s' cannot be undefined because the ability is inherited from a supertype.");
+                new TypeWrite(51, "The ability of type '%s' to own attribute type '%s' cannot be undefined because the ability is inherited from a supertype.");
         public static final TypeWrite INVALID_UNDEFINE_INHERITED_PLAYS =
-                new TypeWrite(51, "The ability of type '%s' to play role type '%s' cannot be undefined because the ability is inherited from a supertype.");
+                new TypeWrite(52, "The ability of type '%s' to play role type '%s' cannot be undefined because the ability is inherited from a supertype.");
         public static final TypeWrite INVALID_UNDEFINE_NONEXISTENT_OWNS =
-                new TypeWrite(52, "The ability of type '%s' to own attribute type '%s' cannot be undefined because it does not have that ability.");
+                new TypeWrite(53, "The ability of type '%s' to own attribute type '%s' cannot be undefined because it does not have that ability.");
         public static final TypeWrite INVALID_UNDEFINE_NONEXISTENT_PLAYS =
-                new TypeWrite(53, "The ability of type '%s' to play role type '%s' cannot be undefined because it does not have that ability.");
+                new TypeWrite(54, "The ability of type '%s' to play role type '%s' cannot be undefined because it does not have that ability.");
         public static final TypeWrite TYPE_CONSTRAINT_UNACCEPTED =
-                new TypeWrite(54, "The type constraint '%s' is not accepted in a define/undefine query.");
+                new TypeWrite(55, "The type constraint '%s' is not accepted in a define/undefine query.");
         public static final TypeWrite ILLEGAL_SUPERTYPE_ENCODING =
-                new TypeWrite(55, "Unable to set type with class '%s' as a supertype.");
+                new TypeWrite(56, "Unable to set type with class '%s' as a supertype.");
         public static final TypeWrite MAX_SUBTYPE_REACHED =
-                new TypeWrite(56, "The maximum number of '%s' types has been reached: '%s'.");
+                new TypeWrite(57, "The maximum number of '%s' types has been reached: '%s'.");
 
         private static final String codePrefix = "TYW";
         private static final String messagePrefix = "Invalid Type Write";

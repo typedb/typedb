@@ -44,7 +44,7 @@ java_test(
         "//test/behaviour/connection/database:steps",
         "//test/behaviour/connection/session:steps",
         "//test/behaviour/connection/transaction:steps",
-        "//test/behaviour/typeql:steps",
+        "//test/behaviour/query:steps",
 
         # --- If testing Reasoner BDD, enable these steps and disable the Connection steps above ---
 #        "//test/behaviour/reasoner:steps"

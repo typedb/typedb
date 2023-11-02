@@ -34,7 +34,7 @@ import com.vaticle.typedb.core.logic.tool.TypeInference;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
-import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
+import com.vaticle.typeql.lang.pattern.statement.ThingStatement;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -85,7 +85,7 @@ public class LogicManager {
         logicCache.rule().invalidate(rule.getLabel());
     }
 
-    public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingVariable<?> then) {
+    public Rule putRule(String label, Conjunction<? extends Pattern> when, ThingStatement<?> then) {
         Rule rule = getRule(label);
         if (rule != null) deleteAndInvalidateRule(rule);
         return logicCache.rule().get(label, l -> Rule.of(label, when, then, graphMgr, conceptMgr, this));

@@ -25,7 +25,7 @@ import java.util.Objects;
 
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 
-public class ConceptMapGroup implements Answer {
+public class ConceptMapGroup {
     private final Concept owner;
     private final List<? extends ConceptMap> conceptMaps;
     private final int hash;

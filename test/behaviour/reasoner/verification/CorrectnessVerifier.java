@@ -19,7 +19,7 @@
 package com.vaticle.typedb.core.test.behaviour.reasoner.verification;
 
 import com.vaticle.typedb.core.database.CoreSession;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 
 public class CorrectnessVerifier {
 
@@ -35,16 +35,16 @@ public class CorrectnessVerifier {
         return new CorrectnessVerifier(session, ForwardChainingMaterialiser.materialise(session));
     }
 
-    public void verifyCorrectness(TypeQLMatch inferenceQuery) {
+    public void verifyCorrectness(TypeQLGet inferenceQuery) {
         verifySoundness(inferenceQuery);
         verifyCompleteness(inferenceQuery);
     }
 
-    public void verifySoundness(TypeQLMatch inferenceQuery) {
+    public void verifySoundness(TypeQLGet inferenceQuery) {
         SoundnessVerifier.create(materialiser, session).verifyQuery(inferenceQuery);
     }
 
-    public void verifyCompleteness(TypeQLMatch inferenceQuery) {
+    public void verifyCompleteness(TypeQLGet inferenceQuery) {
         CompletenessVerifier.create(materialiser, session).verifyQuery(inferenceQuery);
     }
 

@@ -27,7 +27,7 @@ import com.vaticle.typedb.protocol.TransactionProto;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.pattern.Conjunction;
 import com.vaticle.typeql.lang.pattern.Pattern;
-import com.vaticle.typeql.lang.pattern.variable.ThingVariable;
+import com.vaticle.typeql.lang.pattern.statement.ThingStatement;
 
 import java.util.UUID;
 
@@ -64,7 +64,7 @@ public class LogicService {
 
     private void putRule(LogicProto.LogicManager.PutRule.Req ruleReq, UUID reqID) {
         Conjunction<? extends Pattern> when = TypeQL.parsePattern(ruleReq.getWhen()).asConjunction();
-        ThingVariable<?> then = TypeQL.parseVariable(ruleReq.getThen()).asThing();
+        ThingStatement<?> then = TypeQL.parseStatement(ruleReq.getThen()).asThing();
         com.vaticle.typedb.core.logic.Rule rule = logicMgr.putRule(ruleReq.getLabel(), when, then);
         transactionSvc.respond(ResponseBuilder.LogicManager.putRuleRes(reqID, rule));
     }

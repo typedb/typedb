@@ -34,8 +34,8 @@ import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLUndefine;
 import org.junit.Test;
 
@@ -207,7 +207,7 @@ public class QueryTest {
                     assertEquals(15 - 5, tx.logic().rules().toList().size());
 
                     // a query that used to trigger a rule should not cause an error
-                    List<? extends ConceptMap> answers = tx.query().match(TypeQL.parseQuery("match $x isa repo-fork;").asMatch()).toList();
+                    List<? extends ConceptMap> answers = tx.query().get(TypeQL.parseQuery("match $x isa repo-fork; get;").asGet()).toList();
                 }
             }
         }
@@ -301,9 +301,9 @@ public class QueryTest {
                 }
 
                 try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.READ)) {
-                    String matchString = "match $x isa thing;";
-                    TypeQLMatch matchQuery = TypeQL.parseQuery(matchString);
-                    FunctionalIterator<? extends ConceptMap> answers = transaction.query().match(matchQuery);
+                    String matchString = "match $x isa thing; get;";
+                    TypeQLGet getQuery = TypeQL.parseQuery(matchString);
+                    FunctionalIterator<? extends ConceptMap> answers = transaction.query().get(getQuery);
                     assertFalse(answers.hasNext());
                 }
             }

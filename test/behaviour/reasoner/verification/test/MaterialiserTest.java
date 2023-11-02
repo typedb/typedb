@@ -27,7 +27,7 @@ import com.vaticle.typedb.core.database.CoreSession;
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.ForwardChainingMaterialiser;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typeql.lang.TypeQL.and;
 import static com.vaticle.typeql.lang.TypeQL.define;
@@ -57,7 +58,8 @@ public class MaterialiserTest {
     private static final String database = "MaterialiserTest";
     private static final Path dataDir = Paths.get(System.getProperty("user.dir")).resolve(database);
     private static final Path logDir = dataDir.resolve("logs");
-    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir);
+    private static final Options.Database options = new Options.Database().dataDir(dataDir).reasonerDebuggerDir(logDir)
+            .storageIndexCacheSize(MB).storageDataCacheSize(MB);
     private CoreDatabaseManager databaseMgr;
 
     @Before
@@ -77,7 +79,7 @@ public class MaterialiserTest {
         loadTransitivityExample(databaseMgr);
         try (CoreSession session = databaseMgr.session(database, Arguments.Session.Type.DATA)) {
             ForwardChainingMaterialiser materialiser = ForwardChainingMaterialiser.materialise(session);
-            TypeQLMatch inferredAnswersQuery = TypeQL.match(TypeQL.cVar("lh").isa("location-hierarchy"));
+            TypeQLGet inferredAnswersQuery = TypeQL.match(TypeQL.cVar("lh").isa("location-hierarchy")).get();
             List<ConceptMap> inferredAnswers = iterate(materialiser.query(inferredAnswersQuery).entrySet())
                     .flatMap(Map.Entry::getValue).toList();
             assertEquals(6, inferredAnswers.size());

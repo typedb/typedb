@@ -146,7 +146,8 @@ java_deps(
     target = ":server-bin-linux-arm64",
     java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
-    maven_name = False,
+    maven_name = True,
+    ignore_missing_maven_name = True,
 )
 
 java_deps(
@@ -154,7 +155,8 @@ java_deps(
     target = ":server-bin-linux-x86_64",
     java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
-    maven_name = False,
+    maven_name = True,
+    ignore_missing_maven_name = True,
 )
 
 java_deps(
@@ -162,7 +164,8 @@ java_deps(
     target = ":server-bin-mac-arm64",
     java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
-    maven_name = False,
+    maven_name = True,
+    ignore_missing_maven_name = True,
 )
 
 java_deps(
@@ -170,7 +173,8 @@ java_deps(
     target = ":server-bin-mac-x86_64",
     java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
-    maven_name = False,
+    maven_name = True,
+    ignore_missing_maven_name = True,
 )
 
 java_deps(
@@ -178,7 +182,8 @@ java_deps(
     target = ":server-bin-windows-x86_64",
     java_deps_root = "server/lib/",
     visibility = ["//:__pkg__"],
-    maven_name = False,
+    maven_name = True,
+    ignore_missing_maven_name = True,
 )
 
 assemble_files = {

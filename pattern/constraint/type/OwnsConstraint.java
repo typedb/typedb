@@ -59,8 +59,8 @@ public class OwnsConstraint extends TypeConstraint {
 
     static OwnsConstraint of(TypeVariable owner, com.vaticle.typeql.lang.pattern.constraint.TypeConstraint.Owns constraint,
                              VariableRegistry registry) {
-        TypeVariable attributeType = registry.register(constraint.attribute());
-        TypeVariable overriddenType = constraint.overridden().map(registry::register).orElse(null);
+        TypeVariable attributeType = registry.registerTypeVariable(constraint.attribute());
+        TypeVariable overriddenType = constraint.overridden().map(registry::registerTypeVariable).orElse(null);
         return new OwnsConstraint(owner, attributeType, overriddenType, set(constraint.annotations()));
     }
 

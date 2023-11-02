@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.pattern.Disjunction;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
+import com.vaticle.typeql.lang.common.Reference;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertFalse;

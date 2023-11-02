@@ -24,7 +24,7 @@ import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import java.io.IOException;
@@ -49,12 +49,12 @@ public class Util {
     }
 
     public static List<ConceptMap> timeQuery(String queryString, TypeDB.Transaction transaction, String msg) {
-        return timeQuery(TypeQL.parseQuery(queryString).asMatch(), transaction, msg);
+        return timeQuery(TypeQL.parseQuery(queryString).asGet(), transaction, msg);
     }
 
-    public static List<ConceptMap> timeQuery(TypeQLMatch query, TypeDB.Transaction transaction, String msg) {
+    public static List<ConceptMap> timeQuery(TypeQLGet query, TypeDB.Transaction transaction, String msg) {
         final long startTime = System.currentTimeMillis();
-        List<ConceptMap> results = (List<ConceptMap>) transaction.query().match(query).toList();
+        List<ConceptMap> results = (List<ConceptMap>) transaction.query().get(query).toList();
         final long answerTime = System.currentTimeMillis() - startTime;
         System.out.println(msg + " results = " + results.size() + " answerTime: " + answerTime);
         return results;

@@ -63,11 +63,15 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILL
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ILLEGAL_ROLE_TYPE_ALIAS;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Arguments.Query.Producer.EXHAUSTIVE;
 import static com.vaticle.typedb.core.common.parameters.Concept.Existence.STORED;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.EXPLICIT;
+import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.PARALLELISATION_FACTOR;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.async1;
 import static com.vaticle.typedb.core.concurrent.producer.Producers.async;
@@ -78,6 +82,7 @@ import static com.vaticle.typedb.core.encoding.Encoding.ValueType.DOUBLE;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.LONG;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.OBJECT;
 import static com.vaticle.typedb.core.encoding.Encoding.ValueType.STRING;
+import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.RELATION;
 import static com.vaticle.typedb.core.encoding.Encoding.Vertex.Thing.ROLE;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -159,8 +164,9 @@ public final class ConceptManager {
 
     public EntityType getEntityType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return convertEntityType(vertex);
-        else return null;
+        if (vertex != null && vertex.encoding().equals(Encoding.Vertex.Type.ENTITY_TYPE)) {
+            return convertEntityType(vertex);
+        } else return null;
     }
 
     public RelationType putRelationType(String label) {
@@ -171,8 +177,9 @@ public final class ConceptManager {
 
     public RelationType getRelationType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return convertRelationType(vertex);
-        else return null;
+        if (vertex != null && vertex.encoding().equals(Encoding.Vertex.Type.RELATION_TYPE)) {
+            return convertRelationType(vertex);
+        } else return null;
     }
 
     public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
@@ -205,8 +212,9 @@ public final class ConceptManager {
 
     public AttributeType getAttributeType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return convertAttributeType(vertex);
-        else return null;
+        if (vertex != null && vertex.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE)) {
+            return convertAttributeType(vertex);
+        } else return null;
     }
 
     public Type getType(Label label) {
@@ -219,8 +227,9 @@ public final class ConceptManager {
 
     public ThingType getThingType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return convertThingType(vertex);
-        else return null;
+        if (vertex != null && !vertex.encoding().equals(Encoding.Vertex.Type.ROLE_TYPE)) {
+            return convertThingType(vertex);
+        } else return null;
     }
 
     public Thing getThing(ByteArray iid) {
@@ -325,6 +334,23 @@ public final class ConceptManager {
         throw exception(TypeDBException.of(BAD_VALUE_TYPE, valueType));
     }
 
+    public void validateNotRoleTypeAlias(Label label) {
+        assert label.scope().isPresent();
+        ThingType relationType;
+        if ((relationType = getThingType(label.scope().get())) == null) {
+            throw TypeDBException.of(TYPE_NOT_FOUND, label.scope().get());
+        } else if (!relationType.isRelationType()) {
+            throw TypeDBException.of(ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE, label.scopedName(), label.scope().get());
+        } else {
+            if (relationType.asRelationType().getRelates(EXPLICIT, label.name()) == null) {
+                RoleType superRole = relationType.asRelationType().getRelates(TRANSITIVE, label.name());
+                if (superRole != null) {
+                    throw TypeDBException.of(ILLEGAL_ROLE_TYPE_ALIAS, label.scopedName(), superRole.getLabel().scopedName());
+                }
+            }
+        }
+    }
+
     public void validateTypes() {
         List<TypeDBException> exceptions = getSchemaExceptions();
         if (!exceptions.isEmpty()) throw exception(TypeDBException.of(exceptions));
@@ -337,8 +363,15 @@ public final class ConceptManager {
                 .flatMap(t -> t.exceptions().stream()).collect(toList());
     }
 
+    public void cleanupRelations() {
+        graphMgr.data().writeVertices()
+                .filter(v -> v.existence().equals(STORED) && v.isModified() && v.encoding().equals(RELATION))
+                .forEachRemaining(v -> ThingImpl.of(this, v).asRelation().deleteIfNoPlayer());
+
+    }
+
     public void validateThings() {
-        List<List<Thing>> lists = graphMgr.data().vertices().filter(
+        List<List<Thing>> lists = graphMgr.data().writeVertices().filter(
                 v -> v.existence().equals(STORED) && v.isModified() && !v.encoding().equals(ROLE)
         ).<Thing>map(v -> ThingImpl.of(this, v)).toLists(PARALLELISATION_SPLIT_MINIMUM, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();

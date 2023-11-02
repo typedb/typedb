@@ -28,7 +28,7 @@ import com.vaticle.typedb.core.pattern.equivalence.AlphaEquivalence;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
+import com.vaticle.typeql.lang.pattern.statement.Statement;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -99,8 +99,8 @@ public class AlphaEquivalenceTest {
     }
 
     private Concludable concludable(String variableString) {
-        BoundVariable vars = TypeQL.parseVariable(variableString).asVariable();
-        VariableRegistry registry = VariableRegistry.createFromVariables(list(vars), null);
+        Statement statement = TypeQL.parseStatement(variableString);
+        VariableRegistry registry = VariableRegistry.createFromStatements(list(statement), null);
         Conjunction conjunction = new Conjunction(registry.variables(), list());
         inferTypes(conjunction);
         Set<Concludable> concludables = Concludable.create(conjunction);
@@ -109,9 +109,9 @@ public class AlphaEquivalenceTest {
     }
 
     private Set<Concludable> concludable(String... variableStrings) {
-        List<BoundVariable> variables = new ArrayList<>();
-        for (String variableString : variableStrings) variables.add(TypeQL.parseVariable(variableString).asVariable());
-        VariableRegistry registry = VariableRegistry.createFromVariables(variables, null);
+        List<Statement> statements = new ArrayList<>();
+        for (String variableString : variableStrings) statements.add(TypeQL.parseStatement(variableString));
+        VariableRegistry registry = VariableRegistry.createFromStatements(statements, null);
         Conjunction conjunction = new Conjunction(registry.variables(), list());
         inferTypes(conjunction);
         return Concludable.create(conjunction);
@@ -147,7 +147,7 @@ public class AlphaEquivalenceTest {
         Concludable b = concludable("$b isa age");
         Map<String, String> varNameMap = singleAlphaMap(a, b);
         assertEquals(varNameMap.get("$a"), "$b");
-        assertEquals(varNameMap.get("$_age"), "$_age");
+        assertEquals(varNameMap.get("age"), "age");
         testAlphaEquivalenceSymmetricReflexive(a, b, true);
     }
 
@@ -170,7 +170,7 @@ public class AlphaEquivalenceTest {
         Concludable q = has(concludable("$q has age 30", "$q isa person"));
         Map<String, String> varNameMap = singleAlphaMap(p, q);
         assertEquals("$q", varNameMap.get("$p"));
-        assertEquals("$_age", varNameMap.get("$_age"));
+        assertEquals("age", varNameMap.get("age"));
         testAlphaEquivalenceSymmetricReflexive(p, q, true);
     }
 
@@ -182,7 +182,7 @@ public class AlphaEquivalenceTest {
         Map<String, String> varNameMap = singleAlphaMap(p, q);
         assertEquals(varNameMap.get("$p"), "$q");
         assertEquals(varNameMap.get("$a"), "$b");
-        assertEquals(varNameMap.get("$_age"), "$_age");
+        assertEquals(varNameMap.get("age"), "age");
         testAlphaEquivalenceSymmetricReflexive(p, q, true);
     }
 
@@ -212,9 +212,9 @@ public class AlphaEquivalenceTest {
         assertEquals(varNameMap.get("$r"), "$q");
         assertEquals(varNameMap.get("$p"), "$s");
         assertEquals(varNameMap.get("$c"), "$t");
-        assertEquals(varNameMap.get("$_parentship:parent"), "$_parentship:parent");
-        assertEquals(varNameMap.get("$_parentship:child"), "$_parentship:child");
-        assertEquals(varNameMap.get("$_parentship"), "$_parentship");
+        assertEquals(varNameMap.get("parentship:parent"), "parentship:parent");
+        assertEquals(varNameMap.get("parentship:child"), "parentship:child");
+        assertEquals(varNameMap.get("parentship"), "parentship");
         testAlphaEquivalenceSymmetricReflexive(r, q, true);
     }
 
@@ -228,9 +228,9 @@ public class AlphaEquivalenceTest {
         assertEquals(varNameMap.get("$r"), "$r");
         assertEquals(varNameMap.get("$p"), "$s");
         assertEquals(varNameMap.get("$c"), "$p");
-        assertEquals(varNameMap.get("$_parentship:parent"), "$_parentship:parent");
-        assertEquals(varNameMap.get("$_parentship:child"), "$_parentship:child");
-        assertEquals(varNameMap.get("$_parentship"), "$_parentship");
+        assertEquals(varNameMap.get("parentship:parent"), "parentship:parent");
+        assertEquals(varNameMap.get("parentship:child"), "parentship:child");
+        assertEquals(varNameMap.get("parentship"), "parentship");
         testAlphaEquivalenceSymmetricReflexive(r, q, true);
     }
 
@@ -244,9 +244,9 @@ public class AlphaEquivalenceTest {
         assertEquals(varNameMap.get("$r"), "$x");
         assertEquals(varNameMap.get("$x"), "$y");
         assertEquals(varNameMap.get("$y"), "$r");
-        assertEquals(varNameMap.get("$_parentship:parent"), "$_parentship:parent");
-        assertEquals(varNameMap.get("$_parentship:child"), "$_parentship:child");
-        assertEquals(varNameMap.get("$_parentship"), "$_parentship");
+        assertEquals(varNameMap.get("parentship:parent"), "parentship:parent");
+        assertEquals(varNameMap.get("parentship:child"), "parentship:child");
+        assertEquals(varNameMap.get("parentship"), "parentship");
         testAlphaEquivalenceSymmetricReflexive(r, q, true);
     }
 
@@ -260,15 +260,15 @@ public class AlphaEquivalenceTest {
                 pair("$r", "$q"),
                 pair("$p", "$s"),
                 pair("$c", "$t"),
-                pair("$_siblingship:sibling", "$_siblingship:sibling"),
-                pair("$_siblingship", "$_siblingship")
+                pair("siblingship:sibling", "siblingship:sibling"),
+                pair("siblingship", "siblingship")
         );
         Map<String, String> map2 = map(
                 pair("$r", "$q"),
                 pair("$p", "$t"),
                 pair("$c", "$s"),
-                pair("$_siblingship:sibling", "$_siblingship:sibling"),
-                pair("$_siblingship", "$_siblingship")
+                pair("siblingship:sibling", "siblingship:sibling"),
+                pair("siblingship", "siblingship")
         );
         assertEquals(set(map1, map2), alphaMaps);
         testAlphaEquivalenceSymmetricReflexive(r, q, true);
@@ -283,15 +283,15 @@ public class AlphaEquivalenceTest {
                 pair("$r", "$r"),
                 pair("$p", "$p"),
                 pair("$c", "$c"),
-                pair("$_siblingship:sibling", "$_siblingship:sibling"),
-                pair("$_siblingship", "$_siblingship")
+                pair("siblingship:sibling", "siblingship:sibling"),
+                pair("siblingship", "siblingship")
         );
         Map<String, String> map2 = map(
                 pair("$r", "$r"),
                 pair("$p", "$c"),
                 pair("$c", "$p"),
-                pair("$_siblingship:sibling", "$_siblingship:sibling"),
-                pair("$_siblingship", "$_siblingship")
+                pair("siblingship:sibling", "siblingship:sibling"),
+                pair("siblingship", "siblingship")
         );
         assertEquals(set(map1, map2), alphaMaps);
     }
@@ -307,14 +307,14 @@ public class AlphaEquivalenceTest {
                 pair("$p", "$p"),
                 pair("$role1", "$role1"),
                 pair("$role2", "$role2"),
-                pair("$_employment", "$_employment")
+                pair("employment", "employment")
         );
         Map<String, String> map2 = map(
                 pair("$r", "$r"),
                 pair("$p", "$p"),
                 pair("$role1", "$role2"),
                 pair("$role2", "$role1"),
-                pair("$_employment", "$_employment")
+                pair("employment", "employment")
         );
         assertEquals(set(map1, map2), alphaMaps);
     }
@@ -331,7 +331,7 @@ public class AlphaEquivalenceTest {
                 pair("$p2", "$p2"),
                 pair("$role1", "$role1"),
                 pair("$role2", "$role2"),
-                pair("$_employment", "$_employment")
+                pair("employment", "employment")
         );
         Map<String, String> map2 = map(
                 pair("$r", "$r"),
@@ -339,7 +339,7 @@ public class AlphaEquivalenceTest {
                 pair("$p2", "$p1"),
                 pair("$role1", "$role2"),
                 pair("$role2", "$role1"),
-                pair("$_employment", "$_employment")
+                pair("employment", "employment")
         );
         assertEquals(set(map1, map2), alphaMaps);
     }
@@ -353,9 +353,9 @@ public class AlphaEquivalenceTest {
         Map<String, String> varNameMap = singleAlphaMap(r, q);
         assertEquals(varNameMap.get("$r"), "$q");
         assertEquals(varNameMap.get("$p"), "$s");
-        assertEquals(varNameMap.get("$_friendship:friend"), "$_friendship:friend");
-        assertEquals(varNameMap.get("$_friendship:friend"), "$_friendship:friend");
-        assertEquals(varNameMap.get("$_friendship"), "$_friendship");
+        assertEquals(varNameMap.get("friendship:friend"), "friendship:friend");
+        assertEquals(varNameMap.get("friendship:friend"), "friendship:friend");
+        assertEquals(varNameMap.get("friendship"), "friendship");
         testAlphaEquivalenceSymmetricReflexive(r, q, true);
     }
 
@@ -370,10 +370,10 @@ public class AlphaEquivalenceTest {
         assertEquals(varNameMap.get("$p"), "$s");
         assertEquals(varNameMap.get("$c"), "$t");
         assertEquals(varNameMap.get("$u"), "$v");
-        assertEquals(varNameMap.get("$_transaction:buyer"), "$_transaction:buyer");
-        assertEquals(varNameMap.get("$_transaction:seller"), "$_transaction:seller");
-        assertEquals(varNameMap.get("$_transaction:produce"), "$_transaction:produce");
-        assertEquals(varNameMap.get("$_transaction"), "$_transaction");
+        assertEquals(varNameMap.get("transaction:buyer"), "transaction:buyer");
+        assertEquals(varNameMap.get("transaction:seller"), "transaction:seller");
+        assertEquals(varNameMap.get("transaction:produce"), "transaction:produce");
+        assertEquals(varNameMap.get("transaction"), "transaction");
         testAlphaEquivalenceSymmetricReflexive(r, q, true);
     }
 

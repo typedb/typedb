@@ -33,7 +33,7 @@ import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.predicate.PredicateArgument;
 import com.vaticle.typedb.core.traversal.predicate.PredicateOperator;
 import com.vaticle.typeql.lang.common.TypeQLToken;
-import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -79,11 +79,11 @@ public abstract class Predicate<T> implements AlphaEquivalent<Predicate<?>> {
         } else if (predicate.isDateTime()) {
             return new Constant.DateTime(predicate.predicate().asEquality(), predicate.asDateTime().value());
         } else if (predicate.isVariable()) {
-            UnboundVariable rhs = predicate.asVariable().value();
-            if (rhs.isConceptVariable()) {
-                return new ThingVar(predicate.predicate().asEquality(), register.register(rhs.asConceptVariable().toThing()));
-            } else if (rhs.isValueVariable()) {
-                return new ValueVar(predicate.predicate().asEquality(), register.register(rhs.asValueVariable().toBound()));
+            TypeQLVariable rhs = predicate.asVariable().value();
+            if (rhs.isConceptVar()) {
+                return new ThingVar(predicate.predicate().asEquality(), register.registerThingVariable(rhs.asConceptVar()));
+            } else if (rhs.isValueVar()) {
+                return new ValueVar(predicate.predicate().asEquality(), register.registerValueVariable(rhs.asValueVar()));
             } else throw TypeDBException.of(ILLEGAL_STATE);
         } else throw TypeDBException.of(ILLEGAL_STATE);
     }

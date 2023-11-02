@@ -22,15 +22,25 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_test
 package(
     default_visibility = [
         "//:__pkg__",
-        "//reasoner:__pkg__",
         "//database:__pkg__",
+        "//reasoner:__pkg__",
         "//test:__subpackages__",
     ],
 )
 
 native_java_libraries(
     name = "logic",
-    srcs = glob(["*.java", "tool/*.java", "**/*.java"], exclude = ["*Test.java", "*/*Test.java"]),
+    srcs = glob(
+        [
+            "*.java",
+            "tool/*.java",
+            "**/*.java",
+        ],
+        exclude = [
+            "*Test.java",
+            "*/*Test.java",
+        ],
+    ),
     native_libraries_deps = [
         # Internal dependencies
         "//common:common",
@@ -40,6 +50,11 @@ native_java_libraries(
         "//pattern:pattern",
         "//traversal:traversal",
     ],
+    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-logic:{pom_version}"],
+    visibility = ["//visibility:public"],
+    runtime_deps = [
+        "@maven//:ch_qos_logback_logback_classic",
+    ],
     deps = [
         # Internal Repository Dependencies
         "@vaticle_typedb_common//:common",
@@ -48,13 +63,8 @@ native_java_libraries(
 
         # External Maven Dependencies
         "@maven//:com_google_code_findbugs_jsr305",
-        "@maven//:org_slf4j_slf4j_api"
+        "@maven//:org_slf4j_slf4j_api",
     ],
-    runtime_deps = [
-        "@maven//:ch_qos_logback_logback_classic",
-    ],
-    tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-logic:{pom_version}"],
-    visibility = ["//visibility:public"],
 )
 
 host_compatible_java_test(
@@ -106,7 +116,7 @@ host_compatible_java_test(
         "//common:common",
         "//logic:logic",
         "//pattern:pattern",
-        "//traversal:traversal"
+        "//traversal:traversal",
     ],
     test_class = "com.vaticle.typedb.core.logic.resolvable.UnifierTest",
     deps = [
@@ -114,8 +124,8 @@ host_compatible_java_test(
 
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java/common",
         "@vaticle_typeql//java:typeql-lang",
-        "@vaticle_typeql//java/pattern:pattern"
     ],
 )
 

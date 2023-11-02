@@ -20,9 +20,8 @@ package com.vaticle.typedb.core.traversal.common;
 
 import com.vaticle.typedb.core.common.parameters.Order;
 import com.vaticle.typeql.lang.common.TypeQLArg;
-import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
-import com.vaticle.typeql.lang.pattern.variable.Variable;
-import com.vaticle.typeql.lang.query.builder.Sortable;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
+import com.vaticle.typeql.lang.query.TypeQLQuery;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,10 +34,11 @@ import java.util.Set;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.map;
-import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
 import static com.vaticle.typedb.core.common.parameters.Order.Desc.DESC;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 
 public class Modifiers {
 
@@ -46,8 +46,8 @@ public class Modifiers {
     Sorting sorting;
 
     public Modifiers() {
-        filter = new Filter(set());
-        sorting = new Sorting(list(), map());
+        filter = new Filter(emptySet());
+        sorting = new Sorting(emptyList(), map());
     }
 
     public Filter filter() {
@@ -89,17 +89,12 @@ public class Modifiers {
             this.variables = variables;
         }
 
-        public static Filter create(Set<Identifier.Variable.Retrievable> variables) {
-            return new Filter(variables);
+        public static Filter create(Set<? extends Identifier.Variable.Retrievable> variables) {
+            return new Filter(new HashSet<>(variables));
         }
 
-        public static Filter create(List<UnboundVariable> vars) {
-            Set<Identifier.Variable.Retrievable> variables = new HashSet<>();
-            assert iterate(vars).allMatch(Variable::isNamed);
-            iterate(vars).filter(Variable::isNamed)
-                    .map(v -> Identifier.Variable.of(v.reference().asName()))
-                    .forEachRemaining(variables::add);
-            return new Filter(variables);
+        public static Filter create(List<? extends Identifier.Variable.Retrievable> variables) {
+            return new Filter(new HashSet<>(variables));
         }
 
         public Set<Identifier.Variable.Retrievable> variables() {
@@ -137,7 +132,7 @@ public class Modifiers {
             return new Sorting(variables, ascending);
         }
 
-        public static Sorting create(Sortable.Sorting sort) {
+        public static Sorting create(TypeQLQuery.Modifiers.Sorting sort) {
             List<Identifier.Variable.Retrievable> variables = new ArrayList<>();
             Map<Identifier.Variable.Retrievable, Order> ascending = new HashMap<>();
             sort.variables().forEach(typeQLVar -> {

@@ -29,8 +29,8 @@ import com.vaticle.typedb.core.pattern.variable.VariableCloner;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typeql.lang.common.TypeQLToken;
-import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
-import com.vaticle.typeql.lang.pattern.variable.builder.Expression;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
+import com.vaticle.typeql.lang.pattern.expression.Expression;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -61,7 +61,8 @@ public class AssignmentConstraint extends ValueConstraint {
         variables().forEach(var -> var.constraining(this));
     }
 
-    public static AssignmentConstraint of(ValueVariable valueVariable, com.vaticle.typeql.lang.pattern.constraint.ValueConstraint.Assignment constraint, VariableRegistry registry) {
+    public static AssignmentConstraint of(ValueVariable valueVariable, com.vaticle.typeql.lang.pattern.constraint.ValueConstraint.Assignment constraint,
+                                          VariableRegistry registry) {
         registry.bounds().ifPresent(bounds -> {
             if (bounds.isBound(valueVariable.reference())) {
                 throw TypeDBException.of(VALUE_VARIABLE_DUPLICATE_ASSIGMENT, valueVariable.id());
@@ -70,9 +71,9 @@ public class AssignmentConstraint extends ValueConstraint {
 
         Set<ThingVariable> thingArguments = new HashSet<>();
         Set<ValueVariable> valueArguments = new HashSet<>();
-        for (BoundVariable v : constraint.variables()) {
-            if (v.isThing()) thingArguments.add(registry.register(v.asThing()));
-            else if (v.isValue()) valueArguments.add(registry.register(v.asValue()));
+        for (TypeQLVariable v : constraint.variables()) {
+            if (v.isConceptVar()) thingArguments.add(registry.registerThingVariable(v.asConceptVar()));
+            else if (v.isValueVar()) valueArguments.add(registry.registerValueVariable(v.asValueVar()));
             else throw TypeDBException.of(ILLEGAL_STATE);
         }
         return new AssignmentConstraint(valueVariable, constraint.expression(), thingArguments, valueArguments);

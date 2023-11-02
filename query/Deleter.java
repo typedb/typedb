@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Label;
+import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Relation;
@@ -35,10 +36,13 @@ import com.vaticle.typedb.core.pattern.variable.ValueVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.reasoner.Reasoner;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
+import com.vaticle.typeql.lang.common.Reference;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,24 +64,32 @@ import static com.vaticle.typedb.core.query.common.Util.tryInferRoleType;
 
 public class Deleter {
 
-    private final Matcher matcher;
+    private final Getter getter;
     private final Set<ThingVariable> variables;
     private final Context.Query context;
 
-    public Deleter(Matcher matcher, Set<ThingVariable> variables, Context.Query context) {
-        this.matcher = matcher;
+    public Deleter(Getter getter, Set<ThingVariable> variables, Context.Query context) {
+        this.getter = getter;
         this.variables = variables;
         this.context = context;
         this.context.producer(Either.first(EXHAUSTIVE));
     }
 
-    public static Deleter create(Reasoner reasoner, TypeQLDelete query, Context.Query context) {
-        VariableRegistry registry = VariableRegistry.createFromThings(query.variables(), false);
-        registry.variables().forEach(Deleter::validate);
+    public static Deleter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLDelete query, Context.Query context) {
 
-        assert query.match().namedVariablesUnbound().containsAll(query.namedVariablesUnbound());
-        Matcher matcher = Matcher.create(reasoner, query.match().get(query.namedVariablesUnbound()));
-        return new Deleter(matcher, registry.things(), context);
+        VariableRegistry registry = VariableRegistry.createFromThings(query.statements(), false);
+        registry.variables().forEach(Deleter::validate);
+        assert query.match().get().namedVariables().containsAll(query.namedVariables());
+
+        Set<TypeQLVariable> filter = new HashSet<>(query.match().get().namedVariables());
+        filter.retainAll(query.namedVariables());
+        assert !filter.isEmpty();
+        if (query.modifiers().sort().isPresent()) {
+            filter.addAll(query.modifiers().sort().get().variables());
+        }
+
+        Getter getter = Getter.create(reasoner, conceptMgr, query.match().get().get(new ArrayList<>(filter)).modifiers(query.modifiers()), context);
+        return new Deleter(getter, registry.things(), context);
     }
 
     public static void validate(Variable var) {
@@ -103,7 +115,7 @@ public class Deleter {
     }
 
     public void execute() {
-        List<? extends ConceptMap> matches = matcher.execute(context).toList();
+        List<? extends ConceptMap> matches = getter.execute(context).toList();
         matches.forEach(matched -> new Operation(matched, variables).executeInPlace());
     }
 

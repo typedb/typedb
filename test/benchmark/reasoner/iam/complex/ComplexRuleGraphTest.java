@@ -68,7 +68,8 @@ public class ComplexRuleGraphTest {
                         "$f isa file, has path \"%s\";\n" +
                         "$o isa operation, has name \"%s\";\n" +
                         "$a (object: $f, action: $o) isa access;\n" +
-                        "$pe (subject: $p, access: $a) isa permission;\n",
+                        "$pe (subject: $p, access: $a) isa permission;\n" +
+                "get;",
                 queryParams.permissionEmail, queryParams.permissionObject, queryParams.permissionAction);
         Benchmark benchmark = new Benchmark("combinatorial-proofs-single", query, 1);
         runner.runBenchmark(benchmark);
@@ -85,7 +86,8 @@ public class ComplexRuleGraphTest {
                         "$o isa object, has id $o-id;\n" +
                         "$a isa action, has name $an;\n" +
                         "$ac (object: $o, action: $a) isa access;\n" +
-                        "$pe (subject: $p, access: $ac) isa permission;\n",
+                        "$pe (subject: $p, access: $ac) isa permission;\n" +
+                "get;",
                 queryParams.permissionEmail);
 
         Benchmark benchmark = new Benchmark("combinatorial-proofs-all", query, 67);

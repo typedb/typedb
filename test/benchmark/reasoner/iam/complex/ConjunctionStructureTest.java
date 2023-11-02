@@ -75,7 +75,7 @@ public class ConjunctionStructureTest {
                         "   $ac2(object: $o, action: $a2) isa access;\n" +
                         "   $p1 (subject: $s, access: $ac1) isa permission;\n" +
                         "   $p2 (subject: $s, access: $ac2) isa permission;\n" +
-                        "get $oid;",
+                "get $oid;",
                 queryParams.segregationEmail, queryParams.segregationObject, queryParams.segregationAction1, queryParams.segregationAction2);
         Benchmark benchmark = new Benchmark("multiple-starting-points", query, 1);
         benchmarker.runBenchmark(benchmark);
@@ -95,7 +95,8 @@ public class ConjunctionStructureTest {
                         "   $a1 isa action, has name \"%s\";\n" +
                         "   $a2 isa action, has name \"%s\";\n" +
                         "   (collection: $parent, member:$o) isa collection-membership;\n" +
-                        "   (subject: $s, object: $o, action: $a1, action: $a2) isa high-arity-test-segregation-violation;\n",
+                        "   (subject: $s, object: $o, action: $a1, action: $a2) isa high-arity-test-segregation-violation;\n" +
+                "get;",
                 queryParams.segregationEmail, queryParams.segregationObject, queryParams.segregationAction1, queryParams.segregationAction2);
 
         Benchmark benchmark = new Benchmark("high-arity-bounds", query, 1);
@@ -103,6 +104,6 @@ public class ConjunctionStructureTest {
 
         benchmark.assertAnswerCountCorrect();
         benchmark.assertRunningTime(1000);
-        benchmark.assertCounters(500, 15, 104, 128, 230);
+        benchmark.assertCounters(500, 22, 69, 102, 165);
     }
 }
