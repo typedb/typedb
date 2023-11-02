@@ -67,7 +67,8 @@ public class RealQueriesTest {
                         "$f isa file, has path \"%s\";\n" +
                         "$o isa operation, has name \"%s\";\n" +
                         "$a (object: $f, action: $o) isa access;\n" +
-                        "$pe (subject: $p, access: $a) isa permission, has validity true;\n",
+                        "$pe (subject: $p, access: $a) isa permission, has validity true;\n" +
+                "get;",
                 queryParams.permissionEmail, queryParams.permissionObject, queryParams.permissionAction);
         Benchmark benchmark = new Benchmark("check-permission", query, 1);
         benchmarker.runBenchmark(benchmark);
@@ -85,7 +86,8 @@ public class RealQueriesTest {
                         "$o isa object, has id $id;\n" +
                         "$a isa action, has name $n;\n" +
                         "$ac (object: $o, action: $a) isa access;\n" +
-                        "$pe (subject: $p, access: $ac) isa permission, has validity $v;\n",
+                        "$pe (subject: $p, access: $ac) isa permission, has validity $v;\n" +
+                "get;",
                 queryParams.permissionEmail);
         Benchmark benchmark = new Benchmark("list-subject-permissions", query, 67);
         benchmarker.runBenchmark(benchmark);
@@ -101,7 +103,8 @@ public class RealQueriesTest {
                 "$s isa subject, has id $s-id;\n" +
                 "$o isa object, has id $o-id;\n" +
                 "$p isa segregation-policy, has name $n;\n" +
-                "(subject: $s, object: $o, policy: $p) isa segregation-violation;\n";
+                "(subject: $s, object: $o, policy: $p) isa segregation-violation;\n" +
+                "get;";
         Benchmark benchmark = new Benchmark("list-segregation-violations", query, 1);
         benchmarker.runBenchmark(benchmark);
 
@@ -120,7 +123,8 @@ public class RealQueriesTest {
                 "$ac(object: $o, action: $a) isa access;\n" +
                 "$s-requesting isa subject, has parent-company-name \"Vaticle\", has id $s-requesting-id;\n" +
                 "$s-requested isa subject, has parent-company-name \"Vaticle\", has id $s-requested-id;\n" +
-                "(requester: $s-requesting, requestee: $s-requested, change: $ac) isa change-request;\n";
+                "(requester: $s-requesting, requestee: $s-requested, change: $ac) isa change-request;\n;" +
+                "get;";
         Benchmark benchmark = new Benchmark("list-change-requests", query, 7);
         benchmarker.runBenchmark(benchmark);
 

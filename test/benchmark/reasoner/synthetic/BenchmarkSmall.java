@@ -217,7 +217,7 @@ public class BenchmarkSmall {
 
                 TypeQLGet.Unmodified query = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;")).get();
 
-                TypeQLGet.Unmodified query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q; $x has index 'a'; ")).get();
+                TypeQLGet.Unmodified query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q; $x has index 'a';")).get();
 
                 assertEquals(answers, Util.timeQuery(query, tx, "full").size());
                 assertEquals(N, Util.timeQuery(query2, tx, "With specific resource").size());
@@ -268,7 +268,7 @@ public class BenchmarkSmall {
                 TypeQLGet.Unmodified query2 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x has index 'a';")).get();
 
                 // with substitution
-                Concept id = tx.query().get(TypeQL.parseQuery("match $x has index 'a';").asGet()).next().get(cVar("x"));
+                Concept id = tx.query().get(TypeQL.parseQuery("match $x has index 'a'; get;").asGet()).next().get(cVar("x"));
                 TypeQLGet.Unmodified query3 = TypeQL.match(TypeQL.parsePatterns("(from: $x, to: $y) isa Q;$x iid " + id.asThing().getIID().toHexString() + ";")).get();
 
                 Util.timeQuery(query, tx, "full");
@@ -373,7 +373,7 @@ public class BenchmarkSmall {
 
                 String queryString = "match (from: $x, to: $y) isa path;" +
                         "$x has index 'a0,0';" +
-                        "get $y; limit " + answers + ";";
+                        "get $y; limit " + answers + "; ";
 
                 assertEquals(Util.timeQuery(queryString, tx, "tree").size(), answers);
             }

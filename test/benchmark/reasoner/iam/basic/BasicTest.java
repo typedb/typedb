@@ -66,7 +66,8 @@ public class BasicTest {
     @Test
     public void testOwnership() {
         String query = "match\n" +
-                "$x isa access, has id $a; ";
+                "$x isa access, has id $a;\n" +
+                "get;";
         Benchmark benchmark = new Benchmark("inferred-ownership", query, NACCESS);
         benchmarker.runBenchmark(benchmark);
 
@@ -78,7 +79,8 @@ public class BasicTest {
     @Test
     public void testRelationWithRolePlayers() {
         String query = "match\n" +
-                "(start: $o, end: $x) isa object-pair;\n";
+                "(start: $o, end: $x) isa object-pair;\n" +
+                "get;";
         Benchmark benchmark = new Benchmark("relation-with-rp", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
 
@@ -90,7 +92,8 @@ public class BasicTest {
     @Test
     public void testRelationWithoutRolePlayer() {
         String query = "match\n" +
-                "$r isa object-pair;\n";
+                "$r isa object-pair;\n" +
+                "get;";
         Benchmark benchmark = new Benchmark("relation-without-rp", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
 
@@ -104,7 +107,8 @@ public class BasicTest {
         String query = String.format(
                 "match\n" +
                         "$o isa object, has id \"%s\";\n" +
-                        "(start: $o, end: $x) isa object-pair;\n",
+                        "(start: $o, end: $x) isa object-pair;\n" +
+                "get;",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("relation-bound", query, NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -121,7 +125,8 @@ public class BasicTest {
                         "$o1 isa object, has id \"%s\";\n" +
                         "$r1 (start: $o1, end: $x1) isa object-pair;\n" +
                         "$r1 is $r2;\n" +
-                        "$r2 (start: $o2, end: $x2);\n",
+                        "$r2 (start: $o2, end: $x2);\n" +
+                "get;",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("relation-unpacking", query, NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -134,7 +139,8 @@ public class BasicTest {
     @Test
     public void testInferredRelationAndOwnership() {
         String query = "match\n" +
-                "$r isa object-pair, has id $id;\n";
+                "$r isa object-pair, has id $id;\n" +
+                "get;";
         Benchmark benchmark = new Benchmark("inferred-relation-inferred-ownership", query, NOBJECTS * NOBJECTS * 2 - NOBJECTS);
         benchmarker.runBenchmark(benchmark);
         benchmark.assertAnswerCountCorrect();
@@ -149,7 +155,8 @@ public class BasicTest {
                 "match\n" +
                         "$a isa object, has id \"%s\";\n" +
                         "(start: $a, end: $b) isa object-pair;\n" +
-                        "(start: $b, end: $c) isa object-pair;\n",
+                        "(start: $b, end: $c) isa object-pair;\n" +
+                "get;",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("double-join", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -167,7 +174,7 @@ public class BasicTest {
                         "(start: $a, end: $b) isa object-pair;\n" +
                         "(start: $b, end: $c) isa object-pair;\n" +
                         "(start: $c, end: $d) isa object-pair;\n" +
-                        "get $a, $d;\n",
+                    "get $a, $d;\n",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("triple-join-with-projection", query, NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -183,7 +190,8 @@ public class BasicTest {
                 "match\n" +
                         "$a isa object, has id \"%s\";\n" +
                         "($a, $b) isa object-pair;\n" +
-                        "($b, $c) isa object-pair;\n",
+                        "($b, $c) isa object-pair;\n" +
+                "get;",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("double-join-symmetric", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -198,7 +206,8 @@ public class BasicTest {
         String query = String.format("match\n" +
                         "$a isa object, has id \"%s\";\n" +
                         "(start: $a, end: $b) isa object-pair;\n" +
-                        "(start: $b, end: $a) isa object-pair;\n",
+                        "(start: $b, end: $a) isa object-pair;\n" +
+                        "get;",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("double-join-loop", query, NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -213,7 +222,8 @@ public class BasicTest {
         String query = String.format("match\n" +
                         "$b isa object, has id \"%s\";\n" +
                         "(start: $a, end: $b) isa object-pair;\n" +
-                        "(start: $b, end: $c) isa object-pair;\n",
+                        "(start: $b, end: $c) isa object-pair;\n" +
+                        "get;",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("double-join-from-middle", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -229,7 +239,8 @@ public class BasicTest {
                 "match\n" +
                         "$a isa object, has id \"%s\";\n" +
                         "(start: $a, end: $b) isa object-pair;\n" +
-                        "(start: $a, end: $c) isa object-pair;\n",
+                        "(start: $a, end: $c) isa object-pair;\n" +
+                        "get;",
                 queryParams.basicTestObject);
         Benchmark benchmark = new Benchmark("double-join-out-going", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
@@ -243,7 +254,8 @@ public class BasicTest {
     public void testQueryTwice() {
         String query = "match\n" +
                 "(start: $a, end: $b) isa object-pair;\n" +
-                "(start: $a, end: $b) isa object-pair;\n";
+                "(start: $a, end: $b) isa object-pair;\n" +
+                "get;";
         Benchmark benchmark = new Benchmark("double-join-self", query, NOBJECTS * NOBJECTS);
         benchmarker.runBenchmark(benchmark);
 

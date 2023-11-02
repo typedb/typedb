@@ -247,12 +247,12 @@ public class BenchmarkBig {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
                 Entity entity = tx.concepts().getEntityType("a-entity").getInstances().next();
                 String queryPattern = "(from: $x, to: $y) isa P;";
-                String queryString = "match " + queryPattern;
+                String queryString = "match " + queryPattern + "get;";
                 String subbedQueryString = "match " + queryPattern +
-                        " $x iid " + entity.getIID().toHexString() + ";";
+                        " $x iid " + entity.getIID().toHexString() + "; get;";
                 String subbedQueryString2 = "match " + queryPattern +
-                        " $y iid " + entity.getIID().toHexString() + ";";
-                String limitedQueryString = "match " + queryPattern +
+                        " $y iid " + entity.getIID().toHexString() + "; get;";
+                String limitedQueryString = "match " + queryPattern + " get;" +
                         " limit " + limit + ";";
 
                 Util.timeQuery(queryString, tx, "full");
@@ -288,14 +288,14 @@ public class BenchmarkBig {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
                 Thing entityId = tx.concepts().getEntityType("genericEntity").getInstances().next();
                 String queryPattern = "(fromRole: $x, toRole: $y) isa A;";
-                String queryString = "match " + queryPattern;
+                String queryString = "match " + queryPattern + " get;";
                 String subbedQueryString = "match " +
                         queryPattern +
-                        " $x iid " + entityId.getIID().toHexString() + ";";
+                        " $x iid " + entityId.getIID().toHexString() + "; get;";
                 String subbedQueryString2 = "match " +
                         queryPattern +
-                        " $y iid " + entityId.getIID().toHexString() + ";";
-                String limitedQueryString = "match " + queryPattern +
+                        " $y iid " + entityId.getIID().toHexString() + "; get;";
+                String limitedQueryString = "match " + queryPattern + " get;" +
                         " limit " + limit + ";";
 
                 Util.timeQuery(queryString, tx, "full");
@@ -325,15 +325,15 @@ public class BenchmarkBig {
 
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
-                Thing firstId = tx.query().get(TypeQL.parseQuery("match $x has index 'first';").asGet()).next().get(ConceptVariableBuilder.named("x")).asThing();
-                Thing lastId = tx.query().get(TypeQL.parseQuery("match $x has index '" + N + "';").asGet()).next().get(ConceptVariableBuilder.named("x")).asThing();
+                Thing firstId = tx.query().get(TypeQL.parseQuery("match $x has index 'first'; get;").asGet()).next().get(ConceptVariableBuilder.named("x")).asThing();
+                Thing lastId = tx.query().get(TypeQL.parseQuery("match $x has index '" + N + "'; get;").asGet()).next().get(ConceptVariableBuilder.named("x")).asThing();
                 String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
-                String queryString = "match " + queryPattern;
+                String queryString = "match " + queryPattern + "get;";
                 String subbedQueryString = "match " + queryPattern +
-                        "$x iid " + firstId.getIID().toHexString() + ";";
+                        "$x iid " + firstId.getIID().toHexString() + "; get;";
                 String subbedQueryString2 = "match " + queryPattern +
-                        "$y iid " + lastId.getIID().toHexString() + ";";
-                String limitedQueryString = "match " + queryPattern +
+                        "$y iid " + lastId.getIID().toHexString() + "; get;";
+                String limitedQueryString = "match " + queryPattern + " get;" +
                         " limit 1;";
                 assertEquals(1, Util.timeQuery(queryString, tx, "full").size());
                 assertEquals(1, Util.timeQuery(subbedQueryString, tx, "first argument bound").size());
