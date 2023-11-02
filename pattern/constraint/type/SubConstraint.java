@@ -53,7 +53,7 @@ public class SubConstraint extends TypeConstraint {
 
     static SubConstraint of(TypeVariable owner, com.vaticle.typeql.lang.pattern.constraint.TypeConstraint.Sub constraint,
                             VariableRegistry registry) {
-        return new SubConstraint(owner, registry.register(constraint.type()), constraint.isExplicit());
+        return new SubConstraint(owner, registry.registerTypeVariable(constraint.type()), constraint.isExplicit());
     }
 
     static SubConstraint of(TypeVariable owner, SubConstraint clone, VariableCloner cloner) {

@@ -58,8 +58,8 @@ public class RelatesConstraint extends TypeConstraint {
 
     static RelatesConstraint of(TypeVariable owner, com.vaticle.typeql.lang.pattern.constraint.TypeConstraint.Relates constraint,
                                 VariableRegistry registry) {
-        TypeVariable roleType = registry.register(constraint.role());
-        TypeVariable overriddenRoleType = constraint.overridden().map(registry::register).orElse(null);
+        TypeVariable roleType = registry.registerTypeVariable(constraint.role());
+        TypeVariable overriddenRoleType = constraint.overridden().map(registry::registerTypeVariable).orElse(null);
         return new RelatesConstraint(owner, roleType, overriddenRoleType);
     }
 

@@ -316,10 +316,11 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                     case DELETE_REQ:
                     case UPDATE_REQ:
                         return true;
-                    case MATCH_REQ:
-                    case MATCH_AGGREGATE_REQ:
-                    case MATCH_GROUP_REQ:
-                    case MATCH_GROUP_AGGREGATE_REQ:
+                    case GET_REQ:
+                    case GET_AGGREGATE_REQ:
+                    case GET_GROUP_REQ:
+                    case GET_GROUP_AGGREGATE_REQ:
+                    case FETCH_REQ:
                     case EXPLAIN_REQ:
                         return false;
                 }

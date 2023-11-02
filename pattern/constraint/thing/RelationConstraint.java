@@ -197,8 +197,8 @@ public class RelationConstraint extends ThingConstraint implements AlphaEquivale
         public static RolePlayer of(com.vaticle.typeql.lang.pattern.constraint.ThingConstraint.Relation.RolePlayer constraint,
                                     VariableRegistry registry) {
             return new RolePlayer(
-                    constraint.roleType().map(registry::register).orElse(null),
-                    registry.register(constraint.player()),
+                    constraint.roleType().map(registry::registerTypeVariable).orElse(null),
+                    registry.registerThingVariable(constraint.player()),
                     constraint.repetition()
             );
         }

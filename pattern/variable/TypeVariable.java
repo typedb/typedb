@@ -79,6 +79,7 @@ public class TypeVariable extends Variable implements AlphaEquivalent<TypeVariab
     }
 
     public static TypeVariable of(Identifier.Variable identifier) {
+        // TODO: if the identifier is a label, add a label constraint
         return new TypeVariable(identifier);
     }
 

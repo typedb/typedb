@@ -23,8 +23,8 @@ import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
-import com.vaticle.typedb.core.concept.answer.Numeric;
-import com.vaticle.typedb.core.concept.answer.NumericGroup;
+import com.vaticle.typedb.core.concept.answer.ReadableConceptTree;
+import com.vaticle.typedb.core.concept.answer.ValueGroup;
 import com.vaticle.typedb.core.concept.thing.Attribute;
 import com.vaticle.typedb.core.concept.thing.Entity;
 import com.vaticle.typedb.core.concept.thing.Relation;
@@ -51,15 +51,17 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
 import static com.google.protobuf.ByteString.copyFrom;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeUUID;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Concept.Existence.INFERRED;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.conceptMap;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.numeric;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.Answer.readableConceptTree;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Logic.Rule.protoRule;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.protoAttribute;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.Thing.protoEntity;
@@ -75,6 +77,7 @@ public class ResponseBuilder {
 
     public static StatusRuntimeException exception(Throwable e) {
         if (e instanceof StatusRuntimeException) return (StatusRuntimeException) e;
+        else if (e instanceof NullPointerException) return Status.INTERNAL.withDescription("Null Pointer Exception in TypeDB Server! This is a bug!").asRuntimeException();
         else return Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException();
     }
 
@@ -107,17 +110,17 @@ public class ResponseBuilder {
 
         public static DatabaseProto.DatabaseManager.Get.Res getRes(String serverAddress, String name) {
             return DatabaseProto.DatabaseManager.Get.Res.newBuilder().setDatabase(
-                DatabaseProto.DatabaseReplicas.newBuilder().setName(name).addReplicas(
-                        DatabaseProto.DatabaseReplicas.Replica.newBuilder().setAddress(serverAddress).setPrimary(true).setPreferred(true).setTerm(0).build()
-                )
+                    DatabaseProto.DatabaseReplicas.newBuilder().setName(name).addReplicas(
+                            DatabaseProto.DatabaseReplicas.Replica.newBuilder().setAddress(serverAddress).setPrimary(true).setPreferred(true).setTerm(0).build()
+                    )
             ).build();
         }
 
         public static DatabaseProto.DatabaseManager.All.Res allRes(String serverAddress, List<String> names) {
             return DatabaseProto.DatabaseManager.All.Res.newBuilder().addAllDatabases(
-                iterate(names).map(name -> DatabaseProto.DatabaseReplicas.newBuilder().setName(name).addReplicas(
-                    DatabaseProto.DatabaseReplicas.Replica.newBuilder().setAddress(serverAddress).setPrimary(true).setPreferred(true).setTerm(0).build()
-                ).build()).toList()
+                    iterate(names).map(name -> DatabaseProto.DatabaseReplicas.newBuilder().setName(name).addReplicas(
+                            DatabaseProto.DatabaseReplicas.Replica.newBuilder().setAddress(serverAddress).setPrimary(true).setPreferred(true).setTerm(0).build()
+                    ).build()).toList()
             ).build();
         }
     }
@@ -216,31 +219,37 @@ public class ResponseBuilder {
             ));
         }
 
-        public static TransactionProto.Transaction.ResPart matchResPart(UUID reqID, List<? extends ConceptMap> answers) {
-            return queryMgrResPart(reqID, QueryProto.QueryManager.ResPart.newBuilder().setMatchResPart(
-                    QueryProto.QueryManager.Match.ResPart.newBuilder().addAllAnswers(
+        public static TransactionProto.Transaction.ResPart getResPart(UUID reqID, List<? extends ConceptMap> answers) {
+            return queryMgrResPart(reqID, QueryProto.QueryManager.ResPart.newBuilder().setGetResPart(
+                    QueryProto.QueryManager.Get.ResPart.newBuilder().addAllAnswers(
                             iterate(answers).map(Answer::conceptMap).toList()
                     )));
         }
 
-        public static TransactionProto.Transaction.Res matchAggregateRes(UUID reqID, Numeric answer) {
-            return queryMgrRes(reqID, QueryProto.QueryManager.Res.newBuilder().setMatchAggregateRes(
-                    QueryProto.QueryManager.MatchAggregate.Res.newBuilder().setAnswer(numeric(answer))
-            ));
+        public static TransactionProto.Transaction.Res getAggregateRes(UUID reqID, Optional<com.vaticle.typedb.core.concept.value.Value<?>> answer) {
+            QueryProto.QueryManager.GetAggregate.Res.Builder response = QueryProto.QueryManager.GetAggregate.Res.newBuilder();
+            answer.ifPresent(value -> response.setAnswer(Value.protoValue(value)));
+            return queryMgrRes(reqID, QueryProto.QueryManager.Res.newBuilder().setGetAggregateRes(response));
         }
 
-        public static TransactionProto.Transaction.ResPart matchGroupResPart(UUID reqID, List<ConceptMapGroup> answers) {
-            return queryMgrResPart(reqID, QueryProto.QueryManager.ResPart.newBuilder().setMatchGroupResPart(
-                    QueryProto.QueryManager.MatchGroup.ResPart.newBuilder().addAllAnswers(
+        public static TransactionProto.Transaction.ResPart getGroupResPart(UUID reqID, List<ConceptMapGroup> answers) {
+            return queryMgrResPart(reqID, QueryProto.QueryManager.ResPart.newBuilder().setGetGroupResPart(
+                    QueryProto.QueryManager.GetGroup.ResPart.newBuilder().addAllAnswers(
                             iterate(answers).map(Answer::conceptMapGroup).toList())
             ));
         }
 
-        public static TransactionProto.Transaction.ResPart matchGroupAggregateResPart(UUID reqID, List<NumericGroup> answers) {
-            return queryMgrResPart(reqID, QueryProto.QueryManager.ResPart.newBuilder().setMatchGroupAggregateResPart(
-                    QueryProto.QueryManager.MatchGroupAggregate.ResPart.newBuilder().addAllAnswers(
-                            iterate(answers).map(Answer::numericGroup).toList()))
+        public static TransactionProto.Transaction.ResPart getGroupAggregateResPart(UUID reqID, List<ValueGroup> answers) {
+            return queryMgrResPart(reqID, QueryProto.QueryManager.ResPart.newBuilder().setGetGroupAggregateResPart(
+                    QueryProto.QueryManager.GetGroupAggregate.ResPart.newBuilder().addAllAnswers(
+                            iterate(answers).map(Answer::valueGroup).toList()))
             );
+        }
+
+        public static TransactionProto.Transaction.ResPart fetchResPart(UUID reqID, List<? extends ReadableConceptTree> answers) {
+            QueryProto.QueryManager.Fetch.ResPart.Builder resPartBuilder = QueryProto.QueryManager.Fetch.ResPart.newBuilder();
+            answers.forEach(tree -> resPartBuilder.addAnswers(readableConceptTree(tree)));
+            return queryMgrResPart(reqID, QueryProto.QueryManager.ResPart.newBuilder().setFetchResPart(resPartBuilder));
         }
 
         public static TransactionProto.Transaction.ResPart insertResPart(UUID reqID, List<ConceptMap> answers) {
@@ -412,14 +421,14 @@ public class ResponseBuilder {
                 return ConceptProto.Concept.newBuilder().setAttribute(protoAttribute(concept.asAttribute())).build();
             } else if (concept.isValue()) {
                 return ConceptProto.Concept.newBuilder().setValue(Value.protoValue(concept.asValue())).build();
-            } else throw TypeDBException.of(ErrorMessage.Internal.ILLEGAL_STATE);
+            } else throw TypeDBException.of(ILLEGAL_STATE);
         }
     }
 
     public static class Type {
 
         public static ConceptProto.ThingType protoThingType(com.vaticle.typedb.core.concept.type.ThingType type) {
-            var builder = ConceptProto.ThingType.newBuilder();
+            ConceptProto.ThingType.Builder builder = ConceptProto.ThingType.newBuilder();
             if (type.isEntityType()) builder.setEntityType(protoEntityType(type.asEntityType()));
             else if (type.isRelationType()) builder.setRelationType(protoRelationType(type.asRelationType()));
             else if (type.isAttributeType()) builder.setAttributeType(protoAttributeType(type.asAttributeType()));
@@ -845,10 +854,13 @@ public class ResponseBuilder {
     public static class Thing {
 
         public static ConceptProto.Thing protoThing(com.vaticle.typedb.core.concept.thing.Thing thing) {
-            if (thing.isEntity()) return ConceptProto.Thing.newBuilder().setEntity(protoEntity(thing.asEntity())).build();
-            else if (thing.isRelation()) return ConceptProto.Thing.newBuilder().setRelation(protoRelation(thing.asRelation())).build();
-            else if (thing.isAttribute()) return ConceptProto.Thing.newBuilder().setAttribute(protoAttribute(thing.asAttribute())).build();
-            else throw TypeDBException.of(ErrorMessage.Internal.ILLEGAL_STATE);
+            if (thing.isEntity())
+                return ConceptProto.Thing.newBuilder().setEntity(protoEntity(thing.asEntity())).build();
+            else if (thing.isRelation())
+                return ConceptProto.Thing.newBuilder().setRelation(protoRelation(thing.asRelation())).build();
+            else if (thing.isAttribute())
+                return ConceptProto.Thing.newBuilder().setAttribute(protoAttribute(thing.asAttribute())).build();
+            else throw TypeDBException.of(ILLEGAL_STATE);
         }
 
         public static ConceptProto.Entity protoEntity(com.vaticle.typedb.core.concept.thing.Entity thing) {
@@ -1114,23 +1126,65 @@ public class ResponseBuilder {
                     .build();
         }
 
-        public static AnswerProto.Numeric numeric(Numeric answer) {
-            AnswerProto.Numeric.Builder builder = AnswerProto.Numeric.newBuilder();
-            if (answer.isLong()) {
-                builder.setLongValue(answer.asLong());
-            } else if (answer.isDouble()) {
-                builder.setDoubleValue(answer.asDouble());
-            } else if (answer.isNaN()) {
-                builder.setNan(true);
-            }
+        public static AnswerProto.ValueGroup valueGroup(ValueGroup answer) {
+            AnswerProto.ValueGroup.Builder response = AnswerProto.ValueGroup.newBuilder().setOwner(Concept.protoConcept(answer.owner()));
+            answer.value().ifPresent(value -> response.setValue(Value.protoValue(value)));
+            return response.build();
+        }
+
+        public static AnswerProto.ReadableConceptTree readableConceptTree(ReadableConceptTree answer) {
+            return AnswerProto.ReadableConceptTree.newBuilder()
+                    .setRoot(readableConceptTreeNode(answer.root()))
+                    .build();
+        }
+
+        private static AnswerProto.ReadableConceptTree.Node readableConceptTreeNode(ReadableConceptTree.Node node) {
+            AnswerProto.ReadableConceptTree.Node.Builder builder = AnswerProto.ReadableConceptTree.Node.newBuilder();
+            if (node.isMap()) return builder.setMap(readableConceptTreeNode(node.asMap())).build();
+            else if (node.isList()) return builder.setList(readableConceptTreeNode(node.asList())).build();
+            else if (node.isLeaf()) {
+                return builder.setReadableConcept(readableConcept(node.asLeaf().readableConcept())).build();
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+        }
+
+        private static AnswerProto.ReadableConceptTree.Node.Map readableConceptTreeNode(ReadableConceptTree.Node.Map node) {
+            AnswerProto.ReadableConceptTree.Node.Map.Builder builder = AnswerProto.ReadableConceptTree.Node.Map.newBuilder();
+            node.map().forEach((key, concept) -> {
+                AnswerProto.ReadableConceptTree.Node value = readableConceptTreeNode(concept);
+                builder.putMap(key, value);
+            });
             return builder.build();
         }
 
-        public static AnswerProto.NumericGroup numericGroup(NumericGroup answer) {
-            return AnswerProto.NumericGroup.newBuilder()
-                    .setOwner(Concept.protoConcept(answer.owner()))
-                    .setNumber(numeric(answer.numeric()))
-                    .build();
+        private static AnswerProto.ReadableConceptTree.Node.List readableConceptTreeNode(ReadableConceptTree.Node.List node) {
+            AnswerProto.ReadableConceptTree.Node.List.Builder builder = AnswerProto.ReadableConceptTree.Node.List.newBuilder();
+            node.list().forEach(listNode -> builder.addList(readableConceptTreeNode(listNode)));
+            return builder.build();
+        }
+
+        private static AnswerProto.ReadableConceptTree.Node.ReadableConcept readableConcept(
+                @Nullable com.vaticle.typedb.core.concept.Concept.Readable concept) {
+            AnswerProto.ReadableConceptTree.Node.ReadableConcept.Builder builder = AnswerProto.ReadableConceptTree.Node.ReadableConcept.newBuilder();
+            if (concept == null) return null;
+            else if (concept.isType()) {
+                com.vaticle.typedb.core.concept.type.Type type = concept.asType();
+                if (type.isEntityType()) {
+                    return builder.setEntityType(protoEntityType(type.asEntityType())).build();
+                } else if (type.isRelationType()) {
+                    return builder.setRelationType(protoRelationType(type.asRelationType())).build();
+                } else if (type.isAttributeType()) {
+                    return builder.setAttributeType(protoAttributeType(type.asAttributeType())).build();
+                } else if (type.isRoleType()) {
+                    return builder.setRoleType(protoRoleType(type.asRoleType())).build();
+                } else if (type.isThingType()) {
+                    return builder.setThingTypeRoot(protoThingTypeRoot()).build();
+                } else throw TypeDBException.of(ILLEGAL_STATE);
+            } else if (concept.isAttribute()) {
+                return builder.setAttribute(protoAttribute(concept.asAttribute())).build();
+            } else if (concept.isValue()) {
+                return builder.setValue(Value.protoValue(concept.asValue())).build();
+            } else throw TypeDBException.of(ILLEGAL_STATE);
+
         }
     }
 }

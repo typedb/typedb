@@ -119,7 +119,7 @@ public class RuleScaling {
                     );
                     Rule relationRule = TypeQL.rule("relationRule" + i)
                             .when(specificPattern.asConjunction())
-                            .then(TypeQL.parseVariable("(someRole: $link, anotherRole: $anotherLink) isa inferredRelation").asThing());
+                            .then(TypeQL.parseStatement("(someRole: $link, anotherRole: $anotherLink) isa inferredRelation").asThing());
 
                     tx.query().define(TypeQL.define(relationRule));
 
@@ -128,7 +128,7 @@ public class RuleScaling {
                                     specificPattern,
                                     TypeQL.parsePattern("$r (someRole: $link, anotherRole: $anotherLink) isa inferredRelation")
                             ))
-                            .then(TypeQL.parseVariable("$r has inferredAttribute 'inferredValue" + i + "'").asThing());
+                            .then(TypeQL.parseStatement("$r has inferredAttribute 'inferredValue" + i + "'").asThing());
 
                     tx.query().define(TypeQL.define(attributeRule));
 
@@ -138,7 +138,7 @@ public class RuleScaling {
                                     TypeQL.parsePattern("$r (someRole: $link, anotherRole: $anotherLink) isa inferredRelation"),
                                     TypeQL.parsePattern("$r has inferredAttribute 'inferredValue" + i + "'")
                             ))
-                            .then(TypeQL.parseVariable("$r has anotherInferredAttribute 'anotherInferredValue" + i + "'").asThing());
+                            .then(TypeQL.parseStatement("$r has anotherInferredAttribute 'anotherInferredValue" + i + "'").asThing());
 
                     tx.query().define(TypeQL.define(anotherAttributeRule));
 
@@ -147,7 +147,7 @@ public class RuleScaling {
                                     TypeQL.parsePattern("$r (someRole: $link, anotherRole: $anotherLink) isa inferredRelation"),
                                     TypeQL.parsePattern("$r has inferredAttribute 'inferredValue" + i + "'"),
                                     TypeQL.parsePattern("$r has anotherInferredAttribute 'anotherInferredValue" + i + "'")))
-                            .then(TypeQL.parseVariable("(someRole: $anotherLink, anotherRole: $index) isa indexingRelation").asThing());
+                            .then(TypeQL.parseStatement("(someRole: $anotherLink, anotherRole: $index) isa indexingRelation").asThing());
 
                     tx.query().define(TypeQL.define(indexingRelationRule));
                 }

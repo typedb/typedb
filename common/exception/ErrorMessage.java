@@ -312,6 +312,32 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         }
     }
 
+    public static class Projection extends ErrorMessage {
+        public static final Projection PROJECTION_VARIABLE_UNNAMED =
+                new Projection(1, "Projection variable '%s' must be named.");
+        public static final Projection PROJECTION_VARIABLE_UNBOUND =
+                new Projection(2, "Projection variable '%s' is not bound in the preceding match clause.");
+        public static final Projection VARIABLE_PROJECTION_CONCEPT_NOT_READABLE =
+                new Projection(3, "The variable projection '%s' cannot be used to fetch entity or relation instances. Entities and relations must be mapped to attributes.");
+        public static final Projection ILLEGAL_ATTRIBUTE_PROJECTION_TYPE_VARIABLE =
+                new Projection(4, "Illegal attribute projection from type variable '%s'.");
+        public static final Projection ILLEGAL_ATTRIBUTE_PROJECTION_ATTRIBUTE_TYPE_INVALID =
+                new Projection(5, "Attribute projection from '%s' maps to an invalid attribute type '%s'.");
+        public static final Projection ILLEGAL_ATTRIBUTE_PROJECTION_TYPES_NOT_OWNED =
+                new Projection(6, "Projection from '%s' to attribute type '%s' is illegal, since '%s' could be of type '%s' which does not own the attribute type or any of its subtypes. Constrain the 'match' clause such that all types can own the attribute type or its subtypes.");
+        public static final Projection SUBQUERY_UNBOUNDED =
+                new Projection(7, "Subquery labeled '%s' is not bounded by any parent match clause.");
+
+
+        private static final String codePrefix = "PRO";
+        private static final String messagePrefix = "Invalid projection operation";
+
+        Projection(int number, String message) {
+            super(codePrefix, number, messagePrefix, message);
+        }
+    }
+
+
     public static class Expression extends ErrorMessage {
         public static final Expression AMBIGUOUS_VARIABLE_TYPE =
                 new Expression(1, "The variable '%s' has ambiguous value types: '%s'.");
@@ -324,7 +350,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Expression ILLEGAL_CONVERSION =
                 new Expression(5, "The expression '%s' with value type '%s' cannot be converted to type '%s'.");
         public static final Expression ILLEGAL_FUNCTION_ARGUMENT_TYPE =
-                new Expression(6, "The expression function '%s' cannot accept arguments of value type '%s'.");
+              new Expression(6, "The expression function '%s' cannot accept arguments of value type '%s'.");
         public static final Expression ARGUMENT_COUNT_MISMATCH =
                 new Expression(7, "The expression '%s' expects '%s' arguments but received '%s': '%s'.");
         public static final Expression EVALUATION_ERROR =

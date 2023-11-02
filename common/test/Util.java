@@ -18,7 +18,13 @@
 
 package com.vaticle.typedb.core.common.test;
 
+import com.eclipsesource.json.JsonArray;
+import com.eclipsesource.json.JsonObject;
+import com.eclipsesource.json.JsonValue;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -72,5 +78,58 @@ public class Util {
         } catch (RuntimeException e) {
             assert e.getMessage().contains(message);
         }
+    }
+
+    public static boolean jsonEquals(JsonValue first, JsonValue second, boolean orderedArrays) {
+        if (first == second) return true;
+        else if (!first.getClass().equals(second.getClass())) return false;
+        else if (first.isObject()) return jsonObjectEquals(first.asObject(), second.asObject(), orderedArrays);
+        else if (first.isArray()) return jsonArrayEquals(orderedArrays, first.asArray(), second.asArray());
+        else return first.equals(second);
+    }
+
+    private static boolean jsonObjectEquals(JsonObject firstObject, JsonObject secondObject, boolean orderedArrays) {
+        for (String firstKey : firstObject.names()) {
+            JsonValue firstValue = firstObject.get(firstKey);
+            JsonValue secondValue;
+            if ((secondValue = secondObject.get(firstKey)) == null ||
+                    !com.vaticle.typedb.core.common.test.Util.jsonEquals(firstValue, secondValue, orderedArrays)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean jsonArrayEquals(boolean orderedArrays, JsonArray firstArray, JsonArray secondArray) {
+        if (firstArray.size() != secondArray.size()) return false;
+        if (orderedArrays) return jsonArrayEqualsOrdered(firstArray, secondArray);
+        else return jsonArrayEqualsUnordered(firstArray, secondArray);
+    }
+
+    private static boolean jsonArrayEqualsUnordered(JsonArray firstArray, JsonArray secondArray) {
+        List<JsonValue> secondCopy = new ArrayList<>(secondArray.values());
+        for (int i = 0; i < firstArray.size(); i++) {
+            boolean found = false;
+            int j;
+            JsonValue firstValue = firstArray.get(i);
+            for (j = 0; j < secondCopy.size(); j++) {
+                if (com.vaticle.typedb.core.common.test.Util.jsonEquals(firstValue, secondCopy.get(j), false)) {
+                    secondCopy.remove(j);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
+
+    private static boolean jsonArrayEqualsOrdered(JsonArray firstArray, JsonArray secondArray) {
+        for (int i = 0; i < firstArray.size(); i++) {
+            if (!com.vaticle.typedb.core.common.test.Util.jsonEquals(firstArray.get(i), secondArray.get(i), true)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

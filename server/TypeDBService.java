@@ -127,9 +127,9 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         try {
             if (request.getVersion() != VersionProto.Version.VERSION) {
                 int driverProtocolVersion = request.getVersion() == VersionProto.Version.UNSPECIFIED ?
-                        0 : request.getVersion().getNumber();
+                        0 : request.getVersionValue();
                 TypeDBException error = TypeDBException.of(
-                        PROTOCOL_VERSION_MISMATCH, VersionProto.Version.VERSION.getNumber(), driverProtocolVersion
+                        PROTOCOL_VERSION_MISMATCH, VersionProto.Version.VERSION, driverProtocolVersion
                 );
                 responder.onError(exception(error));
                 LOG.error(error.getMessage(), error);

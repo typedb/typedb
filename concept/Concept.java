@@ -82,4 +82,26 @@ public interface Concept {
     Value<?> asValue();
 
     TypeDBException exception(TypeDBException exception);
+
+    interface Readable {
+
+        String KEY_TYPE = "type";
+        String KEY_ROOT = "root";
+        String KEY_LABEL = "label";
+        String KEY_VALUE = "value";
+        String KEY_VALUE_TYPE = "value_type";
+
+        boolean isType();
+
+        boolean isAttribute();
+
+        boolean isValue();
+
+        Type asType();
+
+        Attribute asAttribute();
+
+        Value<?> asValue();
+
+    }
 }

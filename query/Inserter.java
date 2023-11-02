@@ -44,13 +44,14 @@ import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
-import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
+import com.vaticle.typeql.lang.common.TypeQLVariable;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -83,14 +84,14 @@ import static com.vaticle.typeql.lang.common.TypeQLToken.Predicate.Equality.EQ;
 
 public class Inserter {
 
-    private final Matcher matcher;
+    private final Getter getter;
     private final ConceptManager conceptMgr;
     private final Set<ThingVariable> variables;
     private final Context.Query context;
 
-    public Inserter(@Nullable Matcher matcher, ConceptManager conceptMgr,
+    public Inserter(@Nullable Getter getter, ConceptManager conceptMgr,
                     Set<ThingVariable> variables, Context.Query context) {
-        this.matcher = matcher;
+        this.getter = getter;
         this.conceptMgr = conceptMgr;
         this.variables = variables;
         this.context = context;
@@ -98,28 +99,33 @@ public class Inserter {
     }
 
     public static Inserter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLInsert query, Context.Query context) {
-        Matcher matcher = null;
+        Getter getter = null;
         if (query.match().isPresent()) {
-            TypeQLMatch.Unfiltered match = query.match().get();
-            List<UnboundVariable> filter = new ArrayList<>(match.namedVariablesUnbound());
-            filter.retainAll(query.namedVariablesUnbound());
+            TypeQLGet.Unmodified get = query.match().get().get();
+            Set<TypeQLVariable> filter = new HashSet<>(query.match().get().namedVariables());
+            filter.retainAll(query.namedVariables());
             assert !filter.isEmpty();
-            matcher = Matcher.create(reasoner, conceptMgr, match.get(filter));
+            if (query.modifiers().sort().isPresent()) {
+                filter.addAll(query.modifiers().sort().get().variables());
+            }
+            getter = Getter.create(reasoner, conceptMgr, get.match().get(new ArrayList<>(filter)).modifiers(query.modifiers()), context);
         }
-        VariableRegistry registry = VariableRegistry.createFromThings(query.variables());
-        for (Variable variable : registry.variables()) validate(variable, matcher);
-        return new Inserter(matcher, conceptMgr, registry.things(), context);
+        VariableRegistry registry = VariableRegistry.createFromThings(query.statements());
+        for (Variable var : registry.variables()) {
+            validate(var, getter);
+        }
+        return new Inserter(getter, conceptMgr, registry.things(), context);
     }
 
-    public static void validate(Variable var, @Nullable Matcher matcher) {
-        if (var.isType()) validate(var.asType(), matcher);
+    public static void validate(Variable var, @Nullable Getter getter) {
+        if (var.isType()) validate(var.asType(), getter);
         else if (var.isThing()) validate(var.asThing());
         else if (var.isValue()) validate(var.asValue());
     }
 
-    private static void validate(TypeVariable var, @Nullable Matcher matcher) {
+    private static void validate(TypeVariable var, @Nullable Getter getter) {
         if (var.id().isName() &&
-                (matcher == null || !matcher.disjunction().sharedVariables().contains(var.id().asName()))) {
+                (getter == null || !getter.disjunction().sharedVariables().contains(var.id().asName()))) {
             throw TypeDBException.of(ILLEGAL_UNBOUND_TYPE_VAR_IN_INSERT, var.id());
         }
     }
@@ -147,12 +153,12 @@ public class Inserter {
     }
 
     public FunctionalIterator<ConceptMap> execute() {
-        if (matcher != null) return context.options().parallel() ? executeParallel() : executeSerial();
+        if (getter != null) return context.options().parallel() ? executeParallel() : executeSerial();
         else return single(new Operation(conceptMgr, new ConceptMap(), variables).execute());
     }
 
     private FunctionalIterator<ConceptMap> executeParallel() {
-        List<? extends List<? extends ConceptMap>> lists = matcher.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
+        List<? extends List<? extends ConceptMap>> lists = getter.execute(context).toLists(PARALLELISATION_SPLIT_MIN, PARALLELISATION_FACTOR);
         assert !lists.isEmpty();
         List<ConceptMap> inserts;
         if (lists.size() == 1) inserts = iterate(lists.get(0)).map(
@@ -165,7 +171,7 @@ public class Inserter {
     }
 
     private FunctionalIterator<ConceptMap> executeSerial() {
-        List<? extends ConceptMap> matches = matcher.execute(context).toList();
+        List<? extends ConceptMap> matches = getter.execute(context).toList();
         return iterate(iterate(matches).map(matched -> new Operation(conceptMgr, matched, variables).execute()).toList());
     }
 

@@ -37,8 +37,8 @@ import com.vaticle.typedb.core.traversal.GraphTraversal;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typeql.lang.pattern.Conjunctable;
-import com.vaticle.typeql.lang.pattern.variable.BoundVariable;
-import com.vaticle.typeql.lang.pattern.variable.builder.Expression.Constant;
+import com.vaticle.typeql.lang.pattern.expression.Expression.Constant;
+import com.vaticle.typeql.lang.pattern.statement.Statement;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -105,17 +105,17 @@ public class Conjunction implements Pattern, Cloneable {
 
     public static Conjunction create(com.vaticle.typeql.lang.pattern.Conjunction<Conjunctable> typeql,
                                      @Nullable VariableRegistry bounds) {
-        List<BoundVariable> typeQLVariables = new ArrayList<>();
+        List<Statement> typeQLVariables = new ArrayList<>();
         List<com.vaticle.typeql.lang.pattern.Negation<?>> typeQLNegations = new ArrayList<>();
 
         typeql.patterns().forEach(conjunctable -> {
-            if (conjunctable.isVariable()) typeQLVariables.add(conjunctable.asVariable());
+            if (conjunctable.isStatement()) typeQLVariables.add(conjunctable.asStatement());
             else if (conjunctable.isNegation()) typeQLNegations.add(conjunctable.asNegation());
             else throw TypeDBException.of(ILLEGAL_STATE);
         });
 
         if (typeQLVariables.isEmpty() && !typeQLNegations.isEmpty()) throw TypeDBException.of(UNBOUNDED_NEGATION);
-        VariableRegistry registry = VariableRegistry.createFromVariables(typeQLVariables, bounds);
+        VariableRegistry registry = VariableRegistry.createFromStatements(typeQLVariables, bounds);
         List<Negation> typeDBNegations = typeQLNegations.isEmpty() ? list() :
                 typeQLNegations.stream().map(n -> Negation.create(n, registry)).collect(toList());
         return new Conjunction(registry.variables(), typeDBNegations);

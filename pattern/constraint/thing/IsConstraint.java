@@ -44,7 +44,7 @@ public class IsConstraint extends ThingConstraint {
     }
 
     static IsConstraint of(ThingVariable owner, ConceptConstraint.Is constraint, VariableRegistry registry) {
-        return new IsConstraint(owner, registry.register(constraint.variable()).asThing());
+        return new IsConstraint(owner, registry.registerThingVariable(constraint.variable()).asThing());
     }
 
     static IsConstraint of(ThingVariable owner, IsConstraint clone, VariableCloner cloner) {

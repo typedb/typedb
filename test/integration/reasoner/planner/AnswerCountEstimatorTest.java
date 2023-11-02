@@ -32,7 +32,7 @@ import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.test.integration.util.Util;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.TypeQL;
-import com.vaticle.typeql.lang.pattern.variable.Reference;
+import com.vaticle.typeql.lang.common.Reference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

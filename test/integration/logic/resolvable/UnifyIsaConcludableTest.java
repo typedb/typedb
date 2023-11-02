@@ -154,7 +154,7 @@ public class UnifyIsaConcludableTest {
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
         Map<String, Set<String>> expected = map(
                 pair("$a", set("$_0")),
-                pair("$t", set("$_first-name"))
+                pair("$t", set("first-name"))
         );
         assertEquals(expected, result);
 
@@ -179,7 +179,7 @@ public class UnifyIsaConcludableTest {
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
         Map<String, Set<String>> expected = map(
                 pair("$a", set("$_0")),
-                pair("$t", set("$_employment"))
+                pair("$t", set("employment"))
         );
         assertEquals(expected, result);
 

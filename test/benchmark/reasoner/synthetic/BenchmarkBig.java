@@ -32,9 +32,8 @@ import com.vaticle.typedb.core.concept.type.RelationType;
 import com.vaticle.typedb.core.concept.type.RoleType;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typeql.lang.TypeQL;
+import com.vaticle.typeql.lang.builder.ConceptVariableBuilder;
 import com.vaticle.typeql.lang.pattern.schema.Rule;
-import com.vaticle.typeql.lang.pattern.variable.UnboundConceptVariable;
-import com.vaticle.typeql.lang.pattern.variable.UnboundVariable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -102,8 +101,8 @@ public class BenchmarkBig {
     private void loadRandomisedRelationInstances(String entityLabel, String fromRoleLabel, String toRoleLabel,
                                                  String relationLabel, int N, TypeDB.Session session) {
         try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-            UnboundConceptVariable entity = cVar("e");
-            Thing[] instances = transaction.query().match(TypeQL.match(entity.isa(entityLabel)))
+            ConceptVariableBuilder entity = cVar("e");
+            Thing[] instances = transaction.query().get(TypeQL.match(entity.isa(entityLabel)).get())
                     .map(ans -> ans.get(entity))
                     .toList().toArray(new Thing[0]);
 
@@ -177,21 +176,21 @@ public class BenchmarkBig {
 
                 // define N rules
                 for (int i = 2; i <= N; i++) {
-                    UnboundConceptVariable fromVar = cVar("from");
-                    UnboundConceptVariable intermedVar = cVar("intermed");
-                    UnboundConceptVariable toVar = cVar("to");
+                    ConceptVariableBuilder fromVar = cVar("from");
+                    ConceptVariableBuilder intermedVar = cVar("intermed");
+                    ConceptVariableBuilder toVar = cVar("to");
                     Rule rulePattern = TypeQL.rule("rule" + i).when(
-                            TypeQL.and(
-                                    cVar()
-                                            .rel(fromRoleLabel, fromVar)
-                                            .rel(toRoleLabel, intermedVar)
-                                            .isa(baseRelationLabel),
-                                    cVar()
-                                            .rel(fromRoleLabel, intermedVar)
-                                            .rel(toRoleLabel, toVar)
-                                            .isa(genericRelationLabel + (i - 1))
+                                    TypeQL.and(
+                                            cVar()
+                                                    .rel(fromRoleLabel, fromVar)
+                                                    .rel(toRoleLabel, intermedVar)
+                                                    .isa(baseRelationLabel),
+                                            cVar()
+                                                    .rel(fromRoleLabel, intermedVar)
+                                                    .rel(toRoleLabel, toVar)
+                                                    .isa(genericRelationLabel + (i - 1))
+                                    )
                             )
-                    )
                             .then(
                                     cVar()
                                             .rel(fromRoleLabel, fromVar)
@@ -210,8 +209,8 @@ public class BenchmarkBig {
             loadEntities(entityLabel, N + 1, session);
 
             try (TypeDB.Transaction transaction = session.transaction(Arguments.Transaction.Type.WRITE)) {
-                UnboundConceptVariable entityVar = cVar("e");
-                Thing[] instances = transaction.query().match(TypeQL.match(entityVar.isa(entityLabel)))
+                ConceptVariableBuilder entityVar = cVar("e");
+                Thing[] instances = transaction.query().get(TypeQL.match(entityVar.isa(entityLabel)).get())
                         .map(ans -> ans.get(entityVar).asThing())
                         .toList().toArray(new Thing[0]);
 
@@ -326,8 +325,8 @@ public class BenchmarkBig {
 
         try (TypeDB.Session session = dataSession()) {
             try (TypeDB.Transaction tx = session.transaction(Arguments.Transaction.Type.READ, new Options.Transaction().infer(true))) {
-                Thing firstId = tx.query().match(TypeQL.parseQuery("match $x has index 'first';").asMatch()).next().get(UnboundConceptVariable.named("x")).asThing();
-                Thing lastId = tx.query().match(TypeQL.parseQuery("match $x has index '" + N + "';").asMatch()).next().get(UnboundConceptVariable.named("x")).asThing();
+                Thing firstId = tx.query().get(TypeQL.parseQuery("match $x has index 'first';").asGet()).next().get(ConceptVariableBuilder.named("x")).asThing();
+                Thing lastId = tx.query().get(TypeQL.parseQuery("match $x has index '" + N + "';").asGet()).next().get(ConceptVariableBuilder.named("x")).asThing();
                 String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
                 String queryString = "match " + queryPattern;
                 String subbedQueryString = "match " + queryPattern +

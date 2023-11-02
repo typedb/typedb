@@ -23,23 +23,7 @@ load("@vaticle_dependencies//builder/java:rules.bzl", "host_compatible_java_libr
 host_compatible_java_library(
     name = "steps",
     srcs = [
-        "TypeQLSteps.java"
-    ],
-    deps = [
-        # Package dependencies
-        "//test/behaviour/exception",
-        "//test/behaviour/connection:steps",
-
-        # External dependencies from Vaticle
-        "@vaticle_typedb_common//:common",
-        "@vaticle_typeql//java:typeql-lang",
-        "@vaticle_typeql//java/common:common",
-        "@vaticle_typeql//java/pattern:pattern",
-        "@vaticle_typeql//java/query:query",
-
-        # External dependencies from Maven
-        "@maven//:junit_junit",
-        "@maven//:io_cucumber_cucumber_java",
+        "TypeQLSteps.java",
     ],
     native_libraries_deps = [
         "//concept:concept",
@@ -48,11 +32,27 @@ host_compatible_java_library(
         "//traversal:traversal",
         "//pattern:pattern",
     ],
+    visibility = ["//visibility:public"],
     runtime_deps = [
         "//test/behaviour/connection/database:steps",
         "//test/behaviour/connection/transaction:steps",
     ],
-    visibility = ["//visibility:public"],
+    deps = [
+        # Package dependencies
+        "//test/behaviour/connection:steps",
+        "//test/behaviour/exception",
+
+        # External dependencies from Vaticle
+        "@vaticle_typedb_common//:common",
+        "@vaticle_typeql//java:typeql-lang",
+        "@vaticle_typeql//java/common",
+        "@vaticle_typeql//java/query",
+
+        # External dependencies from Maven
+        "@maven//:com_eclipsesource_minimal_json_minimal_json",
+        "@maven//:junit_junit",
+        "@maven//:io_cucumber_cucumber_java",
+    ],
 )
 
 checkstyle_test(

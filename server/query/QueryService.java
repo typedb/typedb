@@ -23,7 +23,8 @@ import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.answer.ConceptMap;
 import com.vaticle.typedb.core.concept.answer.ConceptMapGroup;
-import com.vaticle.typedb.core.concept.answer.NumericGroup;
+import com.vaticle.typedb.core.concept.answer.ReadableConceptTree;
+import com.vaticle.typedb.core.concept.answer.ValueGroup;
 import com.vaticle.typedb.core.query.QueryManager;
 import com.vaticle.typedb.core.reasoner.answer.Explanation;
 import com.vaticle.typedb.core.server.TransactionService;
@@ -32,8 +33,9 @@ import com.vaticle.typedb.protocol.TransactionProto;
 import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
+import com.vaticle.typeql.lang.query.TypeQLFetch;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
 import com.vaticle.typeql.lang.query.TypeQLUndefine;
 import com.vaticle.typeql.lang.query.TypeQLUpdate;
 
@@ -46,11 +48,12 @@ import static com.vaticle.typedb.core.server.common.RequestReader.byteStringAsUU
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.defineRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.deleteRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.explainResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.fetchResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.insertResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.matchAggregateRes;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.matchGroupAggregateResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.matchGroupResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.matchResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.getAggregateRes;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.getGroupAggregateResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.getGroupResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.getResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.undefineRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.updateResPart;
 
@@ -77,17 +80,20 @@ public class QueryService {
             case UNDEFINE_REQ:
                 this.undefine(queryReq.getUndefineReq().getQuery(), options, reqID);
                 return;
-            case MATCH_REQ:
-                this.match(queryReq.getMatchReq().getQuery(), options, reqID);
+            case GET_REQ:
+                this.get(queryReq.getGetReq().getQuery(), options, reqID);
                 return;
-            case MATCH_AGGREGATE_REQ:
-                this.matchAggregate(queryReq.getMatchAggregateReq().getQuery(), options, reqID);
+            case GET_AGGREGATE_REQ:
+                this.getAggregate(queryReq.getGetAggregateReq().getQuery(), options, reqID);
                 return;
-            case MATCH_GROUP_REQ:
-                this.matchGroup(queryReq.getMatchGroupReq().getQuery(), options, reqID);
+            case GET_GROUP_REQ:
+                this.getGroup(queryReq.getGetGroupReq().getQuery(), options, reqID);
                 return;
-            case MATCH_GROUP_AGGREGATE_REQ:
-                this.matchGroupAggregate(queryReq.getMatchGroupAggregateReq().getQuery(), options, reqID);
+            case GET_GROUP_AGGREGATE_REQ:
+                this.getGroupAggregate(queryReq.getGetGroupAggregateReq().getQuery(), options, reqID);
+                return;
+            case FETCH_REQ:
+                this.fetch(queryReq.getFetchReq().getQuery(), options, reqID);
                 return;
             case INSERT_REQ:
                 this.insert(queryReq.getInsertReq().getQuery(), options, reqID);
@@ -121,31 +127,38 @@ public class QueryService {
         transactionSvc.respond(undefineRes(reqID));
     }
 
-    private void match(String queryStr, Options.Query options, UUID reqID) {
-        TypeQLMatch query = TypeQL.parseQuery(queryStr).asMatch();
+    private void get(String queryStr, Options.Query options, UUID reqID) {
+        TypeQLGet query = TypeQL.parseQuery(queryStr).asGet();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
-        FunctionalIterator<? extends ConceptMap> answers = queryMgr.match(query, context);
-        transactionSvc.stream(answers, reqID, context.options(), a -> matchResPart(reqID, a));
+        FunctionalIterator<? extends ConceptMap> answers = queryMgr.get(query, context);
+        transactionSvc.stream(answers, reqID, context.options(), a -> getResPart(reqID, a));
     }
 
-    private void matchAggregate(String queryStr, Options.Query options, UUID reqID) {
-        TypeQLMatch.Aggregate query = TypeQL.parseQuery(queryStr).asMatchAggregate();
+    private void getAggregate(String queryStr, Options.Query options, UUID reqID) {
+        TypeQLGet.Aggregate query = TypeQL.parseQuery(queryStr).asGetAggregate();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
-        transactionSvc.respond(matchAggregateRes(reqID, queryMgr.match(query, context)));
+        transactionSvc.respond(getAggregateRes(reqID, queryMgr.get(query, context)));
     }
 
-    private void matchGroup(String queryStr, Options.Query options, UUID reqID) {
-        TypeQLMatch.Group query = TypeQL.parseQuery(queryStr).asMatchGroup();
+    private void getGroup(String queryStr, Options.Query options, UUID reqID) {
+        TypeQLGet.Group query = TypeQL.parseQuery(queryStr).asGetGroup();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
-        FunctionalIterator<ConceptMapGroup> answers = queryMgr.match(query, context);
-        transactionSvc.stream(answers, reqID, context.options(), a -> matchGroupResPart(reqID, a));
+        FunctionalIterator<ConceptMapGroup> answers = queryMgr.get(query, context);
+        transactionSvc.stream(answers, reqID, context.options(), a -> getGroupResPart(reqID, a));
     }
 
-    private void matchGroupAggregate(String queryStr, Options.Query options, UUID reqID) {
-        TypeQLMatch.Group.Aggregate query = TypeQL.parseQuery(queryStr).asMatchGroupAggregate();
+    private void getGroupAggregate(String queryStr, Options.Query options, UUID reqID) {
+        TypeQLGet.Group.Aggregate query = TypeQL.parseQuery(queryStr).asGetGroupAggregate();
         Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
-        FunctionalIterator<NumericGroup> answers = queryMgr.match(query, context);
-        transactionSvc.stream(answers, reqID, context.options(), a -> matchGroupAggregateResPart(reqID, a));
+        FunctionalIterator<ValueGroup> answers = queryMgr.get(query, context);
+        transactionSvc.stream(answers, reqID, context.options(), a -> getGroupAggregateResPart(reqID, a));
+    }
+
+    private void fetch(String queryStr, Options.Query options, UUID reqID) {
+        TypeQLFetch query = TypeQL.parseQuery(queryStr).asFetch();
+        Context.Query context = new Context.Query(transactionSvc.context(), options.query(query), query);
+        FunctionalIterator<ReadableConceptTree> answers = queryMgr.fetch(query, context);
+        transactionSvc.stream(answers, reqID, context.options(), a -> fetchResPart(reqID, a));
     }
 
     private void insert(String queryStr, Options.Query options, UUID reqID) {

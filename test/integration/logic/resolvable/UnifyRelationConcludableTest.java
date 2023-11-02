@@ -256,7 +256,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(2, unifier.requirements().isaExplicit().size());
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().types().get(Variable.label("employment:employee")));
+                unifier.requirements().types().get(Variable.label("employee", "employment")));
         assertEquals(2, unifier.requirements().types().size());
         assertEquals(0, unifier.requirements().predicates().size());
 
@@ -269,7 +269,7 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.anon(0), employment),
                 pair(Variable.namedConcept("x"), person),
                 pair(Variable.label("employment"), employment.getType()),
-                pair(Variable.label("employment:employee"), employment.getType().getRelates("employee"))
+                pair(Variable.label("employee", "employment"), employment.getType().getRelates("employee"))
         );
         FunctionalIterator<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertTrue(unified.hasNext());
@@ -286,7 +286,7 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.anon(0), friendship),
                 pair(Variable.namedConcept("x"), person),
                 pair(Variable.label("employment"), friendship.getType()),
-                pair(Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
+                pair(Variable.label("employee", "employment"), friendship.getType().getRelates("friend"))
         );
         unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map()));
         assertFalse(unified.hasNext());
@@ -303,7 +303,7 @@ public class UnifyRelationConcludableTest {
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
         Map<String, Set<String>> expected = map(
                 pair("$y", set("$x")),
-                pair("$rel", set("$_employment")),
+                pair("$rel", set("employment")),
                 pair("$_0", set("$_0"))
         );
         assertEquals(expected, result);
@@ -311,7 +311,7 @@ public class UnifyRelationConcludableTest {
         // test requirements
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().types().get(Variable.label("relation:employee")));
+                unifier.requirements().types().get(Variable.label("employee", "relation")));
         assertEquals(2, unifier.requirements().types().size());
         assertEquals(2, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
@@ -324,7 +324,7 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.anon(0), employment),
                 pair(Variable.namedConcept("x"), person),
                 pair(Variable.label("employment"), employment.getType()),
-                pair(Variable.label("employment:employee"), employment.getType().getRelates("employee"))
+                pair(Variable.label("employee", "employment"), employment.getType().getRelates("employee"))
         );
         Set<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map())).toSet();
         assertFalse(unified.isEmpty());
@@ -341,7 +341,7 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.anon(0), friendship),
                 pair(Variable.namedConcept("x"), person),
                 pair(Variable.label("employment"), friendship.getType()),
-                pair(Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
+                pair(Variable.label("employee", "employment"), friendship.getType().getRelates("friend"))
         );
         assertFalse(unifier.unUnify(concepts, new Unifier.Requirements.Instance(map())).hasNext());
     }
@@ -357,7 +357,7 @@ public class UnifyRelationConcludableTest {
         Map<String, Set<String>> result = getStringMapping(unifier.mapping());
         Map<String, Set<String>> expected = map(
                 pair("$y", set("$x")),
-                pair("$role", set("$_employment:employee")),
+                pair("$role", set("employment:employee")),
                 pair("$_0", set("$_0"))
         );
         assertEquals(expected, result);
@@ -377,7 +377,7 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.anon(0), employment),
                 pair(Variable.namedConcept("x"), person),
                 pair(Variable.label("employment"), employment.getType()),
-                pair(Variable.label("employment:employee"), employment.getType().getRelates("employee"))
+                pair(Variable.label("employee", "employment"), employment.getType().getRelates("employee"))
         );
         Set<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map())).toSet();
         assertFalse(unified.isEmpty());
@@ -394,7 +394,7 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.anon(0), friendship),
                 pair(Variable.namedConcept("x"), person),
                 pair(Variable.label("employment"), friendship.getType()),
-                pair(Variable.label("employment:employee"), friendship.getType().getRelates("friend"))
+                pair(Variable.label("employee", "employment"), friendship.getType().getRelates("friend"))
         );
         assertFalse(unifier.unUnify(concepts, new Unifier.Requirements.Instance(map())).hasNext());
     }
@@ -417,7 +417,7 @@ public class UnifyRelationConcludableTest {
         // test requirements
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().types().get(Variable.label("relation:employee")));
+                unifier.requirements().types().get(Variable.label("employee", "relation")));
         assertEquals(1, unifier.requirements().types().size());
         assertEquals(2, unifier.requirements().isaExplicit().size());
         assertEquals(0, unifier.requirements().predicates().size());
@@ -450,7 +450,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(2, unifier.requirements().types().size());
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().types().get(Variable.label("employment:employee")));
+                unifier.requirements().types().get(Variable.label("employee", "employment")));
         assertEquals(0, unifier.requirements().predicates().size());
 
         // test filter allows a valid answer
@@ -507,17 +507,17 @@ public class UnifyRelationConcludableTest {
         Set<Map<String, Set<String>>> expected = set(
                 map(
                         pair("$p", set("$x")),
-                        pair("$role", set("$_employment:employee")),
+                        pair("$role", set("employment:employee")),
                         pair("$_0", set("$_0"))
                 ),
                 map(
                         pair("$p", set("$y")),
-                        pair("$role", set("$_employment:employee")),
+                        pair("$role", set("employment:employee")),
                         pair("$_0", set("$_0"))
                 ),
                 map(
                         pair("$p", set("$z")),
-                        pair("$role", set("$_employment:employee")),
+                        pair("$role", set("employment:employee")),
                         pair("$_0", set("$_0"))
                 )
         );
@@ -672,29 +672,29 @@ public class UnifyRelationConcludableTest {
                 map(
                         pair("$p", set("$x")),
                         pair("$q", set("$x", "$y")),
-                        pair("$role1", set("$_employment:employee")),
-                        pair("$role2", set("$_employment:employer")),
+                        pair("$role1", set("employment:employee")),
+                        pair("$role2", set("employment:employer")),
                         pair("$_0", set("$_0"))
                 ),
                 map(
                         pair("$p", set("$x")),
                         pair("$q", set("$x", "$y")),
-                        pair("$role1", set("$_employment:employee", "$_employment:employer")),
-                        pair("$role2", set("$_employment:employee")),
+                        pair("$role1", set("employment:employee", "employment:employer")),
+                        pair("$role2", set("employment:employee")),
                         pair("$_0", set("$_0"))
                 ),
                 map(
                         pair("$p", set("$y")),
                         pair("$q", set("$x")),
-                        pair("$role1", set("$_employment:employee", "$_employment:employer")),
-                        pair("$role2", set("$_employment:employee")),
+                        pair("$role1", set("employment:employee", "employment:employer")),
+                        pair("$role2", set("employment:employee")),
                         pair("$_0", set("$_0"))
                 ),
                 map(
                         pair("$p", set("$y")),
                         pair("$q", set("$x")),
-                        pair("$role1", set("$_employment:employee")),
-                        pair("$role2", set("$_employment:employer")),
+                        pair("$role1", set("employment:employee")),
+                        pair("$role2", set("employment:employer")),
                         pair("$_0", set("$_0"))
                 )
         );
@@ -720,22 +720,22 @@ public class UnifyRelationConcludableTest {
                 map(
                         pair("$p", set("$x", "$y")),
                         pair("$q", set("$x")),
-                        pair("$role1", set("$_employment:employee")),
-                        pair("$role2", set("$_employment:employer")),
+                        pair("$role1", set("employment:employee")),
+                        pair("$role2", set("employment:employer")),
                         pair("$_0", set("$_0"))
                 ),
                 map(
                         pair("$p", set("$x", "$y")),
                         pair("$q", set("$x")),
-                        pair("$role1", set("$_employment:employee", "$_employment:employer")),
-                        pair("$role2", set("$_employment:employee")),
+                        pair("$role1", set("employment:employee", "employment:employer")),
+                        pair("$role2", set("employment:employee")),
                         pair("$_0", set("$_0"))
                 ),
                 map(
                         pair("$p", set("$x")),
                         pair("$q", set("$y")),
-                        pair("$role1", set("$_employment:employee", "$_employment:employer")),
-                        pair("$role2", set("$_employment:employee")),
+                        pair("$role1", set("employment:employee", "employment:employer")),
+                        pair("$role2", set("employment:employee")),
                         pair("$_0", set("$_0"))
                 )
         );
@@ -794,7 +794,7 @@ public class UnifyRelationConcludableTest {
         assertEquals(2, unifier.requirements().types().size());
         assertEquals(
                 roleHierarchy("employee", "employment"),
-                unifier.requirements().types().get(Variable.label("employment:employee")));
+                unifier.requirements().types().get(Variable.label("employee", "employment")));
         assertEquals(
                 typeHierarchy("employment"),
                 unifier.requirements().isaExplicit().get(Variable.anon(0)));
@@ -1035,7 +1035,7 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.anon(0), friendship),
                 pair(Variable.namedConcept("x"), person),
                 pair(Variable.label("friendship"), friendship.getType()),
-                pair(Variable.label("friendship:friend"), friendship.getType().getRelates("friend"))
+                pair(Variable.label("friend", "friendship"), friendship.getType().getRelates("friend"))
         );
         List<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map())).toList();
         assertEquals(6, unified.size());
@@ -1099,7 +1099,7 @@ public class UnifyRelationConcludableTest {
                 pair(Variable.anon(0), friendship),
                 pair(Variable.namedConcept("x"), person),
                 pair(Variable.label("friendship"), friendship.getType()),
-                pair(Variable.label("friendship:friend"), friendship.getType().getRelates("friend"))
+                pair(Variable.label("friend", "friendship"), friendship.getType().getRelates("friend"))
         );
         List<ConceptMap> unified = unifier.unUnify(concepts, new Unifier.Requirements.Instance(map(
                 pair(Variable.namedConcept("rel"), friendship.getType())
@@ -1164,8 +1164,8 @@ public class UnifyRelationConcludableTest {
 
     private void verifyUnificationSucceeds(String parent, Rule rule) {
         Unifier unifier = uniqueUnifier(parent, rule);
-        List<? extends ConceptMap> childAnswers = transaction.query().match(TypeQL.match(rule.getThenPreNormalised())).toList();
-        List<? extends ConceptMap> parentAnswers = transaction.query().match(TypeQL.match(TypeQL.parsePattern(parent))).toList();
+        List<? extends ConceptMap> childAnswers = transaction.query().get(TypeQL.match(rule.getThenPreNormalised()).get()).toList();
+        List<? extends ConceptMap> parentAnswers = transaction.query().get(TypeQL.match(TypeQL.parsePattern(parent)).get()).toList();
         assertFalse(childAnswers.isEmpty());
         assertFalse(parentAnswers.isEmpty());
 

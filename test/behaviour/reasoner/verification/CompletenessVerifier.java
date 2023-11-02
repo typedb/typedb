@@ -32,7 +32,7 @@ import com.vaticle.typedb.core.test.behaviour.reasoner.verification.BoundPattern
 import com.vaticle.typedb.core.test.behaviour.reasoner.verification.CorrectnessVerifier.CompletenessException;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typedb.core.traversal.common.Modifiers.Filter;
-import com.vaticle.typeql.lang.query.TypeQLMatch;
+import com.vaticle.typeql.lang.query.TypeQLGet;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -57,7 +57,7 @@ class CompletenessVerifier {
         return new CompletenessVerifier(materialiser, session);
     }
 
-    void verifyQuery(TypeQLMatch inferenceQuery) {
+    void verifyQuery(TypeQLGet inferenceQuery) {
         materialiser.query(inferenceQuery).forEach((conjunction, answers) -> {
             answers.forEachRemaining(answer -> verifyConjunction(BoundConjunction.create(conjunction, answer)));
         });

@@ -163,8 +163,9 @@ public final class ConceptManager {
 
     public EntityType getEntityType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return convertEntityType(vertex);
-        else return null;
+        if (vertex != null && vertex.encoding().equals(Encoding.Vertex.Type.ENTITY_TYPE)) {
+            return convertEntityType(vertex);
+        } else return null;
     }
 
     public RelationType putRelationType(String label) {
@@ -175,8 +176,9 @@ public final class ConceptManager {
 
     public RelationType getRelationType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return convertRelationType(vertex);
-        else return null;
+        if (vertex != null && vertex.encoding().equals(Encoding.Vertex.Type.RELATION_TYPE)) {
+            return convertRelationType(vertex);
+        } else return null;
     }
 
     public AttributeType putAttributeType(String label, AttributeType.ValueType valueType) {
@@ -209,8 +211,9 @@ public final class ConceptManager {
 
     public AttributeType getAttributeType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return convertAttributeType(vertex);
-        else return null;
+        if (vertex != null && vertex.encoding().equals(Encoding.Vertex.Type.ATTRIBUTE_TYPE)) {
+            return convertAttributeType(vertex);
+        } else return null;
     }
 
     public Type getType(Label label) {
@@ -223,8 +226,9 @@ public final class ConceptManager {
 
     public ThingType getThingType(String label) {
         TypeVertex vertex = graphMgr.schema().getType(label);
-        if (vertex != null) return convertThingType(vertex);
-        else return null;
+        if (vertex != null && !vertex.encoding().equals(Encoding.Vertex.Type.ROLE_TYPE)) {
+            return convertThingType(vertex);
+        } else return null;
     }
 
     public Thing getThing(ByteArray iid) {

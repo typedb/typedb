@@ -48,8 +48,8 @@ public class PredicateConstraint extends ValueConstraint implements AlphaEquival
     }
 
     static PredicateConstraint of(ValueVariable owner,
-                                     com.vaticle.typeql.lang.pattern.constraint.ValueConstraint.Predicate predicateConstraint,
-                                     VariableRegistry register) {
+                                  com.vaticle.typeql.lang.pattern.constraint.ValueConstraint.Predicate predicateConstraint,
+                                  VariableRegistry register) {
         return new PredicateConstraint(owner, Predicate.of(predicateConstraint.predicate(), register));
     }
 

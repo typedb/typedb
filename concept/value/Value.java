@@ -23,8 +23,11 @@ import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.encoding.Encoding;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
-public interface Value<VALUE> extends Concept {
+public interface Value<VALUE> extends Concept, Concept.Readable {
+
+    DateTimeFormatter DATE_TIME_FORMATTER_MILLIS = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     ByteArray getIID();
 

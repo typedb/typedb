@@ -41,7 +41,7 @@ public class Util {
 
     public static Rule createRule(String label, String whenConjunctionPattern, String thenPattern, LogicManager logicMgr) {
         Rule rule = logicMgr.putRule(label, TypeQL.parsePattern(whenConjunctionPattern).asConjunction(),
-                TypeQL.parseVariable(thenPattern).asThing());
+                TypeQL.parseStatement(thenPattern).asThing());
         return rule;
     }
 

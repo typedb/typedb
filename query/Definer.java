@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.query;
 
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Context;
+import com.vaticle.typedb.core.common.parameters.Label;
 import com.vaticle.typedb.core.concept.ConceptManager;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.AttributeType.ValueType;
@@ -76,7 +77,7 @@ public class Definer {
 
     public static Definer create(ConceptManager conceptMgr, LogicManager logicMgr,
                                  TypeQLDefine query, Context.Query context) {
-        Set<TypeVariable> types = VariableRegistry.createFromTypes(query.variables()).types();
+        Set<TypeVariable> types = VariableRegistry.createFromTypes(query.statements()).types();
         return new Definer(conceptMgr, logicMgr, types, query.rules(), context);
     }
 

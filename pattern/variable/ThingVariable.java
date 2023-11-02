@@ -47,7 +47,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_ISA;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.MULTIPLE_THING_CONSTRAINT_RELATION;
 
-public class ThingVariable extends Variable implements AlphaEquivalent<ThingVariable> {
+public class ThingVariable extends com.vaticle.typedb.core.pattern.variable.Variable implements AlphaEquivalent<ThingVariable> {
 
     private IIDConstraint iidConstraint;
     private IsaConstraint isaConstraint;
@@ -67,7 +67,8 @@ public class ThingVariable extends Variable implements AlphaEquivalent<ThingVari
         this.constraining = new HashSet<>();
     }
 
-    ThingVariable constrainThing(List<com.vaticle.typeql.lang.pattern.constraint.ThingConstraint> constraints, VariableRegistry registry) {
+    ThingVariable constrainThing(List<com.vaticle.typeql.lang.pattern.constraint.ThingConstraint> constraints,
+                                 com.vaticle.typedb.core.pattern.variable.VariableRegistry registry) {
         constraints.forEach(constraint -> {
             if (constraint.isIsa() && constraint.asIsa().isDerived() && !registry.allowsDerived()) {
                 throw TypeDBException.of(ILLEGAL_DERIVED_THING_CONSTRAINT_ISA, id(), constraint.asIsa().type());
