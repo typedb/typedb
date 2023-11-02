@@ -442,21 +442,27 @@ public class CoreDatabase implements TypeDB.Database {
     @Override
     public String schema() {
         try (TypeDB.Session session = databaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
-            return TypeQL.parseQuery("define\n\n" + tx.concepts().typesSyntax() + tx.logic().rulesSyntax()).toString(true);
+            String syntax = tx.concepts().typesSyntax() + tx.logic().rulesSyntax();
+            if (syntax.trim().isEmpty()) return "";
+            else return TypeQL.parseQuery("define\n\n" + syntax).toString(true);
         }
     }
 
     @Override
     public String typeSchema() {
         try (TypeDB.Session session = databaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
-            return TypeQL.parseQuery("define\n\n" + tx.concepts().typesSyntax()).toString(true);
+            String syntax = tx.concepts().typesSyntax();
+            if (syntax.trim().isEmpty()) return "";
+            return TypeQL.parseQuery("define\n\n" + syntax).toString(true);
         }
     }
 
     @Override
     public String ruleSchema() {
         try (TypeDB.Session session = databaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
-            return TypeQL.parseQuery("define\n\n" + tx.logic().rulesSyntax()).toString(true);
+            String syntax = tx.logic().rulesSyntax();
+            if (syntax.trim().isEmpty()) return "";
+            else return TypeQL.parseQuery("define\n\n" + syntax).toString(true);
         }
     }
 
