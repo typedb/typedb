@@ -79,9 +79,9 @@ import static org.junit.Assert.assertTrue;
 public class TypeQLSteps {
 
     private static List<? extends ConceptMap> getAnswers;
-    private static Optional<Value<?>> numericAnswer;
-    private static List<ConceptMapGroup> answerGroups;
-    private static List<ValueGroup> numericAnswerGroups;
+    private static Optional<Value<?>> aggregateAnswer;
+    private static List<ConceptMapGroup> groupAnswers;
+    private static List<ValueGroup> groupAggregateAnswers;
     private static List<ReadableConceptTree> fetchAnswers;
     HashMap<String, UniquenessCheck> identifierChecks = new HashMap<>();
     private Map<String, Map<String, String>> rules;
@@ -153,9 +153,9 @@ public class TypeQLSteps {
 
     private void clearAnswers() {
         getAnswers = null;
-        numericAnswer = null;
-        answerGroups = null;
-        numericAnswerGroups = null;
+        aggregateAnswer = null;
+        groupAnswers = null;
+        groupAggregateAnswers = null;
     }
 
     @When("get answers of typeql insert")
@@ -218,7 +218,7 @@ public class TypeQLSteps {
     public void typeql_match_aggregate(String typeQLQueryStatements) {
         TypeQLGet.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGetAggregate();
         clearAnswers();
-        numericAnswer = tx().query().get(typeQLQuery);
+        aggregateAnswer = tx().query().get(typeQLQuery);
         assertQueryPlansCorrect(typeQLQuery.get());
     }
 
@@ -231,7 +231,7 @@ public class TypeQLSteps {
     public void typeql_match_group(String typeQLQueryStatements) {
         TypeQLGet.Group typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGetGroup();
         clearAnswers();
-        answerGroups = tx().query().get(typeQLQuery).toList();
+        groupAnswers = tx().query().get(typeQLQuery).toList();
         assertQueryPlansCorrect(typeQLQuery.get());
     }
 
@@ -244,7 +244,7 @@ public class TypeQLSteps {
     public void typeql_match_group_aggregate(String typeQLQueryStatements) {
         TypeQLGet.Group.Aggregate typeQLQuery = TypeQL.parseQuery(String.join("\n", typeQLQueryStatements)).asGetGroupAggregate();
         clearAnswers();
-        numericAnswerGroups = tx().query().get(typeQLQuery).toList();
+        groupAggregateAnswers = tx().query().get(typeQLQuery).toList();
         assertQueryPlansCorrect(typeQLQuery.group().get());
     }
 
@@ -298,15 +298,15 @@ public class TypeQLSteps {
 
     @Then("aggregate value is: {double}")
     public void aggregate_value_is(double expectedAnswer) {
-        assertNotNull("The last executed query was not an aggregate query", numericAnswer);
-        double asDouble = numericAnswer.get().isDouble() ? numericAnswer.get().asDouble().value() : numericAnswer.get().asLong().value();
+        assertNotNull("The last executed query was not an aggregate query", aggregateAnswer);
+        double asDouble = aggregateAnswer.get().isDouble() ? aggregateAnswer.get().asDouble().value() : aggregateAnswer.get().asLong().value();
         assertEquals(String.format("Expected answer to equal %f, but it was %f.", expectedAnswer, asDouble),
                 expectedAnswer, asDouble, 0.001);
     }
 
     @Then("aggregate answer is empty")
     public void aggregate_answer_is_not_a_number() {
-        assertTrue(numericAnswer.isEmpty());
+        assertTrue(aggregateAnswer.isEmpty());
     }
 
     @Then("answer groups are")
@@ -319,8 +319,8 @@ public class TypeQLSteps {
                 .collect(Collectors.toSet());
 
         assertEquals(String.format("Expected [%d] answer groups, but found [%d].",
-                        answerIdentifierGroups.size(), answerGroups.size()),
-                answerIdentifierGroups.size(), answerGroups.size()
+                        answerIdentifierGroups.size(), groupAnswers.size()),
+                answerIdentifierGroups.size(), groupAnswers.size()
         );
 
         for (AnswerIdentifierGroup answerIdentifierGroup : answerIdentifierGroups) {
@@ -342,8 +342,8 @@ public class TypeQLSteps {
                 default:
                     throw new IllegalStateException("Unexpected value: " + identifier[0]);
             }
-            System.out.println(answerGroups);
-            ConceptMapGroup answerGroup = answerGroups.stream()
+            System.out.println(groupAnswers);
+            ConceptMapGroup answerGroup = groupAnswers.stream()
                     .filter(ag -> checker.check(ag.owner()))
                     .findAny()
                     .orElse(null);
@@ -377,8 +377,8 @@ public class TypeQLSteps {
             expectations.put(groupOwnerIdentifier, expectedAnswer);
         }
 
-        assertEquals(String.format("Expected [%d] answer groups, but found [%d].", expectations.size(), numericAnswerGroups.size()),
-                expectations.size(), numericAnswerGroups.size()
+        assertEquals(String.format("Expected [%d] answer groups, but found [%d].", expectations.size(), groupAggregateAnswers.size()),
+                expectations.size(), groupAggregateAnswers.size()
         );
 
         for (Map.Entry<String, Double> expectation : expectations.entrySet()) {
@@ -401,7 +401,7 @@ public class TypeQLSteps {
                     throw new IllegalStateException("Unexpected value: " + identifier[0]);
             }
             double expectedAnswer = expectation.getValue();
-            ValueGroup answerGroup = numericAnswerGroups.stream()
+            ValueGroup answerGroup = groupAggregateAnswers.stream()
                     .filter(ag -> checker.check(ag.owner()))
                     .findAny()
                     .orElse(null);
@@ -419,7 +419,7 @@ public class TypeQLSteps {
 
     @Then("number of groups is: {int}")
     public void number_of_groups_is(int expectedGroupCount) {
-        assertEquals(expectedGroupCount, answerGroups.size());
+        assertEquals(expectedGroupCount, groupAnswers.size());
     }
 
     public static class AnswerIdentifierGroup {
@@ -441,8 +441,8 @@ public class TypeQLSteps {
 
     @Then("group aggregate answer value is empty")
     public void group_aggregate_answer_value_not_a_number() {
-        assertEquals("Step requires exactly 1 grouped answer", 1, numericAnswerGroups.size());
-        assertTrue(numericAnswerGroups.get(0).value().isEmpty());
+        assertEquals("Step requires exactly 1 grouped answer", 1, groupAggregateAnswers.size());
+        assertTrue(groupAggregateAnswers.get(0).value().isEmpty());
     }
 
     private boolean matchAnswer(Map<String, String> answerIdentifiers, ConceptMap answer) {
