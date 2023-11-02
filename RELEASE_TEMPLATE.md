@@ -1,3 +1,3 @@
-Install & Run: https://typedb.com/docs/typedb/2.x/installation
+Install & Run: https://typedb.com/docs/home/install
 
 { release notes }
