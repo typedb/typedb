@@ -319,6 +319,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
          */
         @Override
         public void commit() {
+            if (type().isWrite()) conceptMgr.cleanupRelations(); // writes requires transaction to be open
             if (isOpen.compareAndSet(true, false)) {
                 try {
                     if (type().isRead()) throw TypeDBException.of(ILLEGAL_COMMIT);

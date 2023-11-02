@@ -64,7 +64,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.I
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_UNBOUND_TYPE_VAR_IN_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_VALUE_CONSTRAINT_IN_INSERT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.INSERT_RELATION_CONSTRAINT_TOO_MANY;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.RELATION_CONSTRAINT_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ROLE_TYPE_MISMATCH;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_IID_NOT_INSERTABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.THING_INSERT_ISA_NOT_THING_TYPE;
@@ -257,8 +256,7 @@ public class Inserter {
             if (type.isEntityType()) {
                 return type.asEntityType().create();
             } else if (type.isRelationType()) {
-                if (var.relation().isPresent()) return type.asRelationType().create();
-                else throw TypeDBException.of(RELATION_CONSTRAINT_MISSING, var.reference());
+                return type.asRelationType().create();
             } else if (type.isAttributeType()) {
                 return insertAttribute(type.asAttributeType(), var);
             } else if (type.isThingType() && type.isRoot()) {
