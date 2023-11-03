@@ -211,7 +211,8 @@ If you want to begin your journey with TypeDB, you can explore the following res
 
 * More on TypeDB's [features](https://typedb.com/features)
 * In-depth dive into TypeDB's [philosophy](https://typedb.com/philosophy)
-* Our [TypeDB quickstart](https://typedb.com/docs/typedb/2.x/quickstart-guide)
+* Our [TypeDB quickstart](https://typedb.com/docs/home/quickstart)
+* [TypeDB in 25 queries](https://typedb.com/docs/home/25-queries)
 * **[TypeQL](https://github.com/vaticle/typeql)**
 * **[TypeDB Studio](https://github.com/vaticle/typedb-studio)**
 
