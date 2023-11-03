@@ -35,10 +35,10 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
     }
 
     public static class Server extends ErrorMessage {
-        public static final Server DATA_DIRECTORY_NOT_FOUND =
-                new Server(1, "The expected data directory '%s' does not exist.");
+        public static final Server FAILED_TO_CREATE_DATA_DIRECTORY =
+                new Server(1, "Failed to create the data directory '%s', received exception:\n'%s'");
         public static final Server DATA_DIRECTORY_NOT_WRITABLE =
-                new Server(2, "The expected data directory '%s' is not writable.");
+                new Server(2, "The data directory path '%s' is not writable.");
         public static final Server EXITED_WITH_ERROR =
                 new Server(3, "Exited with error.");
         public static final Server UNCAUGHT_ERROR =
