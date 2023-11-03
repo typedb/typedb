@@ -296,16 +296,119 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     private static boolean isWriteRequest(TransactionProto.Transaction.Req request) {
         switch (request.getReqCase()) {
-            // For simplicity, treat Concept API calls as writes
             case OPEN_REQ:
             case COMMIT_REQ:
             case ROLLBACK_REQ:
-            case CONCEPT_MANAGER_REQ:
-            case LOGIC_MANAGER_REQ:
             case RULE_REQ:
-            case TYPE_REQ:
-            case THING_REQ:
                 return true;
+            case CONCEPT_MANAGER_REQ:
+                switch (request.getConceptManagerReq().getReqCase()) {
+                    case GET_ENTITY_TYPE_REQ:
+                    case GET_RELATION_TYPE_REQ:
+                    case GET_ATTRIBUTE_TYPE_REQ:
+                    case GET_ENTITY_REQ:
+                    case GET_RELATION_REQ:
+                    case GET_ATTRIBUTE_REQ:
+                    case GET_SCHEMA_EXCEPTIONS_REQ:
+                        return false;
+                    case PUT_ENTITY_TYPE_REQ:
+                    case PUT_RELATION_TYPE_REQ:
+                    case PUT_ATTRIBUTE_TYPE_REQ:
+                        return true;
+                }
+                break;
+            case LOGIC_MANAGER_REQ:
+                switch (request.getLogicManagerReq().getReqCase()) {
+                    case GET_RULE_REQ:
+                    case GET_RULES_REQ:
+                        return false;
+                    case PUT_RULE_REQ:
+                        return true;
+                }
+                break;
+            case TYPE_REQ:
+                switch (request.getTypeReq().getReqCase()) {
+                    case THING_TYPE_REQ:
+                        switch (request.getTypeReq().getThingTypeReq().getReqCase()) {
+                            case THING_TYPE_DELETE_REQ:
+                            case THING_TYPE_SET_LABEL_REQ:
+                            case THING_TYPE_SET_ABSTRACT_REQ:
+                            case THING_TYPE_UNSET_ABSTRACT_REQ:
+                            case THING_TYPE_SET_OWNS_REQ:
+                            case THING_TYPE_UNSET_OWNS_REQ:
+                            case THING_TYPE_SET_PLAYS_REQ:
+                            case THING_TYPE_UNSET_PLAYS_REQ:
+                            case ENTITY_TYPE_CREATE_REQ:
+                            case ENTITY_TYPE_SET_SUPERTYPE_REQ:
+                            case RELATION_TYPE_CREATE_REQ:
+                            case RELATION_TYPE_SET_SUPERTYPE_REQ:
+                            case RELATION_TYPE_SET_RELATES_REQ:
+                            case RELATION_TYPE_UNSET_RELATES_REQ:
+                            case ATTRIBUTE_TYPE_PUT_REQ:
+                            case ATTRIBUTE_TYPE_SET_SUPERTYPE_REQ:
+                            case ATTRIBUTE_TYPE_SET_REGEX_REQ:
+                                return true;
+                            case THING_TYPE_GET_OWNS_REQ:
+                            case THING_TYPE_GET_OWNS_OVERRIDDEN_REQ:
+                            case THING_TYPE_GET_PLAYS_REQ:
+                            case THING_TYPE_GET_PLAYS_OVERRIDDEN_REQ:
+                            case THING_TYPE_GET_SYNTAX_REQ:
+                            case ENTITY_TYPE_GET_SUPERTYPE_REQ:
+                            case ENTITY_TYPE_GET_SUPERTYPES_REQ:
+                            case ENTITY_TYPE_GET_SUBTYPES_REQ:
+                            case ENTITY_TYPE_GET_INSTANCES_REQ:
+                            case RELATION_TYPE_GET_SUPERTYPE_REQ:
+                            case RELATION_TYPE_GET_SUPERTYPES_REQ:
+                            case RELATION_TYPE_GET_SUBTYPES_REQ:
+                            case RELATION_TYPE_GET_INSTANCES_REQ:
+                            case RELATION_TYPE_GET_RELATES_REQ:
+                            case RELATION_TYPE_GET_RELATES_FOR_ROLE_LABEL_REQ:
+                            case RELATION_TYPE_GET_RELATES_OVERRIDDEN_REQ:
+                            case ATTRIBUTE_TYPE_GET_REQ:
+                            case ATTRIBUTE_TYPE_GET_SUPERTYPE_REQ:
+                            case ATTRIBUTE_TYPE_GET_SUPERTYPES_REQ:
+                            case ATTRIBUTE_TYPE_GET_SUBTYPES_REQ:
+                            case ATTRIBUTE_TYPE_GET_INSTANCES_REQ:
+                            case ATTRIBUTE_TYPE_GET_REGEX_REQ:
+                            case ATTRIBUTE_TYPE_GET_OWNERS_REQ:
+                                return false;
+                        }
+                        break;
+                    case ROLE_TYPE_REQ:
+                        switch (request.getTypeReq().getRoleTypeReq().getReqCase()) {
+                            case ROLE_TYPE_DELETE_REQ:
+                            case ROLE_TYPE_SET_LABEL_REQ:
+                                return true;
+                            case ROLE_TYPE_GET_SUPERTYPE_REQ:
+                            case ROLE_TYPE_GET_SUPERTYPES_REQ:
+                            case ROLE_TYPE_GET_SUBTYPES_REQ:
+                            case ROLE_TYPE_GET_RELATION_TYPES_REQ:
+                            case ROLE_TYPE_GET_PLAYER_TYPES_REQ:
+                            case ROLE_TYPE_GET_RELATION_INSTANCES_REQ:
+                            case ROLE_TYPE_GET_PLAYER_INSTANCES_REQ:
+                                return false;
+                        }
+                        break;
+                }
+                break;
+            case THING_REQ:
+                switch (request.getThingReq().getReqCase()) {
+                    case THING_DELETE_REQ:
+                    case THING_SET_HAS_REQ:
+                    case THING_UNSET_HAS_REQ:
+                    case RELATION_ADD_ROLE_PLAYER_REQ:
+                    case RELATION_REMOVE_ROLE_PLAYER_REQ:
+                        return true;
+                    case THING_GET_HAS_REQ:
+                    case THING_GET_RELATIONS_REQ:
+                    case THING_GET_PLAYING_REQ:
+                    case RELATION_GET_PLAYERS_BY_ROLE_TYPE_REQ:
+                    case RELATION_GET_ROLE_PLAYERS_REQ:
+                    case RELATION_GET_RELATING_REQ:
+                    case ATTRIBUTE_GET_OWNERS_REQ:
+                        return false;
+                }
+                break;
             case STREAM_REQ:
                 return false;
             case QUERY_MANAGER_REQ:
