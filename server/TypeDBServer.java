@@ -54,8 +54,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_TO_CREATE_DATA_DIRECTORY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.PORT_IN_USE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
@@ -94,7 +94,7 @@ public class TypeDBServer implements AutoCloseable {
         this.debug = debug;
 
         verifyJavaVersion();
-        verifyDataDir();
+        createOrVerifyDataDir();
 
         if (debug) logger().info("Running {} in debug mode.", name());
 
@@ -144,12 +144,17 @@ public class TypeDBServer implements AutoCloseable {
         }
     }
 
-    private void verifyDataDir() {
+    private void createOrVerifyDataDir() {
         if (!Files.isDirectory(config.storage().dataDir())) {
-            throw TypeDBException.of(DATA_DIRECTORY_NOT_FOUND, this.config.storage().dataDir());
-        }
-
-        if (!Files.isWritable(config.storage().dataDir())) {
+            try {
+                Path path = Files.createDirectories(config.storage().dataDir());
+                if (!path.toFile().setWritable(true)) {
+                    throw TypeDBException.of(DATA_DIRECTORY_NOT_WRITABLE, path);
+                }
+            } catch (IOException e) {
+                throw TypeDBException.of(FAILED_TO_CREATE_DATA_DIRECTORY, this.config.storage().dataDir(), e);
+            }
+        } else if (!Files.isWritable(config.storage().dataDir())) {
             throw TypeDBException.of(DATA_DIRECTORY_NOT_WRITABLE, config.storage().dataDir());
         }
     }
