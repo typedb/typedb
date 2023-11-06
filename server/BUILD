@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@vaticle_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip", "java_deps")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
@@ -294,68 +293,6 @@ deploy_artifact(
     artifact_name = "typedb-server-windows-x86_64-{version}.zip",
     release = deployment['artifact.release'],
     snapshot = deployment['artifact.snapshot'],
-)
-
-assemble_apt(
-    name = "assemble-linux-x86_64-apt",
-    package_name = "typedb-server",
-    maintainer = "Vaticle <community@vaticle.com>",
-    description = "TypeDB (server)",
-    depends = [
-      "openjdk-11-jre",
-      "typedb-bin (=%{@vaticle_typedb_common})"
-    ],
-    workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
-    archives = [":server-deps-linux-x86_64"],
-    installation_dir = "/opt/typedb/core/",
-    files = assemble_files,
-    empty_dirs = [
-        "/opt/typedb/core/server/lib/",
-        "/var/lib/typedb/core/data/"
-    ],
-    empty_dirs_permission = "0777",
-    symlinks = {
-        "/opt/typedb/core/server/data": "/var/lib/typedb/core/data/",
-    },
-    architecture = "amd64",
-)
-
-assemble_apt(
-    name = "assemble-linux-arm64-apt",
-    package_name = "typedb-server",
-    maintainer = "Vaticle <community@vaticle.com>",
-    description = "TypeDB (server)",
-    depends = [
-      "openjdk-11-jre",
-      "typedb-bin (=%{@vaticle_typedb_common})"
-    ],
-    workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
-    archives = [":server-deps-linux-arm64"],
-    installation_dir = "/opt/typedb/core/",
-    files = assemble_files,
-    empty_dirs = [
-        "/opt/typedb/core/server/lib/",
-        "/var/lib/typedb/core/data/"
-    ],
-    empty_dirs_permission = "0777",
-    symlinks = {
-        "/opt/typedb/core/server/data": "/var/lib/typedb/core/data/",
-    },
-    architecture = "arm64",
-)
-
-deploy_apt(
-    name = "deploy-apt-x86_64",
-    target = ":assemble-linux-x86_64-apt",
-    snapshot = deployment['apt.snapshot'],
-    release = deployment['apt.release']
-)
-
-deploy_apt(
-    name = "deploy-apt-arm64",
-    target = ":assemble-linux-arm64-apt",
-    snapshot = deployment['apt.snapshot'],
-    release = deployment['apt.release']
 )
 
 checkstyle_test(
