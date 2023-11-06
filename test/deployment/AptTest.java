@@ -18,8 +18,6 @@
 
 package com.vaticle.typedb.core.test.deployment;
 
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +25,6 @@ import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.StartedProcess;
 
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -52,12 +49,10 @@ public class AptTest {
     private final String commit;
     private final ProcessExecutor executor;
     private StartedProcess typeDBProcess;
-    private JsonObject workspaceRefs;
 
-    public AptTest() throws IOException {
+    public AptTest() {
         commit = System.getenv("TEST_DEPLOYMENT_APT_COMMIT");
         executor = new ProcessExecutor().directory(Paths.get(".").toFile()).readOutput(true);
-        workspaceRefs = Json.parse(new FileReader("./external/vaticle_typedb_workspace_refs/refs.json")).asObject();
     }
 
     @Test
@@ -79,7 +74,7 @@ public class AptTest {
 
     private void install() throws InterruptedException, TimeoutException, IOException {
         System.out.println("core = " + commit);
-        Files.write(versionFile, commit.getBytes(StandardCharsets.US_ASCII));
+        Files.writeString(versionFile, commit, StandardCharsets.US_ASCII);
         execute("sudo", "apt", "install", "-y", "typedb=0.0.0-" + commit);
     }
 
@@ -94,23 +89,15 @@ public class AptTest {
 
     private void stop() {
         if (typeDBProcess != null) {
-            try {
-                System.out.println("Stopping TypeDB server");
-
-                typeDBProcess.getProcess().destroy();
-
-                System.out.println("TypeDB server stopped");
-            } catch (Exception e) {
-                throw e;
-            }
+            System.out.println("Stopping TypeDB server");
+            typeDBProcess.getProcess().destroy();
+            System.out.println("TypeDB server stopped");
         }
     }
 
     private void waitUntilReady() throws InterruptedException {
-        int attempt = 0;
-        while (!isTypeDBServerReady() && attempt < 25) {
+        for (int attempt = 0; !isTypeDBServerReady() && attempt < 25; attempt++) {
             Thread.sleep(1000);
-            attempt++;
         }
     }
 
@@ -122,21 +109,6 @@ public class AptTest {
         } catch (IOException e) {
             return false;
         }
-    }
-
-    private String getDependencyVersion(String dependency) {
-        String commitDep = workspaceRefs.get("commits").asObject().getString(dependency, null);
-
-        if (commitDep != null) {
-            return "0.0.0-" + commitDep;
-        }
-
-        String tagDep = workspaceRefs.get("tags").asObject().getString(dependency, null);
-        if (tagDep != null) {
-            return tagDep;
-        }
-
-        throw new RuntimeException(String.format("dependency %s not found", dependency));
     }
 
     private ProcessResult execute(String... cmd) throws InterruptedException, TimeoutException, IOException {
