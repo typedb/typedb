@@ -21,6 +21,7 @@ load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@vaticle_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip", "checksum", "assemble_versioned")
 load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
+load("@vaticle_bazel_distribution//common/targz:rules.bzl", "targz_edit")
 load("@vaticle_dependencies//builder/java:rules.bzl", "native_java_libraries")
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//distribution/artifact:rules.bzl", "artifact_repackage")
@@ -260,27 +261,87 @@ deploy_brew(
     version_file = "//:VERSION"
 )
 
+apt_depends = ["default-jre"]
+apt_installation_dir = "/opt/typedb/core/"
+apt_empty_dirs =[
+    "/var/log/typedb/",
+    "/opt/typedb/core/server/lib/",
+    "/var/lib/typedb/core/data/",
+    "/opt/typedb/core/console/lib/",
+]
+apt_symlinks = {
+    "/opt/typedb/core/server/data": "/var/lib/typedb/core/data/",
+    "/usr/local/bin/typedb": "/opt/typedb/core/typedb",
+    "/opt/typedb/core/server/logs": "/var/log/typedb/",
+    "/usr/lib/systemd/system/typedb.service": "/opt/typedb/core/typedb.service",
+}
+
+targz_edit(
+    name = "console-artifact-native-x86_64.tar.gz",
+    src = "@vaticle_typedb_console_artifact_linux-x86_64//file",
+    strip_components = 1,
+)
+
 assemble_apt(
-    name = "assemble-linux-apt",
-    package_name = "typedb-all",
+    name = "assemble-linux-x86_64-apt",
+    package_name = "typedb",
     maintainer = "Vaticle <community@vaticle.com>",
-    description = "TypeDB (all)",
-    # typedb-server and typedb-console have arm/intel releases. Apt will find one matching installer's platform
-    depends = [
-        "default-jre",
-        "typedb-server (=%{version})",
-        # Note: arbitrarily pick version from the x86_64 console artifact
-        "typedb-console (=%{@vaticle_typedb_console_artifact_linux-x86_64})",
-    ],
+    description = "TypeDB",
+    depends = apt_depends,
     workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
-    architecture = "all",
+    archives = [
+        "//server:server-deps-linux-x86_64",
+        ":console-artifact-native-x86_64.tar.gz",
+        "@vaticle_typedb_common//binary:assemble-bash-targz",
+        "@vaticle_typedb_common//binary:assemble-apt-targz",
+    ],
+    installation_dir = apt_installation_dir,
+    files = assemble_files,
+    empty_dirs = apt_empty_dirs,
+    empty_dirs_permission = "0777",
+    symlinks = apt_symlinks,
+    architecture = "amd64",
 )
 
 deploy_apt(
-    name = "deploy-apt",
-    target = ":assemble-linux-apt",
+    name = "deploy-apt-x86_64",
+    target = ":assemble-linux-x86_64-apt",
     snapshot = deployment['apt.snapshot'],
-    release = deployment['apt.release'],
+    release = deployment['apt.release']
+)
+
+targz_edit(
+    name = "console-artifact-native-arm64.tar.gz",
+    src = "@vaticle_typedb_console_artifact_linux-arm64//file",
+    strip_components = 1,
+)
+
+assemble_apt(
+    name = "assemble-linux-arm64-apt",
+    package_name = "typedb",
+    maintainer = "Vaticle <community@vaticle.com>",
+    description = "TypeDB",
+    depends = apt_depends,
+    workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
+    archives = [
+        "//server:server-deps-linux-arm64",
+        ":console-artifact-native-arm64.tar.gz",
+        "@vaticle_typedb_common//binary:assemble-bash-targz",
+        "@vaticle_typedb_common//binary:assemble-apt-targz",
+    ],
+    installation_dir = apt_installation_dir,
+    files = assemble_files,
+    empty_dirs = apt_empty_dirs,
+    empty_dirs_permission = "0777",
+    symlinks = apt_symlinks,
+    architecture = "arm64",
+)
+
+deploy_apt(
+    name = "deploy-apt-arm64",
+    target = ":assemble-linux-arm64-apt",
+    snapshot = deployment['apt.snapshot'],
+    release = deployment['apt.release']
 )
 
 release_validate_deps(
