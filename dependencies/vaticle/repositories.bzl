@@ -20,8 +20,8 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 def vaticle_bazel_distribution():
     git_repository(
         name = "vaticle_bazel_distribution",
-        remote = "https://github.com/dmitrii-ubskii/bazel-distribution",
-        commit = "f8b8390e220abf06e43f5cc62b1b85ac74dc31ae",
+        remote = "https://github.com/vaticle/bazel-distribution",
+        commit = "939a5424bd276b007620ee96829ff713b12b12d0",
     )
 
 def vaticle_dependencies():
@@ -41,8 +41,8 @@ def vaticle_typeql():
 def vaticle_typedb_common():
     git_repository(
         name = "vaticle_typedb_common",
-        remote = "https://github.com/dmitrii-ubskii/typedb-common",
-        commit = "b18063410125bc755d057048a420f0bf2422562d",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_common
+        remote = "https://github.com/vaticle/typedb-common",
+        commit = "04ff8a59ab6f1a855f3a327f4d59e760417a0265",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_common
     )
 
 def vaticle_typedb_protocol():
