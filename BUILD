@@ -307,7 +307,7 @@ deploy_apt(
     name = "deploy-apt-x86_64",
     target = ":assemble-linux-x86_64-apt",
     snapshot = deployment['apt.snapshot'],
-    release = deployment['apt.release']
+    release = deployment['apt.release'],
 )
 
 targz_edit(
@@ -341,7 +341,7 @@ deploy_apt(
     name = "deploy-apt-arm64",
     target = ":assemble-linux-arm64-apt",
     snapshot = deployment['apt.snapshot'],
-    release = deployment['apt.release']
+    release = deployment['apt.release'],
 )
 
 release_validate_deps(
