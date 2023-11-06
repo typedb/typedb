@@ -80,7 +80,7 @@ public class AptTest {
     private void install() throws InterruptedException, TimeoutException, IOException {
         System.out.println("core = " + commit);
         Files.write(versionFile, commit.getBytes(StandardCharsets.US_ASCII));
-        execute("sudo", "apt", "install", "-y", "typedb-server=0.0.0-" + commit, "typedb-bin=" + getDependencyVersion("vaticle_typedb_common"));
+        execute("sudo", "apt", "install", "-y", "typedb=0.0.0-" + commit);
     }
 
     private void start() throws InterruptedException, IOException {
