@@ -1,26 +1,12 @@
 [![TypeDB](./docs/banner.png)](https://typedb.com/introduction)
 
-<div align="center">
-  <a href="https://factory.vaticle.com/vaticle/typedb">
-    <img alt="Factory" src="https://factory.vaticle.com/api/status/vaticle/typedb/badge.svg" />
-  </a>
-  <a href="https://circleci.com/gh/vaticle/typedb/tree/master">
-    <img alt="CircleCI" src="https://circleci.com/gh/vaticle/typedb/tree/master.svg?style=shield" />
-  </a>
-  <a href="https://github.com/vaticle/typedb/releases/latest">
-    <img alt="GitHub release" src="https://img.shields.io/github/release/vaticle/typedb.svg">
-  </a>
-  <a href="https://vaticle.com/discord">
-    <img alt="Discord" src="https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff" />
-  </a>
-  <a href="https://forum.vaticle.com">
-    <img alt="Discussion Forum" src="https://img.shields.io/discourse/https/forum.vaticle.com/topics.svg" />
-  </a>
-  <a href="https://stackoverflow.com/questions/tagged/typedb">
-    <img alt="Stack Overflow" src="https://img.shields.io/badge/stackoverflow-typedb-796de3.svg">
-  </a>
-</div>
-
+[![Factory](https://factory.vaticle.com/api/status/vaticle/typedb/badge.svg)](https://factory.vaticle.com/vaticle/typedb)
+[![CircleCI](https://circleci.com/gh/vaticle/typedb/tree/master.svg?style=shield)](https://circleci.com/gh/vaticle/typedb/tree/master)
+[![GitHub release](https://img.shields.io/github/release/vaticle/typedb.svg)](https://github.com/vaticle/typedb/releases/latest)
+[![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff)](https://typedb.com/discord)
+[![Discussion Forum](https://img.shields.io/discourse/https/forum.typedb.com/topics.svg)](https://forum.typedb.com)
+[![Stack Overflow](https://img.shields.io/badge/stackoverflow-typedb-796de3.svg)](https://stackoverflow.com/questions/tagged/typedb)
+[![Stack Overflow](https://img.shields.io/badge/stackoverflow-typeql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/typeql)
 
 # Introducing TypeDB
 
@@ -211,7 +197,8 @@ If you want to begin your journey with TypeDB, you can explore the following res
 
 * More on TypeDB's [features](https://typedb.com/features)
 * In-depth dive into TypeDB's [philosophy](https://typedb.com/philosophy)
-* Our [TypeDB quickstart](https://typedb.com/docs/typedb/2.x/quickstart-guide)
+* Our [TypeDB quickstart](https://typedb.com/docs/home/quickstart)
+* [TypeDB in 25 queries](https://typedb.com/docs/home/25-queries)
 * **[TypeQL](https://github.com/vaticle/typeql)**
 * **[TypeDB Studio](https://github.com/vaticle/typedb-studio)**
 
