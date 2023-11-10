@@ -241,9 +241,8 @@ release:
         export DEPLOY_APT_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_APT_PASSWORD=$REPO_VATICLE_PASSWORD
         bazel run @vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel run --define version=$(cat VERSION) //server:deploy-apt-x86_64 -- release
-        bazel run --define version=$(cat VERSION) //server:deploy-apt-arm64 -- release
-        bazel run --define version=$(cat VERSION) //:deploy-apt -- release
+        bazel run --define version=$(cat VERSION) //:deploy-apt-x86_64 -- release
+        bazel run --define version=$(cat VERSION) //:deploy-apt-arm64 -- release
     deploy-docker:
       image: vaticle-ubuntu-22.04
       filter:
