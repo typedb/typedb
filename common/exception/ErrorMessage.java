@@ -502,7 +502,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final TypeRead TYPE_NOT_FOUND =
                 new TypeRead(3, "The type '%s' does not exist.");
         public static final TypeRead ROLE_TYPE_NOT_FOUND =
-                new TypeRead(4, "There are no role types of label '%s' in the scope of '%s'");
+                new TypeRead(4, "There is no role type '%s' in the relation type '%s'");
         public static final TypeRead TYPE_NOT_RESOLVABLE =
                 new TypeRead(5, "The type for variable '%s' is not resolvable.");
         public static final TypeRead TYPE_NOT_ATTRIBUTE_TYPE =

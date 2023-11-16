@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_DEFINED_NOT_ON_ATTRIBUTE_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeWrite.ATTRIBUTE_VALUE_TYPE_MISSING;
@@ -214,7 +215,7 @@ public class Definer {
             define(plays.relation().get());
             LabelConstraint roleTypeLabel = plays.role().label().get();
             conceptMgr.validateNotRoleTypeAlias(roleTypeLabel.properLabel());
-            RoleType roleType = getRoleType(roleTypeLabel).asRoleType();
+            RoleType roleType = getRoleType(roleTypeLabel);
             if (plays.overridden().isPresent()) {
                 String overriddenLabelName = plays.overridden().get().label().get().properLabel().name();
                 Optional<? extends RoleType> overriddenType = roleType.getSupertypes()
@@ -227,7 +228,11 @@ public class Definer {
     }
 
     private RoleType getRoleType(LabelConstraint label) {
-        return conceptMgr.getRelationType(label.scope().get()).getRelates(EXPLICIT, label.label());
+        RoleType roleType = conceptMgr.getRelationType(label.scope().get()).getRelates(EXPLICIT, label.label());
+        if (roleType == null) {
+            throw TypeDBException.of(ROLE_TYPE_NOT_FOUND, label.label(), label.scope().get());
+        }
+        return roleType;
     }
 
     private void define(com.vaticle.typeql.lang.pattern.schema.Rule rule) {
