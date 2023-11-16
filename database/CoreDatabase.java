@@ -234,7 +234,7 @@ public class CoreDatabase implements TypeDB.Database {
     }
 
     protected void load() {
-        validateDirectories();
+        assert isExistingDatabaseDirectory(directory());
         loadSchema();
         validateEncodingVersion();
         loadData();
@@ -249,12 +249,10 @@ public class CoreDatabase implements TypeDB.Database {
         statisticsCorrector.doReactivate();
     }
 
-    protected void validateDirectories() {
-        boolean dataExists = directory().resolve(Encoding.ROCKS_DATA).toFile().exists();
-        boolean schemaExists = directory().resolve(Encoding.ROCKS_SCHEMA).toFile().exists();
-        if (!schemaExists || !dataExists) {
-            throw TypeDBException.of(INVALID_DATABASE_DIRECTORIES, name(), directory(), list(ROCKS_SCHEMA, ROCKS_DATA));
-        }
+    public static boolean isExistingDatabaseDirectory(Path directory) {
+        boolean dataExists = directory.resolve(Encoding.ROCKS_DATA).toFile().exists();
+        boolean schemaExists = directory.resolve(Encoding.ROCKS_SCHEMA).toFile().exists();
+        return dataExists && schemaExists;
     }
 
     protected void loadSchema() {
