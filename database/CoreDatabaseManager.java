@@ -45,6 +45,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.TYP
 public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
     static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
+
     static {
         RocksDB.loadLibrary();
         Loader.loadNativeLibraries();
@@ -87,11 +88,13 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
     protected void loadAll() {
         File[] databaseDirectories = directory().toFile().listFiles(File::isDirectory);
         if (databaseDirectories != null && databaseDirectories.length > 0) {
-            Arrays.stream(databaseDirectories).parallel().forEach(directory -> {
-                String name = directory.getName();
-                CoreDatabase database = databaseFactory.databaseLoadAndOpen(this, name);
-                databases.put(name, database);
-            });
+            Arrays.stream(databaseDirectories).parallel()
+                    .filter(file -> CoreDatabase.isExistingDatabaseDirectory(file.toPath()))
+                    .forEach(directory -> {
+                        String name = directory.getName();
+                        CoreDatabase database = databaseFactory.databaseLoadAndOpen(this, name);
+                        databases.put(name, database);
+                    });
         }
     }
 
