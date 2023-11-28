@@ -93,11 +93,15 @@ public interface Concept {
 
         boolean isType();
 
+        boolean isAttributeType();
+
         boolean isAttribute();
 
         boolean isValue();
 
         Type asType();
+
+        AttributeType asAttributeType();
 
         Attribute asAttribute();
 

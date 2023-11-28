@@ -22,6 +22,7 @@ package com.vaticle.typedb.core.concept.answer;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.value.Value;
 
@@ -267,6 +268,7 @@ public class ReadableConceptTree {
             @Override
             public String toJSON() {
                 if (readableConcept == null) return "";
+                else if (readableConcept.isAttributeType()) return getAttributeType(readableConcept.asAttributeType());
                 else if (readableConcept.isType()) return getType(readableConcept.asType());
                 else if (readableConcept.isAttribute()) return getAttribute(readableConcept.asAttribute());
                 else if (readableConcept.isValue()) return getValue(readableConcept.asValue());
@@ -277,6 +279,14 @@ public class ReadableConceptTree {
                 return Map.CURLY_LEFT + "\n" +
                         quote(KEY_LABEL) + Map.KEY_VALUE_SEPARATOR + quote(type.getLabel().scopedName()) + Map.ENTRY_SEPARATOR + "\n" +
                         quote(KEY_ROOT) + Map.KEY_VALUE_SEPARATOR + quote(getRoot(type)) + "\n" +
+                        Map.CURLY_RIGHT;
+            }
+
+            private static String getAttributeType(AttributeType attributeType) {
+                return Map.CURLY_LEFT + "\n" +
+                        quote(KEY_LABEL) + Map.KEY_VALUE_SEPARATOR + quote(attributeType.getLabel().scopedName()) + Map.ENTRY_SEPARATOR + "\n" +
+                        quote(KEY_ROOT) + Map.KEY_VALUE_SEPARATOR + quote(getRoot(attributeType)) + "\n" +
+                        quote(KEY_VALUE_TYPE) + Map.KEY_VALUE_SEPARATOR + quote(attributeType.getValueType().encoding().typeQLValueType().toString()) + "\n" +
                         Map.CURLY_RIGHT;
             }
 
@@ -300,9 +310,8 @@ public class ReadableConceptTree {
                 }
                 else throw TypeDBException.of(ILLEGAL_STATE);
                 return Map.CURLY_LEFT + "\n" +
-                        quote(KEY_TYPE) + Map.KEY_VALUE_SEPARATOR + getType(attribute.getType()) + Map.ENTRY_SEPARATOR + "\n" +
+                        quote(KEY_TYPE) + Map.KEY_VALUE_SEPARATOR + getAttributeType(attribute.getType()) + Map.ENTRY_SEPARATOR + "\n" +
                         quote(KEY_VALUE) + Map.KEY_VALUE_SEPARATOR + valueString + Map.ENTRY_SEPARATOR + "\n" +
-                        quote(KEY_VALUE_TYPE) + Map.KEY_VALUE_SEPARATOR + quote(attribute.getType().getValueType().encoding().typeQLValueType().toString()) + "\n" +
                         Map.CURLY_RIGHT;
             }
 
