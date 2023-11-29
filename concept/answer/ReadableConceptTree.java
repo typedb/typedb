@@ -285,7 +285,7 @@ public class ReadableConceptTree {
             private static String getAttributeType(AttributeType attributeType) {
                 return Map.CURLY_LEFT + "\n" +
                         quote(KEY_LABEL) + Map.KEY_VALUE_SEPARATOR + quote(attributeType.getLabel().scopedName()) + Map.ENTRY_SEPARATOR + "\n" +
-                        quote(KEY_ROOT) + Map.KEY_VALUE_SEPARATOR + quote(getRoot(attributeType)) + "\n" +
+                        quote(KEY_ROOT) + Map.KEY_VALUE_SEPARATOR + quote(getRoot(attributeType)) + Map.ENTRY_SEPARATOR + "\n" +
                         quote(KEY_VALUE_TYPE) + Map.KEY_VALUE_SEPARATOR + quote(attributeType.getValueType().encoding().typeQLValueType().toString()) + "\n" +
                         Map.CURLY_RIGHT;
             }
@@ -311,7 +311,7 @@ public class ReadableConceptTree {
                 else throw TypeDBException.of(ILLEGAL_STATE);
                 return Map.CURLY_LEFT + "\n" +
                         quote(KEY_TYPE) + Map.KEY_VALUE_SEPARATOR + getAttributeType(attribute.getType()) + Map.ENTRY_SEPARATOR + "\n" +
-                        quote(KEY_VALUE) + Map.KEY_VALUE_SEPARATOR + valueString + Map.ENTRY_SEPARATOR + "\n" +
+                        quote(KEY_VALUE) + Map.KEY_VALUE_SEPARATOR + valueString + "\n" +
                         Map.CURLY_RIGHT;
             }
 
