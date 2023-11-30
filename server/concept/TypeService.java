@@ -194,36 +194,36 @@ public class TypeService {
     }
 
     private void roleTypeDelete(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
-        getRoleType(roleTypeReq).delete();
+        notNull(getRoleType(roleTypeReq)).delete();
         transactionSvc.respond(ResponseBuilder.Type.RoleType.deleteRes(reqID));
     }
 
     private void roleTypeSetLabel(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
-        getRoleType(roleTypeReq).setLabel(roleTypeReq.getRoleTypeSetLabelReq().getLabel());
+        notNull(getRoleType(roleTypeReq)).setLabel(roleTypeReq.getRoleTypeSetLabelReq().getLabel());
         transactionSvc.respond(ResponseBuilder.Type.RoleType.setLabelRes(reqID));
     }
 
     private void roleTypeGetSupertype(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
-        transactionSvc.respond(ResponseBuilder.Type.RoleType.getSupertypeRes(reqID, getRoleType(roleTypeReq).getSupertype()));
+        transactionSvc.respond(ResponseBuilder.Type.RoleType.getSupertypeRes(reqID, notNull(getRoleType(roleTypeReq)).getSupertype()));
     }
 
     private void roleTypeGetSupertypes(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
         transactionSvc.stream(
-                getRoleType(roleTypeReq).getSupertypes(), reqID,
+                notNull(getRoleType(roleTypeReq)).getSupertypes(), reqID,
                 types -> ResponseBuilder.Type.RoleType.getSupertypesResPart(reqID, types)
         );
     }
 
     private void roleTypeGetSubtypes(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
         transactionSvc.stream(
-                getRoleType(roleTypeReq).getSubtypes(), reqID,
+                notNull(getRoleType(roleTypeReq)).getSubtypes(), reqID,
                 types -> ResponseBuilder.Type.RoleType.getSubtypesResPart(reqID, types)
         );
     }
 
     private void roleTypeGetRelationTypes(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
         transactionSvc.stream(
-                getRoleType(roleTypeReq).getRelationTypes(), reqID,
+                notNull(getRoleType(roleTypeReq)).getRelationTypes(), reqID,
                 relationTypes -> ResponseBuilder.Type.RoleType.getRelationTypesResPart(reqID, relationTypes)
         );
     }
@@ -231,7 +231,7 @@ public class TypeService {
     private void roleTypeGetPlayerTypes(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
         ConceptProto.RoleType.GetPlayerTypes.Req req = roleTypeReq.getRoleTypeGetPlayerTypesReq();
         transactionSvc.stream(
-                getRoleType(roleTypeReq).getPlayerTypes(getTransitivity(req.getTransitivity())), reqID,
+                notNull(getRoleType(roleTypeReq)).getPlayerTypes(getTransitivity(req.getTransitivity())), reqID,
                 types -> ResponseBuilder.Type.RoleType.getPlayerTypesResPart(reqID, types)
         );
     }
@@ -239,7 +239,7 @@ public class TypeService {
     private void roleTypeGetRelationInstances(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
         ConceptProto.RoleType.GetRelationInstances.Req req = roleTypeReq.getRoleTypeGetRelationInstancesReq();
         transactionSvc.stream(
-                getRoleType(roleTypeReq).getRelationInstances(getTransitivity(req.getTransitivity())), reqID,
+                notNull(getRoleType(roleTypeReq)).getRelationInstances(getTransitivity(req.getTransitivity())), reqID,
                 relations -> ResponseBuilder.Type.RoleType.getRelationInstancesResPart(reqID, relations)
         );
     }
@@ -247,7 +247,7 @@ public class TypeService {
     private void roleTypeGetPlayerInstances(ConceptProto.RoleType.Req roleTypeReq, UUID reqID) {
         ConceptProto.RoleType.GetPlayerInstances.Req req = roleTypeReq.getRoleTypeGetPlayerInstancesReq();
         transactionSvc.stream(
-                getRoleType(roleTypeReq).getPlayerInstances(getTransitivity(req.getTransitivity())), reqID,
+                notNull(getRoleType(roleTypeReq)).getPlayerInstances(getTransitivity(req.getTransitivity())), reqID,
                 players -> ResponseBuilder.Type.RoleType.getPlayerInstancesResPart(reqID, players)
         );
     }
@@ -257,22 +257,22 @@ public class TypeService {
     }
 
     private void thingTypeDelete(ConceptProto.ThingType.Req typeReq, UUID reqID) {
-        getThingType(typeReq).delete();
+        notNull(getThingType(typeReq)).delete();
         transactionSvc.respond(ResponseBuilder.Type.ThingType.deleteRes(reqID));
     }
 
     private void thingTypeSetLabel(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        getThingType(thingTypeReq).setLabel(thingTypeReq.getThingTypeSetLabelReq().getLabel());
+        notNull(getThingType(thingTypeReq)).setLabel(thingTypeReq.getThingTypeSetLabelReq().getLabel());
         transactionSvc.respond(ResponseBuilder.Type.ThingType.setLabelRes(reqID));
     }
 
     private void thingTypeSetAbstract(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        getThingType(thingTypeReq).setAbstract();
+        notNull(getThingType(thingTypeReq)).setAbstract();
         transactionSvc.respond(ResponseBuilder.Type.ThingType.setAbstractRes(reqID));
     }
 
     private void thingTypeUnsetAbstract(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        getThingType(thingTypeReq).unsetAbstract();
+        notNull(getThingType(thingTypeReq)).unsetAbstract();
         transactionSvc.respond(ResponseBuilder.Type.ThingType.unsetAbstractRes(reqID));
     }
 
@@ -282,16 +282,16 @@ public class TypeService {
         Set<Annotation> annotations = getAnnotations(getOwnsReq.getAnnotationsList());
         Transitivity transitivity = getTransitivity(getOwnsReq.getTransitivity());
         if (getOwnsReq.hasValueType()) {
-            attributes = getThingType(thingTypeReq).getOwns(transitivity, valueType(getOwnsReq.getValueType()), annotations)
+            attributes = notNull(getThingType(thingTypeReq)).getOwns(transitivity, valueType(getOwnsReq.getValueType()), annotations)
                     .map(ThingType.Owns::attributeType);
-        } else attributes = getThingType(thingTypeReq).getOwns(transitivity, annotations).map(ThingType.Owns::attributeType);
+        } else attributes = notNull(getThingType(thingTypeReq)).getOwns(transitivity, annotations).map(ThingType.Owns::attributeType);
         transactionSvc.stream(attributes, reqID, attributeTypes -> ResponseBuilder.Type.ThingType.getOwnsResPart(reqID, attributeTypes));
     }
 
     private void thingTypeGetOwnsOverridden(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.ThingType.GetOwnsOverridden.Req getOwnsOverriddenReq = thingTypeReq.getThingTypeGetOwnsOverriddenReq();
         AttributeType attributeType = getAttributeType(getOwnsOverriddenReq.getAttributeType());
-        transactionSvc.respond(ResponseBuilder.Type.ThingType.getOwnsOverriddenRes(reqID, getThingType(thingTypeReq).getOwnsOverridden(attributeType)));
+        transactionSvc.respond(ResponseBuilder.Type.ThingType.getOwnsOverriddenRes(reqID, notNull(getThingType(thingTypeReq)).getOwnsOverridden(attributeType)));
     }
 
     private void thingTypeSetOwns(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
@@ -301,21 +301,21 @@ public class TypeService {
 
         if (setOwnsReq.hasOverriddenType()) {
             AttributeType overriddenType = getAttributeType(setOwnsReq.getOverriddenType());
-            getThingType(thingTypeReq).setOwns(attributeType, overriddenType, annotations);
-        } else getThingType(thingTypeReq).setOwns(attributeType, annotations);
+            notNull(getThingType(thingTypeReq)).setOwns(attributeType, overriddenType, annotations);
+        } else notNull(getThingType(thingTypeReq)).setOwns(attributeType, annotations);
         transactionSvc.respond(ResponseBuilder.Type.ThingType.setOwnsRes(reqID));
     }
 
     private void thingTypeUnsetOwns(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.ThingType.UnsetOwns.Req unsetOwnsReq = thingTypeReq.getThingTypeUnsetOwnsReq();
-        getThingType(thingTypeReq).unsetOwns(getAttributeType(unsetOwnsReq.getAttributeType()));
+        notNull(getThingType(thingTypeReq)).unsetOwns(getAttributeType(unsetOwnsReq.getAttributeType()));
         transactionSvc.respond(ResponseBuilder.Type.ThingType.unsetOwnsRes(reqID));
     }
 
     private void thingTypeGetPlays(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.ThingType.GetPlays.Req getPlaysReq = thingTypeReq.getThingTypeGetPlaysReq();
         transactionSvc.stream(
-                getThingType(thingTypeReq).getPlays(getTransitivity(getPlaysReq.getTransitivity())), reqID,
+                notNull(getThingType(thingTypeReq)).getPlays(getTransitivity(getPlaysReq.getTransitivity())), reqID,
                 roleTypes -> ResponseBuilder.Type.ThingType.getPlaysResPart(reqID, roleTypes)
         );
     }
@@ -323,45 +323,45 @@ public class TypeService {
     private void thingTypeGetPlaysOverridden(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.ThingType.GetPlaysOverridden.Req getPlaysOverriddenReq = thingTypeReq.getThingTypeGetPlaysOverriddenReq();
         RoleType roleType = getRoleType(getPlaysOverriddenReq.getRoleType());
-        transactionSvc.respond(ResponseBuilder.Type.ThingType.getPlaysOverriddenRes(reqID, getThingType(thingTypeReq).getPlaysOverridden(roleType)));
+        transactionSvc.respond(ResponseBuilder.Type.ThingType.getPlaysOverriddenRes(reqID, notNull(getThingType(thingTypeReq)).getPlaysOverridden(roleType)));
     }
 
     private void thingTypeSetPlays(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.ThingType.SetPlays.Req setPlaysRequest = thingTypeReq.getThingTypeSetPlaysReq();
         RoleType role = getRoleType(setPlaysRequest.getRoleType());
         if (setPlaysRequest.hasOverriddenRoleType()) {
-            getThingType(thingTypeReq).setPlays(role, getRoleType(setPlaysRequest.getOverriddenRoleType()));
-        } else getThingType(thingTypeReq).setPlays(role);
+            notNull(getThingType(thingTypeReq)).setPlays(role, getRoleType(setPlaysRequest.getOverriddenRoleType()));
+        } else notNull(getThingType(thingTypeReq)).setPlays(role);
         transactionSvc.respond(ResponseBuilder.Type.ThingType.setPlaysRes(reqID));
     }
 
     private void thingTypeUnsetPlays(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.ThingType.UnsetPlays.Req unsetPlaysReq = thingTypeReq.getThingTypeUnsetPlaysReq();
-        getThingType(thingTypeReq).unsetPlays(notNull(getRoleType(unsetPlaysReq.getRoleType())));
+        notNull(getThingType(thingTypeReq)).unsetPlays(notNull(getRoleType(unsetPlaysReq.getRoleType())));
         transactionSvc.respond(ResponseBuilder.Type.ThingType.unsetPlaysRes(reqID));
     }
 
     private void thingTypeGetSyntax(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        transactionSvc.respond(ResponseBuilder.Type.ThingType.getSyntaxRes(reqID, getThingType(thingTypeReq).getSyntax()));
+        transactionSvc.respond(ResponseBuilder.Type.ThingType.getSyntaxRes(reqID, notNull(getThingType(thingTypeReq)).getSyntax()));
     }
 
     private void entityTypeCreate(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        transactionSvc.respond(ResponseBuilder.Type.EntityType.createRes(reqID, getEntityType(thingTypeReq).create()));
+        transactionSvc.respond(ResponseBuilder.Type.EntityType.createRes(reqID, notNull(getEntityType(thingTypeReq)).create()));
     }
 
     private void entityTypeGetSupertype(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        transactionSvc.respond(ResponseBuilder.Type.EntityType.getSupertypeRes(reqID, getEntityType(thingTypeReq).getSupertype()));
+        transactionSvc.respond(ResponseBuilder.Type.EntityType.getSupertypeRes(reqID, notNull(getEntityType(thingTypeReq)).getSupertype()));
     }
 
     private void entityTypeSetSupertype(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         EntityType supertype = getEntityType(thingTypeReq.getEntityTypeSetSupertypeReq().getEntityType());
-        getEntityType(thingTypeReq).setSupertype(supertype);
+        notNull(getEntityType(thingTypeReq)).setSupertype(supertype);
         transactionSvc.respond(ResponseBuilder.Type.EntityType.setSupertypeRes(reqID));
     }
 
     private void entityTypeGetSupertypes(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         transactionSvc.stream(
-                getEntityType(thingTypeReq).getSupertypes(), reqID,
+                notNull(getEntityType(thingTypeReq)).getSupertypes(), reqID,
                 types -> ResponseBuilder.Type.EntityType.getSupertypesResPart(reqID, types)
         );
     }
@@ -369,7 +369,7 @@ public class TypeService {
     private void entityTypeGetSubtypes(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         Transitivity transitivity = getTransitivity(thingTypeReq.getEntityTypeGetSubtypesReq().getTransitivity());
         transactionSvc.stream(
-                getEntityType(thingTypeReq).getSubtypes(transitivity), reqID,
+                notNull(getEntityType(thingTypeReq)).getSubtypes(transitivity), reqID,
                 types -> ResponseBuilder.Type.EntityType.getSubtypesResPart(reqID, types)
         );
     }
@@ -377,28 +377,28 @@ public class TypeService {
     private void entityTypeGetInstances(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         Transitivity transitivity = getTransitivity(thingTypeReq.getEntityTypeGetInstancesReq().getTransitivity());
         transactionSvc.stream(
-                getEntityType(thingTypeReq).getInstances(transitivity), reqID,
+                notNull(getEntityType(thingTypeReq)).getInstances(transitivity), reqID,
                 things -> ResponseBuilder.Type.EntityType.getInstancesResPart(reqID, things)
         );
     }
 
     private void relationTypeCreate(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        transactionSvc.respond(ResponseBuilder.Type.RelationType.createRes(reqID, getRelationType(thingTypeReq).create()));
+        transactionSvc.respond(ResponseBuilder.Type.RelationType.createRes(reqID, notNull(getRelationType(thingTypeReq)).create()));
     }
 
     private void relationTypeGetSupertype(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        transactionSvc.respond(ResponseBuilder.Type.RelationType.getSupertypeRes(reqID, getRelationType(thingTypeReq).getSupertype()));
+        transactionSvc.respond(ResponseBuilder.Type.RelationType.getSupertypeRes(reqID, notNull(getRelationType(thingTypeReq)).getSupertype()));
     }
 
     private void relationTypeSetSupertype(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         RelationType supertype = getRelationType(thingTypeReq.getRelationTypeSetSupertypeReq().getRelationType());
-        getThingType(thingTypeReq).asRelationType().setSupertype(supertype);
+        notNull(getThingType(thingTypeReq)).asRelationType().setSupertype(supertype);
         transactionSvc.respond(ResponseBuilder.Type.RelationType.setSupertypeRes(reqID));
     }
 
     private void relationTypeGetSupertypes(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         transactionSvc.stream(
-                getRelationType(thingTypeReq).getSupertypes(), reqID,
+                notNull(getRelationType(thingTypeReq)).getSupertypes(), reqID,
                 types -> ResponseBuilder.Type.RelationType.getSupertypesResPart(reqID, types)
         );
     }
@@ -406,7 +406,7 @@ public class TypeService {
     private void relationTypeGetSubtypes(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         Transitivity transitivity = getTransitivity(thingTypeReq.getRelationTypeGetSubtypesReq().getTransitivity());
         transactionSvc.stream(
-                getRelationType(thingTypeReq).getSubtypes(transitivity), reqID,
+                notNull(getRelationType(thingTypeReq)).getSubtypes(transitivity), reqID,
                 types -> ResponseBuilder.Type.RelationType.getSubtypesResPart(reqID, types)
         );
     }
@@ -414,7 +414,7 @@ public class TypeService {
     private void relationTypeGetInstances(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         Transitivity transitivity = getTransitivity(thingTypeReq.getRelationTypeGetInstancesReq().getTransitivity());
         transactionSvc.stream(
-                getRelationType(thingTypeReq).getInstances(transitivity), reqID,
+                notNull(getRelationType(thingTypeReq)).getInstances(transitivity), reqID,
                 things -> ResponseBuilder.Type.RelationType.getInstancesResPart(reqID, things)
         );
     }
@@ -422,34 +422,34 @@ public class TypeService {
     private void relationTypeGetRelates(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         Transitivity transitivity = getTransitivity(thingTypeReq.getRelationTypeGetRelatesReq().getTransitivity());
         transactionSvc.stream(
-                getRelationType(thingTypeReq).getRelates(transitivity), reqID,
+                notNull(getRelationType(thingTypeReq)).getRelates(transitivity), reqID,
                 roleTypes -> ResponseBuilder.Type.RelationType.getRelatesResPart(reqID, roleTypes)
         );
     }
 
     private void relationTypeGetRelatesForRoleLabel(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         String roleLabel = thingTypeReq.getRelationTypeGetRelatesForRoleLabelReq().getLabel();
-        transactionSvc.respond(ResponseBuilder.Type.RelationType.getRelatesForRoleLabelRes(reqID, getRelationType(thingTypeReq).getRelates(roleLabel)));
+        transactionSvc.respond(ResponseBuilder.Type.RelationType.getRelatesForRoleLabelRes(reqID, notNull(getRelationType(thingTypeReq)).getRelates(roleLabel)));
     }
 
     private void relationTypeGetRelatesOverridden(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         String roleLabel = thingTypeReq.getRelationTypeGetRelatesOverriddenReq().getLabel();
-        transactionSvc.respond(ResponseBuilder.Type.RelationType.getRelatesOverriddenRes(reqID, getRelationType(thingTypeReq).getRelatesOverridden(roleLabel)));
+        transactionSvc.respond(ResponseBuilder.Type.RelationType.getRelatesOverriddenRes(reqID, notNull(getRelationType(thingTypeReq)).getRelatesOverridden(roleLabel)));
     }
 
     private void relationTypeSetRelates(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         ConceptProto.RelationType.SetRelates.Req setRelatesReq = thingTypeReq.getRelationTypeSetRelatesReq();
         if (setRelatesReq.hasOverriddenLabel()) {
-            getRelationType(thingTypeReq).setRelates(setRelatesReq.getLabel(), setRelatesReq.getOverriddenLabel());
+            notNull(getRelationType(thingTypeReq)).setRelates(setRelatesReq.getLabel(), setRelatesReq.getOverriddenLabel());
         } else {
-            getRelationType(thingTypeReq).setRelates(setRelatesReq.getLabel());
+            notNull(getRelationType(thingTypeReq)).setRelates(setRelatesReq.getLabel());
         }
         transactionSvc.respond(ResponseBuilder.Type.RelationType.setRelatesRes(reqID));
     }
 
     private void relationTypeUnsetRelates(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         String roleLabel = thingTypeReq.getRelationTypeUnsetRelatesReq().getLabel();
-        getRelationType(thingTypeReq).unsetRelates(roleLabel);
+        notNull(getRelationType(thingTypeReq)).unsetRelates(roleLabel);
         transactionSvc.respond(ResponseBuilder.Type.RelationType.unsetRelatesRes(reqID));
     }
 
@@ -516,18 +516,18 @@ public class TypeService {
     }
 
     private void attributeTypeGetSupertype(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        transactionSvc.respond(ResponseBuilder.Type.AttributeType.getSupertypeRes(reqID, getAttributeType(thingTypeReq).getSupertype()));
+        transactionSvc.respond(ResponseBuilder.Type.AttributeType.getSupertypeRes(reqID, notNull(getAttributeType(thingTypeReq)).getSupertype()));
     }
 
     private void attributeTypeSetSupertype(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         AttributeType supertype = getAttributeType(thingTypeReq.getAttributeTypeSetSupertypeReq().getAttributeType());
-        getThingType(thingTypeReq).asAttributeType().setSupertype(supertype);
+        notNull(getThingType(thingTypeReq)).asAttributeType().setSupertype(supertype);
         transactionSvc.respond(ResponseBuilder.Type.AttributeType.setSupertypeRes(reqID));
     }
 
     private void attributeTypeGetSupertypes(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         transactionSvc.stream(
-                getAttributeType(thingTypeReq).getSupertypes(), reqID,
+                notNull(getAttributeType(thingTypeReq)).getSupertypes(), reqID,
                 types -> ResponseBuilder.Type.AttributeType.getSupertypesResPart(reqID, types)
         );
     }
@@ -552,17 +552,17 @@ public class TypeService {
     private void attributeTypeGetInstances(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
         Transitivity transitivity = getTransitivity(thingTypeReq.getAttributeTypeGetInstancesReq().getTransitivity());
         transactionSvc.stream(
-                getAttributeType(thingTypeReq).getInstances(transitivity), reqID,
+                notNull(getAttributeType(thingTypeReq)).getInstances(transitivity), reqID,
                 things -> ResponseBuilder.Type.AttributeType.getInstancesResPart(reqID, things)
         );
     }
 
     private void attributeTypeGetRegex(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        transactionSvc.respond(ResponseBuilder.Type.AttributeType.getRegexRes(reqID, getAttributeType(thingTypeReq).asString().getRegex()));
+        transactionSvc.respond(ResponseBuilder.Type.AttributeType.getRegexRes(reqID, notNull(getAttributeType(thingTypeReq)).asString().getRegex()));
     }
 
     private void attributeTypeSetRegex(ConceptProto.ThingType.Req thingTypeReq, UUID reqID) {
-        AttributeType.String attributeType = getAttributeType(thingTypeReq).asString();
+        AttributeType.String attributeType = notNull(getAttributeType(thingTypeReq)).asString();
         String regex = thingTypeReq.getAttributeTypeSetRegexReq().getRegex();
         if (regex.isEmpty()) attributeType.setRegex(null);
         else attributeType.setRegex(Pattern.compile(regex));
@@ -574,7 +574,7 @@ public class TypeService {
         Set<Annotation> annotations = getAnnotations(getOwnersReq.getAnnotationsList());
         Transitivity transitivity = getTransitivity(getOwnersReq.getTransitivity());
         transactionSvc.stream(
-                getAttributeType(thingTypeReq).getOwners(transitivity, annotations), reqID,
+                notNull(getAttributeType(thingTypeReq)).getOwners(transitivity, annotations), reqID,
                 owners -> ResponseBuilder.Type.AttributeType.getOwnersResPart(reqID, owners)
         );
     }
