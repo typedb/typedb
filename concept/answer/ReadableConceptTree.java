@@ -22,6 +22,7 @@ package com.vaticle.typedb.core.concept.answer;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.concept.Concept;
 import com.vaticle.typedb.core.concept.thing.Attribute;
+import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.concept.value.Value;
 
@@ -274,10 +275,14 @@ public class ReadableConceptTree {
             }
 
             private static String getType(Type type) {
-                return Map.CURLY_LEFT + "\n" +
+                String buf = Map.CURLY_LEFT + "\n" +
                         quote(KEY_LABEL) + Map.KEY_VALUE_SEPARATOR + quote(type.getLabel().scopedName()) + Map.ENTRY_SEPARATOR + "\n" +
-                        quote(KEY_ROOT) + Map.KEY_VALUE_SEPARATOR + quote(getRoot(type)) + "\n" +
-                        Map.CURLY_RIGHT;
+                        quote(KEY_ROOT) + Map.KEY_VALUE_SEPARATOR + quote(getRoot(type));
+                if (type.isAttributeType()) {
+                    buf += Map.ENTRY_SEPARATOR + "\n" +
+                        quote(KEY_VALUE_TYPE) + Map.KEY_VALUE_SEPARATOR + quote(type.asAttributeType().getValueType().encoding().typeQLValueType().toString());
+                }
+                return buf + "\n" + Map.CURLY_RIGHT;
             }
 
             private static String getRoot(Type type) {
@@ -301,8 +306,7 @@ public class ReadableConceptTree {
                 else throw TypeDBException.of(ILLEGAL_STATE);
                 return Map.CURLY_LEFT + "\n" +
                         quote(KEY_TYPE) + Map.KEY_VALUE_SEPARATOR + getType(attribute.getType()) + Map.ENTRY_SEPARATOR + "\n" +
-                        quote(KEY_VALUE) + Map.KEY_VALUE_SEPARATOR + valueString + Map.ENTRY_SEPARATOR + "\n" +
-                        quote(KEY_VALUE_TYPE) + Map.KEY_VALUE_SEPARATOR + quote(attribute.getType().getValueType().encoding().typeQLValueType().toString()) + "\n" +
+                        quote(KEY_VALUE) + Map.KEY_VALUE_SEPARATOR + valueString + "\n" +
                         Map.CURLY_RIGHT;
             }
 
