@@ -277,10 +277,12 @@ public class ReadableConceptTree {
             private static String getType(Type type) {
                 String buf = Map.CURLY_LEFT + "\n" +
                         quote(KEY_LABEL) + Map.KEY_VALUE_SEPARATOR + quote(type.getLabel().scopedName()) + Map.ENTRY_SEPARATOR + "\n" +
-                        quote(KEY_ROOT) + Map.KEY_VALUE_SEPARATOR + quote(getRoot(type)) + "\n";
-                if (type.isAttributeType())
-                    buf += quote(KEY_VALUE_TYPE) + Map.KEY_VALUE_SEPARATOR + quote(type.asAttributeType().getValueType().encoding().typeQLValueType().toString()) + "\n";
-                return buf + Map.CURLY_RIGHT;
+                        quote(KEY_ROOT) + Map.KEY_VALUE_SEPARATOR + quote(getRoot(type));
+                if (type.isAttributeType()) {
+                    buf += Map.ENTRY_SEPARATOR + "\n" +
+                        quote(KEY_VALUE_TYPE) + Map.KEY_VALUE_SEPARATOR + quote(type.asAttributeType().getValueType().encoding().typeQLValueType().toString());
+                }
+                return buf + "\n" + Map.CURLY_RIGHT;
             }
 
             private static String getRoot(Type type) {
