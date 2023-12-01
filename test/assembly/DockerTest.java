@@ -70,7 +70,7 @@ public class DockerTest {
     }
 
     private static boolean isTypeDBServerReady(TypeDBConsoleRunner consoleRunner) {
-        return consoleRunner.run("--server", "localhost:" + typeDBPort, "--command", "database create docker-test") == 0;
+        return consoleRunner.run("--core", "localhost:" + typeDBPort, "--command", "database create docker-test") == 0;
     }
 
     private ProcessResult execute(String... cmd) throws InterruptedException, TimeoutException, IOException {
