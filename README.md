@@ -12,7 +12,7 @@
 
 TypeDB is a [polymorphic](https://typedb.com/features#polymorphic-queries) database with a [conceptual](https://typedb.com/features#conceptual-modeling) data model, a strong [subtyping](https://typedb.com/features#strong-type-system) system, a symbolic [reasoning](https://typedb.com/features#symbolic-reasoning) engine, and a beautiful and elegant [type-theoretic](https://typedb.com/features#modern-language) language [TypeQL](https://github.com/vaticle/typeql).
 
-> **IMPORTANT NOTE:** TypeDB & TypeQL is in the process of being ported over and rewritten in [Rust](https://www.rust-lang.org). There will changes that won't be backwards compatible, as we refine the the language further to extend its expressivity, as well as changes to the byte storage data structure to further boost performanc significantly. We're aiming to complete this by February/March 2024, released as TypeDB 3.0, along with preliminary benchmarks of TypeDB.
+> **IMPORTANT NOTE:** TypeDB & TypeQL are in the process of being ported over and rewritten in [Rust](https://www.rust-lang.org). There will be changes that won't be backwards compatible, as we refine the the language further to extend its expressivity, as well as changes to the byte storage data structure to further boost performance significantly. We're aiming to complete this by February/March 2024, released as TypeDB 3.0, along with preliminary benchmarks of TypeDB.
 
 ## Polymorphic databases
 
