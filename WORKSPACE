@@ -36,14 +36,6 @@ load("@vaticle_dependencies//library/maven:rules.bzl", "maven")
 load("@rules_jvm_external//:repositories.bzl", "rules_jvm_external_deps")
 rules_jvm_external_deps()
 
-# Load //builder/antlr
-load("@vaticle_dependencies//builder/antlr:deps.bzl", antlr_deps = "deps", "antlr_version")
-antlr_deps()
-
-load("@rules_antlr//antlr:lang.bzl", "JAVA")
-load("@rules_antlr//antlr:repositories.bzl", "rules_antlr_dependencies")
-rules_antlr_dependencies(antlr_version, JAVA)
-
 # Load //builder/kotlin
 load("@vaticle_dependencies//builder/kotlin:deps.bzl", kotlin_deps = "deps")
 kotlin_deps()
@@ -60,17 +52,6 @@ load("@rules_proto_grpc//:repositories.bzl", "rules_proto_grpc_repos", "rules_pr
 rules_proto_grpc_toolchains()
 rules_proto_grpc_repos()
 
-load("@rules_proto_grpc//java:repositories.bzl", rules_proto_grpc_java_repos = "java_repos")
-rules_proto_grpc_java_repos()
-
-load("@io_grpc_grpc_java//:repositories.bzl", "IO_GRPC_GRPC_JAVA_ARTIFACTS")
-load("@vaticle_dependencies//library/maven:rules.bzl", "parse_unversioned")
-io_grpc_artifacts = [parse_unversioned(c) for c in IO_GRPC_GRPC_JAVA_ARTIFACTS]
-
-# Load //builder/python
-load("@vaticle_dependencies//builder/python:deps.bzl", python_deps = "deps")
-python_deps()
-
 # Load //tool/common
 load("@vaticle_dependencies//tool/common:deps.bzl", "vaticle_dependencies_ci_pip",
     vaticle_dependencies_tool_maven_artifacts = "maven_artifacts")
@@ -83,6 +64,38 @@ checkstyle_deps()
 # Load //tool/unuseddeps
 load("@vaticle_dependencies//tool/unuseddeps:deps.bzl", unuseddeps_deps = "deps")
 unuseddeps_deps()
+
+
+# Load //builder/rust
+load("@vaticle_dependencies//builder/rust:deps.bzl", rust_deps = "deps")
+rust_deps()
+
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains", "rust_analyzer_toolchain_tools_repository")
+rules_rust_dependencies()
+load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
+rust_analyzer_dependencies()
+load("@rules_rust//rust:defs.bzl", "rust_common")
+rust_register_toolchains(
+    edition = "2021",
+    extra_target_triples = [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+        "x86_64-unknown-linux-gnu",
+    ],
+    rust_analyzer_version = rust_common.default_version,
+)
+
+rust_analyzer_toolchain_tools_repository(
+    name = "rust_analyzer_toolchain_tools",
+    version = rust_common.default_version
+)
+
+load("@vaticle_dependencies//library/crates:crates.bzl", "fetch_crates")
+fetch_crates()
+load("@crates//:defs.bzl", "crate_repositories")
+crate_repositories()
 
 ######################################
 # Load @vaticle_bazel_distribution #
@@ -104,37 +117,37 @@ github_deps()
 # Load //pip
 load("@vaticle_bazel_distribution//pip:deps.bzl", pip_deps = "deps")
 pip_deps()
-
-######################################
-# Load @vaticle_dependencies//distribution/docker #
-######################################
-
-# must be loaded after `vaticle_bazel_distribution` to ensure
-# `rules_pkg` is correctly patched (bazel-distribution #251)
-
-# Load //distribution/docker
-load("@vaticle_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
-docker_deps()
-
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
-go_rules_dependencies()
-go_register_toolchains(version = "1.18.3")
-gazelle_dependencies()
-
-load("@io_bazel_rules_docker//repositories:repositories.bzl", bazel_rules_docker_repositories = "repositories")
-bazel_rules_docker_repositories()
-
-load("@io_bazel_rules_docker//repositories:deps.bzl", bazel_rules_docker_container_deps = "deps")
-bazel_rules_docker_container_deps()
-
-load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
-container_pull(
-  name = "vaticle_ubuntu_image",
-  registry = "index.docker.io",
-  repository = "vaticle/ubuntu",
-  tag = "4ee548cea883c716055566847c4736a7ef791c38"
-)
+#
+####################################################
+## Load @vaticle_dependencies//distribution/docker #
+####################################################
+#
+## must be loaded after `vaticle_bazel_distribution` to ensure
+## `rules_pkg` is correctly patched (bazel-distribution #251)
+#
+## Load //distribution/docker
+#load("@vaticle_dependencies//distribution/docker:deps.bzl", docker_deps = "deps")
+#docker_deps()
+#
+#load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+#load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+#go_rules_dependencies()
+#go_register_toolchains(version = "1.18.3")
+#gazelle_dependencies()
+#
+#load("@io_bazel_rules_docker//repositories:repositories.bzl", bazel_rules_docker_repositories = "repositories")
+#bazel_rules_docker_repositories()
+#
+#load("@io_bazel_rules_docker//repositories:deps.bzl", bazel_rules_docker_container_deps = "deps")
+#bazel_rules_docker_container_deps()
+#
+#load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
+#container_pull(
+#  name = "vaticle_ubuntu_image",
+#  registry = "index.docker.io",
+#  repository = "vaticle/ubuntu",
+#  tag = "4ee548cea883c716055566847c4736a7ef791c38"
+#)
 
 #####################################
 # Load @vaticle/typedb dependencies #
@@ -143,35 +156,19 @@ container_pull(
 # We don't load Maven artifacts for @vaticle_typedb_common as they are only needed
 # if you depend on @vaticle_typedb_common//test/server
 load("//dependencies/vaticle:repositories.bzl", "vaticle_typedb_common","vaticle_typeql", "vaticle_typedb_protocol", "vaticle_typedb_behaviour")
+load("@vaticle_dependencies//tool/common:deps.bzl", "vaticle_dependencies_ci_pip", vaticle_dependencies_tool_maven_artifacts = "maven_artifacts")
 vaticle_typedb_common()
-vaticle_typeql()
-vaticle_typedb_protocol()
-vaticle_typedb_behaviour()
 
 load("//dependencies/vaticle:artifacts.bzl", "vaticle_typedb_console_artifact")
 vaticle_typedb_console_artifact()
-
-# Load maven artifacts
-load("@vaticle_typedb_common//dependencies/maven:artifacts.bzl", vaticle_typedb_common_artifacts = "artifacts")
-load("@vaticle_typeql//dependencies/maven:artifacts.bzl", vaticle_typeql_artifacts = "artifacts")
-load("@vaticle_typedb_protocol//dependencies/maven:artifacts.bzl", vaticle_typedb_protocol_artifacts = "artifacts")
-load("//dependencies/maven:artifacts.bzl", vaticle_typedb_artifacts = "artifacts")
 
 ############################
 # Load @maven dependencies #
 ############################
 load("@vaticle_dependencies//library/maven:rules.bzl", "maven")
 maven(
-    vaticle_typedb_common_artifacts  +
-    vaticle_dependencies_tool_maven_artifacts +
-    vaticle_typeql_artifacts +
-    vaticle_typedb_artifacts +
-    io_grpc_artifacts,
-    generate_compat_repositories = True,
+    vaticle_dependencies_tool_maven_artifacts
 )
-
-load("@maven//:compat.bzl", "compat_repositories")
-compat_repositories()
 
 ###############################################
 # Create @vaticle_typedb_workspace_refs #

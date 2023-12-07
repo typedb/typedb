@@ -111,35 +111,35 @@ jobs:
 
 
 workflows:
-  typedb:
-    jobs:
-      - test-assembly-mac-x86_64-zip:
-          filters:
-            branches:
-              only:
-                - master
-                - development
-      - test-assembly-mac-arm64-zip:
-          filters:
-            branches:
-              only:
-                - master
-                - development
-      - test-assembly-linux-x86_64-zip:
-          filters:
-            branches:
-              only:
-                - master
-                - development
-      - test-assembly-linux-arm64-zip:
-          filters:
-            branches:
-              only:
-                - master
-                - development
-      - test-assembly-windows-zip:
-          filters:
-            branches:
-              only:
-                - master
-                - development
+#  typedb:
+#    jobs:
+#      - test-assembly-mac-x86_64-zip:
+#          filters:
+#            branches:
+#              only:
+#                - master
+#                - development
+#      - test-assembly-mac-arm64-zip:
+#          filters:
+#            branches:
+#              only:
+#                - master
+#                - development
+#      - test-assembly-linux-x86_64-zip:
+#          filters:
+#            branches:
+#              only:
+#                - master
+#                - development
+#      - test-assembly-linux-arm64-zip:
+#          filters:
+#            branches:
+#              only:
+#                - master
+#                - development
+#      - test-assembly-windows-zip:
+#          filters:
+#            branches:
+#              only:
+#                - master
+#                - development
