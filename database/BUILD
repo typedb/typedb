@@ -15,18 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_static_library", "rustfmt_test", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-#
-#rust_library(
-#    name = "database",
-#    srcs = glob([
-#        "*.rs"
-#    ]),
-#    deps = [
-#
-#    ]
-#)
+
+rust_library(
+    name = "database",
+    srcs = glob([
+        "*.rs"
+    ]),
+    deps = [
+        "//storage",
+    ],
+    visibility = ["//visibility:public"],
+)
 
 checkstyle_test(
     name = "checkstyle",

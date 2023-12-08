@@ -19,9 +19,22 @@ load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//tool/release/deps:rules.bzl", "release_validate_deps")
 
+load("@rules_rust//rust:defs.bzl", "rust_binary")
+
 exports_files(
     ["VERSION", "deployment.bzl", "LICENSE", "README.md"],
 )
+
+rust_binary(
+    name = "typedb-server-bin",
+    srcs = [
+        "main.rs"
+    ],
+    deps = [
+        "//server",
+    ]
+)
+
 
 checkstyle_test(
     name = "checkstyle",
@@ -47,15 +60,15 @@ checkstyle_test(
     license_type = "agpl-fulltext",
 )
 
-# CI targets that are not declared in any BUILD file, but are called externally
 filegroup(
-    name = "ci",
+    name = "tools",
     data = [
         "@vaticle_dependencies//factory/analysis:dependency-analysis",
-        "@vaticle_dependencies//library/maven:update",
         "@vaticle_dependencies//tool/bazelinstall:remote_cache_setup.sh",
         "@vaticle_dependencies//tool/release/notes:create",
         "@vaticle_dependencies//tool/checkstyle:test-coverage",
         "@vaticle_dependencies//tool/unuseddeps:unused-deps",
+        "@rust_analyzer_toolchain_tools//lib/rustlib/src:rustc_srcs",
+        "@vaticle_dependencies//tool/ide:rust_sync",
     ],
 )

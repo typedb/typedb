@@ -15,13 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
+load("@rules_rust//rust:defs.bzl", "rust_library")
+package(default_visibility = ["//visibility:public",])
 
-
-package(default_visibility = ["//visibility:private",])
-
+rust_library(
+    name = "server",
+    srcs = glob([
+        "*.rs",
+    ]),
+    deps = [
+        "//database"
+    ]
+)
 
 checkstyle_test(
     name = "checkstyle",

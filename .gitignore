@@ -41,6 +41,7 @@ bazel-*
 dist/
 out/
 *.class
+target
 
 # Package
 *.jarg
@@ -69,3 +70,7 @@ logs/
 
 # Python cache
 __pycache__
+
+# Cargo files
+Cargo.lock
+Cargo.toml

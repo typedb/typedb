@@ -16,15 +16,18 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-package(
-    default_visibility = [
-        "//concept:__pkg__",
-        "//database:__pkg__",
-        "//traversal:__pkg__",
-        "//reasoner:__pkg__"
+load("@rules_rust//rust:defs.bzl", "rust_library")
+package(default_visibility = ["//visibility:public",])
+
+rust_library(
+    name = "storage",
+    srcs = glob([
+        "*.rs",
+    ]),
+    deps = [
+        "@crates//:speedb",
     ]
 )
-
 
 checkstyle_test(
     name = "checkstyle",

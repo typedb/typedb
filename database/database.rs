@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Vaticle
+ * Copyright (C) 2023 Vaticle
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -13,13 +13,11 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package com.vaticle.typedb.core.server;
-
-/**
- * Class for storing the TypeDB Version.
- */
-public class Version {
-    public static final String VERSION = "{version}";
+struct Database {
+    name: str,
 }
+
+
