@@ -16,5 +16,13 @@
  *
  */
 
-mod storage;
-mod snapshot;
+use tracing;
+use tracing_subscriber::{registry::Registry, Layer, prelude::*};
+pub use tracing::{error, trace};
+
+pub fn initialise_logging() {
+    let default_layer = tracing_subscriber::fmt::layer();
+    let subscriber = tracing_subscriber::registry().with(default_layer);
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("Failed to set up logging subscriber.");
+}

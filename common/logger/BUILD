@@ -17,24 +17,23 @@
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library")
-package(default_visibility = ["//visibility:public",])
+
+package(default_visibility = ["//visibility:public"])
 
 rust_library(
-    name = "storage",
-    crate_root = "storage.rs",
+    name = "logger",
+    crate_root = "logger.rs",
     srcs = glob([
         "*.rs",
     ]),
     deps = [
-        "//common/logger",
-
-        "@crates//:speedb",
         "@crates//:tracing",
+        "@crates//:tracing-subscriber",
     ]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["*", "*/*", "*/*/*"]),
     license_type = "agpl-header",
 )

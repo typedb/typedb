@@ -16,7 +16,19 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-package(default_visibility = ["//visibility:public"])
+load("@rules_rust//rust:defs.bzl", "rust_test")
+package(default_visibility = ["//visibility:public",])
+
+rust_test(
+    name = "test-storage",
+    srcs = glob([
+        "*.rs",
+    ]),
+    deps = [
+        "//storage",
+        "//common/logger",
+    ]
+)
 
 checkstyle_test(
     name = "checkstyle",
