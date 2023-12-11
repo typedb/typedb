@@ -27,6 +27,9 @@ rust_test(
     deps = [
         "//storage",
         "//common/logger",
+
+        "@crates//:rand",
+        "@crates//:speedb",
     ]
 )
 

@@ -19,17 +19,18 @@
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 
+use crate::SectionError;
+
 #[derive(Debug)]
-pub(crate) struct StorageError {
-    pub(crate) storage_name: String,
-    pub(crate) kind: StorageErrorKind,
+pub struct StorageError {
+    pub storage_name: String,
+    pub kind: StorageErrorKind,
 }
 
 #[derive(Debug)]
-pub(crate) enum StorageErrorKind {
-    FailedToCreateSection { section_name: String, source: speedb::Error },
-    FailedToGetSectionHandle { section_name: String },
-    FailedToDeleteStorage { section_name:  source: std::io::Error },
+pub enum StorageErrorKind {
+    FailedToDeleteStorage { source: std::io::Error },
+    SectionError { source: SectionError },
 }
 
 impl Display for StorageError {
@@ -41,10 +42,8 @@ impl Display for StorageError {
 impl Error for StorageError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
-            StorageErrorKind::FailedToCreateSection { source, .. } => Some(source),
-            StorageErrorKind::FailedToGetSectionHandle { .. } => None,
             StorageErrorKind::FailedToDeleteStorage { source, .. } => Some(source),
-            StorageErrorKind::FailedToDeleteSection { source, .. } => Some(source),
+            StorageErrorKind::SectionError { source, .. } => Some(source),
         }
     }
 }
