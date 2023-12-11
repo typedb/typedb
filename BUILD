@@ -78,7 +78,7 @@ assemble_targz(
     targets = [
         ":console-artifact-jars-linux-arm64",
         "//server:server-deps-linux-arm64",
-        "@vaticle_typedb_common//binary:assemble-bash-targz"
+        "//binary:assemble-bash-targz"
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -97,7 +97,7 @@ assemble_targz(
     targets = [
         ":console-artifact-jars-linux-x86_64",
         "//server:server-deps-linux-x86_64",
-        "@vaticle_typedb_common//binary:assemble-bash-targz"
+        "//binary:assemble-bash-targz"
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -116,7 +116,7 @@ assemble_zip(
     targets = [
         "//server:server-deps-mac-arm64",
         ":console-artifact-jars-mac-arm64",
-        "@vaticle_typedb_common//binary:assemble-bash-targz",
+        "//binary:assemble-bash-targz",
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -135,7 +135,7 @@ assemble_zip(
     targets = [
         "//server:server-deps-mac-x86_64",
         ":console-artifact-jars-mac-x86_64",
-        "@vaticle_typedb_common//binary:assemble-bash-targz",
+        "//binary:assemble-bash-targz",
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -154,7 +154,7 @@ assemble_zip(
     targets = [
         "//server:server-deps-windows-x86_64",
         ":console-artifact-jars-windows-x86_64",
-        "@vaticle_typedb_common//binary:assemble-bat-targz",
+        "//binary:assemble-bat-targz",
     ],
     additional_files = assemble_files,
     empty_directories = empty_directories,
@@ -292,8 +292,8 @@ assemble_apt(
     archives = [
         "//server:server-deps-linux-x86_64",
         ":console-artifact-native-x86_64.tar.gz",
-        "@vaticle_typedb_common//binary:assemble-bash-targz",
-        "@vaticle_typedb_common//binary:assemble-apt-targz",
+        "//binary:assemble-bash-targz",
+        "//binary:assemble-apt-targz",
     ],
     installation_dir = apt_installation_dir,
     files = assemble_files,
@@ -326,8 +326,8 @@ assemble_apt(
     archives = [
         "//server:server-deps-linux-arm64",
         ":console-artifact-native-arm64.tar.gz",
-        "@vaticle_typedb_common//binary:assemble-bash-targz",
-        "@vaticle_typedb_common//binary:assemble-apt-targz",
+        "//binary:assemble-bash-targz",
+        "//binary:assemble-apt-targz",
     ],
     installation_dir = apt_installation_dir,
     files = assemble_files,
