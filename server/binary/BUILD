@@ -26,7 +26,7 @@ exports_files(["typedb", "typedb.bat", "typedb.service"])
 assemble_targz(
     name = "assemble-bash-targz",
     additional_files = {
-        "//binary:typedb": 'typedb',
+        "//server/binary:typedb": 'typedb',
     },
     permissions = {
         "typedb": "0755",
@@ -37,7 +37,7 @@ assemble_targz(
 assemble_targz(
     name = "assemble-apt-targz",
     additional_files = {
-        "//binary:typedb.service": "typedb.service",
+        "//server/binary:typedb.service": "typedb.service",
     },
     visibility = ["//visibility:public"]
 )
@@ -45,7 +45,7 @@ assemble_targz(
 assemble_targz(
     name = "assemble-bat-targz",
     additional_files = {
-        "//binary:typedb.bat": "typedb.bat",
+        "//server/binary:typedb.bat": "typedb.bat",
     },
     visibility = ["//visibility:public"]
 )
