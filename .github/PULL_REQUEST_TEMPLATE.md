@@ -1,4 +1,4 @@
-## Release notes: usage and product changes
+## Usage and product changes
 
 
 ## Implementation

@@ -48,7 +48,7 @@ public class RootConjunctionController
     public void initialise() {
         planner().planRoot(conjunction);
         setUpUpstreamControllers();
-        getOrCreateProcessor(new ConceptMap());
+        getOrCreateProcessor(ConceptMap.EMPTY);
     }
 
     @Override

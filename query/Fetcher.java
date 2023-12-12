@@ -30,7 +30,10 @@ import com.vaticle.typedb.core.concept.answer.ReadableConceptTree;
 import com.vaticle.typedb.core.concept.thing.Thing;
 import com.vaticle.typedb.core.concept.type.AttributeType;
 import com.vaticle.typedb.core.concept.type.ThingType;
+import com.vaticle.typedb.core.pattern.Conjunction;
 import com.vaticle.typedb.core.pattern.Disjunction;
+import com.vaticle.typedb.core.pattern.variable.ThingVariable;
+import com.vaticle.typedb.core.pattern.variable.TypeVariable;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typedb.core.traversal.common.Identifier;
 import com.vaticle.typeql.lang.common.Reference;
@@ -45,6 +48,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.vaticle.typedb.common.collection.Collections.list;
+import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.ILLEGAL_ATTRIBUTE_PROJECTION_ATTRIBUTE_TYPE_INVALID;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.ILLEGAL_ATTRIBUTE_PROJECTION_TYPES_NOT_OWNED;
@@ -55,7 +60,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.S
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Projection.VARIABLE_PROJECTION_CONCEPT_NOT_READABLE;
 import static com.vaticle.typedb.core.common.iterator.Iterators.iterate;
 import static com.vaticle.typedb.core.common.parameters.Concept.Transitivity.TRANSITIVE;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
 
 public class Fetcher {
 
@@ -108,7 +115,7 @@ public class Fetcher {
     }
 
     public FunctionalIterator<ReadableConceptTree> execute() {
-        return execute(context, new ConceptMap());
+        return execute(context, ConceptMap.EMPTY);
     }
 
     public FunctionalIterator<ReadableConceptTree> execute(ConceptMap bindings) {
@@ -259,13 +266,28 @@ public class Fetcher {
                 ReadableConceptTree.Node.Map entries = new ReadableConceptTree.Node.Map();
                 Thing thing = concepts.get(keyVariable).asThing();
                 entries.add(Concept.Readable.KEY_TYPE, new ReadableConceptTree.Node.Leaf<>(thing.getType()));
-                attributeFetches.forEach(attrFetch -> entries.add(
-                        attrFetch.name(),
-                        new ReadableConceptTree.Node.List(
-                                thing.getHas(attrFetch.attributeTypes(), emptySet()).map(ReadableConceptTree.Node.Leaf::new).toList()
-                        )
-                ));
+                Identifier.Variable.Name attrVar = Identifier.Variable.namedConcept("attr");
+                attributeFetches.forEach(attrFetch -> {
+                    // use a new context to avoid taking limits into sub-query
+                    Context.Query subContext = new Context.Query(context.parent(), context.options());
+                    List<ReadableConceptTree.Node.Leaf<com.vaticle.typedb.core.concept.thing.Attribute>> c = reasoner.execute(createAttributeQuery(attrFetch.attributeType, attrVar, thing),
+                                    list(), TypeQLQuery.Modifiers.EMPTY, subContext, ConceptMap.EMPTY)
+                            .map(cm -> new ReadableConceptTree.Node.Leaf<>(cm.get(attrVar).asAttribute()))
+                            .toList();
+                    entries.add(attrFetch.name(), new ReadableConceptTree.Node.List(c));
+                });
                 return entries;
+            }
+
+            private Disjunction createAttributeQuery(AttributeType attributeType, Identifier.Variable.Name attributeVariable, Thing attrOwner) {
+                TypeVariable attrType = new TypeVariable(Identifier.Variable.namedConcept("attr_type"));
+                attrType.label(attributeType.getLabel());
+                ThingVariable attr = ThingVariable.of(attributeVariable);
+                attr.isa(attrType, false);
+                ThingVariable owner = ThingVariable.of(Identifier.Variable.namedConcept("owner"));
+                owner.has(attr);
+                owner.iid(attrOwner.getIID());
+                return new Disjunction(singletonList(new Conjunction(set(owner, attr, attrType), emptyList())));
             }
 
             @Override
@@ -278,7 +300,7 @@ public class Fetcher {
                     Set<? extends AttributeType> ownedTypes = type.getOwnedAttributes(TRANSITIVE);
                     // one of the subtypes must be in the set of owned types
                     iterate(this.attributeFetches).forEachRemaining(attributeFetch -> {
-                        if (iterate(attributeFetch.attributeTypes).noneMatch(ownedTypes::contains)) {
+                        if (iterate(attributeFetch.attributeSubtypes).noneMatch(ownedTypes::contains)) {
                             throw TypeDBException.of(ILLEGAL_ATTRIBUTE_PROJECTION_TYPES_NOT_OWNED,
                                     keyVariable, attributeFetch.name(), keyVariable, label);
                         }
@@ -288,26 +310,31 @@ public class Fetcher {
 
             private static class AttributeFetch {
 
-                private final List<? extends AttributeType> attributeTypes;
+                private final AttributeType attributeType;
                 private final String name;
+                private final List<? extends AttributeType> attributeSubtypes;
 
-                private AttributeFetch(String name, List<? extends AttributeType> attributeTypes) {
+                private AttributeFetch(String name, AttributeType attributeType) {
                     this.name = name;
-                    this.attributeTypes = attributeTypes;
+                    this.attributeType = attributeType;
+                    this.attributeSubtypes = attributeType.getSubtypes().toList();
                 }
 
                 public static AttributeFetch create(AttributeType attributeType, @Nullable TypeQLFetch.Key.Label label) {
-                    List<? extends AttributeType> attributeTypes = attributeType.getSubtypes().toList();
-                    if (label == null) return new AttributeFetch(attributeType.getLabel().scopedName(), attributeTypes);
-                    else return new AttributeFetch(label.label(), attributeTypes);
+                    if (label == null) return new AttributeFetch(attributeType.getLabel().scopedName(), attributeType);
+                    else return new AttributeFetch(label.label(), attributeType);
                 }
 
                 public String name() {
                     return name;
                 }
 
-                public List<? extends AttributeType> attributeTypes() {
-                    return attributeTypes;
+                public AttributeType attributeType() {
+                    return attributeType;
+                }
+
+                public List<? extends AttributeType> attributeSubtypes() {
+                    return attributeSubtypes;
                 }
             }
         }
@@ -331,10 +358,11 @@ public class Fetcher {
                 )) {
                     throw TypeDBException.of(SUBQUERY_UNBOUNDED, key.label());
                 }
-
+                // use a new context to avoid taking limits into sub-query
+                Context.Query subContext = new Context.Query(context.parent(), context.options());
                 if (subquery.isFirst()) {
-                    return SubFetch.create(reasoner, conceptMgr, context, bounds, key, subquery.first());
-                } else return SubGetAggregate.create(reasoner, conceptMgr, context, bounds, key, subquery.second());
+                    return SubFetch.create(reasoner, conceptMgr, subContext, bounds, key, subquery.first());
+                } else return SubGetAggregate.create(reasoner, conceptMgr, subContext, bounds, key, subquery.second());
             }
 
             @Override
