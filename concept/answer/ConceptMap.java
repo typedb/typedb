@@ -32,6 +32,7 @@ import com.vaticle.typedb.core.traversal.common.Modifiers;
 import com.vaticle.typeql.lang.common.Reference;
 import com.vaticle.typeql.lang.common.TypeQLVariable;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -48,13 +49,11 @@ import static java.util.Collections.unmodifiableMap;
 
 public class ConceptMap {
 
+    public static ConceptMap EMPTY = new ConceptMap(Collections.emptyMap());
+
     private final Map<Retrievable, ? extends Concept> concepts;
     private final Explainables explainables;
     private final int hash;
-
-    public ConceptMap() {
-        this(new HashMap<>());
-    }
 
     public ConceptMap(Map<Retrievable, ? extends Concept> concepts) {
         this(concepts, new Explainables());

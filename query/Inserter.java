@@ -153,7 +153,7 @@ public class Inserter {
 
     public FunctionalIterator<ConceptMap> execute() {
         if (getter != null) return context.options().parallel() ? executeParallel() : executeSerial();
-        else return single(new Operation(conceptMgr, new ConceptMap(), variables).execute());
+        else return single(new Operation(conceptMgr, ConceptMap.EMPTY, variables).execute());
     }
 
     private FunctionalIterator<ConceptMap> executeParallel() {
