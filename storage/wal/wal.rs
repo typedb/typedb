@@ -16,15 +16,33 @@
  *
  */
 
-use tracing;
-pub use tracing::{error, trace};
-use tracing_subscriber::{Layer, prelude::*};
+use std::iter::empty;
 
-pub mod result;
+pub struct WAL {}
 
-pub fn initialise_logging() {
-    let default_layer = tracing_subscriber::fmt::layer();
-    let subscriber = tracing_subscriber::registry().with(default_layer);
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set up logging subscriber.");
+///
+/// Questions:
+///     1. Single file write vs multi-file write with multiple threads - performance implication?
+///     2. Recovery/Checksum requirements - what are the failure modes
+///     3. How to benchmark
+///
+impl WAL {
+    fn sequenced_write(&self, record: impl Record) -> SequenceNumber {
+        todo!()
+    }
+
+    fn last_sequence_number(&self) -> SequenceNumber {
+        todo!()
+    }
+
+    fn iterate_records_from(&self, sequence_number: SequenceNumber) -> impl Iterator<Item=(SequenceNumber, &dyn Record)> {
+        empty()
+    }
+}
+
+pub struct SequenceNumber {
+    pub number: u64,
+}
+
+pub trait Record {
 }

@@ -16,15 +16,12 @@
  *
  */
 
-use tracing;
-pub use tracing::{error, trace};
-use tracing_subscriber::{Layer, prelude::*};
+use wal::{Record, SequenceNumber};
 
-pub mod result;
+pub(crate) trait DurabilityService {
+    fn sequenced_write(&self, record: &dyn Record) -> SequenceNumber;
 
-pub fn initialise_logging() {
-    let default_layer = tracing_subscriber::fmt::layer();
-    let subscriber = tracing_subscriber::registry().with(default_layer);
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set up logging subscriber.");
+    fn last_sequence_number(&self) -> SequenceNumber;
+
+    fn iterate_records_from(&self, sequence_number: SequenceNumber) -> Box<dyn Iterator<Item=(SequenceNumber, &dyn Record)>>;
 }

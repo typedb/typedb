@@ -14,20 +14,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
-use std::pin::Pin;
 use std::rc::Rc;
-use std::sync::Arc;
-use speedb::{DB, DBCommon, DBIteratorWithThreadMode, Options, SingleThreaded};
+
 use logger::{error, trace};
+use logger::result::ResultExt;
+use speedb::{DB, Options};
+use wal::SequenceNumber;
+
+use crate::durability_service::DurabilityService;
 use crate::error::{StorageError, StorageErrorKind};
 use crate::key::Key;
+use crate::snapshot::WriteSnapshot;
 
 mod snapshot;
 pub mod error;
 pub mod key;
+mod durability_service;
+mod isolation_manager;
 
 pub struct Storage {
     name: Rc<str>,
@@ -38,6 +45,7 @@ pub struct Storage {
 
 impl Storage {
     const BYTES_EMPTY: [u8; 0] = [];
+    const BYTES_EMPTY_VEC: Vec<u8> = Vec::new();
 
     pub fn new(name: &str, path: &PathBuf) -> Result<Self, StorageError> {
         let kv_storage_dir = path.with_extension(name);
@@ -49,6 +57,17 @@ impl Storage {
         })
     }
 
+    // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
+    fn new_from_checkpoint(path: &PathBuf, durability_service: impl DurabilityService) -> Result<Self, StorageError> {
+        todo!("Booting from checkpoint not yet implemented")
+
+        // Steps:
+        //   Load each section from their latest checkpoint
+        //   Get the last known committed sequence number from each section
+        //   Iterate over records from Durability Service from the earliest sequence number
+        //   For each record, commit the records. Some sections will write duplicates, but all writes are idempotent so this is OK.
+    }
+
     pub fn create_section(&mut self, name: &str, prefix: u8, options: &Options) -> Result<(), StorageError> {
         let section_path = self.path.with_extension(name);
         self.validate_new_section(name, prefix)?;
@@ -56,7 +75,7 @@ impl Storage {
             storage_name: self.name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: err },
         })?);
-        self.section_index[prefix as usize] = self.sections.len()  as u8 - 1;
+        self.section_index[prefix as usize] = self.sections.len() as u8 - 1;
         Ok(())
     }
 
@@ -71,7 +90,7 @@ impl Storage {
                             kind: SectionErrorKind::FailedToCreateSectionNameExists {},
                         }
                     },
-                })
+                });
             } else if section.prefix == prefix {
                 return Err(StorageError {
                     storage_name: self.name.as_ref().to_owned(),
@@ -84,28 +103,53 @@ impl Storage {
                             },
                         }
                     },
-                })
+                });
             }
         }
         Ok(())
     }
 
-    pub fn put(&self, key: &Key) -> Result<(), SectionError> {
-        self.get_section(key.data[0]).put(&key.data)
+    pub fn write_snapshot<'a>(&'a self) -> WriteSnapshot<'a> {
+        WriteSnapshot::new(self, SequenceNumber { number: 0 })
     }
 
-    pub fn get(&self, key: &Key) -> Result<Option<Vec<u8>>, SectionError> {
-        self.get_section(key.data[0]).get(&key.data)
+    pub fn put(&self, key: &Key) {
+        self.get_section(key.data[0]).put(&key.data).map_err(|e| StorageError {
+            storage_name: self.name.as_ref().to_owned(),
+            kind: StorageErrorKind::SectionError { source: e },
+        }).unwrap_or_log()
     }
 
-    pub fn iterate_prefix<'s>(&'s self, prefix: Vec<u8>) -> impl Iterator<Item=Result<(Box<[u8]>, Box<[u8]>), speedb::Error>> + 's {
+    pub fn get(&self, key: &Key) -> Option<Vec<u8>> {
+        self.get_section(key.data[0]).get(&key.data).map_err(|e| StorageError {
+            storage_name: self.name.as_ref().to_owned(),
+            kind: StorageErrorKind::SectionError { source: e },
+        }).unwrap_or_log()
+    }
+
+    pub fn iterate_prefix<'s>(&'s self, prefix: &Vec<u8>) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
         debug_assert!(prefix.len() > 1);
         self.get_section(*prefix.get(0).unwrap()).iterate_prefix(prefix)
+            .map(|res| {
+                match res {
+                    Ok(v) => Ok(v),
+                    Err(error) => Err(StorageError {
+                        storage_name: self.name.as_ref().to_owned(),
+                        kind: StorageErrorKind::SectionError { source: error }
+                    })
+                }.unwrap_or_log()
+            })
     }
 
     fn get_section(&self, prefix: u8) -> &Section {
         let section_index = self.section_index[prefix as usize];
         self.sections.get(section_index as usize).unwrap()
+    }
+
+    fn checkpoint(&self) {
+        todo!("Checkpointing not yet implemented")
+        // Steps:
+        //  Each section should checkpoint
     }
 
     pub fn delete_storage(mut self) -> Result<(), Vec<StorageError>> {
@@ -140,6 +184,7 @@ pub struct Section {
     path: PathBuf,
     prefix: u8,
     kv_storage: DB,
+    next_checkpoint_id: u64,
 }
 
 impl Section {
@@ -154,7 +199,20 @@ impl Section {
             path: path,
             prefix: prefix,
             kv_storage: kv_storage,
+            next_checkpoint_id: 0,
         })
+    }
+
+    // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
+    fn new_from_checkpoint(path: PathBuf) {
+        todo!()
+        // Steps:
+        //  WARNING: this is intended to be DESTRUCTIVE since we may wipe anything partially written in the active directory
+        //  Locate the directory with the latest number - say 'checkpoint_n'
+        //  Delete 'active' directory.
+        //  Rename directory called 'active' to 'checkpoint_x' -- TODO: do we need to delete 'active' or will re-checkpointing to it be clever enough to delete corrupt files?
+        //  Rename 'checkpoint_x' to 'active'
+        //  open DB at 'active'
     }
 
     pub fn new_options() -> Options {
@@ -169,9 +227,8 @@ impl Section {
     fn put(&self, bytes: &Vec<u8>) -> Result<(), SectionError> {
         self.kv_storage.put(bytes, Storage::BYTES_EMPTY)
             .map_err(|e| SectionError {
-                // TODO: is into_string() correct?
-                section_name: self.name.to_owned(),
-                kind: SectionErrorKind::FailedSectionPut { source: e },
+                section_name: self.name.clone(),
+                kind: SectionErrorKind::FailedIterate { source: e },
             })
     }
 
@@ -179,13 +236,30 @@ impl Section {
     fn get(&self, bytes: &Vec<u8>) -> Result<Option<Vec<u8>>, SectionError> {
         self.kv_storage.get(bytes).map_err(|e| SectionError {
             section_name: self.name.clone(),
-            kind: SectionErrorKind::FailedSectionGet { source: e },
+            kind: SectionErrorKind::FailedGet { source: e },
         })
     }
 
     // TODO: we should benchmark using iterator pools
-    fn iterate_prefix<'s>(&'s self, prefix: Vec<u8>) -> impl Iterator<Item=Result<(Box<[u8]>, Box<[u8]>), speedb::Error>> + 's {
-        self.kv_storage.prefix_iterator(prefix)
+    fn iterate_prefix<'s>(&'s self, prefix: &Vec<u8>) -> impl Iterator<Item=Result<(Box<[u8]>, Box<[u8]>), SectionError>> + 's {
+        self.kv_storage.prefix_iterator(prefix).map(|result| {
+            match result {
+                Ok(kv) => Ok(kv),
+                Err(error) => Err(SectionError {
+                    section_name: self.name.clone(),
+                    kind: SectionErrorKind::FailedIterate { source: error }
+                })
+            }
+        })
+    }
+
+    fn checkpoint(&self) -> Result<(), SectionError> {
+        todo!()
+        // Steps:
+        //  Create new checkpoint directory at 'checkpoint_{next_checkpoint_id}'
+        //  Take the last sequence number watermark
+        //  Take a storage checkpoint into directory (may end up containing some more commits, which is OK)
+        //  Write properties file: timestamp and last sequence number watermark
     }
 
     fn delete_section(self) -> Result<(), SectionError> {
@@ -214,8 +288,9 @@ pub enum SectionErrorKind {
     FailedToCreateSectionPrefixExists { prefix: u8, existing_section: String },
     FailedToGetSectionHandle {},
     FailedToDeleteSection { source: std::io::Error },
-    FailedSectionGet { source: speedb::Error },
-    FailedSectionPut { source: speedb::Error },
+    FailedGet { source: speedb::Error },
+    FailedPut { source: speedb::Error },
+    FailedIterate { source: speedb::Error },
 }
 
 impl Display for SectionError {
@@ -232,8 +307,9 @@ impl Error for SectionError {
             SectionErrorKind::FailedToCreateSectionPrefixExists { .. } => None,
             SectionErrorKind::FailedToGetSectionHandle { .. } => None,
             SectionErrorKind::FailedToDeleteSection { source, .. } => Some(source),
-            SectionErrorKind::FailedSectionGet { source, .. } => Some(source),
-            SectionErrorKind::FailedSectionPut { source, .. } => Some(source),
+            SectionErrorKind::FailedGet { source, .. } => Some(source),
+            SectionErrorKind::FailedPut { source, .. } => Some(source),
+            SectionErrorKind::FailedIterate { source, .. } => Some(source),
         }
     }
 }

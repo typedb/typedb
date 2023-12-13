@@ -16,15 +16,29 @@
  *
  */
 
-use tracing;
-pub use tracing::{error, trace};
-use tracing_subscriber::{Layer, prelude::*};
+use std::iter::empty;
+use wal::SequenceNumber;
+use crate::snapshot;
+use crate::snapshot::Snapshot;
 
-pub mod result;
+struct IsolationManager {}
 
-pub fn initialise_logging() {
-    let default_layer = tracing_subscriber::fmt::layer();
-    let subscriber = tracing_subscriber::registry().with(default_layer);
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set up logging subscriber.");
+impl IsolationManager {
+    fn notify_open(&self, sequence_number: SequenceNumber) {
+        todo!()
+    }
+
+    fn notify_commit(&self, sequence_number: SequenceNumber, snapshot: &Snapshot) {
+        todo!()
+    }
+
+    fn notify_closed(&self, sequence_number: SequenceNumber) {
+        todo!()
+    }
+
+    fn iterate_snapshots(&self, from: SequenceNumber, to: SequenceNumber) -> impl Iterator<Item=Snapshot> {
+        empty()
+    }
 }
+
+

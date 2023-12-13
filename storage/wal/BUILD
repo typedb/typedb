@@ -20,17 +20,15 @@ load("@rules_rust//rust:defs.bzl", "rust_library")
 package(default_visibility = ["//visibility:public",])
 
 rust_library(
-    name = "storage",
-    crate_root = "storage.rs",
+    name = "wal",
+    crate_root = "wal.rs",
     srcs = glob([
         "*.rs",
     ]),
     deps = [
-        "//storage/wal",
         "//common/logger",
 
         "@crates//:itertools",
-        "@crates//:speedb",
         "@crates//:tracing",
     ]
 )

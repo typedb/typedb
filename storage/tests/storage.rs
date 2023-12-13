@@ -112,34 +112,35 @@ fn get_put_iterate() {
     let sec_1_key_2 = Key { data: vec![sec_1_prefix, 0x1, 0x0, 0x10] };
     let sec_1_key_3 = Key { data: vec![sec_1_prefix, 0x1, 0x0, 0xff] };
     let sec_1_key_4 = Key { data: vec![sec_1_prefix, 0x2, 0x0, 0xff] };
-    storage.put(&sec_1_key_1).unwrap();
-    storage.put(&sec_1_key_2).unwrap();
-    storage.put(&sec_1_key_3).unwrap();
-    storage.put(&sec_1_key_4).unwrap();
+    storage.put(&sec_1_key_1);
+    storage.put(&sec_1_key_2);
+    storage.put(&sec_1_key_3);
+    storage.put(&sec_1_key_4);
 
     let sec_2_key_1 = Key { data: vec![sec_2_prefix, 0x1, 0x0, 0x1] };
     let sec_2_key_2 = Key { data: vec![sec_2_prefix, 0xb, 0x0, 0x10] };
     let sec_2_key_3 = Key { data: vec![sec_2_prefix, 0x5, 0x0, 0xff] };
     let sec_2_key_4 = Key { data: vec![sec_2_prefix, 0x2, 0x0, 0xff] };
-    storage.put(&sec_2_key_1).unwrap();
-    storage.put(&sec_2_key_2).unwrap();
-    storage.put(&sec_2_key_3).unwrap();
-    storage.put(&sec_2_key_4).unwrap();
+    storage.put(&sec_2_key_1);
+    storage.put(&sec_2_key_2);
+    storage.put(&sec_2_key_3);
+    storage.put(&sec_2_key_4);
 
     let first_value = storage.get(&sec_1_key_1);
-    assert!(first_value.is_ok() && first_value.unwrap().unwrap().is_empty());
+    assert!(first_value.is_some() && first_value.unwrap().is_empty());
 
     let second_value = storage.get(&sec_2_key_1);
-    assert!(second_value.is_ok() && second_value.unwrap().unwrap().is_empty());
+    assert!(second_value.is_some() && second_value.unwrap().is_empty());
 
-    let entries: Result<Vec<(Vec<u8>, Vec<u8>)>, speedb::Error> = storage.iterate_prefix(vec![sec_1_prefix, 0x1])
-        .map(|res| res.map(|(key, value)| (key.to_vec(), value.to_vec())))
+    let prefix = vec![sec_1_prefix, 0x1];
+    let entries: Vec<(Vec<u8>, Vec<u8>)> = storage.iterate_prefix(&prefix)
+        .map(|(key, value)| (key.to_vec(), value.to_vec()))
         .collect();
-    assert_eq!(entries, Ok(vec![
+    assert_eq!(entries, vec![
         (sec_1_key_2.data, Vec::new()),
         (sec_1_key_3.data, Vec::new()),
         (sec_1_key_4.data, Vec::new()),
-    ]));
+    ]);
 
     cleanup(storage_path)
 }
