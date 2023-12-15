@@ -4,14 +4,15 @@
 [![CircleCI](https://circleci.com/gh/vaticle/typedb/tree/master.svg?style=shield)](https://circleci.com/gh/vaticle/typedb/tree/master)
 [![GitHub release](https://img.shields.io/github/release/vaticle/typedb.svg)](https://github.com/vaticle/typedb/releases/latest)
 [![Discord](https://img.shields.io/discord/665254494820368395?color=7389D8&label=chat&logo=discord&logoColor=ffffff)](https://typedb.com/discord)
-[![Discussion Forum](https://img.shields.io/discourse/https/forum.typedb.com/topics.svg)](https://forum.typedb.com)
+[![Discussion Forum](https://img.shields.io/badge/discourse-forum-blue.svg)](https://forum.typedb.com)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typedb-796de3.svg)](https://stackoverflow.com/questions/tagged/typedb)
 [![Stack Overflow](https://img.shields.io/badge/stackoverflow-typeql-3dce8c.svg)](https://stackoverflow.com/questions/tagged/typeql)
 
 # Introducing TypeDB
 
-TypeDB is a [polymorphic](https://typedb.com/features#polymorphic-queries) database with a [conceptual](https://typedb.com/features#conceptual-modeling) data model, a strong [subtyping](https://typedb.com/features#strong-type-system) system, a symbolic [reasoning](https://typedb.com/features#symbolic-reasoning) engine, and a beautiful and elegant [type-theoretic](https://typedb.com/features#modern-language) language TypeQL.
+TypeDB is a [polymorphic](https://typedb.com/features#polymorphic-queries) database with a [conceptual](https://typedb.com/features#conceptual-modeling) data model, a strong [subtyping](https://typedb.com/features#strong-type-system) system, a symbolic [reasoning](https://typedb.com/features#symbolic-reasoning) engine, and a beautiful and elegant [type-theoretic](https://typedb.com/features#modern-language) language [TypeQL](https://github.com/vaticle/typeql).
 
+> **IMPORTANT NOTE:** TypeDB & TypeQL are in the process of being ported over and rewritten in [Rust](https://www.rust-lang.org). There will be changes that won't be backwards compatible, as we refine the the language further to extend its expressivity, as well as changes to the byte storage data structure to further boost performance significantly. We're aiming to complete this by February/March 2024, released as TypeDB 3.0, along with preliminary benchmarks of TypeDB.
 
 ## Polymorphic databases
 
@@ -72,7 +73,7 @@ mentorship sub relation,
 
 ### The query language
 
-The query language of TypeDB is [TypeQL](‣). The syntax of TypeQL is fully variablizable and provides native support for polymorphic queries. The language is based on [fully declarative and composable](https://typedb.com/features#modern-language) patterns, mirroring the structure of natural language.
+The query language of TypeDB is [TypeQL](https://typedb.com/docs/typeql/overview). The syntax of TypeQL is fully variablizable and provides native support for polymorphic queries. The language is based on [fully declarative and composable](https://typedb.com/features#modern-language) patterns, mirroring the structure of natural language.
 
 ```php
 match $user isa user,

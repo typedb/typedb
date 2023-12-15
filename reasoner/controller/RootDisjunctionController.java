@@ -49,7 +49,7 @@ public class RootDisjunctionController
     public void initialise() {
         planner().planRoot(disjunction);
         setUpUpstreamControllers();
-        getOrCreateProcessor(new ConceptMap());
+        getOrCreateProcessor(ConceptMap.EMPTY);
     }
 
     @Override

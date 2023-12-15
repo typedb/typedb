@@ -129,7 +129,7 @@ public class Getter {
     }
 
     public FunctionalIterator<? extends ConceptMap> execute(Context.Query context) {
-        return execute(new ConceptMap(), context);
+        return execute(ConceptMap.EMPTY, context);
     }
 
     FunctionalIterator<? extends ConceptMap> execute(ConceptMap bindings, Context.Query context) {
@@ -156,7 +156,7 @@ public class Getter {
         }
 
         public Optional<Value<?>> execute() {
-            return execute(new ConceptMap());
+            return execute(ConceptMap.EMPTY);
         }
 
         public Optional<Value<?>> execute(ConceptMap bindings) {

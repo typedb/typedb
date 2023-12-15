@@ -45,7 +45,7 @@ public class AssemblyTest {
             server.start();
             TypeDBConsoleRunner console = new TypeDBConsoleRunner();
             int exitCode = console.run(
-                    "--server", server.address(),
+                    "--core", server.address(),
                     "--script", Paths.get("test", "assembly", "console-script").toAbsolutePath().toString()
             );
             assert exitCode == 0;
