@@ -18,28 +18,21 @@
 load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 package(default_visibility = [
-    "//concept:__pkg__",
-    "//database:__pkg__"
+    "//database:__pkg__",
 ])
 
 rust_library(
-    name = "encoding",
-    crate_root = "encoding.rs",
+    name = "concept",
     srcs = glob([
-        "*.rs",
-        "*/*.rs"
+        "*.rs"
     ]),
     deps = [
-        "//storage",
-        "//common/logger",
-
-        "@crates//:tracing",
-    ]
+        "//encoding",
+    ],
 )
-
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*"]),
+    include = glob(["*"]),
     license_type = "agpl-header",
 )

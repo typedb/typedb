@@ -16,15 +16,3 @@
  *
  */
 
-use tracing;
-pub use tracing::{error, trace, info};
-use tracing::dispatcher::DefaultGuard;
-use tracing_subscriber::{Layer, prelude::*};
-
-pub mod result;
-
-pub fn initialise_logging() -> DefaultGuard {
-    let default_layer = tracing_subscriber::fmt::layer();
-    let subscriber = tracing_subscriber::registry().with(default_layer);
-    tracing::subscriber::set_default(subscriber)
-}

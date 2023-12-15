@@ -19,10 +19,8 @@
 use std::fs;
 use std::path::PathBuf;
 use std::rc::Rc;
-use logger::result::ResultExt;
-
-use storage::Storage;
-use encoding::thing::thing_encoder::{ThingEncoder};
+use storage::error::StorageError;
+use storage::{Section, Storage};
 
 struct Database {
     name: Rc<str>,
@@ -33,16 +31,23 @@ impl Database {
     fn new(path: &PathBuf, name: String) -> Database {
         let database_path = path.with_extension(&name);
         fs::create_dir(database_path.as_path());
-        let database_name = Rc::from(name);
-        let mut storage = Storage::new(database_name.clone(), path)
-            .unwrap_or_log(); // TODO we don't want to panic here
-
-        let thing_encoder = ThingEncoder::new(&mut storage);
-
+        let storage = Database::create_storage(...);
         Database {
-            name: database_name,
+            name: Rc::from(name),
             path: database_path,
         }
+    }
+
+    fn create_storage(database_name: Rc<str>, path: &PathBuf) -> Result<Storage, StorageError> {
+        let mut storage = Storage::new(database_name, path)?;
+        let options = Section::new_options();
+        // TODO: add expected key length
+        storage.create_section("entity", 0x0, &options)?;
+        storage.create_section("relation", 0x1, &options)?;
+        storage.create_section("short_attribute", 0x2, &options)?;
+        storage.create_section("long_attribute", 0x3, &options)?;
+        storage.create_section("schema", 0xf0, &options)?;
+        Ok(storage)
     }
 }
 

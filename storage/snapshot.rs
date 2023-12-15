@@ -39,8 +39,8 @@ pub struct ReadSnapshot<'storage> {
 
 pub struct WriteSnapshot<'storage> {
     storage: &'storage Storage,
-    inserts: BTreeMap<Vec<u8>, Vec<u8>>,
     // TODO: replace with BTree Left-Right structure to allow concurrent read/write
+    inserts: BTreeMap<Vec<u8>, Vec<u8>>,
     open_sequence_number: SequenceNumber,
 }
 

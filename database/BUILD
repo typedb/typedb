@@ -24,7 +24,12 @@ rust_library(
         "*.rs"
     ]),
     deps = [
+        "//encoding",
         "//storage",
+        "//common/logger",
+
+        "@crates//:itertools",
+        "@crates//:tracing",
     ],
     visibility = ["//visibility:public"],
 )

@@ -20,7 +20,7 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use logger::{error, trace};
+use logger::{error, trace, info};
 use logger::result::ResultExt;
 use speedb::{DB, Options};
 use wal::SequenceNumber;
@@ -37,20 +37,22 @@ mod durability_service;
 mod isolation_manager;
 
 pub struct Storage {
-    name: Rc<str>,
+    owner_name: Rc<str>,
     path: PathBuf,
     sections: Vec<Section>,
     section_index: [u8; 256],
 }
 
 impl Storage {
+
+    const STORAGE_DIR_NAME: &'static str = "storage";
     const BYTES_EMPTY: [u8; 0] = [];
     const BYTES_EMPTY_VEC: Vec<u8> = Vec::new();
 
-    pub fn new(name: &str, path: &PathBuf) -> Result<Self, StorageError> {
-        let kv_storage_dir = path.with_extension(name);
+    pub fn new(owner_name: Rc<str>, path: &PathBuf) -> Result<Self, StorageError> {
+        let kv_storage_dir = path.with_extension(Storage::STORAGE_DIR_NAME);
         Ok(Storage {
-            name: Rc::from(name.to_owned()),
+            owner_name: owner_name.clone(),
             path: kv_storage_dir,
             sections: Vec::new(),
             section_index: [0; 256],
@@ -72,7 +74,7 @@ impl Storage {
         let section_path = self.path.with_extension(name);
         self.validate_new_section(name, prefix)?;
         self.sections.push(Section::new(name, section_path, prefix, options).map_err(|err| StorageError {
-            storage_name: self.name.as_ref().to_owned(),
+            storage_name: self.owner_name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: err },
         })?);
         self.section_index[prefix as usize] = self.sections.len() as u8 - 1;
@@ -83,7 +85,7 @@ impl Storage {
         for section in &self.sections {
             if section.name == name {
                 return Err(StorageError {
-                    storage_name: self.name.as_ref().to_owned(),
+                    storage_name: self.owner_name.as_ref().to_owned(),
                     kind: StorageErrorKind::SectionError {
                         source: SectionError {
                             section_name: name.to_owned(),
@@ -93,7 +95,7 @@ impl Storage {
                 });
             } else if section.prefix == prefix {
                 return Err(StorageError {
-                    storage_name: self.name.as_ref().to_owned(),
+                    storage_name: self.owner_name.as_ref().to_owned(),
                     kind: StorageErrorKind::SectionError {
                         source: SectionError {
                             section_name: name.to_owned(),
@@ -115,14 +117,14 @@ impl Storage {
 
     pub fn put(&self, key: &Key) {
         self.get_section(key.data[0]).put(&key.data).map_err(|e| StorageError {
-            storage_name: self.name.as_ref().to_owned(),
+            storage_name: self.owner_name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: e },
         }).unwrap_or_log()
     }
 
     pub fn get(&self, key: &Key) -> Option<Vec<u8>> {
         self.get_section(key.data[0]).get(&key.data).map_err(|e| StorageError {
-            storage_name: self.name.as_ref().to_owned(),
+            storage_name: self.owner_name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: e },
         }).unwrap_or_log()
     }
@@ -134,8 +136,8 @@ impl Storage {
                 match res {
                     Ok(v) => Ok(v),
                     Err(error) => Err(StorageError {
-                        storage_name: self.name.as_ref().to_owned(),
-                        kind: StorageErrorKind::SectionError { source: error }
+                        storage_name: self.owner_name.as_ref().to_owned(),
+                        kind: StorageErrorKind::SectionError { source: error },
                     })
                 }.unwrap_or_log()
             })
@@ -156,21 +158,22 @@ impl Storage {
         let errors: Vec<StorageError> = self.sections.into_iter().map(|section| section.delete_section())
             .filter(|result| result.is_err())
             .map(|result| StorageError {
-                storage_name: self.name.as_ref().to_owned(),
+                storage_name: self.owner_name.as_ref().to_owned(),
                 kind: StorageErrorKind::SectionError { source: result.unwrap_err() },
             }).collect();
         if errors.is_empty() {
-            match std::fs::remove_dir_all(self.path.clone()) {
-                Ok(_) => {
-                    trace!("Storage {} deleted.", self.name);
-                    Ok(())
-                }
-                Err(e) => {
-                    error!("Failed to delete storage {}, received error: {}", self.name, e);
-                    Err(vec!(StorageError {
-                        storage_name: self.name.as_ref().to_owned(),
-                        kind: StorageErrorKind::FailedToDeleteStorage { source: e },
-                    }))
+            if !self.path.exists() {
+                return Ok(());
+            } else {
+                match std::fs::remove_dir_all(self.path.clone()) {
+                    Ok(_) => Ok(()),
+                    Err(e) => {
+                        error!("Failed to delete storage {}, received error: {}", self.owner_name, e);
+                        Err(vec!(StorageError {
+                            storage_name: self.owner_name.as_ref().to_owned(),
+                            kind: StorageErrorKind::FailedToDeleteStorage { source: e },
+                        }))
+                    }
                 }
             }
         } else {
@@ -192,7 +195,7 @@ impl Section {
         let kv_storage = DB::open(&options, &path)
             .map_err(|e| SectionError {
                 section_name: name.to_owned(),
-                kind: SectionErrorKind::FailedToCreateSectionKVError { source: e },
+                kind: SectionErrorKind::FailedToCreateSectionError { source: e },
             })?;
         Ok(Section {
             name: name.to_owned(),
@@ -247,7 +250,7 @@ impl Section {
                 Ok(kv) => Ok(kv),
                 Err(error) => Err(SectionError {
                     section_name: self.name.clone(),
-                    kind: SectionErrorKind::FailedIterate { source: error }
+                    kind: SectionErrorKind::FailedIterate { source: error },
                 })
             }
         })
@@ -283,7 +286,7 @@ pub struct SectionError {
 
 #[derive(Debug)]
 pub enum SectionErrorKind {
-    FailedToCreateSectionKVError { source: speedb::Error },
+    FailedToCreateSectionError { source: speedb::Error },
     FailedToCreateSectionNameExists {},
     FailedToCreateSectionPrefixExists { prefix: u8, existing_section: String },
     FailedToGetSectionHandle {},
@@ -302,7 +305,7 @@ impl Display for SectionError {
 impl Error for SectionError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match &self.kind {
-            SectionErrorKind::FailedToCreateSectionKVError { source, .. } => Some(source),
+            SectionErrorKind::FailedToCreateSectionError { source, .. } => Some(source),
             SectionErrorKind::FailedToCreateSectionNameExists { .. } => None,
             SectionErrorKind::FailedToCreateSectionPrefixExists { .. } => None,
             SectionErrorKind::FailedToGetSectionHandle { .. } => None,

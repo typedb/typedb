@@ -30,6 +30,7 @@ rust_test(
 
         "@crates//:rand",
         "@crates//:speedb",
+        "@crates//:tracing",
     ]
 )
 

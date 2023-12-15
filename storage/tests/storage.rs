@@ -18,17 +18,19 @@
 
 
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use logger::initialise_logging;
 use rand;
+use tracing::subscriber::DefaultGuard;
 
 use storage::{Storage, key::{Key}, error::{StorageError, StorageErrorKind}, SectionError, SectionErrorKind};
 
-fn setup() -> PathBuf {
-    initialise_logging();
+fn setup() -> (PathBuf, DefaultGuard) {
+    let guard = initialise_logging();
     let id = rand::random::<u64>();
     let fs_tmp_dir = std::env::temp_dir();
-    fs_tmp_dir.with_extension(format!("test_storage_{}", id))
+    (fs_tmp_dir.with_extension(format!("test_storage_{}", id)), guard)
 }
 
 fn cleanup(path: PathBuf) {
@@ -37,20 +39,19 @@ fn cleanup(path: PathBuf) {
 
 #[test]
 fn create_delete() {
-    let storage_path = setup();
-    let storage_result = Storage::new("storage", &storage_path);
+    let (storage_path, _log_guard) = setup();
+    let storage_result = Storage::new(Rc::from("storage"), &storage_path);
     assert!(storage_result.is_ok());
     let storage = storage_result.unwrap();
     let delete_result = storage.delete_storage();
     assert!(delete_result.is_ok());
-
     cleanup(storage_path)
 }
 
 #[test]
 fn create_sections() {
-    let storage_path = setup();
-    let mut storage = Storage::new("storage", &storage_path).unwrap();
+    let (storage_path, _log_guard) = setup();
+    let mut storage = Storage::new(Rc::from("storage"), &storage_path).unwrap();
     let sec_1_prefix: u8 = 0x0;
     let create_1_result = storage.create_section("sec_1", sec_1_prefix, &storage::Section::new_options());
     assert!(create_1_result.is_ok());
@@ -58,20 +59,20 @@ fn create_sections() {
     let create_2_result = storage.create_section("sec_2", sec_2_prefix, &storage::Section::new_options());
     assert!(create_2_result.is_ok(), "{create_2_result:?}");
     let delete_result = storage.delete_storage();
-    assert!(delete_result.is_ok());
+    assert!(delete_result.is_ok(), "{:?}", delete_result);
 
     cleanup(storage_path)
 }
 
 #[test]
 fn create_sections_errors() {
-    let storage_path = setup();
-    let mut storage = Storage::new("storage", &storage_path).unwrap();
+    let (storage_path, _log_guard) = setup();
+    let mut storage = Storage::new(Rc::from("storage"), &storage_path).unwrap();
     let sec_1_prefix: u8 = 0x0;
     storage.create_section("sec_1", sec_1_prefix, &storage::Section::new_options()).unwrap();
 
     let sec_2_prefix: u8 = 0x10;
-    let name_error = storage.create_section("sec_2", sec_2_prefix, &storage::Section::new_options());
+    let name_error = storage.create_section("sec_1", sec_2_prefix, &storage::Section::new_options());
     assert!(matches!(name_error, Err(StorageError{
         kind: StorageErrorKind::SectionError {
             source: SectionError {
@@ -101,8 +102,8 @@ fn create_sections_errors() {
 
 #[test]
 fn get_put_iterate() {
-    let storage_path = setup();
-    let mut storage = Storage::new("storage", &storage_path).unwrap();
+    let (storage_path, _log_guard) = setup();
+    let mut storage = Storage::new(Rc::from("storage"), &storage_path).unwrap();
     let sec_1_prefix: u8 = 0x0;
     storage.create_section("sec_1", sec_1_prefix, &storage::Section::new_options()).unwrap();
     let sec_2_prefix: u8 = 0x10;
