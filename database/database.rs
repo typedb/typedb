@@ -22,18 +22,20 @@ use std::rc::Rc;
 use logger::result::ResultExt;
 
 use storage::Storage;
-use encoding::thing::thing_encoder::{ThingEncoder};
+use encoding::thing::thing_encoding::{ThingEncoder};
+use crate::transaction::{TransactionRead};
 
 struct Database {
     name: Rc<str>,
     path: PathBuf,
+    storage: Storage,
 }
 
 impl Database {
     fn new(path: &PathBuf, name: String) -> Database {
         let database_path = path.with_extension(&name);
         fs::create_dir(database_path.as_path());
-        let database_name = Rc::from(name);
+        let database_name: Rc<str> = Rc::from(name);
         let mut storage = Storage::new(database_name.clone(), path)
             .unwrap_or_log(); // TODO we don't want to panic here
 
@@ -42,6 +44,14 @@ impl Database {
         Database {
             name: database_name,
             path: database_path,
+            storage: storage,
+        }
+    }
+
+    fn transaction_read(&self) -> TransactionRead {
+        let snapshot = self.storage.snapshot_read();
+        TransactionRead {
+            snapshot: snapshot,
         }
     }
 }

@@ -16,3 +16,4 @@
  *
  */
 
+mod thing_manager;

@@ -20,3 +20,8 @@
 pub struct Key {
     pub data: Vec<u8>,
 }
+
+pub trait Keyable {
+
+    fn bytes(&self) -> &[u8];
+}

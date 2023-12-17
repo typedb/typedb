@@ -31,6 +31,7 @@ rust_library(
     ]),
     deps = [
         "//storage",
+        "//storage/wal",
         "//common/logger",
 
         "@crates//:tracing",

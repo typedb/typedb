@@ -16,3 +16,10 @@
  *
  */
 
+use storage::snapshot::ReadSnapshot;
+
+// TODO: what lifetime should the txn have? Snapshots require storage lifetimes.
+pub(crate) struct TransactionRead<'db> {
+    pub(crate) snapshot: ReadSnapshot<'db>,
+}
+

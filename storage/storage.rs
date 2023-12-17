@@ -28,11 +28,11 @@ use wal::SequenceNumber;
 use crate::durability_service::DurabilityService;
 use crate::error::{StorageError, StorageErrorKind};
 use crate::key::Key;
-use crate::snapshot::WriteSnapshot;
+use crate::snapshot::{ReadSnapshot, WriteSnapshot};
 
-mod snapshot;
 pub mod error;
 pub mod key;
+pub mod snapshot;
 mod durability_service;
 mod isolation_manager;
 
@@ -44,7 +44,6 @@ pub struct Storage {
 }
 
 impl Storage {
-
     const STORAGE_DIR_NAME: &'static str = "storage";
     const BYTES_EMPTY: [u8; 0] = [];
     const BYTES_EMPTY_VEC: Vec<u8> = Vec::new();
@@ -111,8 +110,12 @@ impl Storage {
         Ok(())
     }
 
-    pub fn write_snapshot<'a>(&'a self) -> WriteSnapshot<'a> {
+    pub fn snapshot_write<'storage>(&'storage self) -> WriteSnapshot<'storage> {
         WriteSnapshot::new(self, SequenceNumber { number: 0 })
+    }
+
+    pub fn snapshot_read<'storage>(&'storage self) -> ReadSnapshot<'storage> {
+        ReadSnapshot::new(self, SequenceNumber { number: 0 })
     }
 
     pub fn put(&self, key: &Key) {
@@ -129,9 +132,9 @@ impl Storage {
         }).unwrap_or_log()
     }
 
-    pub fn iterate_prefix<'s>(&'s self, prefix: &Vec<u8>) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
+    pub fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
         debug_assert!(prefix.len() > 1);
-        self.get_section(*prefix.get(0).unwrap()).iterate_prefix(prefix)
+        self.get_section(*prefix[0]).iterate_prefix(prefix)
             .map(|res| {
                 match res {
                     Ok(v) => Ok(v),

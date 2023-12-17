@@ -16,26 +16,27 @@
  *
  */
 
-pub mod thing;
-pub mod type_;
 
-use storage::key::Keyable;
+pub(crate) mod concept {
+    use wal::SequenceNumber;
 
-pub enum Prefix {
-    ENTITY_TYPE,
-    ATTRIBUTE_TYPE,
+    const ID_2_SIZE: usize = 2;
 
-    ENTITY,
-    ATTRIBUTE
+    struct TypeIIDSequenced {
+        iid: TypeIID,
+        sequence_number: SequenceNumber,
+    }
+
+    pub(crate) struct TypeIID {
+        prefix: u8,
+        id: TypeID,
+    }
+
+    pub(crate) struct TypeID {
+        bytes: [u8; ID_2_SIZE],
+    }
 }
 
-impl Keyable for Prefix {
-    fn bytes(&self) -> &[u8] {
-        match self {
-            Prefix::ENTITY_TYPE => &[0],
-            Prefix::ATTRIBUTE_TYPE => &[1],
-            Prefix::ENTITY => &[100],
-            Prefix::ATTRIBUTE => &[101],
-        }
-    }
+mod connection {
+
 }

@@ -28,6 +28,8 @@ rust_library(
     ]),
     deps = [
         "//encoding",
+        "//storage",
+        "//storage/wal",
     ],
 )
 

@@ -16,4 +16,4 @@
  *
  */
 
-pub mod thing_encoder;
+pub mod thing_encoding;

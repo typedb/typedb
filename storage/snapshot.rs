@@ -33,8 +33,32 @@ pub enum Snapshot<'storage> {
     Write(WriteSnapshot<'storage>),
 }
 
+impl<'storage> Snapshot<'storage> {
+
+    pub fn iterate_prefix(&'storage self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'storage {
+        match self {
+            Snapshot::Read(snapshot) => snapshot.iterate_prefix(prefix),
+            Snapshot::Write(snapshot) => snapshot.iterate_prefix(prefix),
+        }
+    }
+}
+
 pub struct ReadSnapshot<'storage> {
     storage: &'storage Storage,
+    open_sequence_number: SequenceNumber,
+}
+
+impl<'storage> ReadSnapshot<'storage> {
+    pub(crate) fn new(storage: &'storage Storage, open_sequence_number: SequenceNumber) -> ReadSnapshot {
+        ReadSnapshot {
+            storage: storage,
+            open_sequence_number: open_sequence_number,
+        }
+    }
+
+    fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
+        self.storage.iterate_prefix(prefix).merge(self.iterate_prefix_buffered(prefix))
+    }
 }
 
 pub struct WriteSnapshot<'storage> {
@@ -58,16 +82,18 @@ impl<'storage> WriteSnapshot<'storage> {
     }
 
     fn get(&self, key: &Key) -> Option<Vec<u8>> {
-        // TODO merge
+        // TODO merge with inserts & deletes
         self.storage.get(key)
     }
 
-    fn iterate_prefix<'s>(&'s self, prefix: &Vec<u8>) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
+    fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
         self.storage.iterate_prefix(prefix).merge(self.iterate_prefix_buffered(prefix))
     }
 
-    fn iterate_prefix_buffered<'s>(&'s self, prefix: &Vec<u8>) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
-        self.inserts.range::<Vec<u8>, _>(prefix..).map(|(key, val)| {
+    fn iterate_prefix_buffered<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
+        // TODO: avoid copy
+        let p: Vec<u8> = prefix.into();
+        self.inserts.range::<Vec<u8>, _>(&..).map(|(key, val)| {
             // TODO: we can avoid allocation here once we settle on a Key/Value struct
             (key.clone().into_boxed_slice(), val.clone().into_boxed_slice())
         })

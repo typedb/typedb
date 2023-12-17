@@ -16,26 +16,4 @@
  *
  */
 
-pub mod thing;
-pub mod type_;
-
-use storage::key::Keyable;
-
-pub enum Prefix {
-    ENTITY_TYPE,
-    ATTRIBUTE_TYPE,
-
-    ENTITY,
-    ATTRIBUTE
-}
-
-impl Keyable for Prefix {
-    fn bytes(&self) -> &[u8] {
-        match self {
-            Prefix::ENTITY_TYPE => &[0],
-            Prefix::ATTRIBUTE_TYPE => &[1],
-            Prefix::ENTITY => &[100],
-            Prefix::ATTRIBUTE => &[101],
-        }
-    }
-}
+pub mod type_encoding;
