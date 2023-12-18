@@ -13,7 +13,6 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 use storage::{Section, Storage};
@@ -43,6 +42,8 @@ pub mod concept {
 
     const OBJECT_ID_SIZE: usize = 8;
     const ATTRIBUTE_ID_SIZE: usize = 12;
+
+    // TODO: Sequence number should be inserted at the storage layer, and not be visible here
 
     #[repr(C, packed)]
     #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -118,7 +119,8 @@ mod connection {
         use crate::thing::thing_encoding::concept::{ObjectIID, AttributeIID};
         use crate::type_::type_encoding::concept::TypeID;
 
-        const PREFIX_HAS_FORWARD_SIZE: usize = ObjectIID::size() + INFIX_SIZE + PREFIX_SIZE + TypeID::size();
+        const PREFIX_HAS_FORWARD_SIZE: usize = ObjectIID::size() + INFIX_SIZE + PREFIX_SIZE;
+        const PREFIX_HAS_FORWARD_TYPE_SIZE: usize = ObjectIID::size() + INFIX_SIZE + PREFIX_SIZE + TypeID::size();
 
         #[repr(C, packed)]
         #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -138,7 +140,15 @@ mod connection {
         pub fn prefix_has_forward(owner: &ObjectIID) -> [u8; PREFIX_HAS_FORWARD_SIZE] {
             let mut array = [0 as u8; PREFIX_HAS_FORWARD_SIZE];
             array[0..ObjectIID::size()].copy_from_slice(owner.as_bytes());
-            array[ObjectIID::size()..(ObjectIID::size() + INFIX_SIZE)].copy_from_slice(Infix::HasForward.as_bytes());
+            array[ObjectIID::size()..(ObjectIID::size() + INFIX_SIZE)].copy_from_slice(&Infix::HasForward.as_bytes());
+            array
+        }
+
+        pub fn prefix_has_forward_type(owner: &ObjectIID, type_: &TypeID) -> [u8; PREFIX_HAS_FORWARD_TYPE_SIZE] {
+            let mut array = [0 as u8; PREFIX_HAS_FORWARD_TYPE_SIZE];
+            array[0..ObjectIID::size()].copy_from_slice(owner.as_bytes());
+            array[ObjectIID::size()..(ObjectIID::size() + INFIX_SIZE)].copy_from_slice(&Infix::HasForward.as_bytes());
+            array[(ObjectIID::size() + INFIX_SIZE)..(ObjectIID::size() + INFIX_SIZE + TypeID::size())].copy_from_slice(type_.as_bytes());
             array
         }
     }

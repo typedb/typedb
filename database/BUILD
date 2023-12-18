@@ -24,9 +24,10 @@ rust_library(
         "*.rs"
     ]),
     deps = [
+        "//common/logger",
+        "//concept",
         "//encoding",
         "//storage",
-        "//common/logger",
 
         "@crates//:itertools",
         "@crates//:tracing",

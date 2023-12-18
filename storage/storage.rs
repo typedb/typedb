@@ -118,18 +118,35 @@ impl Storage {
         ReadSnapshot::new(self, SequenceNumber { number: 0 })
     }
 
-    pub fn put(&self, key: &Key) {
-        self.get_section(key.data[0]).put(&key.data).map_err(|e| StorageError {
-            storage_name: self.owner_name.as_ref().to_owned(),
-            kind: StorageErrorKind::SectionError { source: e },
-        }).unwrap_or_log()
+    pub fn snapshot_commit<'storage>(&'storage self, snapshot: WriteSnapshot<'storage>) {
+        // steps:
+        //  1. validate transaction-local integrity constraints
+        //  2. make durable and get sequence number
+        //  3. notify committed to isolation manager (must be immediate so waiting txn's don't spin long)
+        //  4. validate against concurrent transactions in the given order
+        //  5. write to kv-storage
     }
+
+    //
+    // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
+    //
+    // pub fn put(&self, key: &Key) {
+    //     self.get_section(key.data[0]).put(&key.data).map_err(|e| StorageError {
+    //         storage_name: self.owner_name.as_ref().to_owned(),
+    //         kind: StorageErrorKind::SectionError { source: e },
+    //     }).unwrap_or_log()
+    // }
 
     pub fn get(&self, key: &Key) -> Option<Vec<u8>> {
         self.get_section(key.data[0]).get(&key.data).map_err(|e| StorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: e },
+            // TODO: unwrap_or_log may be incorrect: this could trigger if the DB is deleted for example?
         }).unwrap_or_log()
+    }
+
+    pub fn get_prev(&self, key: &[u8]) -> Option<Box<[u8]>> {
+        self.get_section(key[0]).get_prev(key)
     }
 
     pub fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
@@ -142,6 +159,7 @@ impl Storage {
                         storage_name: self.owner_name.as_ref().to_owned(),
                         kind: StorageErrorKind::SectionError { source: error },
                     })
+                    // TODO: unwrap_or_log may be incorrect: this could trigger if the DB is deleted for example?
                 }.unwrap_or_log()
             })
     }
@@ -231,6 +249,7 @@ impl Section {
     }
 
     fn put(&self, bytes: &Vec<u8>) -> Result<(), SectionError> {
+        // TODO: this should WAL
         self.kv_storage.put(bytes, Storage::BYTES_EMPTY)
             .map_err(|e| SectionError {
                 section_name: self.name.clone(),
@@ -244,6 +263,12 @@ impl Section {
             section_name: self.name.clone(),
             kind: SectionErrorKind::FailedGet { source: e },
         })
+    }
+
+    fn get_prev(&self, bytes: &[u8]) -> Option<Box<[u8]>> {
+        let mut iterator = self.kv_storage.raw_iterator();
+        iterator.seek_for_prev(bytes);
+        iterator.key().map(|array_ref| array_ref.into())
     }
 
     // TODO: we should benchmark using iterator pools

@@ -35,9 +35,9 @@ rust_library(
         "//common/logger",
 
         "@crates//:tracing",
+        "@crates//:binary-layout",
     ]
 )
-
 
 checkstyle_test(
     name = "checkstyle",

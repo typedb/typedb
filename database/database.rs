@@ -13,23 +13,26 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 use std::fs;
 use std::path::PathBuf;
 use std::rc::Rc;
-use logger::result::ResultExt;
 
+use concept::type_manager::TypeManager;
+use encoding::thing::thing_encoding::ThingEncoder;
+use encoding::type_::id_generator::TypeIIDGenerator;
+use logger::result::ResultExt;
+use storage::snapshot::Snapshot;
 use storage::Storage;
-use encoding::thing::thing_encoding::{ThingEncoder};
-use storage::snapshot::ReadSnapshot;
-use crate::transaction::{TransactionRead};
+
+use crate::transaction::TransactionRead;
 
 struct Database {
     name: Rc<str>,
     path: PathBuf,
     storage: Storage,
+    type_iid_generator: TypeIIDGenerator,
 }
 
 impl Database {
@@ -40,6 +43,8 @@ impl Database {
         let mut storage = Storage::new(database_name.clone(), path)
             .unwrap_or_log(); // TODO we don't want to panic here
 
+        let type_iid_generator = TypeIIDGenerator::new(&storage);
+
         let thing_encoder = ThingEncoder::new(&mut storage);
         // let thing_encoder = TypeEncoder::new(&mut storage);
 
@@ -47,13 +52,16 @@ impl Database {
             name: database_name,
             path: database_path,
             storage: storage,
+            type_iid_generator: type_iid_generator,
         }
     }
 
     fn transaction_read(&self) -> TransactionRead {
-        let snapshot: ReadSnapshot<'_> = self.storage.snapshot_read();
+        let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(self.storage.snapshot_read()));
+        let type_manager = TypeManager::new(snapshot.clone(), &self.type_iid_generator);
         TransactionRead {
             snapshot: snapshot,
+            type_manager: type_manager,
         }
     }
 }

@@ -13,24 +13,34 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 use std::iter::empty;
 
 use encoding::Prefix;
 use encoding::thing::thing_encoding::concept::{AttributeIID, ObjectIID};
-use storage::key::Keyable;
 use storage::snapshot::Snapshot;
+use crate::type_manager::EntityType;
 
-struct ThingManager<'txn, 'storage: 'txn> {
+pub struct ThingManager<'txn, 'storage: 'txn> {
     snapshot: &'txn Snapshot<'storage>,
 }
 
-impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage>{
+impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage> {
 
-    fn create_entity(&self) -> Entity {
-        todo!()
+    pub fn new(&self, snapshot: &'txn Snapshot<'storage>) -> ThingManager<'txn, 'storage> {
+        ThingManager {
+            snapshot: snapshot
+        }
+    }
+
+    fn create_entity(&self, entity_type: EntityType) -> Entity {
+        if let Snapshot::Write(write_snapshot) = self.snapshot {
+            // create ID
+            // create IID
+            // create and return Entity
+        }
+        panic!("Illegal state: create entity requires write snapshot")
     }
 
     fn get_entities(&self) -> impl Iterator<Item=Entity> {
@@ -40,38 +50,9 @@ impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage>{
     }
 }
 
-trait ThingRead {
 
-}
-
-trait ObjectRead: ThingRead {
-
-    fn get_iid(&self) -> ObjectIID;
-
-    fn get_has(&self) {
-        // TODO: when do we deal with key versions - in the Snapshot?
-        // self.snapshot.iterate_prefix(ThingEncoder::encodeHasForward(self.get_iid())
-        todo!()
-    }
-
-}
-
-trait AttributeRead {
-
-    fn get_iid(&self) -> AttributeIID;
-}
-
-struct Entity<'txn, 'storage: 'txn> {
+struct Entity {
     iid: ObjectIID,
-    snapshot: &'txn Snapshot<'storage>
-}
-
-impl<'txn, 'storage: 'txn> Entity<'txn, 'storage> {
-
-    fn get_has(&self, ) {
-        // self.thing_manager.get_has(self.iid)
-        todo!()
-    }
 }
 
 struct Attribute {

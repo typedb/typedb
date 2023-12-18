@@ -13,12 +13,26 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
-use storage::snapshot::ReadSnapshot;
+use std::rc::Rc;
 
-// TODO: what lifetime should the txn have? Snapshots require storage lifetimes.
-pub(crate) struct TransactionRead<'storage> {
-    pub(crate) snapshot: ReadSnapshot<'storage>,
+use concept::type_manager::TypeManager;
+use storage::snapshot::Snapshot;
+
+pub(crate) struct TransactionRead<'txn, 'storage: 'txn> {
+    pub(crate) snapshot: Rc<Snapshot<'storage>>,
+    pub(crate) type_manager: TypeManager<'txn, 'storage>,
 }
+
+pub(crate) struct TransactionWrite<'txn, 'storage: 'txn> {
+    pub(crate) snapshot: Rc<Snapshot<'storage>>,
+    pub type_manager: TypeManager<'txn, 'storage>,
+}
+
+impl<'txn, 'storage: 'txn> TransactionWrite<'txn, 'storage> {
+
+
+
+}
+

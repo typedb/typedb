@@ -13,12 +13,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use std::sync::RwLock;
 
 use itertools::Itertools;
 use wal::SequenceNumber;
@@ -33,13 +33,13 @@ pub enum Snapshot<'storage> {
 }
 
 impl<'storage> Snapshot<'storage> {
-    //
-    // pub fn iterate_prefix(&'storage self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'storage {
-    //     match self {
-    //         Snapshot::Read(snapshot) => snapshot.iterate_prefix(prefix),
-    //         Snapshot::Write(snapshot) => snapshot.iterate_prefix(prefix),
-    //     }
-    // }
+
+    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &[u8]) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'snapshot> {
+        match self {
+            Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
+            Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
+        }
+    }
 }
 
 pub struct ReadSnapshot<'storage> {
@@ -55,7 +55,7 @@ impl<'storage> ReadSnapshot<'storage> {
         }
     }
 
-    fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
+    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'snapshot {
         self.storage.iterate_prefix(prefix)
     }
 }
@@ -63,7 +63,7 @@ impl<'storage> ReadSnapshot<'storage> {
 pub struct WriteSnapshot<'storage> {
     storage: &'storage Storage,
     // TODO: replace with BTree Left-Right structure to allow concurrent read/write
-    inserts: BTreeMap<Vec<u8>, Vec<u8>>,
+    inserts: RwLock<BTreeMap<Vec<u8>, Vec<u8>>>,
     open_sequence_number: SequenceNumber,
 }
 
@@ -71,13 +71,19 @@ impl<'storage> WriteSnapshot<'storage> {
     pub(crate) fn new(storage: &'storage Storage, open_sequence_number: SequenceNumber) -> WriteSnapshot {
         WriteSnapshot {
             storage: storage,
-            inserts: BTreeMap::new(),
+            inserts: RwLock::new(BTreeMap::new()),
             open_sequence_number: open_sequence_number,
         }
     }
 
-    fn put(&mut self, key: &Key) {
-        let _ = self.inserts.insert(key.data.clone(), Storage::BYTES_EMPTY_VEC);
+    pub fn put(&self, key: &[u8]) {
+        let mut map = self.inserts.write().unwrap();
+        map.insert(key.into(), Storage::BYTES_EMPTY_VEC);
+    }
+
+    pub fn put_val(&self, key: &[u8], val: &[u8]) {
+        let mut map = self.inserts.write().unwrap();
+        map.insert(key.into(), val.into());
     }
 
     fn get(&self, key: &Key) -> Option<Vec<u8>> {
@@ -85,17 +91,19 @@ impl<'storage> WriteSnapshot<'storage> {
         self.storage.get(key)
     }
 
-    fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
+    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'snapshot {
         self.storage.iterate_prefix(prefix).merge(self.iterate_prefix_buffered(prefix))
     }
 
     fn iterate_prefix_buffered<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
         // TODO: avoid copy
         let p: Vec<u8> = prefix.into();
-        self.inserts.range::<Vec<u8>, _>(&p..).map(|(key, val)| {
+        let map = self.inserts.read().unwrap();
+        // TODO: hold read lock while iterating so avoid collecting into array
+        map.range::<Vec<u8>, _>(&p..).map(|(key, val)| {
             // TODO: we can avoid allocation here once we settle on a Key/Value struct
             (key.clone().into_boxed_slice(), val.clone().into_boxed_slice())
-        })
+        }).collect::<Vec<_>>().into_iter()
     }
 }
 
