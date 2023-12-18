@@ -23,6 +23,7 @@ use logger::result::ResultExt;
 
 use storage::Storage;
 use encoding::thing::thing_encoding::{ThingEncoder};
+use storage::snapshot::ReadSnapshot;
 use crate::transaction::{TransactionRead};
 
 struct Database {
@@ -40,6 +41,7 @@ impl Database {
             .unwrap_or_log(); // TODO we don't want to panic here
 
         let thing_encoder = ThingEncoder::new(&mut storage);
+        // let thing_encoder = TypeEncoder::new(&mut storage);
 
         Database {
             name: database_name,
@@ -49,7 +51,7 @@ impl Database {
     }
 
     fn transaction_read(&self) -> TransactionRead {
-        let snapshot = self.storage.snapshot_read();
+        let snapshot: ReadSnapshot<'_> = self.storage.snapshot_read();
         TransactionRead {
             snapshot: snapshot,
         }

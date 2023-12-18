@@ -40,6 +40,7 @@ impl WAL {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SequenceNumber {
     pub number: u64,
 }

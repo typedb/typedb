@@ -18,53 +18,62 @@
 
 use std::iter::empty;
 
-use encoding::thing::thing_encoding::concept::{ThingIID, ThingIIDSmall};
-use encoding::{Prefix};
-use storage::key::{Key, Keyable};
+use encoding::Prefix;
+use encoding::thing::thing_encoding::concept::{AttributeIID, ObjectIID};
+use storage::key::Keyable;
 use storage::snapshot::Snapshot;
 
-struct ThingManager<'storage> {
-    snapshot: &'storage Snapshot<'storage>,
+struct ThingManager<'txn, 'storage: 'txn> {
+    snapshot: &'txn Snapshot<'storage>,
 }
 
-impl<'storage> ThingManager<'storage>{
+impl<'txn, 'storage: 'txn> ThingManager<'txn, 'storage>{
 
     fn create_entity(&self) -> Entity {
         todo!()
     }
 
     fn get_entities(&self) -> impl Iterator<Item=Entity> {
-        let prefix = Prefix::ENTITY.bytes();
-        self.snapshot.iterate_prefix(prefix).map(|(key, value)| Entity::new(ThingEncoder::decideThingIIDSmall))
+        let prefix = Prefix::Entity.as_bytes();
+        // self.snapshot.iterate_prefix(prefix).map(|(key, value)| Entity::new(ThingEncoder::decideThingIIDSmall))
         empty()
     }
 }
 
 trait ThingRead {
 
-    fn thing_manager<'storage>(&'storage self) -> &'storage ThingManager;
 }
 
 trait ObjectRead: ThingRead {
 
-    fn get_iid(&self) -> ThingIIDSmall;
+    fn get_iid(&self) -> ObjectIID;
 
     fn get_has(&self) {
         // TODO: when do we deal with key versions - in the Snapshot?
         // self.snapshot.iterate_prefix(ThingEncoder::encodeHasForward(self.get_iid())
         todo!()
     }
+
 }
 
 trait AttributeRead {
 
-    fn get_iid(&self) -> ThingIID;
+    fn get_iid(&self) -> AttributeIID;
 }
 
-struct Entity {
-    iid: ThingIIDSmall,
+struct Entity<'txn, 'storage: 'txn> {
+    iid: ObjectIID,
+    snapshot: &'txn Snapshot<'storage>
+}
+
+impl<'txn, 'storage: 'txn> Entity<'txn, 'storage> {
+
+    fn get_has(&self, ) {
+        // self.thing_manager.get_has(self.iid)
+        todo!()
+    }
 }
 
 struct Attribute {
-    iid: ThingIID,
+    iid: AttributeIID,
 }

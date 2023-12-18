@@ -20,7 +20,7 @@ use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use logger::{error, trace, info};
+use logger::error;
 use logger::result::ResultExt;
 use speedb::{DB, Options};
 use wal::SequenceNumber;
@@ -134,7 +134,7 @@ impl Storage {
 
     pub fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
         debug_assert!(prefix.len() > 1);
-        self.get_section(*prefix[0]).iterate_prefix(prefix)
+        self.get_section(prefix[0]).iterate_prefix(prefix)
             .map(|res| {
                 match res {
                     Ok(v) => Ok(v),
@@ -247,7 +247,7 @@ impl Section {
     }
 
     // TODO: we should benchmark using iterator pools
-    fn iterate_prefix<'s>(&'s self, prefix: &Vec<u8>) -> impl Iterator<Item=Result<(Box<[u8]>, Box<[u8]>), SectionError>> + 's {
+    fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=Result<(Box<[u8]>, Box<[u8]>), SectionError>> + 's {
         self.kv_storage.prefix_iterator(prefix).map(|result| {
             match result {
                 Ok(kv) => Ok(kv),

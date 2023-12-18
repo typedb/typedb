@@ -24,7 +24,7 @@ use logger::initialise_logging;
 use rand;
 use tracing::subscriber::DefaultGuard;
 
-use storage::{Storage, key::{Key}, error::{StorageError, StorageErrorKind}, SectionError, SectionErrorKind};
+use storage::{error::{StorageError, StorageErrorKind}, key::Key, SectionError, SectionErrorKind, Storage};
 
 fn setup() -> (PathBuf, DefaultGuard) {
     let guard = initialise_logging();

@@ -16,26 +16,43 @@
  *
  */
 
+use storage::key::{Keyable};
+
 pub mod thing;
 pub mod type_;
 
-use storage::key::Keyable;
+pub const PREFIX_SIZE: usize = 1;
+pub const INFIX_SIZE: usize = 1;
 
 pub enum Prefix {
-    ENTITY_TYPE,
-    ATTRIBUTE_TYPE,
+    EntityType,
+    AttributeType,
 
-    ENTITY,
-    ATTRIBUTE
+    Entity,
+    Attribute,
 }
 
-impl Keyable for Prefix {
-    fn bytes(&self) -> &[u8] {
+impl Prefix {
+    pub fn as_bytes(&self) -> &[u8; PREFIX_SIZE] {
         match self {
-            Prefix::ENTITY_TYPE => &[0],
-            Prefix::ATTRIBUTE_TYPE => &[1],
-            Prefix::ENTITY => &[100],
-            Prefix::ATTRIBUTE => &[101],
+            Prefix::EntityType => &[0],
+            Prefix::AttributeType => &[1],
+            Prefix::Entity => &[100],
+            Prefix::Attribute => &[101],
+        }
+    }
+}
+
+pub enum Infix {
+    HasForward,
+    HasBackward,
+}
+
+impl Infix {
+    pub(crate) fn as_bytes(&self) -> &[u8; INFIX_SIZE] {
+        match self {
+            Infix::HasForward => &[0],
+            Infix::HasBackward => &[1],
         }
     }
 }

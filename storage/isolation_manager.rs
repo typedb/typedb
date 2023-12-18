@@ -17,8 +17,9 @@
  */
 
 use std::iter::empty;
+
 use wal::SequenceNumber;
-use crate::snapshot;
+
 use crate::snapshot::Snapshot;
 
 struct IsolationManager {}

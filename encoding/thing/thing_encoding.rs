@@ -24,8 +24,7 @@ impl ThingEncoder {
     pub fn new(storage: &mut Storage) -> ThingEncoder {
         let options = Section::new_options();
         let _ = storage.create_section("entity", 0, &options);
-        let _ = storage.create_section("relation", 1, &options);
-        let _ = storage.create_section("attribute_small", 10, &options);
+        let _ = storage.create_section("attribute", 10, &options);
         let _ = storage.create_section("has_forward", 100, &options);
         let _ = storage.create_section("has_backward", 101, &options);
         todo!()
@@ -37,119 +36,130 @@ impl ThingEncoder {
 }
 
 pub mod concept {
+    use std::mem::transmute;
     use wal::SequenceNumber;
+
     use crate::type_::type_encoding::concept::TypeID;
 
-    const ID_8_SIZE: usize = 8;
-    const ID_24_SIZE: usize = 24;
+    const OBJECT_ID_SIZE: usize = 8;
+    const ATTRIBUTE_ID_SIZE: usize = 12;
 
-    pub enum ThingIID {
-        Small(ThingIIDSmall),
-        Large(ThingIIDLarge),
-    }
-
-    struct ThingIIDSmallSequenced {
-        iid: ThingIIDSmall,
+    #[repr(C, packed)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+    struct ObjectIIDSequenced {
+        iid: ObjectIID,
         sequence_number: SequenceNumber,
     }
 
-    pub struct ThingIIDSmall {
-        prefix: u8,
-        type_id: TypeID,
-        id: ThingID8,
+    #[repr(C, packed)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+    pub struct ObjectIID {
+        pub(crate) prefix: u8,
+        pub(crate) type_id: TypeID,
+        pub(crate) id: ObjectID,
     }
 
-    struct ThingIIDLargeSequenced {
-        iid: ThingIIDLarge,
+    impl ObjectIID {
+        pub(crate) const fn size() -> usize {
+            std::mem::size_of::<Self>()
+        }
+
+        pub(crate) fn as_bytes(&self) -> &[u8; ObjectIID::size()] {
+            unsafe {
+                transmute(self)
+            }
+        }
+    }
+
+    #[repr(C, packed)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+    struct ObjectID {
+        bytes: [u8; OBJECT_ID_SIZE],
+    }
+
+    #[repr(C, packed)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+    pub struct AttributeIIDSequenced {
+        iid: AttributeIID,
         sequence_number: SequenceNumber,
     }
 
-    pub struct ThingIIDLarge {
+    #[repr(C, packed)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+    pub struct AttributeIID {
         prefix: u8,
         type_id: TypeID,
-        id: ThingID24,
+        id: AttributeID,
     }
 
-    struct ThingID8 {
-        bytes: [u8; ID_8_SIZE],
+    impl AttributeIID {
+        const fn size() -> usize {
+            std::mem::size_of::<Self>()
+        }
+
+        fn as_bytes(&self) -> &[u8; ObjectIID::size()] {
+            unsafe {
+                transmute(self)
+            }
+        }
     }
 
-    struct ThingID24 {
-        bytes: [u8; ID_24_SIZE],
+    #[repr(C, packed)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+    struct AttributeID {
+        bytes: [u8; ATTRIBUTE_ID_SIZE],
     }
 }
 
 mod connection {
-
-    mod has_small_forward {
+    mod has_forward {
         use wal::SequenceNumber;
-        use crate::thing::thing_encoding::concept::ThingIIDSmall;
+        use crate::{Infix, INFIX_SIZE, PREFIX_SIZE};
+        use crate::thing::thing_encoding::concept::{ObjectIID, AttributeIID};
+        use crate::type_::type_encoding::concept::TypeID;
 
-        pub(crate) const NAME: &str = "has_small_forward";
+        const PREFIX_HAS_FORWARD_SIZE: usize = ObjectIID::size() + INFIX_SIZE + PREFIX_SIZE + TypeID::size();
 
-        struct HasSmallForwardIIDSequenced {
-            id: HasSmallForwardIID,
+        #[repr(C, packed)]
+        #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+        struct HasForwardIIDSequenced {
+            id: HasForwardIID,
             sequence_number: SequenceNumber,
         }
 
-        struct HasSmallForwardIID {
-            owner: ThingIIDSmall,
+        #[repr(C, packed)]
+        #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+        struct HasForwardIID {
+            owner: ObjectIID,
             infix: u8,
-            attribute: ThingIIDSmall,
+            attribute: AttributeIID,
+        }
+
+        pub fn prefix_has_forward(owner: &ObjectIID) -> [u8; PREFIX_HAS_FORWARD_SIZE] {
+            let mut array = [0 as u8; PREFIX_HAS_FORWARD_SIZE];
+            array[0..ObjectIID::size()].copy_from_slice(owner.as_bytes());
+            array[ObjectIID::size()..(ObjectIID::size() + INFIX_SIZE)].copy_from_slice(Infix::HasForward.as_bytes());
+            array
         }
     }
 
-    mod has_small_backward {
+    mod has_backward {
         use wal::SequenceNumber;
-        use crate::thing::thing_encoding::concept::{ThingIIDSmall};
+        use crate::thing::thing_encoding::concept::{ObjectIID, AttributeIID};
 
-        pub(crate) const NAME: &str = "has_small_backward";
-
-        struct HasSmallBackwardIIDSequenced {
-            id: HasSmallBackwardIID,
+        #[repr(C, packed)]
+        #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+        struct HasBackwardIIDSequenced {
+            id: HasBackwardIID,
             sequence_number: SequenceNumber,
         }
 
-        struct HasSmallBackwardIID {
-            owner: ThingIIDSmall,
+        #[repr(C, packed)]
+        #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+        struct HasBackwardIID {
+            attribute: AttributeIID,
             infix: u8,
-            attribute: ThingIIDSmall,
-        }
-    }
-
-    mod has_large_forward {
-        use wal::SequenceNumber;
-        use crate::thing::thing_encoding::concept::{ThingIIDSmall, ThingIIDLarge};
-
-        pub(crate) const NAME: &str = "has_large_forward";
-
-        struct HasLargeForwardIIDSequenced {
-            id: HasLargeForwardIID,
-            sequence_number: SequenceNumber,
-        }
-
-        struct HasLargeForwardIID {
-            owner: ThingIIDSmall,
-            infix: u8,
-            attribute: ThingIIDLarge,
-        }
-    }
-
-    mod has_large_backward {
-        use wal::SequenceNumber;
-        use crate::thing::thing_encoding::concept::{ThingIIDLarge, ThingIIDSmall};
-
-        pub(crate) const NAME: &str = "has_large_backward";
-
-        struct HasLargeBackwardIIDSequenced {
-            id: HasLargeBackwardIID,
-            sequence_number: SequenceNumber,
-        }
-
-        struct HasLargeBackwardIID {
-            owner: ThingIIDLarge,
-            infix: u8,
-            attribute: ThingIIDSmall,
+            owner: ObjectIID,
         }
     }
 }

@@ -16,7 +16,6 @@
  *
  */
 
-use std::collections::btree_map::Range;
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
@@ -34,13 +33,13 @@ pub enum Snapshot<'storage> {
 }
 
 impl<'storage> Snapshot<'storage> {
-
-    pub fn iterate_prefix(&'storage self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'storage {
-        match self {
-            Snapshot::Read(snapshot) => snapshot.iterate_prefix(prefix),
-            Snapshot::Write(snapshot) => snapshot.iterate_prefix(prefix),
-        }
-    }
+    //
+    // pub fn iterate_prefix(&'storage self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'storage {
+    //     match self {
+    //         Snapshot::Read(snapshot) => snapshot.iterate_prefix(prefix),
+    //         Snapshot::Write(snapshot) => snapshot.iterate_prefix(prefix),
+    //     }
+    // }
 }
 
 pub struct ReadSnapshot<'storage> {
@@ -57,7 +56,7 @@ impl<'storage> ReadSnapshot<'storage> {
     }
 
     fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
-        self.storage.iterate_prefix(prefix).merge(self.iterate_prefix_buffered(prefix))
+        self.storage.iterate_prefix(prefix)
     }
 }
 
@@ -93,7 +92,7 @@ impl<'storage> WriteSnapshot<'storage> {
     fn iterate_prefix_buffered<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
         // TODO: avoid copy
         let p: Vec<u8> = prefix.into();
-        self.inserts.range::<Vec<u8>, _>(&..).map(|(key, val)| {
+        self.inserts.range::<Vec<u8>, _>(&p..).map(|(key, val)| {
             // TODO: we can avoid allocation here once we settle on a Key/Value struct
             (key.clone().into_boxed_slice(), val.clone().into_boxed_slice())
         })

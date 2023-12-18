@@ -18,25 +18,42 @@
 
 
 pub(crate) mod concept {
+    use std::mem::transmute;
     use wal::SequenceNumber;
 
-    const ID_2_SIZE: usize = 2;
+    const TYPE_ID_SIZE: usize = 2;
 
+    #[repr(C, packed)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
     struct TypeIIDSequenced {
         iid: TypeIID,
         sequence_number: SequenceNumber,
     }
 
+    #[repr(C, packed)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
     pub(crate) struct TypeIID {
         prefix: u8,
         id: TypeID,
     }
 
+    #[repr(C, packed)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
     pub(crate) struct TypeID {
-        bytes: [u8; ID_2_SIZE],
+        bytes: [u8; TYPE_ID_SIZE],
+    }
+
+    impl TypeID {
+        pub(crate) const fn size() -> usize {
+            std::mem::size_of::<Self>()
+        }
+
+        fn as_bytes(&self) -> &[u8; TypeID::size()] {
+            unsafe {
+                transmute(self)
+            }
+        }
     }
 }
 
-mod connection {
-
-}
+mod connection {}
