@@ -44,7 +44,7 @@ java_library(
 assemble_maven(
     name = "assemble-maven",
     target = ":typedb-runner",
-    workspace_refs = "@vaticle_typedb_common_workspace_refs//:refs.json",
+    workspace_refs = "@vaticle_typedb_workspace_refs//:refs.json",
     version_overrides = version(artifacts_org = artifacts, artifacts_repo={}),
     project_name = "TypeDB Runners",
     project_description = "TypeDB Runner classes and tools",
