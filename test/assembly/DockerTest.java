@@ -18,7 +18,7 @@
 
 package com.vaticle.typedb.core.test.assembly;
 
-import com.vaticle.typedb.common.test.console.TypeDBConsoleRunner;
+import com.vaticle.typedb.console.test.runner.TypeDBConsoleRunner;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
