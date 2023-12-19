@@ -26,12 +26,14 @@
 @maven//:com_google_ortools_ortools_linux_aarch64_9_6_2534
 @maven//:com_google_ortools_ortools_linux_x86_64_9_6_2534
 @maven//:com_google_ortools_ortools_win32_x86_64_9_6_2534
-@maven//:com_google_protobuf_protobuf_java_3_21_7
+@maven//:com_google_protobuf_protobuf_java_3_20_1
 @maven//:com_google_re2j_re2j_1_6
 @maven//:com_google_truth_truth_1_0_1
 @maven//:com_googlecode_java_diff_utils_diffutils_1_3_0
 @maven//:com_squareup_okhttp_okhttp_2_7_5
 @maven//:com_squareup_okio_okio_1_17_5
+@maven//:com_vaticle_typedb_typedb_common_7fd4316e7fd4c3ba9ce94f2ea73f12c82057930b
+@maven//:com_vaticle_typedb_typedb_console_runner_d0a2597c08af0c8a2c00dff6c51e3325e0cbb6d0
 @maven//:commons_codec_commons_codec_1_11
 @maven//:commons_io_commons_io_2_3
 @maven//:commons_logging_commons_logging_1_2
