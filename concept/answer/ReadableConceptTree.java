@@ -267,7 +267,7 @@ public class ReadableConceptTree {
 
             @Override
             public String toJSON() {
-                if (readableConcept == null) return "";
+                if (readableConcept == null) return "null";
                 else if (readableConcept.isType()) return getType(readableConcept.asType());
                 else if (readableConcept.isAttribute()) return getAttribute(readableConcept.asAttribute());
                 else if (readableConcept.isValue()) return getValue(readableConcept.asValue());
