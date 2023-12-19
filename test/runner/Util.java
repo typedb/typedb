@@ -66,16 +66,6 @@ public class Util {
         return new File(options.getServerArchive());
     }
 
-    public static File getConsoleArchiveFile() {
-        String[] args = System.getProperty("sun.java.command").split(" ");
-        Optional<CLIOptions> maybeOptions = CLIOptions.parseCLIOptions(args);
-        if (!maybeOptions.isPresent()) {
-            throw new IllegalArgumentException("No archives were passed as arguments");
-        }
-        CLIOptions options = maybeOptions.get();
-        return new File(options.getConsoleArchive());
-    }
-
     public static Path unarchive(File archive) throws IOException, TimeoutException, InterruptedException {
         Path runnerDir = Files.createTempDirectory("typedb");
         ProcessExecutor executor = createProcessExecutor(Paths.get(".").toAbsolutePath());
@@ -249,22 +239,12 @@ public class Util {
         )
         private String serverArchive;
 
-        @CommandLine.Option(
-                names = {"--console"},
-                description = "Location of the archive containing a console artifact."
-        )
-        private String consoleArchive;
-
         public String getServerArchive() {
             return serverArchive;
         }
 
-        public String getConsoleArchive() {
-            return consoleArchive;
-        }
-
         public static Optional<CLIOptions> parseCLIOptions(String[] args) {
-            CommandLine commandLine = new CommandLine(new CLIOptions());
+            CommandLine commandLine = new CommandLine(new CLIOptions()).setUnmatchedArgumentsAllowed(true);
             try {
                 CommandLine.ParseResult result = commandLine.parseArgs(args);
                 return Optional.of(result.asCommandLineList().get(0).getCommand());
