@@ -16,13 +16,15 @@
 #
 
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("//test/runner:rules.bzl", "typedb_java_test")
+load("@vaticle_dependencies//builder/java:rules.bzl", "typedb_java_test")
 
 
 typedb_java_test(
     name = "assembly",
     test_class = "com.vaticle.typedb.core.test.assembly.AssemblyTest",
     srcs = ["AssemblyTest.java"],
+    deps = ["//test/runner:typedb-runner"],
+    classpath_resources = ["//test/runner:logback"],
     server_artifacts = {
         "@vaticle_bazel_distribution//platform:is_linux_arm64": "//server:assemble-linux-arm64-targz",
         "@vaticle_bazel_distribution//platform:is_linux_x86_64": "//server:assemble-linux-x86_64-targz",
