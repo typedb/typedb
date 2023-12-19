@@ -15,16 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@vaticle_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@vaticle_bazel_distribution//maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@vaticle_dependencies//distribution/maven:version.bzl", "version")
 load("@vaticle_dependencies//library/maven:artifacts.bzl", "artifacts")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
-
-load("//:deployment.bzl", deployment_github = "deployment", deployment_docker = "deployment")
-load("@vaticle_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps")
-load("@vaticle_bazel_distribution//artifact:rules.bzl", "deploy_artifact")
 
 java_library(
     name = "typedb-runner",
@@ -54,29 +49,6 @@ deploy_maven(
     target = ":assemble-maven",
     snapshot = deployment['maven.snapshot'],
     release = deployment['maven.release']
-)
-
-java_deps(
-    name = "runner-deps",
-    target = ":typedb-runner",
-    visibility = ["//:__pkg__"],
-    maven_name = True,
-    ignore_missing_maven_name = True,
-)
-
-assemble_targz(
-    name = "assemble-artifact",
-    targets = [":runner-deps"],
-    output_filename = "typedb-runner",
-)
-
-deploy_artifact(
-    name = "deploy-artifact",
-    target = ":assemble-artifact",
-    artifact_group = "vaticle_typedb",
-    artifact_name = "typedb-runner-{version}.tar.gz",
-    release = deployment['artifact.release'],
-    snapshot = deployment['artifact.snapshot'],
 )
 
 filegroup(
