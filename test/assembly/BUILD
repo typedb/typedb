@@ -27,7 +27,6 @@ typedb_java_test(
         "//test/runner:typedb-runner",
         "@maven//:com_vaticle_typedb_typedb_console_runner",
     ],
-    classpath_resources = ["//test/runner:logback"],
     server_artifacts = {
         "@vaticle_bazel_distribution//platform:is_linux_arm64": "//server:assemble-linux-arm64-targz",
         "@vaticle_bazel_distribution//platform:is_linux_x86_64": "//server:assemble-linux-x86_64-targz",
@@ -58,7 +57,6 @@ typedb_java_test(
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",
     ],
-    classpath_resources = ["//test/runner:logback"],
     server_artifacts = {
         "@vaticle_bazel_distribution//platform:is_linux_arm64": "//server:assemble-linux-arm64-targz",
         "@vaticle_bazel_distribution//platform:is_linux_x86_64": "//server:assemble-linux-x86_64-targz",

@@ -51,12 +51,6 @@ deploy_maven(
     release = deployment['maven.release']
 )
 
-filegroup(
-    name = "logback",
-    srcs = ["logback.xml"],
-    visibility = ["//visibility:public"],
-)
-
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*", "*/*"]),
