@@ -49,7 +49,6 @@ typedb_java_test(
     test_class = "com.vaticle.typedb.core.test.assembly.DockerTest",
     srcs = ["DockerTest.java"],
     deps = [
-        "//test/runner:typedb-runner",
         "@maven//:com_vaticle_typedb_typedb_console_runner",
         "@maven//:org_slf4j_slf4j_api",
         "@maven//:org_zeroturnaround_zt_exec",
