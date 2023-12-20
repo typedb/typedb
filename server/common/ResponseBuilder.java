@@ -1165,7 +1165,7 @@ public class ResponseBuilder {
         private static AnswerProto.ReadableConceptTree.Node.ReadableConcept readableConcept(
                 @Nullable com.vaticle.typedb.core.concept.Concept.Readable concept) {
             AnswerProto.ReadableConceptTree.Node.ReadableConcept.Builder builder = AnswerProto.ReadableConceptTree.Node.ReadableConcept.newBuilder();
-            if (concept == null) return builder.setEmpty(true).build();
+            if (concept == null) return builder.build();
             else if (concept.isType()) {
                 com.vaticle.typedb.core.concept.type.Type type = concept.asType();
                 if (type.isEntityType()) {
