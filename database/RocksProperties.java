@@ -18,24 +18,26 @@
 
 package com.vaticle.typedb.core.database;
 
+import io.sentry.ITransaction;
+import io.sentry.Sentry;
+import io.sentry.SpanStatus;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.RocksDBException;
-import org.rocksdb.TableProperties;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.collection.Bytes.MB;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.STORAGE_PROPERTY_EXCEPTION;
+import static io.sentry.MeasurementUnit.Information.BYTE;
 import static java.lang.String.format;
-import static java.util.Arrays.stream;
 
 /**
  * A list of interesting properties to retrieve from RocksDB.
@@ -194,27 +196,30 @@ public class RocksProperties {
         return format("%.1f", ((float) bytes) / MB);
     }
 
-    static class Logger implements Runnable {
+    static class Monitor implements Runnable {
 
         private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(RocksProperties.class);
 
         private final OptimisticTransactionDB rocksDB;
         private final List<ColumnFamilyHandle> cfHandles;
         private final String database;
+        private final Path directory;
 
-        Logger(OptimisticTransactionDB rocksDB, List<ColumnFamilyHandle> cfHandles, String database) {
+        Monitor(OptimisticTransactionDB rocksDB, List<ColumnFamilyHandle> cfHandles, String database, Path directory) {
             this.rocksDB = rocksDB;
             this.cfHandles = cfHandles;
             this.database = database;
+            this.directory = directory;
         }
 
         @Override
         public void run() {
-            logRocksProperties();
-            logRocksFilesSummary();
+//            monitorRocksProperties();
+            monitorRocksFilesSummary();
         }
 
-        private void logRocksProperties() {
+        private void monitorRocksProperties() {
+            if (!LOG.isDebugEnabled()) return;
             try {
                 StringBuilder builder = new StringBuilder(format(
                         "Database '%s' rocksdb properties from '%d' column families:\n", database, cfHandles.size()));
@@ -231,56 +236,63 @@ public class RocksProperties {
             }
         }
 
-        private void logRocksFilesSummary() {
+        private void monitorRocksFilesSummary() {
+            ITransaction tx = Sentry.startTransaction("db_metrics", "collect");
             try {
-                long[] dataBlocksSize = new long[cfHandles.size()];
-                Arrays.fill(dataBlocksSize, 0);
-                long[] indexBlocksSize = new long[cfHandles.size()];
-                Arrays.fill(indexBlocksSize, 0);
-                long[] filterBlocksSize = new long[cfHandles.size()];
-                Arrays.fill(filterBlocksSize, 0);
-                long[] rawKeysSize = new long[cfHandles.size()];
-                Arrays.fill(rawKeysSize, 0);
-                long[] rawValuesSize = new long[cfHandles.size()];
-                Arrays.fill(rawValuesSize, 0);
-                long[] numEntries = new long[cfHandles.size()];
-                Arrays.fill(numEntries, 0);
-                long[] numDeletions = new long[cfHandles.size()];
-                Arrays.fill(numDeletions, 0);
-                long[] keysEstimate = new long[cfHandles.size()];
-                long sstFiles = 0;
-                for (int i = 0; i < cfHandles.size(); i++) {
-                    ColumnFamilyHandle cfHandle = cfHandles.get(i);
-                    Map<String, TableProperties> sstProperties = rocksDB.getPropertiesOfAllTables(cfHandle);
-                    sstFiles += sstProperties.size();
-                    for (Map.Entry<String, TableProperties> entry : sstProperties.entrySet()) {
-                        TableProperties properties = entry.getValue();
-                        dataBlocksSize[i] += properties.getDataSize();
-                        indexBlocksSize[i] += properties.getIndexSize();
-                        filterBlocksSize[i] += properties.getFilterSize();
-                        rawKeysSize[i] += properties.getRawKeySize();
-                        rawValuesSize[i] += properties.getRawValueSize();
-                        numEntries[i] += properties.getNumEntries();
-                        numDeletions[i] += properties.getNumDeletions();
-                    }
-                    keysEstimate[i] = numEntries[i] - numDeletions[i];
-                }
-                String formattedSummary = format("%-40s %s \n", "Data blocks size", formatBytesToMB(dataBlocksSize)) +
-                        format("%-40s %s \n", "Index blocks size", formatBytesToMB(indexBlocksSize)) +
-                        format("%-40s %s \n", "Filter blocks size", formatBytesToMB(filterBlocksSize)) +
-                        format("%-40s %s \n", "Raw keys size", formatBytesToMB(rawKeysSize)) +
-                        format("%-40s %s \n", "Raw values size", formatBytesToMB(rawValuesSize)) +
-                        format("%-40s %d (%s) \n", "Approximate total keys", stream(keysEstimate).sum(),
-                                stream(keysEstimate).mapToObj(l -> "" + l).collect(Collectors.joining("/"))) +
-                        format("%-40s %s bytes\n", "Bytes per key (raw values/approx keys)",
-                                formatSeparated1f(rawKeysSize, (v, i) -> (float) v / (keysEstimate[i]))) +
-                        format("%-40s %s bytes\n", "Bytes per value (raw values/approx keys)",
-                                formatSeparated1f(rawValuesSize, (v, i) -> (float) v / (keysEstimate[i])));
-
-                LOG.debug("Database '{}' rocksdb summary from '{}' column families and '{}' SST files:\n{}\n",
-                        database, cfHandles.size(), sstFiles, formattedSummary);
-            } catch (RocksDBException e) {
+//                long[] dataBlocksSize = new long[cfHandles.size()];
+//                Arrays.fill(dataBlocksSize, 0);
+//                long[] indexBlocksSize = new long[cfHandles.size()];
+//                Arrays.fill(indexBlocksSize, 0);
+//                long[] filterBlocksSize = new long[cfHandles.size()];
+//                Arrays.fill(filterBlocksSize, 0);
+//                long[] rawKeysSize = new long[cfHandles.size()];
+//                Arrays.fill(rawKeysSize, 0);
+//                long[] rawValuesSize = new long[cfHandles.size()];
+//                Arrays.fill(rawValuesSize, 0);
+//                long[] numEntries = new long[cfHandles.size()];
+//                Arrays.fill(numEntries, 0);
+//                long[] numDeletions = new long[cfHandles.size()];
+//                Arrays.fill(numDeletions, 0);
+//                long[] keysEstimate = new long[cfHandles.size()];
+//                long sstFiles = 0;
+//                for (int i = 0; i < cfHandles.size(); i++) {
+//                    ColumnFamilyHandle cfHandle = cfHandles.get(i);
+//                    Map<String, TableProperties> sstProperties = rocksDB.getPropertiesOfAllTables(cfHandle);
+//                    sstFiles += sstProperties.size();
+//                    for (Map.Entry<String, TableProperties> entry : sstProperties.entrySet()) {
+//                        TableProperties properties = entry.getValue();
+//                        dataBlocksSize[i] += properties.getDataSize();
+//                        indexBlocksSize[i] += properties.getIndexSize();
+//                        filterBlocksSize[i] += properties.getFilterSize();
+//                        rawKeysSize[i] += properties.getRawKeySize();
+//                        rawValuesSize[i] += properties.getRawValueSize();
+//                        numEntries[i] += properties.getNumEntries();
+//                        numDeletions[i] += properties.getNumDeletions();
+//                    }
+//                    keysEstimate[i] = numEntries[i] - numDeletions[i];
+//                }
+//                String formattedSummary = format("%-40s %s \n", "Data blocks size", formatBytesToMB(dataBlocksSize)) +
+//                        format("%-40s %s \n", "Index blocks size", formatBytesToMB(indexBlocksSize)) +
+//                        format("%-40s %s \n", "Filter blocks size", formatBytesToMB(filterBlocksSize)) +
+//                        format("%-40s %s \n", "Raw keys size", formatBytesToMB(rawKeysSize)) +
+//                        format("%-40s %s \n", "Raw values size", formatBytesToMB(rawValuesSize)) +
+//                        format("%-40s %d (%s) \n", "Approximate total keys", stream(keysEstimate).sum(),
+//                                stream(keysEstimate).mapToObj(l -> "" + l).collect(Collectors.joining("/"))) +
+//                        format("%-40s %s bytes\n", "Bytes per key (raw values/approx keys)",
+//                                formatSeparated1f(rawKeysSize, (v, i) -> (float) v / (keysEstimate[i]))) +
+//                        format("%-40s %s bytes\n", "Bytes per value (raw values/approx keys)",
+//                                formatSeparated1f(rawValuesSize, (v, i) -> (float) v / (keysEstimate[i])));
+//
+//                LOG.debug("Database '{}' rocksdb summary from '{}' column families and '{}' SST files:\n{}\n",
+//                        database, cfHandles.size(), sstFiles, formattedSummary);
+                long dbSizeOnDisk = Files.walk(directory).mapToLong(p -> p.toFile().length()).sum();
+                tx.setMeasurement("storage.sizeOnDisk", dbSizeOnDisk, BYTE);
+            } catch (IOException e) {
                 LOG.error(STORAGE_PROPERTY_EXCEPTION.message(), e);
+                tx.setThrowable(e);
+                tx.setStatus(SpanStatus.INTERNAL_ERROR);
+            } finally {
+                tx.finish();
             }
         }
 

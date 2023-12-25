@@ -32,6 +32,8 @@ import ch.qos.logback.core.util.FileSize;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.server.parameters.CoreConfig;
 import com.vaticle.typedb.core.server.parameters.util.YAMLParser;
+import io.sentry.SentryOptions;
+import io.sentry.logback.SentryAppender;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -40,11 +42,12 @@ import java.util.Map;
 import static ch.qos.logback.core.CoreConstants.UNBOUNDED_TOTAL_SIZE_CAP;
 import static ch.qos.logback.core.CoreConstants.UNBOUND_HISTORY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.server.common.Constants.DIAGNOSTICS_REPORTING_URI;
 import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_ARCHIVE_EXT;
 
 public class CoreLogback {
 
-    public void configure(LoggerContext logContext, CoreConfig.Log logConfig) {
+    public void configure(LoggerContext logContext, CoreConfig.Log logConfig, CoreConfig.Diagnostics diagnosticsConfig) {
         // all appenders use the same layout
         LayoutWrappingEncoder<ILoggingEvent> encoder = new LayoutWrappingEncoder<>();
         encoder.setContext(logContext);
@@ -56,6 +59,9 @@ public class CoreLogback {
         Map<String, Appender<ILoggingEvent>> appenders = new HashMap<>();
         logConfig.output().outputs().forEach((name, outputType) ->
                 appenders.put(name, appender(name, logContext, encoder, outputType)));
+        if (diagnosticsConfig.reporting().enable()) {
+            appenders.put("diagnostics", remoteAppender("diagnostics", logContext, encoder));
+        }
 
         configureRootLogger(logConfig.logger().defaultLogger(), logContext, appenders);
         logConfig.logger().filteredLoggers().values().forEach(l -> configureLogger(l, logContext, appenders));
@@ -127,6 +133,20 @@ public class CoreLogback {
         policy.setParent(appender);
         policy.start();
         appender.setRollingPolicy(policy);
+        appender.start();
+        return appender;
+    }
+
+    protected static SentryAppender remoteAppender(String name, LoggerContext context,
+                                                   LayoutWrappingEncoder<ILoggingEvent> encoder) {
+        SentryAppender appender = new SentryAppender();
+        appender.setContext(context);
+        appender.setName(name);
+        appender.setEncoder(encoder);
+        appender.setMinimumBreadcrumbLevel(Level.ERROR);
+        SentryOptions options = new SentryOptions();
+        options.setDsn(DIAGNOSTICS_REPORTING_URI);
+        appender.setOptions(options);
         appender.start();
         return appender;
     }

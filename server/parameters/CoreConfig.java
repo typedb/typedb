@@ -38,12 +38,14 @@ public class CoreConfig {
     protected final Server server;
     protected final Storage storage;
     protected final Log log;
+    protected final Diagnostics diagnostics;
     protected final VaticleFactory vaticleFactory;
 
-    protected CoreConfig(Server server, Storage storage, Log log, @Nullable VaticleFactory vaticleFactory) {
+    protected CoreConfig(Server server, Storage storage, Log log, @Nullable Diagnostics diagnostics, @Nullable VaticleFactory vaticleFactory) {
         this.server = server;
         this.storage = storage;
         this.log = log;
+        this.diagnostics = diagnostics;
         this.vaticleFactory = vaticleFactory;
     }
 
@@ -57,6 +59,10 @@ public class CoreConfig {
 
     public Log log() {
         return log;
+    }
+
+    public Diagnostics diagnostics() {
+        return diagnostics;
     }
 
     public VaticleFactory vaticleFactory() {
@@ -379,6 +385,38 @@ public class CoreConfig {
                 public boolean isEnabled() {
                     return enable;
                 }
+            }
+        }
+    }
+
+    public static class Diagnostics {
+
+        private final Reporting reporting;
+
+        public Diagnostics(Reporting reporting) {
+            this.reporting = reporting;
+        }
+
+        public Reporting reporting() {
+            return reporting;
+        }
+
+        public static class Reporting {
+
+            private final boolean enable;
+            private final String uri;
+
+            Reporting(boolean enable, @Nullable String uri) {
+                this.enable = enable;
+                this.uri = uri;
+            }
+
+            public boolean enable() {
+                return enable;
+            }
+
+            public Optional<String> uri() {
+                return Optional.ofNullable(uri);
             }
         }
     }

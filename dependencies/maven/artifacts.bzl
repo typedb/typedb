@@ -41,6 +41,8 @@ artifacts = [
     "io.grpc:grpc-stub",
     "io.netty:netty-all",
     "io.netty:netty-transport",
+    "io.sentry:sentry",
+    "io.sentry:sentry-logback",
     "javax.annotation:javax.annotation-api",
     "junit:junit",
     "org.slf4j:slf4j-api",

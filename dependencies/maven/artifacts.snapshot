@@ -99,6 +99,8 @@
 @maven//:io_opencensus_opencensus_contrib_grpc_metrics_0_24_0
 @maven//:io_opencensus_opencensus_contrib_http_util_0_24_0
 @maven//:io_perfmark_perfmark_api_0_25_0
+@maven//:io_sentry_sentry_7_1_0
+@maven//:io_sentry_sentry_logback_7_1_0
 @maven//:javax_annotation_javax_annotation_api_1_3_2
 @maven//:junit_junit_4_12
 @maven//:net_java_dev_jna_jna_5_12_1

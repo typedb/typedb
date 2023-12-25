@@ -82,7 +82,6 @@ import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongs;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INCOMPATIBLE_ENCODING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INVALID_DATABASE_DIRECTORIES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
@@ -100,8 +99,6 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Ty
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.serial;
 import static com.vaticle.typedb.core.encoding.Encoding.ENCODING_VERSION;
-import static com.vaticle.typedb.core.encoding.Encoding.ROCKS_DATA;
-import static com.vaticle.typedb.core.encoding.Encoding.ROCKS_SCHEMA;
 import static com.vaticle.typedb.core.encoding.Encoding.System.ENCODING_VERSION_KEY;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -110,7 +107,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class CoreDatabase implements TypeDB.Database {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
-    private static final int ROCKS_LOG_PERIOD = 300;
+    private static final int ROCKS_MONITOR_PERIOD_SECONDS = 10;
 
     private final CoreDatabaseManager databaseMgr;
     private final Factory.Session sessionFactory;
@@ -130,7 +127,7 @@ public class CoreDatabase implements TypeDB.Database {
     protected CorePartitionManager.Schema rocksSchemaPartitionMgr;
     protected CorePartitionManager.Data rocksDataPartitionMgr;
     protected CoreSession.Data statisticsBackgroundCounterSession;
-    protected ScheduledExecutorService scheduledPropertiesLogger;
+    protected ScheduledExecutorService scheduledPropertiesMonitor;
     private Cache cache;
 
     protected CoreDatabase(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
@@ -142,8 +139,8 @@ public class CoreDatabase implements TypeDB.Database {
         isolationMgr = new IsolationManager();
         statisticsCorrector = createStatisticsCorrector();
         sessions = new ConcurrentHashMap<>();
-        rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
-                options().storageIndexCacheSize(), LOG.isDebugEnabled() || LOG.isTraceEnabled(), ROCKS_LOG_PERIOD);
+        rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(), options().storageIndexCacheSize(),
+                LOG.isDebugEnabled() || LOG.isTraceEnabled() || options().diagnosticsReportingEnabled(), ROCKS_MONITOR_PERIOD_SECONDS);
         schemaLock = new StampedLock();
         schemaLockWriteRequests = new AtomicInteger(0);
         nextTransactionID = new AtomicLong(0);
@@ -225,7 +222,7 @@ public class CoreDatabase implements TypeDB.Database {
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
-        mayInitRocksDataLogger();
+        mayInitRocksMonitor();
     }
 
     protected CorePartitionManager.Data createPartitionMgrData(List<ColumnFamilyDescriptor> dataDescriptors,
@@ -274,18 +271,18 @@ public class CoreDatabase implements TypeDB.Database {
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
-        mayInitRocksDataLogger();
+        mayInitRocksMonitor();
     }
 
-    private void mayInitRocksDataLogger() {
-        if (rocksConfiguration.isLoggingEnabled()) {
-            scheduledPropertiesLogger = java.util.concurrent.Executors.newScheduledThreadPool(1);
-            scheduledPropertiesLogger.scheduleAtFixedRate(
-                    new RocksProperties.Logger(rocksData, rocksDataPartitionMgr.handles, name),
-                    0, ROCKS_LOG_PERIOD, SECONDS
+    private void mayInitRocksMonitor() {
+        if (rocksConfiguration.isMonitorEnabled()) {
+            scheduledPropertiesMonitor = java.util.concurrent.Executors.newScheduledThreadPool(1);
+            scheduledPropertiesMonitor.scheduleAtFixedRate(
+                    new RocksProperties.Monitor(rocksData, rocksDataPartitionMgr.handles, name, directory()),
+                    0, ROCKS_MONITOR_PERIOD_SECONDS, SECONDS
             );
         } else {
-            scheduledPropertiesLogger = null;
+            scheduledPropertiesMonitor = null;
         }
     }
 
@@ -473,16 +470,16 @@ public class CoreDatabase implements TypeDB.Database {
 
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            if (scheduledPropertiesLogger != null) shutdownRocksPropertiesLogger();
+            if (scheduledPropertiesMonitor != null) shutdownRocksPropertiesLogger();
             closeResources();
         }
     }
 
     private void shutdownRocksPropertiesLogger() {
-        assert scheduledPropertiesLogger != null;
+        assert scheduledPropertiesMonitor != null;
         try {
-            scheduledPropertiesLogger.shutdown();
-            boolean terminated = scheduledPropertiesLogger.awaitTermination(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
+            scheduledPropertiesMonitor.shutdown();
+            boolean terminated = scheduledPropertiesMonitor.awaitTermination(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
             if (!terminated) throw TypeDBException.of(ROCKS_LOGGER_SHUTDOWN_TIMEOUT);
         } catch (InterruptedException e) {
             throw TypeDBException.of(e);

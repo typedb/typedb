@@ -46,6 +46,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     public static final boolean DEFAULT_QUERY_READ_PREFETCH = true;
     public static final boolean DEFAULT_QUERY_WRITE_PREFETCH = false;
     public static final boolean DEFAULT_READ_ANY_REPLICA = false;
+    public static final boolean DEFAULT_DIAGNOSTICS_REPORTING_ENABLED = true;
 
     private PARENT parent;
     private Boolean infer = null;
@@ -59,6 +60,7 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
     private Long schemaLockAcquireTimeoutMillis = null;
     private Boolean readAnyReplica = null;
     protected Boolean prefetch = null;
+    protected Boolean diagnosticsReportingEnabled = null;
     protected Path typeDBDir = null;
     protected Path dataDir = null;
     protected Path reasonerDebuggerDir = null;
@@ -179,6 +181,17 @@ public abstract class Options<PARENT extends Options<?, ?>, SELF extends Options
 
     public SELF readAnyReplica(boolean readAnyReplica) {
         this.readAnyReplica = readAnyReplica;
+        return getThis();
+    }
+
+    public boolean diagnosticsReportingEnabled() {
+        if (diagnosticsReportingEnabled != null) return diagnosticsReportingEnabled;
+        else if (parent != null) return parent.diagnosticsReportingEnabled();
+        else return DEFAULT_DIAGNOSTICS_REPORTING_ENABLED;
+    }
+
+    public SELF diagnosticsReportingEnabled(boolean diagnosticsReportingEnabled) {
+        this.diagnosticsReportingEnabled = diagnosticsReportingEnabled;
         return getThis();
     }
 

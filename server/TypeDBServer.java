@@ -38,16 +38,24 @@ import com.vaticle.typedb.core.server.parameters.CoreSubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.sentry.Sentry;
+import io.sentry.SentryLevel;
+import io.sentry.protocol.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.BindException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,6 +69,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILE
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
+import static com.vaticle.typedb.core.server.common.Constants.DIAGNOSTICS_REPORTING_URI;
 import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
 import static org.slf4j.Logger.ROOT_LOGGER_NAME;
@@ -84,8 +93,26 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     protected static void configureLogging(CoreLogback logback, CoreConfig config) {
-        logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
+        logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log(), config.diagnostics());
         java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
+        Sentry.init(options -> {
+            options.setDsn(DIAGNOSTICS_REPORTING_URI);
+            options.setTracesSampleRate(1.0);
+            options.setSendDefaultPii(false);
+        });
+        User user = new User();
+        user.setUsername(instanceId());
+        Sentry.setUser(user);
+        Sentry.captureMessage("start_server", SentryLevel.DEBUG);
+    }
+
+    private static String instanceId() {
+        try {
+            byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
+            return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(mac));
+        } catch (NoSuchAlgorithmException | IOException e) {
+            return "";
+        }
     }
 
     protected TypeDBServer(CoreConfig config, CoreLogback logback, boolean debug, Factory factory) {
@@ -103,6 +130,7 @@ public class TypeDBServer implements AutoCloseable {
                 .dataDir(config.storage().dataDir())
                 .storageDataCacheSize(config.storage().databaseCache().dataSize())
                 .storageIndexCacheSize(config.storage().databaseCache().indexSize())
+                .diagnosticsReportingEnabled(config.diagnostics().reporting().enable())
                 .reasonerDebuggerDir(config.log().debugger().reasonerTracer().output().baseDirectory())
                 .reasonerPerfCounters(config.log().debugger().reasonerPerfCounters().isEnabled());
 
@@ -234,6 +262,8 @@ public class TypeDBServer implements AutoCloseable {
     public synchronized void close() throws TypeDBCheckedException {
         if (isOpen.compareAndSet(true, false)) {
             try {
+                Sentry.captureMessage("stop_server", SentryLevel.DEBUG);
+
                 logger().info("");
                 logger().info("Closing {} instance...", name());
                 assert typeDBService != null;

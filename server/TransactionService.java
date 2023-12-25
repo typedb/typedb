@@ -34,6 +34,9 @@ import com.vaticle.typedb.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import io.sentry.ITransaction;
+import io.sentry.Sentry;
+import io.sentry.SpanStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,6 +136,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     private void execute(TransactionProto.Transaction.Req request) {
         Lock accessLock = null;
+        ITransaction tx = Sentry.startTransaction("transaction_req", requestType(request));
         try {
             accessLock = acquireRequestLock(request);
             switch (request.getReqCase()) {
@@ -145,8 +149,11 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                     executeRequest(request);
             }
         } catch (Throwable error) {
+            tx.setThrowable(error);
+            tx.setStatus(SpanStatus.INTERNAL_ERROR);
             close(error);
         } finally {
+            tx.finish();
             if (accessLock != null) accessLock.unlock();
         }
     }
@@ -185,6 +192,18 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                 break;
             default:
                 throw TypeDBException.of(ILLEGAL_ARGUMENT);
+        }
+    }
+
+    private String requestType(TransactionProto.Transaction.Req req) {
+        switch (req.getReqCase()) {
+            case QUERY_MANAGER_REQ: return req.getQueryManagerReq().getReqCase().name();
+            case CONCEPT_MANAGER_REQ: return req.getConceptManagerReq().getReqCase().name();
+            case LOGIC_MANAGER_REQ: return req.getLogicManagerReq().getReqCase().name();
+            case THING_REQ: return req.getThingReq().getReqCase().name();
+            case TYPE_REQ: return req.getTypeReq().getReqCase().name();
+            case RULE_REQ: return req.getRuleReq().getReqCase().name();
+            default: return req.getReqCase().name();
         }
     }
 

@@ -84,6 +84,8 @@ native_java_libraries(
         "@maven//:org_slf4j_slf4j_api",
         "@maven//:ch_qos_logback_logback_classic",
         "@maven//:ch_qos_logback_logback_core",
+        "@maven//:io_sentry_sentry",
+        "@maven//:io_sentry_sentry_logback",
     ],
     runtime_deps = [
         "@maven//:ch_qos_logback_logback_classic",

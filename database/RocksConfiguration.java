@@ -38,12 +38,12 @@ public class RocksConfiguration {
 
     private final Schema schemaOptions;
     private final Data dataOptions;
-    private final boolean loggingEnabled;
+    private final boolean monitorEnabled;
 
-    public RocksConfiguration(long dataCacheSize, long indexCacheSize, boolean loggingEnabled, int logStatisticsPeriodSec) {
+    public RocksConfiguration(long dataCacheSize, long indexCacheSize, boolean monitorEnabled, int logStatisticsPeriodSec) {
         this.schemaOptions = new Schema();
-        this.dataOptions = new Data(dataCacheSize, indexCacheSize, loggingEnabled, logStatisticsPeriodSec);
-        this.loggingEnabled = loggingEnabled;
+        this.dataOptions = new Data(dataCacheSize, indexCacheSize, monitorEnabled, logStatisticsPeriodSec);
+        this.monitorEnabled = monitorEnabled;
     }
 
     public Schema schema() {
@@ -54,8 +54,8 @@ public class RocksConfiguration {
         return dataOptions;
     }
 
-    public boolean isLoggingEnabled() {
-        return loggingEnabled;
+    public boolean isMonitorEnabled() {
+        return monitorEnabled;
     }
 
     public static class Schema {
