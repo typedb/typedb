@@ -100,6 +100,7 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Ty
 import static com.vaticle.typedb.core.concurrent.executor.Executors.serial;
 import static com.vaticle.typedb.core.encoding.Encoding.ENCODING_VERSION;
 import static com.vaticle.typedb.core.encoding.Encoding.System.ENCODING_VERSION_KEY;
+import static java.util.Collections.emptySet;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -107,7 +108,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class CoreDatabase implements TypeDB.Database {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
-    private static final int ROCKS_MONITOR_PERIOD_SECONDS = 10;
+    private static final int ROCKS_LOG_PERIOD = 300;
 
     private final CoreDatabaseManager databaseMgr;
     private final Factory.Session sessionFactory;
@@ -127,7 +128,8 @@ public class CoreDatabase implements TypeDB.Database {
     protected CorePartitionManager.Schema rocksSchemaPartitionMgr;
     protected CorePartitionManager.Data rocksDataPartitionMgr;
     protected CoreSession.Data statisticsBackgroundCounterSession;
-    protected ScheduledExecutorService scheduledPropertiesMonitor;
+    protected ScheduledExecutorService scheduledPropertiesLogger;
+    protected RocksProperties.Reader rocksPropertiesReader;
     private Cache cache;
 
     protected CoreDatabase(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
@@ -139,8 +141,8 @@ public class CoreDatabase implements TypeDB.Database {
         isolationMgr = new IsolationManager();
         statisticsCorrector = createStatisticsCorrector();
         sessions = new ConcurrentHashMap<>();
-        rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(), options().storageIndexCacheSize(),
-                LOG.isDebugEnabled() || LOG.isTraceEnabled() || options().diagnosticsReportingEnabled(), ROCKS_MONITOR_PERIOD_SECONDS);
+        rocksConfiguration = new RocksConfiguration(options().storageDataCacheSize(),
+                options().storageIndexCacheSize(), LOG.isDebugEnabled() || LOG.isTraceEnabled(), ROCKS_LOG_PERIOD);
         schemaLock = new StampedLock();
         schemaLockWriteRequests = new AtomicInteger(0);
         nextTransactionID = new AtomicLong(0);
@@ -219,10 +221,11 @@ public class CoreDatabase implements TypeDB.Database {
             assert dataHandles.size() == 1;
             dataHandles.addAll(rocksData.createColumnFamilies(dataDescriptors.subList(1, dataDescriptors.size())));
             rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
+            rocksPropertiesReader = new RocksProperties.Reader(rocksData, rocksDataPartitionMgr.handles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
-        mayInitRocksMonitor();
+        mayInitRocksDataLogger();
     }
 
     protected CorePartitionManager.Data createPartitionMgrData(List<ColumnFamilyDescriptor> dataDescriptors,
@@ -268,21 +271,22 @@ public class CoreDatabase implements TypeDB.Database {
             );
             assert dataDescriptors.size() == dataHandles.size();
             rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
+            rocksPropertiesReader = new RocksProperties.Reader(rocksData, rocksDataPartitionMgr.handles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
-        mayInitRocksMonitor();
+        mayInitRocksDataLogger();
     }
 
-    private void mayInitRocksMonitor() {
-        if (rocksConfiguration.isMonitorEnabled()) {
-            scheduledPropertiesMonitor = java.util.concurrent.Executors.newScheduledThreadPool(1);
-            scheduledPropertiesMonitor.scheduleAtFixedRate(
-                    new RocksProperties.Monitor(rocksData, rocksDataPartitionMgr.handles, name, directory()),
-                    0, ROCKS_MONITOR_PERIOD_SECONDS, SECONDS
+    private void mayInitRocksDataLogger() {
+        if (rocksConfiguration.isLoggingEnabled()) {
+            scheduledPropertiesLogger = java.util.concurrent.Executors.newScheduledThreadPool(1);
+            scheduledPropertiesLogger.scheduleAtFixedRate(
+                    new RocksProperties.Logger(rocksPropertiesReader, name),
+                    0, ROCKS_LOG_PERIOD, SECONDS
             );
         } else {
-            scheduledPropertiesMonitor = null;
+            scheduledPropertiesLogger = null;
         }
     }
 
@@ -434,6 +438,65 @@ public class CoreDatabase implements TypeDB.Database {
         return sessions.values().stream().map(Pair::first);
     }
 
+    public long storageKeysEstimate() {
+        return rocksPropertiesReader.getTotal(RocksProperties.properties.get("key-count"));
+    }
+
+    public long storageBytesEstimate() {
+        return rocksPropertiesReader.getTotal(RocksProperties.properties.get("disk-size-live-bytes"));
+    }
+
+    public long totalThingTypes() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().stats().thingTypeCount();
+            }
+        }
+    }
+
+    public long totalRoleTypes() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().stats().roleTypeCount();
+            }
+        }
+    }
+
+    public long totalOwns() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().thingTypes().map(t -> t.outOwnsCount(false))
+                        .reduce(0L, Long::sum);
+            }
+        }
+    }
+
+    public long totalThings() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.data().stats().thingVertexTransitiveCount(Encoding.Vertex.Type.Root.THING.properLabel());
+            }
+        }
+    }
+
+    public long totalRoles() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.data().stats().thingVertexTransitiveCount(Encoding.Vertex.Type.Root.ROLE.properLabel());
+            }
+        }
+    }
+
+    public long totalHas() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().thingTypes().map(owner -> txn.graphMgr.data().stats().hasEdgeSum(
+                        owner, txn.graphMgr.schema().ownedAttributeTypes(owner, emptySet())
+                )).reduce(0L, Long::sum);
+            }
+        }
+    }
+
     @Override
     public String schema() {
         try (TypeDB.Session session = databaseMgr.session(name, DATA); TypeDB.Transaction tx = session.transaction(READ)) {
@@ -470,16 +533,16 @@ public class CoreDatabase implements TypeDB.Database {
 
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            if (scheduledPropertiesMonitor != null) shutdownRocksPropertiesLogger();
+            if (scheduledPropertiesLogger != null) shutdownRocksPropertiesLogger();
             closeResources();
         }
     }
 
     private void shutdownRocksPropertiesLogger() {
-        assert scheduledPropertiesMonitor != null;
+        assert scheduledPropertiesLogger != null;
         try {
-            scheduledPropertiesMonitor.shutdown();
-            boolean terminated = scheduledPropertiesMonitor.awaitTermination(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
+            scheduledPropertiesLogger.shutdown();
+            boolean terminated = scheduledPropertiesLogger.awaitTermination(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
             if (!terminated) throw TypeDBException.of(ROCKS_LOGGER_SHUTDOWN_TIMEOUT);
         } catch (InterruptedException e) {
             throw TypeDBException.of(e);

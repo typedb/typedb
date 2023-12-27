@@ -27,6 +27,7 @@ public class Constants {
 
     static final File ASCII_LOGO_FILE = getTypedbDir().resolve("server/resources/typedb-ascii.txt").toFile();
     public static final Path CONFIG_PATH = getTypedbDir().resolve("server/conf/config.yml");
+    public static final String TYPEDB_DISTRIBUTION_NAME = "TypeDB Core";
     public static final String TYPEDB_LOG_FILE_NAME = "typedb";
     public static final String TYPEDB_LOG_FILE_EXT = ".log";
     public static final String TYPEDB_LOG_ARCHIVE_EXT = ".log.gz";

@@ -25,6 +25,9 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
+import com.vaticle.typedb.core.server.logging.Diagnostics;
+import io.sentry.ISpan;
+import io.sentry.ITransaction;
 import org.rocksdb.RocksDB;
 
 import java.io.File;
@@ -41,6 +44,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DAT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NAME_RESERVED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.TYPEDB_CLOSED;
+import static java.util.Collections.emptyList;
 
 public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
@@ -73,11 +77,19 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
     protected CoreDatabaseManager(Options.Database databaseOptions, Factory.Database databaseFactory) {
         if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
-        this.databaseOptions = databaseOptions;
-        this.databaseFactory = databaseFactory;
-        databases = new ConcurrentHashMap<>();
-        isOpen = new AtomicBoolean(true);
-        loadAll();
+        ITransaction diagnosticsTxn = Diagnostics.requiredTransaction(
+                "db-manager-core-open", "db-manager-open",
+                "Creating database manager and loading existing databases", emptyList()
+        );
+        try {
+            this.databaseOptions = databaseOptions;
+            this.databaseFactory = databaseFactory;
+            databases = new ConcurrentHashMap<>();
+            isOpen = new AtomicBoolean(true);
+            loadAll(diagnosticsTxn);
+        } finally {
+            diagnosticsTxn.finish();
+        }
     }
 
     @Override
@@ -85,17 +97,32 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         return this.isOpen.get();
     }
 
-    protected void loadAll() {
+    protected void loadAll(ITransaction diagnosticsTxn) {
         File[] databaseDirectories = directory().toFile().listFiles(File::isDirectory);
         if (databaseDirectories != null && databaseDirectories.length > 0) {
             Arrays.stream(databaseDirectories).parallel()
                     .filter(file -> CoreDatabase.isExistingDatabaseDirectory(file.toPath()))
                     .forEach(directory -> {
                         String name = directory.getName();
+                        ISpan span = diagnosticsTxn.startChild("db-core-open");
                         CoreDatabase database = databaseFactory.databaseLoadAndOpen(this, name);
+                        recordDiagnostics(span, database);
+                        span.finish();
                         databases.put(name, database);
                     });
         }
+    }
+
+    private void recordDiagnostics(ISpan span, CoreDatabase database) {
+        span.setData("db-name-id", database.name().hashCode());
+        span.setMeasurement("db-concepts-thing-type-count", database.totalThingTypes());
+        span.setMeasurement("db-concepts-role-type-count", database.totalRoleTypes());
+        span.setMeasurement("db-concepts-owns-count", database.totalOwns());
+        span.setMeasurement("db-concepts-thing-count", database.totalThings());
+        span.setMeasurement("db-concepts-role-count", database.totalRoles());
+        span.setMeasurement("db-concepts-has-count", database.totalHas());
+        span.setMeasurement("db-storage-keys-count", database.storageKeysEstimate());
+        span.setMeasurement("db-storage-bytes-count", database.storageBytesEstimate());
     }
 
     @Override
