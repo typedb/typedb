@@ -17,7 +17,6 @@
 
 package com.vaticle.typedb.core.common.diagnostics;
 
-import com.vaticle.typedb.common.collection.Pair;
 import io.sentry.ITransaction;
 import io.sentry.NoOpTransaction;
 import io.sentry.Sentry;
@@ -25,7 +24,6 @@ import io.sentry.TransactionContext;
 import io.sentry.protocol.User;
 
 import javax.annotation.Nullable;
-import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -33,9 +31,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import static java.util.Collections.emptyList;
+import static java.util.concurrent.TimeUnit.HOURS;
 
 public class Diagnostics {
+
+    public static long INITIAL_DELAY_MILLIS = HOURS.toMillis(1);
 
     public static void initialise(String serverID, String distributionName, String version, String diagnosticsURI) {
         Sentry.init(options -> {

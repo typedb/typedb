@@ -102,6 +102,7 @@ import static com.vaticle.typedb.core.encoding.Encoding.ENCODING_VERSION;
 import static com.vaticle.typedb.core.encoding.Encoding.System.ENCODING_VERSION_KEY;
 import static java.util.Collections.emptySet;
 import static java.util.Comparator.reverseOrder;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -109,8 +110,8 @@ public class CoreDatabase implements TypeDB.Database {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
     private static final int ROCKS_LOG_PERIOD = 300;
-    private static final long DIAGNOSTIC_TXN_DELAY_INITIAL = SECONDS.toMillis(1);
-    private static final long DIAGNOSTIC_TXN_PERIOD = SECONDS.toMillis(30);
+    private static final long DIAGNOSTIC_TXN_DELAY_INITIAL = Diagnostics.INITIAL_DELAY_MILLIS;
+    private static final long DIAGNOSTIC_TXN_PERIOD = HOURS.toMillis(1);
 
     private final CoreDatabaseManager databaseMgr;
     private final Factory.Session sessionFactory;

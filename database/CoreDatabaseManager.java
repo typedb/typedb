@@ -52,7 +52,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
     static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
-    private static final long DIAGNOSTICS_DB_DELAY_INITIAL = HOURS.toMillis(1);
+    private static final long DIAGNOSTICS_DB_DELAY_INITIAL = Diagnostics.INITIAL_DELAY_MILLIS;
     private static final long DIAGNOSTICS_DB_PERIOD = HOURS.toMillis(24);
 
     static {
