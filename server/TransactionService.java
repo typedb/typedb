@@ -136,7 +136,6 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     private void execute(TransactionProto.Transaction.Req request) {
         Lock accessLock = null;
-//        ITransaction tx = Sentry.startTransaction("transaction_req", requestType(request));
         try {
             accessLock = acquireRequestLock(request);
             switch (request.getReqCase()) {
@@ -149,11 +148,8 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                     executeRequest(request);
             }
         } catch (Throwable error) {
-//            tx.setThrowable(error);
-//            tx.setStatus(SpanStatus.INTERNAL_ERROR);
             close(error);
         } finally {
-//            tx.finish();
             if (accessLock != null) accessLock.unlock();
         }
     }

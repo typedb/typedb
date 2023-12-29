@@ -40,8 +40,6 @@ import com.vaticle.typedb.core.server.parameters.CoreSubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.sentry.Sentry;
-import io.sentry.SentryLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +92,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     protected static void configureLogging(CoreLogback logback, CoreConfig config) {
-        logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log(), config.diagnostics());
+        logback.configure((LoggerContext) LoggerFactory.getILoggerFactory(), config.log());
         java.util.logging.Logger.getLogger("io.grpc").setLevel(Level.SEVERE);
     }
 
@@ -170,6 +168,19 @@ public class TypeDBServer implements AutoCloseable {
         }
     }
 
+    private void configureDiagnostics() {
+        Diagnostics.initialise(serverID(), TYPEDB_DISTRIBUTION_NAME, Version.VERSION, Constants.DIAGNOSTICS_REPORTING_URI);
+    }
+
+    private String serverID() {
+        try {
+            byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
+            return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(mac));
+        } catch (NoSuchAlgorithmException | IOException e) {
+            return "";
+        }
+    }
+
     protected io.grpc.Server rpcServer() {
         assert Executors.isInitialised();
 
@@ -188,7 +199,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     protected String name() {
-        return "TypeDB Server";
+        return TYPEDB_DISTRIBUTION_NAME;
     }
 
     protected CoreConfig config() {
@@ -209,19 +220,6 @@ public class TypeDBServer implements AutoCloseable {
 
     protected Logger logger() {
         return LOG;
-    }
-
-    private void configureDiagnostics() {
-        Diagnostics.initialise(serverID(), TYPEDB_DISTRIBUTION_NAME, Version.VERSION, Constants.DIAGNOSTICS_REPORTING_URI);
-    }
-
-    private String serverID() {
-        try {
-            byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
-            return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(mac));
-        } catch (NoSuchAlgorithmException | IOException e) {
-            return "";
-        }
     }
 
     protected void start() {
@@ -258,10 +256,8 @@ public class TypeDBServer implements AutoCloseable {
     public synchronized void close() throws TypeDBCheckedException {
         if (isOpen.compareAndSet(true, false)) {
             try {
-                Sentry.captureMessage("stop_server", SentryLevel.DEBUG);
-
                 logger().info("");
-                logger().info("Closing {} instance...", name());
+                logger().info("Closing {} server...", name());
                 assert typeDBService != null;
                 typeDBService.close();
                 logger().info("Stopping network layer...");
@@ -272,7 +268,7 @@ public class TypeDBServer implements AutoCloseable {
                 logger().info("Stopping storage layer...");
                 databaseMgr.close();
                 System.runFinalization();
-                logger().info("{} instance has been closed.", name());
+                logger().info("{} server has been closed.", name());
             } catch (Throwable e) {
                 logger().error(FAILED_AT_STOPPING.message(), e);
                 throw TypeDBCheckedException.of(e);

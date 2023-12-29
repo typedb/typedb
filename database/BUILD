@@ -48,7 +48,6 @@ native_java_libraries(
         "@vaticle_typeql//java:typeql-lang",
 
         # External dependencies from Maven
-        "@maven//:com_eclipsesource_minimal_json_minimal_json",
         "@maven//:com_google_ortools_ortools_java",
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api",

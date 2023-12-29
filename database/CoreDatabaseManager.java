@@ -48,7 +48,6 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DAT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.TYPEDB_CLOSED;
 import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
@@ -89,11 +88,10 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         databases = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(true);
         loadAll();
-        this.scheduledDiagnostics = Diagnostics.scheduleRunner(
+        this.scheduledDiagnostics = Diagnostics.scheduledRunner(
                 DIAGNOSTICS_DB_DELAY_INITIAL, DIAGNOSTICS_DB_PERIOD,
-                "db_all_statistics", "db_all_statistics",
-                "Database statistics for each database on this server",
-                this::submitDiagnostics, Executors.scheduled()
+                "db_statistics", "db_statistics",
+                null, this::submitDiagnostics, Executors.scheduled()
         );
     }
 

@@ -44,7 +44,7 @@ import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_LOG_ARCHIVE
 
 public class CoreLogback {
 
-    public void configure(LoggerContext logContext, CoreConfig.Log logConfig, CoreConfig.Diagnostics diagnosticsConfig) {
+    public void configure(LoggerContext logContext, CoreConfig.Log logConfig) {
         // all appenders use the same layout
         LayoutWrappingEncoder<ILoggingEvent> encoder = new LayoutWrappingEncoder<>();
         encoder.setContext(logContext);

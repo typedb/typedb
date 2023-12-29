@@ -142,6 +142,7 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
     abstract void delete();
 
     protected void closeResources() {
+        context.diagnosticTxn().finish();
         reasoner.close();
     }
 

@@ -45,7 +45,7 @@ public class Diagnostics {
             options.setRelease(releaseName(distributionName, version));
         });
         User user = new User();
-        user.setUsername("dev-test-" + serverID);
+        user.setUsername(serverID);
         Sentry.setUser(user);
     }
 
@@ -53,27 +53,25 @@ public class Diagnostics {
         return distributionName + "@" + version;
     }
 
-    private static TransactionContext transactionContext(String name, String operation, @Nullable String description, List<Pair<String, String>> tags) {
-        TransactionContext context = new TransactionContext(name, operation);
-        if (description != null) context.setDescription(description);
-        for (Pair<String, String> tag : tags) {
-            context.setTag(tag.first(), tag.second());
-        }
-        return context;
+    public static ScheduledDiagnosticProvider scheduledProvider(long initialDelayMillis, long delayMillis, String name,
+                                                                String operation, @Nullable String description) {
+        return new ScheduledDiagnosticProvider(initialDelayMillis, delayMillis, transactionContext(name, operation, description));
     }
 
-    public static ScheduledDiagnosticProvider scheduledProvider(long initialDelayMillis, long delayMillis, String name, String operation,
-                                                                @Nullable String description) {
-        return new ScheduledDiagnosticProvider(initialDelayMillis, delayMillis, transactionContext(name, operation, description, emptyList()));
-    }
-
-    public static ScheduledFuture<?> scheduleRunner(long initialDelayMillis, long delayMillis, String name, String operation,
-                                                    @Nullable String description, Consumer<TransactionContext> run, ScheduledThreadPoolExecutor executor) {
-        TransactionContext transactionContext = transactionContext(name, operation, description, emptyList());
+    public static ScheduledFuture<?> scheduledRunner(long initialDelayMillis, long delayMillis, String name, String operation,
+                                                     @Nullable String description, Consumer<TransactionContext> run,
+                                                     ScheduledThreadPoolExecutor executor) {
+        TransactionContext transactionContext = transactionContext(name, operation, description);
         return executor.scheduleWithFixedDelay(
                 () -> run.accept(transactionContext),
                 initialDelayMillis, delayMillis, TimeUnit.MILLISECONDS
         );
+    }
+
+    private static TransactionContext transactionContext(String name, String operation, @Nullable String description) {
+        TransactionContext context = new TransactionContext(name, operation);
+        if (description != null) context.setDescription(description);
+        return context;
     }
 
     /**

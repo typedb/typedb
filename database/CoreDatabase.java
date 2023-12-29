@@ -103,7 +103,6 @@ import static com.vaticle.typedb.core.encoding.Encoding.System.ENCODING_VERSION_
 import static java.util.Collections.emptySet;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CoreDatabase implements TypeDB.Database {
@@ -155,7 +154,7 @@ public class CoreDatabase implements TypeDB.Database {
         isOpen = new AtomicBoolean(false);
         txnDiagnosticProvider = Diagnostics.scheduledProvider(
                 DIAGNOSTIC_TXN_DELAY_INITIAL, DIAGNOSTIC_TXN_PERIOD,
-                "db_txn", "db_txn", "TypeDB transaction"
+                "db_txn", "txn_open_to_close", null
         );
         txnDiagnosticLastTransactionID = nextTransactionID.get();
     }
