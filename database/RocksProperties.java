@@ -65,7 +65,7 @@ public class RocksProperties {
             pair("disk-size-live-bytes" , new Property.Byte("Live SST files size", "rocksdb.live-sst-files-size", true))
     );
 
-    private static abstract class Property {
+    static abstract class Property {
 
         private final String label;
         private final String property;

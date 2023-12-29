@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -75,7 +76,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
@@ -103,12 +103,15 @@ import static com.vaticle.typedb.core.encoding.Encoding.System.ENCODING_VERSION_
 import static java.util.Collections.emptySet;
 import static java.util.Comparator.reverseOrder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CoreDatabase implements TypeDB.Database {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
     private static final int ROCKS_LOG_PERIOD = 300;
+    private static final long DIAGNOSTIC_TXN_DELAY_INITIAL = SECONDS.toMillis(1);
+    private static final long DIAGNOSTIC_TXN_PERIOD = SECONDS.toMillis(30);
 
     private final CoreDatabaseManager databaseMgr;
     private final Factory.Session sessionFactory;
@@ -122,7 +125,10 @@ public class CoreDatabase implements TypeDB.Database {
     protected final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     protected final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final IsolationManager isolationMgr;
+    public final Diagnostics.ScheduledDiagnosticProvider txnDiagnosticProvider;
+    public long txnDiagnosticLastTransactionID;
     private final StatisticsCorrector statisticsCorrector;
+
     protected OptimisticTransactionDB rocksSchema;
     protected OptimisticTransactionDB rocksData;
     protected CorePartitionManager.Schema rocksSchemaPartitionMgr;
@@ -147,6 +153,11 @@ public class CoreDatabase implements TypeDB.Database {
         schemaLockWriteRequests = new AtomicInteger(0);
         nextTransactionID = new AtomicLong(0);
         isOpen = new AtomicBoolean(false);
+        txnDiagnosticProvider = Diagnostics.scheduledProvider(
+                DIAGNOSTIC_TXN_DELAY_INITIAL, DIAGNOSTIC_TXN_PERIOD,
+                "db_txn", "db_txn", "TypeDB transaction"
+        );
+        txnDiagnosticLastTransactionID = nextTransactionID.get();
     }
 
     protected StatisticsCorrector createStatisticsCorrector() {
@@ -438,23 +449,47 @@ public class CoreDatabase implements TypeDB.Database {
         return sessions.values().stream().map(Pair::first);
     }
 
-    public long storageKeysEstimate() {
+    public long storageDataKeysEstimate() {
         return rocksPropertiesReader.getTotal(RocksProperties.properties.get("key-count"));
     }
 
-    public long storageBytesEstimate() {
+    public long storageDataBytesEstimate() {
         return rocksPropertiesReader.getTotal(RocksProperties.properties.get("disk-size-live-bytes"));
     }
 
-    public long totalThingTypes() {
+    public long typeCount() {
         try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
             try (CoreTransaction txn = session.transaction(READ)) {
-                return txn.graphMgr.schema().stats().thingTypeCount();
+                return txn.graphMgr.schema().stats().typeCount();
             }
         }
     }
 
-    public long totalRoleTypes() {
+    public long entityTypeCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().stats().entityTypeCount();
+            }
+        }
+    }
+
+    public long relationTypeCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().stats().relationTypeCount();
+            }
+        }
+    }
+
+    public long attributeTypeCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().stats().attributeTypeCount();
+            }
+        }
+    }
+
+    public long roleTypeCount() {
         try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
             try (CoreTransaction txn = session.transaction(READ)) {
                 return txn.graphMgr.schema().stats().roleTypeCount();
@@ -462,7 +497,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    public long totalOwns() {
+    public long ownsCount() {
         try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
             try (CoreTransaction txn = session.transaction(READ)) {
                 return txn.graphMgr.schema().thingTypes().map(t -> t.outOwnsCount(false))
@@ -471,7 +506,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    public long totalThings() {
+    public long thingCount() {
         try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
             try (CoreTransaction txn = session.transaction(READ)) {
                 return txn.graphMgr.data().stats().thingVertexTransitiveCount(Encoding.Vertex.Type.Root.THING.properLabel());
@@ -479,7 +514,31 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    public long totalRoles() {
+    public long entityCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.data().stats().thingVertexTransitiveCount(Encoding.Vertex.Type.Root.ENTITY.properLabel());
+            }
+        }
+    }
+
+    public long relationCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.data().stats().thingVertexTransitiveCount(Encoding.Vertex.Type.Root.RELATION.properLabel());
+            }
+        }
+    }
+
+    public long attributeCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.data().stats().thingVertexTransitiveCount(Encoding.Vertex.Type.Root.ATTRIBUTE.properLabel());
+            }
+        }
+    }
+
+    public long roleCount() {
         try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
             try (CoreTransaction txn = session.transaction(READ)) {
                 return txn.graphMgr.data().stats().thingVertexTransitiveCount(Encoding.Vertex.Type.Root.ROLE.properLabel());
@@ -487,7 +546,7 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    public long totalHas() {
+    public long hasCount() {
         try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
             try (CoreTransaction txn = session.transaction(READ)) {
                 return txn.graphMgr.schema().thingTypes().map(owner -> txn.graphMgr.data().stats().hasEdgeSum(

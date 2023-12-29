@@ -30,8 +30,9 @@ import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.database.Factory;
 import com.vaticle.typedb.core.migrator.CoreMigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
+import com.vaticle.typedb.core.server.common.Constants;
 import com.vaticle.typedb.core.server.logging.CoreLogback;
-import com.vaticle.typedb.core.server.logging.Diagnostics;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.server.parameters.CoreConfig;
 import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
 import com.vaticle.typedb.core.server.parameters.CoreSubcommand;
@@ -113,7 +114,6 @@ public class TypeDBServer implements AutoCloseable {
                 .dataDir(config.storage().dataDir())
                 .storageDataCacheSize(config.storage().databaseCache().dataSize())
                 .storageIndexCacheSize(config.storage().databaseCache().indexSize())
-                .diagnosticsReportingEnabled(config.diagnostics().reporting().enable())
                 .reasonerDebuggerDir(config.log().debugger().reasonerTracer().output().baseDirectory())
                 .reasonerPerfCounters(config.log().debugger().reasonerPerfCounters().isEnabled());
 
@@ -212,7 +212,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     private void configureDiagnostics() {
-        Diagnostics.initialise(serverID(), TYPEDB_DISTRIBUTION_NAME, Version.VERSION);
+        Diagnostics.initialise(serverID(), TYPEDB_DISTRIBUTION_NAME, Version.VERSION, Constants.DIAGNOSTICS_REPORTING_URI);
     }
 
     private String serverID() {

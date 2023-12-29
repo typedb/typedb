@@ -22,6 +22,7 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.database.CoreDatabase;
 import com.vaticle.typedb.core.server.common.ResponseBuilder;
 import com.vaticle.typedb.core.server.common.SynchronizedStreamObserver;
 import com.vaticle.typedb.core.server.concept.ConceptService;
@@ -79,7 +80,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class TransactionService implements StreamObserver<TransactionProto.Transaction.Client>, AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(TransactionService.class);
-    private static final String TRACE_PREFIX = "transaction_services.";
     private static final int MAX_NETWORK_LATENCY_MILLIS = 3_000;
 
     private final TypeDBService typeDBSvc;
@@ -136,7 +136,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
 
     private void execute(TransactionProto.Transaction.Req request) {
         Lock accessLock = null;
-        ITransaction tx = Sentry.startTransaction("transaction_req", requestType(request));
+//        ITransaction tx = Sentry.startTransaction("transaction_req", requestType(request));
         try {
             accessLock = acquireRequestLock(request);
             switch (request.getReqCase()) {
@@ -149,11 +149,11 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                     executeRequest(request);
             }
         } catch (Throwable error) {
-            tx.setThrowable(error);
-            tx.setStatus(SpanStatus.INTERNAL_ERROR);
+//            tx.setThrowable(error);
+//            tx.setStatus(SpanStatus.INTERNAL_ERROR);
             close(error);
         } finally {
-            tx.finish();
+//            tx.finish();
             if (accessLock != null) accessLock.unlock();
         }
     }
@@ -195,18 +195,6 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
         }
     }
 
-    private String requestType(TransactionProto.Transaction.Req req) {
-        switch (req.getReqCase()) {
-            case QUERY_MANAGER_REQ: return req.getQueryManagerReq().getReqCase().name();
-            case CONCEPT_MANAGER_REQ: return req.getConceptManagerReq().getReqCase().name();
-            case LOGIC_MANAGER_REQ: return req.getLogicManagerReq().getReqCase().name();
-            case THING_REQ: return req.getThingReq().getReqCase().name();
-            case TYPE_REQ: return req.getTypeReq().getReqCase().name();
-            case RULE_REQ: return req.getRuleReq().getReqCase().name();
-            default: return req.getReqCase().name();
-        }
-    }
-
     protected void open(TransactionProto.Transaction.Req request) {
         if (isTransactionOpen.get()) throw TypeDBException.of(TRANSACTION_ALREADY_OPENED);
         TransactionProto.Transaction.Open.Req openReq = request.getOpenReq();
@@ -233,7 +221,19 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                                                   Options.Transaction options) {
         Arguments.Transaction.Type type = Arguments.Transaction.Type.of(req.getType().getNumber());
         if (type == null) throw TypeDBException.of(BAD_TRANSACTION_TYPE, req.getType());
-        return sessionSvc.session().transaction(type, options);
+        TypeDB.Transaction transaction = sessionSvc.session().transaction(type, options);
+        CoreDatabase coreDatabase = (CoreDatabase) sessionSvc.session().database();
+        transaction.context().diagnosticTxn(coreDatabase.txnDiagnosticProvider.get((txn, elapsedMillis) -> {
+                    long txnCount = transaction.context().transactionId() - coreDatabase.txnDiagnosticLastTransactionID;
+                    coreDatabase.txnDiagnosticLastTransactionID = transaction.context().transactionId();
+                    double txnPerSec = txnCount * 1000.0 / elapsedMillis;
+                    txn.setMeasurement("db_txn_window_txn_count", txnCount);
+                    txn.setMeasurement("db_txn_window_millis", elapsedMillis);
+                    txn.setMeasurement("db_txn_window_txn_per_sec", txnPerSec);
+                    return txn;
+                })
+        );
+        return transaction;
     }
 
     protected void commit(UUID requestID) {

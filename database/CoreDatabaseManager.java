@@ -20,14 +20,16 @@ package com.vaticle.typedb.core.database;
 
 import com.google.ortools.Loader;
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concurrent.executor.Executors;
-import com.vaticle.typedb.core.server.logging.Diagnostics;
-import io.sentry.ISpan;
 import io.sentry.ITransaction;
+import io.sentry.Sentry;
+import io.sentry.SpanStatus;
+import io.sentry.TransactionContext;
 import org.rocksdb.RocksDB;
 
 import java.io.File;
@@ -36,6 +38,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -44,11 +47,14 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DAT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NAME_RESERVED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.TYPEDB_CLOSED;
-import static java.util.Collections.emptyList;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
     static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
+    private static final long DIAGNOSTICS_DB_DELAY_INITIAL = HOURS.toMillis(1);
+    private static final long DIAGNOSTICS_DB_PERIOD = HOURS.toMillis(24);
 
     static {
         RocksDB.loadLibrary();
@@ -62,6 +68,7 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
     protected final ConcurrentMap<String, CoreDatabase> databases;
     protected final Factory.Database databaseFactory;
     protected final AtomicBoolean isOpen;
+    private final ScheduledFuture<?> scheduledDiagnostics;
 
     public static CoreDatabaseManager open(Path directory, Factory factory) {
         return open(new Options.Database().dataDir(directory), factory);
@@ -77,19 +84,17 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
     protected CoreDatabaseManager(Options.Database databaseOptions, Factory.Database databaseFactory) {
         if (!Executors.isInitialised()) Executors.initialise(MAX_THREADS);
-        ITransaction diagnosticsTxn = Diagnostics.requiredTransaction(
-                "db-manager-core-open", "db-manager-open",
-                "Creating database manager and loading existing databases", emptyList()
+        this.databaseOptions = databaseOptions;
+        this.databaseFactory = databaseFactory;
+        databases = new ConcurrentHashMap<>();
+        isOpen = new AtomicBoolean(true);
+        loadAll();
+        this.scheduledDiagnostics = Diagnostics.scheduleRunner(
+                DIAGNOSTICS_DB_DELAY_INITIAL, DIAGNOSTICS_DB_PERIOD,
+                "db_all_statistics", "db_all_statistics",
+                "Database statistics for each database on this server",
+                this::submitDiagnostics, Executors.scheduled()
         );
-        try {
-            this.databaseOptions = databaseOptions;
-            this.databaseFactory = databaseFactory;
-            databases = new ConcurrentHashMap<>();
-            isOpen = new AtomicBoolean(true);
-            loadAll(diagnosticsTxn);
-        } finally {
-            diagnosticsTxn.finish();
-        }
     }
 
     @Override
@@ -97,32 +102,42 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         return this.isOpen.get();
     }
 
-    protected void loadAll(ITransaction diagnosticsTxn) {
+    protected void loadAll() {
         File[] databaseDirectories = directory().toFile().listFiles(File::isDirectory);
         if (databaseDirectories != null && databaseDirectories.length > 0) {
             Arrays.stream(databaseDirectories).parallel()
                     .filter(file -> CoreDatabase.isExistingDatabaseDirectory(file.toPath()))
                     .forEach(directory -> {
                         String name = directory.getName();
-                        ISpan span = diagnosticsTxn.startChild("db-core-open");
                         CoreDatabase database = databaseFactory.databaseLoadAndOpen(this, name);
-                        recordDiagnostics(span, database);
-                        span.finish();
                         databases.put(name, database);
                     });
         }
     }
 
-    private void recordDiagnostics(ISpan span, CoreDatabase database) {
-        span.setData("db-name-id", database.name().hashCode());
-        span.setMeasurement("db-concepts-thing-type-count", database.totalThingTypes());
-        span.setMeasurement("db-concepts-role-type-count", database.totalRoleTypes());
-        span.setMeasurement("db-concepts-owns-count", database.totalOwns());
-        span.setMeasurement("db-concepts-thing-count", database.totalThings());
-        span.setMeasurement("db-concepts-role-count", database.totalRoles());
-        span.setMeasurement("db-concepts-has-count", database.totalHas());
-        span.setMeasurement("db-storage-keys-count", database.storageKeysEstimate());
-        span.setMeasurement("db-storage-bytes-count", database.storageBytesEstimate());
+    private void submitDiagnostics(TransactionContext context) {
+        for (CoreDatabase database : all()) {
+            ITransaction transaction = Sentry.startTransaction(context);
+            try {
+                transaction.setData("db_name_hash", database.name().hashCode());
+                transaction.setMeasurement("concept_type_count", database.typeCount());
+                transaction.setMeasurement("concept_thing_count", database.thingCount());
+                transaction.setMeasurement("concept_thing_connection_count", database.roleCount() + database.hasCount());
+                transaction.setMeasurement("concept_thing_entity_count", database.entityCount());
+                transaction.setMeasurement("concept_thing_relation_count", database.relationCount());
+                transaction.setMeasurement("concept_thing_attribute_count", database.attributeCount());
+                transaction.setMeasurement("concept_thing_role_count", database.roleCount());
+                transaction.setMeasurement("concept_thing_has_count", database.hasCount());
+                transaction.setMeasurement("storage_data_keys_count", database.storageDataKeysEstimate());
+                transaction.setMeasurement("storage_data_bytes", database.storageDataBytesEstimate());
+                transaction.setStatus(SpanStatus.OK);
+            } catch (Exception e) {
+                transaction.setThrowable(e);
+                transaction.setStatus(SpanStatus.UNKNOWN);
+            } finally {
+                transaction.finish();
+            }
+        }
     }
 
     @Override
@@ -183,6 +198,7 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
+            scheduledDiagnostics.cancel(true);
             databases.values().parallelStream().forEach(CoreDatabase::close);
         }
     }

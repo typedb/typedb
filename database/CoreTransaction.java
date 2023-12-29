@@ -36,6 +36,7 @@ import com.vaticle.typedb.core.query.QueryManager;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typedb.core.traversal.TraversalCache;
 import com.vaticle.typedb.core.traversal.TraversalEngine;
+import io.sentry.NoOpTransaction;
 import org.rocksdb.RocksDBException;
 
 import java.util.Optional;
@@ -64,9 +65,11 @@ public abstract class CoreTransaction implements TypeDB.Transaction {
 
     private CoreTransaction(CoreSession session, Arguments.Transaction.Type type, Options.Transaction options) {
         this.session = session;
+        long txnID = this.session.database().nextTransactionID();
         this.context = new Context.Transaction(session.context(), options)
                 .type(type)
-                .id(this.session.database().nextTransactionID());
+                .id(txnID)
+                .diagnosticTxn(NoOpTransaction.getInstance());
     }
 
     void initialise(GraphManager graphMgr, TraversalCache traversalCache, LogicCache logicCache) {

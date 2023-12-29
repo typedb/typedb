@@ -34,6 +34,7 @@ native_java_libraries(
         "@maven//:com_github_ben_manes_caffeine_caffeine",
         "@maven//:com_google_guava_guava",
         "@maven//:com_google_code_findbugs_jsr305",
+        "@maven//:io_sentry_sentry",
         "@maven//:org_slf4j_slf4j_api",
     ],
     linux_arm64_deps = ["@maven//:com_google_ortools_ortools_linux_aarch64"],
