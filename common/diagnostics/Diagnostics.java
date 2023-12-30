@@ -17,9 +17,12 @@
 
 package com.vaticle.typedb.core.common.diagnostics;
 
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
+import com.vaticle.typedb.core.common.exception.TypeDBException;
 import io.sentry.ITransaction;
 import io.sentry.NoOpTransaction;
 import io.sentry.Sentry;
+import io.sentry.SpanStatus;
 import io.sentry.TransactionContext;
 import io.sentry.protocol.User;
 
@@ -51,6 +54,17 @@ public class Diagnostics {
 
     private static String releaseName(String distributionName, String version) {
         return distributionName + "@" + version;
+    }
+
+    public static void submitError(Throwable error) {
+        if (error instanceof TypeDBException && ((TypeDBException) error).code().isPresent() &&
+                !((TypeDBException) error).code().get().startsWith(ErrorMessage.Internal.codePrefix)) {
+            ITransaction txn = Sentry.startTransaction("user_error", "user_error");
+            txn.setData("error_code", ((TypeDBException) error).code().get());
+            txn.finish(SpanStatus.OK);
+        } else {
+            Sentry.captureException(error);
+        }
     }
 
     public static ScheduledDiagnosticProvider scheduledProvider(long initialDelayMillis, long delayMillis, String name,

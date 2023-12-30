@@ -110,7 +110,6 @@ public class CoreDatabase implements TypeDB.Database {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
     private static final int ROCKS_LOG_PERIOD = 300;
-    private static final long DIAGNOSTIC_TXN_DELAY_INITIAL = Diagnostics.INITIAL_DELAY_MILLIS;
     private static final long DIAGNOSTIC_TXN_PERIOD = HOURS.toMillis(1);
 
     private final CoreDatabaseManager databaseMgr;
@@ -154,7 +153,7 @@ public class CoreDatabase implements TypeDB.Database {
         nextTransactionID = new AtomicLong(0);
         isOpen = new AtomicBoolean(false);
         txnDiagnosticProvider = Diagnostics.scheduledProvider(
-                DIAGNOSTIC_TXN_DELAY_INITIAL, DIAGNOSTIC_TXN_PERIOD,
+                Diagnostics.INITIAL_DELAY_MILLIS, DIAGNOSTIC_TXN_PERIOD,
                 "db_txn", "txn_open_to_close", null
         );
         txnDiagnosticLastTransactionID = nextTransactionID.get();

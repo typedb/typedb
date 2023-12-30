@@ -52,7 +52,6 @@ import static java.util.concurrent.TimeUnit.HOURS;
 public class CoreDatabaseManager implements TypeDB.DatabaseManager {
 
     static final int MAX_THREADS = Runtime.getRuntime().availableProcessors();
-    private static final long DIAGNOSTICS_DB_DELAY_INITIAL = Diagnostics.INITIAL_DELAY_MILLIS;
     private static final long DIAGNOSTICS_DB_PERIOD = HOURS.toMillis(24);
 
     static {
@@ -89,7 +88,7 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         isOpen = new AtomicBoolean(true);
         loadAll();
         this.scheduledDiagnostics = Diagnostics.scheduledRunner(
-                DIAGNOSTICS_DB_DELAY_INITIAL, DIAGNOSTICS_DB_PERIOD,
+                Diagnostics.INITIAL_DELAY_MILLIS, DIAGNOSTICS_DB_PERIOD,
                 "db_statistics", "db_statistics",
                 null, this::submitDiagnostics, Executors.scheduled()
         );

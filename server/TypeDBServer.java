@@ -40,6 +40,7 @@ import com.vaticle.typedb.core.server.parameters.CoreSubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.sentry.Sentry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,6 +124,7 @@ public class TypeDBServer implements AutoCloseable {
                     try {
                         logger().error(UNCAUGHT_ERROR.message(t.getName(), e), e);
                         close();
+                        Sentry.captureException(e);
                         System.exit(1);
                     } catch (TypeDBCheckedException ex) {
                         logger().error("Failed to shut down cleanly, performing hard stop.");
