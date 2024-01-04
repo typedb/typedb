@@ -48,6 +48,10 @@ log:
       enable: false
       type: reasoner-perf-counters
 
+diagnostics:
+  reporting:
+    enable: true
+
 vaticle-factory:
   enable: false
 #  uri: "https://tracing.factory.vaticle.com:7979"

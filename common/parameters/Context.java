@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.common.parameters;
 
 import com.vaticle.typedb.common.collection.Either;
 import com.vaticle.typeql.lang.query.TypeQLQuery;
+import io.sentry.ITransaction;
 
 import javax.annotation.Nullable;
 
@@ -80,6 +81,8 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
 
     public static class Transaction extends Context<Context.Session, Options.Transaction> {
 
+        private ITransaction diagnosticTxn;
+
         public Transaction(Context.Session context, Options.Transaction options) {
             super(context, options.parent(context.options()));
         }
@@ -96,6 +99,15 @@ public class Context<PARENT extends Context<?, ?>, OPTIONS extends Options<?, ?>
 
         public long id() {
             return transactionId;
+        }
+
+        public Transaction diagnosticTxn(ITransaction txn) {
+            this.diagnosticTxn = txn;
+            return this;
+        }
+
+        public ITransaction diagnosticTxn() {
+            return this.diagnosticTxn;
         }
     }
 

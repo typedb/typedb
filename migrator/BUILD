@@ -76,9 +76,10 @@ native_java_libraries(
         "@maven//:io_grpc_grpc_protobuf",
         "@maven//:io_grpc_grpc_api",
         "@maven//:io_grpc_grpc_stub",
+        "@maven//:io_github_speedb_io_speedbjni",
+        "@maven//:io_sentry_sentry",
         "@maven//:javax_annotation_javax_annotation_api", # gRPC needs this in order to compile in Java 11 and Java 14
         "@maven//:org_slf4j_slf4j_api",
-        "@maven//:io_github_speedb_io_speedbjni",
     ],
     tags = ["maven_coordinates=com.vaticle.typedb:typedb-core-migrator:{pom_version}"],
     visibility = ["//visibility:public"],
