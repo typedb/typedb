@@ -18,10 +18,13 @@
 package com.vaticle.typedb.core.server;
 
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Options;
+import com.vaticle.typedb.core.database.CoreDatabase;
 import com.vaticle.typedb.core.server.common.ResponseBuilder;
 import com.vaticle.typedb.core.server.common.SynchronizedStreamObserver;
 import com.vaticle.typedb.core.server.concept.ConceptService;
@@ -34,6 +37,10 @@ import com.vaticle.typedb.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import io.sentry.Hint;
+import io.sentry.ITransaction;
+import io.sentry.Sentry;
+import io.sentry.SpanStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +83,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class TransactionService implements StreamObserver<TransactionProto.Transaction.Client>, AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(TransactionService.class);
-    private static final String TRACE_PREFIX = "transaction_services.";
     private static final int MAX_NETWORK_LATENCY_MILLIS = 3_000;
 
     private final TypeDBService typeDBSvc;
@@ -214,7 +220,19 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
                                                   Options.Transaction options) {
         Arguments.Transaction.Type type = Arguments.Transaction.Type.of(req.getType().getNumber());
         if (type == null) throw TypeDBException.of(BAD_TRANSACTION_TYPE, req.getType());
-        return sessionSvc.session().transaction(type, options);
+        TypeDB.Transaction transaction = sessionSvc.session().transaction(type, options);
+        CoreDatabase coreDatabase = (CoreDatabase) sessionSvc.session().database();
+        transaction.context().diagnosticTxn(coreDatabase.txnDiagnosticProvider.get((txn, elapsedMillis) -> {
+                    long txnCount = transaction.context().transactionId() - coreDatabase.txnDiagnosticLastTransactionID;
+                    coreDatabase.txnDiagnosticLastTransactionID = transaction.context().transactionId();
+                    double txnPerSec = txnCount * 1000.0 / elapsedMillis;
+                    txn.setMeasurement("db_txn_window_txn_count", txnCount);
+                    txn.setMeasurement("db_txn_window_millis", elapsedMillis);
+                    txn.setMeasurement("db_txn_window_txn_per_sec", txnPerSec);
+                    return txn;
+                })
+        );
+        return transaction;
     }
 
     protected void commit(UUID requestID) {
@@ -461,6 +479,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             if (isClientCancelled(error)) LOG.debug(error.getMessage(), error);
             else {
                 LOG.error(error.getMessage().trim());
+                Diagnostics.submitError(error);
             }
         }
     }

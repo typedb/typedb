@@ -45,6 +45,10 @@ log:
       level: info
       output: [ stdout, file ]
 
+diagnostics:
+  reporting:
+    enable: true
+
 vaticle-factory:
   enable: false
 #  uri: "https://tracing.factory.vaticle.com:7979"

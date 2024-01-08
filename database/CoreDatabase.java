@@ -22,6 +22,7 @@ import com.vaticle.typedb.common.collection.ConcurrentSet;
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.core.TypeDB;
 import com.vaticle.typedb.core.common.collection.ByteArray;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -75,14 +76,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Stream;
 
-import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.pair;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLong;
 import static com.vaticle.typedb.core.common.collection.ByteArray.encodeLongs;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INCOMPATIBLE_ENCODING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.INVALID_DATABASE_DIRECTORIES;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROCKS_LOGGER_SHUTDOWN_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
@@ -100,10 +99,10 @@ import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Ty
 import static com.vaticle.typedb.core.common.parameters.Arguments.Transaction.Type.WRITE;
 import static com.vaticle.typedb.core.concurrent.executor.Executors.serial;
 import static com.vaticle.typedb.core.encoding.Encoding.ENCODING_VERSION;
-import static com.vaticle.typedb.core.encoding.Encoding.ROCKS_DATA;
-import static com.vaticle.typedb.core.encoding.Encoding.ROCKS_SCHEMA;
 import static com.vaticle.typedb.core.encoding.Encoding.System.ENCODING_VERSION_KEY;
+import static java.util.Collections.emptySet;
 import static java.util.Comparator.reverseOrder;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -111,6 +110,7 @@ public class CoreDatabase implements TypeDB.Database {
 
     private static final Logger LOG = LoggerFactory.getLogger(CoreDatabase.class);
     private static final int ROCKS_LOG_PERIOD = 300;
+    private static final long DIAGNOSTIC_TXN_PERIOD = HOURS.toMillis(1);
 
     private final CoreDatabaseManager databaseMgr;
     private final Factory.Session sessionFactory;
@@ -124,13 +124,17 @@ public class CoreDatabase implements TypeDB.Database {
     protected final KeyGenerator.Schema.Persisted schemaKeyGenerator;
     protected final KeyGenerator.Data.Persisted dataKeyGenerator;
     private final IsolationManager isolationMgr;
+    public final Diagnostics.ScheduledDiagnosticProvider txnDiagnosticProvider;
+    public long txnDiagnosticLastTransactionID;
     private final StatisticsCorrector statisticsCorrector;
+
     protected OptimisticTransactionDB rocksSchema;
     protected OptimisticTransactionDB rocksData;
     protected CorePartitionManager.Schema rocksSchemaPartitionMgr;
     protected CorePartitionManager.Data rocksDataPartitionMgr;
     protected CoreSession.Data statisticsBackgroundCounterSession;
     protected ScheduledExecutorService scheduledPropertiesLogger;
+    protected RocksProperties.Reader rocksPropertiesReader;
     private Cache cache;
 
     protected CoreDatabase(CoreDatabaseManager databaseMgr, String name, Factory.Session sessionFactory) {
@@ -148,6 +152,11 @@ public class CoreDatabase implements TypeDB.Database {
         schemaLockWriteRequests = new AtomicInteger(0);
         nextTransactionID = new AtomicLong(0);
         isOpen = new AtomicBoolean(false);
+        txnDiagnosticProvider = Diagnostics.scheduledProvider(
+                Diagnostics.INITIAL_DELAY_MILLIS, DIAGNOSTIC_TXN_PERIOD,
+                "db_txn", "txn_open_to_close", null
+        );
+        txnDiagnosticLastTransactionID = nextTransactionID.get();
     }
 
     protected StatisticsCorrector createStatisticsCorrector() {
@@ -222,6 +231,7 @@ public class CoreDatabase implements TypeDB.Database {
             assert dataHandles.size() == 1;
             dataHandles.addAll(rocksData.createColumnFamilies(dataDescriptors.subList(1, dataDescriptors.size())));
             rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
+            rocksPropertiesReader = new RocksProperties.Reader(rocksData, rocksDataPartitionMgr.handles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
@@ -271,6 +281,7 @@ public class CoreDatabase implements TypeDB.Database {
             );
             assert dataDescriptors.size() == dataHandles.size();
             rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
+            rocksPropertiesReader = new RocksProperties.Reader(rocksData, rocksDataPartitionMgr.handles);
         } catch (RocksDBException e) {
             throw TypeDBException.of(e);
         }
@@ -281,7 +292,7 @@ public class CoreDatabase implements TypeDB.Database {
         if (rocksConfiguration.isLoggingEnabled()) {
             scheduledPropertiesLogger = java.util.concurrent.Executors.newScheduledThreadPool(1);
             scheduledPropertiesLogger.scheduleAtFixedRate(
-                    new RocksProperties.Logger(rocksData, rocksDataPartitionMgr.handles, name),
+                    new RocksProperties.Logger(rocksPropertiesReader, name),
                     0, ROCKS_LOG_PERIOD, SECONDS
             );
         } else {
@@ -435,6 +446,113 @@ public class CoreDatabase implements TypeDB.Database {
     @Override
     public Stream<TypeDB.Session> sessions() {
         return sessions.values().stream().map(Pair::first);
+    }
+
+    public long storageDataKeysEstimate() {
+        return rocksPropertiesReader.getTotal(RocksProperties.properties.get("key-count"));
+    }
+
+    public long storageDataBytesEstimate() {
+        return rocksPropertiesReader.getTotal(RocksProperties.properties.get("disk-size-live-bytes"));
+    }
+
+    public long typeCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().stats().typeCount();
+            }
+        }
+    }
+
+    public long entityTypeCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().stats().entityTypeCount();
+            }
+        }
+    }
+
+    public long relationTypeCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().stats().relationTypeCount();
+            }
+        }
+    }
+
+    public long attributeTypeCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().stats().attributeTypeCount();
+            }
+        }
+    }
+
+    public long roleTypeCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().stats().roleTypeCount();
+            }
+        }
+    }
+
+    public long ownsCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().thingTypes().map(t -> t.outOwnsCount(false))
+                        .reduce(0L, Long::sum);
+            }
+        }
+    }
+
+    public long thingCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.data().stats().thingVertexTransitiveCount(Encoding.Vertex.Type.Root.THING.properLabel());
+            }
+        }
+    }
+
+    public long entityCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.data().stats().thingVertexTransitiveCount(Encoding.Vertex.Type.Root.ENTITY.properLabel());
+            }
+        }
+    }
+
+    public long relationCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.data().stats().thingVertexTransitiveCount(Encoding.Vertex.Type.Root.RELATION.properLabel());
+            }
+        }
+    }
+
+    public long attributeCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.data().stats().thingVertexTransitiveCount(Encoding.Vertex.Type.Root.ATTRIBUTE.properLabel());
+            }
+        }
+    }
+
+    public long roleCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.data().stats().thingVertexTransitiveCount(Encoding.Vertex.Type.Root.ROLE.properLabel());
+            }
+        }
+    }
+
+    public long hasCount() {
+        try (CoreSession session = createAndOpenSession(DATA, new Options.Session())) {
+            try (CoreTransaction txn = session.transaction(READ)) {
+                return txn.graphMgr.schema().thingTypes().map(owner -> txn.graphMgr.data().stats().hasEdgeSum(
+                        owner, txn.graphMgr.schema().ownedAttributeTypes(owner, emptySet())
+                )).reduce(0L, Long::sum);
+            }
+        }
     }
 
     @Override

@@ -981,17 +981,19 @@ public class TypeGraph {
         private volatile int thingTypeCount;
         private volatile int abstractTypeCount;
         private volatile int concreteThingTypeCount;
+        private volatile int entityTypeCount;
         private volatile int attributeTypeCount;
         private volatile int relationTypeCount;
         private volatile int roleTypeCount;
         private final ConcurrentMap<TypeVertex, Long> subTypesDepth;
         private final ConcurrentMap<Pair<TypeVertex, Boolean>, Long> subTypesCount;
-        private final ConcurrentMap<Encoding.ValueType, Long> attTypesWithValueType;
+        private final ConcurrentMap<Encoding.ValueType<?>, Long> attTypesWithValueType;
 
         private Statistics() {
             thingTypeCount = UNSET_COUNT;
             abstractTypeCount = UNSET_COUNT;
             concreteThingTypeCount = UNSET_COUNT;
+            entityTypeCount = UNSET_COUNT;
             attributeTypeCount = UNSET_COUNT;
             relationTypeCount = UNSET_COUNT;
             roleTypeCount = UNSET_COUNT;
@@ -1031,6 +1033,16 @@ public class TypeGraph {
             if (isReadOnly) {
                 if (thingTypeCount == UNSET_COUNT) thingTypeCount = fn.get();
                 return thingTypeCount;
+            } else {
+                return fn.get();
+            }
+        }
+
+        public long entityTypeCount() {
+            Supplier<Integer> fn = () -> toIntExact(entityTypes().stream().count());
+            if (isReadOnly) {
+                if (entityTypeCount == UNSET_COUNT) entityTypeCount = fn.get();
+                return entityTypeCount;
             } else {
                 return fn.get();
             }

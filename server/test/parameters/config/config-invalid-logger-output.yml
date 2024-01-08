@@ -45,6 +45,10 @@ log:
       type: reasoner-tracer
       output: nonexistant-file
 
+diagnostics:
+  reporting:
+    enable: true
+
 vaticle-factory:
   enable: false
 #  uri: "https://tracing.factory.vaticle.com:7979"

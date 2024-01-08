@@ -52,6 +52,7 @@ native_java_libraries(
         "@maven//:com_google_code_findbugs_jsr305",
         "@maven//:org_slf4j_slf4j_api",
         "@maven//:io_github_speedb_io_speedbjni",
+        "@maven//:io_sentry_sentry",
     ],
     linux_arm64_deps = ["@maven//:com_google_ortools_ortools_linux_aarch64"],
     linux_x86_64_deps = ["@maven//:com_google_ortools_ortools_linux_x86_64"],

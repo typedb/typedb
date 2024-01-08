@@ -1165,7 +1165,7 @@ public class ResponseBuilder {
         private static AnswerProto.ReadableConceptTree.Node.ReadableConcept readableConcept(
                 @Nullable com.vaticle.typedb.core.concept.Concept.Readable concept) {
             AnswerProto.ReadableConceptTree.Node.ReadableConcept.Builder builder = AnswerProto.ReadableConceptTree.Node.ReadableConcept.newBuilder();
-            if (concept == null) return null;
+            if (concept == null) return builder.build();
             else if (concept.isType()) {
                 com.vaticle.typedb.core.concept.type.Type type = concept.asType();
                 if (type.isEntityType()) {
@@ -1184,7 +1184,6 @@ public class ResponseBuilder {
             } else if (concept.isValue()) {
                 return builder.setValue(Value.protoValue(concept.asValue())).build();
             } else throw TypeDBException.of(ILLEGAL_STATE);
-
         }
     }
 }

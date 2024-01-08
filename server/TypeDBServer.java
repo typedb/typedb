@@ -30,7 +30,9 @@ import com.vaticle.typedb.core.database.CoreFactory;
 import com.vaticle.typedb.core.database.Factory;
 import com.vaticle.typedb.core.migrator.CoreMigratorClient;
 import com.vaticle.typedb.core.migrator.MigratorService;
+import com.vaticle.typedb.core.server.common.Constants;
 import com.vaticle.typedb.core.server.logging.CoreLogback;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.server.parameters.CoreConfig;
 import com.vaticle.typedb.core.server.parameters.CoreConfigParser;
 import com.vaticle.typedb.core.server.parameters.CoreSubcommand;
@@ -38,16 +40,22 @@ import com.vaticle.typedb.core.server.parameters.CoreSubcommandParser;
 import com.vaticle.typedb.core.server.parameters.util.ArgsParser;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.sentry.Sentry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.BindException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,6 +69,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILE
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.INCOMPATIBLE_JAVA_RUNTIME;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNCAUGHT_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.UNRECOGNISED_CLI_COMMAND;
+import static com.vaticle.typedb.core.server.common.Constants.TYPEDB_DISTRIBUTION_NAME;
 import static com.vaticle.typedb.core.server.common.Util.getTypedbDir;
 import static com.vaticle.typedb.core.server.common.Util.printASCIILogo;
 import static org.slf4j.Logger.ROOT_LOGGER_NAME;
@@ -95,6 +104,7 @@ public class TypeDBServer implements AutoCloseable {
 
         verifyJavaVersion();
         createOrVerifyDataDir();
+        configureDiagnostics();
 
         if (debug) logger().info("Running {} in debug mode.", name());
 
@@ -114,6 +124,7 @@ public class TypeDBServer implements AutoCloseable {
                     try {
                         logger().error(UNCAUGHT_ERROR.message(t.getName(), e), e);
                         close();
+                        Sentry.captureException(e);
                         System.exit(1);
                     } catch (TypeDBCheckedException ex) {
                         logger().error("Failed to shut down cleanly, performing hard stop.");
@@ -159,6 +170,19 @@ public class TypeDBServer implements AutoCloseable {
         }
     }
 
+    private void configureDiagnostics() {
+        Diagnostics.initialise(serverID(), TYPEDB_DISTRIBUTION_NAME, Version.VERSION, Constants.DIAGNOSTICS_REPORTING_URI);
+    }
+
+    private String serverID() {
+        try {
+            byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
+            return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(mac));
+        } catch (NoSuchAlgorithmException | IOException e) {
+            return "";
+        }
+    }
+
     protected io.grpc.Server rpcServer() {
         assert Executors.isInitialised();
 
@@ -177,7 +201,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     protected String name() {
-        return "TypeDB Server";
+        return TYPEDB_DISTRIBUTION_NAME;
     }
 
     protected CoreConfig config() {
@@ -235,7 +259,7 @@ public class TypeDBServer implements AutoCloseable {
         if (isOpen.compareAndSet(true, false)) {
             try {
                 logger().info("");
-                logger().info("Closing {} instance...", name());
+                logger().info("Closing {} server...", name());
                 assert typeDBService != null;
                 typeDBService.close();
                 logger().info("Stopping network layer...");
@@ -246,7 +270,7 @@ public class TypeDBServer implements AutoCloseable {
                 logger().info("Stopping storage layer...");
                 databaseMgr.close();
                 System.runFinalization();
-                logger().info("{} instance has been closed.", name());
+                logger().info("{} server has been closed.", name());
             } catch (Throwable e) {
                 logger().error(FAILED_AT_STOPPING.message(), e);
                 throw TypeDBCheckedException.of(e);

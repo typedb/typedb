@@ -150,7 +150,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Internal UNIMPLEMENTED =
                 new Internal(15, "This functionality is not yet implemented.");
 
-        private static final String codePrefix = "INT";
+        public static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
 
         Internal(int number, String message) {
