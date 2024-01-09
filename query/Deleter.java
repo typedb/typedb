@@ -76,7 +76,7 @@ public class Deleter {
     }
 
     public static Deleter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLDelete query, Context.Query context) {
-        validateNamedThingVariables(query);
+        validateTypeQLVariables(query);
         VariableRegistry registry = VariableRegistry.createFromThings(query.statements(), false);
         registry.variables().forEach(Deleter::validate);
         assert query.match().get().namedVariables().containsAll(query.namedVariables());
@@ -92,7 +92,7 @@ public class Deleter {
         return new Deleter(getter, registry.things(), context);
     }
 
-    private static void validateNamedThingVariables(TypeQLDelete query) {
+    private static void validateTypeQLVariables(TypeQLDelete query) {
         for (Statement statement : query.statements()) {
             for (Constraint constraint : statement.constraints()) {
                 Optional<? extends TypeQLVariable> var = constraint.variables().stream().filter(v ->  v.isValueVar() || v.isAnonymised()).findFirst();

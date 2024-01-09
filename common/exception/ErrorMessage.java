@@ -293,8 +293,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Pattern(9, "The thing variable '%s' has multiple 'isa' constraints, '%s' and '%s'.");
         public static final Pattern MULTIPLE_THING_CONSTRAINT_RELATION =
                 new Pattern(10, "The relation variable '%s' has multiple 'relation' constraints");
-        public static final Pattern ILLEGAL_REDECLARED_THING_CONSTRAINT_ISA =
-                new Pattern(11, "The thing variable '%s'  has a redeclared 'isa' constraint, in a query that does not allow it.");
+        public static final Pattern ILLEGAL_IMPLICIT_THING_CONSTRAINT_ISA =
+                new Pattern(11, "The thing variable '%s' has an implicit 'isa' constraint, in a query that does not allow it.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_SUB =
                 new Pattern(12, "The type variable '%s' has multiple 'sub' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_LABEL =
