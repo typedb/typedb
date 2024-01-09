@@ -21,6 +21,7 @@ package com.vaticle.typedb.core.server;
 import ch.qos.logback.classic.LoggerContext;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.common.util.Java;
+import com.vaticle.typedb.core.common.collection.Bytes;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -49,12 +50,14 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -177,7 +180,9 @@ public class TypeDBServer implements AutoCloseable {
     private String serverID() {
         try {
             byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
-            return Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(mac));
+            byte[] macHash = MessageDigest.getInstance("SHA-256").digest(mac);
+            byte[] truncatedHash = Arrays.copyOfRange(macHash, 0, 8);
+            return String.format("%X", ByteBuffer.wrap(truncatedHash).getLong());
         } catch (NoSuchAlgorithmException | IOException e) {
             return "";
         }
