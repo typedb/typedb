@@ -18,7 +18,6 @@
 package com.vaticle.typedb.core.query;
 
 import com.vaticle.typedb.common.collection.Either;
-import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Context;
 import com.vaticle.typedb.core.common.parameters.Label;
@@ -32,12 +31,13 @@ import com.vaticle.typedb.core.concept.type.ThingType;
 import com.vaticle.typedb.core.concept.type.Type;
 import com.vaticle.typedb.core.pattern.constraint.thing.HasConstraint;
 import com.vaticle.typedb.core.pattern.variable.ThingVariable;
-import com.vaticle.typedb.core.pattern.variable.ValueVariable;
 import com.vaticle.typedb.core.pattern.variable.Variable;
 import com.vaticle.typedb.core.pattern.variable.VariableRegistry;
 import com.vaticle.typedb.core.reasoner.Reasoner;
 import com.vaticle.typeql.lang.common.Reference;
 import com.vaticle.typeql.lang.common.TypeQLVariable;
+import com.vaticle.typeql.lang.pattern.constraint.Constraint;
+import com.vaticle.typeql.lang.pattern.statement.Statement;
 import com.vaticle.typeql.lang.query.TypeQLDelete;
 
 import java.util.ArrayList;
@@ -45,11 +45,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.DELETE_RELATION_CONSTRAINT_TOO_MANY;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.HAS_TYPE_MISMATCH;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ANONYMOUS_RELATION_IN_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_IS_CONSTRAINT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_VALUE_VARIABLE_IN_DELETE;
@@ -76,7 +76,7 @@ public class Deleter {
     }
 
     public static Deleter create(Reasoner reasoner, ConceptManager conceptMgr, TypeQLDelete query, Context.Query context) {
-
+        validateNamedThingVariables(query);
         VariableRegistry registry = VariableRegistry.createFromThings(query.statements(), false);
         registry.variables().forEach(Deleter::validate);
         assert query.match().get().namedVariables().containsAll(query.namedVariables());
@@ -92,22 +92,27 @@ public class Deleter {
         return new Deleter(getter, registry.things(), context);
     }
 
-    public static void validate(Variable var) {
-        if (var.isValue()) validate(var.asValue());
-        else if (var.isThing()) validate(var.asThing());
+    private static void validateNamedThingVariables(TypeQLDelete query) {
+        for (Statement statement : query.statements()) {
+            for (Constraint constraint : statement.constraints()) {
+                Optional<? extends TypeQLVariable> var = constraint.variables().stream().filter(v ->  v.isValueVar() || v.isAnonymised()).findFirst();
+                if (var.isPresent()) {
+                    if (var.get().isValueVar()) {
+                        throw TypeDBException.of(ILLEGAL_VALUE_VARIABLE_IN_DELETE, var.get());
+                    } else if (var.get().isAnonymised()) {
+                        throw TypeDBException.of(ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE, constraint);
+                    }
+                }
+            }
+        }
     }
 
-    private static void validate(ValueVariable var) {
-        throw TypeDBException.of(ILLEGAL_VALUE_VARIABLE_IN_DELETE, var.reference());
+    public static void validate(Variable var) {
+        if (var.isThing()) validate(var.asThing());
     }
 
     private static void validate(ThingVariable var) {
-        if (!var.reference().isName()) {
-            ErrorMessage.ThingWrite msg = var.relation().isPresent()
-                    ? ILLEGAL_ANONYMOUS_RELATION_IN_DELETE
-                    : ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE;
-            throw TypeDBException.of(msg, var);
-        } else if (var.iid().isPresent()) {
+        if (var.iid().isPresent()) {
             throw TypeDBException.of(THING_IID_NOT_INSERTABLE, var.reference(), var.iid().get());
         } else if (!var.is().isEmpty()) {
             throw TypeDBException.of(ILLEGAL_IS_CONSTRAINT, var, var.is().iterator().next());

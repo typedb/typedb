@@ -293,8 +293,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Pattern(9, "The thing variable '%s' has multiple 'isa' constraints, '%s' and '%s'.");
         public static final Pattern MULTIPLE_THING_CONSTRAINT_RELATION =
                 new Pattern(10, "The relation variable '%s' has multiple 'relation' constraints");
-        public static final Pattern ILLEGAL_DERIVED_THING_CONSTRAINT_ISA =
-                new Pattern(11, "The thing variable '%s' has a derived 'isa' constraint, in a query that does not allow it.");
+        public static final Pattern ILLEGAL_REDECLARED_THING_CONSTRAINT_ISA =
+                new Pattern(11, "The thing variable '%s'  has a redeclared 'isa' constraint, in a query that does not allow it.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_SUB =
                 new Pattern(12, "The type variable '%s' has multiple 'sub' constraints.");
         public static final Pattern MULTIPLE_TYPE_CONSTRAINT_LABEL =
@@ -446,10 +446,10 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new ThingWrite(14, "Attempted to re-insert pre-existing thing of matched variable '%s' as a new instance (isa) of type '%s'.");
         public static final ThingWrite THING_ISA_MISSING =
                 new ThingWrite(15, "The thing variable '%s' cannot be inserted as a new instance without providing its type (isa).");
-        public static final ThingWrite ILLEGAL_ANONYMOUS_RELATION_IN_DELETE =
-                new ThingWrite(16, "Illegal anonymous relation in delete query: '%s'.  You must match the relation variable by name, and then delete it.");
+        public static final ThingWrite ILLEGAL_VALUE_VARIABLE_IN_DELETE =
+                new ThingWrite(16, "Illegal value variable '%s' in delete query. You can only delete named variables that were matched.");
         public static final ThingWrite ILLEGAL_ANONYMOUS_VARIABLE_IN_DELETE =
-                new ThingWrite(17, "Illegal anonymous variable in delete query: '%s'.  You can only delete named variables that were matched.");
+                new ThingWrite(17, "Illegal anonymous delete variable in constraint '%s'.  You can only delete named variables that were matched.");
         public static final ThingWrite INVALID_DELETE_THING =
                 new ThingWrite(18, "The thing '%s' cannot be deleted, as the provided type '%s' is not its direct type nor supertype.");
         public static final ThingWrite INVALID_DELETE_THING_DIRECT =
@@ -482,12 +482,10 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new ThingWrite(32, "Could not perform delete of role players due to multiple relation constraints being present for relation '%s'.");
         public static final ThingWrite DELETE_ROLEPLAYER_NOT_PRESENT =
                 new ThingWrite(33, "Could not delete roleplayer '%s' as relation '%s' does not relate it.");
-        public static final ThingWrite ILLEGAL_VALUE_VARIABLE_IN_DELETE =
-                new ThingWrite(34, "Illegal value variable '%s' found in delete query. Value variables may not be used in delete queries.");
         public static final ThingWrite ILLEGAL_VALUE_CONSTRAINT_IN_INSERT =
-                new ThingWrite(35, "Illegal value constraint found in the insert query on variable '%s'. Value variables are only permitted to specify attribute values.");
+                new ThingWrite(34, "Illegal value constraint found in the insert query on variable '%s'. Value variables are only permitted to specify attribute values.");
         public static final ThingWrite ILLEGAL_UNBOUND_TYPE_VAR_IN_INSERT =
-                new ThingWrite(36, "Type variable '%s' found in the insert query must retrieved by the match previously.");
+                new ThingWrite(35, "Type variable '%s' found in the insert query must retrieved by the match previously.");
 
         private static final String codePrefix = "THW";
         private static final String messagePrefix = "Invalid Thing Write";
