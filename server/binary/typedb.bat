@@ -38,15 +38,16 @@ echo   Missing argument. Possible commands are:
 goto print_usage
 
 :startserver
+for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
 
 set "G_CP=%TYPEDB_HOME%\server\conf\;%TYPEDB_HOME%\server\lib\*"
 echo "%G_CP%"
 echo "%TYPEDB_HOME%"
 
 if "%2"=="--help" (
-    java %SERVER_JAVAOPTS% -cp "%G_CP%" -Dtypedb.dir="%TYPEDB_HOME%" com.vaticle.typedb.core.server.TypeDBServer %2 %3 %4 %5 %6 %7 %8 %9
+    java %SERVER_JAVAOPTS% -cp "%G_CP%" -Dtypedb.dir="%TYPEDB_HOME%" com.vaticle.typedb.core.server.TypeDBServer %ARGS%
 ) else (
-    start cmd /c java %SERVER_JAVAOPTS% -cp "%G_CP%" -Dtypedb.dir="%TYPEDB_HOME%" com.vaticle.typedb.core.server.TypeDBServer %2 %3 %4 %5 %6 %7 %8 %9 ^|^| pause
+    start cmd /c java %SERVER_JAVAOPTS% -cp "%G_CP%" -Dtypedb.dir="%TYPEDB_HOME%" com.vaticle.typedb.core.server.TypeDBServer %ARGS% ^|^| pause
 )
 goto exit
 
