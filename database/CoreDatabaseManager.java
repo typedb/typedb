@@ -50,6 +50,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DAT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NAME_RESERVED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.TYPEDB_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNKNOWN_ERROR;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class CoreDatabaseManager implements TypeDB.DatabaseManager {
@@ -119,7 +120,8 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
                 CompletableFuture.allOf(dbLoads.toArray(new CompletableFuture[0])).join();
             } catch (CompletionException e) {
                 close();
-                throw TypeDBException.of(e.getCause());
+                if (e.getCause() instanceof TypeDBException) throw (TypeDBException) e.getCause();
+                else throw TypeDBException.of(UNKNOWN_ERROR, e);
             }
         }
     }

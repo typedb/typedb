@@ -145,7 +145,7 @@ public class EncodingTest {
         try {
             return ByteArray.join(ATTRIBUTE.prefix().bytes(), type.iid().bytes(), Encoding.ValueType.STRING.bytes(), encodeStringAsSorted(attributeValue, STRING_ENCODING));
         } catch (TypeDBCheckedException e) {
-            throw TypeDBException.of(e);
+            throw e.toUnchecked();
         }
     }
 

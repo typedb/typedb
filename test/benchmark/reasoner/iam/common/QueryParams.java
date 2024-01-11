@@ -24,6 +24,8 @@ import com.vaticle.typedb.core.common.exception.TypeDBException;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.JAVA_ERROR;
+
 public class QueryParams {
     public final String permissionEmail;
     public final String permissionObject;
@@ -58,7 +60,7 @@ public class QueryParams {
         try {
             yamlMap = YAML.load(paramFile).asMap();
         } catch (FileNotFoundException e) {
-            throw TypeDBException.of(e);
+            throw TypeDBException.of(JAVA_ERROR, e);
         }
         return new QueryParams(
                 get(yamlMap, "permission_email"), get(yamlMap, "permission_object"), get(yamlMap, "permission_action"),

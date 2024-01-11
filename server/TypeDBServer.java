@@ -64,6 +64,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNKNOWN_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_TO_CREATE_DATA_DIRECTORY;
@@ -292,7 +293,7 @@ public class TypeDBServer implements AutoCloseable {
                 logger().info("{} server has been closed.", name());
             } catch (Throwable e) {
                 logger().error(FAILED_AT_STOPPING.message(), e);
-                throw TypeDBCheckedException.of(e);
+                throw TypeDBCheckedException.of(UNKNOWN_ERROR, e);
             }
         }
     }

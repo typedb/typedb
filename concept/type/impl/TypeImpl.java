@@ -43,6 +43,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import static com.vaticle.typedb.common.util.Objects.className;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Pattern.TYPEQL_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.ThingWrite.ILLEGAL_ABSTRACT_WRITE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SESSION_SCHEMA_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.INVALID_TYPE_CASTING;
@@ -96,7 +97,7 @@ public abstract class TypeImpl extends ConceptImpl implements Type {
         try {
             TypeQL.parseLabel(label);
         } catch (TypeQLException e) {
-            throw TypeDBException.of(e);
+            throw TypeDBException.of(TYPEQL_ERROR, e);
         }
         validateIsNotDeleted();
         vertex.label(label);

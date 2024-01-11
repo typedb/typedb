@@ -86,7 +86,9 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.ROC
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.DIRTY_INITIALISATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.JAVA_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.STORAGE_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ISOLATION_DELETE_MODIFY_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_ISOLATION_EXCLUSIVE_CREATE_VIOLATION;
@@ -167,7 +169,7 @@ public class CoreDatabase implements TypeDB.Database {
         try {
             Files.createDirectory(databaseMgr.directory().resolve(name));
         } catch (IOException e) {
-            throw TypeDBException.of(e);
+            throw TypeDBException.of(JAVA_ERROR, e);
         }
 
         CoreDatabase database = new CoreDatabase(databaseMgr, name, sessionFactory);
@@ -198,7 +200,7 @@ public class CoreDatabase implements TypeDB.Database {
             statisticsCorrector.doActivate();
         } catch (RocksDBException e) {
             closeResources();
-            throw TypeDBException.of(e);
+            throw TypeDBException.of(STORAGE_ERROR, e);
         }
     }
 
@@ -255,9 +257,9 @@ public class CoreDatabase implements TypeDB.Database {
             }
             statisticsCorrector.markReactivating();
             statisticsCorrector.doReactivate();
-        } catch(RocksDBException e){
+        } catch (RocksDBException e) {
             closeResources();
-            throw TypeDBException.of(e);
+            throw TypeDBException.of(STORAGE_ERROR, e);
         }
     }
 
@@ -298,30 +300,22 @@ public class CoreDatabase implements TypeDB.Database {
         }
     }
 
-    protected void initialiseEncodingVersion() {
-        try {
-            rocksSchema.put(
-                    rocksSchemaPartitionMgr.get(Key.Partition.DEFAULT),
-                    ENCODING_VERSION_KEY.bytes().getBytes(),
-                    ByteArray.encodeInt(ENCODING_VERSION).getBytes()
-            );
-        } catch (RocksDBException e) {
-            throw TypeDBException.of(e);
-        }
+    protected void initialiseEncodingVersion() throws RocksDBException {
+        rocksSchema.put(
+                rocksSchemaPartitionMgr.get(Key.Partition.DEFAULT),
+                ENCODING_VERSION_KEY.bytes().getBytes(),
+                ByteArray.encodeInt(ENCODING_VERSION).getBytes()
+        );
     }
 
-    protected void validateEncodingVersion() {
-        try {
-            byte[] encodingBytes = rocksSchema.get(
-                    rocksSchemaPartitionMgr.get(Key.Partition.DEFAULT),
-                    ENCODING_VERSION_KEY.bytes().getBytes()
-            );
-            int encoding = encodingBytes == null || encodingBytes.length == 0 ? 0 : ByteArray.of(encodingBytes).decodeInt();
-            if (encoding != ENCODING_VERSION) {
-                throw TypeDBException.of(INCOMPATIBLE_ENCODING, name(), directory().toAbsolutePath(), encoding, ENCODING_VERSION);
-            }
-        } catch (RocksDBException e) {
-            throw TypeDBException.of(e);
+    protected void validateEncodingVersion() throws RocksDBException {
+        byte[] encodingBytes = rocksSchema.get(
+                rocksSchemaPartitionMgr.get(Key.Partition.DEFAULT),
+                ENCODING_VERSION_KEY.bytes().getBytes()
+        );
+        int encoding = encodingBytes == null || encodingBytes.length == 0 ? 0 : ByteArray.of(encodingBytes).decodeInt();
+        if (encoding != ENCODING_VERSION) {
+            throw TypeDBException.of(INCOMPATIBLE_ENCODING, name(), directory().toAbsolutePath(), encoding, ENCODING_VERSION);
         }
     }
 
@@ -337,7 +331,7 @@ public class CoreDatabase implements TypeDB.Database {
                 lock = schemaLock().tryWriteLock(options.schemaLockTimeoutMillis(), MILLISECONDS);
                 if (lock == 0) throw TypeDBException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
             } catch (InterruptedException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(JAVA_ERROR, e);
             } finally {
                 schemaLockWriteRequests.decrementAndGet();
             }
@@ -601,7 +595,7 @@ public class CoreDatabase implements TypeDB.Database {
             boolean terminated = scheduledPropertiesLogger.awaitTermination(Executors.SHUTDOWN_TIMEOUT_MS, MILLISECONDS);
             if (!terminated) throw TypeDBException.of(ROCKS_LOGGER_SHUTDOWN_TIMEOUT);
         } catch (InterruptedException e) {
-            throw TypeDBException.of(e);
+            throw TypeDBException.of(JAVA_ERROR, e);
         }
     }
 
@@ -622,7 +616,7 @@ public class CoreDatabase implements TypeDB.Database {
         try {
             Files.walk(directory()).sorted(reverseOrder()).map(Path::toFile).forEach(File::delete);
         } catch (IOException e) {
-            throw TypeDBException.of(e);
+            throw TypeDBException.of(JAVA_ERROR, e);
         }
     }
 
@@ -978,13 +972,13 @@ public class CoreDatabase implements TypeDB.Database {
                 corrections.clear();
             } catch (InterruptedException | TimeoutException e) {
                 LOG.warn(STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT.message());
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(JAVA_ERROR, e);
             } catch (ExecutionException e) {
                 if (!((e.getCause() instanceof TypeDBException) &&
                         ((TypeDBException) e.getCause()).errorMessage().map(errorMessage ->
                                 errorMessage.code().equals(RESOURCE_CLOSED.code()) || errorMessage.code().equals(DATABASE_CLOSED.code())
                         ).orElse(false))) {
-                    throw TypeDBException.of(e);
+                    throw TypeDBException.of(JAVA_ERROR, e);
                 }
             } finally {
                 if (session != null) session.close();

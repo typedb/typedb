@@ -49,15 +49,6 @@ public class TypeDBException extends RuntimeException {
         this.error = error;
     }
 
-    private TypeDBException(Throwable e) {
-        super(e);
-        error = null;
-    }
-
-    public static TypeDBException of(Throwable e) {
-        return new TypeDBException(e);
-    }
-
     public static TypeDBException of(ErrorMessage errorMessage, Throwable cause) {
         return new TypeDBException(errorMessage, cause);
     }

@@ -34,6 +34,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNKNOWN_ERROR;
 
 public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
 
@@ -98,7 +99,7 @@ public class ProducerIterator<T> extends AbstractFunctionalIterator<T> {
             state = State.COMPLETED;
             if (done.error().isPresent()) {
                 if (done.error().get() instanceof TypeDBException) throw (TypeDBException) done.error().get();
-                else throw TypeDBException.of(done.error().get());
+                else throw TypeDBException.of(UNKNOWN_ERROR, done.error().get());
             }
         }
 

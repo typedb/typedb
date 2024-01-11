@@ -33,6 +33,7 @@ import java.util.concurrent.locks.StampedLock;
 
 import static com.vaticle.typedb.common.util.Objects.className;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_CAST;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.JAVA_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNEXPECTED_INTERRUPTION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SCHEMA_ACQUIRE_LOCK_TIMEOUT;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Session.SESSION_CLOSED;
@@ -140,7 +141,7 @@ public abstract class CoreSession implements TypeDB.Session {
                     throw TypeDBException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
                 }
             } catch (InterruptedException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(JAVA_ERROR, e);
             }
             CoreTransaction.Schema transaction = txSchemaFactory.initialisationTransaction(this);
             transactions.put(transaction, 0L);
@@ -161,7 +162,7 @@ public abstract class CoreSession implements TypeDB.Session {
                         throw TypeDBException.of(SCHEMA_ACQUIRE_LOCK_TIMEOUT);
                     }
                 } catch (InterruptedException e) {
-                    throw TypeDBException.of(e);
+                    throw TypeDBException.of(JAVA_ERROR, e);
                 }
             }
             CoreTransaction.Schema transaction = txSchemaFactory.transaction(this, type, options);

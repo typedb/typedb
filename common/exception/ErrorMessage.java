@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.common.exception;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.JAVA_ERROR;
+
 public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.ErrorMessage {
 
     private ErrorMessage(String codePrefix, int codeNumber, String messagePrefix, String messageBody) {
@@ -29,7 +31,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
             try {
                 Class.forName(innerClass.getName(), true, innerClass.getClassLoader());
             } catch (ClassNotFoundException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(JAVA_ERROR, e);
             }
         }
     }
@@ -149,6 +151,12 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Internal(14, "Unexpected optimiser value.");
         public static final Internal UNIMPLEMENTED =
                 new Internal(15, "This functionality is not yet implemented.");
+        public static final Internal JAVA_ERROR =
+                new Internal(16, "Received Java error:\n%s");
+        public static final Internal STORAGE_ERROR =
+                new Internal(17, "Received storage error:\n%s");
+        public static final Internal UNKNOWN_ERROR =
+                new Internal(18, "Received unknown error:\n%s");
 
         public static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
@@ -309,6 +317,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Pattern(22, "The value variable '%s' can only have one assignment in the first scope it is used in.");
         public static final Pattern VALUE_ASSIGNMENT_CYCLE =
                 new Pattern(23, "A cyclic assignment between value variables was detected: '%s'.");
+        public static final Pattern TYPEQL_ERROR =
+                new Pattern(24, "TypeQL error occurred:\n'%s'.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";
