@@ -49,10 +49,11 @@ public class Diagnostics {
         this.errorReporter = errorReporter;
     }
 
-    public static synchronized void initialise(String serverID, String distributionName, String version, String diagnosticsURI,
+    public static synchronized void initialise(boolean enable, String serverID, String distributionName, String version, String diagnosticsURI,
                                                ErrorReporter errorReporter) {
         assert diagnostics == null;
         Sentry.init(options -> {
+            options.setEnabled(enable);
             options.setDsn(diagnosticsURI);
             options.setEnableTracing(true);
             options.setSendDefaultPii(false);

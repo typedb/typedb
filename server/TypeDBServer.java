@@ -191,12 +191,12 @@ public class TypeDBServer implements AutoCloseable {
 
     protected void configureDiagnostics() {
         Diagnostics.initialise(
-                serverID(), TYPEDB_DISTRIBUTION_NAME, Version.VERSION, Constants.DIAGNOSTICS_REPORTING_URI,
-                new CoreErrorReporter()
+                config.diagnostics().reporting().enable(), serverID(), name(), Version.VERSION,
+                Constants.DIAGNOSTICS_REPORTING_URI, new CoreErrorReporter()
         );
     }
 
-    private String serverID() {
+    protected String serverID() {
         try {
             byte[] mac = NetworkInterface.getByInetAddress(InetAddress.getLocalHost()).getHardwareAddress();
             byte[] macHash = MessageDigest.getInstance("SHA-256").digest(mac);
