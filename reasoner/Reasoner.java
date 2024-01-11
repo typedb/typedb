@@ -279,9 +279,9 @@ public class Reasoner {
     private FunctionalIterator<ConceptMap> iterator(Conjunction conjunction, Filter filter) {
         assert conjunction.isCoherent();
         if (!conjunction.isAnswerable()) return empty();
-        FunctionalIterator<ConceptMap> answers = traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
-        if (conjunction.negations().isEmpty()) return answers;
-        else {
+        if (conjunction.negations().isEmpty()) {
+            return traversalEng.iterator(conjunction.traversal(filter)).map(conceptMgr::conceptMap);
+        } else {
             return traversalEng.iterator(conjunction.traversal()).map(conceptMgr::conceptMap)
                     .filter(ans -> !isNegated(ans, conjunction.negations()))
                     .map(conceptMap -> conceptMap.filter(filter)).distinct();
@@ -291,11 +291,13 @@ public class Reasoner {
     private SortedIterator<ConceptMap.Sortable, Order.Asc> iteratorSorted(Conjunction conjunction,
                                                                           Filter filter, Sorting sorting) {
         ConceptMap.Sortable.Comparator comparator = ConceptMap.Comparator.create(sorting);
-        SortedIterator<ConceptMap.Sortable, Order.Asc> answers = traversalEng.iterator(conjunction.traversal(filter, sorting))
-                .mapSorted(vertexMap -> conceptMgr.conceptMapOrdered(vertexMap, comparator), ASC);
-        if (conjunction.negations().isEmpty()) return answers;
-        else {
-            return answers.filter(ans -> !isNegated(ans, conjunction.negations()))
+        if (conjunction.negations().isEmpty()) {
+            return traversalEng.iterator(conjunction.traversal(filter, sorting))
+                    .mapSorted(vertexMap -> conceptMgr.conceptMapOrdered(vertexMap, comparator), ASC);
+        } else {
+            return traversalEng.iterator(conjunction.traversal(Filter.create(list()), sorting))
+                    .mapSorted(vertexMap -> conceptMgr.conceptMapOrdered(vertexMap, comparator), ASC)
+                    .filter(ans -> !isNegated(ans, conjunction.negations()))
                     .mapSorted(conceptMap -> conceptMap.filter(filter), ASC).distinct();
         }
     }
