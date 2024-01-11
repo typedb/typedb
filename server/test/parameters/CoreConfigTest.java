@@ -31,11 +31,11 @@ import java.util.HashSet;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIGS_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_FILE_NOT_FOUND;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_KEY_MISSING;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_LOG_OUTPUT_UNRECOGNISED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_VALUE_UNEXPECTED;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIG_KEY_MISSING;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.CONFIGS_UNRECOGNISED;
 import static java.util.Collections.emptySet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

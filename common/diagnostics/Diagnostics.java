@@ -70,7 +70,7 @@ public class Diagnostics {
     private static void submitTypeDBException(TypeDBException exception) {
         if (exception.errorMessage().isPresent()) {
             if (!exception.errorMessage().get().getClass().equals(ErrorMessage.Internal.class)) {
-                ITransaction txn = Sentry.startTransaction("user_error_typedb", "user_error_typedb");
+                ITransaction txn = Sentry.startTransaction("user_error", "user_error");
                 txn.setData("error_code", exception.errorMessage().get().code());
                 txn.finish(SpanStatus.OK);
             } else {
@@ -79,18 +79,13 @@ public class Diagnostics {
         } else if (exception.getCause() != null) {
             Throwable cause = exception.getCause();
             if (cause instanceof TypeDBException) {
-                // unwrap the recursive TypeDB exceptions (which shouldn't exist!) to get to the root cause
+                // unwrap the recursive TypeDB exceptions to get to the root cause - we should eliminate these cases
                 submitTypeDBException((TypeDBException) cause);
-            } else if (cause instanceof TypeQLException) {
-                submitTypeQLException((TypeQLException) cause);
+            } else {
+                Sentry.captureException(cause);
             }
         }
     }
-
-    private static void submitTypeQLException(TypeQLException cause) {
-
-    }
-
 
     public static ScheduledDiagnosticProvider scheduledProvider(long initialDelayMillis, long delayMillis, String name,
                                                                 String operation, @Nullable String description) {

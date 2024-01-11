@@ -24,10 +24,7 @@ import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.type.AttributeType.ValueType;
 import com.vaticle.typedb.protocol.ConceptProto;
 import com.vaticle.typedb.protocol.OptionsProto;
-import com.vaticle.typedb.protocol.TransactionProto;
 
-import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;

@@ -49,11 +49,11 @@ import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.deleteRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.explainResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.fetchResPart;
-import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.insertResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.getAggregateRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.getGroupAggregateResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.getGroupResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.getResPart;
+import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.insertResPart;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.undefineRes;
 import static com.vaticle.typedb.core.server.common.ResponseBuilder.QueryManager.updateResPart;
 

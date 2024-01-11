@@ -247,7 +247,11 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Transaction TRANSACTION_TIMEOUT_NOT_CONFIGURABLE =
                 new Transaction(18, "Transaction timeout cannot be configured at the '%s' level.");
         public static final Transaction QUERY_ERROR =
-                new Transaction(19, "Error during query execution.");
+                new Transaction(19, "Error executing query: \n%s");
+        public static final Transaction CONCEPT_ERROR =
+                new Transaction(20, "Error executing concept operation: \n%s");
+        public static final Transaction LOGIC_ERROR =
+                new Transaction(21, "Error executing logic operation: \n%s");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction Operation";
@@ -351,7 +355,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Expression ILLEGAL_CONVERSION =
                 new Expression(5, "The expression '%s' with value type '%s' cannot be converted to type '%s'.");
         public static final Expression ILLEGAL_FUNCTION_ARGUMENT_TYPE =
-              new Expression(6, "The expression function '%s' cannot accept arguments of value type '%s'.");
+                new Expression(6, "The expression function '%s' cannot accept arguments of value type '%s'.");
         public static final Expression ARGUMENT_COUNT_MISMATCH =
                 new Expression(7, "The expression '%s' expects '%s' arguments but received '%s': '%s'.");
         public static final Expression EVALUATION_ERROR =

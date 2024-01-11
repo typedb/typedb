@@ -37,10 +37,6 @@ import com.vaticle.typedb.protocol.TransactionProto;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import io.sentry.Hint;
-import io.sentry.ITransaction;
-import io.sentry.Sentry;
-import io.sentry.SpanStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -256,23 +252,48 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     protected void executeConceptRequest(TransactionProto.Transaction.Req req) {
-        services.concept.execute(req);
+        try {
+            services.concept.execute(req);
+        } catch (RuntimeException e) {
+            if (e instanceof TypeDBException) throw e;
+            else throw TypeDBException.of(ErrorMessage.Transaction.CONCEPT_ERROR, e);
+        }
     }
 
     protected void executeLogicRequest(TransactionProto.Transaction.Req req) {
-        services.logic.execute(req);
+        try {
+            services.logic.execute(req);
+        } catch (RuntimeException e) {
+            if (e instanceof TypeDBException) throw e;
+            else throw TypeDBException.of(ErrorMessage.Transaction.LOGIC_ERROR, e);
+        }
     }
 
     protected void executeThingRequest(TransactionProto.Transaction.Req req) {
-        services.thing.execute(req);
+        try {
+            services.thing.execute(req);
+        } catch (RuntimeException e) {
+            if (e instanceof TypeDBException) throw e;
+            else throw TypeDBException.of(ErrorMessage.Transaction.CONCEPT_ERROR, e);
+        }
     }
 
     protected void executeTypeRequest(TransactionProto.Transaction.Req req) {
-        services.type.execute(req);
+        try {
+            services.type.execute(req);
+        } catch (RuntimeException e) {
+            if (e instanceof TypeDBException) throw e;
+            else throw TypeDBException.of(ErrorMessage.Transaction.CONCEPT_ERROR, e);
+        }
     }
 
     protected void executeRuleRequest(TransactionProto.Transaction.Req req) {
-        services.rule.execute(req);
+        try {
+            services.rule.execute(req);
+        } catch (RuntimeException e) {
+            if (e instanceof TypeDBException) throw e;
+            else throw TypeDBException.of(ErrorMessage.Transaction.LOGIC_ERROR, e);
+        }
     }
 
     public void respond(TransactionProto.Transaction.Res response) {
