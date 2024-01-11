@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.logic.resolvable;
 
 import com.google.common.collect.Lists;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -90,6 +91,7 @@ public class UnifyRelationConcludableTest {
 
     @BeforeClass
     public static void setUp() throws IOException {
+        Diagnostics.initialiseNoop();
         Util.resetDirectory(dataDir);
         databaseMgr = CoreDatabaseManager.open(options);
         databaseMgr.create(database);

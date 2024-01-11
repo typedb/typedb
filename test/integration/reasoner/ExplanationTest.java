@@ -19,6 +19,7 @@ package com.vaticle.typedb.core.reasoner;
 
 import com.vaticle.typedb.common.collection.Pair;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.Concept;
@@ -40,6 +41,7 @@ import com.vaticle.typedb.core.traversal.common.Identifier.Variable.Retrievable;
 import com.vaticle.typeql.lang.TypeQL;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -77,6 +79,11 @@ public class ExplanationTest {
         ActorExecutorGroup service = new ActorExecutorGroup(1, new NamedThreadFactory("typedb-actor"));
         transaction.reasoner().controllerRegistry().setExecutorService(service);
         return transaction;
+    }
+
+    @BeforeClass
+    public static void beforeClass() {
+        Diagnostics.initialiseNoop();
     }
 
     @Before

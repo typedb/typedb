@@ -23,6 +23,7 @@ import io.sentry.NoOpTransaction;
 import io.sentry.Sentry;
 import io.sentry.TransactionContext;
 import io.sentry.protocol.User;
+import jdk.jshell.Diag;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.ScheduledFuture;
@@ -63,6 +64,11 @@ public class Diagnostics {
         user.setUsername(serverID);
         Sentry.setUser(user);
         diagnostics = new Diagnostics(errorReporter);
+    }
+
+    public static synchronized void initialiseNoop() {
+        Sentry.init(options -> options.setEnabled(false));
+        diagnostics = new Diagnostics(new ErrorReporter.NoopReporter());
     }
 
     private static String releaseName(String distributionName, String version) {

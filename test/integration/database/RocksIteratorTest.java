@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.database;
 
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options;
 import com.vaticle.typedb.core.concept.type.AttributeType;
@@ -63,6 +64,7 @@ public class RocksIteratorTest {
 
     @BeforeClass
     public static void setUp() throws IOException {
+        Diagnostics.initialiseNoop();
         Util.resetDirectory(dataDir);
         dbMgr.create(database);
         TypeDB.Session session = dbMgr.session(database, Arguments.Session.Type.SCHEMA);

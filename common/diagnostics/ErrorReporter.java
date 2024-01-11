@@ -21,4 +21,11 @@ public interface ErrorReporter {
 
     void reportError(Throwable error);
 
+    class NoopReporter implements ErrorReporter {
+
+        @Override
+        public void reportError(Throwable error) {
+            return;
+        }
+    }
 }

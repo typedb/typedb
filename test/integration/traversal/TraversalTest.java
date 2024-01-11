@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.traversal;
 
 import com.vaticle.typedb.core.TypeDB;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.iterator.FunctionalIterator;
 import com.vaticle.typedb.core.common.iterator.sorted.SortedIterator;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -47,6 +48,7 @@ import com.vaticle.typeql.lang.query.TypeQLDefine;
 import com.vaticle.typeql.lang.query.TypeQLInsert;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -79,6 +81,11 @@ public class TraversalTest {
 
     private static CoreDatabaseManager databaseMgr;
     private static CoreSession session;
+
+    @BeforeClass
+    public static void beforeClass() {
+        Diagnostics.initialiseNoop();
+    }
 
     @Before
     public void setup() throws IOException {
