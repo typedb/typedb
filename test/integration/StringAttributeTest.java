@@ -144,8 +144,8 @@ public class StringAttributeTest {
                     try {
                         attrType.put(excludedString);
                     } catch (TypeDBException e) {
-                        assertTrue(e.code().isPresent());
-                        assertEquals(UNENCODABLE_STRING.code(), e.code().get());
+                        assertTrue(e.errorMessage().isPresent());
+                        assertEquals(UNENCODABLE_STRING.code(), e.errorMessage().get().code());
                     }
                 }
             }

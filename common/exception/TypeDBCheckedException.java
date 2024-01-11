@@ -50,7 +50,7 @@ public class TypeDBCheckedException extends Exception {
         return new TypeDBCheckedException(errorMessage, parameters);
     }
 
-    public Optional<String> code() {
-        return Optional.ofNullable(errorMessage).map(com.vaticle.typedb.common.exception.ErrorMessage::code);
+    public Optional<ErrorMessage> errorMessage() {
+        return Optional.ofNullable(errorMessage);
     }
 }
