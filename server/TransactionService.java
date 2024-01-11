@@ -247,7 +247,12 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
     }
 
     protected void executeQueryRequest(TransactionProto.Transaction.Req req) {
-        services.query.execute(req);
+        try {
+            services.query.execute(req);
+        } catch (RuntimeException e) {
+            if (e instanceof TypeDBException) throw e;
+            else throw TypeDBException.of(ErrorMessage.Transaction.QUERY_ERROR, e);
+        }
     }
 
     protected void executeConceptRequest(TransactionProto.Transaction.Req req) {

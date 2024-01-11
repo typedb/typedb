@@ -983,8 +983,8 @@ public class CoreDatabase implements TypeDB.Database {
                 throw TypeDBException.of(e);
             } catch (ExecutionException e) {
                 if (!((e.getCause() instanceof TypeDBException) &&
-                        ((TypeDBException) e.getCause()).code().map(code ->
-                                code.equals(RESOURCE_CLOSED.code()) || code.equals(DATABASE_CLOSED.code())
+                        ((TypeDBException) e.getCause()).errorMessage().map(errorMessage ->
+                                errorMessage.code().equals(RESOURCE_CLOSED.code()) || errorMessage.code().equals(DATABASE_CLOSED.code())
                         ).orElse(false))) {
                     throw TypeDBException.of(e);
                 }

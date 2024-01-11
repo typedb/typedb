@@ -246,6 +246,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Transaction(17, "RPC answer streaming prefetch size must be at least 1, is set to: %d.");
         public static final Transaction TRANSACTION_TIMEOUT_NOT_CONFIGURABLE =
                 new Transaction(18, "Transaction timeout cannot be configured at the '%s' level.");
+        public static final Transaction QUERY_ERROR =
+                new Transaction(19, "Error during query execution.");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction Operation";
@@ -336,7 +338,6 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
             super(codePrefix, number, messagePrefix, message);
         }
     }
-
 
     public static class Expression extends ErrorMessage {
         public static final Expression AMBIGUOUS_VARIABLE_TYPE =

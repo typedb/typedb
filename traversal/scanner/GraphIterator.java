@@ -183,8 +183,8 @@ public class GraphIterator extends AbstractFunctionalIterator<VertexMap> {
             return iteratorState == IteratorState.FETCHED;
         } catch (Throwable e) {
             // note: catching runtime exception until we can gracefully interrupt running queries on tx close
-            if (e instanceof TypeDBException && ((TypeDBException) e).code().isPresent() &&
-                    ((TypeDBException) e).code().get().equals(RESOURCE_CLOSED.code())) {
+            if (e instanceof TypeDBException && ((TypeDBException) e).errorMessage().isPresent() &&
+                    ((TypeDBException) e).errorMessage().get().code().equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Transaction was closed during graph iteration");
             } else {
                 LOG.error("Parameters: " + params.toString());

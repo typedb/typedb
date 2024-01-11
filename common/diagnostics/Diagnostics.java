@@ -20,6 +20,7 @@ package com.vaticle.typedb.core.common.diagnostics;
 
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
+import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import io.sentry.ITransaction;
 import io.sentry.NoOpTransaction;
 import io.sentry.Sentry;
@@ -58,15 +59,38 @@ public class Diagnostics {
     }
 
     public static void submitError(Throwable error) {
-        if (error instanceof TypeDBException && ((TypeDBException) error).code().isPresent() &&
-                !((TypeDBException) error).code().get().startsWith(ErrorMessage.Internal.codePrefix)) {
-            ITransaction txn = Sentry.startTransaction("user_error", "user_error");
-            txn.setData("error_code", ((TypeDBException) error).code().get());
-            txn.finish(SpanStatus.OK);
+        if (error instanceof TypeDBException) {
+            TypeDBException exception = (TypeDBException) error;
+            submitTypeDBException(exception);
         } else {
             Sentry.captureException(error);
         }
     }
+
+    private static void submitTypeDBException(TypeDBException exception) {
+        if (exception.errorMessage().isPresent()) {
+            if (!exception.errorMessage().get().getClass().equals(ErrorMessage.Internal.class)) {
+                ITransaction txn = Sentry.startTransaction("user_error_typedb", "user_error_typedb");
+                txn.setData("error_code", exception.errorMessage().get().code());
+                txn.finish(SpanStatus.OK);
+            } else {
+                Sentry.captureException(exception);
+            }
+        } else if (exception.getCause() != null) {
+            Throwable cause = exception.getCause();
+            if (cause instanceof TypeDBException) {
+                // unwrap the recursive TypeDB exceptions (which shouldn't exist!) to get to the root cause
+                submitTypeDBException((TypeDBException) cause);
+            } else if (cause instanceof TypeQLException) {
+                submitTypeQLException((TypeQLException) cause);
+            }
+        }
+    }
+
+    private static void submitTypeQLException(TypeQLException cause) {
+
+    }
+
 
     public static ScheduledDiagnosticProvider scheduledProvider(long initialDelayMillis, long delayMillis, String name,
                                                                 String operation, @Nullable String description) {

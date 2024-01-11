@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 public class TypeDBException extends RuntimeException {
 
     @Nullable
-    public final ErrorMessage error;
+    private final ErrorMessage error;
 
     private TypeDBException(String error) {
         super(error);
@@ -66,8 +66,8 @@ public class TypeDBException extends RuntimeException {
         return new TypeDBException(errorMessage, parameters);
     }
 
-    public Optional<String> code() {
-        return Optional.ofNullable(error).map(ErrorMessage::code);
+    public Optional<ErrorMessage> errorMessage() {
+        return Optional.ofNullable(error);
     }
 
     public static TypeDBException of(List<TypeDBException> exceptions) {
