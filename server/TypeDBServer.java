@@ -21,7 +21,7 @@ package com.vaticle.typedb.core.server;
 import ch.qos.logback.classic.LoggerContext;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.common.util.Java;
-import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
+import com.vaticle.typedb.core.common.diagnostics.CoreDiagnostics;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -188,7 +188,7 @@ public class TypeDBServer implements AutoCloseable {
     }
 
     private void configureDiagnostics() {
-        Diagnostics.initialise(serverID(), TYPEDB_DISTRIBUTION_NAME, Version.VERSION, Constants.DIAGNOSTICS_REPORTING_URI);
+        CoreDiagnostics.initialise(serverID(), TYPEDB_DISTRIBUTION_NAME, Version.VERSION, Constants.DIAGNOSTICS_REPORTING_URI);
     }
 
     private String serverID() {

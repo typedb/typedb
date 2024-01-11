@@ -27,7 +27,6 @@ native_java_libraries(
         # External dependencies from Vaticle
         "@vaticle_typedb_common//:common",
         "@vaticle_typeql//java/query:query",
-        "@vaticle_typeql//java/common:common",
 
         # External Maven Dependencies
         "@maven//:com_google_ortools_ortools_java",

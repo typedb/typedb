@@ -18,7 +18,7 @@
 package com.vaticle.typedb.core.server;
 
 import com.vaticle.typedb.core.TypeDB;
-import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
+import com.vaticle.typedb.core.common.diagnostics.CoreDiagnostics;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -134,7 +134,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
                         PROTOCOL_VERSION_MISMATCH, VersionProto.Version.VERSION.getNumber(), driverProtocolVersion
                 );
                 responder.onError(exception(error));
-                Diagnostics.submitError(error);
+                CoreDiagnostics.submitError(error);
                 LOG.error(error.getMessage(), error);
             } else {
                 responder.onNext(ResponseBuilder.Connection.openRes());
@@ -154,7 +154,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            CoreDiagnostics.submitError(e);
             responder.onError(exception(e));
         }
     }
@@ -164,7 +164,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.submitError(exception);
+        CoreDiagnostics.submitError(exception);
         responder.onError(exception);
     }
 
@@ -173,7 +173,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.submitError(exception);
+        CoreDiagnostics.submitError(exception);
         responder.onError(exception);
     }
 
@@ -182,7 +182,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.submitError(exception);
+        CoreDiagnostics.submitError(exception);
         responder.onError(exception);
     }
 
@@ -191,7 +191,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.submitError(exception);
+        CoreDiagnostics.submitError(exception);
         responder.onError(exception);
     }
 
@@ -200,7 +200,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.submitError(exception);
+        CoreDiagnostics.submitError(exception);
         responder.onError(exception);
     }
 
@@ -209,7 +209,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.submitError(exception);
+        CoreDiagnostics.submitError(exception);
         responder.onError(exception);
     }
 
@@ -218,7 +218,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.submitError(exception);
+        CoreDiagnostics.submitError(exception);
         responder.onError(exception);
     }
 
@@ -227,7 +227,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
         ErrorMessage errorMessage = USER_MANAGEMENT_NOT_AVAILABLE;
         LOG.error(errorMessage.message());
         TypeDBException exception = TypeDBException.of(errorMessage);
-        Diagnostics.submitError(exception);
+        CoreDiagnostics.submitError(exception);
         responder.onError(exception);
     }
 
@@ -239,7 +239,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            CoreDiagnostics.submitError(e);
             responder.onError(exception(e));
         }
     }
@@ -252,7 +252,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            CoreDiagnostics.submitError(e);
             responder.onError(exception(e));
         }
     }
@@ -264,7 +264,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            CoreDiagnostics.submitError(e);
             responder.onError(exception(e));
         }
     }
@@ -277,7 +277,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            CoreDiagnostics.submitError(e);
             responder.onError(exception(e));
         }
     }
@@ -290,7 +290,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             responder.onCompleted();
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            CoreDiagnostics.submitError(e);
             responder.onError(exception(e));
         }
     }
@@ -303,7 +303,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             responder.onCompleted();
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            CoreDiagnostics.submitError(e);
             responder.onError(exception(e));
         }
     }
@@ -316,7 +316,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             responder.onCompleted();
         } catch (TypeDBException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            CoreDiagnostics.submitError(e);
             responder.onError(exception(e));
         }
     }
@@ -329,7 +329,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            CoreDiagnostics.submitError(e);
             responder.onError(exception(e));
         }
     }
@@ -349,7 +349,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            CoreDiagnostics.submitError(e);
             responder.onError(exception(e));
         }
     }
@@ -366,7 +366,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            CoreDiagnostics.submitError(e);
             responder.onError(exception(e));
         }
     }
@@ -383,7 +383,7 @@ public class TypeDBService extends TypeDBGrpc.TypeDBImplBase {
             responder.onCompleted();
         } catch (RuntimeException e) {
             LOG.error(e.getMessage(), e);
-            Diagnostics.submitError(e);
+            CoreDiagnostics.submitError(e);
             responder.onError(exception(e));
         }
     }

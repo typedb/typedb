@@ -20,7 +20,6 @@ package com.vaticle.typedb.core.common.diagnostics;
 
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
-import com.vaticle.typeql.lang.common.exception.TypeQLException;
 import io.sentry.ITransaction;
 import io.sentry.NoOpTransaction;
 import io.sentry.Sentry;
@@ -38,7 +37,7 @@ import java.util.function.Consumer;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
-public class Diagnostics {
+public class CoreDiagnostics {
 
     public static long INITIAL_DELAY_MILLIS = HOURS.toMillis(1);
 
