@@ -182,35 +182,36 @@ public class CoreDatabase implements TypeDB.Database {
     }
 
     protected void initialise() {
-        openSchema();
-        initialiseEncodingVersion();
-        openData();
-        isOpen.set(true);
-        try (CoreSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
-            try (CoreTransaction.Schema txn = session.initialisationTransaction()) {
-                if (txn.graph().isInitialised()) throw TypeDBException.of(DIRTY_INITIALISATION);
-                txn.graph().initialise();
-                txn.commit();
-            }
-        }
-        statisticsCorrector.markActivating();
-        statisticsCorrector.doActivate();
-    }
-
-    protected void openSchema() {
         try {
-            List<ColumnFamilyDescriptor> schemaDescriptors = CorePartitionManager.Schema.descriptors(rocksConfiguration.schema());
-            List<ColumnFamilyHandle> schemaHandles = new ArrayList<>();
-            rocksSchema = OptimisticTransactionDB.open(
-                    rocksConfiguration.schema().dbOptions(),
-                    directory().resolve(Encoding.ROCKS_SCHEMA).toString(),
-                    schemaDescriptors,
-                    schemaHandles
-            );
-            rocksSchemaPartitionMgr = createPartitionMgrSchema(schemaDescriptors, schemaHandles);
+            openSchema();
+            initialiseEncodingVersion();
+            openData();
+            isOpen.set(true);
+            try (CoreSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
+                try (CoreTransaction.Schema txn = session.initialisationTransaction()) {
+                    if (txn.graph().isInitialised()) throw TypeDBException.of(DIRTY_INITIALISATION);
+                    txn.graph().initialise();
+                    txn.commit();
+                }
+            }
+            statisticsCorrector.markActivating();
+            statisticsCorrector.doActivate();
         } catch (RocksDBException e) {
+            closeResources();
             throw TypeDBException.of(e);
         }
+    }
+
+    protected void openSchema() throws RocksDBException {
+        List<ColumnFamilyDescriptor> schemaDescriptors = CorePartitionManager.Schema.descriptors(rocksConfiguration.schema());
+        List<ColumnFamilyHandle> schemaHandles = new ArrayList<>();
+        rocksSchema = OptimisticTransactionDB.open(
+                rocksConfiguration.schema().dbOptions(),
+                directory().resolve(Encoding.ROCKS_SCHEMA).toString(),
+                schemaDescriptors,
+                schemaHandles
+        );
+        rocksSchemaPartitionMgr = createPartitionMgrSchema(schemaDescriptors, schemaHandles);
     }
 
     protected CorePartitionManager.Schema createPartitionMgrSchema(List<ColumnFamilyDescriptor> schemaDescriptors,
@@ -218,23 +219,19 @@ public class CoreDatabase implements TypeDB.Database {
         return new CorePartitionManager.Schema(schemaDescriptors, schemaHandles);
     }
 
-    protected void openData() {
-        try {
-            List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
-            List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
-            rocksData = OptimisticTransactionDB.open(
-                    rocksConfiguration.data().dbOptions(),
-                    directory().resolve(Encoding.ROCKS_DATA).toString(),
-                    dataDescriptors.subList(0, 1),
-                    dataHandles
-            );
-            assert dataHandles.size() == 1;
-            dataHandles.addAll(rocksData.createColumnFamilies(dataDescriptors.subList(1, dataDescriptors.size())));
-            rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
-            rocksPropertiesReader = new RocksProperties.Reader(rocksData, rocksDataPartitionMgr.handles);
-        } catch (RocksDBException e) {
-            throw TypeDBException.of(e);
-        }
+    protected void openData() throws RocksDBException {
+        List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
+        List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
+        rocksData = OptimisticTransactionDB.open(
+                rocksConfiguration.data().dbOptions(),
+                directory().resolve(Encoding.ROCKS_DATA).toString(),
+                dataDescriptors.subList(0, 1),
+                dataHandles
+        );
+        assert dataHandles.size() == 1;
+        dataHandles.addAll(rocksData.createColumnFamilies(dataDescriptors.subList(1, dataDescriptors.size())));
+        rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
+        rocksPropertiesReader = new RocksProperties.Reader(rocksData, rocksDataPartitionMgr.handles);
         mayInitRocksDataLogger();
     }
 
@@ -245,18 +242,23 @@ public class CoreDatabase implements TypeDB.Database {
 
     protected void load() {
         assert isExistingDatabaseDirectory(directory());
-        loadSchema();
-        validateEncodingVersion();
-        loadData();
-        isOpen.set(true);
-        try (CoreSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
-            try (CoreTransaction.Schema txn = session.initialisationTransaction()) {
-                schemaKeyGenerator.sync(txn.schemaStorage());
-                dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
+        try {
+            loadSchema();
+            validateEncodingVersion();
+            loadData();
+            isOpen.set(true);
+            try (CoreSession.Schema session = createAndOpenSession(SCHEMA, new Options.Session()).asSchema()) {
+                try (CoreTransaction.Schema txn = session.initialisationTransaction()) {
+                    schemaKeyGenerator.sync(txn.schemaStorage());
+                    dataKeyGenerator.sync(txn.schemaStorage(), txn.dataStorage());
+                }
             }
+            statisticsCorrector.markReactivating();
+            statisticsCorrector.doReactivate();
+        } catch(RocksDBException e){
+            closeResources();
+            throw TypeDBException.of(e);
         }
-        statisticsCorrector.markReactivating();
-        statisticsCorrector.doReactivate();
     }
 
     public static boolean isExistingDatabaseDirectory(Path directory) {
@@ -265,26 +267,22 @@ public class CoreDatabase implements TypeDB.Database {
         return dataExists && schemaExists;
     }
 
-    protected void loadSchema() {
+    protected void loadSchema() throws RocksDBException {
         openSchema();
     }
 
-    protected void loadData() {
-        try {
-            List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
-            List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
-            rocksData = OptimisticTransactionDB.open(
-                    rocksConfiguration.data().dbOptions(),
-                    directory().resolve(Encoding.ROCKS_DATA).toString(),
-                    dataDescriptors,
-                    dataHandles
-            );
-            assert dataDescriptors.size() == dataHandles.size();
-            rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
-            rocksPropertiesReader = new RocksProperties.Reader(rocksData, rocksDataPartitionMgr.handles);
-        } catch (RocksDBException e) {
-            throw TypeDBException.of(e);
-        }
+    protected void loadData() throws RocksDBException {
+        List<ColumnFamilyDescriptor> dataDescriptors = CorePartitionManager.Data.descriptors(rocksConfiguration.data());
+        List<ColumnFamilyHandle> dataHandles = new ArrayList<>();
+        rocksData = OptimisticTransactionDB.open(
+                rocksConfiguration.data().dbOptions(),
+                directory().resolve(Encoding.ROCKS_DATA).toString(),
+                dataDescriptors,
+                dataHandles
+        );
+        assert dataDescriptors.size() == dataHandles.size();
+        rocksDataPartitionMgr = createPartitionMgrData(dataDescriptors, dataHandles);
+        rocksPropertiesReader = new RocksProperties.Reader(rocksData, rocksDataPartitionMgr.handles);
         mayInitRocksDataLogger();
     }
 
@@ -611,10 +609,10 @@ public class CoreDatabase implements TypeDB.Database {
         statisticsCorrector.close();
         sessions.values().forEach(p -> p.first().close());
         cacheClose();
-        rocksDataPartitionMgr.close();
-        rocksData.close();
-        rocksSchemaPartitionMgr.close();
-        rocksSchema.close();
+        if (rocksDataPartitionMgr != null) rocksDataPartitionMgr.close();
+        if (rocksData != null) rocksData.close();
+        if (rocksSchemaPartitionMgr != null) rocksSchemaPartitionMgr.close();
+        if (rocksSchema != null) rocksSchema.close();
     }
 
     @Override
@@ -989,7 +987,7 @@ public class CoreDatabase implements TypeDB.Database {
                     throw TypeDBException.of(e);
                 }
             } finally {
-                session.close();
+                if (session != null) session.close();
             }
         }
     }

@@ -22,6 +22,7 @@ import ch.qos.logback.classic.LoggerContext;
 import com.vaticle.typedb.common.concurrent.NamedThreadFactory;
 import com.vaticle.typedb.common.util.Java;
 import com.vaticle.typedb.core.common.collection.Bytes;
+import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBCheckedException;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Options;
@@ -50,6 +51,7 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -106,6 +108,7 @@ public class TypeDBServer implements AutoCloseable {
         this.debug = debug;
 
         verifyJavaVersion();
+        verifyPort();
         createOrVerifyDataDir();
         configureDiagnostics();
 
@@ -154,7 +157,21 @@ public class TypeDBServer implements AutoCloseable {
         if (majorVersion == Java.UNKNOWN_VERSION) {
             logger().warn("Could not detect Java version from version string '{}'. Will start {} anyway.", System.getProperty("java.version"), name());
         } else if (majorVersion < 11) {
-            throw TypeDBException.of(INCOMPATIBLE_JAVA_RUNTIME, majorVersion);
+            logger().error(INCOMPATIBLE_JAVA_RUNTIME.message(majorVersion));
+            System.exit(1);
+        }
+    }
+
+    private void verifyPort() {
+        int port = config.server().address().getPort();
+        try (ServerSocket serverSocket = new ServerSocket()) {
+            // setReuseAddress(false) is required only on macOS,
+            // otherwise the code will not work correctly on that platform
+            serverSocket.setReuseAddress(false);
+            serverSocket.bind(new InetSocketAddress(InetAddress.getByName("localhost"), port), 1);
+        } catch (Exception ex) {
+            logger().error(PORT_IN_USE.message(address()));
+            System.exit(1);
         }
     }
 
