@@ -18,7 +18,7 @@
 package com.vaticle.typedb.core.migrator;
 
 import com.vaticle.typedb.core.TypeDB;
-import com.vaticle.typedb.core.common.diagnostics.CoreDiagnostics;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.migrator.database.DatabaseExporter;
 import com.vaticle.typedb.core.migrator.database.DatabaseImporter;
 import io.grpc.Status;
@@ -57,7 +57,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
             responseObserver.onCompleted();
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
-            CoreDiagnostics.submitError(e);
+            Diagnostics.get().submitError(e);
             responseObserver.onError(exception(e));
         }
     }
@@ -79,7 +79,7 @@ public class MigratorService extends MigratorGrpc.MigratorImplBase {
             responseObserver.onCompleted();
         } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
-            CoreDiagnostics.submitError(e);
+            Diagnostics.get().submitError(e);
             responseObserver.onError(exception(e));
         } finally {
             if (importer != null) importer.close();

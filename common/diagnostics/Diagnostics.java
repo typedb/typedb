@@ -18,12 +18,9 @@
 
 package com.vaticle.typedb.core.common.diagnostics;
 
-import com.vaticle.typedb.core.common.exception.ErrorMessage;
-import com.vaticle.typedb.core.common.exception.TypeDBException;
 import io.sentry.ITransaction;
 import io.sentry.NoOpTransaction;
 import io.sentry.Sentry;
-import io.sentry.SpanStatus;
 import io.sentry.TransactionContext;
 import io.sentry.protocol.User;
 
@@ -37,11 +34,24 @@ import java.util.function.Consumer;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
-public class CoreDiagnostics {
+public class Diagnostics {
 
     public static long INITIAL_DELAY_MILLIS = HOURS.toMillis(1);
 
-    public static void initialise(String serverID, String distributionName, String version, String diagnosticsURI) {
+    private static Diagnostics diagnostics = null;
+
+    private final ErrorReporter errorReporter;
+
+    /*
+     * Private singleton constructor
+     */
+    private Diagnostics(ErrorReporter errorReporter) {
+        this.errorReporter = errorReporter;
+    }
+
+    public static synchronized void initialise(String serverID, String distributionName, String version, String diagnosticsURI,
+                                               ErrorReporter errorReporter) {
+        assert diagnostics == null;
         Sentry.init(options -> {
             options.setDsn(diagnosticsURI);
             options.setEnableTracing(true);
@@ -51,47 +61,28 @@ public class CoreDiagnostics {
         User user = new User();
         user.setUsername(serverID);
         Sentry.setUser(user);
+        diagnostics = new Diagnostics(errorReporter);
     }
 
     private static String releaseName(String distributionName, String version) {
         return distributionName + "@" + version;
     }
 
-    public static void submitError(Throwable error) {
-        if (error instanceof TypeDBException) {
-            TypeDBException exception = (TypeDBException) error;
-            submitTypeDBException(exception);
-        } else {
-            Sentry.captureException(error);
-        }
+    public static Diagnostics get() {
+        assert diagnostics != null;
+        return diagnostics;
     }
 
-    private static void submitTypeDBException(TypeDBException exception) {
-        if (exception.errorMessage().isPresent()) {
-            if (!exception.errorMessage().get().getClass().equals(ErrorMessage.Internal.class)) {
-                ITransaction txn = Sentry.startTransaction("user_error", "user_error");
-                txn.setData("error_code", exception.errorMessage().get().code());
-                txn.finish(SpanStatus.OK);
-            } else {
-                Sentry.captureException(exception);
-            }
-        } else if (exception.getCause() != null) {
-            Throwable cause = exception.getCause();
-            if (cause instanceof TypeDBException) {
-                // unwrap the recursive TypeDB exceptions to get to the root cause - we should eliminate these cases
-                submitTypeDBException((TypeDBException) cause);
-            } else {
-                Sentry.captureException(cause);
-            }
-        }
+    public void submitError(Throwable error) {
+        this.errorReporter.reportError(error);
     }
 
-    public static ScheduledDiagnosticProvider scheduledProvider(long initialDelayMillis, long delayMillis, String name,
+    public ScheduledDiagnosticProvider scheduledProvider(long initialDelayMillis, long delayMillis, String name,
                                                                 String operation, @Nullable String description) {
         return new ScheduledDiagnosticProvider(initialDelayMillis, delayMillis, transactionContext(name, operation, description));
     }
 
-    public static ScheduledFuture<?> scheduledRunner(long initialDelayMillis, long delayMillis, String name, String operation,
+    public ScheduledFuture<?> scheduledRunner(long initialDelayMillis, long delayMillis, String name, String operation,
                                                      @Nullable String description, Consumer<TransactionContext> run,
                                                      ScheduledThreadPoolExecutor executor) {
         TransactionContext transactionContext = transactionContext(name, operation, description);

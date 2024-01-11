@@ -18,7 +18,7 @@
 package com.vaticle.typedb.core.server;
 
 import com.vaticle.typedb.core.TypeDB;
-import com.vaticle.typedb.core.common.diagnostics.CoreDiagnostics;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -505,7 +505,7 @@ public class TransactionService implements StreamObserver<TransactionProto.Trans
             if (isClientCancelled(error)) LOG.debug(error.getMessage(), error);
             else {
                 LOG.error(error.getMessage().trim());
-                CoreDiagnostics.submitError(error);
+                Diagnostics.get().submitError(error);
             }
         }
     }

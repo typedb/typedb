@@ -20,7 +20,7 @@ package com.vaticle.typedb.core.database;
 
 import com.google.ortools.Loader;
 import com.vaticle.typedb.core.TypeDB;
-import com.vaticle.typedb.core.common.diagnostics.CoreDiagnostics;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.exception.ErrorMessage;
 import com.vaticle.typedb.core.common.exception.TypeDBException;
 import com.vaticle.typedb.core.common.parameters.Arguments;
@@ -91,8 +91,8 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         databases = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(true);
         loadAll();
-        this.scheduledDiagnostics = CoreDiagnostics.scheduledRunner(
-                CoreDiagnostics.INITIAL_DELAY_MILLIS, DIAGNOSTICS_DB_PERIOD,
+        this.scheduledDiagnostics = Diagnostics.get().scheduledRunner(
+                Diagnostics.INITIAL_DELAY_MILLIS, DIAGNOSTICS_DB_PERIOD,
                 "db_statistics", "db_statistics",
                 null, this::submitDiagnostics, Executors.scheduled()
         );
