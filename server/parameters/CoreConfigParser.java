@@ -187,6 +187,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
                     private final String filename;
                     private final String extension;
+
                     public File(String filename, String extension) {
                         super();
                         this.filename = filename;
@@ -511,10 +512,8 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
             protected static final String description = "Configure diagnostics reporting.";
 
             private static final Predefined<Boolean> enable =
-                    predefined("enable", "Enable Vaticle Factory tracing.", BOOLEAN);
-            private static final Predefined<String> uri =
-                    predefined("uri", "URI of Vaticle Factory server.", STRING);
-            private static final Set<Predefined<?>> parsers = set(enable, uri);
+                    predefined("enable", "Enable diagnostics reporting.", BOOLEAN);
+            private static final Set<Predefined<?>> parsers = set(enable);
 
             @Override
             public CoreConfig.Diagnostics.Reporting parse(YAML yaml, String path) {
@@ -531,7 +530,7 @@ public class CoreConfigParser extends YAMLParser.Value.Compound<CoreConfig> {
 
             @Override
             public List<com.vaticle.typedb.core.server.parameters.util.Help> helpList(String path) {
-                return list(enable.help(path), uri.help(path));
+                return list(enable.help(path));
             }
         }
     }

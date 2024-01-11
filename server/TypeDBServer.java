@@ -65,6 +65,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.JAVA_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNKNOWN_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.DATA_DIRECTORY_NOT_WRITABLE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.FAILED_AT_STOPPING;
@@ -248,7 +249,7 @@ public class TypeDBServer implements AutoCloseable {
         return LOG;
     }
 
-    protected void start() {
+    protected void start() throws TypeDBCheckedException {
         try {
             server.start();
             logger().info("{} is now running and will keep this process alive.", name());
@@ -256,9 +257,9 @@ public class TypeDBServer implements AutoCloseable {
             logger().info("");
         } catch (IOException e) {
             if (e.getCause() != null && e.getCause() instanceof BindException) {
-                throw TypeDBException.of(PORT_IN_USE, address());
+                throw TypeDBCheckedException.of(PORT_IN_USE, address());
             } else {
-                throw new RuntimeException(e);
+                throw TypeDBCheckedException.of(JAVA_ERROR, e);
             }
         }
     }
@@ -334,7 +335,12 @@ public class TypeDBServer implements AutoCloseable {
     private static void runServer(CoreSubcommand.Server subcmdServer) {
         Instant start = Instant.now();
         TypeDBServer server = TypeDBServer.create(subcmdServer.config(), subcmdServer.isDebug());
-        server.start();
+        try {
+            server.start();
+        } catch (TypeDBCheckedException e) {
+            server.logger().error(e.getMessage());
+            System.exit(1);
+        }
         Instant end = Instant.now();
         server.logger().info("version: {}", Version.VERSION);
         server.logger().info("listening to address: {}:{}", server.address().getHostString(), server.address().getPort());
