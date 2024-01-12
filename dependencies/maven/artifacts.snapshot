@@ -32,6 +32,7 @@
 @maven//:com_googlecode_java_diff_utils_diffutils_1_3_0
 @maven//:com_squareup_okhttp_okhttp_2_7_5
 @maven//:com_squareup_okio_okio_1_17_5
+@maven//:com_vaticle_typedb_typedb_console_runner_3a90fa5d47167508a1f221e0086f265864b91a1b
 @maven//:commons_codec_commons_codec_1_11
 @maven//:commons_io_commons_io_2_3
 @maven//:commons_logging_commons_logging_1_2

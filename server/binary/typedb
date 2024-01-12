@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+#
+# Copyright (C) 2022 Vaticle
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
+# TypeDB global variables
+JAVA_BIN=java
+if [[ ! -z "$JAVA_HOME" ]]; then
+    JAVA_BIN="$JAVA_HOME/bin/java"
+fi
+[[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+TYPEDB_HOME=$(cd "$(dirname "${path}")" && pwd -P)
+
+TYPEDB_SERVER_DIR="${TYPEDB_HOME}/server"
+
+# ================================================
+# common helper functions
+# ================================================
+exit_if_java_not_found() {
+    which "${JAVA_BIN}" > /dev/null
+    exit_code=$?
+
+    if [[ $exit_code -ne 0 ]]; then
+        echo "Java is not installed on this machine. TypeDB needs Java 11+ in order to run."
+        exit 1
+    fi
+}
+
+print_usage() {
+      echo "  Server:          typedb server [--help]"
+}
+
+# =============================================
+# main routine
+# =============================================
+
+exit_if_java_not_found
+
+case "$1" in
+    server)
+        TYPEDB_SERVER_LIB_DIR="${TYPEDB_SERVER_DIR}/lib"
+        TYPEDB_SERVER_CLASS=com.vaticle.typedb.core.server.TypeDBServer
+        CLASSPATH="${TYPEDB_SERVER_DIR}/conf/:${TYPEDB_SERVER_LIB_DIR}/*"
+
+        IDX=0
+        EXTRAOPTS=
+        while [[ "${@:IDX}" ]]; do
+            case ${@:IDX:1} in
+                --debug) EXTRAOPTS="$EXTRAOPTS -ea"
+                break;
+            esac
+            IDX=$((IDX+1))
+        done
+
+        # exec replaces current shell process with java so no commands after these ones will ever get executed
+        exec ${JAVA_BIN} ${JAVAOPTS} ${EXTRAOPTS} -cp "${CLASSPATH}" -Dtypedb.dir="${TYPEDB_HOME}" ${TYPEDB_SERVER_CLASS} "${@:2}"
+        ;;
+
+    "")
+        echo "Missing argument. Possible commands are:"
+        print_usage
+        exit 1
+        ;;
+    *)
+        echo "Invalid argument: $1. Possible commands are: "
+        print_usage
+        exit 1
+        ;;
+esac

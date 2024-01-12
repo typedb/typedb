@@ -15,19 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@vaticle_dependencies//distribution/artifact:rules.bzl", "native_artifact_files")
-load("@vaticle_dependencies//distribution:deployment.bzl", "deployment")
+*.bat   text eol=crlf
 
-def vaticle_typedb_console_artifact():
-    native_artifact_files(
-        name = "vaticle_typedb_console_artifact",
-        group_name = "vaticle_typedb_console",
-        artifact_name = "typedb-console-{platform}-{version}.{ext}",
-        tag_source = deployment["artifact.release"],
-        commit_source = deployment["artifact.snapshot"],
-        tag = "2.26.3",
-    )
 
-maven_artifacts = {
-    "com.vaticle.typedb:typedb-console-runner": "3a90fa5d47167508a1f221e0086f265864b91a1b",
-}

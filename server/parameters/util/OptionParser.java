@@ -131,7 +131,7 @@ public abstract class OptionParser {
             Optional<Option> option = matchingOptions(options).first();
             if (option.isEmpty()) return Optional.empty();
             else if (!option.get().hasValue())
-                throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get());
+                throw TypeDBException.of(CLI_OPTION_REQUIRES_TYPED_VALUE, option.get(), valueDescription);
             else {
                 try {
                     return Optional.of(Integer.parseInt(option.get().stringValue().get()));

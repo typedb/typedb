@@ -203,7 +203,7 @@ permissions = {
 
 assemble_targz(
     name = "assemble-linux-arm64-targz",
-    targets = ["server-deps-linux-arm64", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = ["server-deps-linux-arm64", "//server/binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
@@ -213,7 +213,7 @@ assemble_targz(
 
 assemble_targz(
     name = "assemble-linux-x86_64-targz",
-    targets = ["server-deps-linux-x86_64", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = ["server-deps-linux-x86_64", "//server/binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
@@ -223,7 +223,7 @@ assemble_targz(
 
 assemble_zip(
     name = "assemble-mac-arm64-zip",
-    targets = ["server-deps-mac-arm64", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = ["server-deps-mac-arm64", "//server/binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
@@ -233,7 +233,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-mac-x86_64-zip",
-    targets = ["server-deps-mac-x86_64", "@vaticle_typedb_common//binary:assemble-bash-targz"],
+    targets = ["server-deps-mac-x86_64", "//server/binary:assemble-bash-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
@@ -243,7 +243,7 @@ assemble_zip(
 
 assemble_zip(
     name = "assemble-windows-x86_64-zip",
-    targets = ["server-deps-windows-x86_64", "@vaticle_typedb_common//binary:assemble-bat-targz"],
+    targets = ["server-deps-windows-x86_64", "//server/binary:assemble-bat-targz"],
     additional_files = assemble_files,
     empty_directories = empty_directories,
     permissions = permissions,
