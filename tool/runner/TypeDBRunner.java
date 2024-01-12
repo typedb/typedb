@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.runner;
+package com.vaticle.typedb.core.tool.runner;
 
 public interface TypeDBRunner {
 

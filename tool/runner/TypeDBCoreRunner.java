@@ -16,7 +16,7 @@
  *
  */
 
-package com.vaticle.typedb.core.test.runner;
+package com.vaticle.typedb.core.tool.runner;
 
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.StartedProcess;
@@ -29,11 +29,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
-import static com.vaticle.typedb.core.test.runner.Util.createProcessExecutor;
-import static com.vaticle.typedb.core.test.runner.Util.findUnusedPorts;
-import static com.vaticle.typedb.core.test.runner.Util.getServerArchiveFile;
-import static com.vaticle.typedb.core.test.runner.Util.typeDBCommand;
-import static com.vaticle.typedb.core.test.runner.Util.unarchive;
+import static com.vaticle.typedb.core.tool.runner.Util.createProcessExecutor;
+import static com.vaticle.typedb.core.tool.runner.Util.findUnusedPorts;
+import static com.vaticle.typedb.core.tool.runner.Util.getServerArchiveFile;
+import static com.vaticle.typedb.core.tool.runner.Util.typeDBCommand;
+import static com.vaticle.typedb.core.tool.runner.Util.unarchive;
 
 public class TypeDBCoreRunner implements TypeDBRunner {
 

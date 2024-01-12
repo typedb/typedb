@@ -15,7 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.vaticle.typedb.core.test.runner;
+package com.vaticle.typedb.core.tool.runner;
 
 public class TypeDBSingleton {
 
