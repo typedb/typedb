@@ -23,7 +23,8 @@ import io.sentry.NoOpTransaction;
 import io.sentry.Sentry;
 import io.sentry.TransactionContext;
 import io.sentry.protocol.User;
-import jdk.jshell.Diag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.ScheduledFuture;
@@ -36,6 +37,8 @@ import java.util.function.Consumer;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class Diagnostics {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Diagnostics.class);
 
     public static long INITIAL_DELAY_MILLIS = HOURS.toMillis(1);
 
@@ -52,7 +55,10 @@ public class Diagnostics {
 
     public static synchronized void initialise(boolean enable, String serverID, String distributionName, String version, String diagnosticsURI,
                                                ErrorReporter errorReporter) {
-        assert diagnostics == null;
+        if (diagnostics != null) {
+            LOG.debug("Skipping re-initialising diagnostics");
+            return;
+        }
         Sentry.init(options -> {
             options.setEnabled(enable);
             options.setDsn(diagnosticsURI);
@@ -85,13 +91,13 @@ public class Diagnostics {
     }
 
     public ScheduledDiagnosticProvider scheduledProvider(long initialDelayMillis, long delayMillis, String name,
-                                                                String operation, @Nullable String description) {
+                                                         String operation, @Nullable String description) {
         return new ScheduledDiagnosticProvider(initialDelayMillis, delayMillis, transactionContext(name, operation, description));
     }
 
     public ScheduledFuture<?> scheduledRunner(long initialDelayMillis, long delayMillis, String name, String operation,
-                                                     @Nullable String description, Consumer<TransactionContext> run,
-                                                     ScheduledThreadPoolExecutor executor) {
+                                              @Nullable String description, Consumer<TransactionContext> run,
+                                              ScheduledThreadPoolExecutor executor) {
         TransactionContext transactionContext = transactionContext(name, operation, description);
         return executor.scheduleWithFixedDelay(
                 () -> run.accept(transactionContext),
