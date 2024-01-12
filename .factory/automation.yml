@@ -296,4 +296,4 @@ release:
       command: |
         export DEPLOY_MAVEN_USERNAME=$REPO_VATICLE_USERNAME
         export DEPLOY_MAVEN_PASSWORD=$REPO_VATICLE_PASSWORD
-        bazel run --define version=$(cat VERSION) //test/runner:deploy-maven -- release
+        bazel run --define version=$(cat VERSION) //tool/runner:deploy-maven -- release
