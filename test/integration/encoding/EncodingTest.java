@@ -75,7 +75,7 @@ public class EncodingTest {
     private static final String database = "encoding-test";
 
     private static final Factory factory = new CoreFactory();
-    private static final CoreDatabaseManager dbMgr = factory.databaseManager(options);
+    private static CoreDatabaseManager dbMgr;
 
     private CoreSession session;
 
@@ -83,6 +83,7 @@ public class EncodingTest {
     public static void setUp() throws IOException {
         Diagnostics.initialiseNoop();
         Util.resetDirectory(dataDir);
+        dbMgr = factory.databaseManager(options);
         dbMgr.create(database);
         TypeDB.Session session = dbMgr.session(database, Arguments.Session.Type.SCHEMA);
         try (TypeDB.Transaction transaction = session.transaction(WRITE)) {

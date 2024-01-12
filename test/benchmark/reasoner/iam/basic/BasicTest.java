@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.benchmark.iam.basic;
 
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.reasoner.benchmark.iam.common.Benchmark;
 import com.vaticle.typedb.core.reasoner.benchmark.iam.common.BenchmarkRunner;
 import com.vaticle.typedb.core.reasoner.benchmark.iam.common.QueryParams;
@@ -47,6 +48,7 @@ public class BasicTest {
 
     @BeforeClass
     public static void setup() throws IOException {
+        Diagnostics.initialiseNoop();
         benchmarker.setUp();
         benchmarker.loadDatabase(COMMON_RESOURCE_DIR.resolve("types.tql"), COMMON_RESOURCE_DIR.resolve("data.typedb"));
         benchmarker.loadSchema(RESOURCE_DIRECTORY.resolve("basic_test.tql"));
