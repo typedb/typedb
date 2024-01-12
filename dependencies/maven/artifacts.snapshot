@@ -32,8 +32,8 @@
 @maven//:com_googlecode_java_diff_utils_diffutils_1_3_0
 @maven//:com_squareup_okhttp_okhttp_2_7_5
 @maven//:com_squareup_okio_okio_1_17_5
-@maven//:com_vaticle_typedb_typedb_common_7fd4316e7fd4c3ba9ce94f2ea73f12c82057930b
-@maven//:com_vaticle_typedb_typedb_console_runner_d0a2597c08af0c8a2c00dff6c51e3325e0cbb6d0
+@maven//:com_vaticle_typedb_typedb_common_1f0f1ec07c9869423b5698271fcca76fde4b4f9e
+@maven//:com_vaticle_typedb_typedb_console_runner_e01eada468d7689355799ffdbee48e99a253abe6
 @maven//:commons_codec_commons_codec_1_11
 @maven//:commons_io_commons_io_2_3
 @maven//:commons_logging_commons_logging_1_2

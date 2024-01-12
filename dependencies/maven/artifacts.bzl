@@ -47,7 +47,3 @@ artifacts = [
     "org.slf4j:slf4j-api",
     "org.zeroturnaround:zt-exec",
 ]
-
-internal_artifacts = {
-    "com.vaticle.typedb:typedb-console-runner": "e01eada468d7689355799ffdbee48e99a253abe6",
-}
