@@ -29,13 +29,7 @@ import javax.annotation.Nullable;
  */
 public class TypeDBException extends RuntimeException {
 
-    @Nullable
     private final ErrorMessage error;
-
-    private TypeDBException(String error) {
-        super(error);
-        this.error = null;
-    }
 
     private TypeDBException(ErrorMessage error, Throwable cause) {
         super(error.message(cause), cause);
@@ -57,16 +51,8 @@ public class TypeDBException extends RuntimeException {
         return new TypeDBException(errorMessage, parameters);
     }
 
-    public Optional<ErrorMessage> errorMessage() {
-        return Optional.ofNullable(error);
-    }
-
-    public static TypeDBException of(List<TypeDBException> exceptions) {
-        StringBuilder messages = new StringBuilder();
-        for (TypeDBException exception : exceptions) {
-            messages.append(exception.getMessage()).append("\n");
-        }
-        return new TypeDBException(messages.toString());
+    public ErrorMessage errorMessage() {
+        return error;
     }
 
     @Override
@@ -74,7 +60,7 @@ public class TypeDBException extends RuntimeException {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TypeDBException that = (TypeDBException) o;
-        return Objects.equals(error, that.error);
+        return error.equals(that.error);
     }
 
     @Override

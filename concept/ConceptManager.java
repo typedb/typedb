@@ -57,11 +57,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNRECOGNISED_VALUE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Server.BAD_VALUE_TYPE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.SCHEMA_VALIDATION_EXCEPTIONS;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.UNSUPPORTED_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.ROLE_TYPE_SCOPE_IS_NOT_RELATION_TYPE;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.TypeRead.TYPE_NOT_FOUND;
@@ -353,7 +355,12 @@ public final class ConceptManager {
 
     public void validateTypes() {
         List<TypeDBException> exceptions = getSchemaExceptions();
-        if (!exceptions.isEmpty()) throw exception(TypeDBException.of(exceptions));
+        if (!exceptions.isEmpty()) {
+            throw exception(TypeDBException.of(
+                    SCHEMA_VALIDATION_EXCEPTIONS, exceptions.stream().map(Throwable::getMessage)
+                            .collect(Collectors.joining("\n"))
+            ));
+        }
     }
 
     public List<TypeDBException> getSchemaExceptions() {

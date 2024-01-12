@@ -260,6 +260,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Transaction(21, "Error executing logic operation: \n%s");
         public static final Transaction RESOURCE_CLOSED =
                 new Transaction(22, "Attempted to utilise a closed resource.");
+        public static final Transaction SCHEMA_VALIDATION_EXCEPTIONS =
+                new Transaction(23, "Errors during schema validation:\n%s");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction Operation";

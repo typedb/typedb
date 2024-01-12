@@ -25,7 +25,6 @@ import com.vaticle.typedb.core.database.CoreDatabase;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
-import org.junit.BeforeClass;
 
 import java.io.File;
 import java.io.IOException;

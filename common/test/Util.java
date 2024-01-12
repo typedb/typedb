@@ -37,8 +37,7 @@ public class Util {
             function.run();
             fail();
         } catch (TypeDBException e) {
-            assert e.errorMessage().isPresent();
-            assertEquals(errorCode, e.errorMessage().get().code());
+            assertEquals(errorCode, e.errorMessage().code());
         } catch (Exception e) {
             fail();
         }

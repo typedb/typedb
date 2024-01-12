@@ -974,10 +974,10 @@ public class CoreDatabase implements TypeDB.Database {
                 LOG.warn(STATISTICS_CORRECTOR_SHUTDOWN_TIMEOUT.message());
                 throw TypeDBException.of(JAVA_ERROR, e);
             } catch (ExecutionException e) {
-                if (!((e.getCause() instanceof TypeDBException) &&
-                        ((TypeDBException) e.getCause()).errorMessage().map(errorMessage ->
-                                errorMessage.code().equals(RESOURCE_CLOSED.code()) || errorMessage.code().equals(DATABASE_CLOSED.code())
-                        ).orElse(false))) {
+                if (!((e.getCause() instanceof TypeDBException) && (
+                        ((TypeDBException) e.getCause()).errorMessage().code().equals(RESOURCE_CLOSED.code()) ||
+                                ((TypeDBException) e.getCause()).errorMessage().code().equals(DATABASE_CLOSED.code())
+                ))) {
                     throw TypeDBException.of(JAVA_ERROR, e);
                 }
             } finally {

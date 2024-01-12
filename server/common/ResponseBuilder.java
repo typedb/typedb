@@ -360,7 +360,7 @@ public class ResponseBuilder {
                                     //       that ensures every exception has a code and a message.
                                     //       For this specific API we know that getSchemaExceptions() always does.
                                     e -> ConceptProto.Exception.newBuilder()
-                                            .setCode(e.errorMessage().get().code()).setMessage(e.getMessage()).build()
+                                            .setCode(e.errorMessage().code()).setMessage(e.getMessage()).build()
                             ).collect(toList())
                     ).build()
             ));

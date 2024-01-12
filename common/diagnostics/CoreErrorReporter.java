@@ -35,22 +35,12 @@ public class CoreErrorReporter implements ErrorReporter {
     }
 
     private void submitTypeDBException(TypeDBException exception) {
-        if (exception.errorMessage().isPresent()) {
-            if (!exception.errorMessage().get().getClass().equals(ErrorMessage.Internal.class)) {
-                ITransaction txn = Sentry.startTransaction("user_error", "user_error");
-                txn.setData("error_code", exception.errorMessage().get().code());
-                txn.finish(SpanStatus.OK);
-            } else {
-                Sentry.captureException(exception);
-            }
-        } else if (exception.getCause() != null) {
-            Throwable cause = exception.getCause();
-            if (cause instanceof TypeDBException) {
-                // unwrap the recursive TypeDB exceptions to get to the root cause - we should eliminate these cases
-                submitTypeDBException((TypeDBException) cause);
-            } else {
-                Sentry.captureException(cause);
-            }
+        if (!exception.errorMessage().getClass().equals(ErrorMessage.Internal.class)) {
+            ITransaction txn = Sentry.startTransaction("user_error", "user_error");
+            txn.setData("error_code", exception.errorMessage().code());
+            txn.finish(SpanStatus.OK);
+        } else {
+            Sentry.captureException(exception);
         }
     }
 }

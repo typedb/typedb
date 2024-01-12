@@ -108,8 +108,8 @@ public abstract class AbstractController<
 
     @Override
     public void exception(Throwable e) {
-        if (e instanceof TypeDBException && ((TypeDBException) e).errorMessage().isPresent()) {
-            String code = ((TypeDBException) e).errorMessage().get().code();
+        if (e instanceof TypeDBException) {
+            String code = ((TypeDBException) e).errorMessage().code();
             if (code.equals(RESOURCE_CLOSED.code())) {
                 LOG.debug("Controller interrupted by resource close: {}", e.getMessage());
                 context.registry().terminate(e);
