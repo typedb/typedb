@@ -26,7 +26,7 @@
 @maven//:com_google_ortools_ortools_linux_aarch64_9_6_2534
 @maven//:com_google_ortools_ortools_linux_x86_64_9_6_2534
 @maven//:com_google_ortools_ortools_win32_x86_64_9_6_2534
-@maven//:com_google_protobuf_protobuf_java_3_20_1
+@maven//:com_google_protobuf_protobuf_java_3_21_7
 @maven//:com_google_re2j_re2j_1_6
 @maven//:com_google_truth_truth_1_0_1
 @maven//:com_googlecode_java_diff_utils_diffutils_1_3_0
