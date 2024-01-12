@@ -186,7 +186,7 @@ public class Getter {
             try {
                 return ValueImpl.of(conceptMgr, value);
             } catch (TypeDBCheckedException e) {
-                throw TypeDBException.of(e);
+                throw e.toUnchecked();
             }
         }
 
@@ -194,7 +194,7 @@ public class Getter {
             try {
                 return ValueImpl.of(conceptMgr, value);
             } catch (TypeDBCheckedException e) {
-                throw TypeDBException.of(e);
+                throw e.toUnchecked();
             }
         }
 

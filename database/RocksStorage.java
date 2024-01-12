@@ -54,7 +54,9 @@ import java.util.concurrent.locks.StampedLock;
 import static com.vaticle.typedb.common.collection.Collections.hasIntersection;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_OPERATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
-import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.RESOURCE_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.STORAGE_ERROR;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNKNOWN_ERROR;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.RESOURCE_CLOSED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_DATA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Transaction.TRANSACTION_SCHEMA_READ_VIOLATION;
 import static com.vaticle.typedb.core.common.parameters.Order.Asc.ASC;
@@ -179,8 +181,11 @@ public abstract class RocksStorage implements Storage {
         if (exception instanceof TypeDBException) {
             e = (TypeDBException) exception;
             logger().debug(e.getMessage(), e);
+        } else if (exception instanceof RocksDBException) {
+            e = TypeDBException.of(STORAGE_ERROR, exception);
+            logger().error("", exception);
         } else {
-            e = TypeDBException.of(exception);
+            e = TypeDBException.of(UNKNOWN_ERROR, exception);
             logger().error("", exception);
         }
         return e;

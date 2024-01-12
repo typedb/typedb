@@ -18,6 +18,8 @@
 
 package com.vaticle.typedb.core.common.exception;
 
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.JAVA_ERROR;
+
 public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.ErrorMessage {
 
     private ErrorMessage(String codePrefix, int codeNumber, String messagePrefix, String messageBody) {
@@ -29,7 +31,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
             try {
                 Class.forName(innerClass.getName(), true, innerClass.getClassLoader());
             } catch (ClassNotFoundException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(JAVA_ERROR, e);
             }
         }
     }
@@ -129,8 +131,6 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Internal(4, "Illegal argument provided.");
         public static final Internal UNSUPPORTED_OPERATION =
                 new Internal(5, "Operation is not supported.");
-        public static final Internal RESOURCE_CLOSED =
-                new Internal(6, "Attempted to utilise a closed resource.");
         public static final Internal UNRECOGNISED_VALUE =
                 new Internal(7, "Unrecognised encoding value!");
         public static final Internal STORAGE_PROPERTY_EXCEPTION =
@@ -149,6 +149,12 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Internal(14, "Unexpected optimiser value.");
         public static final Internal UNIMPLEMENTED =
                 new Internal(15, "This functionality is not yet implemented.");
+        public static final Internal JAVA_ERROR =
+                new Internal(16, "Received Java error:\n%s");
+        public static final Internal STORAGE_ERROR =
+                new Internal(17, "Received storage error:\n%s");
+        public static final Internal UNKNOWN_ERROR =
+                new Internal(18, "Received unknown error:\n%s");
 
         public static final String codePrefix = "INT";
         private static final String messagePrefix = "Invalid Internal State";
@@ -246,6 +252,16 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Transaction(17, "RPC answer streaming prefetch size must be at least 1, is set to: %d.");
         public static final Transaction TRANSACTION_TIMEOUT_NOT_CONFIGURABLE =
                 new Transaction(18, "Transaction timeout cannot be configured at the '%s' level.");
+        public static final Transaction QUERY_ERROR =
+                new Transaction(19, "Error executing query: \n%s");
+        public static final Transaction CONCEPT_ERROR =
+                new Transaction(20, "Error executing concept operation: \n%s");
+        public static final Transaction LOGIC_ERROR =
+                new Transaction(21, "Error executing logic operation: \n%s");
+        public static final Transaction RESOURCE_CLOSED =
+                new Transaction(22, "Attempted to utilise a closed resource.");
+        public static final Transaction SCHEMA_VALIDATION_EXCEPTIONS =
+                new Transaction(23, "Errors during schema validation:\n%s");
 
         private static final String codePrefix = "TXN";
         private static final String messagePrefix = "Invalid Transaction Operation";
@@ -303,6 +319,8 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
                 new Pattern(22, "The value variable '%s' can only have one assignment in the first scope it is used in.");
         public static final Pattern VALUE_ASSIGNMENT_CYCLE =
                 new Pattern(23, "A cyclic assignment between value variables was detected: '%s'.");
+        public static final Pattern TYPEQL_ERROR =
+                new Pattern(24, "TypeQL error occurred:\n'%s'.");
 
         private static final String codePrefix = "QRY";
         private static final String messagePrefix = "Invalid Query Pattern";
@@ -337,7 +355,6 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         }
     }
 
-
     public static class Expression extends ErrorMessage {
         public static final Expression AMBIGUOUS_VARIABLE_TYPE =
                 new Expression(1, "The variable '%s' has ambiguous value types: '%s'.");
@@ -350,7 +367,7 @@ public abstract class ErrorMessage extends com.vaticle.typedb.common.exception.E
         public static final Expression ILLEGAL_CONVERSION =
                 new Expression(5, "The expression '%s' with value type '%s' cannot be converted to type '%s'.");
         public static final Expression ILLEGAL_FUNCTION_ARGUMENT_TYPE =
-              new Expression(6, "The expression function '%s' cannot accept arguments of value type '%s'.");
+                new Expression(6, "The expression function '%s' cannot accept arguments of value type '%s'.");
         public static final Expression ARGUMENT_COUNT_MISMATCH =
                 new Expression(7, "The expression '%s' expects '%s' arguments but received '%s': '%s'.");
         public static final Expression EVALUATION_ERROR =

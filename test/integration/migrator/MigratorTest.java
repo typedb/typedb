@@ -19,6 +19,7 @@
 package com.vaticle.typedb.core.migrator;
 
 import com.google.protobuf.Parser;
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
 import com.vaticle.typedb.core.migrator.data.DataProto;
@@ -26,6 +27,7 @@ import com.vaticle.typedb.core.migrator.database.DatabaseExporter;
 import com.vaticle.typedb.core.migrator.database.DatabaseImporter;
 import com.vaticle.typedb.core.server.Version;
 import com.vaticle.typedb.core.test.integration.util.Util;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.BufferedInputStream;
@@ -52,6 +54,11 @@ public class MigratorTest {
     private static final Path schemaPath = Paths.get("test/integration/migrator/schema.tql");
     private final Path dataPath = Paths.get("test/integration/migrator/data.typedb");
     private final Path exportDataPath = Paths.get("test/integration/migrator/exported-data.typedb");
+
+    @BeforeClass
+    public static void beforeClass() {
+        Diagnostics.initialiseNoop();
+    }
 
     @Test
     public void test_import_export_database() throws IOException {

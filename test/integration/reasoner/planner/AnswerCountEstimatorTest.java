@@ -18,6 +18,7 @@
 
 package com.vaticle.typedb.core.reasoner.planner;
 
+import com.vaticle.typedb.core.common.diagnostics.Diagnostics;
 import com.vaticle.typedb.core.common.parameters.Arguments;
 import com.vaticle.typedb.core.common.parameters.Options.Database;
 import com.vaticle.typedb.core.database.CoreDatabaseManager;
@@ -35,6 +36,7 @@ import com.vaticle.typeql.lang.TypeQL;
 import com.vaticle.typeql.lang.common.Reference;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -59,6 +61,11 @@ public class AnswerCountEstimatorTest {
     private static CoreTransaction transaction;
 
     private static final boolean FANCY_PROJECTION_IS_IMPLEMENTED = false;
+
+    @BeforeClass
+    public static void beforeClass() {
+        Diagnostics.initialiseNoop();
+    }
 
     @Before
     public void setUp() throws IOException {

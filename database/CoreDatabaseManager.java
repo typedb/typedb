@@ -35,7 +35,10 @@ import org.rocksdb.RocksDB;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledFuture;
@@ -47,6 +50,7 @@ import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DAT
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NAME_RESERVED;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.TYPEDB_CLOSED;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNKNOWN_ERROR;
 import static java.util.concurrent.TimeUnit.HOURS;
 
 public class CoreDatabaseManager implements TypeDB.DatabaseManager {
@@ -87,7 +91,7 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
         databases = new ConcurrentHashMap<>();
         isOpen = new AtomicBoolean(true);
         loadAll();
-        this.scheduledDiagnostics = Diagnostics.scheduledRunner(
+        this.scheduledDiagnostics = Diagnostics.get().scheduledRunner(
                 Diagnostics.INITIAL_DELAY_MILLIS, DIAGNOSTICS_DB_PERIOD,
                 "db_statistics", "db_statistics",
                 null, this::submitDiagnostics, Executors.scheduled()
@@ -102,13 +106,23 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
     protected void loadAll() {
         File[] databaseDirectories = directory().toFile().listFiles(File::isDirectory);
         if (databaseDirectories != null && databaseDirectories.length > 0) {
-            Arrays.stream(databaseDirectories).parallel()
+            List<CompletableFuture<Void>> dbLoads = Arrays.stream(databaseDirectories)
                     .filter(file -> CoreDatabase.isExistingDatabaseDirectory(file.toPath()))
-                    .forEach(directory -> {
-                        String name = directory.getName();
-                        CoreDatabase database = databaseFactory.databaseLoadAndOpen(this, name);
-                        databases.put(name, database);
-                    });
+                    .map(directory ->
+                            CompletableFuture.runAsync(() -> {
+                                String name = directory.getName();
+                                CoreDatabase database = databaseFactory.databaseLoadAndOpen(this, name);
+                                databases.put(name, database);
+                            }, Executors.async1())
+                    ).collect(Collectors.toList());
+            try {
+                // once all future complete, we will catch any exceptions in order to close all databases cleanly
+                CompletableFuture.allOf(dbLoads.toArray(new CompletableFuture[0])).join();
+            } catch (CompletionException e) {
+                close();
+                if (e.getCause() instanceof TypeDBException) throw (TypeDBException) e.getCause();
+                else throw TypeDBException.of(UNKNOWN_ERROR, e);
+            }
         }
     }
 
@@ -195,7 +209,7 @@ public class CoreDatabaseManager implements TypeDB.DatabaseManager {
     @Override
     public void close() {
         if (isOpen.compareAndSet(true, false)) {
-            scheduledDiagnostics.cancel(true);
+            if (scheduledDiagnostics != null) scheduledDiagnostics.cancel(true);
             databases.values().parallelStream().forEach(CoreDatabase::close);
         }
     }

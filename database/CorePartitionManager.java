@@ -34,6 +34,7 @@ import java.util.stream.IntStream;
 import static com.vaticle.typedb.common.collection.Collections.list;
 import static com.vaticle.typedb.common.collection.Collections.set;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.ILLEGAL_STATE;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.STORAGE_ERROR;
 import static com.vaticle.typedb.core.encoding.key.Key.Partition.DEFAULT;
 import static com.vaticle.typedb.core.encoding.key.Key.Partition.FIXED_START_EDGE;
 import static com.vaticle.typedb.core.encoding.key.Key.Partition.METADATA;
@@ -56,7 +57,7 @@ public abstract class CorePartitionManager {
             try {
                 return Arrays.equals(descriptors.get(i).getName(), handles.get(i).getDescriptor().getName());
             } catch (RocksDBException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(STORAGE_ERROR, e);
             }
         });
     }

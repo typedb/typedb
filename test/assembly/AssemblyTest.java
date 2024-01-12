@@ -31,6 +31,7 @@ public class AssemblyTest {
     @Test
     public void bootup() throws InterruptedException, TimeoutException, IOException {
         TypeDBCoreRunner server = new TypeDBCoreRunner();
+        // TODO: disable reporting via configuration
         try {
             server.start();
         } finally {

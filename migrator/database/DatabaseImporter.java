@@ -66,6 +66,9 @@ import java.util.function.Function;
 
 import static com.vaticle.typedb.core.common.collection.Bytes.unsignedByte;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Database.DATABASE_NOT_EMPTY;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.JAVA_ERROR;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.STORAGE_ERROR;
+import static com.vaticle.typedb.core.common.exception.ErrorMessage.Internal.UNKNOWN_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_NOT_FOUND;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.FILE_READ_ERROR;
 import static com.vaticle.typedb.core.common.exception.ErrorMessage.Migrator.IMPORT_CHECKSUM_MISMATCH;
@@ -172,7 +175,7 @@ public class DatabaseImporter {
             LOG.info("Importing {} from TypeDB {} to {} in TypeDB {}", header.getOriginalDatabase(),
                     header.getTypedbVersion(), session.database().name(), version);
         } catch (IOException e) {
-            throw TypeDBException.of(e);
+            throw TypeDBException.of(JAVA_ERROR, e);
         }
     }
 
@@ -216,7 +219,8 @@ public class DatabaseImporter {
             try {
                 CompletableFuture.allOf(workers).join();
             } catch (CompletionException exception) {
-                throw TypeDBException.of(exception);
+                if (exception.getCause() instanceof TypeDBException) throw (TypeDBException)exception.getCause();
+                else throw TypeDBException.of(UNKNOWN_ERROR, exception.getCause());
             }
         }
 
@@ -229,7 +233,7 @@ public class DatabaseImporter {
                         queue.put(item);
                     }
                 } catch (IOException | InterruptedException e) {
-                    throw TypeDBException.of(e);
+                    throw TypeDBException.of(JAVA_ERROR, e);
                 }
             }, readerExecutor);
             return queue;
@@ -519,7 +523,7 @@ public class DatabaseImporter {
             addRolePlayers(transaction);
             transaction.commit();
         } catch (IOException e) {
-            throw TypeDBException.of(e);
+            throw TypeDBException.of(JAVA_ERROR, e);
         }
     }
 
@@ -592,8 +596,10 @@ public class DatabaseImporter {
                 LOG.info("Import started with '" + directory + "' for auxiliary files.");
                 assert !Files.list(directory).findFirst().isPresent();
                 storage = RocksDB.open(directory.toString());
-            } catch (IOException | RocksDBException e) {
-                throw TypeDBException.of(e);
+            } catch (IOException e) {
+                throw TypeDBException.of(JAVA_ERROR, e);
+            } catch (RocksDBException e) {
+                throw TypeDBException.of(STORAGE_ERROR, e);
             }
         }
 
@@ -609,7 +615,7 @@ public class DatabaseImporter {
                     if (!deleted) LOG.warn("Failed to delete temporary file '" + path.toString() + "'");
                 });
             } catch (IOException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(JAVA_ERROR, e);
             }
         }
 
@@ -619,7 +625,7 @@ public class DatabaseImporter {
             try {
                 storage.put(mappingKey.getBytes(), newID.getBytes());
             } catch (RocksDBException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(STORAGE_ERROR, e);
             }
         }
 
@@ -631,7 +637,7 @@ public class DatabaseImporter {
                 if (value == null) return null;
                 else return ByteArray.of(value);
             } catch (RocksDBException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(STORAGE_ERROR, e);
             }
         }
 
@@ -644,7 +650,7 @@ public class DatabaseImporter {
             try {
                 storage.put(key.getBytes(), new byte[0]);
             } catch (RocksDBException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(STORAGE_ERROR, e);
             }
         }
 
@@ -653,7 +659,7 @@ public class DatabaseImporter {
             try {
                 return storage.get(key.getBytes()) != null;
             } catch (RocksDBException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(STORAGE_ERROR, e);
             }
         }
 
@@ -670,7 +676,7 @@ public class DatabaseImporter {
             try {
                 storage.delete(key.getBytes());
             } catch (RocksDBException e) {
-                throw TypeDBException.of(e);
+                throw TypeDBException.of(STORAGE_ERROR, e);
             }
         }
 

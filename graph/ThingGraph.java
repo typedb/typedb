@@ -276,7 +276,7 @@ public class ThingGraph {
         try {
             vertexIID = new VertexIID.Attribute.Double(type.iid(), value);
         } catch (TypeDBCheckedException e) {
-            throw TypeDBException.of(e);
+            throw e.toUnchecked();
         }
         return getOrReadFromStorage(
                 attributesByIID.doubles,
@@ -294,8 +294,8 @@ public class ThingGraph {
         try {
             attIID = new VertexIID.Attribute.String(type.iid(), value);
         } catch (TypeDBCheckedException e) {
-            if (e.code().isPresent() && e.code().get().equals(ILLEGAL_STRING_SIZE.code())) return null;
-            else throw storage().exception(TypeDBException.of(e));
+            if (e.errorMessage().isPresent() && e.errorMessage().get().code().equals(ILLEGAL_STRING_SIZE.code())) return null;
+            else throw storage().exception(e.toUnchecked());
         }
 
         return getOrReadFromStorage(
@@ -361,7 +361,7 @@ public class ThingGraph {
         try {
             vertexIID = new VertexIID.Attribute.Double(type.iid(), value);
         } catch (TypeDBCheckedException e) {
-            throw TypeDBException.of(e);
+            throw e.toUnchecked();
         }
         AttributeVertex.Write<Double> vertex = attributesByIID.doubles.computeIfAbsent(
                 vertexIID, iid -> {
@@ -385,11 +385,7 @@ public class ThingGraph {
         try {
             attIID = new VertexIID.Attribute.String(type.iid(), value);
         } catch (TypeDBCheckedException e) {
-            if (e.code().isPresent() && e.code().get().equals(ILLEGAL_STRING_SIZE.code())) {
-                throw storage().exception(TypeDBException.of(ILLEGAL_STRING_SIZE, STRING_MAX_SIZE));
-            } else {
-                throw storage().exception(TypeDBException.of(e));
-            }
+            throw storage().exception(e.toUnchecked());
         }
 
         AttributeVertex.Write<String> vertex = attributesByIID.strings.computeIfAbsent(

@@ -48,6 +48,7 @@ public class DockerTest {
         String imagePath = Paths.get("assemble-docker.tar").toAbsolutePath().toString();
         ProcessResult result = execute("docker", "load", "-i", imagePath);
         LOG.info(result.outputString());
+        // TODO: disable diagnostics reporting
         StartedProcess typeDBProcess = executor.command(
                 "docker", "run", "--name", "typedb",
                 "--rm", "-t", "-p", String.format("%d:%d", typeDBPort, typeDBPort),
