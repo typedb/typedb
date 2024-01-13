@@ -24,8 +24,11 @@ import org.zeroturnaround.exec.StartedProcess;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
@@ -43,8 +46,14 @@ public class TypeDBCoreRunner implements TypeDBRunner {
     private final int port;
     private StartedProcess process;
     private final ProcessExecutor executor;
+    private Map<String, String> options;
 
     public TypeDBCoreRunner() throws InterruptedException, TimeoutException, IOException {
+        this(new HashMap<>());
+    }
+
+    public TypeDBCoreRunner(Map<String, String> options) throws InterruptedException, TimeoutException, IOException {
+        this.options = options;
         port = findUnusedPorts(1).get(0);
         System.out.println(address() + ": Constructing " + name() + " runner");
         System.out.println(address() + ": Extracting distribution archive...");
@@ -88,13 +97,12 @@ public class TypeDBCoreRunner implements TypeDBRunner {
     }
 
     private List<String> command() {
-        return typeDBCommand(
-                "server",
-                "--server.address",
-                address(),
-                "--storage.data",
-                dataDir.toAbsolutePath().toString()
-        );
+        List<String> cmd = new ArrayList<>();
+        cmd.add("server");
+        cmd.add("--server.address=" + address());
+        cmd.add("--storage.data=" + dataDir.toAbsolutePath().toString());
+        options.forEach((key, value) -> cmd.add(key + "=" + value));
+        return typeDBCommand(cmd);
     }
 
     @Override
