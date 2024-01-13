@@ -306,8 +306,8 @@ assemble_apt(
 deploy_apt(
     name = "deploy-apt-x86_64",
     target = ":assemble-linux-x86_64-apt",
-    snapshot = deployment['artifact']['snapshot']['upload'],
-    release = deployment['artifact']['release']['upload'],
+    snapshot = deployment['apt']['snapshot']['upload'],
+    release = deployment['apt']['release']['upload'],
 )
 
 targz_edit(
@@ -340,8 +340,8 @@ assemble_apt(
 deploy_apt(
     name = "deploy-apt-arm64",
     target = ":assemble-linux-arm64-apt",
-    snapshot = deployment['artifact']['snapshot']['upload'],
-    release = deployment['artifact']['release']['upload'],
+    snapshot = deployment['apt']['snapshot']['upload'],
+    release = deployment['apt']['release']['upload'],
 )
 
 release_validate_deps(
