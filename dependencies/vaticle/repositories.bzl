@@ -21,35 +21,35 @@ def vaticle_bazel_distribution():
     git_repository(
         name = "vaticle_bazel_distribution",
         remote = "https://github.com/vaticle/bazel-distribution",
-        commit = "bc2fcd5d0caf521d54acf2b7dfe214352e0292d6",
+        commit = "4a01d09ef542a423ced909db9a61291dc0a6acc5",
     )
 
 def vaticle_dependencies():
     git_repository(
         name = "vaticle_dependencies",
         remote = "https://github.com/vaticle/dependencies",
-        commit = "41bb5bfb1b5f2adab4a88886d2e74f10d456e7e1",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_dependencies
+        commit = "a4a3bac9515fd51365e02f6aad762f67357e49a5", # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_dependencies
     )
 
 def vaticle_typeql():
     git_repository(
         name = "vaticle_typeql",
         remote = "https://github.com/vaticle/typeql",
-        tag = "2.25.8",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql
+        commit = "3a523f4d7d40b0c5d3b9af68f31a3859215fa671",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typeql
     )
 
 def vaticle_typedb_common():
     git_repository(
         name = "vaticle_typedb_common",
         remote = "https://github.com/vaticle/typedb-common",
-        commit = "1f0f1ec07c9869423b5698271fcca76fde4b4f9e",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_common
+        commit = "dbc333528ecdafa5b571344237e831619c3fa5f0",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_common
     )
 
 def vaticle_typedb_protocol():
     git_repository(
         name = "vaticle_typedb_protocol",
         remote = "https://github.com/vaticle/typedb-protocol",
-        commit = "9575d084bf4a8618175b70c316b476a8d3984cab",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @vaticle_typedb_protocol
+        commit = "a1ebf01a761268dc28c6fd2ab8b6cd825431f3d4"
     )
 
 def vaticle_typedb_behaviour():

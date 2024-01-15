@@ -47,8 +47,8 @@ assemble_maven(
 deploy_maven(
     name = "deploy-maven",
     target = ":assemble-maven",
-    snapshot = deployment['maven.snapshot'],
-    release = deployment['maven.release']
+    snapshot = deployment['maven']['snapshot']['upload'],
+    release = deployment['maven']['release']['upload'],
 )
 
 checkstyle_test(
