@@ -29,5 +29,5 @@ def vaticle_typedb_console_artifact():
     )
 
 maven_artifacts = {
-#    "com.vaticle.typedb:typedb-console-runner": "3a90fa5d47167508a1f221e0086f265864b91a1b",
+    "com.vaticle.typedb:typedb-console-runner": "45e1bae89d4495a5a44c9ca0dfb385fe4c9033a6",
 }
