@@ -32,7 +32,5 @@ pub(crate) struct TransactionWrite<'txn, 'storage: 'txn> {
 
 impl<'txn, 'storage: 'txn> TransactionWrite<'txn, 'storage> {
 
-
-
 }
 

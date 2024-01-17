@@ -22,6 +22,7 @@ use encoding::Prefix;
 use encoding::type_::id_generator::TypeIIDGenerator;
 use encoding::type_::type_encoding::concept::TypeIID;
 use encoding::type_::type_encoding::index::{TypeIIDLabelIndex, LabelTypeIIDIndex};
+use storage::key::WritableKey;
 use storage::snapshot::Snapshot;
 
 pub struct TypeManager<'txn, 'storage: 'txn> {
@@ -42,11 +43,12 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_iid = self.iid_generator.take_entity_iid();
-            write_snapshot.put(type_iid.as_bytes());
+            let type_iid_key = type_iid.to_writable_key();
+            write_snapshot.put(type_iid_key.clone());
             let (iid_label_index_key, value) = TypeIIDLabelIndex::new(type_iid, label);
-            write_snapshot.put_val(iid_label_index_key.as_bytes(), value.as_bytes());
-            let (label_iid_index_key, value) = LabelTypeIIDIndex::new(label, type_iid);
-            write_snapshot.put_val(&label_iid_index_key.to_bytes(), value.as_bytes());
+            write_snapshot.put_val(iid_label_index_key.to_writable_key(), value.to_bytes());
+            let label_iid_index_key = LabelTypeIIDIndex::new(label, type_iid);
+            write_snapshot.put_val(label_iid_index_key.to_writable_key(), type_iid_key.bytes().into());
             return EntityType::new(type_iid);
         }
         panic!("Illegal state: create entity type requires write snapshot")
@@ -63,11 +65,12 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_iid = self.iid_generator.take_attribute_iid();
-            write_snapshot.put(type_iid.as_bytes());
+            let type_iid_key = type_iid.to_writable_key();
+            write_snapshot.put(type_iid_key.clone());
             let (iid_label_index_key, value) = TypeIIDLabelIndex::new(type_iid, label);
-            write_snapshot.put_val(iid_label_index_key.as_bytes(), value.as_bytes());
-            let (label_iid_index_key, value) = LabelTypeIIDIndex::new(label, type_iid);
-            write_snapshot.put_val(&label_iid_index_key.to_bytes(), value.as_bytes());
+            write_snapshot.put_val(iid_label_index_key.to_writable_key(), value.to_bytes());
+            let label_iid_index_key = LabelTypeIIDIndex::new(label, type_iid);
+            write_snapshot.put_val(label_iid_index_key.to_writable_key(), type_iid_key.bytes().into());
             return AttributeType::new(type_iid);
         }
         panic!("Illegal state: create entity type requires write snapshot")

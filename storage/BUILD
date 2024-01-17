@@ -37,6 +37,7 @@ rust_library(
         "@crates//:itertools",
         "@crates//:speedb",
         "@crates//:tracing",
+        "@crates//:struct_deser",
     ]
 )
 

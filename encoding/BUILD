@@ -35,7 +35,10 @@ rust_library(
         "//common/logger",
 
         "@crates//:tracing",
-        "@crates//:binary-layout",
+        "@crates//:struct_deser",
+    ],
+    proc_macro_deps = [
+        "@crates//:struct_deser-derive"
     ]
 )
 

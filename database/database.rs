@@ -36,7 +36,7 @@ struct Database {
 }
 
 impl Database {
-    fn new(path: &PathBuf, name: String) -> Database {
+    pub fn new(path: &PathBuf, name: String) -> Database {
         let database_path = path.with_extension(&name);
         fs::create_dir(database_path.as_path());
         let database_name: Rc<str> = Rc::from(name);

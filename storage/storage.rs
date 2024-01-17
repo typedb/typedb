@@ -27,7 +27,7 @@ use wal::SequenceNumber;
 
 use crate::durability_service::DurabilityService;
 use crate::error::{StorageError, StorageErrorKind};
-use crate::key::Key;
+use crate::key::WriteKey;
 use crate::snapshot::{ReadSnapshot, WriteSnapshot};
 
 pub mod error;
@@ -45,8 +45,6 @@ pub struct Storage {
 
 impl Storage {
     const STORAGE_DIR_NAME: &'static str = "storage";
-    const BYTES_EMPTY: [u8; 0] = [];
-    const BYTES_EMPTY_VEC: Vec<u8> = Vec::new();
 
     pub fn new(owner_name: Rc<str>, path: &PathBuf) -> Result<Self, StorageError> {
         let kv_storage_dir = path.with_extension(Storage::STORAGE_DIR_NAME);
@@ -120,25 +118,22 @@ impl Storage {
 
     pub fn snapshot_commit<'storage>(&'storage self, snapshot: WriteSnapshot<'storage>) {
         // steps:
-        //  1. validate transaction-local integrity constraints
-        //  2. make durable and get sequence number
-        //  3. notify committed to isolation manager (must be immediate so waiting txn's don't spin long)
-        //  4. validate against concurrent transactions in the given order
-        //  5. write to kv-storage
+        //  1. make durable and get sequence number
+        //  2. notify committed to isolation manager (must be immediate so waiting txn's don't spin long)
+        //  3. validate against concurrent transactions in the given order
+        //  4. write to kv-storage
     }
 
-    //
-    // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
-    //
-    // pub fn put(&self, key: &Key) {
-    //     self.get_section(key.data[0]).put(&key.data).map_err(|e| StorageError {
-    //         storage_name: self.owner_name.as_ref().to_owned(),
-    //         kind: StorageErrorKind::SectionError { source: e },
-    //     }).unwrap_or_log()
-    // }
+    pub fn put(&self, key: &WriteKey) {
+        // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
+        self.get_section(key.bytes()[0]).put(key.bytes()).map_err(|e| StorageError {
+            storage_name: self.owner_name.as_ref().to_owned(),
+            kind: StorageErrorKind::SectionError { source: e },
+        }).unwrap_or_log()
+    }
 
-    pub fn get(&self, key: &Key) -> Option<Vec<u8>> {
-        self.get_section(key.data[0]).get(&key.data).map_err(|e| StorageError {
+    pub fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
+        self.get_section(key[0]).get(key).map_err(|e| StorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: e },
             // TODO: unwrap_or_log may be incorrect: this could trigger if the DB is deleted for example?
@@ -248,17 +243,16 @@ impl Section {
         options
     }
 
-    fn put(&self, bytes: &Vec<u8>) -> Result<(), SectionError> {
-        // TODO: this should WAL
-        self.kv_storage.put(bytes, Storage::BYTES_EMPTY)
+    fn put(&self, bytes: &[u8]) -> Result<(), SectionError> {
+        // TODO: this should WAL if it is going to be exposed
+        self.kv_storage.put(bytes, key::empty().as_slice())
             .map_err(|e| SectionError {
                 section_name: self.name.clone(),
                 kind: SectionErrorKind::FailedIterate { source: e },
             })
     }
 
-    // TODO: look into using get_pin if we're going to use the result
-    fn get(&self, bytes: &Vec<u8>) -> Result<Option<Vec<u8>>, SectionError> {
+    fn get(&self, bytes: &[u8]) -> Result<Option<Vec<u8>>, SectionError> {
         self.kv_storage.get(bytes).map_err(|e| SectionError {
             section_name: self.name.clone(),
             kind: SectionErrorKind::FailedGet { source: e },

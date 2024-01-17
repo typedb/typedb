@@ -23,7 +23,7 @@ use logger::initialise_logging;
 use rand;
 use tracing::subscriber::DefaultGuard;
 
-use storage::{error::{StorageError, StorageErrorKind}, key::Key, SectionError, SectionErrorKind, Storage};
+use storage::{error::{StorageError, StorageErrorKind}, key::WriteKey, SectionError, SectionErrorKind, Storage};
 
 fn setup() -> (PathBuf, DefaultGuard) {
     let guard = initialise_logging();
@@ -108,28 +108,28 @@ fn get_put_iterate() {
     let sec_2_prefix: u8 = 0x10;
     storage.create_section("sec_2", sec_2_prefix, &storage::Section::new_options()).unwrap();
 
-    let sec_1_key_1 = Key { data: vec![sec_1_prefix, 0x0, 0x0, 0x1] };
-    let sec_1_key_2 = Key { data: vec![sec_1_prefix, 0x1, 0x0, 0x10] };
-    let sec_1_key_3 = Key { data: vec![sec_1_prefix, 0x1, 0x0, 0xff] };
-    let sec_1_key_4 = Key { data: vec![sec_1_prefix, 0x2, 0x0, 0xff] };
+    let sec_1_key_1 = WriteKey::from(vec![sec_1_prefix, 0x0, 0x0, 0x1]);
+    let sec_1_key_2 =  WriteKey::from( vec![sec_1_prefix, 0x1, 0x0, 0x10]);
+    let sec_1_key_3 =  WriteKey::from( vec![sec_1_prefix, 0x1, 0x0, 0xff]);
+    let sec_1_key_4 =  WriteKey::from(vec![sec_1_prefix, 0x2, 0x0, 0xff]);
     storage.put(&sec_1_key_1);
     storage.put(&sec_1_key_2);
     storage.put(&sec_1_key_3);
     storage.put(&sec_1_key_4);
 
-    let sec_2_key_1 = Key { data: vec![sec_2_prefix, 0x1, 0x0, 0x1] };
-    let sec_2_key_2 = Key { data: vec![sec_2_prefix, 0xb, 0x0, 0x10] };
-    let sec_2_key_3 = Key { data: vec![sec_2_prefix, 0x5, 0x0, 0xff] };
-    let sec_2_key_4 = Key { data: vec![sec_2_prefix, 0x2, 0x0, 0xff] };
+    let sec_2_key_1 = WriteKey::from(vec![sec_2_prefix, 0x1, 0x0, 0x1]);
+    let sec_2_key_2 = WriteKey::from(vec![sec_2_prefix, 0xb, 0x0, 0x10]);
+    let sec_2_key_3 = WriteKey::from(vec![sec_2_prefix, 0x5, 0x0, 0xff]);
+    let sec_2_key_4 = WriteKey::from(vec![sec_2_prefix, 0x2, 0x0, 0xff]);
     storage.put(&sec_2_key_1);
     storage.put(&sec_2_key_2);
     storage.put(&sec_2_key_3);
     storage.put(&sec_2_key_4);
 
-    let first_value = storage.get(&sec_1_key_1);
+    let first_value = storage.get(sec_1_key_1.bytes());
     assert!(first_value.is_some() && first_value.unwrap().is_empty());
 
-    let second_value = storage.get(&sec_2_key_1);
+    let second_value = storage.get(sec_2_key_1.bytes());
     assert!(second_value.is_some() && second_value.unwrap().is_empty());
 
     let prefix = vec![sec_1_prefix, 0x1];
@@ -137,9 +137,9 @@ fn get_put_iterate() {
         .map(|(key, value)| (key.to_vec(), value.to_vec()))
         .collect();
     assert_eq!(entries, vec![
-        (sec_1_key_2.data, Vec::new()),
-        (sec_1_key_3.data, Vec::new()),
-        (sec_1_key_4.data, Vec::new()),
+        (sec_1_key_2.bytes().to_vec(), Vec::new()),
+        (sec_1_key_3.bytes().to_vec(), Vec::new()),
+        (sec_1_key_4.bytes().to_vec(), Vec::new()),
     ]);
 
     cleanup(storage_path)

@@ -44,9 +44,9 @@ kotlin_repositories()
 load("@io_bazel_rules_kotlin//kotlin:core.bzl", "kt_register_toolchains")
 kt_register_toolchains()
 
-# Load //builder/grpc
-load("@vaticle_dependencies//builder/grpc:deps.bzl", grpc_deps = "deps")
-grpc_deps()
+# Load //builder/proto_grpc
+load("@vaticle_dependencies//builder/proto_grpc:deps.bzl", proto_grpc_deps = "deps")
+proto_grpc_deps()
 
 load("@rules_proto_grpc//:repositories.bzl", "rules_proto_grpc_repos", "rules_proto_grpc_toolchains")
 rules_proto_grpc_toolchains()
@@ -64,7 +64,6 @@ checkstyle_deps()
 # Load //tool/unuseddeps
 load("@vaticle_dependencies//tool/unuseddeps:deps.bzl", unuseddeps_deps = "deps")
 unuseddeps_deps()
-
 
 # Load //builder/rust
 load("@vaticle_dependencies//builder/rust:deps.bzl", rust_deps = "deps")

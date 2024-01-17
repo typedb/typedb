@@ -121,55 +121,55 @@ mod connection {
 
         const PREFIX_HAS_FORWARD_SIZE: usize = ObjectIID::size() + INFIX_SIZE + PREFIX_SIZE;
         const PREFIX_HAS_FORWARD_TYPE_SIZE: usize = ObjectIID::size() + INFIX_SIZE + PREFIX_SIZE + TypeID::size();
-
-        #[repr(C, packed)]
-        #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-        struct HasForwardIIDSequenced {
-            id: HasForwardIID,
-            sequence_number: SequenceNumber,
-        }
-
-        #[repr(C, packed)]
-        #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-        struct HasForwardIID {
-            owner: ObjectIID,
-            infix: u8,
-            attribute: AttributeIID,
-        }
-
-        pub fn prefix_has_forward(owner: &ObjectIID) -> [u8; PREFIX_HAS_FORWARD_SIZE] {
-            let mut array = [0 as u8; PREFIX_HAS_FORWARD_SIZE];
-            array[0..ObjectIID::size()].copy_from_slice(owner.as_bytes());
-            array[ObjectIID::size()..(ObjectIID::size() + INFIX_SIZE)].copy_from_slice(&Infix::HasForward.as_bytes());
-            array
-        }
-
-        pub fn prefix_has_forward_type(owner: &ObjectIID, type_: &TypeID) -> [u8; PREFIX_HAS_FORWARD_TYPE_SIZE] {
-            let mut array = [0 as u8; PREFIX_HAS_FORWARD_TYPE_SIZE];
-            array[0..ObjectIID::size()].copy_from_slice(owner.as_bytes());
-            array[ObjectIID::size()..(ObjectIID::size() + INFIX_SIZE)].copy_from_slice(&Infix::HasForward.as_bytes());
-            array[(ObjectIID::size() + INFIX_SIZE)..(ObjectIID::size() + INFIX_SIZE + TypeID::size())].copy_from_slice(type_.as_bytes());
-            array
-        }
+        //
+        // #[repr(C, packed)]
+        // #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+        // struct HasForwardIIDSequenced {
+        //     id: HasForwardIID,
+        //     sequence_number: SequenceNumber,
+        // }
+        //
+        // #[repr(C, packed)]
+        // #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+        // struct HasForwardIID {
+        //     owner: ObjectIID,
+        //     infix: u8,
+        //     attribute: AttributeIID,
+        // }
+        //
+        // pub fn prefix_has_forward(owner: &ObjectIID) -> [u8; PREFIX_HAS_FORWARD_SIZE] {
+        //     let mut array = [0 as u8; PREFIX_HAS_FORWARD_SIZE];
+        //     array[0..ObjectIID::size()].copy_from_slice(owner.as_bytes());
+        //     array[ObjectIID::size()..(ObjectIID::size() + INFIX_SIZE)].copy_from_slice(&Infix::HasForward.as_bytes());
+        //     array
+        // }
+        //
+        // pub fn prefix_has_forward_type(owner: &ObjectIID, type_: &TypeID) -> [u8; PREFIX_HAS_FORWARD_TYPE_SIZE] {
+        //     let mut array = [0 as u8; PREFIX_HAS_FORWARD_TYPE_SIZE];
+        //     array[0..ObjectIID::size()].copy_from_slice(owner.as_bytes());
+        //     array[ObjectIID::size()..(ObjectIID::size() + INFIX_SIZE)].copy_from_slice(&Infix::HasForward.as_bytes());
+        //     array[(ObjectIID::size() + INFIX_SIZE)..(ObjectIID::size() + INFIX_SIZE + TypeID::size())].copy_from_slice(type_.as_bytes());
+        //     array
+        // }
     }
 
     mod has_backward {
         use wal::SequenceNumber;
         use crate::thing::thing_encoding::concept::{ObjectIID, AttributeIID};
-
-        #[repr(C, packed)]
-        #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-        struct HasBackwardIIDSequenced {
-            id: HasBackwardIID,
-            sequence_number: SequenceNumber,
-        }
-
-        #[repr(C, packed)]
-        #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-        struct HasBackwardIID {
-            attribute: AttributeIID,
-            infix: u8,
-            owner: ObjectIID,
-        }
+        //
+        // #[repr(C, packed)]
+        // #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+        // struct HasBackwardIIDSequenced {
+        //     id: HasBackwardIID,
+        //     sequence_number: SequenceNumber,
+        // }
+        //
+        // #[repr(C, packed)]
+        // #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+        // struct HasBackwardIID {
+        //     attribute: AttributeIID,
+        //     infix: u8,
+        //     owner: ObjectIID,
+        // }
     }
 }

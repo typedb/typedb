@@ -17,9 +17,10 @@
 
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::intrinsics::transmute;
 use std::str::Utf8Error;
-use storage::key::{Keyable};
+
+use struct_deser::SerializedByteLen;
+use struct_deser_derive::StructDeser;
 
 pub mod thing;
 pub mod type_;
@@ -39,22 +40,14 @@ pub enum Prefix {
     Attribute,
 }
 
-#[repr(C, packed)]
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct PrefixID {
-    // TODO: should we have this BE the enum so we can print the name of enum/compare easily?
     id: [u8; PREFIX_SIZE],
 }
 
 impl PrefixID {
     pub(crate) const fn size() -> usize {
-        std::mem::size_of::<Self>()
-    }
-
-    pub fn as_bytes(&self) -> &[u8; Self::size()] {
-        unsafe {
-            transmute(self)
-        }
+        PrefixID::BYTE_LEN
     }
 }
 
@@ -105,24 +98,15 @@ impl Infix {
 
 // TODO: review efficiency/style of encoding values
 mod value {
-    use std::mem::size_of;
     use logger::result::ResultExt;
+    use struct_deser_derive::StructDeser;
+
     use crate::{EncodingError, EncodingErrorKind};
 
-    #[repr(C, packed)]
-    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-    pub struct U16Bytes {
-        bytes: [u8; size_of::<u16>()],
-    }
-
-    impl U16Bytes {
-        pub fn encode(value: u16) -> U16Bytes {
-            U16Bytes { bytes: value.to_be_bytes() }
-        }
-
-        pub fn decode(&self) -> u16 {
-            u16::from_be_bytes(self.bytes.clone())
-        }
+    #[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq, Hash)]
+    pub struct U16 {
+        #[be]
+        value: u16,
     }
 
     pub struct StringBytes {
@@ -154,8 +138,8 @@ mod value {
                 }).unwrap_or_log()
         }
 
-        pub fn as_bytes(&self) -> &[u8] {
-            self.bytes.as_ref()
+        pub fn to_bytes(self) -> Box<[u8]> {
+            self.bytes
         }
     }
 }

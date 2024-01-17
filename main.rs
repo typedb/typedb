@@ -15,6 +15,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-fn main() {
+use database::database;
 
+fn main() {
+    let guard = initialise_logging();
+    let id = rand::random::<u64>();
+    let fs_tmp_dir = std::env::temp_dir().with_extension(format!("test_storage_{}", id));
+
+    database::new();
+        //
+        // let (storage_path, _log_guard) = setup();
+        // let storage_result = Storage::new(Rc::from("storage"), &storage_path);
+        // assert!(storage_result.is_ok());
+        // let storage = storage_result.unwrap();
+        // let delete_result = storage.delete_storage();
+        // assert!(delete_result.is_ok());
+        // cleanup(storage_path)
+
+    std::fs::remove_dir_all(fs_tmp_dir).ok();
 }

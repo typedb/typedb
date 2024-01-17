@@ -18,14 +18,15 @@
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use std::ops::RangeFrom;
 use std::sync::RwLock;
 
 use itertools::Itertools;
 use wal::SequenceNumber;
 
 use crate::error::StorageError;
-use crate::key::Key;
-use crate::Storage;
+use crate::key::WriteKey;
+use crate::{key, Storage};
 
 pub enum Snapshot<'storage> {
     Read(ReadSnapshot<'storage>),
@@ -33,8 +34,7 @@ pub enum Snapshot<'storage> {
 }
 
 impl<'storage> Snapshot<'storage> {
-
-    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &[u8]) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'snapshot> {
+    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &WriteKey) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'snapshot> {
         match self {
             Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
             Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
@@ -55,15 +55,15 @@ impl<'storage> ReadSnapshot<'storage> {
         }
     }
 
-    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'snapshot {
-        self.storage.iterate_prefix(prefix)
+    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &WriteKey) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'snapshot {
+        self.storage.iterate_prefix(prefix.bytes())
     }
 }
 
 pub struct WriteSnapshot<'storage> {
     storage: &'storage Storage,
     // TODO: replace with BTree Left-Right structure to allow concurrent read/write
-    inserts: RwLock<BTreeMap<Vec<u8>, Vec<u8>>>,
+    inserts: RwLock<BTreeMap<WriteKey, Box<[u8]>>>,
     open_sequence_number: SequenceNumber,
 }
 
@@ -76,33 +76,32 @@ impl<'storage> WriteSnapshot<'storage> {
         }
     }
 
-    pub fn put(&self, key: &[u8]) {
+    pub fn put(&self, key: WriteKey) {
         let mut map = self.inserts.write().unwrap();
-        map.insert(key.into(), Storage::BYTES_EMPTY_VEC);
+        map.insert(key, key::empty());
     }
 
-    pub fn put_val(&self, key: &[u8], val: &[u8]) {
+    pub fn put_val(&self, key: WriteKey, val: Box<[u8]>) {
         let mut map = self.inserts.write().unwrap();
-        map.insert(key.into(), val.into());
+        map.insert(key, val);
     }
 
-    fn get(&self, key: &Key) -> Option<Vec<u8>> {
+    fn get(&self, key: &WriteKey) -> Option<Vec<u8>> {
         // TODO merge with inserts & deletes
-        self.storage.get(key)
+        self.storage.get(key.bytes())
     }
 
-    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'snapshot {
-        self.storage.iterate_prefix(prefix).merge(self.iterate_prefix_buffered(prefix))
+    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &WriteKey) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'snapshot {
+        self.storage.iterate_prefix(prefix.bytes()).merge(self.iterate_prefix_buffered(prefix))
     }
 
-    fn iterate_prefix_buffered<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
-        // TODO: avoid copy
-        let p: Vec<u8> = prefix.into();
+    fn iterate_prefix_buffered<'s>(&'s self, prefix: &WriteKey) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
         let map = self.inserts.read().unwrap();
+        let range = RangeFrom { start: prefix };
         // TODO: hold read lock while iterating so avoid collecting into array
-        map.range::<Vec<u8>, _>(&p..).map(|(key, val)| {
+        map.range::<WriteKey, _>(range).map(|(key, val)| {
             // TODO: we can avoid allocation here once we settle on a Key/Value struct
-            (key.clone().into_boxed_slice(), val.clone().into_boxed_slice())
+            (key.bytes().into(), val.clone())
         }).collect::<Vec<_>>().into_iter()
     }
 }

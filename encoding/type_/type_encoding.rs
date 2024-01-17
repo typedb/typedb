@@ -17,21 +17,14 @@
 
 
 pub mod concept {
-    use std::mem::transmute;
-    use wal::SequenceNumber;
+    use struct_deser::SerializedByteLen;
+    use struct_deser_derive::StructDeser;
+
     use crate::PrefixID;
 
     const TYPE_ID_SIZE: usize = 2;
 
-    #[repr(C, packed)]
-    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-    struct TypeIIDSequenced {
-        iid: TypeIID,
-        sequence_number: SequenceNumber,
-    }
-
-    #[repr(C, packed)]
-    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+    #[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq, Hash)]
     pub struct TypeIID {
         prefix: PrefixID,
         id: TypeID,
@@ -47,18 +40,11 @@ pub mod concept {
         }
 
         pub(crate) const fn size() -> usize {
-            std::mem::size_of::<Self>()
-        }
-
-        pub fn as_bytes(&self) -> &[u8; Self::size()] {
-            unsafe {
-                transmute(self)
-            }
+            PrefixID::size() + TypeID::size()
         }
     }
 
-    #[repr(C, packed)]
-    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+    #[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq, Hash)]
     pub struct TypeID {
         bytes: [u8; TYPE_ID_SIZE],
     }
@@ -69,26 +55,20 @@ pub mod concept {
         }
 
         pub(crate) const fn size() -> usize {
-            std::mem::size_of::<Self>()
-        }
-
-        pub fn as_bytes(&self) -> &[u8; Self::size()] {
-            unsafe {
-                transmute(self)
-            }
+            TypeID::BYTE_LEN
         }
     }
 }
 
 pub mod index {
-    use std::io::Read;
-    use std::mem::transmute;
-    use crate::{Prefix, PrefixID, value};
+    use struct_deser::SerializedByteLen;
+    use struct_deser_derive::StructDeser;
+
+    use crate::{Prefix, PrefixID};
     use crate::type_::type_encoding::concept::TypeIID;
     use crate::value::StringBytes;
 
-    #[repr(C, packed)]
-    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+    #[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq, Hash)]
     pub struct TypeIIDLabelIndex {
         prefix: PrefixID,
         iid: TypeIID,
@@ -106,13 +86,7 @@ pub mod index {
         }
 
         pub(crate) const fn size() -> usize {
-            std::mem::size_of::<Self>()
-        }
-
-        pub fn as_bytes(&self) -> &[u8; Self::size()] {
-            unsafe {
-                transmute(self)
-            }
+            TypeIIDLabelIndex::BYTE_LEN
         }
     }
 
@@ -122,21 +96,19 @@ pub mod index {
     }
 
     impl LabelTypeIIDIndex {
-        pub fn new(label: &str, iid: TypeIID) -> (LabelTypeIIDIndex, TypeIID) {
-            (
-                LabelTypeIIDIndex {
-                    prefix: Prefix::LabelTypeIndex.as_id(),
-                    label: StringBytes::encode(label),
-                },
-                iid
-            )
+        pub fn new(label: &str, iid: TypeIID) -> LabelTypeIIDIndex {
+            LabelTypeIIDIndex {
+                prefix: Prefix::LabelTypeIndex.as_id(),
+                label: StringBytes::encode(label),
+            }
         }
 
         pub fn to_bytes(&self) -> Box<[u8]> {
-            self.prefix.as_bytes().iter()
-                .chain(self.label.as_bytes().iter())
-                .map(|byte| byte.clone())
-                .collect::<Vec<u8>>().into_boxed_slice()
+            // self.prefix.as_bytes().iter()
+            //     .chain(self.label.as_bytes().iter())
+            //     .map(|byte| byte.clone())
+            //     .collect::<Vec<u8>>().into_boxed_slice()
+            todo!()
         }
     }
 }
