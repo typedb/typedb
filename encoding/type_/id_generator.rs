@@ -18,9 +18,9 @@
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use storage::Storage;
-use crate::Prefix;
+use crate::prefix::Prefix;
 
-use crate::Prefix::{AttributeType, EntityType};
+use crate::prefix::Prefix::{AttributeType, EntityType};
 use crate::type_::type_encoding::concept::{TypeID, TypeIID};
 
 pub struct TypeIIDGenerator {
@@ -30,7 +30,14 @@ pub struct TypeIIDGenerator {
 }
 
 impl TypeIIDGenerator {
-    pub fn new(storage: &Storage) -> TypeIIDGenerator {
+    pub fn new() -> TypeIIDGenerator {
+        TypeIIDGenerator {
+            next_entity_id: AtomicU16::new(0),
+            next_attribute_id: AtomicU16::new(0),
+        }
+    }
+
+    pub fn load(storage: &Storage) -> TypeIIDGenerator {
         let next_entity: AtomicU16 = storage.get_prev(&EntityType.as_bytes_next()).map_or_else(
             || AtomicU16::new(0),
             |prev| {

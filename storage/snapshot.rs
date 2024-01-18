@@ -25,7 +25,7 @@ use itertools::Itertools;
 use wal::SequenceNumber;
 
 use crate::error::StorageError;
-use crate::key::WriteKey;
+use crate::key::{WriteKey, WriteKeyFixed};
 use crate::{key, Storage};
 
 pub enum Snapshot<'storage> {

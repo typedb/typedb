@@ -17,7 +17,7 @@
 
 use std::iter::empty;
 
-use encoding::Prefix;
+use encoding::prefix::Prefix;
 use encoding::thing::thing_encoding::concept::{AttributeIID, ObjectIID};
 use storage::snapshot::Snapshot;
 use crate::type_manager::EntityType;

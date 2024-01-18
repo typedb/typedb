@@ -15,22 +15,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// use database::database::Database;
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub struct Label {
+    pub(crate) name: String,
+    pub(crate) scope: Option<String>,
+}
 
-fn main() {
-    // let guard = initialise_logging();
-    // let id = rand::random::<u64>();
-    // let fs_tmp_dir = std::env::temp_dir().with_extension(format!("test_storage_{}", id));
+impl Label {
 
-    // Database::new();
-        //
-        // let (storage_path, _log_guard) = setup();
-        // let storage_result = Storage::new(Rc::from("storage"), &storage_path);
-        // assert!(storage_result.is_ok());
-        // let storage = storage_result.unwrap();
-        // let delete_result = storage.delete_storage();
-        // assert!(delete_result.is_ok());
-        // cleanup(storage_path)
+    pub fn name(&self) -> &String {
+        &self.name
+    }
 
-    // std::fs::remove_dir_all(fs_tmp_dir).ok();
+    pub fn scope(&self) -> &Option<String> {
+        &self.scope
+    }
 }

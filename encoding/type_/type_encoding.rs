@@ -20,7 +20,8 @@ pub mod concept {
     use struct_deser::SerializedByteLen;
     use struct_deser_derive::StructDeser;
 
-    use crate::PrefixID;
+    use crate::{EncodingSection, WritableKeyFixed};
+    use crate::prefix::PrefixID;
 
     const TYPE_ID_SIZE: usize = 2;
 
@@ -38,9 +39,11 @@ pub mod concept {
         pub fn prefix(&self) -> PrefixID {
             self.prefix
         }
+    }
 
-        pub(crate) const fn size() -> usize {
-            PrefixID::size() + TypeID::size()
+    impl WritableKeyFixed for TypeIID {
+        fn key_section_id(&self) -> u8 {
+            EncodingSection::Schema.id()
         }
     }
 
@@ -58,13 +61,37 @@ pub mod concept {
             TypeID::BYTE_LEN
         }
     }
+
+    pub mod root {
+        use crate::label::Label;
+
+        pub enum Root {
+            Entity,
+            Attribute,
+            Relation,
+            Role,
+        }
+
+        impl Root {
+            // TODO this should be CONST
+            pub fn label(&self) -> Label {
+                match self {
+                    Root::Entity => Label { name: String::from("entity"), scope: None },
+                    Root::Attribute => Label { name: String::from("attribute"), scope: None },
+                    Root::Relation => Label { name: String::from("relation"), scope: None },
+                    Root::Role => Label { name: String::from("role"), scope: None },
+                }
+            }
+        }
+    }
 }
 
 pub mod index {
     use struct_deser::SerializedByteLen;
     use struct_deser_derive::StructDeser;
 
-    use crate::{Prefix, PrefixID};
+    use crate::{EncodingSection, Serialisable, WritableKeyDynamic, WritableKeyFixed};
+    use crate::prefix::{Prefix, PrefixID};
     use crate::type_::type_encoding::concept::TypeIID;
     use crate::value::StringBytes;
 
@@ -90,25 +117,43 @@ pub mod index {
         }
     }
 
+    impl WritableKeyFixed for TypeIIDLabelIndex {
+        fn key_section_id(&self) -> u8 {
+            EncodingSection::Schema.id()
+        }
+    }
+
     pub struct LabelTypeIIDIndex {
         prefix: PrefixID,
         label: StringBytes,
     }
 
     impl LabelTypeIIDIndex {
-        pub fn new(label: &str, iid: TypeIID) -> LabelTypeIIDIndex {
+        pub fn new(label: &str) -> LabelTypeIIDIndex {
             LabelTypeIIDIndex {
                 prefix: Prefix::LabelTypeIndex.as_id(),
                 label: StringBytes::encode(label),
             }
         }
+    }
 
-        pub fn to_bytes(&self) -> Box<[u8]> {
-            // self.prefix.as_bytes().iter()
-            //     .chain(self.label.as_bytes().iter())
-            //     .map(|byte| byte.clone())
-            //     .collect::<Vec<u8>>().into_boxed_slice()
-            todo!()
+    impl Serialisable for LabelTypeIIDIndex {
+        fn serialised_size(&self) -> usize {
+            self.prefix.serialised_size() + self.label.serialised_size()
+        }
+
+        fn serialise_into(&self, array: &mut [u8]) {
+            debug_assert_eq!(array.len(), self.serialised_size());
+            let slice = &mut array[0..self.prefix.serialised_size()];
+            self.prefix.serialise_into(slice);
+            let slice = &mut array[self.prefix.serialised_size()..self.serialised_size()];
+            self.label.serialise_into(slice)
+        }
+    }
+
+    impl WritableKeyDynamic for LabelTypeIIDIndex {
+        fn key_section_id(&self) -> u8 {
+            EncodingSection::Schema.id()
         }
     }
 }

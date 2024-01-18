@@ -23,7 +23,7 @@ use logger::initialise_logging;
 use rand;
 use tracing::subscriber::DefaultGuard;
 
-use storage::{error::{StorageError, StorageErrorKind}, key::WriteKey, SectionError, SectionErrorKind, Storage};
+use storage::{error::{StorageError, StorageErrorKind}, key::WriteKeyFixed, SectionError, SectionErrorKind, Storage};
 
 fn setup() -> (PathBuf, DefaultGuard) {
     let guard = initialise_logging();
@@ -108,19 +108,19 @@ fn get_put_iterate() {
     let sec_2_prefix: u8 = 0x10;
     storage.create_section("sec_2", sec_2_prefix, &storage::Section::new_options()).unwrap();
 
-    let sec_1_key_1 = WriteKey::from(vec![sec_1_prefix, 0x0, 0x0, 0x1]);
-    let sec_1_key_2 =  WriteKey::from( vec![sec_1_prefix, 0x1, 0x0, 0x10]);
-    let sec_1_key_3 =  WriteKey::from( vec![sec_1_prefix, 0x1, 0x0, 0xff]);
-    let sec_1_key_4 =  WriteKey::from(vec![sec_1_prefix, 0x2, 0x0, 0xff]);
+    let sec_1_key_1 = WriteKeyFixed::from(vec![sec_1_prefix, 0x0, 0x0, 0x1]);
+    let sec_1_key_2 =  WriteKeyFixed::from( vec![sec_1_prefix, 0x1, 0x0, 0x10]);
+    let sec_1_key_3 =  WriteKeyFixed::from( vec![sec_1_prefix, 0x1, 0x0, 0xff]);
+    let sec_1_key_4 =  WriteKeyFixed::from(vec![sec_1_prefix, 0x2, 0x0, 0xff]);
     storage.put(&sec_1_key_1);
     storage.put(&sec_1_key_2);
     storage.put(&sec_1_key_3);
     storage.put(&sec_1_key_4);
 
-    let sec_2_key_1 = WriteKey::from(vec![sec_2_prefix, 0x1, 0x0, 0x1]);
-    let sec_2_key_2 = WriteKey::from(vec![sec_2_prefix, 0xb, 0x0, 0x10]);
-    let sec_2_key_3 = WriteKey::from(vec![sec_2_prefix, 0x5, 0x0, 0xff]);
-    let sec_2_key_4 = WriteKey::from(vec![sec_2_prefix, 0x2, 0x0, 0xff]);
+    let sec_2_key_1 = WriteKeyFixed::from(vec![sec_2_prefix, 0x1, 0x0, 0x1]);
+    let sec_2_key_2 = WriteKeyFixed::from(vec![sec_2_prefix, 0xb, 0x0, 0x10]);
+    let sec_2_key_3 = WriteKeyFixed::from(vec![sec_2_prefix, 0x5, 0x0, 0xff]);
+    let sec_2_key_4 = WriteKeyFixed::from(vec![sec_2_prefix, 0x2, 0x0, 0xff]);
     storage.put(&sec_2_key_1);
     storage.put(&sec_2_key_2);
     storage.put(&sec_2_key_3);

@@ -114,9 +114,9 @@ pub mod concept {
 
 mod connection {
     mod has_forward {
-        use wal::SequenceNumber;
-        use crate::{Infix, INFIX_SIZE, PREFIX_SIZE};
-        use crate::thing::thing_encoding::concept::{ObjectIID, AttributeIID};
+        use crate::infix::INFIX_SIZE;
+        use crate::prefix::PREFIX_SIZE;
+        use crate::thing::thing_encoding::concept::ObjectIID;
         use crate::type_::type_encoding::concept::TypeID;
 
         const PREFIX_HAS_FORWARD_SIZE: usize = ObjectIID::size() + INFIX_SIZE + PREFIX_SIZE;
@@ -154,8 +154,6 @@ mod connection {
     }
 
     mod has_backward {
-        use wal::SequenceNumber;
-        use crate::thing::thing_encoding::concept::{ObjectIID, AttributeIID};
         //
         // #[repr(C, packed)]
         // #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]

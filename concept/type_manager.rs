@@ -17,13 +17,16 @@
 
 
 use std::rc::Rc;
-use encoding::Prefix;
 
+use encoding::{WritableKeyDynamic, WritableKeyFixed};
+pub use encoding::label::Label;
+use encoding::prefix::Prefix;
 use encoding::type_::id_generator::TypeIIDGenerator;
 use encoding::type_::type_encoding::concept::TypeIID;
-use encoding::type_::type_encoding::index::{TypeIIDLabelIndex, LabelTypeIIDIndex};
-use storage::key::WritableKey;
+use encoding::type_::type_encoding::concept::root::Root;
+use encoding::type_::type_encoding::index::{LabelTypeIIDIndex, TypeIIDLabelIndex};
 use storage::snapshot::Snapshot;
+use storage::Storage;
 
 pub struct TypeManager<'txn, 'storage: 'txn> {
     snapshot: Rc<Snapshot<'storage>>,
@@ -39,41 +42,53 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
         }
     }
 
-    fn create_entity_type(&self, label: &str) -> EntityType {
+    pub fn initialise_types(storage: &mut Storage, id_generator: &TypeIIDGenerator) {
+        let snapshot = Rc::new(Snapshot::Write(storage.snapshot_write()));
+        let type_manager = TypeManager::new(snapshot, id_generator);
+        type_manager.create_entity_type(&Root::Entity.label());
+
+
+
+
+    }
+
+    pub fn create_entity_type(&self, label_: &Label) -> EntityType {
+        let label = &label_.name();
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_iid = self.iid_generator.take_entity_iid();
-            let type_iid_key = type_iid.to_writable_key();
+            let type_iid_key = type_iid.serialise_to_write_key();
             write_snapshot.put(type_iid_key.clone());
             let (iid_label_index_key, value) = TypeIIDLabelIndex::new(type_iid, label);
-            write_snapshot.put_val(iid_label_index_key.to_writable_key(), value.to_bytes());
-            let label_iid_index_key = LabelTypeIIDIndex::new(label, type_iid);
-            write_snapshot.put_val(label_iid_index_key.to_writable_key(), type_iid_key.bytes().into());
+            write_snapshot.put_val(iid_label_index_key.serialise_to_write_key(), value.to_bytes());
+            let label_iid_index_key = LabelTypeIIDIndex::new(label);
+            write_snapshot.put_val(label_iid_index_key.serialise_to_write_key(), type_iid_key.bytes().to_vec().into_boxed_slice());
             return EntityType::new(type_iid);
         }
-        panic!("Illegal state: create entity type requires write snapshot")
+        panic!("Illegal state: create type requires write snapshot")
     }
 
-    fn get_entity_type(&self, label: &str) -> EntityType {
+    pub fn get_entity_type(&self, label: &Label) -> EntityType {
         // let prefix = Prefix::Entity.as_bytes();
         // // self.snapshot.iterate_prefix(prefix).map(|(key, value)| Entity::new(ThingEncoder::decideThingIIDSmall))
         // empty()
         todo!()
     }
 
-    fn create_attribute_type(&self, label: &str) -> AttributeType {
+    pub fn create_attribute_type(&self, label_: &Label) -> AttributeType {
+        let label = &label_.name();
         // TODO: validate type doesn't exist already
         if let Snapshot::Write(write_snapshot) = self.snapshot.as_ref() {
             let type_iid = self.iid_generator.take_attribute_iid();
-            let type_iid_key = type_iid.to_writable_key();
+            let type_iid_key = type_iid.serialise_to_write_key();
             write_snapshot.put(type_iid_key.clone());
             let (iid_label_index_key, value) = TypeIIDLabelIndex::new(type_iid, label);
-            write_snapshot.put_val(iid_label_index_key.to_writable_key(), value.to_bytes());
-            let label_iid_index_key = LabelTypeIIDIndex::new(label, type_iid);
-            write_snapshot.put_val(label_iid_index_key.to_writable_key(), type_iid_key.bytes().into());
+            write_snapshot.put_val(iid_label_index_key.serialise_to_write_key(), value.to_bytes());
+            let label_iid_index_key = LabelTypeIIDIndex::new(label);
+            write_snapshot.put_val(label_iid_index_key.serialise_to_write_key(), type_iid_key.bytes().to_vec().into_boxed_slice());
             return AttributeType::new(type_iid);
         }
-        panic!("Illegal state: create entity type requires write snapshot")
+        panic!("Illegal state: create type requires write snapshot")
     }
 
     // TODO:

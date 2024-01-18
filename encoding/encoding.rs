@@ -19,131 +19,84 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::str::Utf8Error;
 
-use struct_deser::SerializedByteLen;
-use struct_deser_derive::StructDeser;
+use storage::{Section, Storage};
+use storage::error::StorageError;
+pub use storage::key::{FIXED_KEY_LENGTH_BYTES, WriteKey, WriteKeyFixed};
+use storage::key::WriteKeyDynamic;
+use struct_deser::{IntoBytes, SerializedByteLen};
 
 pub mod thing;
 pub mod type_;
+pub mod prefix;
+pub mod label;
+mod infix;
+mod value;
 
-pub const PREFIX_SIZE: usize = 1;
-pub const INFIX_SIZE: usize = 1;
 
-pub enum Prefix {
-    EntityType,
-    RelationType,
-    AttributeType,
-
-    TypeLabelIndex,
-    LabelTypeIndex,
-
-    Entity,
-    Attribute,
+enum EncodingSection {
+    Schema,
 }
 
-#[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct PrefixID {
-    id: [u8; PREFIX_SIZE],
-}
-
-impl PrefixID {
-    pub(crate) const fn size() -> usize {
-        PrefixID::BYTE_LEN
-    }
-}
-
-impl Prefix {
-    pub const fn as_bytes(&self) -> [u8; PREFIX_SIZE] {
+impl EncodingSection {
+    const fn name(&self) -> &str {
         match self {
-            Prefix::EntityType => [0],
-            Prefix::RelationType => [1],
-            Prefix::AttributeType => [2],
-            Prefix::TypeLabelIndex => [20],
-            Prefix::LabelTypeIndex => [21],
-            Prefix::Entity => [100],
-            Prefix::Attribute => [101],
+            EncodingSection::Schema => "schema",
         }
     }
 
-    // TODO: this is hard to maintain relative to the above - we should convert the pair into a macro
-    pub const fn as_bytes_next(&self) -> [u8; PREFIX_SIZE] {
+    const fn id(&self) -> u8 {
         match self {
-            Prefix::EntityType => [1],
-            Prefix::RelationType => [2],
-            Prefix::AttributeType => [3],
-            Prefix::TypeLabelIndex => [21],
-            Prefix::LabelTypeIndex => [22],
-            Prefix::Entity => [101],
-            Prefix::Attribute => [102],
+            EncodingSection::Schema => 0b0,
         }
     }
 
-    pub const fn as_id(&self) -> PrefixID {
-        PrefixID { id: self.as_bytes() }
+    fn initialise_storage(&self, storage: &mut Storage) -> Result<(), StorageError> {
+        let options = Section::new_options();
+        storage.create_section(self.name(), self.id(), &options)
     }
 }
 
-pub enum Infix {
-    HasForward,
-    HasBackward,
+pub fn initialise_storage(storage: &mut Storage) -> Result<(), StorageError> {
+    EncodingSection::Schema.initialise_storage(storage)
 }
 
-impl Infix {
-    pub(crate) const fn as_bytes(&self) -> [u8; INFIX_SIZE] {
-        match self {
-            Infix::HasForward => [0],
-            Infix::HasBackward => [1],
-        }
-    }
+pub trait Serialisable {
+    fn serialised_size(&self) -> usize;
+
+    fn serialise_into(&self, array: &mut [u8]);
 }
 
-// TODO: review efficiency/style of encoding values
-mod value {
-    use logger::result::ResultExt;
-    use struct_deser_derive::StructDeser;
-
-    use crate::{EncodingError, EncodingErrorKind};
-
-    #[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq, Hash)]
-    pub struct U16 {
-        #[be]
-        value: u16,
+impl<T: IntoBytes> Serialisable for T {
+    fn serialised_size(&self) -> usize {
+        Self::BYTE_LEN
     }
 
-    pub struct StringBytes {
-        bytes: Box<[u8]>,
-    }
-
-    impl StringBytes {
-        pub fn encode(value: &str) -> StringBytes {
-            // todo: don't want to allocate to vec here
-            StringBytes { bytes: value.as_bytes().to_vec().into_boxed_slice() }
-        }
-
-        pub fn decode(&self) -> String {
-            // todo: don't want to allocate to vec here
-            String::from_utf8(self.bytes.to_vec())
-                .map_err(|err| {
-                    EncodingError {
-                        kind: EncodingErrorKind::FailedUFT8Decode { bytes: self.bytes.clone(), source: err.utf8_error() }
-                    }
-                }).unwrap_or_log()
-        }
-
-        pub fn decode_ref(&self) -> &str {
-            std::str::from_utf8(self.bytes.as_ref())
-                .map_err(|err| {
-                    EncodingError {
-                        kind: EncodingErrorKind::FailedUFT8Decode { bytes: self.bytes.clone(), source: err }
-                    }
-                }).unwrap_or_log()
-        }
-
-        pub fn to_bytes(self) -> Box<[u8]> {
-            self.bytes
-        }
+    fn serialise_into(&self, array: &mut [u8]) {
+        debug_assert_eq!(array.len(), self.serialised_size());
+        self.into_bytes(array)
     }
 }
 
+pub trait WritableKeyFixed: Serialisable {
+    fn key_section_id(&self) -> u8;
+
+    fn serialise_to_write_key(&self) -> WriteKey {
+        let mut bytes = Vec::<u8>::with_capacity(self.serialised_size());
+        self.serialise_into(bytes.as_mut_slice());
+        WriteKey::Dynamic(WriteKeyDynamic::new(self.key_section_id(), bytes.into_boxed_slice()))
+    }
+}
+
+pub trait WritableKeyDynamic: Serialisable {
+    fn key_section_id(&self) -> u8;
+
+    fn serialise_to_write_key(&self) -> WriteKey {
+        debug_assert!(self.serialised_size() < FIXED_KEY_LENGTH_BYTES);
+        let mut data = [0; FIXED_KEY_LENGTH_BYTES];
+        self.serialise_into(&mut data[0..self.serialised_size()]);
+        WriteKey::Fixed(WriteKeyFixed::new(self.key_section_id(), self.serialised_size(), data))
+    }
+}
 
 #[derive(Debug)]
 pub struct EncodingError {

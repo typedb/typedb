@@ -27,7 +27,7 @@ use wal::SequenceNumber;
 
 use crate::durability_service::DurabilityService;
 use crate::error::{StorageError, StorageErrorKind};
-use crate::key::WriteKey;
+use crate::key::{WriteKey, WriteKeyFixed};
 use crate::snapshot::{ReadSnapshot, WriteSnapshot};
 
 pub mod error;
