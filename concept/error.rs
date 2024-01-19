@@ -15,6 +15,28 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub mod thing_manager;
-pub mod type_manager;
-pub mod error;
+
+use std::fmt::{Display, Formatter};
+
+#[derive(Debug)]
+pub struct TypeError {
+    pub kind: TypeErrorKind,
+}
+
+#[derive(Debug)]
+pub enum TypeErrorKind {
+}
+
+impl Display for TypeError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+
+// impl Error for TypeError {
+//     fn source(&self) -> Option<&(dyn Error + 'static)> {
+//         match &self.kind {
+//
+//         }
+//     }
+// }

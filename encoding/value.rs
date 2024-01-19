@@ -18,7 +18,7 @@
 use logger::result::ResultExt;
 use struct_deser_derive::StructDeser;
 
-use crate::{EncodingError, EncodingErrorKind, Serialisable, WritableKeyFixed};
+use crate::{DeserialisableDynamic, EncodingError, EncodingErrorKind, Serialisable, WritableKeyFixed};
 
 #[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct U16 {
@@ -68,5 +68,14 @@ impl Serialisable for StringBytes {
     fn serialise_into(&self, array: &mut [u8]) {
         debug_assert_eq!(array.len(), self.bytes.len());
         array.copy_from_slice(self.bytes.as_ref())
+    }
+}
+
+impl DeserialisableDynamic for StringBytes {
+
+    fn deserialise_from(array: Box<[u8]>) -> Self {
+        StringBytes {
+            bytes: array
+        }
     }
 }

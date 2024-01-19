@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::borrow::Cow;
 use std::cmp::Ordering;
 
 pub const FIXED_KEY_LENGTH_BYTES: usize = 48;
@@ -156,8 +157,4 @@ impl Ord for WriteKeyDynamic {
     fn cmp(&self, other: &Self) -> Ordering {
         self.data.cmp(&other.data)
     }
-}
-
-pub fn empty() -> Box<[u8; 0]> {
-    Box::new([0; 0])
 }

@@ -16,8 +16,11 @@
  */
 
 use std::iter::empty;
+use std::sync::atomic::{AtomicU64, Ordering};
 
-pub struct WAL {}
+pub struct WAL {
+    sequence_number: AtomicU64,
+}
 
 ///
 /// Questions:
@@ -26,8 +29,17 @@ pub struct WAL {}
 ///     3. How to benchmark
 ///
 impl WAL {
-    fn sequenced_write(&self, record: impl Record) -> SequenceNumber {
-        todo!()
+
+    pub fn new() -> WAL {
+        WAL {
+            sequence_number: AtomicU64::new(0),
+        }
+    }
+
+    pub fn sequenced_write(&self, record: impl Record) -> SequenceNumber {
+        SequenceNumber {
+            number: self.sequence_number.fetch_add(1, Ordering::Relaxed)
+        }
     }
 
     fn last_sequence_number(&self) -> SequenceNumber {
@@ -45,4 +57,6 @@ pub struct SequenceNumber {
 }
 
 pub trait Record {
+
+    fn as_bytes(&self) -> &[u8];
 }

@@ -20,17 +20,27 @@ use std::rc::Rc;
 use concept::type_manager::TypeManager;
 use storage::snapshot::Snapshot;
 
-pub(crate) struct TransactionRead<'txn, 'storage: 'txn> {
+pub struct TransactionRead<'txn, 'storage: 'txn> {
     pub(crate) snapshot: Rc<Snapshot<'storage>>,
     pub(crate) type_manager: TypeManager<'txn, 'storage>,
 }
 
-pub(crate) struct TransactionWrite<'txn, 'storage: 'txn> {
+impl<'txn, 'storage: 'txn> TransactionRead <'txn, 'storage> {
+
+    pub fn type_manager(&self) -> &TypeManager<'txn, 'storage> {
+        &self.type_manager
+    }
+}
+
+pub struct TransactionWrite<'txn, 'storage: 'txn> {
     pub(crate) snapshot: Rc<Snapshot<'storage>>,
-    pub type_manager: TypeManager<'txn, 'storage>,
+    pub(crate) type_manager: TypeManager<'txn, 'storage>,
 }
 
 impl<'txn, 'storage: 'txn> TransactionWrite<'txn, 'storage> {
 
+    pub fn type_manager(&self) -> &TypeManager<'txn, 'storage> {
+        &self.type_manager
+    }
 }
 

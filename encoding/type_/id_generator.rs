@@ -59,14 +59,14 @@ impl TypeIIDGenerator {
         }
     }
 
-    pub fn take_entity_iid(&self) -> TypeIID {
+    pub fn take_entity_type_iid(&self) -> TypeIID {
         let next = self.next_entity_id.fetch_add(1, Ordering::Relaxed);
-        TypeIID::new(Prefix::Entity.as_id(), TypeID::new(next.to_be_bytes()))
+        TypeIID::new(Prefix::EntityType.as_id(), TypeID::new(next.to_be_bytes()))
     }
 
-    pub fn take_attribute_iid(&self) -> TypeIID {
+    pub fn take_attribute_type_iid(&self) -> TypeIID {
         let next = self.next_attribute_id.fetch_add(1, Ordering::Relaxed);
-        TypeIID::new(Prefix::Attribute.as_id(), TypeID::new(next.to_be_bytes()))
+        TypeIID::new(Prefix::AttributeType.as_id(), TypeID::new(next.to_be_bytes()))
     }
 }
 

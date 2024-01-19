@@ -23,7 +23,7 @@ use storage::{Section, Storage};
 use storage::error::StorageError;
 pub use storage::key::{FIXED_KEY_LENGTH_BYTES, WriteKey, WriteKeyFixed};
 use storage::key::WriteKeyDynamic;
-use struct_deser::{IntoBytes, SerializedByteLen};
+use struct_deser::{FromBytes, IntoBytes, SerializedByteLen};
 
 pub mod thing;
 pub mod type_;
@@ -66,14 +66,37 @@ pub trait Serialisable {
     fn serialise_into(&self, array: &mut [u8]);
 }
 
+pub trait DeserialisableFixed {
+    fn serialised_size() -> usize;
+
+    fn deserialise_from(array: &[u8]) -> Self;
+}
+
+pub trait DeserialisableDynamic {
+    fn deserialise_from(array: Box<[u8]>) -> Self;
+}
+
 impl<T: IntoBytes> Serialisable for T {
     fn serialised_size(&self) -> usize {
+        println!("Size: {}", Self::BYTE_LEN);
         Self::BYTE_LEN
     }
 
     fn serialise_into(&self, array: &mut [u8]) {
+        println!("Size of array: {}, required size: {}", array.len(), self.serialised_size());
         debug_assert_eq!(array.len(), self.serialised_size());
         self.into_bytes(array)
+    }
+}
+
+impl<T: FromBytes> DeserialisableFixed for T {
+    fn serialised_size() -> usize {
+        Self::BYTE_LEN
+    }
+
+    fn deserialise_from(array: &[u8]) -> Self {
+        debug_assert_eq!(array.len(), Self::serialised_size());
+        T::from_bytes(array)
     }
 }
 
@@ -81,7 +104,7 @@ pub trait WritableKeyFixed: Serialisable {
     fn key_section_id(&self) -> u8;
 
     fn serialise_to_write_key(&self) -> WriteKey {
-        let mut bytes = Vec::<u8>::with_capacity(self.serialised_size());
+        let mut bytes = vec![0; self.serialised_size()];
         self.serialise_into(bytes.as_mut_slice());
         WriteKey::Dynamic(WriteKeyDynamic::new(self.key_section_id(), bytes.into_boxed_slice()))
     }

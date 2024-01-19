@@ -21,7 +21,6 @@ use std::rc::Rc;
 
 use concept::type_manager::TypeManager;
 use encoding::initialise_storage;
-use encoding::thing::thing_encoding::ThingEncoder;
 use encoding::type_::id_generator::TypeIIDGenerator;
 use storage::snapshot::Snapshot;
 use storage::Storage;
@@ -51,8 +50,7 @@ impl Database {
             kind: FailedToSetupStorage(storage_error),
         })?;
         let type_iid_generator = TypeIIDGenerator::new();
-        // let thing_encoder = ThingEncoder::new(&mut storage);
-        // let thing_encoder = TypeEncoder::new(&mut storage);
+        TypeManager::initialise_types(&mut storage, &type_iid_generator);
 
         let database = Database {
             name: database_name.clone(),
@@ -60,17 +58,10 @@ impl Database {
             storage: storage,
             type_iid_generator: type_iid_generator,
         };
-        database.initialise();
         Ok(database)
     }
 
-    fn initialise(&self) {
-        let txn = self.transaction_write();
-        let name = "entity";
-        txn.type_manager.create_entity_type(&name);
-    }
-
-    fn transaction_read(&self) -> TransactionRead {
+    pub fn transaction_read(&self) -> TransactionRead {
         let mut snapshot: Rc<Snapshot<'_>> = Rc::new(Snapshot::Read(self.storage.snapshot_read()));
         let type_manager = TypeManager::new(snapshot.clone(), &self.type_iid_generator);
         TransactionRead {
@@ -88,5 +79,3 @@ impl Database {
         }
     }
 }
-
-

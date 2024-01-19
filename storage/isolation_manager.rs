@@ -15,28 +15,43 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::collections::BTreeMap;
 use std::iter::empty;
+use std::rc::Rc;
+use std::sync::RwLock;
+use logger::result::ResultExt;
 
 use wal::SequenceNumber;
 
+use crate::key::WriteKey;
 use crate::snapshot::Snapshot;
 
-struct IsolationManager {}
+pub(crate) struct IsolationManager {
+    // TODO improve: RWLock is not optimal
+    commits: RwLock<Vec<(SequenceNumber, SequenceNumber, Rc<BTreeMap<WriteKey, Option<Box<[u8]>>>>)>>
+}
 
 impl IsolationManager {
-    fn notify_open(&self, sequence_number: SequenceNumber) {
+    pub(crate) fn new() -> IsolationManager {
+        IsolationManager {
+            commits: RwLock::new(vec![]),
+        }
+    }
+
+    pub(crate) fn notify_open(&self, sequence_number: SequenceNumber) {
         todo!()
     }
 
-    fn notify_commit(&self, sequence_number: SequenceNumber, snapshot: &Snapshot) {
+    pub(crate) fn notify_commit(&self, open_sequence_number: SequenceNumber, commit_sequence_number: SequenceNumber, writes: Rc<BTreeMap<WriteKey, Option<Box<[u8]>>>>) {
+        let mut lock = self.commits.write().unwrap_or_log();
+        lock.push((open_sequence_number, commit_sequence_number, writes));
+    }
+
+    pub(crate) fn notify_closed(&self, sequence_number: SequenceNumber) {
         todo!()
     }
 
-    fn notify_closed(&self, sequence_number: SequenceNumber) {
-        todo!()
-    }
-
-    fn iterate_snapshots(&self, from: SequenceNumber, to: SequenceNumber) -> impl Iterator<Item=Snapshot> {
+    pub(crate) fn iterate_snapshots(&self, from: SequenceNumber, to: SequenceNumber) -> impl Iterator<Item=Snapshot> {
         empty()
     }
 }

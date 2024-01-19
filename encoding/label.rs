@@ -15,19 +15,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::borrow::Cow;
+
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Label {
-    pub(crate) name: String,
-    pub(crate) scope: Option<String>,
+    pub(crate) name: Cow<'static, str>,
+    pub(crate) scope: Option<Cow<'static, str>>,
 }
 
 impl Label {
-
-    pub fn name(&self) -> &String {
+    pub fn name(&self) -> &str {
         &self.name
     }
 
-    pub fn scope(&self) -> &Option<String> {
+    // TODO; can this just return an &Option<str> ?
+    pub fn scope(&self) -> &Option<Cow<'static, str>> {
         &self.scope
     }
 }

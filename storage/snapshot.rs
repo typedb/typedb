@@ -34,7 +34,14 @@ pub enum Snapshot<'storage> {
 }
 
 impl<'storage> Snapshot<'storage> {
-    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &WriteKey) -> Box<dyn Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'snapshot> {
+    pub fn get<'snapshot>(&'snapshot self, key: &WriteKey) -> Option<Box<[u8]>> {
+        match self {
+            Snapshot::Read(snapshot) => snapshot.get(key),
+            Snapshot::Write(snapshot) => snapshot.get(key),
+        }
+    }
+
+    pub fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &WriteKey) -> Box<dyn Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 'snapshot> {
         match self {
             Snapshot::Read(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
             Snapshot::Write(snapshot) => Box::new(snapshot.iterate_prefix(prefix)),
@@ -55,7 +62,11 @@ impl<'storage> ReadSnapshot<'storage> {
         }
     }
 
-    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &WriteKey) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'snapshot {
+    fn get<'snapshot>(&self, key: &WriteKey) -> Option<Box<[u8]>> {
+        self.storage.get(key.bytes())
+    }
+
+    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &WriteKey) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 'snapshot {
         self.storage.iterate_prefix(prefix.bytes())
     }
 }
@@ -63,7 +74,7 @@ impl<'storage> ReadSnapshot<'storage> {
 pub struct WriteSnapshot<'storage> {
     storage: &'storage Storage,
     // TODO: replace with BTree Left-Right structure to allow concurrent read/write
-    inserts: RwLock<BTreeMap<WriteKey, Box<[u8]>>>,
+    writes: RwLock<BTreeMap<WriteKey, Option<Box<[u8]>>>>,
     open_sequence_number: SequenceNumber,
 }
 
@@ -71,38 +82,46 @@ impl<'storage> WriteSnapshot<'storage> {
     pub(crate) fn new(storage: &'storage Storage, open_sequence_number: SequenceNumber) -> WriteSnapshot {
         WriteSnapshot {
             storage: storage,
-            inserts: RwLock::new(BTreeMap::new()),
+            writes: RwLock::new(BTreeMap::new()),
             open_sequence_number: open_sequence_number,
         }
     }
 
     pub fn put(&self, key: WriteKey) {
-        let mut map = self.inserts.write().unwrap();
-        map.insert(key, key::empty());
+        let mut map = self.writes.write().unwrap();
+        map.insert(key, None);
     }
 
     pub fn put_val(&self, key: WriteKey, val: Box<[u8]>) {
-        let mut map = self.inserts.write().unwrap();
-        map.insert(key, val);
+        let mut map = self.writes.write().unwrap();
+        map.insert(key, Some(val));
     }
 
-    fn get(&self, key: &WriteKey) -> Option<Vec<u8>> {
+    fn get(&self, key: &WriteKey) -> Option<Box<[u8]>> {
         // TODO merge with inserts & deletes
         self.storage.get(key.bytes())
     }
 
-    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &WriteKey) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 'snapshot {
+    fn iterate_prefix<'snapshot>(&'snapshot self, prefix: &WriteKey) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 'snapshot {
         self.storage.iterate_prefix(prefix.bytes()).merge(self.iterate_prefix_buffered(prefix))
     }
 
-    fn iterate_prefix_buffered<'s>(&'s self, prefix: &WriteKey) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
-        let map = self.inserts.read().unwrap();
+    fn iterate_prefix_buffered<'s>(&'s self, prefix: &WriteKey) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 's {
+        let map = self.writes.read().unwrap();
         let range = RangeFrom { start: prefix };
         // TODO: hold read lock while iterating so avoid collecting into array
         map.range::<WriteKey, _>(range).map(|(key, val)| {
             // TODO: we can avoid allocation here once we settle on a Key/Value struct
             (key.bytes().into(), val.clone())
         }).collect::<Vec<_>>().into_iter()
+    }
+
+    pub fn commit(self) {
+        self.storage.snapshot_commit(self);
+    }
+
+    pub(crate) fn into_data(self) -> (BTreeMap<WriteKey, Option<Box<[u8]>>>, SequenceNumber) {
+        (self.writes.into_inner().unwrap(), self.open_sequence_number)
     }
 }
 

@@ -15,19 +15,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use std::ops::Deref;
 use std::path::PathBuf;
 use std::rc::Rc;
 
 use logger::error;
 use logger::result::ResultExt;
 use speedb::{DB, Options};
-use wal::SequenceNumber;
+use wal::{Record, SequenceNumber, WAL};
 
 use crate::durability_service::DurabilityService;
 use crate::error::{StorageError, StorageErrorKind};
-use crate::key::{WriteKey, WriteKeyFixed};
+use crate::isolation_manager::IsolationManager;
+use crate::key::{WriteKey};
 use crate::snapshot::{ReadSnapshot, WriteSnapshot};
 
 pub mod error;
@@ -41,6 +44,13 @@ pub struct Storage {
     path: PathBuf,
     sections: Vec<Section>,
     section_index: [u8; 256],
+    durability_service: WAL,
+    // TODO: want to inject either a remote or local service
+    isolation_manager: IsolationManager,
+
+
+    // TODO eliminate
+    empty: Box<[u8]>
 }
 
 impl Storage {
@@ -53,6 +63,9 @@ impl Storage {
             path: kv_storage_dir,
             sections: Vec::new(),
             section_index: [0; 256],
+            durability_service: WAL::new(),
+            isolation_manager: IsolationManager::new(),
+            empty: Box::new([0; 0]),
         })
     }
 
@@ -117,22 +130,33 @@ impl Storage {
     }
 
     pub fn snapshot_commit<'storage>(&'storage self, snapshot: WriteSnapshot<'storage>) {
-        // steps:
+        let (writes, open_sequence_number) = snapshot.into_data();
         //  1. make durable and get sequence number
+        let commit_sequence_number = self.durability_service.sequenced_write(WALRecordCommit::new(&writes));
         //  2. notify committed to isolation manager (must be immediate so waiting txn's don't spin long)
-        //  3. validate against concurrent transactions in the given order
+        let writes_shared = Rc::new(writes);
+        self.isolation_manager.notify_commit(open_sequence_number, commit_sequence_number, writes_shared.clone());
+        // steps:
+        //  3. validate against concurrent transactions in the given order.
+        // TODO decide if we should block until all predecessors finish, allow out of order (non-Calvin model), or validate against all predecessors even if they are validating and fail eagerly.
+
+        // TODO implement
+
         //  4. write to kv-storage
+        // snapshot_ref
+        writes_shared.iter().for_each(|(key, value)| self.put(key, value));
     }
 
-    pub fn put(&self, key: &WriteKey) {
+    pub fn put(&self, key: &WriteKey, value: &Option<Box<[u8]>>) {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
-        self.get_section(key.bytes()[0]).put(key.bytes()).map_err(|e| StorageError {
+        let value_bytes = value.as_ref().map_or_else(|| &self.empty, |v| v);
+        self.get_section(key.bytes()[0]).put(key.bytes(), value_bytes).map_err(|e| StorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: e },
         }).unwrap_or_log()
     }
 
-    pub fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
+    pub fn get(&self, key: &[u8]) -> Option<Box<[u8]>> {
         self.get_section(key[0]).get(key).map_err(|e| StorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: e },
@@ -144,7 +168,7 @@ impl Storage {
         self.get_section(key[0]).get_prev(key)
     }
 
-    pub fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Box<[u8]>)> + 's {
+    pub fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 's {
         debug_assert!(prefix.len() > 1);
         self.get_section(prefix[0]).iterate_prefix(prefix)
             .map(|res| {
@@ -243,33 +267,33 @@ impl Section {
         options
     }
 
-    fn put(&self, bytes: &[u8]) -> Result<(), SectionError> {
+    fn put(&self, key: &[u8], value: &Box<[u8]>) -> Result<(), SectionError> {
         // TODO: this should WAL if it is going to be exposed
-        self.kv_storage.put(bytes, key::empty().as_slice())
+        self.kv_storage.put(key, value)
             .map_err(|e| SectionError {
                 section_name: self.name.clone(),
-                kind: SectionErrorKind::FailedIterate { source: e },
+                kind: SectionErrorKind::FailedPut { source: e },
             })
     }
 
-    fn get(&self, bytes: &[u8]) -> Result<Option<Vec<u8>>, SectionError> {
-        self.kv_storage.get(bytes).map_err(|e| SectionError {
+    fn get(&self, key: &[u8]) -> Result<Option<Box<[u8]>>, SectionError> {
+        self.kv_storage.get(key).map_err(|e| SectionError {
             section_name: self.name.clone(),
             kind: SectionErrorKind::FailedGet { source: e },
-        })
+        }).map(|value| value.map(|v| v.into_boxed_slice()))
     }
 
-    fn get_prev(&self, bytes: &[u8]) -> Option<Box<[u8]>> {
+    fn get_prev(&self, key: &[u8]) -> Option<Box<[u8]>> {
         let mut iterator = self.kv_storage.raw_iterator();
-        iterator.seek_for_prev(bytes);
+        iterator.seek_for_prev(key);
         iterator.key().map(|array_ref| array_ref.into())
     }
 
     // TODO: we should benchmark using iterator pools
-    fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=Result<(Box<[u8]>, Box<[u8]>), SectionError>> + 's {
+    fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=Result<(Box<[u8]>, Option<Box<[u8]>>), SectionError>> + 's {
         self.kv_storage.prefix_iterator(prefix).map(|result| {
             match result {
-                Ok(kv) => Ok(kv),
+                Ok((key, value)) => Ok((key, if value.is_empty() { None } else { Some(value) })),
                 Err(error) => Err(SectionError {
                     section_name: self.name.clone(),
                     kind: SectionErrorKind::FailedIterate { source: error },
@@ -297,6 +321,30 @@ impl Section {
                 })
             }
         }
+    }
+}
+
+struct WALRecordCommit {
+    // TODO: replace with proper interface for serialised data
+    data: Box<[(Box<[u8]>, Option<Box<[u8]>>)]>,
+}
+
+impl WALRecordCommit {
+    fn new(commit_data: &BTreeMap<WriteKey, Option<Box<[u8]>>>) -> WALRecordCommit {
+        let data = commit_data
+            .iter()
+            .map(|(key, value)| {
+                (key.bytes().to_vec().into_boxed_slice(), value.as_ref().map(|v| v.to_vec().into_boxed_slice()))
+            }).collect::<Vec<_>>().into_boxed_slice();
+        WALRecordCommit {
+            data: data
+        }
+    }
+}
+
+impl Record for WALRecordCommit {
+    fn as_bytes(&self) -> &[u8] {
+        todo!()
     }
 }
 

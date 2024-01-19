@@ -63,6 +63,7 @@ pub mod concept {
     }
 
     pub mod root {
+        use std::borrow::Cow;
         use crate::label::Label;
 
         pub enum Root {
@@ -73,13 +74,12 @@ pub mod concept {
         }
 
         impl Root {
-            // TODO this should be CONST
-            pub fn label(&self) -> Label {
+            pub const fn label(&self) -> Label {
                 match self {
-                    Root::Entity => Label { name: String::from("entity"), scope: None },
-                    Root::Attribute => Label { name: String::from("attribute"), scope: None },
-                    Root::Relation => Label { name: String::from("relation"), scope: None },
-                    Root::Role => Label { name: String::from("role"), scope: None },
+                    Root::Entity => Label { name: Cow::Borrowed("entity"), scope: None },
+                    Root::Attribute => Label { name: Cow::Borrowed("attribute"), scope: None },
+                    Root::Relation => Label { name: Cow::Borrowed("relation"), scope: None },
+                    Root::Role => Label { name: Cow::Borrowed("role"), scope: Some(Cow::Borrowed("relation")) },
                 }
             }
         }
@@ -90,7 +90,7 @@ pub mod index {
     use struct_deser::SerializedByteLen;
     use struct_deser_derive::StructDeser;
 
-    use crate::{EncodingSection, Serialisable, WritableKeyDynamic, WritableKeyFixed};
+    use crate::{DeserialisableDynamic, DeserialisableFixed, EncodingSection, Serialisable, WritableKeyDynamic, WritableKeyFixed};
     use crate::prefix::{Prefix, PrefixID};
     use crate::type_::type_encoding::concept::TypeIID;
     use crate::value::StringBytes;
@@ -148,6 +148,22 @@ pub mod index {
             self.prefix.serialise_into(slice);
             let slice = &mut array[self.prefix.serialised_size()..self.serialised_size()];
             self.label.serialise_into(slice)
+        }
+    }
+
+    impl DeserialisableDynamic for LabelTypeIIDIndex {
+
+        fn deserialise_from(array: Box<[u8]>) -> Self {
+            let slice = &array[0..<PrefixID as DeserialisableFixed>::serialised_size()];
+            let prefix_id = PrefixID::deserialise_from(slice);
+
+            // TODO: introduce 'ByteArray', which allows in-place truncation. This will allow us to avoid re-allocating on truncation
+            let slice = &array[<PrefixID as DeserialisableFixed>::serialised_size()..array.len()];
+            let label = StringBytes::deserialise_from(Box::from(slice));
+            LabelTypeIIDIndex {
+                prefix: prefix_id,
+                label: label
+            }
         }
     }
 
