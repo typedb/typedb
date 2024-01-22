@@ -24,7 +24,8 @@ use tracing::subscriber::DefaultGuard;
 use logger::initialise_logging;
 use rand;
 use storage::{error::{StorageError, StorageErrorKind}, SectionError, SectionErrorKind, Storage};
-use storage::key::{Key, KeyFixed};
+use storage::key_value::{Key, KeyFixed, Value};
+
 
 fn setup() -> (PathBuf, DefaultGuard) {
     let guard = initialise_logging();
@@ -118,34 +119,34 @@ fn get_put_iterate() {
     let sec_1_key_2 =  Key::Fixed(KeyFixed::from((vec![sec_1_id, 0x1, 0x0, 0x10], sec_1_id)));
     let sec_1_key_3 =  Key::Fixed(KeyFixed::from((vec![sec_1_id, 0x1, 0x0, 0xff], sec_1_id)));
     let sec_1_key_4 = Key::Fixed( KeyFixed::from((vec![sec_1_id, 0x2, 0x0, 0xff], sec_1_id)));
-    storage.put(&sec_1_key_1, &None);
-    storage.put(&sec_1_key_2, &None);
-    storage.put(&sec_1_key_3, &None);
-    storage.put(&sec_1_key_4, &None);
+    storage.put(&sec_1_key_1, &Value::Empty);
+    storage.put(&sec_1_key_2, &Value::Empty);
+    storage.put(&sec_1_key_3, &Value::Empty);
+    storage.put(&sec_1_key_4, &Value::Empty);
 
     let sec_2_key_1 = Key::Fixed(KeyFixed::from((vec![sec_2_id, 0x1, 0x0, 0x1], sec_2_id)));
     let sec_2_key_2 = Key::Fixed(KeyFixed::from((vec![sec_2_id, 0xb, 0x0, 0x10], sec_2_id)));
     let sec_2_key_3 = Key::Fixed(KeyFixed::from((vec![sec_2_id, 0x5, 0x0, 0xff], sec_2_id)));
     let sec_2_key_4 =Key::Fixed( KeyFixed::from((vec![sec_2_id, 0x2, 0x0, 0xff], sec_2_id)));
-    storage.put(&sec_2_key_1, &None);
-    storage.put(&sec_2_key_2, &None);
-    storage.put(&sec_2_key_3, &None);
-    storage.put(&sec_2_key_4, &None);
+    storage.put(&sec_2_key_1, &Value::Empty);
+    storage.put(&sec_2_key_2, &Value::Empty);
+    storage.put(&sec_2_key_3, &Value::Empty);
+    storage.put(&sec_2_key_4, &Value::Empty);
 
     let first_value = storage.get(&sec_1_key_1);
-    assert!(first_value.is_some() && first_value.unwrap().is_empty());
+    assert_eq!(first_value, Some(Value::Empty));
 
     let second_value = storage.get(&sec_2_key_1);
-    assert!(second_value.is_some() && second_value.unwrap().is_empty());
+    assert_eq!(second_value, Some(Value::Empty));
 
     let prefix = Key::Fixed(KeyFixed::from((vec![sec_1_id, 0x1], sec_1_id)));
-    let entries: Vec<(Vec<u8>, Vec<u8>)> = storage.iterate_prefix(&prefix)
-        .map(|(key, value)| (key.to_vec(), value.map_or(vec![0; 0], |v| v.to_vec())))
+    let entries: Vec<(Vec<u8>, Value)> = storage.iterate_prefix(&prefix)
+        .map(|(key, value)| (key.to_vec(), value))
         .collect();
     assert_eq!(entries, vec![
-        (sec_1_key_2.bytes().to_vec(), Vec::new()),
-        (sec_1_key_3.bytes().to_vec(), Vec::new()),
-        (sec_1_key_4.bytes().to_vec(), Vec::new()),
+        (sec_1_key_2.bytes().to_vec(), Value::Empty),
+        (sec_1_key_3.bytes().to_vec(), Value::Empty),
+        (sec_1_key_4.bytes().to_vec(), Value::Empty),
     ]);
 
     cleanup(storage_path)

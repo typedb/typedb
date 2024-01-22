@@ -23,12 +23,12 @@ use logger::result::ResultExt;
 
 use wal::SequenceNumber;
 
-use crate::key::Key;
+use crate::key_value::{Key, Value};
 use crate::snapshot::Snapshot;
 
 pub(crate) struct IsolationManager {
     // TODO improve: RWLock is not optimal
-    commits: RwLock<Vec<(SequenceNumber, SequenceNumber, Rc<BTreeMap<Key, Option<Box<[u8]>>>>)>>
+    commits: RwLock<Vec<(SequenceNumber, SequenceNumber, Rc<BTreeMap<Key, Value>>)>>
 }
 
 impl IsolationManager {
@@ -42,7 +42,7 @@ impl IsolationManager {
         todo!()
     }
 
-    pub(crate) fn notify_commit(&self, open_sequence_number: SequenceNumber, commit_sequence_number: SequenceNumber, writes: Rc<BTreeMap<Key, Option<Box<[u8]>>>>) {
+    pub(crate) fn notify_commit(&self, open_sequence_number: SequenceNumber, commit_sequence_number: SequenceNumber, writes: Rc<BTreeMap<Key, Value>>) {
         let mut lock = self.commits.write().unwrap_or_log();
         lock.push((open_sequence_number, commit_sequence_number, writes));
     }

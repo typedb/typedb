@@ -21,8 +21,8 @@ use std::str::Utf8Error;
 
 use storage::{Section, Storage};
 use storage::error::StorageError;
-pub use storage::key::{FIXED_KEY_LENGTH_BYTES, Key, KeyFixed};
-use storage::key::KeyDynamic;
+pub use storage::key_value::{FIXED_KEY_LENGTH_BYTES, Key, KeyFixed};
+use storage::key_value::{KeyDynamic, Value};
 use struct_deser::{FromBytes, IntoBytes, SerializedByteLen};
 
 pub mod thing;
@@ -35,18 +35,21 @@ mod value;
 
 enum EncodingSection {
     Schema,
+    Data, // TODO: partition into sub-spaces for write optimisation
 }
 
 impl EncodingSection {
     const fn name(&self) -> &str {
         match self {
             EncodingSection::Schema => "schema",
+            EncodingSection::Data => "data",
         }
     }
 
     const fn id(&self) -> u8 {
         match self {
             EncodingSection::Schema => 0b0,
+            EncodingSection::Data => 0b100,
         }
     }
 
@@ -57,7 +60,8 @@ impl EncodingSection {
 }
 
 pub fn initialise_storage(storage: &mut Storage) -> Result<(), StorageError> {
-    EncodingSection::Schema.initialise_storage(storage)
+    EncodingSection::Schema.initialise_storage(storage)?;
+    EncodingSection::Data.initialise_storage(storage)
 }
 
 pub trait Serialisable {
@@ -83,7 +87,6 @@ impl<T: IntoBytes> Serialisable for T {
     }
 
     fn serialise_into(&self, array: &mut [u8]) {
-        println!("Size of array: {}, required size: {}", array.len(), self.serialised_size());
         debug_assert_eq!(array.len(), self.serialised_size());
         self.into_bytes(array)
     }
@@ -120,6 +123,17 @@ pub trait SerialisableKeyDynamic: Serialisable {
         Key::Fixed(KeyFixed::new(self.key_section_id(), self.serialised_size(), data))
     }
 }
+
+pub trait SerialisableValue: Serialisable {
+    fn serialise_to_value(&self) -> Value {
+        let mut bytes = vec![0; self.serialised_size()];
+        self.serialise_into(bytes.as_mut_slice());
+        Value::Value(bytes.into_boxed_slice())
+    }
+}
+
+// anything serialisable can be serialised as a value
+impl<T: Serialisable> SerialisableValue for T {}
 
 #[derive(Debug)]
 pub struct EncodingError {

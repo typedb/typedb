@@ -14,6 +14,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#![feature(test)]
 
-pub mod thing_encoding;
-pub mod id_generator;
+use std::process::Termination;
+use test::{Bencher, black_box};
+use encoding::thing::id_generator::ThingIIDGenerator;
+
+#[bench]
+fn id_generation(&mut bencher: Bencher) -> impl Termination {
+    let thing_iid_generator = ThingIIDGenerator::new();
+    dbg!("TEST");
+    ().into()
+}
+
+// #[bench]
+// fn id_generation_and_serialisation() {
+//
+// }

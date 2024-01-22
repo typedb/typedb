@@ -22,6 +22,7 @@ use std::rc::Rc;
 use concept::type_manager::TypeManager;
 use encoding::initialise_storage;
 use encoding::type_::id_generator::TypeIIDGenerator;
+use encoding::thing::id_generator::ThingIIDGenerator;
 use storage::snapshot::Snapshot;
 use storage::Storage;
 use crate::error::DatabaseError;
@@ -33,6 +34,7 @@ pub struct Database {
     path: PathBuf,
     storage: Storage,
     type_iid_generator: TypeIIDGenerator,
+    thing_iid_generator: ThingIIDGenerator,
 }
 
 impl Database {
@@ -50,6 +52,7 @@ impl Database {
             kind: FailedToSetupStorage(storage_error),
         })?;
         let type_iid_generator = TypeIIDGenerator::new();
+        let thing_iid_generator = ThingIIDGenerator::new();
         TypeManager::initialise_types(&mut storage, &type_iid_generator);
 
         let database = Database {
@@ -57,6 +60,7 @@ impl Database {
             path: database_path,
             storage: storage,
             type_iid_generator: type_iid_generator,
+            thing_iid_generator: thing_iid_generator,
         };
         Ok(database)
     }

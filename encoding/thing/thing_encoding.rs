@@ -17,95 +17,61 @@
 
 use storage::{Section, Storage};
 
-pub struct ThingEncoder {}
-
-impl ThingEncoder {
-    pub fn new(storage: &mut Storage) -> ThingEncoder {
-        let options = Section::new_options();
-        let _ = storage.create_section("entity", 0, &options);
-        let _ = storage.create_section("attribute", 10, &options);
-        let _ = storage.create_section("has_forward", 100, &options);
-        let _ = storage.create_section("has_backward", 101, &options);
-        todo!()
-    }
-
-    pub fn load(storage: &mut Storage) -> ThingEncoder {
-        todo!()
-    }
-}
-
 pub mod concept {
-    use std::mem::transmute;
+    use std::mem;
+    use struct_deser_derive::StructDeser;
+
+    use crate::{DeserialisableDynamic, DeserialisableFixed, EncodingSection, Serialisable, SerialisableKeyDynamic, SerialisableKeyFixed};
     use wal::SequenceNumber;
+    use crate::prefix::PrefixID;
 
     use crate::type_::type_encoding::concept::TypeID;
 
     const OBJECT_ID_SIZE: usize = 8;
     const ATTRIBUTE_ID_SIZE: usize = 12;
 
-    // TODO: Sequence number should be inserted at the storage layer, and not be visible here
-
-    #[repr(C, packed)]
-    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-    struct ObjectIIDSequenced {
-        iid: ObjectIID,
-        sequence_number: SequenceNumber,
-    }
-
-    #[repr(C, packed)]
-    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+    #[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq)]
     pub struct ObjectIID {
-        pub(crate) prefix: u8,
-        pub(crate) type_id: TypeID,
-        pub(crate) id: ObjectID,
+        prefix: PrefixID,
+        type_id: TypeID,
+        object_id: ObjectID,
     }
 
     impl ObjectIID {
-        pub(crate) const fn size() -> usize {
-            std::mem::size_of::<Self>()
-        }
-
-        pub(crate) fn as_bytes(&self) -> &[u8; ObjectIID::size()] {
-            unsafe {
-                transmute(self)
-            }
+        pub fn new(prefix: PrefixID, type_id: TypeID, object_id: ObjectID) -> ObjectIID {
+            ObjectIID { prefix: prefix, type_id: type_id, object_id: object_id }
         }
     }
 
-    #[repr(C, packed)]
-    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-    struct ObjectID {
+    impl SerialisableKeyFixed for ObjectIID {
+        fn key_section_id(&self) -> u8 {
+            EncodingSection::Data.id()
+        }
+    }
+
+    #[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq)]
+    pub struct ObjectID {
         bytes: [u8; OBJECT_ID_SIZE],
     }
 
-    #[repr(C, packed)]
-    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-    pub struct AttributeIIDSequenced {
-        iid: AttributeIID,
-        sequence_number: SequenceNumber,
+    impl ObjectID {
+        pub fn from(id: u64) -> ObjectID {
+            debug_assert_eq!(mem::size_of_val(&id), OBJECT_ID_SIZE);
+            ObjectID { bytes: id.to_be_bytes() }
+        }
     }
 
-    #[repr(C, packed)]
-    #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
     pub struct AttributeIID {
-        prefix: u8,
+        prefix: PrefixID,
         type_id: TypeID,
         id: AttributeID,
     }
 
     impl AttributeIID {
-        const fn size() -> usize {
-            std::mem::size_of::<Self>()
-        }
 
-        fn as_bytes(&self) -> &[u8; ObjectIID::size()] {
-            unsafe {
-                transmute(self)
-            }
-        }
     }
 
-    #[repr(C, packed)]
     #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
     struct AttributeID {
         bytes: [u8; ATTRIBUTE_ID_SIZE],
@@ -119,8 +85,8 @@ mod connection {
         use crate::thing::thing_encoding::concept::ObjectIID;
         use crate::type_::type_encoding::concept::TypeID;
 
-        const PREFIX_HAS_FORWARD_SIZE: usize = ObjectIID::size() + INFIX_SIZE + PREFIX_SIZE;
-        const PREFIX_HAS_FORWARD_TYPE_SIZE: usize = ObjectIID::size() + INFIX_SIZE + PREFIX_SIZE + TypeID::size();
+        // const PREFIX_HAS_FORWARD_SIZE: usize = ObjectIID::size() + INFIX_SIZE + PREFIX_SIZE;
+        // const PREFIX_HAS_FORWARD_TYPE_SIZE: usize = ObjectIID::size() + INFIX_SIZE + PREFIX_SIZE + TypeID::size();
         //
         // #[repr(C, packed)]
         // #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]

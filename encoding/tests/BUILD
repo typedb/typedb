@@ -15,36 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
 load("@vaticle_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-package(default_visibility = [
-    ":__subpackages__",
-    "//concept:__pkg__",
-    "//database:__subpackages__"
-])
+load("@rules_rust//rust:defs.bzl", "rust_test")
+package(default_visibility = ["//visibility:public",])
 
-rust_library(
-    name = "encoding",
-    crate_root = "encoding.rs",
+rust_test(
+    name = "bench-encoding",
     srcs = glob([
-        "*.rs",
-        "*/*.rs"
+        "bench.rs",
     ]),
     deps = [
-        "//storage",
-        "//storage/wal",
-        "//common/logger",
-
-        "@crates//:tracing",
-        "@crates//:struct_deser",
-    ],
-    proc_macro_deps = [
-        "@crates//:struct_deser-derive"
+        "//encoding",
     ]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*"]),
+    include = glob(["*", "*/*", "*/*/*"]),
     license_type = "agpl-header",
 )

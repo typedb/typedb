@@ -15,7 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-use std::borrow::Cow;
 use std::cmp::Ordering;
 
 pub const FIXED_KEY_LENGTH_BYTES: usize = 48;
@@ -77,7 +76,7 @@ impl KeyDynamic {
     pub fn new(section_id: u8, data: Box<[u8]>) -> KeyDynamic {
         KeyDynamic {
             section_id: section_id,
-            data: data
+            data: data,
         }
     }
 
@@ -155,5 +154,33 @@ impl PartialOrd<Self> for KeyDynamic {
 impl Ord for KeyDynamic {
     fn cmp(&self, other: &Self) -> Ordering {
         self.data.cmp(&other.data)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Value {
+    Empty,
+    Value(Box<[u8]>),
+}
+
+impl Value {
+    pub fn bytes(&self) -> &[u8] {
+        match self {
+            Value::Empty => &[0; 0],
+            Value::Value(bytes) => bytes,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Value::Empty => true,
+            Value::Value(_) => false,
+        }
+    }
+}
+
+impl From<Option<Box<[u8]>>> for Value {
+    fn from(value: Option<Box<[u8]>>) -> Self {
+        value.map_or_else(|| Value::Empty, |bytes| Value::Value(bytes))
     }
 }

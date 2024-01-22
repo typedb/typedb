@@ -17,6 +17,7 @@
 
 
 pub mod concept {
+    use std::mem;
     use struct_deser::SerializedByteLen;
     use struct_deser_derive::StructDeser;
 
@@ -24,6 +25,7 @@ pub mod concept {
     use crate::prefix::PrefixID;
 
     const TYPE_ID_SIZE: usize = 2;
+    type TYPE_ID_UINT = u16;
 
     #[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq, Hash)]
     pub struct TypeIID {
@@ -53,12 +55,17 @@ pub mod concept {
     }
 
     impl TypeID {
-        pub fn new(id: [u8; TYPE_ID_SIZE]) -> TypeID {
-            TypeID { bytes: id }
+        pub fn from(id: u16) -> TypeID {
+            debug_assert_eq!(mem::size_of_val(&id), TYPE_ID_SIZE);
+            TypeID { bytes: id.to_be_bytes() }
         }
 
         pub(crate) const fn size() -> usize {
             TypeID::BYTE_LEN
+        }
+
+        pub(crate) fn as_u16(&self) -> u16 {
+            u16::from_be_bytes(self.bytes)
         }
     }
 

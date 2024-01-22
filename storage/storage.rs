@@ -30,11 +30,11 @@ use wal::{Record, SequenceNumber, WAL};
 use crate::durability_service::DurabilityService;
 use crate::error::{StorageError, StorageErrorKind};
 use crate::isolation_manager::IsolationManager;
-use crate::key::{Key};
+use crate::key_value::{Key, Value};
 use crate::snapshot::{ReadSnapshot, WriteSnapshot};
 
 pub mod error;
-pub mod key;
+pub mod key_value;
 pub mod snapshot;
 mod durability_service;
 mod isolation_manager;
@@ -48,9 +48,8 @@ pub struct Storage {
     // TODO: want to inject either a remote or local service
     isolation_manager: IsolationManager,
 
-
     // TODO eliminate
-    empty: Box<[u8]>
+    empty: Box<[u8]>,
 }
 
 impl Storage {
@@ -148,16 +147,15 @@ impl Storage {
         writes_shared.iter().for_each(|(key, value)| self.put(key, value));
     }
 
-    pub fn put(&self, key: &Key, value: &Option<Box<[u8]>>) {
+    pub fn put(&self, key: &Key, value: &Value) {
         // TODO: writes should always have to go through a transaction? Otherwise we have to WAL right here in a different path
-        let value_bytes = value.as_ref().map_or_else(|| &self.empty, |v| v);
-        self.get_section(key.section_id()).put(key.bytes(), value_bytes).map_err(|e| StorageError {
+        self.get_section(key.section_id()).put(key.bytes(), value.bytes()).map_err(|e| StorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: e },
         }).unwrap_or_log()
     }
 
-    pub fn get(&self, key: &Key) -> Option<Box<[u8]>> {
+    pub fn get(&self, key: &Key) -> Option<Value> {
         self.get_section(key.section_id()).get(key.bytes()).map_err(|e| StorageError {
             storage_name: self.owner_name.as_ref().to_owned(),
             kind: StorageErrorKind::SectionError { source: e },
@@ -165,16 +163,16 @@ impl Storage {
         }).unwrap_or_log()
     }
 
-    pub fn get_prev(&self, key: &Key) -> Option<Box<[u8]>> {
+    pub fn get_prev(&self, key: &Key) -> Option<Value> {
         self.get_section(key.section_id()).get_prev(key.bytes())
     }
 
-    pub fn iterate_prefix<'s>(&'s self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Option<Box<[u8]>>)> + 's {
+    pub fn iterate_prefix<'s>(&'s self, prefix: &Key) -> impl Iterator<Item=(Box<[u8]>, Value)> + 's {
         debug_assert!(prefix.bytes().len() > 1);
         self.get_section(prefix.section_id()).iterate_prefix(prefix.bytes())
             .map(|res| {
                 match res {
-                    Ok(v) => Ok(v),
+                    Ok((k, v)) => Ok((k, Value::from(v))),
                     Err(error) => Err(StorageError {
                         storage_name: self.owner_name.as_ref().to_owned(),
                         kind: StorageErrorKind::SectionError { source: error },
@@ -268,7 +266,7 @@ impl Section {
         options
     }
 
-    fn put(&self, key: &[u8], value: &Box<[u8]>) -> Result<(), SectionError> {
+    fn put(&self, key: &[u8], value: &[u8]) -> Result<(), SectionError> {
         // TODO: this should WAL if it is going to be exposed
         self.kv_storage.put(key, value)
             .map_err(|e| SectionError {
@@ -277,24 +275,27 @@ impl Section {
             })
     }
 
-    fn get(&self, key: &[u8]) -> Result<Option<Box<[u8]>>, SectionError> {
+    fn get(&self, key: &[u8]) -> Result<Option<Value>, SectionError> {
         self.kv_storage.get(key).map_err(|e| SectionError {
             section_name: self.name.clone(),
             kind: SectionErrorKind::FailedGet { source: e },
-        }).map(|value| value.map(|v| v.into_boxed_slice()))
+        }).map(
+            |value| value.map(
+                |v| if v.is_empty() { Value::Empty } else { Value::Value(v.into_boxed_slice()) })
+        )
     }
 
-    fn get_prev(&self, key: &[u8]) -> Option<Box<[u8]>> {
+    fn get_prev(&self, key: &[u8]) -> Option<Value> {
         let mut iterator = self.kv_storage.raw_iterator();
         iterator.seek_for_prev(key);
-        iterator.key().map(|array_ref| array_ref.into())
+        iterator.key().map(|array_ref| Value::Value(array_ref.into()))
     }
 
     // TODO: we should benchmark using iterator pools
-    fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=Result<(Box<[u8]>, Option<Box<[u8]>>), SectionError>> + 's {
+    fn iterate_prefix<'s>(&'s self, prefix: &[u8]) -> impl Iterator<Item=Result<(Box<[u8]>, Value), SectionError>> + 's {
         self.kv_storage.prefix_iterator(prefix).map(|result| {
             match result {
-                Ok((key, value)) => Ok((key, if value.is_empty() { None } else { Some(value) })),
+                Ok((key, value)) => Ok((key, if value.is_empty() { Value::Empty } else { Value::Value(value) })),
                 Err(error) => Err(SectionError {
                     section_name: self.name.clone(),
                     kind: SectionErrorKind::FailedIterate { source: error },
@@ -327,15 +328,15 @@ impl Section {
 
 struct WALRecordCommit {
     // TODO: replace with proper interface for serialised data
-    data: Box<[(Box<[u8]>, Option<Box<[u8]>>)]>,
+    data: Box<[(Box<[u8]>, Box<[u8]>)]>,
 }
 
 impl WALRecordCommit {
-    fn new(commit_data: &BTreeMap<Key, Option<Box<[u8]>>>) -> WALRecordCommit {
+    fn new(commit_data: &BTreeMap<Key, Value>) -> WALRecordCommit {
         let data = commit_data
             .iter()
             .map(|(key, value)| {
-                (key.bytes().to_vec().into_boxed_slice(), value.as_ref().map(|v| v.to_vec().into_boxed_slice()))
+                (key.bytes().to_vec().into_boxed_slice(), value.bytes().to_vec().into_boxed_slice())
             }).collect::<Vec<_>>().into_boxed_slice();
         WALRecordCommit {
             data: data

@@ -17,8 +17,9 @@
 
 use logger::result::ResultExt;
 use struct_deser_derive::StructDeser;
+use storage::key_value::Value;
 
-use crate::{DeserialisableDynamic, EncodingError, EncodingErrorKind, Serialisable, SerialisableKeyFixed};
+use crate::{DeserialisableDynamic, EncodingError, EncodingErrorKind, Serialisable, SerialisableKeyFixed, SerialisableValue};
 
 #[derive(StructDeser, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct U16 {

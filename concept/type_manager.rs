@@ -19,7 +19,7 @@
 use std::ops::Deref;
 use std::rc::Rc;
 
-use encoding::{DeserialisableFixed, SerialisableKeyDynamic, SerialisableKeyFixed};
+use encoding::{DeserialisableFixed, SerialisableKeyDynamic, SerialisableKeyFixed, SerialisableValue};
 pub use encoding::label::Label;
 use encoding::prefix::Prefix;
 use encoding::type_::id_generator::TypeIIDGenerator;
@@ -66,9 +66,9 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             let type_iid_key = type_iid.serialise_to_key();
             write_snapshot.put(type_iid_key.clone());
             let (iid_label_index_key, value) = TypeIIDLabelIndex::new(type_iid, label);
-            write_snapshot.put_val(iid_label_index_key.serialise_to_key(), value.to_bytes());
+            write_snapshot.put_val(iid_label_index_key.serialise_to_key(), value.serialise_to_value());
             let label_iid_index_key = LabelTypeIIDIndex::new(label);
-            write_snapshot.put_val(label_iid_index_key.serialise_to_key(), type_iid_key.bytes().to_vec().into_boxed_slice());
+            write_snapshot.put_val(label_iid_index_key.serialise_to_key(), type_iid.serialise_to_value());
             return EntityType::new(type_iid);
         }
         panic!("Illegal state: create type requires write snapshot")
@@ -76,7 +76,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
 
     pub fn get_entity_type(&self, label: &Label) -> Option<EntityType> {
         let key = LabelTypeIIDIndex::new(label.name()).serialise_to_key();
-        self.snapshot.get(&key).map(|value| EntityType::new(TypeIID::deserialise_from(&value)))
+        self.snapshot.get(&key).map(|value| EntityType::new(TypeIID::deserialise_from(&value.bytes())))
     }
 
     pub fn create_attribute_type(&self, label_: &Label) -> AttributeType {
@@ -87,9 +87,10 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
             let type_iid_key = type_iid.serialise_to_key();
             write_snapshot.put(type_iid_key.clone());
             let (iid_label_index_key, value) = TypeIIDLabelIndex::new(type_iid, label);
-            write_snapshot.put_val(iid_label_index_key.serialise_to_key(), value.to_bytes());
+            write_snapshot.put_val(iid_label_index_key.serialise_to_key(), value.serialise_to_value());
             let label_iid_index_key = LabelTypeIIDIndex::new(label);
-            write_snapshot.put_val(label_iid_index_key.serialise_to_key(), type_iid_key.bytes().to_vec().into_boxed_slice());
+            // TODO: we serialise TypeIID twice, the same way - for Key and for Value
+            write_snapshot.put_val(label_iid_index_key.serialise_to_key(), type_iid.serialise_to_value());
             return AttributeType::new(type_iid);
         }
         panic!("Illegal state: create type requires write snapshot")
@@ -97,7 +98,7 @@ impl<'txn, 'storage: 'txn> TypeManager<'txn, 'storage> {
 
     pub fn get_attribute_type(&self, label: &Label) -> Option<AttributeType> {
         let key = LabelTypeIIDIndex::new(label.name()).serialise_to_key();
-        self.snapshot.get(&key).map(|value| AttributeType::new(TypeIID::deserialise_from(&value)))
+        self.snapshot.get(&key).map(|value| AttributeType::new(TypeIID::deserialise_from(&value.bytes())))
     }
 
     // TODO:
