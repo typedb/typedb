@@ -75,6 +75,8 @@ python_deps()
 load("@vaticle_dependencies//tool/common:deps.bzl", "vaticle_dependencies_ci_pip",
     vaticle_dependencies_tool_maven_artifacts = "maven_artifacts")
 vaticle_dependencies_ci_pip()
+load("@vaticle_dependencies_ci_pip//:requirements.bzl", "install_deps")
+install_deps()
 
 # Load //tool/checkstyle
 load("@vaticle_dependencies//tool/checkstyle:deps.bzl", checkstyle_deps = "deps")
